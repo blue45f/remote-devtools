@@ -1,0 +1,5 @@
+packages:
+  - client
+  - sdk
+  - figma-plugin
+  - .

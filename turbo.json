@@ -1,0 +1,20 @@
+{
+  "extends": ["//"],
+  "$schema": "https://turborepo.org/schema.json",
+  "tasks": {
+    "build:internal": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**", "sdk/dist/**", "client/out/**"]
+    },
+    "build:external": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**", "sdk/dist/**", "client/out/**"]
+    },
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "outputs": []
+    }
+  }
+}
