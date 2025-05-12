@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remote Debug Tools</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background: #ffffff;
+        color: #333333;
+        padding: 16px;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 600px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .container {
+        max-width: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #000000;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        color: #666666;
+      }
+
+      .section {
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #000000;
+        margin-bottom: 12px;
+      }
+
+      .button {
+        width: 100%;
+        padding: 10px 16px;
+        background: #007aff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-bottom: 8px;
+      }
+
+      .button:hover {
+        background: #0056d3;
+      }
+
+      .button:active {
+        transform: translateY(1px);
+      }
+
+      .button.secondary {
+        background: #f0f0f0;
+        color: #333333;
+      }
+
+      .button.secondary:hover {
+        background: #e0e0e0;
+      }
+
+      .button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .selection-info {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 13px;
+        min-height: 60px;
+        color: #666666;
+      }
+
+      .selection-item {
+        padding: 4px 0;
+        border-bottom: 1px solid #eeeeee;
+      }
+
+      .selection-item:last-child {
+        border-bottom: none;
+      }
+
+      .api-config {
+        margin-top: 20px;
+        padding: 16px;
+        background: #f9f9f9;
+        border-radius: 8px;
+      }
+
+      .input-group {
+        margin-bottom: 12px;
+      }
+
+      .input-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #666666;
+        margin-bottom: 4px;
+      }
+
+      .input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #dddddd;
+        border-radius: 4px;
+        font-size: 14px;
+        background: white;
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: #007aff;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+      }
+
+      .message {
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+
+      .message.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .message.error {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .message.info {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #007aff;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-left: 8px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .device-user-info {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 16px;
+      }
+
+      .device-user-info h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+      }
+
+      .device-user-info p {
+        font-size: 13px;
+        margin: 4px 0;
+        color: #666;
+      }
+
+      .device-list {
+        background: #f0f8ff;
+        border-radius: 6px;
+        padding: 12px;
+        border: 1px solid #d1e7ff;
+      }
+
+      .device-list h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+      }
+
+      .device-list ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .device-item {
+        padding: 12px;
+        background: white;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .device-item:hover {
+        background: #f5f5f5;
+        transform: translateX(2px);
+      }
+
+      .device-item.selected {
+        background: #e3f2fd;
+        border-color: #2196f3;
+        border-width: 2px;
+      }
+
+      .device-item strong {
+        display: block;
+        color: #333;
+        margin-bottom: 4px;
+      }
+
+      .device-id {
+        font-size: 11px;
+        color: #999;
+        font-family: monospace;
+      }
+
+      /* 녹화 세션과 티켓 스타일 */
+      .rooms-container,
+      .tickets-container {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      .rooms-container h3,
+      .tickets-container h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #333;
+      }
+
+      .rooms-list,
+      .tickets-list {
+        list-style: none;
+        padding: 0;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .room-item {
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .room-item:hover:not(.loading) {
+        border-color: #2ac1bc;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .room-item.loading {
+        cursor: wait;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      .room-item.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e0e0e0;
+        border-top-color: #2ac1bc;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .ticket-item {
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border: 1px solid #e0e0e0;
+        transition: all 0.2s;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .ticket-item:hover {
+        border-color: #2196f3;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .ticket-item.active {
+        background: linear-gradient(90deg, #e3f2fd 0%, #f0f8ff 100%);
+        border-color: #2196f3;
+        box-shadow: 0 0 0 1px #2196f3;
+      }
+
+      .ticket-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        gap: 12px;
+      }
+
+      .ticket-selector {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .selector-circle {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #d0d0d0;
+        border-radius: 50%;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .ticket-selector:hover .selector-circle {
+        border-color: #2196f3;
+        transform: scale(1.1);
+      }
+
+      .selector-circle.selected {
+        border-color: #2196f3;
+        background-color: #2196f3;
+      }
+
+      .selector-circle.selected::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 6px;
+        height: 6px;
+        background: white;
+        border-radius: 50%;
+      }
+
+      .ticket-title-wrapper {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+      }
+
+      .ticket-link {
+        color: #333;
+        text-decoration: none;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 4px 8px;
+        display: inline-block;
+        max-width: 100%;
+      }
+
+      .ticket-link:hover {
+        color: #2196f3;
+        text-decoration: underline;
+      }
+
+      .ticket-image-btn {
+        background: transparent;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 6px;
+        cursor: pointer;
+        color: #666;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        min-width: 32px;
+        min-height: 32px;
+      }
+
+      .ticket-image-btn:hover:not(.loading) {
+        background: #f5f5f5;
+        color: #333;
+        border-color: #999;
+      }
+
+      .ticket-image-btn.loading {
+        cursor: wait;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+
+      .ticket-image-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .ticket-image-btn.loading svg {
+        display: none;
+      }
+
+      .ticket-image-btn.loading::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        border: 2px solid #e0e0e0;
+        border-top-color: #2196f3;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        position: absolute;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 티켓 업로드 섹션 */
+      .ticket-upload-section {
+        padding: 8px 12px;
+        border-top: 1px solid rgba(33, 150, 243, 0.2);
+        background: #f8f9fa;
+      }
+
+      /* 드래그 앤 드롭 영역 */
+      .drop-zone {
+        margin-top: 12px;
+        padding: 20px;
+        border: 2px dashed #d0d0d0;
+        border-radius: 8px;
+        background: #fafafa;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+        position: relative;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .drop-zone:hover {
+        border-color: #2196f3;
+        background: #f0f8ff;
+      }
+
+      .drop-zone.drag-over {
+        border-color: #2196f3;
+        background: #e3f2fd;
+        transform: scale(1.02);
+      }
+
+      .drop-zone.uploading {
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
+      .drop-zone-icon {
+        font-size: 24px;
+        color: #999;
+        margin-bottom: 8px;
+      }
+
+      .drop-zone-text {
+        font-size: 13px;
+        color: #666;
+        margin: 0;
+      }
+
+      .drop-zone-hint {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+      }
+
+      .drop-zone .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e0e0e0;
+        border-top-color: #2196f3;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 8px;
+      }
+
+      .drop-zone-success {
+        color: #4caf50;
+        font-size: 32px;
+        margin-bottom: 8px;
+        animation: checkmark 0.3s ease-in-out;
+      }
+
+      @keyframes checkmark {
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .upload-selection-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .upload-selection-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+
+      .upload-selection-btn:active {
+        transform: translateY(0);
+      }
+
+      .upload-selection-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .room-name {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+      }
+
+      .room-meta {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .room-date {
+        font-size: 11px;
+        color: #999;
+      }
+
+      .room-badge {
+        background: #ff6b6b;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+      }
+
+      .empty-message {
+        text-align: center;
+        color: #999;
+        padding: 20px;
+        font-size: 13px;
+      }
+
+      .email-input-section {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 16px;
+      }
+
+      .email-input-section h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+      }
+
+      .email-input-section p {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 12px;
+      }
+
+      .email-input-section .input {
+        margin-bottom: 12px;
+      }
+
+      .hint {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        font-style: italic;
+      }
+
+      .auto-detect {
+        background: #e8f5e9;
+        border: 1px solid #4caf50;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #2e7d32;
+      }
+
+      .auto-detect strong {
+        font-weight: 600;
+        color: #1b5e20;
+      }
+
+      .jira-content {
+        background: #f9f9f9;
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      /* 탭 스타일 */
+      .tabs-container {
+        margin-bottom: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .tab-button {
+        flex: 1;
+        padding: 10px 16px;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .tab-button:hover {
+        background: rgba(255, 255, 255, 0.5);
+        color: #333;
+      }
+
+      .tab-button.active {
+        background: white;
+        color: #007aff;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+        max-height: calc(100vh - 250px); /* 헤더와 탭 버튼 공간 고려 */
+      }
+
+      .tab-content.active {
+        display: flex;
+        flex-direction: column;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .tab-icon {
+        font-size: 16px;
+      }
+
+      .tab-badge {
+        background: #ff4444;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="title">Remote Debug Tools</h1>
+        <div
+          id="environment-info"
+          style="padding: 8px; margin-top: 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px"
+        >
+          <strong>환경:</strong> <span id="env-mode">확인중...</span><br />
+          <strong>서버:</strong> <span id="env-url" style="color: #007aff">확인중...</span>
+        </div>
+      </div>
+
+      <!-- 디바이스 정보 섹션 -->
+      <div class="section" id="deviceSection" style="display: none">
+        <h2 class="section-title">나의 디바이스</h2>
+        <div class="device-info"></div>
+      </div>
+
+      <!-- 탭 섹션 -->
+      <div class="tabs-container">
+        <div class="tabs">
+          <button class="tab-button active" data-tab="tickets">
+            <span class="tab-icon">🎫</span>
+            <span>티켓</span>
+            <span id="ticketsBadge" class="tab-badge" style="display: none">0</span>
+          </button>
+          <button class="tab-button" data-tab="rooms">
+            <span class="tab-icon">📝</span>
+            <span>녹화 세션</span>
+            <span id="roomsBadge" class="tab-badge" style="display: none">0</span>
+          </button>
+        </div>
+
+        <!-- 탭 컨텐츠 -->
+        <div class="tab-content active" id="ticketsTabContent">
+          <!-- 티켓 섹션 -->
+          <div class="section" id="ticketsSection"></div>
+        </div>
+
+        <div class="tab-content" id="roomsTabContent">
+          <!-- 녹화 세션 섹션 -->
+          <div class="section" id="roomsSection"></div>
+        </div>
+      </div>
+
+      <div id="messageContainer"></div>
+    </div>
+
+    <script type="module" src="./ui.ts"></script>
+  </body>
+</html>

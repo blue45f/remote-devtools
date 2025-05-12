@@ -1,0 +1,19 @@
+{
+  "name": "Remote Debug Tools",
+  "id": "remote-debug-tools",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma"],
+  "permissions": ["currentuser", "activeusers"],
+  "menu": [],
+  "networkAccess": {
+    "allowedDomains": [
+      "http://localhost:3001"
+    ],
+    "reasoning": "디버깅 툴 서버와 통신"
+  }
+}
