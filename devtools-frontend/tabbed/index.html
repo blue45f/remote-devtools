@@ -1,0 +1,854 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Remote Debug Tools</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #1e1e1e;
+        color: #e1e1e1;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tab-container {
+        background: #2d2d30;
+        border-bottom: 1px solid #3e3e42;
+        display: flex;
+        align-items: center;
+        padding: 0;
+        min-height: 45px; /* 높이 증가 */
+      }
+
+      .tab {
+        padding: 12px 24px; /* 패딩 증가 */
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: #cccccc;
+        font-size: 14px; /* 폰트 크기 증가 */
+        font-weight: 500; /* 폰트 굵기 추가 */
+        transition: all 0.2s;
+        border-right: 1px solid #3e3e42;
+        position: relative;
+        white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+      }
+
+      .tab:hover {
+        background: #2a2a2a;
+        color: #ffffff;
+      }
+
+      .tab.active {
+        background: #1e1e1e;
+        color: #ffffff;
+        border-bottom: 2px solid #007acc;
+      }
+
+      .tab-actions {
+        margin-left: auto;
+        padding: 0 15px; /* 패딩 증가 */
+        display: flex;
+        gap: 12px; /* 간격 증가 */
+        align-items: center;
+        flex-shrink: 0; /* 축소 방지 */
+      }
+
+      .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #888;
+        margin-right: 8px;
+        display: inline-block;
+      }
+
+      .status-indicator.live {
+        background: #4ec9b0;
+        animation: pulse 2s infinite;
+      }
+
+      .status-indicator.backup {
+        background: #f48771;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .content-container {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        /* 클립보드 접근 권한 허용 */
+      }
+
+      .tab-content {
+        width: 100%;
+        height: 100%;
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .backup-selector {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #2d2d30;
+        border: 1px solid #3e3e42;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        z-index: 100;
+      }
+
+      .connection-info {
+        font-size: 13px; /* 폰트 크기 증가 */
+        color: #e1e1e1; /* 색상 밝게 */
+        padding: 8px 12px; /* 패딩 증가 */
+        background: #252526;
+        border-radius: 6px; /* 둥근 모서리 증가 */
+        font-weight: 500; /* 폰트 굵기 추가 */
+        white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+      }
+
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 30, 30, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #ccc;
+        z-index: 1000;
+      }
+
+      .action-button {
+        padding: 10px 20px; /* 패딩 대폭 증가 */
+        background: #0e639c;
+        color: white;
+        border: none;
+        border-radius: 6px; /* 둥근 모서리 증가 */
+        cursor: pointer;
+        font-size: 14px; /* 폰트 크기 증가 */
+        font-weight: 600; /* 폰트 굵기 증가 */
+        transition: all 0.2s ease; /* 전체 전환 효과 */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+        white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+      }
+
+      .action-button:hover {
+        background: #1177bb;
+        transform: translateY(-1px); /* 호버 시 살짝 위로 */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
+      }
+
+      .action-button:disabled {
+        background: #555;
+        cursor: not-allowed;
+      }
+
+      /* 로딩 스피너 애니메이션 */
+      .loading-spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 6px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .action-button.loading {
+        background: #666;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      .action-button.loading:hover {
+        background: #666;
+      }
+
+      /* 탭 스크롤바 스타일 */
+      #previousTabs::-webkit-scrollbar {
+        height: 4px;
+      }
+
+      #previousTabs::-webkit-scrollbar-track {
+        background: #2d2d30;
+      }
+
+      #previousTabs::-webkit-scrollbar-thumb {
+        background: #666;
+        border-radius: 2px;
+      }
+
+      #previousTabs::-webkit-scrollbar-thumb:hover {
+        background: #888;
+      }
+
+      /* 반응형 개선 */
+      @media (max-width: 1200px) {
+        .tab-actions {
+          gap: 8px;
+        }
+
+        .action-button {
+          padding: 8px 16px;
+          font-size: 13px;
+        }
+
+        #previousTabs {
+          max-width: calc(100vw - 350px);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .tab-container {
+          flex-wrap: wrap;
+          min-height: auto;
+        }
+
+        .tab-actions {
+          width: 100%;
+          justify-content: center;
+          padding: 8px 15px;
+          border-top: 1px solid #3e3e42;
+        }
+
+        #previousTabs {
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tab-container">
+      <button class="tab active" data-tab="current" onclick="switchTab('current')">
+        <span class="status-indicator live"></span>
+        현재 기록
+      </button>
+      <div
+        id="previousTabs"
+        style="
+          display: flex;
+          overflow-x: auto;
+          flex: 1;
+          max-width: calc(100vw - 400px);
+          scrollbar-width: thin;
+          scrollbar-color: #666 #2d2d30;
+        "
+      >
+        <!-- 동적으로 이전 기록 탭들이 추가됨 -->
+      </div>
+      <div class="tab-actions">
+        <button class="action-button" id="addPreviousTab" onclick="addPreviousRecordTab()">이전 기록 더보기</button>
+        <div class="connection-info" id="connectionInfo">연결 대기 중...</div>
+        <button class="action-button" id="refreshButton" onclick="refreshCurrentTab()">새로고침</button>
+      </div>
+    </div>
+
+    <div class="content-container">
+      <div id="current-tab" class="tab-content active">
+        <div
+          id="current-url-display"
+          style="
+            display: none;
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%);
+            border-bottom: 1px solid #474747;
+            color: #9cdcfe;
+            font-size: 13px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            overflow: auto;
+            position: relative;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="color: #c586c0; font-weight: 600; flex-shrink: 0">🌐 URL:</span>
+            <span
+              id="current-url-text"
+              style="flex: 1; white-space: normal; word-break: break-all; text-align: left; direction: ltr"
+              title=""
+            ></span>
+          </div>
+        </div>
+        <iframe id="current-frame" src="" style="height: calc(100% - 0px)" allow="clipboard-write; clipboard-read"></iframe>
+      </div>
+      <!-- 동적으로 이전 기록 컨텐츠들이 추가됨 -->
+    </div>
+
+    <script>
+      let currentTab = 'current'
+      let currentRoom = null
+      let currentRecordId = null
+      let currentDeviceId = null // 현재 기기의 deviceId
+      let currentUrl = null // 현재 기록의 URL
+      let currentDate = null // 현재 기록의 날짜 (YYYY-MM-DD)
+      let previousRecordCount = 0
+      let loadedRecords = new Set() // 이미 로드한 recordId 추적
+      let cachedRoomGroups = null // 정렬된 room 그룹 캐시
+      let nextRoomIndex = 0 // 다음에 로드할 room 인덱스
+
+      function escapeHtml(value) {
+        if (value === null || value === undefined) {
+          return ''
+        }
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+      }
+
+      // 환경별 호스트 URL 가져오기
+      function getApiHost() {
+        const hostname = window.location.hostname
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          return 'http://localhost:3000'
+        } else {
+          // 베타 환경이나 프로덕션 환경
+          return window.location.origin
+        }
+      }
+
+      function getWsHost() {
+        const hostname = window.location.hostname
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          return 'localhost:3000'
+        } else {
+          // 베타 환경이나 프로덕션 환경
+          return window.location.host
+        }
+      }
+
+      // URL 파라미터 파싱
+      function getQueryParams() {
+        const params = new URLSearchParams(window.location.search)
+        const wsParam = params.get('ws')
+        const wssParam = params.get('wss')
+        const wsUrl = wsParam || wssParam
+        if (wsUrl) {
+          try {
+            const decodedWsUrl = decodeURIComponent(wsUrl)
+            console.log('Decoded ws URL:', decodedWsUrl)
+
+            // ws:// 또는 wss:// 프로토콜이 없으면 추가
+            let fullWsUrl = decodedWsUrl
+            if (!decodedWsUrl.startsWith('ws://') && !decodedWsUrl.startsWith('wss://')) {
+              // 현재 페이지가 https면 wss, 아니면 ws 사용
+              const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://'
+              fullWsUrl = protocol + decodedWsUrl
+            }
+
+            console.log('Full ws URL with protocol:', fullWsUrl)
+
+            // URL에서 쿼리 파라미터 파싱
+            const [baseUrl, queryString] = fullWsUrl.split('?')
+            const wsQuery = new URLSearchParams(queryString || '')
+
+            return {
+              room: wsQuery.get('room'),
+              recordId: wsQuery.get('recordId'),
+              recordMode: wsQuery.get('recordMode') === 'true',
+              wsUrl: fullWsUrl,
+              originalWsUrl: decodedWsUrl, // 원본 URL도 보관
+            }
+          } catch (error) {
+            console.error('WebSocket URL 파싱 에러:', error)
+            return null
+          }
+        }
+        return null
+      }
+
+      // 탭 전환
+      function switchTab(tabName) {
+        currentTab = tabName
+
+        // 탭 버튼 활성화 상태 변경
+        document.querySelectorAll('.tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.dataset.tab === tabName)
+        })
+
+        // 컨텐츠 표시/숨김
+        document.querySelectorAll('.tab-content').forEach((content) => {
+          content.classList.toggle('active', content.id === `${tabName}-tab`)
+        })
+      }
+
+      function refreshCurrentTab() {
+        window.location.reload()
+      }
+
+      // 현재 기록의 deviceId, URL, 날짜 가져오기
+      async function getCurrentDeviceId() {
+        if (currentDeviceId) return currentDeviceId
+
+        try {
+          // DB에서 현재 기록의 정보 조회
+          const response = await fetch(`${getApiHost()}/rooms/record/${currentRecordId}/info`)
+          const recordInfo = await response.json()
+
+          if (recordInfo && !recordInfo.error) {
+            currentDeviceId = recordInfo.deviceId || 'unknown-device'
+            currentUrl = recordInfo.url || ''
+
+            // recordInfo의 createdAt timestamp를 한국시간 기준으로 날짜 변환
+            if (recordInfo.createdAt) {
+              // 한국시간 (UTC+9) 기준으로 날짜 계산
+              const koreanTime = new Date(new Date(recordInfo.createdAt).getTime() + 9 * 60 * 60 * 1000)
+              currentDate = koreanTime.toISOString().split('T')[0]
+              console.log(`[DATE_CONVERSION] 원본: ${recordInfo.createdAt} → 한국시간 날짜: ${currentDate}`)
+            } else if (recordInfo.date) {
+              // API에서 이미 변환된 날짜가 있으면 사용
+              currentDate = recordInfo.date
+              console.log(`[DATE_FROM_API] 사용할 날짜: ${currentDate}`)
+            } else {
+              // fallback: 현재 한국시간
+              currentDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+              console.log(`[DATE_FALLBACK] 현재 한국시간 날짜 사용: ${currentDate}`)
+            }
+
+            console.log('현재 기록 정보:', recordInfo)
+
+            // URL 표시 업데이트
+            updateCurrentUrlDisplay()
+          }
+        } catch (error) {
+          console.error('Device ID 조회 실패:', error)
+        }
+
+        return currentDeviceId || 'unknown-device'
+      }
+
+      // 현재 기록의 URL 표시 업데이트
+      function updateCurrentUrlDisplay() {
+        const urlDisplay = document.getElementById('current-url-display')
+        const urlText = document.getElementById('current-url-text')
+        const iframe = document.getElementById('current-frame')
+
+        if (currentUrl) {
+          urlText.textContent = currentUrl
+          urlText.title = currentUrl // 전체 URL을 툴팁으로 표시
+          urlDisplay.style.display = 'block'
+          requestAnimationFrame(() => {
+            const metaHeight = urlDisplay.offsetHeight
+            iframe.style.height = `calc(100% - ${metaHeight}px)`
+          })
+        } else {
+          urlDisplay.style.display = 'none'
+          iframe.style.height = 'calc(100% - 0px)'
+        }
+      }
+
+      // 버튼 로딩 상태 설정
+      function setLoadingState(button, isLoading) {
+        if (isLoading) {
+          button.classList.add('loading')
+          button.disabled = true
+          const originalText = button.textContent
+          button.dataset.originalText = originalText
+          button.innerHTML = '<span class="loading-spinner"></span>로딩 중...'
+        } else {
+          button.classList.remove('loading')
+          button.disabled = false
+          const originalText = button.dataset.originalText || '이전 기록 더보기'
+          button.textContent = originalText
+        }
+      }
+
+      // 이전 기록 탭 추가 (roomGroups 캐시 재사용)
+      async function addPreviousRecordTab() {
+        const button = document.getElementById('addPreviousTab')
+
+        try {
+          // 로딩 상태 시작
+          setLoadingState(button, true)
+
+          console.log(`[PREVIOUS_TAB_DEBUG] 🔍 Starting addPreviousRecordTab - nextRoomIndex: ${nextRoomIndex}`)
+
+          // 캐시된 roomGroups가 없으면 처음 로드
+          if (!cachedRoomGroups) {
+            console.log(`[PREVIOUS_TAB_DEBUG] 📥 Loading roomGroups for first time`)
+            await loadPreviousRoomGroups()
+          }
+
+          console.log(
+            `[PREVIOUS_TAB_DEBUG] 📊 Available roomGroups: ${cachedRoomGroups?.length || 0}, nextIndex: ${nextRoomIndex}`,
+          )
+
+          // 캐시된 roomGroups에서 다음 room 선택
+          if (!cachedRoomGroups || nextRoomIndex >= cachedRoomGroups.length) {
+            const deviceId = await getCurrentDeviceId()
+            console.log(`[PREVIOUS_TAB_DEBUG] ⚠️ No more records available`)
+            alert(
+              `기기 ${deviceId}의 최근 7일간 이전 room 기록을 모두 로드했습니다.\n(총 ${cachedRoomGroups?.length || 0}개 room)`,
+            )
+            return
+          }
+
+          const nextRoomData = cachedRoomGroups[nextRoomIndex]
+          const backupData = nextRoomData.files
+
+          console.log(`[PREVIOUS_TAB_DEBUG] 🎯 Loading record at index ${nextRoomIndex}:`)
+          console.log(`  📄 Timestamp: ${nextRoomData.timestamp}`)
+          console.log(`  🕐 Time: ${new Date(nextRoomData.timestamp).toLocaleString()}`)
+          console.log(`  🏠 Room: ${nextRoomData.room}`)
+          console.log(`  🆔 RecordId: ${nextRoomData.recordId}`)
+
+          // 새 탭 추가 (S3 백업 재생용) - 고유 ID 전달
+          await addTabForS3Backup(nextRoomData.recordId, nextRoomData.room, backupData, nextRoomData.uniqueId)
+          loadedRecords.add(`${nextRoomData.room}_${nextRoomData.recordId}`)
+
+          // 다음 인덱스로 증가
+          nextRoomIndex++
+          console.log(`[PREVIOUS_TAB_DEBUG] ✅ Tab added, nextRoomIndex now: ${nextRoomIndex}`)
+        } catch (error) {
+          console.error('이전 기록 로드 실패:', error)
+          alert('이전 기록을 불러올 수 없습니다.')
+        } finally {
+          // 로딩 상태 종료
+          setLoadingState(button, false)
+        }
+      }
+
+      // 이전 room 그룹들을 로드하고 캐시
+      async function loadPreviousRoomGroups() {
+        const deviceId = await getCurrentDeviceId()
+
+        // 현재 recordId가 없으면 에러
+        if (!currentRecordId) {
+          throw new Error('현재 기록의 recordId 정보를 먼저 로드해야 합니다.')
+        }
+
+        // 현재 녹화 세션의 이전 기록들만 조회 (DB + S3 백업)
+        const response = await fetch(`${getApiHost()}/rooms/record/${currentRecordId}/previous`)
+        const previousRecords = await response.json()
+
+        console.log(`[ROOM_GROUPS_LOAD] recordId: ${currentRecordId}, previousRecords: ${previousRecords.length}`)
+        console.log(`[ROOM_GROUPS_DEBUG] First 3 previous records:`, previousRecords.slice(0, 3))
+
+        // 더 자세한 이전 기록 구조 확인
+        if (previousRecords.length > 0) {
+          const firstRecord = previousRecords[0]
+          console.log(`[PREVIOUS_RECORD_DETAIL] First record properties:`)
+          console.log(`  source: ${firstRecord.source}`)
+          console.log(`  id: ${firstRecord.id}`)
+          console.log(`  name: ${firstRecord.name}`)
+          console.log(`  room: ${firstRecord.room}`)
+          console.log(`  deviceId: ${firstRecord.deviceId}`)
+          console.log(`  timestamp: ${firstRecord.timestamp}`)
+          console.log(`  date: ${firstRecord.date}`)
+          console.log(`  Complete first record:`, JSON.stringify(firstRecord, null, 2))
+        }
+
+        // 서버에서 이미 정렬된 배열을 그대로 사용 (DB + S3 백업 혼합)
+        cachedRoomGroups = previousRecords.map((record, index) => {
+          // S3 백업의 경우 filePath 생성
+          const fileData =
+            record.source === 's3'
+              ? {
+                  ...record,
+                  fileName: `session_${record.timestamp}.json`,
+                  filePath: `${record.date}/${record.deviceId}/session_${record.timestamp}.json`,
+                  recordId: record.id, // S3 ID를 recordId로 사용
+                }
+              : record
+
+          return {
+            room: record.room || record.name || `Previous-${index + 1}`,
+            recordId: record.id,
+            timestamp: parseInt(record.timestamp),
+            files: [fileData], // S3의 경우 filePath가 포함된 데이터
+            date: record.date,
+            type: record.source, // 'db' 또는 's3'
+            uniqueId: `${record.source}-${record.timestamp}-${index}`,
+          }
+        })
+
+        nextRoomIndex = 0 // 인덱스 초기화
+
+        console.log(`[ROOM_GROUPS_CACHED] Total records: ${cachedRoomGroups.length}`)
+      }
+
+      // S3 백업 기반 탭 추가 (이전 room)
+      async function addTabForS3Backup(recordId, roomName, backupData, uniqueId) {
+        previousRecordCount++
+        // 전달받은 고유 ID 사용
+        const tabId = uniqueId || `previous-${previousRecordCount}-${Date.now()}`
+
+        // 중복 탭 생성 방지
+        if (document.querySelector(`[data-tab="${tabId}"]`)) {
+          console.warn(`[TAB_CREATE] 탭이 이미 존재함: ${tabId}`)
+          switchTab(tabId) // 기존 탭으로 전환
+          return
+        }
+
+        console.log(`[TAB_CREATE] 새 탭 생성: ${tabId}, room: ${roomName}, recordId: ${recordId}`)
+
+        // 디바이스별로 그룹화 (경량 API는 URL 정보 없음)
+        const deviceGroups = {}
+        backupData.forEach((file) => {
+          const deviceId = file.deviceId || 'unknown-device'
+          if (!deviceGroups[deviceId]) {
+            deviceGroups[deviceId] = []
+          }
+          deviceGroups[deviceId].push(file)
+        })
+
+        // 현재 기기와 같은 deviceId 선택
+        const targetDeviceId = currentDeviceId || Object.keys(deviceGroups)[0]
+        const targetBackupFiles = deviceGroups[targetDeviceId] || []
+
+        console.log(
+          `[S3_TAB] 탭 생성: ${roomName}, deviceId: ${targetDeviceId}, 파일 개수: ${targetBackupFiles.length}`,
+        )
+
+        // S3 데이터에서 URL 직접 사용 (별도 API 호출 불필요)
+        let primaryUrl = ''
+        let primaryTitle = ''
+        if (targetBackupFiles.length > 0) {
+          primaryUrl = targetBackupFiles[0].url || ''
+          primaryTitle = targetBackupFiles[0].title || ''
+          console.log(`[S3_TAB_URL] S3 데이터에서 URL 사용: ${primaryUrl}`)
+          if (primaryTitle) {
+            console.log(`[S3_TAB_TITLE] S3 데이터에서 Title 사용: ${primaryTitle}`)
+          }
+        }
+
+        // 탭 버튼 추가
+        const previousTabsContainer = document.getElementById('previousTabs')
+        const tabButton = document.createElement('button')
+        tabButton.className = 'tab'
+        tabButton.dataset.tab = tabId
+        tabButton.onclick = () => switchTab(tabId)
+
+        // 백업 파일의 시간 정보 (툴팁용)
+        const backupFile = backupData[0] // 첫 번째 파일 (개별 기록이므로 1개만 있음)
+        const timestamp = parseInt(backupFile.timestamp)
+        const backupTime = new Date(timestamp).toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+
+        // 탭 제목은 순서형태로 표시
+        tabButton.innerHTML = ''
+        const statusIndicator = document.createElement('span')
+        statusIndicator.className = 'status-indicator backup'
+        const labelSpan = document.createElement('span')
+        labelSpan.textContent = primaryTitle
+          ? `이전 기록 #${previousRecordCount} (${primaryTitle})`
+          : `이전 기록 #${previousRecordCount}`
+        tabButton.appendChild(statusIndicator)
+        tabButton.appendChild(labelSpan)
+
+        // 툴팁으로 자세한 정보 표시
+        const tooltipLines = [`시간: ${backupTime}`, `Room: ${roomName}`]
+        if (primaryTitle) {
+          tooltipLines.push(`제목: ${primaryTitle}`)
+        }
+        tooltipLines.push(primaryUrl ? `URL: ${decodeURIComponent(primaryUrl)}` : 'URL 정보 없음')
+        tabButton.title = tooltipLines.join('\n')
+        previousTabsContainer.appendChild(tabButton)
+
+        // 컨텐츠 영역 추가
+        const contentContainer = document.querySelector('.content-container')
+        const tabContent = document.createElement('div')
+        tabContent.id = `${tabId}-tab`
+        tabContent.className = 'tab-content'
+
+        // URL이 있으면 표시 영역 추가
+        const escapedUrl = escapeHtml(primaryUrl)
+        const escapedTitle = escapeHtml(primaryTitle)
+
+        const titleDisplay = primaryTitle
+          ? `<div style="
+              padding: 8px 15px; 
+              background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%); 
+              border-bottom: 1px solid #474747; 
+              color: #dcdcaa; 
+              font-size: 13px;
+              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+              overflow: auto;
+            ">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #ce9178; font-weight: 600; flex-shrink: 0;">📄 TITLE:</span>
+                <span style="
+                  flex: 1; 
+                  white-space: normal;
+                  word-break: break-all;
+                " title="${escapedTitle}">${escapedTitle}</span>
+              </div>
+            </div>`
+          : ''
+
+        const urlDisplay = primaryUrl
+          ? `<div style="
+              padding: 8px 15px; 
+              background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%); 
+              border-bottom: 1px solid #474747; 
+              color: #9cdcfe; 
+              font-size: 13px;
+              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+              overflow: auto;
+            ">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #c586c0; font-weight: 600; flex-shrink: 0;">🌐 URL:</span>
+                <span style="
+                  flex: 1; 
+                  white-space: normal;
+                  word-break: break-all;
+                  direction: ltr;
+                  text-align: left;
+                " title="${escapedUrl}">${escapedUrl}</span>
+              </div>
+            </div>`
+          : ''
+
+        const metaSections = [titleDisplay, urlDisplay].filter(Boolean)
+
+        tabContent.innerHTML = `
+            ${metaSections.join('')}
+            <iframe id="${tabId}-frame" src="" style="height: 100%;" allow="clipboard-write; clipboard-read"></iframe>
+          `
+
+        contentContainer.appendChild(tabContent)
+
+        requestAnimationFrame(() => {
+          const iframeEl = document.getElementById(`${tabId}-frame`)
+          if (iframeEl) {
+            const metaHeightPx = Array.from(tabContent.children)
+              .filter((child) => child !== iframeEl)
+              .reduce((sum, child) => sum + child.offsetHeight, 0)
+
+            iframeEl.style.height = `calc(100% - ${metaHeightPx}px)`
+          }
+        })
+
+        // iframe에 S3 백업 재생용 DevTools 로드 (s3Backup 모드)
+        const wsHostOnly = getWsHost()
+
+        // 백업 파일들의 정확한 경로 정보 전달 (API에서 제공된 filePath 사용)
+        const filePaths = targetBackupFiles
+          .map((file) => {
+            // API에서 제공한 정확한 filePath 사용 (기존+새로운 구조 모두 지원)
+            return file.filePath || `${file.date}/${file.deviceId}/${file.fileName}`
+          })
+          .join(',')
+
+        // S3 세션 ID 생성 - 실제 파일명에서 timestamp 추출
+        const fileTimestampMatch = backupFile.fileName.match(/session_(\d+)\.json/)
+        const fileTimestamp = fileTimestampMatch ? fileTimestampMatch[1] : backupFile.timestamp
+        const encodedDeviceId = encodeURIComponent(targetDeviceId || 'unknown-device')
+        const s3SessionId = `s3-${encodedDeviceId}-${fileTimestamp}-0`
+
+        console.log(`[S3_TAB] 🔍 Session ID generation:`)
+        console.log(`  📄 File name: ${backupFile.fileName}`)
+        console.log(`  ⏰ File timestamp: ${fileTimestamp}`)
+        console.log(`  🆔 Generated session ID: ${s3SessionId}`)
+
+        const s3BackupParams = {
+          s3Backup: 'true',
+          deviceId: targetDeviceId,
+          room: roomName,
+          recordId: s3SessionId, // S3 세션 ID를 recordId로 전달
+          date: currentDate, // 한국시간 기준 날짜
+          fileCount: targetBackupFiles.length,
+          filePaths: filePaths, // 선택된 파일들의 정확한 경로만 전달
+          s3FilePath:
+            targetBackupFiles[0].filePath ||
+            `${targetBackupFiles[0].date}/${targetBackupFiles[0].deviceId}/${targetBackupFiles[0].fileName}`, // Session Replay용 S3 파일 경로
+          tabId: tabId, // 고유한 탭 식별자 추가 (서버에서 구분 가능)
+          timestamp: backupFile.timestamp, // 백업 파일의 고유 timestamp 추가
+        }
+
+        const wsUrl = `${wsHostOnly}?${new URLSearchParams(s3BackupParams).toString()}`
+        // HTTPS 환경에서는 wss 사용, HTTP 환경에서는 ws 사용 (현재 기록과 동일)
+        const isHttps = window.location.protocol === 'https:'
+        const protocol = isHttps ? 'wss' : 'ws'
+        const devtoolsUrl = `/devtools/index.html?${protocol}=${encodeURIComponent(wsUrl)}`
+
+        console.log('Previous record iframe src:', devtoolsUrl)
+        console.log('S3 backup params:', s3BackupParams)
+
+        document.getElementById(`${tabId}-frame`).src = devtoolsUrl
+
+        // 새 탭으로 전환
+        switchTab(tabId)
+      }
+
+      // 초기화
+      async function initialize() {
+        const params = getQueryParams()
+
+        currentRoom = params.room
+        currentRecordId = params.recordId
+
+        // 현재 기록 iframe 설정 - iframe이 독립적으로 WebSocket 연결함
+        const currentFrame = document.getElementById('current-frame')
+        // 원본 WebSocket URL 사용 (프로토콜 제외), fallback으로 디코딩된 URL 사용
+        const searchParams = new URLSearchParams(window.location.search)
+        const wsUrl = searchParams.get('ws')
+        const wssUrl = searchParams.get('wss')
+        const fallbackWsUrl = wssUrl || wsUrl || ''
+        const wsUrlForIframe = params.originalWsUrl || decodeURIComponent(fallbackWsUrl)
+
+        // HTTPS 환경에서는 wss만 사용, HTTP 환경에서는 ws 사용
+        const isHttps = window.location.protocol === 'https:'
+        const protocol = isHttps ? 'wss' : 'ws'
+        currentFrame.src = `/devtools/index.html?${protocol}=${encodeURIComponent(wsUrlForIframe)}`
+
+        console.log('Current frame src:', currentFrame.src)
+        console.log('WebSocket URL for current record:', wsUrlForIframe)
+        console.log('Parsed params:', params)
+
+        // 연결 상태 표시
+        const connectionInfo = document.getElementById('connectionInfo')
+        connectionInfo.style.background = '#0e639c'
+
+        // 현재 recordId를 loadedRecords에 추가
+        loadedRecords.add(currentRecordId)
+
+        // 현재 deviceId 표시 (비동기로 업데이트)
+        getCurrentDeviceId().then((deviceId) => {
+          connectionInfo.textContent = `Device: ${deviceId}`
+        })
+      }
+
+      // 페이지 로드 시 초기화
+      window.addEventListener('load', initialize)
+    </script>
+  </body>
+</html>
