@@ -20,6 +20,12 @@
     "moduleResolution": "Node",
     "jsx": "preserve",
     "paths": {
+      "@remote-platform/core": [
+        "libs/core/src"
+      ],
+      "@remote-platform/core/*": [
+        "libs/core/src/*"
+      ],
       "@remote-platform/entity": [
         "libs/entity/src"
       ],
@@ -31,6 +37,12 @@
       ],
       "@remote-platform/constants/*": [
         "libs/constants/src/*"
+      ],
+      "@remote-platform/interfaces": [
+        "libs/interfaces/src"
+      ],
+      "@remote-platform/interfaces/*": [
+        "libs/interfaces/src/*"
       ]
     }
   },

@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/remote-platform-external/tsconfig.app.json"
       }
     },
+    "core": {
+      "type": "library",
+      "root": "libs/core",
+      "entryFile": "index",
+      "sourceRoot": "libs/core/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
     "entity": {
       "type": "library",
       "root": "libs/entity",
@@ -44,6 +53,15 @@
       "sourceRoot": "libs/constants/src",
       "compilerOptions": {
         "tsConfigPath": "libs/constants/tsconfig.lib.json"
+      }
+    },
+    "interfaces": {
+      "type": "library",
+      "root": "libs/interfaces",
+      "entryFile": "index",
+      "sourceRoot": "libs/interfaces/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/interfaces/tsconfig.lib.json"
       }
     }
   }

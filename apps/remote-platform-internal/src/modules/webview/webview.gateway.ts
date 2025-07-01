@@ -14,13 +14,15 @@ import { Server } from "ws";
 import * as WebSocket from "ws";
 
 import { MSG_ID } from "@remote-platform/constants";
+import {
+  DomService,
+  NetworkService,
+  RecordService,
+  RuntimeService,
+  ScreenService,
+} from "@remote-platform/core";
 
-import { DomService } from "../dom/dom.service";
-import { NetworkService } from "../network/network.service";
-import { RecordService } from "../record/record.service";
-import { RuntimeService } from "../runtime/runtime.service";
 import { S3Service } from "../s3/s3.service";
-import { ScreenService } from "../screen/screen.service";
 
 type RoomData = {
   client: WebSocket;

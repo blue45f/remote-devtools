@@ -18,6 +18,13 @@ import { Server } from "ws";
 
 import { MSG_ID } from "@remote-platform/constants";
 import {
+  DomService,
+  NetworkService,
+  RecordService,
+  RuntimeService,
+  ScreenService,
+} from "@remote-platform/core";
+import {
   TicketComponentEntity,
   TicketLabelEntity,
   TicketLogEntity,
@@ -25,13 +32,8 @@ import {
 
 import { getDefaultCommonInfo } from "../../utils/commonInfo";
 import { BufferService, type BufferEvent } from "../buffer/buffer.service";
-import { DomService } from "../dom/dom.service";
 import { JiraService } from "../jira/jira.service";
-import { NetworkService } from "../network/network.service";
-import { RecordService } from "../record/record.service";
-import { RuntimeService } from "../runtime/runtime.service";
 import { S3Service } from "../s3/s3.service";
-import { ScreenService } from "../screen/screen.service";
 import { SlackService } from "../slack/slack.service";
 import { UserInfoService } from "../user-info/user-info.service";
 
