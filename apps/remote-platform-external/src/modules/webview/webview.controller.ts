@@ -13,7 +13,7 @@ import {
 
 // HTML을 실제 브라우저로 렌더링
 import { renderHTMLToImage } from "../../utils/html-to-image";
-import { RecordService } from "../record/record.service";
+import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
 @Controller("rooms")
