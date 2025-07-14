@@ -3,7 +3,7 @@ import * as path from "path";
 import { Controller, Get, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 
-import { RecordService } from "../record/record.service";
+import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
 import { WebviewGateway } from "./webview.gateway"; // Gateway에서 방 목록을 가져오기 위해 import
