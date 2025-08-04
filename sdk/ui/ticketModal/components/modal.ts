@@ -1,6 +1,12 @@
 import { CommonInfo } from "../../../types/common";
 import { loadTicketFormDataFromAPI } from "../api";
 import { applyButtonStyles } from "../styles";
+import {
+  tokens,
+  applyModalOverlayStyles,
+  applyModalContainerStyles,
+  injectKeyframeAnimations,
+} from "../../theme";
 import { CreateTicketFunction } from "../types";
 
 /**
@@ -11,53 +17,40 @@ export function createTicketModal(
   onCancel: () => void,
   commonInfo: CommonInfo | null,
 ) {
+  // Inject keyframe animations
+  injectKeyframeAnimations();
+
   // 모달 오버레이
   const overlay = document.createElement("div");
   overlay.setAttribute("data-remote-debugger-overlay", "true");
-  overlay.style.position = "fixed";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.width = "100%";
-  overlay.style.height = "100%";
-  overlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-  overlay.style.zIndex = "10000";
-  overlay.style.display = "flex";
-  overlay.style.alignItems = "center";
-  overlay.style.justifyContent = "center";
+  applyModalOverlayStyles(overlay);
 
   // 모달 컨테이너
   const modal = document.createElement("div");
-  modal.style.backgroundColor = "#fff";
-  modal.style.borderRadius = "8px";
-  modal.style.maxWidth = "500px";
-  modal.style.width = "90%";
-  modal.style.maxHeight = "80vh";
-  modal.style.display = "flex";
-  modal.style.flexDirection = "column";
-  modal.style.boxShadow = "0 10px 25px rgba(0, 0, 0, 0.2)";
-  modal.style.position = "relative";
+  applyModalContainerStyles(modal, { maxWidth: "520px" });
 
   // 헤더 컨테이너
   const header = document.createElement("div");
   header.style.display = "flex";
   header.style.justifyContent = "space-between";
   header.style.alignItems = "center";
-  header.style.padding = "24px 24px 0";
+  header.style.padding = "20px 24px 0";
   header.style.position = "sticky";
   header.style.top = "0";
-  header.style.backgroundColor = "#fff";
+  header.style.backgroundColor = "transparent";
   header.style.zIndex = "10";
   header.style.borderTopLeftRadius = "8px";
   header.style.borderTopRightRadius = "8px";
   header.style.marginBottom = "0";
+  header.style.borderBottom = "none";
 
   // 제목
   const title = document.createElement("h2");
-  title.textContent = "QA 티켓 생성";
+  title.textContent = "Create Ticket";
   title.style.margin = "0";
-  title.style.fontSize = "20px";
-  title.style.fontWeight = "bold";
-  title.style.color = "#333";
+  title.style.fontSize = "18px";
+  title.style.fontWeight = "600";
+  title.style.color = "#f4f4f5";
 
   header.appendChild(title);
 
@@ -72,8 +65,8 @@ export function createTicketModal(
   const loadingDiv = document.createElement("div");
   loadingDiv.style.textAlign = "center";
   loadingDiv.style.padding = "40px";
-  loadingDiv.style.color = "#666";
-  loadingDiv.textContent = "폼 데이터를 불러오는 중...";
+  loadingDiv.style.color = "#71717a";
+  loadingDiv.textContent = "Loading form data...";
 
   // 폼 (초기에는 숨김)
   const form = document.createElement("form");
@@ -87,8 +80,8 @@ export function createTicketModal(
   buttonContainer.style.gap = "12px";
   buttonContainer.style.justifyContent = "flex-end";
   buttonContainer.style.padding = "16px 24px";
-  buttonContainer.style.borderTop = "1px solid #e5e7eb";
-  buttonContainer.style.backgroundColor = "#fff";
+  buttonContainer.style.borderTop = "1px solid #27272a";
+  buttonContainer.style.backgroundColor = "#18181b";
   buttonContainer.style.borderBottomLeftRadius = "8px";
   buttonContainer.style.borderBottomRightRadius = "8px";
   buttonContainer.style.marginTop = "0";
@@ -96,13 +89,13 @@ export function createTicketModal(
   // 취소 버튼
   const cancelButton = document.createElement("button");
   cancelButton.type = "button";
-  cancelButton.textContent = "취소";
+  cancelButton.textContent = "Cancel";
   applyButtonStyles(cancelButton, "secondary");
 
   // 생성 버튼
   const submitButton = document.createElement("button");
   submitButton.type = "submit";
-  submitButton.textContent = "티켓 생성";
+  submitButton.textContent = "Create Ticket";
   applyButtonStyles(submitButton, "primary");
 
   // 취소 버튼 이벤트

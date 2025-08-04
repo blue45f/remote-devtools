@@ -1,65 +1,46 @@
-// 디버거 버튼 관련 UI 생성 함수들
+import { tokens } from "./theme";
 
 /**
- * 디버거 버튼들을 생성
+ * Create debugger action buttons panel
  */
 export function createDebuggerButtons(
   onClick: (type: "record" | "live" | "ticket" | "network-rewrite") => void,
 ) {
   const buttonContainer = document.createElement("div");
-  buttonContainer.style.position = "absolute";
-  buttonContainer.style.bottom = "100%";
-  buttonContainer.style.right = "0px";
-  buttonContainer.style.marginBottom = "10px";
-  buttonContainer.style.display = "flex";
-  buttonContainer.style.flexDirection = "column";
-  buttonContainer.style.gap = "10px";
-
-  // QA 티켓 만들기 버튼 생성
-  const ticketButton = document.createElement("button");
-  ticketButton.type = "button";
-  ticketButton.textContent = "QA 티켓 만들기";
-  applyButtonStyles(ticketButton);
-
-  ticketButton.addEventListener("click", () => {
-    onClick?.("ticket");
+  Object.assign(buttonContainer.style, {
+    position: "absolute",
+    bottom: "100%",
+    right: "0px",
+    marginBottom: "10px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
   });
 
-  // 녹화 버튼 생성
-  const recordButton = document.createElement("button");
-  recordButton.type = "button";
-  recordButton.textContent = "녹화 시작";
-  applyButtonStyles(recordButton);
+  const ticketButton = createActionButton("Create Ticket", () =>
+    onClick?.("ticket"),
+  );
+  const recordButton = createActionButton("Start Recording", () =>
+    onClick?.("record"),
+  );
+  const liveButton = createActionButton("Live Session", () =>
+    onClick?.("live"),
+  );
 
-  recordButton.addEventListener("click", () => {
-    onClick?.("record");
+  // Network Rewrite button with amber dot indicator
+  const networkRewriteButton = createActionButton("Network Rewrite", () =>
+    onClick?.("network-rewrite"),
+  );
+  const dot = document.createElement("span");
+  Object.assign(dot.style, {
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    backgroundColor: tokens.color.accent.amber,
+    display: "inline-block",
+    flexShrink: "0",
   });
-
-  // 라이브 세션 버튼 생성
-  const liveButton = document.createElement("button");
-  liveButton.type = "button";
-  liveButton.textContent = "라이브 세션";
-  applyButtonStyles(liveButton);
-
-  liveButton.addEventListener("click", () => {
-    onClick?.("live");
-  });
-
-  // 네트워크 rewrite 버튼 추가
-  const networkRewriteButton = document.createElement("button");
-  networkRewriteButton.type = "button";
-  networkRewriteButton.textContent = "Network Rewrite";
-  applyButtonStyles(networkRewriteButton);
-
-  // 특별한 스타일 추가 (새 기능 강조)
-  networkRewriteButton.style.background =
-    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-  networkRewriteButton.style.position = "relative";
-  networkRewriteButton.style.overflow = "hidden";
-
-  networkRewriteButton.addEventListener("click", () => {
-    onClick?.("network-rewrite");
-  });
+  networkRewriteButton.insertBefore(dot, networkRewriteButton.firstChild);
 
   buttonContainer.appendChild(ticketButton);
   buttonContainer.appendChild(recordButton);
@@ -70,60 +51,96 @@ export function createDebuggerButtons(
 }
 
 /**
- * 버튼에 기본 스타일 적용
+ * Create a dark pill action button
  */
-function applyButtonStyles(button: HTMLButtonElement) {
-  button.style.padding = "8px 16px";
-  button.style.backgroundColor = "#007bff";
-  button.style.color = "#fff";
-  button.style.border = "none";
-  button.style.borderRadius = "4px";
-  button.style.cursor = "pointer";
-  button.style.fontSize = "13px";
-  button.style.whiteSpace = "nowrap";
+function createActionButton(
+  text: string,
+  onClick: () => void,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = text;
+
+  Object.assign(button.style, {
+    padding: "10px 16px",
+    backgroundColor: tokens.color.bg.hover,
+    color: tokens.color.text.secondary,
+    border: `1px solid ${tokens.color.border.medium}`,
+    borderRadius: tokens.radius.md,
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: tokens.font.system,
+    whiteSpace: "nowrap",
+    transition: `all ${tokens.transition.normal}`,
+    minHeight: "44px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    outline: "none",
+  });
+
+  button.addEventListener("mouseenter", () => {
+    button.style.backgroundColor = tokens.color.bg.active;
+    button.style.borderColor = tokens.color.border.strong;
+    button.style.color = tokens.color.text.primary;
+  });
+  button.addEventListener("mouseleave", () => {
+    button.style.backgroundColor = tokens.color.bg.hover;
+    button.style.borderColor = tokens.color.border.medium;
+    button.style.color = tokens.color.text.secondary;
+  });
+  button.addEventListener("mousedown", () => {
+    button.style.transform = "scale(0.97)";
+  });
+  button.addEventListener("mouseup", () => {
+    button.style.transform = "scale(1)";
+  });
+  button.addEventListener("click", onClick);
+
+  return button;
 }
 
 /**
- * 플로팅 버튼 생성
+ * Create floating button
  */
 export const createFloatingButton = (onClick: () => void) => {
   const button = document.createElement("button");
 
-  button.style.backgroundColor = "#007bff";
-  button.style.border = "none";
-  button.style.borderRadius = "999px";
-  button.style.width = "40px";
-  button.style.height = "40px";
-  button.style.cursor = "pointer";
-  button.style.transition = "transform 0.3s ease";
-  button.style.position = "relative";
+  Object.assign(button.style, {
+    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+    border: `1px solid rgba(139, 92, 246, 0.3)`,
+    borderRadius: "999px",
+    width: "48px",
+    height: "48px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    position: "relative",
+    boxShadow: "0 4px 16px rgba(139, 92, 246, 0.35)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    outline: "none",
+  });
 
-  // 가로선
-  const horizontalLine = document.createElement("div");
-  horizontalLine.style.position = "absolute";
-  horizontalLine.style.top = "50%";
-  horizontalLine.style.left = "0";
-  horizontalLine.style.right = "0";
-  horizontalLine.style.margin = "auto";
-  horizontalLine.style.width = "20px";
-  horizontalLine.style.height = "2px";
-  horizontalLine.style.backgroundColor = "#fff";
-  horizontalLine.style.transform = "translateY(-50%)";
+  // SVG plus icon
+  button.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+    <line x1="10" y1="4" x2="10" y2="16"/>
+    <line x1="4" y1="10" x2="16" y2="10"/>
+  </svg>`;
 
-  // 세로선
-  const verticalLine = document.createElement("div");
-  verticalLine.style.position = "absolute";
-  verticalLine.style.top = "0";
-  verticalLine.style.bottom = "0";
-  verticalLine.style.margin = "auto";
-  verticalLine.style.left = "50%";
-  verticalLine.style.width = "2px";
-  verticalLine.style.height = "20px";
-  verticalLine.style.backgroundColor = "#fff";
-  verticalLine.style.transform = "translateX(-50%)";
-
-  button.appendChild(horizontalLine);
-  button.appendChild(verticalLine);
+  button.addEventListener("mouseenter", () => {
+    button.style.boxShadow = "0 6px 20px rgba(139, 92, 246, 0.45)";
+  });
+  button.addEventListener("mouseleave", () => {
+    button.style.boxShadow = "0 4px 16px rgba(139, 92, 246, 0.35)";
+  });
+  button.addEventListener("mousedown", () => {
+    button.style.transform = "scale(0.93)";
+  });
+  button.addEventListener("mouseup", () => {
+    button.style.transform = "scale(1)";
+  });
   button.addEventListener("click", onClick);
 
   return button;
