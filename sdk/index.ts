@@ -6,6 +6,7 @@ import {
 } from "./ui/debuggerButtons";
 import { makeDraggable } from "./ui/draggable";
 import { createGuideButton } from "./ui/guideButton";
+import { injectKeyframeAnimations } from "./ui/theme";
 import { createGuideModal } from "./ui/guideModal";
 import { createNetworkRewriteModal } from "./ui/networkRewriteModal";
 import { createRecordingToast } from "./ui/recordingToast";
@@ -23,6 +24,8 @@ declare global {
 let created = false;
 
 const addRewriteAnimationStyles = () => {
+  injectKeyframeAnimations();
+
   if (!document.getElementById("remote-debug-rewrite-styles")) {
     const style = document.createElement("style");
     style.id = "remote-debug-rewrite-styles";
@@ -32,28 +35,29 @@ const addRewriteAnimationStyles = () => {
         50% { transform: scale(1.05); opacity: 0.9; }
         100% { transform: scale(1); opacity: 1; }
       }
-      
+
       @keyframes glow {
-        0% { box-shadow: 0 0 5px rgba(255, 107, 53, 0.5); }
-        50% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.8); }
-        100% { box-shadow: 0 0 5px rgba(255, 107, 53, 0.5); }
+        0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
       }
-      
+
       @keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-3px); }
         100% { transform: translateY(0px); }
       }
-      
+
       .rewrite-tooltip {
         position: absolute;
         bottom: 50px;
         right: 0;
-        transform: translateX(calc(-50% + 20px));  /* 버튼 중앙에 정렬 (버튼이 40px이므로) */
-        background: #ff6b35;
-        color: white;
+        transform: translateX(calc(-50% + 20px));
+        background: #18181b;
+        color: #fbbf24;
         padding: 4px 8px;
         border-radius: 4px;
+        border: 1px solid #27272a;
         font-size: 11px;
         font-weight: 500;
         white-space: nowrap;
@@ -62,7 +66,7 @@ const addRewriteAnimationStyles = () => {
         pointer-events: none;
         z-index: 10001;
       }
-      
+
       .rewrite-tooltip::after {
         content: '';
         position: absolute;
@@ -71,7 +75,7 @@ const addRewriteAnimationStyles = () => {
         transform: translateX(-50%);
         border-width: 4px;
         border-style: solid;
-        border-color: #ff6b35 transparent transparent transparent;
+        border-color: #18181b transparent transparent transparent;
       }
     `;
     document.head.appendChild(style);
@@ -82,7 +86,7 @@ const addRewriteAnimationStyles = () => {
 const createRewriteTooltip = () => {
   const tooltip = document.createElement("div");
   tooltip.className = "rewrite-tooltip";
-  tooltip.textContent = "rewriting..";
+  tooltip.textContent = "Rewrite Active";
   tooltip.id = "rewrite-tooltip";
   return tooltip;
 };
@@ -224,7 +228,7 @@ export const createDebugger = (
 
           // Rewrite 활성화 시 플로팅 버튼 색상 변경 및 툴팁 추가
           if (Network.Rewrite.isEnabled()) {
-            floatingButton.style.backgroundColor = "#ff6b35";
+            floatingButton.style.backgroundColor = "#f59e0b";
 
             // 메뉴가 열려있지 않을 때만 툴팁 표시
             if (!isOpen) {
@@ -308,7 +312,7 @@ export const createDebugger = (
 
     // WebSocket 연결 오류 처리
     remoteDebugger.addSocketEventListener("error", () => {
-      alert("원격디버거와 연결할 수 없습니다.");
+      alert("Unable to connect to remote debugger.");
     });
   };
 
@@ -355,7 +359,7 @@ export const createDebugger = (
       if (Network.Rewrite.isEnabled()) {
         // Rewrite이 활성화되어 있으면 플로팅 버튼을 주황색으로
         addRewriteAnimationStyles(); // 애니메이션 스타일 추가
-        floatingButton.style.backgroundColor = "#ff6b35";
+        floatingButton.style.backgroundColor = "#f59e0b";
 
         // 툴팁도 함께 표시
         const tooltip = createRewriteTooltip();

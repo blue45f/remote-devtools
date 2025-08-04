@@ -30,7 +30,8 @@
     "start:external": "nest start remote-platform-external",
     "start:external:dev": "nest start remote-platform-external --watch",
     "compose": "docker-compose up",
-    "test:google-sheets": "ts-node apps/remote-platform-external/src/modules/google-sheets/google-sheets.service.test.ts"
+    "test:google-sheets": "ts-node apps/remote-platform-external/src/modules/google-sheets/google-sheets.service.test.ts",
+    "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",
@@ -81,6 +82,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "browser-sync": "^3.0.4",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.4",

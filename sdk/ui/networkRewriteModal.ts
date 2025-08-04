@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger } from "../utils/logger";
+import { tokens, injectKeyframeAnimations, getStatusColor, getMethodColor } from "./theme";
 
 interface NetworkRequest {
   requestId: number;
@@ -22,7 +23,10 @@ export function createNetworkRewriteModal(
     requestBody?: any,
   ) => void,
 ) {
-  // 모달 오버레이 (티켓 모달과 통일)
+  // Inject shared keyframe animations
+  injectKeyframeAnimations();
+
+  // Modal overlay
   const overlay = document.createElement("div");
   overlay.setAttribute("data-remote-debugger-overlay", "true");
   overlay.style.cssText = `
@@ -31,32 +35,35 @@ export function createNetworkRewriteModal(
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
+    background-color: ${tokens.color.bg.overlay};
+    z-index: ${tokens.zIndex.overlay};
     display: flex;
     align-items: center;
     justify-content: center;
   `;
 
-  // 모달 컨테이너
+  // Modal container
   const modal = document.createElement("div");
   modal.className = "remote-debug-network-rewrite-modal";
   modal.style.cssText = `
-    background-color: #fff;
-    border-radius: 8px;
+    background-color: ${tokens.color.bg.surface};
+    border: 1px solid ${tokens.color.border.subtle};
+    border-radius: ${tokens.radius.lg};
     max-width: 900px;
-    width: 90%;
-    max-height: 80vh;
+    width: 92%;
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: ${tokens.shadow.lg};
     position: relative;
+    font-family: ${tokens.font.system};
+    animation: rdtFadeIn 0.2s ease-out;
   `;
 
-  // 헤더
+  // Header
   const header = createModalHeader();
 
-  // 컨텐츠 컨테이너 (스크롤 가능)
+  // Content container (scrollable)
   const contentContainer = document.createElement("div");
   contentContainer.id = "modal-content";
   contentContainer.style.cssText = `
@@ -65,18 +72,18 @@ export function createNetworkRewriteModal(
     padding: 20px 24px 24px;
   `;
 
-  // 뷰 전환 함수
+  // View switching functions
   const showListView = () => {
     const headerTitle = header.querySelector("h3");
     if (headerTitle) headerTitle.textContent = "Network Rewrite";
 
-    // 리스트로 돌아올 때 헤더의 뒤로가기 버튼 제거
+    // Remove back button when returning to list
     const backBtn = header.querySelector("#header-back-btn");
     if (backBtn) {
       backBtn.remove();
     }
 
-    // 리스트로 돌아올 때 하단 버튼 영역 제거
+    // Remove bottom buttons area when returning to list
     const buttonsContainer = modal.querySelector(".edit-buttons-container");
     if (buttonsContainer) {
       buttonsContainer.remove();
@@ -100,14 +107,14 @@ export function createNetworkRewriteModal(
       requestBody?: any,
     ) => void,
   ) => {
-    // 디버깅: item 객체 확인
+    // Debug: check item object
     console.log("[showEditView] Called with item:", item);
     console.log("[showEditView] item.rewriteRule:", item.rewriteRule);
 
     const headerTitle = header.querySelector("h3");
-    if (headerTitle) headerTitle.textContent = "변조 규칙 설정";
+    if (headerTitle) headerTitle.textContent = "Rewrite Configuration";
 
-    // 헤더에 뒤로가기 버튼 추가
+    // Add back button to header
     const existingBackBtn = header.querySelector("#header-back-btn");
     if (existingBackBtn) {
       existingBackBtn.remove();
@@ -115,18 +122,25 @@ export function createNetworkRewriteModal(
 
     const backBtn = document.createElement("button");
     backBtn.id = "header-back-btn";
-    backBtn.textContent = "←";
+    backBtn.textContent = "\u2190";
     backBtn.style.cssText = `
       background: none;
       border: none;
       font-size: 20px;
-      color: #666;
+      color: ${tokens.color.text.dim};
       padding: 0;
       width: 30px;
       height: 30px;
       cursor: pointer;
       margin-right: 10px;
+      transition: color ${tokens.transition.fast};
     `;
+    backBtn.addEventListener("mouseenter", () => {
+      backBtn.style.color = tokens.color.text.primary;
+    });
+    backBtn.addEventListener("mouseleave", () => {
+      backBtn.style.color = tokens.color.text.dim;
+    });
     backBtn.addEventListener("click", showListView);
 
     if (headerTitle && headerTitle.parentElement) {
@@ -137,28 +151,28 @@ export function createNetworkRewriteModal(
     const { content, buttons } = createEditView(item, onSave, showListView);
     contentContainer.appendChild(content);
 
-    // 버튼 영역을 모달 하단에 고정
+    // Fix buttons area at modal bottom
     if (modal.querySelector(".edit-buttons-container")) {
       modal.querySelector(".edit-buttons-container")?.remove();
     }
     modal.appendChild(buttons);
   };
 
-  // 초기 뷰는 리스트
+  // Initial view is the list
   showListView();
 
-  // 모달 조립
+  // Assemble modal
   modal.appendChild(header);
   modal.appendChild(contentContainer);
 
-  // 오버레이 클릭 시 모달 닫기
+  // Close modal on overlay click
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) {
       document.body.removeChild(overlay);
     }
   });
 
-  // 닫기 버튼 이벤트
+  // Close button event
   const closeBtn = header.querySelector("#close-modal-btn");
   closeBtn?.addEventListener("click", () => {
     document.body.removeChild(overlay);
@@ -177,10 +191,10 @@ function createModalHeader() {
     padding: "24px 24px 0",
     position: "sticky",
     top: "0",
-    backgroundColor: "#fff",
+    backgroundColor: tokens.color.bg.surface,
     zIndex: "10",
-    borderTopLeftRadius: "8px",
-    borderTopRightRadius: "8px",
+    borderTopLeftRadius: tokens.radius.lg,
+    borderTopRightRadius: tokens.radius.lg,
     marginBottom: "0",
   });
 
@@ -188,26 +202,34 @@ function createModalHeader() {
   title.textContent = "Network Rewrite";
   Object.assign(title.style, {
     margin: "0",
-    fontSize: "20px",
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: "18px",
+    fontWeight: "600",
+    color: tokens.color.text.primary,
   });
 
   const closeBtn = document.createElement("button");
   closeBtn.id = "close-modal-btn";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "\u2715";
   Object.assign(closeBtn.style, {
     background: "none",
     border: "none",
     fontSize: "24px",
     cursor: "pointer",
-    color: "#666",
+    color: tokens.color.text.dim,
     padding: "0",
     width: "30px",
     height: "30px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    transition: `color ${tokens.transition.fast}`,
+  });
+
+  closeBtn.addEventListener("mouseenter", () => {
+    closeBtn.style.color = tokens.color.text.primary;
+  });
+  closeBtn.addEventListener("mouseleave", () => {
+    closeBtn.style.color = tokens.color.text.dim;
   });
 
   header.appendChild(title);
@@ -225,7 +247,7 @@ function createNetworkList(
     padding: "0",
   });
 
-  // 필터 섹션
+  // Filter section
   const filterSection = document.createElement("div");
   Object.assign(filterSection.style, {
     marginBottom: "16px",
@@ -235,35 +257,35 @@ function createNetworkList(
 
   const searchInput = document.createElement("input");
   searchInput.type = "text";
-  searchInput.placeholder = "🔍 URL 검색...";
+  searchInput.placeholder = "Search requests...";
 
-  // Object.assign으로 스타일을 안전하게 적용
   Object.assign(searchInput.style, {
     flex: "1",
     padding: "10px 16px",
-    border: "1px solid #e5e7eb",
-    borderRadius: "6px",
+    border: `1px solid ${tokens.color.border.medium}`,
+    borderRadius: tokens.radius.md,
     fontSize: "14px",
-    background: "white",
-    color: "#374151",
+    background: tokens.color.bg.elevated,
+    color: tokens.color.text.primary,
     boxSizing: "border-box",
     WebkitAppearance: "none",
     MozAppearance: "none",
     appearance: "none",
-    transition: "border-color 0.2s",
+    transition: `border-color ${tokens.transition.normal}`,
     outline: "none",
+    fontFamily: tokens.font.system,
   });
 
   searchInput.addEventListener("focus", () => {
-    searchInput.style.borderColor = "#3b82f6";
+    searchInput.style.borderColor = tokens.color.accent.violet;
   });
   searchInput.addEventListener("blur", () => {
-    searchInput.style.borderColor = "#e5e7eb";
+    searchInput.style.borderColor = tokens.color.border.medium;
   });
 
   filterSection.appendChild(searchInput);
 
-  // 카드 컨테이너
+  // Cards container
   const cardsContainer = document.createElement("div");
   Object.assign(cardsContainer.style, {
     display: "flex",
@@ -271,12 +293,12 @@ function createNetworkList(
     gap: "12px",
   });
 
-  // 네트워크 데이터를 배열로 변환하고 최근 순으로 정렬
+  // Convert network data to array and sort by most recent
   const allRequests: NetworkRequest[] = [];
 
-  // sessionStorage에서 Rewrite 규칙 가져오기
+  // Get rewrite rules from sessionStorage
   const rewriteRulesData = sessionStorage.getItem("REMOTE_DEBUG_MOCK_RULES");
-  const rewriteRulesSet = new Set<string>(); // 중복 방지용
+  const rewriteRulesSet = new Set<string>(); // Dedup set
 
   if (rewriteRulesData) {
     try {
@@ -288,7 +310,7 @@ function createNetworkList(
             hasResponseRewrite?: boolean;
             rewriteRule?: any;
           } = {
-            requestId: -1 * Date.now() + Math.random(), // 음수 ID로 Rewrite 표시
+            requestId: -1 * Date.now() + Math.random(), // Negative ID for rewrite marker
             method: rule.method,
             url: rule.url,
             status: rule.status || 200,
@@ -296,7 +318,7 @@ function createNetworkList(
             responseData: rule.response,
           };
 
-          // 요청/응답 변조 상태 추가
+          // Add request/response rewrite status
           (rewriteRequest as any).hasRequestRewrite = !!(
             rule.queryString !== undefined || rule.requestBody !== undefined
           );
@@ -305,7 +327,7 @@ function createNetworkList(
           );
           (rewriteRequest as any).rewriteRule = rule;
 
-          // 디버깅 로그
+          // Debug logs
           console.log("[createNetworkList] rule from sessionStorage:", rule);
           console.log("[createNetworkList] rewriteRequest:", rewriteRequest);
 
@@ -318,14 +340,14 @@ function createNetworkList(
     }
   }
 
-  // 기존 네트워크 데이터 추가 (Rewrite 규칙과 중복되지 않는 것만)
+  // Add existing network data (only those not duplicated by rewrite rules)
   networkData.forEach((data, requestId) => {
-    // 실제 응답 데이터가 있는 요청만 추가
+    // Only add requests with actual response data
     if (data) {
-      // 새로운 데이터 구조 처리
+      // Handle new data structure
       if (data.url && data.method && data.status !== undefined) {
         const key = `${data.method}:${data.url.split("?")[0]}`;
-        // Rewrite 규칙에 없는 경우만 추가
+        // Only add if not in rewrite rules
         if (!rewriteRulesSet.has(key)) {
           const requestData = {
             requestId,
@@ -342,14 +364,14 @@ function createNetworkList(
     }
   });
 
-  // 중복 제거: method와 URL(querystring 제외)이 같은 요청은 최신 것만 유지
+  // Dedup: keep only the most recent request for same method + URL (without querystring)
   const uniqueRequestsMap = new Map<string, NetworkRequest>();
   allRequests.forEach((request) => {
-    // URL에서 querystring 제거
+    // Remove querystring from URL
     const urlWithoutQuery = request.url.split("?")[0];
     const key = `${request.method}:${urlWithoutQuery}`;
 
-    // 같은 키가 있으면 더 최신 것으로 교체 (timestamp 비교)
+    // Replace with newer entry if same key exists
     const existing = uniqueRequestsMap.get(key);
     const requestTime = request.timestamp || 0;
     const existingTime = existing?.timestamp || 0;
@@ -358,43 +380,43 @@ function createNetworkList(
     }
   });
 
-  // Map을 배열로 변환
+  // Convert Map to array
   const requests = Array.from(uniqueRequestsMap.values());
 
-  // 정렬: Rewrite 항목을 최상단에, 그 다음 시간순
+  // Sort: rewrite items at top, then by time
   requests.sort((a, b) => {
     const aIsRewriteed = a.requestId < 0;
     const bIsRewriteed = b.requestId < 0;
 
-    // Rewrite 항목이 상단에 오도록
+    // Rewrite items float to top
     if (aIsRewriteed && !bIsRewriteed) return -1;
     if (!aIsRewriteed && bIsRewriteed) return 1;
 
-    // 같은 종류끼리는 최신순으로
+    // Same kind sorted by most recent
     return (b.timestamp || 0) - (a.timestamp || 0);
   });
 
-  // 최근 30개만 표시 (모바일 성능 고려)
+  // Show only the most recent 30 (mobile perf)
   const recentRequests = requests.slice(0, 30);
 
   if (recentRequests.length === 0) {
-    // 데이터가 없는 경우 안내 메시지
+    // Empty state message
     const emptyMessage = document.createElement("div");
     Object.assign(emptyMessage.style, {
       textAlign: "center",
       padding: "40px 20px",
-      color: "#9ca3af",
+      color: tokens.color.text.dim,
       fontSize: "14px",
       lineHeight: "1.5",
-      background: "#f9fafb",
-      borderRadius: "8px",
-      border: "1px solid #e5e7eb",
+      background: tokens.color.bg.elevated,
+      borderRadius: tokens.radius.md,
+      border: `1px solid ${tokens.color.border.subtle}`,
     });
 
     emptyMessage.innerHTML = `
       <div style="margin-bottom: 8px; font-size: 16px;"></div>
-      <div>아직 기록된 네트워크 요청이 없습니다.</div>
-      <div style="margin-top: 4px; font-size: 13px; color: #9ca3af;">페이지를 사용하면서 발생하는 API 요청이 여기에 표시됩니다.</div>
+      <div>No network requests recorded yet.</div>
+      <div style="margin-top: 4px; font-size: 13px; color: ${tokens.color.text.dim};">API requests will appear here as you interact with the page.</div>
     `;
 
     cardsContainer.appendChild(emptyMessage);
@@ -407,7 +429,7 @@ function createNetworkList(
         type: "Fetch",
         responseData: request.responseData,
         requestBody: (request as any).requestBody,
-        isRewriteed: request.requestId < 0, // 음수 ID는 Rewrite 규칙
+        isRewriteed: request.requestId < 0, // Negative ID = rewrite rule
         hasRequestRewrite: (request as any).hasRequestRewrite,
         hasResponseRewrite: (request as any).hasResponseRewrite,
         rewriteRule: (request as any).rewriteRule,
@@ -420,7 +442,7 @@ function createNetworkList(
   container.appendChild(filterSection);
   container.appendChild(cardsContainer);
 
-  // 검색 기능
+  // Search functionality
   searchInput.addEventListener("input", () => {
     const searchTerm = searchInput.value.toLowerCase();
     const cards = cardsContainer.querySelectorAll(".network-card");
@@ -457,41 +479,42 @@ function createCardItem(
   card.className = "network-card";
   card.style.cssText = `
     padding: 16px;
-    background: ${item.isRewriteed ? "#fef3e2" : "white"};
-    border: 1px solid ${item.isRewriteed ? "#fed7aa" : "#e5e7eb"};
-    border-radius: 8px;
-    transition: all 0.2s;
+    background: ${item.isRewriteed ? "rgba(245, 158, 11, 0.08)" : tokens.color.bg.elevated};
+    border: 1px solid ${item.isRewriteed ? "rgba(245, 158, 11, 0.25)" : tokens.color.border.subtle};
+    border-radius: ${tokens.radius.md};
+    transition: all ${tokens.transition.normal};
     cursor: pointer;
   `;
 
-  // 호버 효과
+  // Hover effect
   card.addEventListener("mouseenter", () => {
-    card.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+    card.style.boxShadow = tokens.shadow.sm;
     if (!item.isRewriteed) {
-      card.style.backgroundColor = "#f9fafb";
+      card.style.backgroundColor = tokens.color.bg.hover;
     }
   });
   card.addEventListener("mouseleave", () => {
     card.style.boxShadow = "";
-    card.style.backgroundColor = item.isRewriteed ? "#fef3e2" : "white";
+    card.style.backgroundColor = item.isRewriteed ? "rgba(245, 158, 11, 0.08)" : tokens.color.bg.elevated;
   });
 
   const statusColor = getStatusColor(item.status);
+  const methodColors = getMethodColor(item.method);
 
   card.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <!-- Method 뱃지 -->
+        <!-- Method badge -->
         <span style="
           font-weight: 600;
-          color: ${getMethodColor(item.method)};
+          color: ${methodColors.text};
           font-size: 12px;
-          background: ${getMethodBackground(item.method)};
+          background: ${methodColors.bg};
           padding: 4px 8px;
           border-radius: 4px;
         ">${item.method}</span>
-        
-        <!-- Status 뱃지 -->
+
+        <!-- Status badge -->
         <span style="
           font-weight: 600;
           color: ${statusColor};
@@ -500,7 +523,7 @@ function createCardItem(
           padding: 4px 8px;
           border-radius: 4px;
         ">${item.status}</span>
-        
+
         ${
           item.isRewriteed
             ? `
@@ -508,8 +531,8 @@ function createCardItem(
             item.hasRequestRewrite
               ? `
             <span style="
-              background: #3b82f6;
-              color: white;
+              background: rgba(96, 165, 250, 0.15);
+              color: #60a5fa;
               font-size: 11px;
               padding: 3px 6px;
               border-radius: 3px;
@@ -522,8 +545,8 @@ function createCardItem(
             item.hasResponseRewrite
               ? `
             <span style="
-              background: #ff6b35;
-              color: white;
+              background: rgba(245, 158, 11, 0.15);
+              color: #f59e0b;
               font-size: 11px;
               padding: 3px 6px;
               border-radius: 3px;
@@ -536,8 +559,8 @@ function createCardItem(
             !item.hasRequestRewrite && !item.hasResponseRewrite
               ? `
             <span style="
-              background: #9ca3af;
-              color: white;
+              background: rgba(161, 161, 170, 0.15);
+              color: ${tokens.color.text.muted};
               font-size: 11px;
               padding: 3px 6px;
               border-radius: 3px;
@@ -550,95 +573,97 @@ function createCardItem(
             : ""
         }
       </div>
-      
+
       <div style="display: flex; gap: 6px;">
         <button class="edit-btn" style="
-          background: ${item.isRewriteed ? "#ff6b35" : "#3b82f6"};
-          color: white;
+          background: ${tokens.color.accent.violet};
+          color: #fff;
           border: none;
           padding: 6px 12px;
           border-radius: 4px;
           cursor: pointer;
           font-size: 13px;
           font-weight: 500;
-          transition: opacity 0.2s;
-        ">${item.isRewriteed ? "수정" : "설정"}</button>
-        
+          transition: opacity ${tokens.transition.fast};
+        ">${item.isRewriteed ? "Edit" : "Configure"}</button>
+
         ${
           item.isRewriteed
             ? `
           <button class="disable-btn" style="
-            background: #6b7280;
-            color: white;
-            border: none;
+            background: ${tokens.color.bg.hover};
+            color: ${tokens.color.text.secondary};
+            border: 1px solid ${tokens.color.border.medium};
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            transition: opacity 0.2s;
-          ">비활성</button>
+            transition: all ${tokens.transition.fast};
+          ">Disable</button>
         `
             : ""
         }
       </div>
     </div>
-    
-    <!-- URL 전체 표시 -->
+
+    <!-- URL full display -->
     <div style="
-      font-family: monospace;
+      font-family: ${tokens.font.mono};
       font-size: 13px;
-      color: #4b5563;
+      color: ${tokens.color.text.muted};
       word-break: break-all;
       line-height: 1.4;
     ">${item.url}</div>
   `;
 
-  // 편집 버튼 이벤트 (이벤트 버블링 방지)
+  // Edit button event (prevent event bubbling)
   const editBtn = card.querySelector(".edit-btn");
   editBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     onEditClick(item);
   });
 
-  // 비활성 버튼 이벤트 (이벤트 버블링 방지)
+  // Disable button event (prevent event bubbling)
   const disableBtn = card.querySelector(".disable-btn");
   disableBtn?.addEventListener("click", async (e) => {
     e.stopPropagation();
-    if (confirm(`"${item.url}" Rewrite을 비활성화하시겠습니까?`)) {
-      // Network 클래스에서 Rewrite 규칙 제거
+    if (confirm(`Disable rewrite for "${item.url}"?`)) {
+      // Remove rewrite rule from Network class
       const { Network } = await import("../domain/network");
       Network.Rewrite.removeRule(item.url, item.method);
 
-      // 성공 메시지 표시
+      // Show success message
       const successMsg = document.createElement("div");
       successMsg.style.cssText = `
         position: fixed;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: #6c757d;
-        color: white;
+        background: ${tokens.color.bg.surface};
+        color: ${tokens.color.text.secondary};
+        border: 1px solid ${tokens.color.border.subtle};
         padding: 12px 20px;
-        border-radius: 6px;
+        border-radius: ${tokens.radius.sm};
         font-size: 14px;
         font-weight: 500;
-        z-index: 10002;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: ${tokens.zIndex.toast};
+        box-shadow: ${tokens.shadow.md};
         max-width: 90%;
+        font-family: ${tokens.font.system};
       `;
-      successMsg.textContent = "Rewrite이 비활성화되었습니다";
+      successMsg.textContent = "Rewrite rule disabled";
       document.body.appendChild(successMsg);
 
       setTimeout(() => {
         document.body.removeChild(successMsg);
-        // 페이지 새로고침
+        // Reload page
         window.location.reload();
       }, 1500);
     }
   });
 
-  // 카드 클릭 시 편집
+  // Click card to edit
   card.addEventListener("click", () => {
     onEditClick(item);
   });
@@ -666,7 +691,7 @@ function createEditView(
   ) => void,
   onBack: () => void,
 ) {
-  // 콘텐츠 컨테이너
+  // Content container
   const container = document.createElement("div");
   container.style.cssText = `
     padding: 0 0 80px 0;
@@ -675,7 +700,7 @@ function createEditView(
     gap: 8px;
   `;
 
-  // 버튼 컨테이너 (별도 분리)
+  // Buttons container (separated)
   const buttonsContainer = document.createElement("div");
   buttonsContainer.className = "edit-buttons-container";
   buttonsContainer.style.cssText = `
@@ -683,20 +708,20 @@ function createEditView(
     bottom: 0;
     left: 0;
     right: 0;
-    background: white;
+    background: ${tokens.color.bg.surface};
     padding: 12px 20px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid ${tokens.color.border.subtle};
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
     z-index: 10;
   `;
 
-  // 실제 응답 데이터 사용, 없으면 예시 데이터
+  // Use actual response data, or example data if absent
   let defaultResponse = {};
   if (item.responseData) {
-    // responseData가 문자열인 경우 파싱
+    // Parse if responseData is a string
     if (typeof item.responseData === "string") {
       try {
         defaultResponse = JSON.parse(item.responseData);
@@ -708,7 +733,7 @@ function createEditView(
     }
   }
 
-  // 빈 객체인 경우 예시 데이터 제공
+  // Provide example data if empty object
   if (Object.keys(defaultResponse).length === 0) {
     defaultResponse = {
       success: true,
@@ -720,10 +745,10 @@ function createEditView(
     };
   }
 
-  // 기존 Rewrite 규칙이 있는지 확인
+  // Check for existing rewrite rule
   let existingRule = item.rewriteRule;
   if (!existingRule) {
-    // item에 rewriteRule이 없으면, sessionStorage에서 직접 확인
+    // If item doesn't have rewriteRule, check sessionStorage directly
     try {
       const rewriteRulesData = sessionStorage.getItem(
         "REMOTE_DEBUG_MOCK_RULES",
@@ -735,7 +760,7 @@ function createEditView(
         const urlWithoutQuery = item.url.split("?")[0];
         const ruleKey = `${item.method.toUpperCase()}:${urlWithoutQuery}`;
 
-        // 해당 규칙 찾기
+        // Find the rule
         const foundRule = rewriteRules.find(([key, _]) => key === ruleKey);
         if (foundRule) {
           existingRule = foundRule[1];
@@ -749,121 +774,127 @@ function createEditView(
     }
   }
 
-  // 요청 바디 기본값 설정
+  // Default request body value
   const defaultRequestBody =
     item.requestBody || existingRule?.requestBody || {};
 
+  const methodColors = getMethodColor(item.method);
+
   container.innerHTML = `
-    <!-- 요청 정보 헤더 -->
+    <!-- Request info header -->
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
       <span style="
         font-weight: 600;
-        color: ${getMethodColor(item.method)};
-        background: ${getMethodBackground(item.method)};
+        color: ${methodColors.text};
+        background: ${methodColors.bg};
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 12px;
       ">${item.method}</span>
       <div style="
         flex: 1;
-        font-family: monospace;
+        font-family: ${tokens.font.mono};
         font-size: 13px;
-        color: #4b5563;
+        color: ${tokens.color.text.muted};
         word-break: break-all;
         line-height: 1.4;
       ">${item.url}</div>
     </div>
-    
-    <!-- 요청 탭 메뉴 -->
-    <div style="display: flex; gap: 8px; margin: 16px 0 12px 0; border-bottom: 1px solid #e5e7eb;">
+
+    <!-- Tab menu -->
+    <div style="display: flex; gap: 8px; margin: 16px 0 12px 0; border-bottom: 1px solid ${tokens.color.border.subtle};">
       <button class="tab-btn active" data-tab="request" style="
         padding: 8px 16px;
         background: none;
         border: none;
         font-size: 14px;
         font-weight: 500;
-        color: #ff6b35;
+        color: ${tokens.color.accent.violet};
         cursor: pointer;
-        border-bottom: 2px solid #ff6b35;
-        transition: all 0.2s;
-      ">요청 변조</button>
+        border-bottom: 2px solid ${tokens.color.accent.violet};
+        transition: all ${tokens.transition.normal};
+        font-family: ${tokens.font.system};
+      ">Request</button>
       <button class="tab-btn" data-tab="response" style="
         padding: 8px 16px;
         background: none;
         border: none;
         font-size: 14px;
         font-weight: 500;
-        color: #6b7280;
+        color: ${tokens.color.text.dim};
         cursor: pointer;
         border-bottom: 2px solid transparent;
-        transition: all 0.2s;
-      ">응답 변조</button>
+        transition: all ${tokens.transition.normal};
+        font-family: ${tokens.font.system};
+      ">Response</button>
     </div>
-    
-    <!-- 요청 변조 섹션 -->
+
+    <!-- Request rewrite section -->
     <div id="request-section" style="display: block;">
-      <!-- Query String 편집 -->
+      <!-- Query String edit -->
       <div style="margin-bottom: 12px;">
-        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px;">
-          Query String:
+        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: ${tokens.color.text.muted}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em;">
+          Query String
         </label>
         <div id="querystring-container"></div>
       </div>
-      
-      <!-- Request Body 편집 -->
+
+      <!-- Request Body edit -->
       <div style="margin-bottom: 12px;">
-        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px;">
-          Request Body (JSON):
+        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: ${tokens.color.text.muted}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em;">
+          Request Body (JSON)
         </label>
         <div id="request-body-container"></div>
       </div>
     </div>
-    
-    <!-- 응답 변조 섹션 -->
+
+    <!-- Response rewrite section -->
     <div id="response-section" style="display: none;">
-      <!-- HTTP 상태 코드 편집 -->
+      <!-- HTTP status code edit -->
       <div style="margin-bottom: 12px;">
-        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px;">
-          HTTP 상태 코드:
+        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: ${tokens.color.text.muted}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em;">
+          HTTP Status Code
         </label>
         <div id="select-container"></div>
       </div>
-      
-      <!-- 응답 본문 편집 -->
-      <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px;">
-        응답 본문 (Response Body):
+
+      <!-- Response body edit -->
+      <label style="display: block; margin-bottom: 6px; font-weight: 600; color: ${tokens.color.text.muted}; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em;">
+        Response Body
       </label>
       <div id="textarea-container"></div>
     </div>
   `;
 
-  // 버튼들을 별도 컨테이너에 추가
+  // Buttons in separate container
   buttonsContainer.innerHTML = `
     <button id="cancel-edit" style="
       padding: 10px 20px;
-      background: #f3f4f6;
-      color: #374151;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
+      background: ${tokens.color.bg.hover};
+      color: ${tokens.color.text.secondary};
+      border: 1px solid ${tokens.color.border.medium};
+      border-radius: ${tokens.radius.sm};
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s;
-    ">취소</button>
+      transition: all ${tokens.transition.normal};
+      font-family: ${tokens.font.system};
+    ">Cancel</button>
     <button id="save-edit" style="
       padding: 10px 20px;
-      background: #ff6b35;
-      color: white;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      color: #fff;
       border: none;
-      border-radius: 6px;
+      border-radius: ${tokens.radius.sm};
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
-      transition: opacity 0.2s;
-    ">요청 변조 활성화</button>
+      transition: opacity ${tokens.transition.normal};
+      font-family: ${tokens.font.system};
+    ">Enable Request Rewrite</button>
   `;
 
-  // Query String input을 프로그래밍적으로 생성
+  // Programmatically create Query String input
   const queryStringContainer = container.querySelector(
     "#querystring-container",
   );
@@ -873,12 +904,12 @@ function createEditView(
     const queryStringInput = document.createElement("input");
     queryStringInput.type = "text";
     queryStringInput.id = "querystring-editor";
-    queryStringInput.placeholder = "예: ?param1=value1&param2=value2";
+    queryStringInput.placeholder = "e.g. ?param1=value1&param2=value2";
 
-    // 기본값 설정 - 우선순위별로 확인
+    // Set default value - check by priority
     let defaultQueryString = "";
 
-    // 1. 기존 규칙에서 가져오기
+    // 1. Get from existing rule
     if (
       existingRule?.queryString !== undefined &&
       existingRule.queryString !== null
@@ -889,18 +920,18 @@ function createEditView(
         defaultQueryString,
       );
     }
-    // 2. item에서 가져오기
+    // 2. Get from item
     else if (item.queryString !== undefined && item.queryString !== null) {
       defaultQueryString = item.queryString;
       console.log("[Query String] Using item.queryString:", defaultQueryString);
     }
-    // 3. URL에서 추출
+    // 3. Extract from URL
     else if (item.url.includes("?")) {
       defaultQueryString = item.url.substring(item.url.indexOf("?"));
       console.log("[Query String] Using URL query:", defaultQueryString);
     }
 
-    // 디버깅 로그
+    // Debug logs
     console.log("[Query String] item:", item);
     console.log("[Query String] existingRule:", existingRule);
     console.log("[Query String] Final defaultQueryString:", defaultQueryString);
@@ -910,14 +941,14 @@ function createEditView(
     Object.assign(queryStringInput.style, {
       width: "100%",
       padding: "10px 12px",
-      border: "1px solid #e5e7eb",
-      borderRadius: "6px",
+      border: `1px solid ${tokens.color.border.medium}`,
+      borderRadius: tokens.radius.sm,
       fontSize: "14px",
-      fontFamily: "monospace",
-      transition: "border-color 0.2s",
+      fontFamily: tokens.font.mono,
+      transition: `border-color ${tokens.transition.normal}`,
       outline: "none",
-      background: "white",
-      color: "#374151",
+      background: tokens.color.bg.elevated,
+      color: tokens.color.text.primary,
       boxSizing: "border-box",
       WebkitAppearance: "none",
       MozAppearance: "none",
@@ -925,16 +956,16 @@ function createEditView(
     });
 
     queryStringInput.addEventListener("focus", () => {
-      queryStringInput.style.borderColor = "#3b82f6";
+      queryStringInput.style.borderColor = tokens.color.accent.violet;
     });
     queryStringInput.addEventListener("blur", () => {
-      queryStringInput.style.borderColor = "#e5e7eb";
+      queryStringInput.style.borderColor = tokens.color.border.medium;
     });
 
     queryStringContainer.appendChild(queryStringInput);
   }
 
-  // 탭 전환 로직 추가
+  // Tab switching logic
   const tabButtons = container.querySelectorAll(".tab-btn");
   const requestSection = container.querySelector("#request-section");
   const responseSection = container.querySelector("#response-section");
@@ -944,29 +975,29 @@ function createEditView(
       const targetTab = (btn as HTMLElement).dataset.tab;
       console.log("[Tab Switch] Switching to:", targetTab);
 
-      // 모든 탭 버튼 비활성화
+      // Deactivate all tab buttons
       tabButtons.forEach((b) => {
-        (b as HTMLElement).style.color = "#6b7280";
+        (b as HTMLElement).style.color = tokens.color.text.dim;
         (b as HTMLElement).style.borderBottomColor = "transparent";
         b.classList.remove("active");
       });
 
-      // 클릭한 탭 활성화
-      (btn as HTMLElement).style.color = "#ff6b35";
-      (btn as HTMLElement).style.borderBottomColor = "#ff6b35";
+      // Activate clicked tab
+      (btn as HTMLElement).style.color = tokens.color.accent.violet;
+      (btn as HTMLElement).style.borderBottomColor = tokens.color.accent.violet;
       btn.classList.add("active");
 
-      // 저장 버튼 텍스트 업데이트
+      // Update save button text
       const saveBtn = document.querySelector("#save-edit");
       if (saveBtn) {
         if (targetTab === "request") {
-          saveBtn.textContent = "요청 변조 활성화";
+          saveBtn.textContent = "Enable Request Rewrite";
         } else {
-          saveBtn.textContent = "응답 변조 활성화";
+          saveBtn.textContent = "Enable Response Rewrite";
         }
       }
 
-      // 섹션 표시/숨기기
+      // Show/hide sections
       if (targetTab === "request" && requestSection && responseSection) {
         (requestSection as HTMLElement).style.display = "block";
         (responseSection as HTMLElement).style.display = "none";
@@ -983,7 +1014,7 @@ function createEditView(
     });
   });
 
-  // Request Body 텍스트 영역 추가
+  // Request Body textarea
   const requestBodyContainer = container.querySelector(
     "#request-body-container",
   );
@@ -991,10 +1022,10 @@ function createEditView(
     const requestBodyTextarea = document.createElement("textarea");
     requestBodyTextarea.id = "request-body-editor";
 
-    // Request Body 값 설정
+    // Set Request Body value
     let requestBodyValue = "";
 
-    // 기존 규칙이나 아이템에서 Request Body 가져오기
+    // Get Request Body from existing rule or item
     let actualRequestBody = null;
     if (existingRule?.requestBody !== undefined) {
       actualRequestBody = existingRule.requestBody;
@@ -1007,7 +1038,7 @@ function createEditView(
       actualRequestBody = defaultRequestBody;
     }
 
-    // Request Body를 문자열로 변환
+    // Convert Request Body to string
     if (actualRequestBody !== null && actualRequestBody !== undefined) {
       if (typeof actualRequestBody === "string") {
         requestBodyValue = actualRequestBody;
@@ -1031,63 +1062,64 @@ function createEditView(
       width: "100%",
       height: "200px",
       padding: "12px",
-      border: "1px solid #e5e7eb",
-      borderRadius: "6px",
+      border: `1px solid ${tokens.color.border.medium}`,
+      borderRadius: tokens.radius.sm,
       fontSize: "13px",
-      fontFamily: "monospace",
+      fontFamily: tokens.font.mono,
       lineHeight: "1.5",
       resize: "vertical",
       boxSizing: "border-box",
       WebkitAppearance: "none",
       MozAppearance: "none",
       appearance: "none",
-      transition: "border-color 0.2s",
+      transition: `border-color ${tokens.transition.normal}`,
       outline: "none",
-      background: "white",
-      color: "#374151",
+      background: tokens.color.bg.elevated,
+      color: tokens.color.text.primary,
     });
 
     requestBodyTextarea.addEventListener("focus", () => {
-      requestBodyTextarea.style.borderColor = "#3b82f6";
+      requestBodyTextarea.style.borderColor = tokens.color.accent.violet;
     });
     requestBodyTextarea.addEventListener("blur", () => {
-      requestBodyTextarea.style.borderColor = "#e5e7eb";
+      requestBodyTextarea.style.borderColor = tokens.color.border.medium;
     });
 
     requestBodyContainer.appendChild(requestBodyTextarea);
   }
 
-  // select 요소를 프로그래밍적으로 생성 - container 내에서 찾기
+  // Programmatically create select element - find within container
   const selectContainer = container.querySelector("#select-container");
   if (selectContainer) {
     const select = document.createElement("select");
     select.id = "status-editor";
 
-    // 스타일 적용
+    // Apply styles
     Object.assign(select.style, {
       width: "100%",
       padding: "10px 12px",
-      border: "1px solid #e5e7eb",
-      borderRadius: "6px",
+      border: `1px solid ${tokens.color.border.medium}`,
+      borderRadius: tokens.radius.sm,
       fontSize: "14px",
-      background: "white",
-      color: "#374151",
+      background: tokens.color.bg.elevated,
+      color: tokens.color.text.primary,
       cursor: "pointer",
-      transition: "border-color 0.2s",
+      transition: `border-color ${tokens.transition.normal}`,
       outline: "none",
+      fontFamily: tokens.font.system,
     });
 
     select.addEventListener("focus", () => {
-      select.style.borderColor = "#3b82f6";
+      select.style.borderColor = tokens.color.accent.violet;
     });
     select.addEventListener("blur", () => {
-      select.style.borderColor = "#e5e7eb";
+      select.style.borderColor = tokens.color.border.medium;
     });
 
-    // 옵션 데이터
+    // Option data
     const optionGroups = [
       {
-        label: "성공 (2xx)",
+        label: "Success (2xx)",
         options: [
           { value: 200, text: "200 OK" },
           { value: 201, text: "201 Created" },
@@ -1095,7 +1127,7 @@ function createEditView(
         ],
       },
       {
-        label: "리다이렉션 (3xx)",
+        label: "Redirect (3xx)",
         options: [
           { value: 301, text: "301 Moved Permanently" },
           { value: 302, text: "302 Found" },
@@ -1103,7 +1135,7 @@ function createEditView(
         ],
       },
       {
-        label: "클라이언트 에러 (4xx)",
+        label: "Client Error (4xx)",
         options: [
           { value: 400, text: "400 Bad Request" },
           { value: 401, text: "401 Unauthorized" },
@@ -1114,7 +1146,7 @@ function createEditView(
         ],
       },
       {
-        label: "서버 에러 (5xx)",
+        label: "Server Error (5xx)",
         options: [
           { value: 500, text: "500 Internal Server Error" },
           { value: 502, text: "502 Bad Gateway" },
@@ -1124,7 +1156,7 @@ function createEditView(
       },
     ];
 
-    // 옵션 그룹과 옵션 생성
+    // Create option groups and options
     optionGroups.forEach((group) => {
       const optgroup = document.createElement("optgroup");
       optgroup.label = group.label;
@@ -1134,7 +1166,7 @@ function createEditView(
         option.value = String(optData.value);
         option.textContent = optData.text;
 
-        // 현재 상태 코드와 일치하면 선택
+        // Select if matching current status code
         if (optData.value === item.status) {
           option.selected = true;
         }
@@ -1145,57 +1177,57 @@ function createEditView(
       select.appendChild(optgroup);
     });
 
-    // 현재 상태 코드 설정
+    // Set current status code
     select.value = String(item.status || 200);
 
-    // 컨테이너에 추가
+    // Add to container
     selectContainer.appendChild(select);
   }
 
-  // textarea를 프로그래밍적으로 생성하여 값 설정 문제 해결 - container 내에서 찾기
+  // Programmatically create textarea for response editor - find within container
   const textareaContainer = container.querySelector("#textarea-container");
   if (textareaContainer) {
-    // textarea 요소 생성
+    // Create textarea element
     const textarea = document.createElement("textarea");
     textarea.id = "response-editor";
 
-    // 스타일 적용
+    // Apply styles
     Object.assign(textarea.style, {
       width: "100%",
       height: "250px",
-      fontFamily: "monospace",
+      fontFamily: tokens.font.mono,
       fontSize: "13px",
-      border: "1px solid #e5e7eb",
-      borderRadius: "6px",
+      border: `1px solid ${tokens.color.border.medium}`,
+      borderRadius: tokens.radius.sm,
       padding: "12px",
-      background: "white",
-      color: "#374151",
+      background: tokens.color.bg.elevated,
+      color: tokens.color.text.primary,
       lineHeight: "1.5",
       resize: "vertical",
       boxSizing: "border-box",
       WebkitAppearance: "none",
       MozAppearance: "none",
       appearance: "none",
-      transition: "border-color 0.2s",
+      transition: `border-color ${tokens.transition.normal}`,
       outline: "none",
     });
 
     textarea.addEventListener("focus", () => {
-      textarea.style.borderColor = "#3b82f6";
+      textarea.style.borderColor = tokens.color.accent.violet;
     });
     textarea.addEventListener("blur", () => {
-      textarea.style.borderColor = "#e5e7eb";
+      textarea.style.borderColor = tokens.color.border.medium;
     });
 
-    // 값 설정 - createElement로 생성한 요소는 value 설정이 확실함
+    // Set value - createElement ensures value assignment works reliably
     const jsonString = JSON.stringify(defaultResponse, null, 2);
     textarea.value = jsonString;
 
-    // 컨테이너에 추가
+    // Add to container
     textareaContainer.appendChild(textarea);
   }
 
-  // 이벤트 핸들러 (DOM이 준비된 후 실행)
+  // Event handlers (run after DOM is ready)
   setTimeout(() => {
     buttonsContainer
       .querySelector("#cancel-edit")
@@ -1215,21 +1247,21 @@ function createEditView(
           container.querySelector<HTMLTextAreaElement>("#request-body-editor");
 
         if (!textarea || !selectElement) {
-          alert("에디터를 찾을 수 없습니다.");
+          alert("Editor not found.");
           return;
         }
 
-        // 상태 코드 가져오기
+        // Get status code
         const statusCode = parseInt(selectElement.value);
 
         try {
-          // 현재 활성화된 탭 확인
+          // Check which tab is active
           const isRequestTabActive =
             container
               .querySelector(".tab-btn.active")
               ?.getAttribute("data-tab") === "request";
 
-          // URL에서 querystring 제거하여 저장 (모든 querystring 변형에 대응)
+          // Remove querystring from URL for saving (handle all querystring variations)
           const urlWithoutQuery = item.url.split("?")[0];
 
           let queryString = undefined;
@@ -1237,26 +1269,26 @@ function createEditView(
           let responseData = undefined;
 
           if (isRequestTabActive) {
-            // 요청 탭이 활성화된 경우 - 요청만 변조
+            // Request tab active - rewrite request only
             queryString = queryStringInput?.value || "";
             if (queryString && !queryString.startsWith("?")) {
               queryString = "?" + queryString;
             }
 
-            // Request Body 파싱
+            // Parse Request Body
             if (requestBodyTextarea && requestBodyTextarea.value.trim()) {
               try {
                 requestBody = JSON.parse(requestBodyTextarea.value);
               } catch {
-                // JSON이 아닌 경우 문자열 그대로 사용
+                // Use as string if not valid JSON
                 requestBody = requestBodyTextarea.value;
               }
             }
 
-            // 요청 변조가 실제로 있는지 확인
+            // Check if there is actual request rewrite content
             if (!queryString && !requestBody) {
               alert(
-                "요청 변조할 내용을 입력해주세요 (Query String 또는 Request Body)",
+                "Enter rewrite content (Query String or Request Body)",
               );
               return;
             }
@@ -1265,9 +1297,9 @@ function createEditView(
             console.log("[Save] Query String:", queryString);
             console.log("[Save] Request Body:", requestBody);
           } else {
-            // 응답 탭이 활성화된 경우 - 응답만 변조
+            // Response tab active - rewrite response only
             if (!textarea.value.trim()) {
-              alert("응답 데이터를 입력해주세요");
+              alert("Enter response data");
               return;
             }
 
@@ -1286,94 +1318,46 @@ function createEditView(
             requestBody,
           );
 
-          // 성공 메시지 (토스트 스타일)
+          // Success message (toast style)
           const successMsg = document.createElement("div");
           successMsg.style.cssText = `
         position: fixed;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: #ff6b35;
-        color: white;
+        background: ${tokens.color.bg.surface};
+        color: ${tokens.color.text.secondary};
+        border: 1px solid ${tokens.color.border.subtle};
         padding: 12px 20px;
-        border-radius: 6px;
+        border-radius: ${tokens.radius.sm};
         font-size: 14px;
         font-weight: 500;
-        z-index: 10002;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: ${tokens.zIndex.toast};
+        box-shadow: ${tokens.shadow.md};
         max-width: 90%;
+        font-family: ${tokens.font.system};
       `;
-          const modeText = isRequestTabActive ? "요청 변조" : "응답 변조";
-          successMsg.textContent = `${modeText} 활성화됨`;
+          const modeText = isRequestTabActive ? "Request rewrite enabled" : "Response rewrite enabled";
+          successMsg.textContent = modeText;
           document.body.appendChild(successMsg);
 
           setTimeout(() => {
             document.body.removeChild(successMsg);
-            // 모달 닫기
+            // Close modal
             const overlay = document.querySelector(
               ".remote-debug-network-rewrite-modal",
             )?.parentElement;
             if (overlay) {
               overlay.remove();
             }
-            // 페이지 새로고침하여 Rewrite 적용
+            // Reload page to apply rewrite
             window.location.reload();
           }, 1500);
         } catch (e) {
-          alert("유효한 JSON 형식이 아닙니다.");
+          alert("Invalid JSON format.");
         }
       });
   }, 0);
 
   return { content: container, buttons: buttonsContainer };
-}
-
-// 유틸리티 함수들
-function getStatusColor(status: number): string {
-  if (status >= 200 && status < 300) return "#28a745";
-  if (status >= 300 && status < 400) return "#ffc107";
-  if (status >= 400 && status < 500) return "#fd7e14";
-  if (status >= 500) return "#dc3545";
-  return "#6c757d";
-}
-
-function getMethodColor(method: string): string {
-  const colors: Record<string, string> = {
-    GET: "#28a745",
-    POST: "#007bff",
-    PUT: "#ffc107",
-    DELETE: "#dc3545",
-    PATCH: "#17a2b8",
-  };
-  return colors[method] || "#6c757d";
-}
-
-function getMethodBackground(method: string): string {
-  const colors: Record<string, string> = {
-    GET: "#28a74520",
-    POST: "#007bff20",
-    PUT: "#ffc10720",
-    DELETE: "#dc354520",
-    PATCH: "#17a2b820",
-  };
-  return colors[method] || "#6c757d20";
-}
-
-// 애니메이션 스타일 추가
-if (!document.getElementById("network-rewrite-modal-styles")) {
-  const style = document.createElement("style");
-  style.id = "network-rewrite-modal-styles";
-  style.textContent = `
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(100%);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-  `;
-  document.head.appendChild(style);
 }

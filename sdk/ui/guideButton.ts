@@ -1,71 +1,76 @@
+import { tokens } from "./theme";
+
 /**
- * 안내 버튼 생성
+ * Create guide button
  */
 export function createGuideButton(onClick: () => void) {
   const button = document.createElement("button");
   button.type = "button";
-  button.textContent = "오잉 이게 뭐에요?";
 
-  // 특별한 스타일 적용 (다른 버튼과 다르게)
-  button.style.padding = "10px 16px";
-  button.style.backgroundColor = "#8b5cf6"; // 보라색 계열
-  button.style.color = "#fff";
-  button.style.border = "none";
-  button.style.borderRadius = "8px";
-  button.style.cursor = "pointer";
-  button.style.fontSize = "14px";
-  button.style.fontWeight = "500";
-  button.style.whiteSpace = "nowrap";
-  button.style.transition = "all 0.3s ease";
-  button.style.boxShadow = "0 2px 8px rgba(139, 92, 246, 0.3)";
-  button.style.position = "relative";
-  button.style.overflow = "hidden";
+  Object.assign(button.style, {
+    padding: "10px 16px",
+    backgroundColor: tokens.color.bg.hover,
+    color: tokens.color.text.secondary,
+    border: `1px solid ${tokens.color.border.medium}`,
+    borderLeft: `3px solid ${tokens.color.accent.violet}`,
+    borderRadius: tokens.radius.md,
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: tokens.font.system,
+    whiteSpace: "nowrap",
+    transition: `all ${tokens.transition.normal}`,
+    minHeight: "44px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    outline: "none",
+  });
 
-  // 물음표 아이콘 추가
+  // SVG question mark icon
   const icon = document.createElement("span");
-  icon.textContent = "❓ ";
-  icon.style.marginRight = "4px";
-  icon.style.fontSize = "16px";
-  button.prepend(icon);
+  icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${tokens.color.accent.violet}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>`;
+  icon.style.display = "flex";
+  icon.style.alignItems = "center";
 
-  // 호버 효과
+  const text = document.createElement("span");
+  text.textContent = "Quick Guide";
+
+  button.appendChild(icon);
+  button.appendChild(text);
+
   button.addEventListener("mouseenter", () => {
-    button.style.backgroundColor = "#7c3aed";
-    button.style.transform = "translateY(-2px)";
-    button.style.boxShadow = "0 4px 12px rgba(139, 92, 246, 0.4)";
+    button.style.backgroundColor = tokens.color.bg.active;
+    button.style.borderColor = tokens.color.border.strong;
+    button.style.color = tokens.color.text.primary;
   });
-
   button.addEventListener("mouseleave", () => {
-    button.style.backgroundColor = "#8b5cf6";
-    button.style.transform = "translateY(0)";
-    button.style.boxShadow = "0 2px 8px rgba(139, 92, 246, 0.3)";
+    button.style.backgroundColor = tokens.color.bg.hover;
+    button.style.borderColor = tokens.color.border.medium;
+    button.style.color = tokens.color.text.secondary;
   });
-
-  // 클릭 효과
   button.addEventListener("mousedown", () => {
-    button.style.transform = "scale(0.95)";
+    button.style.transform = "scale(0.97)";
   });
-
   button.addEventListener("mouseup", () => {
     button.style.transform = "scale(1)";
   });
-
-  // 클릭 이벤트
   button.addEventListener("click", onClick);
 
   return button;
 }
 
 /**
- * 안내 버튼을 디버거 버튼 컨테이너에 추가
+ * Add guide button to debugger button container
  */
 export function addGuideButtonToContainer(
   container: HTMLElement,
   guideButton: HTMLButtonElement,
 ) {
-  // 컨테이너의 첫 번째 자식으로 추가 (제일 위에 위치)
   container.insertBefore(guideButton, container.firstChild);
-
-  // 버튼 간격을 위한 스타일 조정
   guideButton.style.marginBottom = "4px";
 }

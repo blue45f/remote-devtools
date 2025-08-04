@@ -1,73 +1,79 @@
+import { tokens } from "../theme";
+
 /**
- * Text Input 필드에 기본 스타일 적용
+ * Apply dark-themed text input styles
  */
 export function applyTextInputStyles(element: HTMLInputElement) {
-  element.style.padding = "8px 12px";
-  element.style.border = "1px solid #ddd";
-  element.style.borderRadius = "4px";
-  element.style.fontSize = "14px";
-  element.style.fontFamily = "inherit";
-  element.style.width = "100%";
-  element.style.boxSizing = "border-box";
-  element.style.backgroundColor = "#fff";
-  element.style.color = "#333";
-  element.style.minHeight = "40px";
-  element.style.lineHeight = "1.5";
+  Object.assign(element.style, {
+    padding: "10px 12px",
+    border: `1px solid ${tokens.color.border.medium}`,
+    borderRadius: tokens.radius.sm,
+    fontSize: "14px",
+    fontFamily: tokens.font.system,
+    width: "100%",
+    boxSizing: "border-box",
+    backgroundColor: tokens.color.bg.elevated,
+    color: tokens.color.text.primary,
+    minHeight: "40px",
+    lineHeight: "1.5",
+    outline: "none",
+    transition: `border-color ${tokens.transition.fast}`,
+  });
 
-  // 호버 효과
   element.addEventListener("mouseenter", () => {
-    element.style.borderColor = "#007bff";
+    element.style.borderColor = tokens.color.border.strong;
   });
-
   element.addEventListener("mouseleave", () => {
-    element.style.borderColor = "#ddd";
+    if (document.activeElement !== element) {
+      element.style.borderColor = tokens.color.border.medium;
+    }
   });
-
-  // 포커스 효과
   element.addEventListener("focus", () => {
-    element.style.borderColor = "#007bff";
-    element.style.outline = "none";
-    element.style.boxShadow = "0 0 0 2px rgba(0, 123, 255, 0.25)";
+    element.style.borderColor = tokens.color.accent.violet;
+    element.style.boxShadow = `0 0 0 2px ${tokens.color.accent.violetGlow}`;
   });
-
   element.addEventListener("blur", () => {
-    element.style.borderColor = "#ddd";
+    element.style.borderColor = tokens.color.border.medium;
     element.style.boxShadow = "none";
   });
-
-  // 엔터키 Submit 방지
   element.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
-      event.preventDefault(); // 엔터키로 인한 form submit 방지
+      event.preventDefault();
     }
   });
 }
 
 /**
- * 버튼에 스타일 적용
+ * Apply dark-themed button styles
  */
 export function applyButtonStyles(
   button: HTMLButtonElement,
   variant: "primary" | "secondary",
 ) {
-  button.style.padding = "8px 16px";
-  button.style.border = "none";
-  button.style.borderRadius = "4px";
-  button.style.cursor = "pointer";
-  button.style.fontSize = "14px";
-  button.style.fontWeight = "bold";
-  button.style.transition = "background-color 0.2s ease";
+  Object.assign(button.style, {
+    padding: "10px 20px",
+    border: "none",
+    borderRadius: tokens.radius.md,
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    fontFamily: tokens.font.system,
+    transition: `all ${tokens.transition.normal}`,
+    minHeight: "40px",
+    outline: "none",
+  });
 
   if (variant === "primary") {
-    button.style.backgroundColor = "#007bff";
-    button.style.color = "#fff";
+    button.style.background = "linear-gradient(135deg, #7c3aed, #6366f1)";
+    button.style.color = "#ffffff";
   } else {
-    button.style.backgroundColor = "#6c757d";
-    button.style.color = "#fff";
+    button.style.backgroundColor = tokens.color.bg.hover;
+    button.style.color = tokens.color.text.secondary;
+    button.style.border = `1px solid ${tokens.color.border.medium}`;
   }
 
   if (button.disabled) {
-    button.style.backgroundColor = "#ccc";
+    button.style.opacity = "0.4";
     button.style.cursor = "not-allowed";
   }
 }

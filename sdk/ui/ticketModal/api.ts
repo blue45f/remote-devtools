@@ -157,7 +157,7 @@ export async function loadTicketFormDataFromAPI({
 
   try {
     if (!deviceId) {
-      throw new Error("디바이스 ID가 없습니다.");
+      throw new Error("Device ID is missing.");
     }
 
     // 1. 사용자 템플릿 목록 조회 및 선택 UI 생성
@@ -174,12 +174,12 @@ export async function loadTicketFormDataFromAPI({
           // 403 에러 - VPN 필요
           loadingDiv.innerHTML =
             '<div style="text-align: center; line-height: 1.6;">' +
-            '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">🔒 VPN 연결이 필요합니다</div>' +
-            '<div style="color: #6b7280; margin-bottom: 8px;">티켓 생성 기능을 사용할 수 없습니다.</div>' +
-            '<div style="color: #6b7280;">서버 연결을 확인한 후 다시 시도해주세요.</div>' +
+            '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
+            '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation is unavailable.</div>' +
+            '<div style="color: #a1a1aa;">Check your server connection and try again.</div>' +
             "</div>";
           submitButton.style.display = "none";
-          cancelButton.textContent = "확인";
+          cancelButton.textContent = "OK";
           return;
         }
       } catch (e) {
@@ -187,21 +187,21 @@ export async function loadTicketFormDataFromAPI({
         console.error("[RemoteDebug-SDK][VPN Error] 네트워크 연결 실패:", e);
         loadingDiv.innerHTML =
           '<div style="text-align: center; line-height: 1.6;">' +
-          '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">🔒 VPN 연결이 필요합니다</div>' +
-          '<div style="color: #6b7280; margin-bottom: 8px;">티켓 생성 기능은 사내 VPN을 통해서만 접근할 수 있습니다.</div>' +
-          '<div style="color: #6b7280;">VPN을 연결한 후 다시 시도해주세요.</div>' +
+          '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
+          '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation requires a corporate VPN connection.</div>' +
+          '<div style="color: #a1a1aa;">Connect to VPN and try again.</div>' +
           "</div>";
         submitButton.style.display = "none";
-        cancelButton.textContent = "확인";
+        cancelButton.textContent = "OK";
         return;
       }
 
       loadingDiv.innerHTML =
-        "티켓 템플릿 정보를 가져올 수 없습니다.<br/>" +
-        "서버 연결 상태를 확인해주세요.";
+        "Could not load ticket template data.<br/>" +
+        "Check your server connection.";
 
       submitButton.style.display = "none";
-      cancelButton.textContent = "확인";
+      cancelButton.textContent = "OK";
       return;
     }
 
@@ -209,11 +209,11 @@ export async function loadTicketFormDataFromAPI({
     if (userTemplates.ticketTemplateList.length === 0) {
       console.error("[RemoteDebug-SDK][Template Error] 등록된 템플릿이 없음");
       loadingDiv.innerHTML =
-        "등록된 템플릿이 없습니다.<br/>" +
-        "관리자 페이지에서 템플릿을 먼저 등록해주세요.";
+        "No templates registered.<br/>" +
+        "Register a template in the admin panel first.";
 
       submitButton.style.display = "none";
-      cancelButton.textContent = "확인";
+      cancelButton.textContent = "OK";
       return;
     }
 
@@ -260,12 +260,12 @@ export async function loadTicketFormDataFromAPI({
       );
       loadingDiv.innerHTML =
         '<div style="text-align: center; line-height: 1.6;">' +
-        '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">🔒 VPN 연결이 필요합니다</div>' +
-        '<div style="color: #6b7280; margin-bottom: 8px;">티켓 생성 기능은 사내 VPN을 통해서만 접근할 수 있습니다.</div>' +
-        '<div style="color: #6b7280;">VPN을 연결한 후 다시 시도해주세요.</div>' +
+        '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
+        '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation requires a corporate VPN connection.</div>' +
+        '<div style="color: #a1a1aa;">Connect to VPN and try again.</div>' +
         "</div>";
       submitButton.style.display = "none";
-      cancelButton.textContent = "확인";
+      cancelButton.textContent = "OK";
       return;
     }
 
@@ -273,12 +273,12 @@ export async function loadTicketFormDataFromAPI({
     if (fetchResponse.status === 403) {
       loadingDiv.innerHTML =
         '<div style="text-align: center; line-height: 1.6;">' +
-        '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">🔒 VPN 연결이 필요합니다</div>' +
-        '<div style="color: #6b7280; margin-bottom: 8px;">티켓 생성 기능은 사내 VPN을 통해서만 접근할 수 있습니다.</div>' +
-        '<div style="color: #6b7280;">VPN을 연결한 후 다시 시도해주세요.</div>' +
+        '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
+        '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation requires a corporate VPN connection.</div>' +
+        '<div style="color: #a1a1aa;">Connect to VPN and try again.</div>' +
         "</div>";
       submitButton.style.display = "none";
-      cancelButton.textContent = "확인";
+      cancelButton.textContent = "OK";
       return;
     }
 
@@ -304,22 +304,22 @@ export async function loadTicketFormDataFromAPI({
       // 사용자 정보가 없는 경우
       if (errorData.errorCode === "NO_USER_INFO") {
         loadingDiv.innerHTML =
-          "사용자 등록이 필요합니다.<br/>" +
-          "관리자에게 문의하여 사용자 등록을 요청해주세요.";
+          "User registration is required.<br/>" +
+          "Contact your admin to request registration.";
         submitButton.style.display = "none";
-        cancelButton.textContent = "확인";
+        cancelButton.textContent = "OK";
         return;
       }
 
       // TC 스프레드시트가 없는 경우
       if (errorData.errorCode === "NO_TC_SPREADSHEET") {
         loadingDiv.innerHTML =
-          "디바이스 ID에 해당하는 'TC 링크'가 없습니다.<br>" +
+          "No test case sheet linked to this device.<br>" +
           "기본 티켓을 생성하거나, 관리자 페이지에서 TC 링크를 추가해주세요.";
 
         // 기본 티켓 생성 버튼을 buttonContainer에 추가
         const defaultTicketButton = document.createElement("button");
-        defaultTicketButton.textContent = "기본 티켓 생성";
+        defaultTicketButton.textContent = "Create Basic Ticket";
         applyButtonStyles(defaultTicketButton, "primary");
 
         defaultTicketButton.addEventListener("click", () => {
@@ -342,7 +342,7 @@ export async function loadTicketFormDataFromAPI({
           modalButtonContainer.innerHTML = "";
 
           // 취소 버튼 (원래 cancelButton)
-          cancelButton.textContent = "취소";
+          cancelButton.textContent = "Cancel";
           applyButtonStyles(cancelButton, "secondary");
 
           modalButtonContainer.appendChild(cancelButton);
@@ -353,11 +353,11 @@ export async function loadTicketFormDataFromAPI({
         return;
       }
 
-      throw new Error(errorData.message || "API 응답 오류");
+      throw new Error(errorData.message || "API response error");
     }
 
     if (!response.success || !response.data) {
-      throw new Error(response.message || "데이터 조회 실패");
+      throw new Error(response.message || "Failed to retrieve data");
     }
 
     const sheetData: SimpleStructuredSheetData = response.data;
@@ -446,10 +446,10 @@ export async function loadTicketFormDataFromAPI({
     );
 
     const errorMessage =
-      error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다";
-    loadingDiv.innerHTML = `오류: ${errorMessage}`;
-    loadingDiv.style.color = "#e74c3c";
+      error instanceof Error ? error.message : "An unknown error occurred";
+    loadingDiv.innerHTML = `Error: ${errorMessage}`;
+    loadingDiv.style.color = "#f87171";
     submitButton.style.display = "none";
-    cancelButton.textContent = "확인";
+    cancelButton.textContent = "OK";
   }
 }
