@@ -232,7 +232,6 @@ export class ChromeDomain {
     this.domains.forEach((domain) => {
       domain.disable();
     });
-    // console.log('All domains disabled')
   }
 
   private protocol = new Map();

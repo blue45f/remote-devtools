@@ -63,14 +63,3 @@ export function createGuideButton(onClick: () => void) {
 
   return button;
 }
-
-/**
- * Add guide button to debugger button container
- */
-export function addGuideButtonToContainer(
-  container: HTMLElement,
-  guideButton: HTMLButtonElement,
-) {
-  container.insertBefore(guideButton, container.firstChild);
-  guideButton.style.marginBottom = "4px";
-}

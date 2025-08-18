@@ -13,16 +13,6 @@ export function isMobile(): boolean {
   return /ios|iphone|ipod|android/.test(navigator.userAgent.toLowerCase());
 }
 
-export function loadScript(url: string): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = url;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.body.appendChild(script);
-  });
-}
-
 export function isElement(node: unknown): node is Element {
   return node instanceof Element;
 }
