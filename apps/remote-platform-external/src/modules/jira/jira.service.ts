@@ -2,8 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 import * as FormData from "form-data";
 
-import { convertRecordLink } from "../../utils";
-import { createUserDataText } from "../../utils/utils";
+import { convertRecordLink, createUserDataText } from "../../utils/utils";
 import { UserInfoService } from "../user-info/user-info.service";
 import { TicketFormData, UserData } from "../webview/webview.gateway";
 

@@ -76,10 +76,6 @@ const getPreview = (
   others: any = {},
 ): Pick<ObjectPreview, "overflow" | "properties"> => {
   const { length = 5, origin = val } = others;
-  // TODO: Map/Set data types pending
-  // if (subtype === 'map' || subtype === 'set') {
-
-  // }
 
   const keys = Object.keys(val);
   const properties: ObjectPreview["properties"] = [];
@@ -152,7 +148,6 @@ export function objectFormat(
     objectId: getIdByObject(val, origin),
   };
   // Some different data types need to be processed separately
-  // function
   if (type === "function") {
     res.className = "Function";
     res.description = val.toString();

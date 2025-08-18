@@ -715,7 +715,6 @@ export class Network extends BaseDomain {
         sendRequest.set("hasPostData", !!data);
       }
 
-      // console.log(`[Network] Fetch request detected: ${method} ${url}`)
       instance.socketSend({
         method: Events.requestWillBeSent,
         params: {
