@@ -4,36 +4,35 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import { WsAdapter } from "@nestjs/platform-ws";
 import * as express from "express";
 
+import {
+  AllExceptionsFilter,
+  HttpExceptionFilter,
+  QueryFailedExceptionFilter,
+} from "@remote-platform/common";
+
 import { AppModule } from "./app.module";
-import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
-import { HttpExceptionFilter } from "./filters/http-exception.filter";
-import { QueryFailedExceptionFilter } from "./filters/query-failed-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bodyParser: false, // 기본 body parser 비활성화
+    bodyParser: false,
   });
 
-  // Express body-parser 직접 설정 (30MB)
   app.use(express.json({ limit: "30mb" }));
   app.use(express.urlencoded({ limit: "30mb", extended: true }));
   app.useWebSocketAdapter(new WsAdapter(app));
-  // 전역 예외 필터 적용 (표준화된 에러 응답)
+
   app.useGlobalFilters(
-    new AllExceptionsFilter(),
+    new AllExceptionsFilter({ sdkCompatible: true }),
     new HttpExceptionFilter(),
     new QueryFailedExceptionFilter(),
   );
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
-        // WebSocket, Postman 등 origin이 없는 요청 허용
         return callback(null, true);
       }
 
-      // CORS 허용 패턴 설정
-      // 프로덕션 환경에서는 환경변수 CORS_ALLOWED_ORIGINS를 설정하세요
-      // 예: CORS_ALLOWED_ORIGINS=example.com,myapp.com
       const customOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(",") || [];
       const customPatterns = customOrigins.map(
         (domain) =>
@@ -59,6 +58,7 @@ async function bootstrap() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   });
+
   await app.listen(process.env.PORT || 3000);
 
   process.on("uncaughtException", (err) => {
@@ -67,11 +67,7 @@ async function bootstrap() {
       `[UNCAUGHT_EXCEPTION] ${JSON.stringify({
         error:
           err instanceof Error
-            ? {
-                message: err.message,
-                stack: err.stack,
-                name: err.name,
-              }
+            ? { message: err.message, stack: err.stack, name: err.name }
             : JSON.stringify(err),
         timestamp: new Date().toISOString(),
         processId: process.pid,
