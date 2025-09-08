@@ -1,5 +1,3 @@
-// 특정 페이지의 Dom 탭
-
 import {
   Column,
   Entity,
@@ -9,11 +7,12 @@ import {
   Unique,
 } from "typeorm";
 
-import { Record } from "./record.entity";
+import { RecordEntity } from "./record.entity";
 
-@Entity()
+/** DOM snapshot captured for a recording session. */
+@Entity("dom")
 @Unique(["record", "type"])
-export class Dom {
+export class DomEntity {
   @PrimaryGeneratedColumn()
   public id: number;
 
@@ -26,10 +25,10 @@ export class Dom {
   @Column({ type: "bigint" })
   public timestamp: number;
 
-  // Dom은 하나의 Record와 연결됨
-  @ManyToOne(() => Record, (record) => record.doms, {
+  /** Each DOM entry belongs to exactly one RecordEntity. */
+  @ManyToOne(() => RecordEntity, (record) => record.doms, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "recordId" })
-  public record: Record;
+  public record: RecordEntity;
 }

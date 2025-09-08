@@ -8,15 +8,15 @@ export const MSG_ID = {
     ENABLE: 6,
     GET_DOCUMENT: 32,
   },
-  Runtime: {
-    enable: 5,
-    runIfWaitingForDebugger: 27,
+  RUNTIME: {
+    ENABLE: 5,
+    RUN_IF_WAITING_FOR_DEBUGGER: 27,
   },
-  Page: {
-    enable: 3,
-    getResourceTree: 4,
+  PAGE: {
+    ENABLE: 3,
+    GET_RESOURCE_TREE: 4,
   },
-  Screen: {
-    startPreview: 7,
+  SCREEN: {
+    START_PREVIEW: 7,
   },
 } as const;

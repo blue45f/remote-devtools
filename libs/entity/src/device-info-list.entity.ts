@@ -11,12 +11,15 @@ import {
 
 import { UserEntity } from "./user.entity";
 
-// 디바이스 정보 타입 (API 전송용)
+/** Device information payload used by the API layer. */
 export interface DeviceInfo {
-  name?: string; // 사용자 지정 이름 (예: "아이폰", "회사 맥북")
-  deviceId: string; // 실제 디바이스 ID
+  /** Optional user-assigned device label. */
+  name?: string;
+  /** Unique hardware device identifier. */
+  deviceId: string;
 }
 
+/** Persisted device information linked to a user. */
 @Entity("device_info_list")
 @Index(["deviceId"], { unique: true })
 @Index(["userId"])
@@ -30,8 +33,9 @@ export class DeviceInfoEntity {
   @Column({ name: "device_id", length: 100, unique: true })
   deviceId: string;
 
+  /** Optional user-assigned device label. */
   @Column({ name: "device_name", length: 100, nullable: true })
-  name?: string; // 사용자가 지정하는 디바이스 이름 (예: "아이폰", "회사 맥북")
+  name?: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
@@ -39,7 +43,6 @@ export class DeviceInfoEntity {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
-  // 관계 설정
   @ManyToOne(() => UserEntity, (user) => user.deviceInfoList, {
     onDelete: "CASCADE",
   })

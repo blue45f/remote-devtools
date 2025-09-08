@@ -9,9 +9,10 @@ import {
 
 import { TicketLogEntity } from "./ticket-log.entity";
 
+/** Component associated with a ticket log entry. */
 @Entity("ticket_components")
-@Index(["componentName"]) // 컴포넌트별 통계 조회 최적화
-@Index(["ticketLogId", "componentName"], { unique: true }) // 중복 방지 및 티켓별 컴포넌트 조회 최적화
+@Index(["componentName"]) // Optimizes per-component statistics queries
+@Index(["ticketLogId", "componentName"], { unique: true }) // Prevents duplicates and optimizes per-ticket component lookups
 export class TicketComponentEntity {
   @PrimaryGeneratedColumn()
   public id: number;
@@ -19,7 +20,7 @@ export class TicketComponentEntity {
   @Column({ name: "ticket_log_id", type: "int" })
   public ticketLogId: number;
 
-  @Column({ name: "component_name", length: 100 }) // 길이 제한으로 효율성 증대
+  @Column({ name: "component_name", length: 100 })
   public componentName: string;
 
   @ManyToOne(() => TicketLogEntity, { onDelete: "CASCADE" })

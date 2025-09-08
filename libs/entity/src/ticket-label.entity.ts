@@ -9,9 +9,10 @@ import {
 
 import { TicketLogEntity } from "./ticket-log.entity";
 
+/** Label associated with a ticket log entry. */
 @Entity("ticket_labels")
-@Index(["labelName"]) // 라벨별 통계 조회 최적화
-@Index(["ticketLogId", "labelName"], { unique: true }) // 중복 방지 및 티켓별 라벨 조회 최적화
+@Index(["labelName"]) // Optimizes per-label statistics queries
+@Index(["ticketLogId", "labelName"], { unique: true }) // Prevents duplicates and optimizes per-ticket label lookups
 export class TicketLabelEntity {
   @PrimaryGeneratedColumn()
   public id: number;
@@ -19,7 +20,7 @@ export class TicketLabelEntity {
   @Column({ name: "ticket_log_id", type: "int" })
   public ticketLogId: number;
 
-  @Column({ name: "label_name", length: 100 }) // 길이 제한으로 효율성 증대
+  @Column({ name: "label_name", length: 100 })
   public labelName: string;
 
   @ManyToOne(() => TicketLogEntity, { onDelete: "CASCADE" })
