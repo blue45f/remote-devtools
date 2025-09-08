@@ -2,29 +2,37 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Runtime } from "@remote-platform/entity";
+import { RuntimeEntity } from "@remote-platform/entity";
 
 import { RecordService } from "./record.service";
 
+/**
+ * Service responsible for persisting and querying runtime console
+ * messages captured during a recording session.
+ */
 @Injectable()
 export class RuntimeService {
   private readonly logger = new Logger(RuntimeService.name);
 
   constructor(
-    @InjectRepository(Runtime)
-    private runtimeRepository: Repository<Runtime>,
-    private recordService: RecordService,
+    @InjectRepository(RuntimeEntity)
+    private readonly runtimeRepository: Repository<RuntimeEntity>,
+    private readonly recordService: RecordService,
   ) {}
 
+  /**
+   * Create a new runtime entry linked to an existing record.
+   * Returns null when the parent record cannot be found.
+   */
   public async create(
-    data: Partial<Runtime & { recordId: number }>,
-  ): Promise<Runtime | null> {
+    data: Partial<RuntimeEntity & { recordId: number }>,
+  ): Promise<RuntimeEntity | null> {
     const { recordId, ...runtimeInfo } = data;
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
       this.logger.warn(
-        `[RUNTIME_CREATE_SKIP] Record not found for id=${recordId}`,
+        `Skipping runtime creation: record not found for id=${recordId}`,
       );
       return null;
     }
@@ -35,19 +43,22 @@ export class RuntimeService {
     });
 
     const saved = await this.runtimeRepository.save(runtime);
-    this.logger.debug(`[RUNTIME_CREATE] recordId=${recordId}, id=${saved.id}`);
+    this.logger.debug(
+      `Runtime entry created: recordId=${recordId}, id=${saved.id}`,
+    );
     return saved;
   }
 
-  public async findByRecordId(recordId: number): Promise<Runtime[]> {
+  /** Retrieve all runtime entries for a record, ordered by timestamp ascending. */
+  public async findByRecordId(recordId: number): Promise<RuntimeEntity[]> {
     return this.runtimeRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: "ASC" },
     });
   }
 
-  // 별칭 메서드 (기존 코드와 호환성 유지)
-  public async findRuntimes(recordId: number): Promise<Runtime[]> {
+  /** Alias for {@link findByRecordId} (retained for backward compatibility). */
+  public async findRuntimes(recordId: number): Promise<RuntimeEntity[]> {
     return this.findByRecordId(recordId);
   }
 }

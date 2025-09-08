@@ -10,9 +10,10 @@ import {
 import { TicketComponentEntity } from "./ticket-component.entity";
 import { TicketLabelEntity } from "./ticket-label.entity";
 
+/** Log of ticket creation events, including metadata and relationships to components/labels. */
 @Entity("ticket_logs")
-@Index(["deviceId", "createdAt"]) // 사용자별 티켓 생성 기록 조회 최적화
-@Index(["createdAt"]) // 시간대별 조회 최적화
+@Index(["deviceId", "createdAt"]) // Optimizes per-device ticket history queries
+@Index(["createdAt"]) // Optimizes time-range queries
 export class TicketLogEntity {
   @PrimaryGeneratedColumn()
   public id: number;
@@ -30,7 +31,7 @@ export class TicketLogEntity {
   public recordId: number;
 
   @Column({ name: "ticket_url", length: 1000 })
-  public ticketURL: string;
+  public ticketUrl: string;
 
   @Column({ name: "jira_project_key", length: 100 })
   public jiraProjectKey: string;
@@ -48,7 +49,7 @@ export class TicketLogEntity {
   public roomName?: string;
 
   @Column({ name: "url", length: 1000 })
-  public URL: string;
+  public url: string;
 
   @OneToMany(() => TicketComponentEntity, (component) => component.ticketLog, {
     cascade: true,

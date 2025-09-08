@@ -1,5 +1,3 @@
-// 특정 페이지의 Runtime 탭
-
 import {
   Column,
   Entity,
@@ -8,10 +6,11 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 
-import { Record } from "./record.entity";
+import { RecordEntity } from "./record.entity";
 
-@Entity()
-export class Runtime {
+/** Runtime console message captured for a recording session. */
+@Entity("runtime")
+export class RuntimeEntity {
   @PrimaryGeneratedColumn()
   public id: number;
 
@@ -21,10 +20,10 @@ export class Runtime {
   @Column({ type: "bigint" })
   public timestamp: number;
 
-  // Runtime은 하나의 Record와 연결됨
-  @ManyToOne(() => Record, (record) => record.runtimes, {
+  /** Each runtime entry belongs to exactly one RecordEntity. */
+  @ManyToOne(() => RecordEntity, (record) => record.runtimes, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "recordId" })
-  public record: Record;
+  public record: RecordEntity;
 }

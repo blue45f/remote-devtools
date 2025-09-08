@@ -7,19 +7,20 @@ import {
   Unique,
 } from "typeorm";
 
-import { Record } from "./record.entity";
+import { RecordEntity } from "./record.entity";
 
-@Entity()
+/** Screen capture snapshot for a recording session. */
+@Entity("screen")
 @Unique(["record", "type"])
-export class Screen {
+export class ScreenEntity {
   @PrimaryGeneratedColumn()
   public id: number;
 
   @Column({ type: "text", nullable: true, default: null })
   public type: "screenPreview" | null;
 
-  @Column({ type: "varchar", length: 50, nullable: true })
-  public event_type:
+  @Column({ name: "event_type", type: "varchar", length: 50, nullable: true })
+  public eventType:
     | "full_snapshot"
     | "incremental_snapshot"
     | "user_interaction"
@@ -31,22 +32,26 @@ export class Screen {
   @Column({ type: "jsonb" })
   public protocol: object;
 
+  /**
+   * Timestamp stored as bigint. The transformer returns it as a string
+   * from the database, but the application accepts both string and number.
+   */
   @Column({
     type: "bigint",
     transformer: {
       to: (value: any) => value,
-      from: (value: string) => value, // bigint를 문자열로 반환
+      from: (value: string) => value,
     },
   })
-  public timestamp: string | number; // DB에서는 문자열로, 앱에서는 둘 다 처리
+  public timestamp: string | number;
 
   @Column({ type: "integer", nullable: true })
   public sequence: number | null;
 
-  // 스크린은 하나의 Record와 연결됨
-  @ManyToOne(() => Record, (record) => record.screen, {
+  /** Each screen entry belongs to exactly one RecordEntity. */
+  @ManyToOne(() => RecordEntity, (record) => record.screens, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "recordId" })
-  public record: Record;
+  public record: RecordEntity;
 }

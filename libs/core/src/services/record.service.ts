@@ -2,36 +2,47 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Record } from "@remote-platform/entity";
+import { RecordEntity } from "@remote-platform/entity";
 
+/**
+ * Service responsible for managing recording session lifecycle.
+ * Handles CRUD operations and queries for RecordEntity entities.
+ */
 @Injectable()
 export class RecordService {
   private readonly logger = new Logger(RecordService.name);
 
   constructor(
-    @InjectRepository(Record)
-    private recordRepository: Repository<Record>,
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
   ) {}
 
-  public async create(data: Partial<Record>): Promise<Record> {
+  /** Create a new recording session and persist it. */
+  public async create(data: Partial<RecordEntity>): Promise<RecordEntity> {
     const record = this.recordRepository.create(data);
     const saved = await this.recordRepository.save(record);
-    this.logger.debug(`[RECORD_CREATE] id=${saved.id}, name=${saved.name}`);
+    this.logger.debug(`Record created: id=${saved.id}, name=${saved.name}`);
     return saved;
   }
 
-  public async findOne(id: number): Promise<Record | null> {
+  /** Find a single record by its primary key. */
+  public async findOne(id: number): Promise<RecordEntity | null> {
     return this.recordRepository.findOne({ where: { id } });
   }
 
-  public async findAll(): Promise<Record[]> {
+  /** Retrieve all records. */
+  public async findAll(): Promise<RecordEntity[]> {
     return this.recordRepository.find();
   }
 
+  /**
+   * Find all records for a given device that were created before
+   * the specified record, ordered by most recent first.
+   */
   public async findPreviousByDeviceId(
     deviceId: string,
     currentRecordId: number,
-  ): Promise<Record[]> {
+  ): Promise<RecordEntity[]> {
     const currentRecord = await this.recordRepository.findOne({
       where: { id: currentRecordId },
     });
@@ -50,20 +61,25 @@ export class RecordService {
       .getMany();
   }
 
-  public async findNetworks(id: number): Promise<Record | null> {
+  /** Find a record by ID with its associated network entries eagerly loaded. */
+  public async findWithNetworks(id: number): Promise<RecordEntity | null> {
     return this.recordRepository.findOne({
       where: { id },
       relations: ["networks"],
     });
   }
 
+  /** Update the duration (in nanoseconds) of an existing record. */
   public async updateDuration(id: number, duration: number): Promise<void> {
     await this.recordRepository.update(id, { duration });
-    this.logger.debug(`[RECORD_UPDATE_DURATION] id=${id}, duration=${duration}`);
+    this.logger.debug(
+      `Record duration updated: id=${id}, duration=${duration}`,
+    );
   }
 
+  /** Delete a record by its primary key. */
   public async delete(id: number): Promise<void> {
     await this.recordRepository.delete(id);
-    this.logger.debug(`[RECORD_DELETE] id=${id}`);
+    this.logger.debug(`Record deleted: id=${id}`);
   }
 }

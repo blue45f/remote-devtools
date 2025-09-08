@@ -6,6 +6,10 @@ import {
   DatabaseConfigOptions,
 } from "../config/database.config";
 
+/**
+ * Dynamic module that bootstraps the TypeORM database connection.
+ * Use {@link DatabaseModule.forRoot} to register it in the root application module.
+ */
 @Module({})
 export class DatabaseModule {
   static forRoot(options: DatabaseConfigOptions = {}): DynamicModule {

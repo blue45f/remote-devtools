@@ -1,4 +1,4 @@
-// WebSocket 관련 타입
+// WebSocket related types
 export interface WebSocketClient {
   id: string;
   recordId?: number;
@@ -6,7 +6,7 @@ export interface WebSocketClient {
   send: (data: string) => void;
 }
 
-// CDP 메시지 타입
+// CDP message types
 export interface CDPMessage {
   id?: number;
   method?: string;
@@ -18,7 +18,7 @@ export interface CDPMessage {
   };
 }
 
-// 녹화 세션 상태
+// Recording session state
 export enum RecordSessionState {
   IDLE = "idle",
   RECORDING = "recording",
@@ -26,14 +26,14 @@ export enum RecordSessionState {
   STOPPED = "stopped",
 }
 
-// 페이지 정보
+// Page information
 export interface PageInfo {
   url: string;
   title?: string;
   referrer?: string;
 }
 
-// 디바이스 정보
+// Device information
 export interface DeviceInfo {
   deviceId: string;
   userAgent?: string;

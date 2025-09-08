@@ -12,13 +12,14 @@ import { DeviceInfoEntity } from "./device-info-list.entity";
 import { UserTicketTemplateEntity } from "./ticket-template-list.entity";
 
 export enum JobType {
-  QA = "QA",
-  PM = "PM",
-  PD = "PD",
-  DEV = "DEV",
+  QA = "QA", // Quality Assurance
+  PM = "PM", // Product Manager
+  PD = "PD", // Product Designer
+  DEV = "DEV", // Developer
   OTHER = "OTHER",
 }
 
+/** Application user, identified by Slack ID and employee number. */
 @Entity("users")
 @Index(["slackId"], { unique: true })
 @Index(["empNo"], { unique: true })
@@ -26,11 +27,13 @@ export class UserEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  /** Full display name. */
   @Column({ length: 100 })
-  name: string; // 한글 이름 (홍영준)
+  name: string;
 
+  /** System username used for JIRA reporter/assignee resolution. */
   @Column({ length: 50, nullable: true })
-  username?: string; // 영어 ID (dd) - JIRA reporter/assignee용
+  username?: string;
 
   @Column({
     type: "enum",
@@ -42,6 +45,7 @@ export class UserEntity {
   @Column({ name: "slack_id", length: 50, unique: true })
   slackId: string;
 
+  /** Employee number (unique identifier within the organization). */
   @Column({ name: "emp_no", length: 20, unique: true })
   empNo: string;
 
@@ -54,7 +58,6 @@ export class UserEntity {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
-  // 관계 설정
   @OneToMany(() => DeviceInfoEntity, (deviceInfo) => deviceInfo.user, {
     cascade: true,
   })

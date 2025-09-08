@@ -6,57 +6,61 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 
-import { Dom } from "./dom.entity";
-import { Network } from "./network.entity";
-import { Runtime } from "./runtime.entity";
-import { Screen } from "./screen.entity";
+import { DomEntity } from "./dom.entity";
+import { NetworkEntity } from "./network.entity";
+import { RuntimeEntity } from "./runtime.entity";
+import { ScreenEntity } from "./screen.entity";
 
-@Entity()
-export class Record {
+/** Represents a single recording session. */
+@Entity("record")
+export class RecordEntity {
   @PrimaryGeneratedColumn()
   public id: number;
 
-  // 녹화 세션 명칭 - 30자 이내 (임시)
+  /** Session name (short label). */
   @Column({ type: "varchar" })
   public name: string;
 
-  // 세션 지속 시간 (나노초)
+  /** Session duration in nanoseconds. */
   @Column({ type: "bigint", nullable: true })
   public duration: number;
 
-  // 디바이스 ID
-
-  // 기록된 페이지 URL
+  /** Page URL captured during this recording. */
   @Column({ type: "text", nullable: true })
   public url?: string;
 
+  /** Unique identifier of the device that produced this recording. */
   @Column({ name: "device_id", nullable: true, length: 255 })
   public deviceId: string;
 
-  // 녹화 모드 여부 (true: 녹화 모드, false: 라이브 모드)
+  /** Whether this session was recorded (true) or captured live (false). */
   @Column({ name: "record_mode", type: "boolean", default: false })
   public recordMode: boolean;
 
-  // 접속 페이지 URL (쿼리 파라미터 제외)
+  /** Referring page URL (query parameters excluded). */
   @Column({ name: "referrer", length: 500, nullable: true })
   public referrer: string;
 
-  @OneToMany(() => Network, (network) => network.record, { cascade: true })
-  public networks: Network[];
+  @OneToMany(() => NetworkEntity, (network) => network.record, {
+    cascade: true,
+  })
+  public networks: NetworkEntity[];
 
-  @OneToMany(() => Dom, (dom) => dom.record, { cascade: true })
-  public doms: Dom[];
+  @OneToMany(() => DomEntity, (dom) => dom.record, { cascade: true })
+  public doms: DomEntity[];
 
-  @OneToMany(() => Runtime, (runtime) => runtime.record, { cascade: true })
-  public runtimes: Runtime[];
+  @OneToMany(() => RuntimeEntity, (runtime) => runtime.record, {
+    cascade: true,
+  })
+  public runtimes: RuntimeEntity[];
 
-  @OneToMany(() => Screen, (screen) => screen.record, { cascade: true })
-  public screen: Runtime[];
+  @OneToMany(() => ScreenEntity, (screen) => screen.record, { cascade: true })
+  public screens: ScreenEntity[];
 
   @CreateDateColumn({ type: "timestamp" })
   public timestamp: Date;
 
-  // createdAt 호환성을 위한 getter
+  /** Alias getter for backward compatibility with older code using createdAt. */
   public get createdAt(): Date {
     return this.timestamp;
   }

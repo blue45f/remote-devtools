@@ -11,13 +11,17 @@ import {
 
 import { UserEntity } from "./user.entity";
 
-// 담당자 정보 타입
+/** Assignee information embedded in a ticket template. */
 export interface AssigneeInfo {
-  displayName: string; // 홍영준
-  username?: string; // dd (어드민에서 알아내서 저장)
-  email?: string; // user@example.com (선택적)
+  /** Full display name of the assignee. */
+  displayName: string;
+  /** System username (resolved via admin). */
+  username?: string;
+  /** Email address (optional). */
+  email?: string;
 }
 
+/** User-defined ticket template with pre-filled defaults. */
 @Entity("ticket_template_list")
 @Index(["userId"])
 @Index(["name"])
@@ -48,7 +52,7 @@ export class UserTicketTemplateEntity {
     type: "json",
     nullable: true,
     comment:
-      'JSON 배열: [{"displayName":"John Doe","username":"johndoe","email":"john@example.com"}]',
+      'JSON array: [{"displayName":"John Doe","username":"johndoe","email":"john@example.com"}]',
   })
   assigneeInfoList?: AssigneeInfo[];
 
@@ -56,7 +60,7 @@ export class UserTicketTemplateEntity {
     name: "component_list",
     type: "json",
     nullable: true,
-    comment: 'JSON 배열: ["인수테스트", "통합테스트", "릴리즈테스트"]',
+    comment: 'JSON array: ["AcceptanceTest", "IntegrationTest", "ReleaseTest"]',
   })
   componentList?: string[];
 
@@ -64,7 +68,7 @@ export class UserTicketTemplateEntity {
     name: "label_list",
     type: "json",
     nullable: true,
-    comment: 'JSON 배열: ["비마트주문", "푸드주문"]',
+    comment: 'JSON array: ["BmartOrder", "FoodOrder"]',
   })
   labelList?: string[];
 
@@ -74,7 +78,6 @@ export class UserTicketTemplateEntity {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
-  // 관계 설정
   @ManyToOne(() => UserEntity, (user) => user.ticketTemplateList, {
     onDelete: "CASCADE",
   })
