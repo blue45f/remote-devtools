@@ -3,71 +3,85 @@ import { UAParser } from "ua-parser-js";
 
 import { UserData } from "../modules/webview/webview.gateway";
 
-const key = CryptoJS.lib.WordArray.create(
+const ENCRYPTION_KEY = CryptoJS.lib.WordArray.create(
   [1935828585, 1734898793, 1852243968],
   32,
 );
 
-const pref = {
+const ENCRYPTION_OPTIONS = {
   mode: CryptoJS.mode.CBC,
   padding: CryptoJS.pad.Pkcs7,
   iv: CryptoJS.lib.WordArray.create([0, 0, 0, 0, 0, 0, 0, 0], 16),
 };
 
-// 사용자 정보 타입 정의
+/** Decrypted user app information with labeled fields. */
 interface UserAppInfo {
-  appVersion: { label: string; value: string };
-  osVersion: { label: string; value: string };
-  platform: { label: string; value: string };
-  latitude: { label: string; value: string };
-  longitude: { label: string; value: string };
-  deviceId: { label: string; value: string };
-  memberNo: { label: string; value: string };
-  address: { label: string; value: string };
+  readonly appVersion: { readonly label: string; readonly value: string };
+  readonly osVersion: { readonly label: string; readonly value: string };
+  readonly platform: { readonly label: string; readonly value: string };
+  readonly latitude: { readonly label: string; readonly value: string };
+  readonly longitude: { readonly label: string; readonly value: string };
+  readonly deviceId: { readonly label: string; readonly value: string };
+  readonly memberNo: { readonly label: string; readonly value: string };
+  readonly address: { readonly label: string; readonly value: string };
 }
 
-export const decryptUserAppData = (userAppData: string): UserAppInfo => {
-  const decoded = CryptoJS.AES.decrypt(userAppData, key, pref).toString(
-    CryptoJS.enc.Utf8,
-  );
+const EMPTY_FIELD = { label: "", value: "N/A" };
 
-  const splittedValue = decoded.split("|");
-  return {
-    appVersion: {
-      label: "앱 버전",
-      value: splittedValue[0],
-    },
-    osVersion: {
-      label: "OS 버전",
-      value: splittedValue[1],
-    },
-    platform: {
-      label: "플랫폼",
-      value: splittedValue[2],
-    },
-    latitude: {
-      label: "위도",
-      value: splittedValue[4],
-    },
-    longitude: {
-      label: "경도",
-      value: splittedValue[5],
-    },
-    deviceId: {
-      label: "디바이스 ID",
-      value: splittedValue[6],
-    },
-    memberNo: {
-      label: "멤버 번호",
-      value: splittedValue[7],
-    },
-    address: {
-      label: "주소",
-      value: `${splittedValue[9]} ${splittedValue[10]} ${splittedValue[11]}`,
-    },
-  };
+const EMPTY_USER_APP_INFO: UserAppInfo = {
+  appVersion: { label: "App Version", value: "N/A" },
+  osVersion: { label: "OS Version", value: "N/A" },
+  platform: { label: "Platform", value: "N/A" },
+  latitude: { label: "Latitude", value: "N/A" },
+  longitude: { label: "Longitude", value: "N/A" },
+  deviceId: { label: "Device ID", value: "N/A" },
+  memberNo: { label: "Member No", value: "N/A" },
+  address: { label: "Address", value: "N/A" },
 };
 
+/**
+ * Decrypts the encrypted user app data string into structured user information.
+ * Returns default "N/A" values when userAppData is missing or decryption fails.
+ */
+export const decryptUserAppData = (userAppData: string): UserAppInfo => {
+  if (!userAppData) {
+    return EMPTY_USER_APP_INFO;
+  }
+
+  try {
+    const decoded = CryptoJS.AES.decrypt(
+      userAppData,
+      ENCRYPTION_KEY,
+      ENCRYPTION_OPTIONS,
+    ).toString(CryptoJS.enc.Utf8);
+
+    if (!decoded) {
+      return EMPTY_USER_APP_INFO;
+    }
+
+    const fields = decoded.split("|");
+    return {
+      appVersion: { label: "App Version", value: fields[0] || "N/A" },
+      osVersion: { label: "OS Version", value: fields[1] || "N/A" },
+      platform: { label: "Platform", value: fields[2] || "N/A" },
+      latitude: { label: "Latitude", value: fields[4] || "N/A" },
+      longitude: { label: "Longitude", value: fields[5] || "N/A" },
+      deviceId: { label: "Device ID", value: fields[6] || "N/A" },
+      memberNo: { label: "Member No", value: fields[7] || "N/A" },
+      address: {
+        label: "Address",
+        value: `${fields[9] || ""} ${fields[10] || ""} ${fields[11] || ""}`.trim() || "N/A",
+      },
+    };
+  } catch {
+    return EMPTY_USER_APP_INFO;
+  }
+};
+
+/**
+ * Builds a DevTools frontend URL for the given room and optional record.
+ * The DevTools frontend adds the protocol prefix, so only the host is passed in the WS URL.
+ */
 export const convertRecordLink = (
   room: string,
   recordId: number | null,
@@ -78,23 +92,21 @@ export const convertRecordLink = (
       : process.env.INTERNAL_HOST || "http://localhost:3000";
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : "";
   const wsHost = host?.replace(/^https?:\/\/(.+)$/, "$1");
-  // DevTools frontend에서 protocol을 추가하므로 host만 전달
   const wsUrl = encodeURIComponent(`${wsHost}?room=${room}${record}`);
   const protocol = host.startsWith("https") ? "wss" : "ws";
   return `${host}/tabbed-debug/?${protocol}=${wsUrl}`;
 };
 
 /**
- * Google Sheets URL에서 스프레드시트 ID를 추출합니다.
- * @param url Google Sheets URL (예: https://docs.google.com/spreadsheets/d/1od4w5nQMgsOyl6ZKL31dgn2JxcdOBVve3K6coaEt71Y/edit?gid=634974048#gid=634974048)
- * @returns 스프레드시트 ID 또는 null (URL이 유효하지 않은 경우)
+ * Extracts the spreadsheet ID from a Google Sheets URL.
+ * @param url - A Google Sheets URL (e.g. https://docs.google.com/spreadsheets/d/<ID>/edit...)
+ * @returns The spreadsheet ID, or null if the URL is invalid.
  */
 export function extractGoogleSheetsId(url: string): string | null {
   if (!url || typeof url !== "string") {
     return null;
   }
 
-  // Google Sheets URL 패턴: /d/[스프레드시트ID]/edit
   const regex = /\/d\/([a-zA-Z0-9-_]+)\/edit/;
   const match = url.match(regex);
 
@@ -102,21 +114,17 @@ export function extractGoogleSheetsId(url: string): string | null {
 }
 
 /**
- * User-Agent 문자열을 파싱하여 OS, OS 버전, 브라우저, 브라우저 버전을 추출하는 함수.
- *
- * @param {string} userAgentString - 파싱할 User-Agent 문자열.
- * @returns {{os: string, browser: string}}
- * 추출된 정보를 담은 간결한 객체.
- * 예: { os: 'iOS / 14.8.1', browser: 'Safari / 14.1.2' }
+ * Parses a User-Agent string to extract OS and browser information.
+ * @param userAgentString - The raw User-Agent header value.
+ * @returns An object with formatted OS and browser strings (e.g. "iOS / 14.8.1").
  */
 export function parseUserAgent(userAgentString: string): {
-  os: string;
-  browser: string;
+  readonly os: string;
+  readonly browser: string;
 } {
   const parser = new UAParser(userAgentString);
   const result = parser.getResult();
 
-  // OS 정보 포맷팅
   let formattedOs = "Unknown";
   if (result.os.name) {
     formattedOs = result.os.version
@@ -124,7 +132,6 @@ export function parseUserAgent(userAgentString: string): {
       : result.os.name;
   }
 
-  // 브라우저 정보 포맷팅
   let formattedBrowser = "Unknown";
   if (result.browser.name) {
     formattedBrowser = result.browser.version
@@ -132,13 +139,14 @@ export function parseUserAgent(userAgentString: string): {
       : result.browser.name;
   }
 
-  return {
-    os: formattedOs,
-    browser: formattedBrowser,
-  };
+  return { os: formattedOs, browser: formattedBrowser };
 }
 
-export const createUserDataText = (userData: UserData) => {
+/**
+ * Builds a human-readable text summary of user/device data for use in
+ * Jira tickets, Slack messages, etc.
+ */
+export const createUserDataText = (userData: UserData): string => {
   const { commonInfo, userAgent, URL, webTitle } = userData;
   const userAppData =
     commonInfo?.user?.userAppData || commonInfo?.user?.userBaedal;
@@ -153,5 +161,21 @@ export const createUserDataText = (userData: UserData) => {
   } = decryptUserAppData(userAppData);
   const { os, browser } = parseUserAgent(userAgent);
 
-  return `서버: ${process.env.APP_ENV || "development"} \nURL: ${webTitle ? `[${webTitle}] ` : ""}${decodeURIComponent(URL)} \n앱 버전: ${appVersion.value.split("_")[1]} \n디바이스 모델: ${platform.value} \nOS: ${os} \n브라우저: ${browser} \n디바이스 ID: ${deviceId.value} \n멤버 번호: ${memberNo.value} \n위도: ${latitude.value} \n경도: ${longitude.value} \n앱 설정 주소: ${address.value}`;
+  const appVersionDisplay = appVersion.value?.includes("_")
+    ? appVersion.value.split("_")[1]
+    : appVersion.value;
+
+  return [
+    `Server: ${process.env.APP_ENV || "development"}`,
+    `URL: ${webTitle ? `[${webTitle}] ` : ""}${decodeURIComponent(URL || "")}`,
+    `App Version: ${appVersionDisplay}`,
+    `Device Model: ${platform.value}`,
+    `OS: ${os}`,
+    `Browser: ${browser}`,
+    `Device ID: ${deviceId.value}`,
+    `Member No: ${memberNo.value}`,
+    `Latitude: ${latitude.value}`,
+    `Longitude: ${longitude.value}`,
+    `App Address: ${address.value}`,
+  ].join("\n");
 };

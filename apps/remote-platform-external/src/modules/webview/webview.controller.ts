@@ -3,9 +3,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
 
 import {
-  Dom,
-  Record,
-  Screen,
+  DomEntity,
+  RecordEntity,
+  ScreenEntity,
   TicketComponentEntity,
   TicketLabelEntity,
   TicketLogEntity,
@@ -27,12 +27,12 @@ export class WebviewController {
     private readonly ticketComponentRepository: Repository<TicketComponentEntity>,
     @InjectRepository(TicketLabelEntity)
     private readonly ticketLabelRepository: Repository<TicketLabelEntity>,
-    @InjectRepository(Record)
-    private readonly recordRepository: Repository<Record>,
-    @InjectRepository(Screen)
-    private readonly screenRepository: Repository<Screen>,
-    @InjectRepository(Dom)
-    private readonly domRepository: Repository<Dom>,
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
+    @InjectRepository(ScreenEntity)
+    private readonly screenRepository: Repository<ScreenEntity>,
+    @InjectRepository(DomEntity)
+    private readonly domRepository: Repository<DomEntity>,
   ) {}
 
   /**
@@ -309,7 +309,7 @@ export class WebviewController {
       tickets: tickets.map((ticket) => ({
         id: ticket.id,
         roomName: ticket.roomName,
-        ticketURL: ticket.ticketURL,
+        ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         title: ticket.title || "제목 없음",
         assignee: ticket.assignee,
@@ -424,7 +424,7 @@ export class WebviewController {
         username: ticket.username,
         userDisplayName: ticket.userDisplayName,
         roomName: ticket.roomName,
-        ticketURL: ticket.ticketURL,
+        ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         assignee: ticket.assignee,
         components: ticket.components.map((comp) => comp.componentName),
@@ -444,7 +444,7 @@ export class WebviewController {
     }
 
     const tickets = await this.ticketLogRepository.find({
-      where: { URL: Like(`%${url}%`) },
+      where: { url: Like(`%${url}%`) },
       order: { createdAt: "DESC" },
       relations: ["components", "labels"], // 컴포넌트 및 라벨 정보 포함
     });
@@ -458,14 +458,14 @@ export class WebviewController {
         username: ticket.username,
         userDisplayName: ticket.userDisplayName,
         roomName: ticket.roomName,
-        ticketURL: ticket.ticketURL,
+        ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         assignee: ticket.assignee,
         parentEpic: ticket.parentEpic,
         components: ticket.components.map((comp) => comp.componentName),
         labels: ticket.labels.map((label) => label.labelName),
         createdAt: ticket.createdAt,
-        URL: ticket.URL,
+        url: ticket.url,
       })),
     };
   }

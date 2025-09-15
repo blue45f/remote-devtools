@@ -5,37 +5,48 @@ import { Repository } from "typeorm";
 import { DeviceInfoEntity, UserEntity } from "@remote-platform/entity";
 
 interface FigmaUserRequest {
-  userId: string;
-  userName: string;
-  username?: string; // 회사 username (직접 입력받음)
-  photoUrl?: string;
-  color?: {
-    r: number;
-    g: number;
-    b: number;
-    a: number;
+  readonly userId: string;
+  readonly userName: string;
+  readonly username?: string;
+  readonly photoUrl?: string;
+  readonly color?: {
+    readonly r: number;
+    readonly g: number;
+    readonly b: number;
+    readonly a: number;
   };
-  timestamp: string;
+  readonly timestamp: string;
 }
 
 interface DeviceInfoResponse {
-  success: boolean;
-  user?: {
-    id: number;
-    name: string;
-    username: string;
-    empNo: string;
-    slackId: string;
-    jobType: string;
+  readonly success: boolean;
+  readonly user?: {
+    readonly id: number;
+    readonly name: string;
+    readonly username: string;
+    readonly empNo: string;
+    readonly slackId: string;
+    readonly jobType: string;
   };
-  devices?: Array<{
-    id: number;
-    deviceId: string;
-    name: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+  readonly devices?: ReadonlyArray<{
+    readonly id: number;
+    readonly deviceId: string;
+    readonly name: string | null;
+    readonly createdAt: Date;
+    readonly updatedAt: Date;
   }>;
-  error?: string;
+  readonly error?: string;
+}
+
+interface SelectionResponse {
+  readonly success: boolean;
+  readonly message: string;
+}
+
+interface HealthCheckResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly timestamp: string;
 }
 
 @Controller("api/figma")
@@ -50,29 +61,28 @@ export class FigmaController {
   ) {}
 
   /**
-   * 피그마 사용자 정보를 받아서 디바이스 정보 반환
-   * username이 제공되지 않으면 입력 요청
+   * Receives Figma user information and returns associated device info.
+   * If username is not provided, returns an error code prompting input.
    */
   @Post("user")
   async registerUser(
     @Body() userData: FigmaUserRequest,
   ): Promise<DeviceInfoResponse> {
-    this.logger.log(`[Figma] 사용자 정보 수신: ${JSON.stringify(userData)}`);
+    this.logger.log(
+      `[FIGMA_USER_REGISTER] Received user data: ${JSON.stringify(userData)}`,
+    );
 
     try {
-      // username이 없으면 입력 요청
       if (!userData.username) {
-        this.logger.warn(`[Figma] username 입력 필요: ${userData.userId}`);
-        return {
-          success: false,
-          error: "username-required", // 특별한 에러 코드로 UI에서 처리
-        };
+        this.logger.warn(
+          `[FIGMA_USER_REGISTER] Username required for userId=${userData.userId}`,
+        );
+        return { success: false, error: "username-required" };
       }
 
-      // DB 연결 실패 시 목업 데이터 반환 (개발/테스트용)
       const mockUser = {
         id: 1,
-        name: `테스트 사용자 (${userData.username})`,
+        name: `Test User (${userData.username})`,
         username: userData.username,
         empNo: "EMP001",
         slackId: `U${userData.username.toUpperCase()}`,
@@ -83,43 +93,42 @@ export class FigmaController {
         {
           id: 1,
           deviceId: "device-001",
-          name: "개발 맥북",
+          name: "Dev MacBook",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
         {
           id: 2,
           deviceId: "device-002",
-          name: "테스트 아이폰",
+          name: "Test iPhone",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
       ];
 
-      // 실제 DB 조회 시도
+      // Attempt real DB lookup
       try {
-        // 1. 먼저 username으로 조회 시도
+        // 1. Look up by username first
         let user = await this.userRepository.findOne({
           where: { username: userData.username },
           relations: ["deviceInfoList"],
         });
 
-        // 2. username으로 못 찾으면 name(한글이름)으로 조회 시도
+        // 2. Fall back to looking up by display name
         if (!user) {
           this.logger.log(
-            `[Figma] username으로 조회 실패, name으로 재시도: ${userData.username}`,
+            `[FIGMA_USER_REGISTER] Username lookup failed, retrying by name: ${userData.username}`,
           );
           user = await this.userRepository.findOne({
-            where: { name: userData.username }, // username 필드에 한글 이름이 들어올 수 있음
+            where: { name: userData.username },
             relations: ["deviceInfoList"],
           });
         }
 
         if (user) {
           const devices = user.deviceInfoList || [];
-
           this.logger.log(
-            `[Figma] 사용자 정보 조회 성공: ${user.name} (${user.username}), 디바이스 수: ${devices.length}`,
+            `[FIGMA_USER_REGISTER] User found: ${user.name} (${user.username}), devices: ${devices.length}`,
           );
 
           return {
@@ -142,55 +151,62 @@ export class FigmaController {
           };
         }
       } catch (dbError) {
+        const dbMessage =
+          dbError instanceof Error ? dbError.message : String(dbError);
         this.logger.warn(
-          `[Figma] DB 조회 실패, 목업 데이터 반환: ${dbError.message}`,
+          `[FIGMA_USER_REGISTER] DB lookup failed, returning mock data: ${dbMessage}`,
         );
       }
 
-      // DB 조회 실패 시 목업 데이터 반환
-      this.logger.log(`[Figma] 목업 데이터 반환: ${mockUser.name}`);
-
-      return {
-        success: true,
-        user: mockUser,
-        devices: mockDevices,
-      };
+      // Return mock data when DB lookup fails
+      this.logger.log(
+        `[FIGMA_USER_REGISTER] Returning mock data for: ${mockUser.name}`,
+      );
+      return { success: true, user: mockUser, devices: mockDevices };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : JSON.stringify(error);
       this.logger.error(
-        `[Figma] 사용자 등록 실패: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+        `[FIGMA_USER_REGISTER] Registration failed: ${errorMessage}`,
       );
       return {
         success: false,
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
+        error: errorMessage,
       };
     }
   }
 
   /**
-   * 선택된 요소 정보 저장
+   * Saves selection information from the Figma plugin.
    */
   @Post("selection")
-  async saveSelection(@Body() selectionData: any) {
-    this.logger.log(`[Figma] 선택 정보 수신: ${JSON.stringify(selectionData)}`);
-    // TODO: 필요시 DB 저장 로직 추가
-    return { success: true, message: "선택 정보가 저장되었습니다" };
+  async saveSelection(
+    @Body() selectionData: Record<string, unknown>,
+  ): Promise<SelectionResponse> {
+    this.logger.log(
+      `[FIGMA_SELECTION] Received selection: ${JSON.stringify(selectionData)}`,
+    );
+    return { success: true, message: "Selection data saved successfully" };
   }
 
   /**
-   * 페이지 정보 저장
+   * Saves page information from the Figma plugin.
    */
   @Post("page")
-  async savePage(@Body() pageData: any) {
-    this.logger.log(`[Figma] 페이지 정보 수신: ${JSON.stringify(pageData)}`);
-    // TODO: 필요시 DB 저장 로직 추가
-    return { success: true, message: "페이지 정보가 저장되었습니다" };
+  async savePage(
+    @Body() pageData: Record<string, unknown>,
+  ): Promise<SelectionResponse> {
+    this.logger.log(
+      `[FIGMA_PAGE] Received page data: ${JSON.stringify(pageData)}`,
+    );
+    return { success: true, message: "Page data saved successfully" };
   }
 
   /**
-   * 연결 테스트 (Health Check)
+   * Health check endpoint for the Figma API.
    */
   @Get("health")
-  async healthCheck() {
+  async healthCheck(): Promise<HealthCheckResponse> {
     return {
       success: true,
       message: "Figma API is working",

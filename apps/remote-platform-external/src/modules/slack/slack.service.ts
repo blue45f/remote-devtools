@@ -4,29 +4,39 @@ import { convertRecordLink, createUserDataText } from "../../utils/utils";
 import { CreateTicketRequestBody } from "../jira/jira.service";
 import { UserData } from "../webview/webview.gateway";
 
+interface SlackMessage {
+  readonly text?: string;
+  readonly blocks: ReadonlyArray<Record<string, unknown>>;
+}
+
+interface SlackApiResponse {
+  readonly ok: boolean;
+  readonly error?: string;
+  readonly ts?: string;
+  readonly channel?: string;
+}
+
 @Injectable()
 export class SlackService {
   private readonly logger = new Logger(SlackService.name);
 
   /**
-   * 슬랙 사용자에게 티켓 생성 알림 DM 전송
-   * @param slackUserId 슬랙 사용자 ID (예: U1234567890)
-   * @param ticketData 티켓 정보
+   * Sends a Slack DM notifying the user that a Jira ticket was created.
    */
   public async sendCreateTicketDM({
     slackUserId,
-    ticketURL,
+    ticketUrl,
     requestBody,
     ticketKey,
   }: {
     slackUserId: string;
-    ticketURL: string;
+    ticketUrl: string;
     requestBody: CreateTicketRequestBody;
     ticketKey: string;
   }): Promise<void> {
     try {
       const message = this.buildTicketMessage({
-        ticketURL,
+        ticketUrl,
         requestBody,
         ticketKey,
       });
@@ -34,7 +44,7 @@ export class SlackService {
       this.logger.log(
         `[SLACK_TICKET_DM_START] ${JSON.stringify({
           slackUserId,
-          ticketURL,
+          ticketUrl,
           messageType: "ticket_notification",
         })}`,
       );
@@ -42,30 +52,26 @@ export class SlackService {
       await this.sendDirectMessage(slackUserId, message);
 
       this.logger.log(
-        `[SLACK_TICKET_DM_SUCCESS] ${JSON.stringify({
-          slackUserId,
-          ticketURL,
-        })}`,
+        `[SLACK_TICKET_DM_SUCCESS] ${JSON.stringify({ slackUserId, ticketUrl })}`,
       );
     } catch (error) {
       this.logger.error(
         `[SLACK_TICKET_DM_ERROR] ${JSON.stringify({
           slackUserId,
-          ticketURL,
+          ticketUrl,
           error:
             error instanceof Error
-              ? {
-                  message: error.message,
-                  stack: error.stack,
-                  name: error.name,
-                }
-              : JSON.stringify(error),
+              ? { message: error.message, stack: error.stack, name: error.name }
+              : String(error),
         })}`,
       );
       throw error;
     }
   }
 
+  /**
+   * Sends a Slack DM with the recording session link and user data.
+   */
   public async sendCreateRoomDM({
     slackUserId,
     userData,
@@ -106,26 +112,24 @@ export class SlackService {
           roomName,
           error:
             error instanceof Error
-              ? {
-                  message: error.message,
-                  stack: error.stack,
-                  name: error.name,
-                }
-              : JSON.stringify(error),
+              ? { message: error.message, stack: error.stack, name: error.name }
+              : String(error),
         })}`,
       );
       throw error;
     }
   }
 
+  /**
+   * Builds a Slack message containing a recording session link and user info.
+   */
   private buildCreateRoomMessage(
     userData: UserData,
     recordId: number,
     roomName: string,
-  ) {
+  ): SlackMessage {
     const userDataText = createUserDataText(userData);
-
-    const recoreLink = convertRecordLink(roomName, recordId);
+    const recordLink = convertRecordLink(roomName, recordId);
 
     return {
       blocks: [
@@ -133,14 +137,14 @@ export class SlackService {
           type: "header",
           text: {
             type: "plain_text",
-            text: "녹화 세션 & 유저 정보",
+            text: "Recording Session & User Info",
           },
         },
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `\`\`\`녹화 세션 링크: ${recoreLink}\n\n${userDataText}\`\`\``,
+            text: `\`\`\`Recording Session Link: ${recordLink}\n\n${userDataText}\`\`\``,
           },
         },
       ],
@@ -148,25 +152,25 @@ export class SlackService {
   }
 
   /**
-   * 티켓 생성 알림 메시지 구성
+   * Builds a Slack message notifying about a newly created Jira ticket.
    */
   private buildTicketMessage({
-    ticketURL,
+    ticketUrl,
     requestBody,
     ticketKey,
   }: {
-    ticketURL: string;
+    ticketUrl: string;
     requestBody: CreateTicketRequestBody;
     ticketKey: string;
-  }) {
+  }): SlackMessage {
     return {
-      text: `🎫 원격 지원 티켓이 생성되었습니다`,
+      text: "A remote support ticket has been created",
       blocks: [
         {
           type: "header",
           text: {
             type: "plain_text",
-            text: `🎫 티켓이 생성되었어요!`,
+            text: "Ticket Created",
           },
         },
         {
@@ -183,10 +187,10 @@ export class SlackService {
               type: "button",
               text: {
                 type: "plain_text",
-                text: "생성된 티켓 바로가기",
+                text: "Go to Ticket",
               },
               style: "primary",
-              url: ticketURL,
+              url: ticketUrl,
             },
           ],
         },
@@ -195,13 +199,12 @@ export class SlackService {
   }
 
   /**
-   * 슬랙 DM 전송
+   * Sends a direct message to a Slack user via the Slack API.
    */
   public async sendDirectMessage(
     slackUserId: string,
-    message: any,
+    message: SlackMessage,
   ): Promise<void> {
-    // 환경변수에서 토큰 가져오기 (fallback: 하드코딩된 토큰)
     const authToken = process.env.SLACK_BOT_TOKEN;
 
     if (!authToken) {
@@ -211,14 +214,11 @@ export class SlackService {
           timestamp: new Date().toISOString(),
         })}`,
       );
-      throw new Error("SLACK_BOT_TOKEN 환경변수가 설정되지 않음");
+      throw new Error("SLACK_BOT_TOKEN environment variable is not set");
     }
 
     try {
-      const requestBody = {
-        channel: slackUserId,
-        ...message,
-      };
+      const requestBody = { channel: slackUserId, ...message };
 
       this.logger.log(
         `[SLACK_API_REQUEST] ${JSON.stringify({
@@ -230,7 +230,6 @@ export class SlackService {
         })}`,
       );
 
-      // 실제 슬랙 API 호출 로직
       const response = await fetch("https://slack.com/api/chat.postMessage", {
         method: "POST",
         headers: {
@@ -240,7 +239,7 @@ export class SlackService {
         body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as SlackApiResponse;
 
       if (!result.ok) {
         this.logger.error(
@@ -252,7 +251,7 @@ export class SlackService {
             httpStatusText: response.statusText,
           })}`,
         );
-        throw new Error(`슬랙 API 오류: ${result.error}`);
+        throw new Error(`Slack API error: ${result.error}`);
       }
 
       this.logger.log(
@@ -269,12 +268,8 @@ export class SlackService {
           slackUserId,
           error:
             error instanceof Error
-              ? {
-                  message: error.message,
-                  stack: error.stack,
-                  name: error.name,
-                }
-              : JSON.stringify(error),
+              ? { message: error.message, stack: error.stack, name: error.name }
+              : String(error),
         })}`,
       );
       throw error;

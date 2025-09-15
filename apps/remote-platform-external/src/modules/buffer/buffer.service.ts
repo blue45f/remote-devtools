@@ -1,9 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 export interface BufferEvent {
-  method: string;
-  params: unknown;
-  timestamp: number;
+  readonly method: string;
+  readonly params: unknown;
+  readonly timestamp: number;
 }
 
 export interface SessionBuffer {
@@ -16,48 +16,51 @@ export interface SessionBuffer {
   events: BufferEvent[];
   createdAt: Date;
   lastUpdated: Date;
-  sessionStartTime: number; // 세션 시작 시간 (timestamp)
-  screenPreviewIndexes: Record<string, number>; // ScreenPreview.* 최신 이벤트 위치
+  sessionStartTime: number;
+  screenPreviewIndexes: Record<string, number>;
 }
 
 @Injectable()
 export class BufferService {
   private readonly logger = new Logger(BufferService.name);
 
-  // 세션별 버퍼 저장소 (메모리)
-  private buffers = new Map<string, SessionBuffer>();
+  /** In-memory buffer storage keyed by "room_recordId". */
+  private readonly buffers = new Map<string, SessionBuffer>();
 
-  // flush 진행 중인 버퍼 관리 (데이터 유실 방지)
-  private flushingBuffers = new Map<string, SessionBuffer>();
+  /** Buffers currently being flushed (prevents data loss during async operations). */
+  private readonly flushingBuffers = new Map<string, SessionBuffer>();
 
-  // 버퍼 설정
-  private readonly maxBufferSize = 50000; // 최대 50,000개 이벤트
-  private readonly flushThreshold = Infinity; // 자동 flush 비활성화 (주기적 flush만 사용)
-  private readonly maxBufferAge = 30 * 60 * 1000; // 30분
+  /** Maximum number of events a single buffer can hold. */
+  private readonly maxBufferSize = 50000;
 
-  // 자동 저장 간격 (밀리초) - 더 이상 사용하지 않음
-  // private readonly autoSaveInterval = 60 * 1000 // 1분마다
+  /** Event count threshold for auto-flush (disabled: uses periodic flush only). */
+  private readonly flushThreshold = Infinity;
+
+  /** Maximum age of a buffer before it is cleaned up (30 minutes). */
+  private readonly maxBufferAge = 30 * 60 * 1000;
 
   constructor() {
-    // 주기적으로 오래된 버퍼 정리
-    setInterval(() => this.cleanupOldBuffers(), 5 * 60 * 1000); // 5분마다
+    // Periodically clean up stale buffers every 5 minutes
+    setInterval(() => this.cleanupOldBuffers(), 5 * 60 * 1000);
 
-    // 주기적인 자동 저장 비활성화
-    // Note: 연결 해제 시에만 저장하도록 변경
     this.logger.log(
       "[BUFFER_SERVICE] Periodic auto-save disabled - only save on disconnect",
     );
   }
 
   /**
-   * 버퍼 키 생성
+   * Generates a buffer key from the room name and record ID.
    */
   private getBufferKey(room: string, recordId: number | null): string {
-    // recordId가 null인 경우 0으로 처리
     const safeRecordId = recordId ?? 0;
     return `${room}_${safeRecordId}`;
   }
 
+  /**
+   * Attempts to find a buffer by the current key format, falling back to
+   * a legacy key format if necessary. Migrates the buffer if found under
+   * a legacy key.
+   */
   private maybeMigrateLegacyKey(
     room: string,
     recordId: number | null,
@@ -76,7 +79,7 @@ export class BufferService {
         }
 
         this.logger.log(
-          `[BUFFER_SERVICE_MIGRATE_KEY] Migrating legacy buffer key ${legacyKey} → ${key} (device: ${preferredDeviceId ?? legacyBuffer.deviceId})`,
+          `[BUFFER_SERVICE_MIGRATE_KEY] Migrating legacy buffer key ${legacyKey} -> ${key} (device: ${preferredDeviceId ?? legacyBuffer.deviceId})`,
         );
 
         this.buffers.delete(legacyKey);
@@ -104,6 +107,10 @@ export class BufferService {
     );
   }
 
+  /**
+   * After removing an event at `removedIndex`, adjusts the
+   * ScreenPreview index map so all subsequent indexes shift down by 1.
+   */
   private adjustScreenPreviewIndexesAfterRemoval(
     buffer: SessionBuffer,
     removedIndex: number,
@@ -124,6 +131,10 @@ export class BufferService {
     }
   }
 
+  /**
+   * After shifting the first event off the ring buffer, adjusts all
+   * ScreenPreview indexes down by 1 (removing any that become negative).
+   */
   private adjustScreenPreviewIndexesAfterShift(buffer: SessionBuffer): void {
     for (const [method, index] of Object.entries(buffer.screenPreviewIndexes)) {
       if (index === 0) {
@@ -134,6 +145,9 @@ export class BufferService {
     }
   }
 
+  /**
+   * Fully rebuilds the ScreenPreview index map by scanning all events.
+   */
   private rebuildScreenPreviewIndexes(buffer: SessionBuffer): void {
     buffer.screenPreviewIndexes = {};
 
@@ -145,7 +159,11 @@ export class BufferService {
   }
 
   /**
-   * 이벤트 추가
+   * Adds an event to the buffer for the given session.
+   * For ScreenPreview events, the previous event with the same method
+   * is replaced rather than appended.
+   *
+   * Returns whether the buffer should be flushed and the current event count.
    */
   public addEvent(
     room: string,
@@ -157,7 +175,7 @@ export class BufferService {
     sessionStartTime: number | undefined,
     event: BufferEvent,
   ): { shouldFlush: boolean; eventCount: number } {
-    // Record/Live 방은 버퍼링 안함
+    // Record/Live rooms are not buffered
     if (room.startsWith("Record-") || room.startsWith("Live-")) {
       this.logger.log(
         `[BUFFER_SERVICE_SKIP] Ignoring buffer event for ${room}`,
@@ -165,7 +183,6 @@ export class BufferService {
       return { shouldFlush: false, eventCount: 0 };
     }
 
-    // recordId가 null인 경우 0으로 처리
     const { key, buffer: resolvedBuffer } = this.maybeMigrateLegacyKey(
       room,
       recordId,
@@ -175,7 +192,6 @@ export class BufferService {
 
     let buffer = resolvedBuffer;
     if (!buffer) {
-      // 새로운 버퍼 생성
       const now = new Date();
       const sessionStartMs = sessionStartTime ?? now.getTime();
       buffer = {
@@ -201,16 +217,17 @@ export class BufferService {
 
     if (buffer.deviceId !== deviceId) {
       this.logger.log(
-        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} → ${deviceId} for room ${room}`,
+        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} -> ${deviceId} for room ${room}`,
       );
       buffer.deviceId = deviceId;
     }
 
-    const isScreenPreviewEvent = this.isScreenPreviewEvent(event);
-    const screenPreviewMethod = isScreenPreviewEvent ? event.method : null;
+    const isScreenPreview = this.isScreenPreviewEvent(event);
+    const screenPreviewMethod = isScreenPreview ? event.method : null;
     let newScreenPreviewIndex: number | null = null;
 
-    if (isScreenPreviewEvent && screenPreviewMethod) {
+    // Replace existing ScreenPreview event with the same method
+    if (isScreenPreview && screenPreviewMethod) {
       const existingIndex = buffer.screenPreviewIndexes[screenPreviewMethod];
       if (
         typeof existingIndex === "number" &&
@@ -229,18 +246,18 @@ export class BufferService {
     }
 
     buffer.events.push(event);
-    if (isScreenPreviewEvent) {
+    if (isScreenPreview) {
       newScreenPreviewIndex = buffer.events.length - 1;
     }
 
     buffer.lastUpdated = new Date();
-    buffer.url = url; // 최신 URL로 업데이트
+    buffer.url = url;
     buffer.userAgent = userAgent;
     if (typeof title === "string") {
       buffer.title = title;
     }
 
-    // 오래된 이벤트 제거 (링 버퍼)
+    // Evict the oldest event when the ring buffer is full
     if (buffer.events.length > this.maxBufferSize) {
       buffer.events.shift();
       this.adjustScreenPreviewIndexesAfterShift(buffer);
@@ -249,7 +266,7 @@ export class BufferService {
       }
     }
 
-    if (isScreenPreviewEvent && screenPreviewMethod) {
+    if (isScreenPreview && screenPreviewMethod) {
       if (newScreenPreviewIndex !== null && newScreenPreviewIndex >= 0) {
         buffer.screenPreviewIndexes[screenPreviewMethod] =
           newScreenPreviewIndex;
@@ -258,7 +275,6 @@ export class BufferService {
       }
     }
 
-    // 플러시 필요 여부 확인
     const shouldFlush = buffer.events.length >= this.flushThreshold;
 
     if (shouldFlush) {
@@ -271,7 +287,8 @@ export class BufferService {
   }
 
   /**
-   * 버퍼 강제 flush (이벤트 수 관계없이)
+   * Force-flushes a buffer regardless of event count.
+   * Returns null if the buffer is empty or does not exist.
    */
   public flushBufferForce(
     room: string,
@@ -288,34 +305,28 @@ export class BufferService {
       return null;
     }
 
-    // 이벤트 수 관계없이 강제 flush
     this.setFlushingBuffer(key, buffer);
     this.buffers.delete(key);
 
     if (deviceId && buffer.deviceId !== deviceId) {
       this.logger.log(
-        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} → ${deviceId} during force flush (room: ${room})`,
+        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} -> ${deviceId} during force flush (room: ${room})`,
       );
       buffer.deviceId = deviceId;
     }
 
-    const flushedBuffer: SessionBuffer = {
-      ...buffer,
-      events: [...buffer.events], // 이벤트 배열도 복사
-    };
-
-    return flushedBuffer;
+    return { ...buffer, events: [...buffer.events] };
   }
 
   /**
-   * 버퍼 가져오기 및 초기화
+   * Flushes (retrieves and clears) the buffer for a given session.
+   * The buffer is moved to flushing state to prevent data loss.
    */
   public flushBuffer(
     room: string,
     recordId: number | null,
     deviceId: string,
   ): SessionBuffer | null {
-    // recordId가 null인 경우 0으로 처리
     const { key, buffer } = this.maybeMigrateLegacyKey(
       room,
       recordId,
@@ -333,23 +344,19 @@ export class BufferService {
       return null;
     }
 
-    // 현재 버퍼를 flushingBuffers로 이동 (데이터 유실 방지)
     this.setFlushingBuffer(key, buffer);
-
-    // 원본 버퍼는 Map에서 삭제 (새로운 이벤트는 새 버퍼에 저장됨)
     this.buffers.delete(key);
 
     if (deviceId && buffer.deviceId !== deviceId) {
       this.logger.log(
-        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} → ${deviceId} during flush (room: ${room})`,
+        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${buffer.deviceId} -> ${deviceId} during flush (room: ${room})`,
       );
       buffer.deviceId = deviceId;
     }
 
-    // flush할 버퍼 복사본 생성
-    const flushedBuffer = {
+    const flushedBuffer: SessionBuffer = {
       ...buffer,
-      events: [...buffer.events], // 이벤트 배열도 복사
+      events: [...buffer.events],
     };
 
     this.logger.log(
@@ -357,8 +364,7 @@ export class BufferService {
         `firstEvent: ${flushedBuffer.events[0]?.method}, lastEvent: ${flushedBuffer.events[flushedBuffer.events.length - 1]?.method}`,
     );
 
-    // flush 완료 후 flushingBuffers에서도 제거
-    // 실제로는 S3 업로드 완료 후에 제거해야 하지만, 현재는 동기적으로 처리
+    // Remove from flushing state asynchronously
     setTimeout(() => {
       this.deleteFlushingBuffer(key);
     }, 0);
@@ -367,13 +373,12 @@ export class BufferService {
   }
 
   /**
-   * 특정 세션의 모든 버퍼 가져오기
+   * Retrieves all buffers belonging to a specific room and record.
    */
   public getSessionBuffers(
     room: string,
     recordId: number | null,
   ): SessionBuffer[] {
-    // recordId가 null인 경우 0으로 처리
     const safeRecordId = recordId ?? 0;
     const buffers: SessionBuffer[] = [];
 
@@ -389,13 +394,12 @@ export class BufferService {
   }
 
   /**
-   * 오래된 버퍼 정리
+   * Removes buffers that have not been updated within the maximum age threshold.
    */
   private cleanupOldBuffers(): void {
     const now = Date.now();
     let cleanedCount = 0;
 
-    // 일반 버퍼 정리
     for (const [key, buffer] of this.buffers) {
       const age = now - buffer.lastUpdated.getTime();
       if (age > this.maxBufferAge) {
@@ -404,7 +408,6 @@ export class BufferService {
       }
     }
 
-    // flush 중인 버퍼도 정리 (너무 오래 걸리는 경우)
     for (const [key, buffer] of this.flushingBuffers) {
       const age = now - buffer.lastUpdated.getTime();
       if (age > this.maxBufferAge) {
@@ -419,20 +422,18 @@ export class BufferService {
   }
 
   /**
-   * 특정 세션의 모든 버퍼 삭제 (flush하지 않고 단순 삭제)
+   * Deletes all buffers for a given session without flushing.
    */
   public clearSessionBuffers(room: string, recordId: number | null): void {
     const safeRecordId = recordId ?? 0;
     const keysToDelete: string[] = [];
 
-    // 일반 버퍼에서 삭제
     for (const [key, buffer] of this.buffers) {
       if (buffer.room === room && buffer.recordId === safeRecordId) {
         keysToDelete.push(key);
       }
     }
 
-    // flush 중인 버퍼에서도 삭제
     for (const [key, buffer] of this.flushingBuffers) {
       if (buffer.room === room && buffer.recordId === safeRecordId) {
         keysToDelete.push(key);
@@ -450,7 +451,7 @@ export class BufferService {
   }
 
   /**
-   * 버퍼 상태 조회
+   * Returns aggregate statistics about all active buffers.
    */
   public getBufferStats(): {
     totalBuffers: number;
@@ -474,7 +475,8 @@ export class BufferService {
   }
 
   /**
-   * 이전 세션의 버퍼 데이터를 현재 세션에 추가 (세션 연속성)
+   * Loads events from a previous session for the same device/room/record,
+   * enabling session continuity.
    */
   public loadPreviousSessionData(
     deviceId: string,
@@ -491,8 +493,6 @@ export class BufferService {
       this.logger.log(
         `[LOAD_PREVIOUS_SESSION] Found ${previousBuffer.events.length} events from previous session for device: ${deviceId}`,
       );
-
-      // 이전 세션 데이터 복사본 반환 (원본은 유지)
       return [...previousBuffer.events];
     }
 
@@ -503,7 +503,7 @@ export class BufferService {
   }
 
   /**
-   * 특정 디바이스의 모든 세션 버퍼 데이터 조회
+   * Retrieves all session buffers for a specific device.
    */
   public getDeviceSessionBuffers(deviceId: string): SessionBuffer[] {
     const deviceBuffers: SessionBuffer[] = [];
@@ -514,14 +514,14 @@ export class BufferService {
       }
     }
 
-    // 생성 시간순으로 정렬
     return deviceBuffers.sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
   }
 
   /**
-   * 세션 연속성 확인 (같은 디바이스, 같은 URL 패턴)
+   * Checks whether the given device has a recent session on the same domain,
+   * indicating a session continuation.
    */
   public isSessionContinuation(
     deviceId: string,
@@ -534,10 +534,8 @@ export class BufferService {
       return false;
     }
 
-    // 가장 최근 세션 확인
     const latestBuffer = deviceBuffers[deviceBuffers.length - 1];
 
-    // URL 패턴 비교 (도메인과 경로가 유사한지)
     const currentDomain = new URL(url).hostname;
     const previousDomain = new URL(latestBuffer.url).hostname;
 
@@ -545,7 +543,8 @@ export class BufferService {
   }
 
   /**
-   * 세션 병합 (이전 세션 데이터를 현재 세션에 통합)
+   * Merges events from a previous session into the current session buffer,
+   * maintaining chronological order by timestamp.
    */
   public mergeSessionData(
     currentRoom: string,
@@ -564,7 +563,6 @@ export class BufferService {
     let currentBuffer = resolvedBuffer;
 
     if (!currentBuffer) {
-      // 현재 버퍼가 없으면 새로 생성
       const now = new Date();
       currentBuffer = {
         room: currentRoom,
@@ -583,15 +581,13 @@ export class BufferService {
 
     if (currentBuffer.deviceId !== deviceId) {
       this.logger.log(
-        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${currentBuffer.deviceId} → ${deviceId} while merging session (room: ${currentRoom})`,
+        `[BUFFER_SERVICE_DEVICE_UPDATE] Updating deviceId ${currentBuffer.deviceId} -> ${deviceId} while merging session (room: ${currentRoom})`,
       );
       currentBuffer.deviceId = deviceId;
     }
 
-    // 이전 이벤트들을 현재 버퍼 앞에 추가 (시간순 정렬)
+    // Prepend previous events and sort by timestamp
     const mergedEvents = [...previousEvents, ...currentBuffer.events];
-
-    // timestamp 기준으로 정렬
     mergedEvents.sort((a, b) => a.timestamp - b.timestamp);
 
     currentBuffer.events = mergedEvents;

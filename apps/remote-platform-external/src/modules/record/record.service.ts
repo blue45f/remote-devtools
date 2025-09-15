@@ -2,27 +2,35 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Record } from "@remote-platform/entity";
+import { RecordEntity } from "@remote-platform/entity";
 
 @Injectable()
 export class RecordService {
-  public async create(data: Partial<Record>): Promise<Record> {
+  constructor(
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
+  ) {}
+
+  public async create(data: Partial<RecordEntity>): Promise<RecordEntity> {
     const record = this.recordRepository.create(data);
     return this.recordRepository.save(record);
   }
 
-  public async findOne(id: number): Promise<Record> {
+  public async findOne(id: number): Promise<RecordEntity> {
     return this.recordRepository.findOne({ where: { id } });
   }
 
-  public async findAll(): Promise<Record[]> {
+  public async findAll(): Promise<RecordEntity[]> {
     return this.recordRepository.find();
   }
 
+  /**
+   * Finds all previous records for the given device, ordered by most recent first.
+   */
   public async findPreviousByDeviceId(
     deviceId: string,
     currentRecordId: number,
-  ): Promise<Record[]> {
+  ): Promise<RecordEntity[]> {
     return this.recordRepository
       .createQueryBuilder("record")
       .where("record.device_id = :deviceId", { deviceId })
@@ -31,9 +39,12 @@ export class RecordService {
       .getMany();
   }
 
-  public async findNetworks(id: number): Promise<Record> {
+  /**
+   * Finds a single record with its associated network entries.
+   */
+  public async findNetworks(id: number): Promise<RecordEntity> {
     return this.recordRepository.findOne({
-      where: { id: id },
+      where: { id },
       relations: ["networks"],
     });
   }
@@ -41,9 +52,4 @@ export class RecordService {
   public async updateDuration(id: number, duration: number): Promise<void> {
     await this.recordRepository.update(id, { duration });
   }
-
-  constructor(
-    @InjectRepository(Record)
-    private recordRepository: Repository<Record>,
-  ) {}
 }

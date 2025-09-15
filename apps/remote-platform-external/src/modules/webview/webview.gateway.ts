@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
@@ -12,7 +12,7 @@ import {
   WebSocketServer,
 } from "@nestjs/websockets";
 import { Repository } from "typeorm";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import * as WebSocket from "ws";
 import { Server } from "ws";
 
@@ -30,12 +30,16 @@ import {
   TicketLogEntity,
 } from "@remote-platform/entity";
 
-import { getDefaultCommonInfo } from "../../utils/commonInfo";
+import { getDefaultCommonInfo } from "../../utils/common-info";
 import { BufferService, type BufferEvent } from "../buffer/buffer.service";
 import { JiraService } from "../jira/jira.service";
 import { S3Service } from "../s3/s3.service";
 import { SlackService } from "../slack/slack.service";
 import { UserInfoService } from "../user-info/user-info.service";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type RoomData = {
   client: WebSocket;
@@ -59,24 +63,32 @@ type BufferRoomInfo = {
 
 type LastBufferInfo = BufferRoomInfo & { room: string };
 
+// ---------------------------------------------------------------------------
+// Gateway
+// ---------------------------------------------------------------------------
+
 @WebSocketGateway()
 export class WebviewGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(WebviewGateway.name);
-  private rooms: Map<string, RoomData> = new Map();
-  private clientMap: Map<WebSocket, string> = new Map();
-  private devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
-  private lastEventTimestamp = 0; // rrweb 이벤트 타임스탬프 추적용
 
-  // Buffer 모드용 room 관리
-  private bufferRooms: Map<string, BufferRoomInfo> = new Map();
-  // deviceId → room 매핑 (빠른 조회용)
-  private deviceToRoom: Map<string, string> = new Map();
-  // 최근 버퍼 정보 보존 (disconnect 이후 Beacon 용)
-  private lastBufferInfoByDevice: Map<string, LastBufferInfo> = new Map();
-  // 화면 이탈로 인해 저장된 버퍼 room 추적 (재진입 시 초기화)
-  private visibilityExitSavedRooms: Set<string> = new Set();
+  private readonly rooms: Map<string, RoomData> = new Map();
+  private readonly clientMap: Map<WebSocket, string> = new Map();
+  private readonly devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
+
+  /** Tracks rrweb event timestamps for ordering. */
+  private lastEventTimestamp = 0;
+
+  // Buffer mode room management
+  private readonly bufferRooms: Map<string, BufferRoomInfo> = new Map();
+  /** Maps deviceId to its current room for fast lookup. */
+  private readonly deviceToRoom: Map<string, string> = new Map();
+  /** Preserves the most recent buffer info per device (survives disconnect for Beacon use). */
+  private readonly lastBufferInfoByDevice: Map<string, LastBufferInfo> =
+    new Map();
+  /** Tracks rooms already saved due to visibility change (prevents duplicate saves on re-entry). */
+  private readonly visibilityExitSavedRooms: Set<string> = new Set();
 
   @WebSocketServer() public server: Server;
 
@@ -100,9 +112,17 @@ export class WebviewGateway
     private readonly ticketLabelRepository: Repository<TicketLabelEntity>,
   ) {}
 
+  // -------------------------------------------------------------------------
+  // Helpers -- sending messages
+  // -------------------------------------------------------------------------
+
   private sendMessage(socket: WebSocket, data: any): void {
     socket.send(JSON.stringify(data));
   }
+
+  // -------------------------------------------------------------------------
+  // Room management
+  // -------------------------------------------------------------------------
 
   private async createRoom({
     client,
@@ -120,6 +140,7 @@ export class WebviewGateway
     referrer?: string;
   }): Promise<number | null> {
     let recordId: number | null = null;
+
     if (recordMode) {
       const { id } = await this.recordService.create({
         name: roomName,
@@ -130,52 +151,13 @@ export class WebviewGateway
       });
       recordId = id;
 
-      // NOTE: 중요! roomCreated 메시지를 보내야 클라이언트에서 socket 을 할당할 수 있음. 그 뒤에 protocol 메시지들을 보내야 순서가 보장됨 (중요!)
+      // IMPORTANT: The roomCreated message must be sent first so the client
+      // can assign the socket. Protocol messages must follow in order.
       this.sendMessage(client, { event: "roomCreated", roomName, recordId });
 
-      this.sendMessage(client, {
-        event: "protocol",
-        message: {
-          id: MSG_ID.NETWORK.ENABLE,
-          method: "Network.enable",
-          params: { maxPostDataSize: 65536 },
-        },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-        method: "Network.setAttachDebugStack",
-        params: { enabled: true },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-        method: "Network.clearAcceptedEncodingsOverride",
-        params: {},
-      });
-
-      // runtime
-      this.sendMessage(client, {
-        event: "protocol",
-        message: {
-          id: MSG_ID.Runtime.enable,
-          method: "Runtime.enable",
-          params: {},
-        },
-      });
-
-      // page
-      this.sendMessage(client, {
-        event: "protocol",
-        message: { id: MSG_ID.Page.enable, method: "Page.enable", params: {} },
-      });
-      this.sendMessage(client, {
-        event: "protocol",
-        message: {
-          id: MSG_ID.Page.getResourceTree,
-          method: "Page.getResourceTree",
-          params: {},
-        },
-      });
+      this.sendRecordModeInitMessages(client);
     }
+
     this.rooms.set(roomName, {
       client,
       devtools: new Map(),
@@ -184,23 +166,12 @@ export class WebviewGateway
     });
     this.clientMap.set(client, roomName);
 
-    // dom
-    this.sendMessage(client, {
-      event: "protocol",
-      message: { id: MSG_ID.DOM.ENABLE, method: "DOM.enable", params: {} },
-    });
-    this.sendMessage(client, {
-      event: "protocol",
-      message: {
-        id: MSG_ID.Screen.startPreview,
-        method: "ScreenPreview.startPreview",
-        params: {},
-      },
-    });
+    // Initialise DOM and Screen Preview domains
+    this.sendDomAndScreenInitMessages(client);
 
-    // 세션 시작 이벤트 저장
+    // Persist session start event
     if (recordId) {
-      const timestamp = Date.now() * 1000000; // 밀리초를 나노초로 변환
+      const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
       await this.screenService.upsert({
         recordId,
         protocol: {
@@ -212,12 +183,110 @@ export class WebviewGateway
         },
         timestamp,
         type: null,
-        event_type: "session_start",
+        eventType: "session_start",
       });
     }
 
     return recordId;
   }
+
+  // -------------------------------------------------------------------------
+  // Helpers -- CDP domain initialisation messages
+  // -------------------------------------------------------------------------
+
+  /** Sends the standard set of Network / Runtime / Page enable messages (wrapped in event: "protocol"). */
+  private sendRecordModeInitMessages(client: WebSocket): void {
+    this.sendMessage(client, {
+      event: "protocol",
+      message: {
+        id: MSG_ID.NETWORK.ENABLE,
+        method: "Network.enable",
+        params: { maxPostDataSize: 65536 },
+      },
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
+      method: "Network.setAttachDebugStack",
+      params: { enabled: true },
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
+      method: "Network.clearAcceptedEncodingsOverride",
+      params: {},
+    });
+
+    // Runtime domain
+    this.sendMessage(client, {
+      event: "protocol",
+      message: {
+        id: MSG_ID.RUNTIME.ENABLE,
+        method: "Runtime.enable",
+        params: {},
+      },
+    });
+
+    // Page domain
+    this.sendMessage(client, {
+      event: "protocol",
+      message: { id: MSG_ID.PAGE.ENABLE, method: "Page.enable", params: {} },
+    });
+    this.sendMessage(client, {
+      event: "protocol",
+      message: {
+        id: MSG_ID.PAGE.GET_RESOURCE_TREE,
+        method: "Page.getResourceTree",
+        params: {},
+      },
+    });
+  }
+
+  /** Sends DOM.enable and ScreenPreview.startPreview messages (wrapped in event: "protocol"). */
+  private sendDomAndScreenInitMessages(client: WebSocket): void {
+    this.sendMessage(client, {
+      event: "protocol",
+      message: { id: MSG_ID.DOM.ENABLE, method: "DOM.enable", params: {} },
+    });
+    this.sendMessage(client, {
+      event: "protocol",
+      message: {
+        id: MSG_ID.SCREEN.START_PREVIEW,
+        method: "ScreenPreview.startPreview",
+        params: {},
+      },
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // rrweb event type mapping
+  // -------------------------------------------------------------------------
+
+  /**
+   * Maps an rrweb numeric event type to its string label.
+   * 0=DomContentLoaded, 1=Load, 2=FullSnapshot, 3=IncrementalSnapshot,
+   * 4=Meta, 5=Custom, others=rrweb_{type}.
+   */
+  private mapRrwebEventType(rrwebType: number): string {
+    switch (rrwebType) {
+      case 0:
+        return "dom_loaded";
+      case 1:
+        return "page_loaded";
+      case 2:
+        return "full_snapshot";
+      case 3:
+        return "incremental_snapshot";
+      case 4:
+        return "meta";
+      case 5:
+        return "custom";
+      default:
+        return `rrweb_${rrwebType}`;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Create Room
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("createRoom")
   public async handleCreateRoom(
@@ -226,22 +295,21 @@ export class WebviewGateway
   ): Promise<void> {
     const { recordMode = false, userData } = data;
 
-    // commonInfo가 없으면 디폴트값 세팅
+    // Ensure commonInfo defaults are present
     if (!userData.commonInfo) {
       userData.commonInfo = getDefaultCommonInfo();
     }
 
-    // userData의 URL과 userAgent를 commonInfo에 반영
+    // Reflect userData URL and userAgent into commonInfo
     userData.commonInfo.URL = userData.URL || userData.commonInfo.URL;
     userData.commonInfo.userAgent =
       userData.userAgent || userData.commonInfo.userAgent;
 
     const { commonInfo } = userData;
-    const roomName = `${recordMode ? "Record-" : "Live-"}${uuidv4()}`;
+    const roomName = `${recordMode ? "Record-" : "Live-"}${randomUUID()}`;
 
-    // Record 모드가 아닌 경우에만 bufferRooms에 추가
+    // For non-Record mode, register the buffer room
     if (!recordMode) {
-      // Room 정보 저장 (버퍼 flush 시 사용)
       const bufferInfo: BufferRoomInfo = {
         deviceId: commonInfo.device.deviceId,
         url: commonInfo.URL,
@@ -258,7 +326,7 @@ export class WebviewGateway
         title: bufferInfo.title,
         sessionStartTime: bufferInfo.sessionStartTime,
       });
-      // 새 버퍼 room 생성 시 화면 이탈 저장 상태 초기화 (새 세션 시작)
+      // Reset visibility-exit save state for the new session
       this.visibilityExitSavedRooms.delete(roomName);
     }
 
@@ -282,9 +350,9 @@ export class WebviewGateway
       referrer: userData.URL?.split("?")[0],
     });
 
-    // Slack DM 전송
+    // Send Slack DM when creating a record room
     if (recordMode && recordId) {
-      // deviceId가 'unknown-'로 시작하지 않는 경우에만 사용자 정보 조회 및 Slack DM 전송
+      // Only look up user info when deviceId is not the default placeholder
       if (!commonInfo.device.deviceId.startsWith("unknown-")) {
         try {
           const userInfo = await this.userInfoService.getUserInfoByDeviceId(
@@ -328,7 +396,7 @@ export class WebviewGateway
       }
     }
 
-    // 버퍼에서 Screen Preview를 DB로 전송 (녹화 세션 만들기 시)
+    // Transfer buffered data to the new record (for recording session creation)
     if (recordMode && recordId) {
       await this.transferBufferedDataToRecord(
         commonInfo.device.deviceId,
@@ -345,6 +413,10 @@ export class WebviewGateway
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Connection / disconnection
+  // -------------------------------------------------------------------------
+
   public handleConnection(client: WebSocket): void {
     this.logger.log(
       `[CLIENT_CONNECTED] ${JSON.stringify({
@@ -353,11 +425,10 @@ export class WebviewGateway
       })}`,
     );
 
-    // Buffer 모드 클라이언트를 위한 임시 맵핑
-    // 실제 room이 생성되기 전까지 'pending' 상태로 관리
+    // Register the client in a pending state until a room is created
     this.clientMap.set(client, "pending");
 
-    // 클라이언트 에러 핸들링
+    // Client error handling
     client.on("error", (error) => {
       this.logger.error(
         `[CLIENT_ERROR] ${JSON.stringify({
@@ -368,7 +439,7 @@ export class WebviewGateway
       );
     });
 
-    // 클라이언트 연결 종료 시 이유 로깅
+    // Log close reason
     client.on("close", (code, reason) => {
       this.logger.log(
         `[CLIENT_CLOSE] ${JSON.stringify({
@@ -380,6 +451,10 @@ export class WebviewGateway
       );
     });
   }
+
+  // -------------------------------------------------------------------------
+  // Message to DevTools
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("messageToDevtools")
   public handleMessageToDevtools(
@@ -403,8 +478,9 @@ export class WebviewGateway
         typeof data.message === "string"
           ? JSON.parse(data.message)
           : data.message;
+
       if (this.domService.isEnableDomResponseMessage(protocol.id)) {
-        // dom이 enable되면 dom 데이터를 요청함
+        // DOM is enabled -- request DOM data
         this.sendMessage(client, {
           event: "protocol",
           message: {
@@ -414,7 +490,7 @@ export class WebviewGateway
           },
         });
       } else if (this.domService.isGetDomResponseMessage(protocol.id)) {
-        // dom 데이터를 받으면 DB에 저장
+        // DOM data received -- persist to DB
         const [seconds, nanoseconds] = process.hrtime();
         void this.domService.upsert({
           recordId: roomData.recordId,
@@ -426,6 +502,10 @@ export class WebviewGateway
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Protocol to all DevTools
+  // -------------------------------------------------------------------------
+
   @SubscribeMessage("protocolToAllDevtools")
   public async handleProtocolToAllDevtools(
     @MessageBody() data: { room: string; message: string },
@@ -433,270 +513,290 @@ export class WebviewGateway
   ): Promise<void> {
     const protocol = JSON.parse(data.message);
     const roomData = this.rooms.get(data.room);
-    if (roomData) {
-      roomData.devtools.forEach((devtools) => devtools.send(data.message));
-      if (roomData.recordId) {
-        const timestamp = Date.now() * 1000000; // 밀리초를 나노초로 변환
-        // TODO: 도메인별로 메시지를 구분할 수 있도록 수정 필요
-        if (protocol.params.requestId) {
-          await this.networkService.create({
-            recordId: roomData.recordId,
-            protocol,
-            requestId: protocol.params.requestId,
-            timestamp,
-          });
-        }
 
-        if (protocol.method.startsWith("DOM.updated")) {
-          await this.domService.upsert({
-            recordId: roomData.recordId,
-            protocol: { root: protocol.params },
-            timestamp,
-            type: "entireDom",
-          });
-        }
-
-        if (protocol.method.startsWith("Runtime.")) {
-          await this.runtimeService.create({
-            recordId: roomData.recordId,
-            protocol,
-            timestamp,
-          });
-        }
-
-        // ScreenPreview는 실시간 미러링용 (마지막 화면만 유지)
-        if (protocol.method.startsWith("ScreenPreview.captured")) {
-          // 이벤트 타입 결정 (Internal과 동일한 로직)
-          let eventType = "incremental_snapshot";
-          if (protocol.params?.isFirstSnapshot) {
-            eventType = "full_snapshot";
-          }
-
-          await this.screenService.upsert({
-            recordId: roomData.recordId,
-            protocol,
-            timestamp,
-            type: "screenPreview", // 실시간 미러링용
-            event_type: eventType as "full_snapshot" | "incremental_snapshot", // 타입 캐스팅
-          });
-        }
-
-        // rrweb 기반 SessionReplay 이벤트 처리
-        if (protocol.method.startsWith("SessionReplay.")) {
-          let eventType = null;
-
-          // rrweb 단일 이벤트 처리
-          if (protocol.method === "SessionReplay.rrwebEvent") {
-            const event = protocol.params?.event;
-            if (event) {
-              const sessionTimestamp =
-                BigInt(event.timestamp || Date.now()) * BigInt(1000000);
-
-              // rrweb 이벤트 타입 매핑
-              const rrwebEventType = event.type;
-              switch (rrwebEventType) {
-                case 0: // DomContentLoaded
-                  eventType = "dom_loaded";
-                  break;
-                case 1: // Load
-                  eventType = "page_loaded";
-                  break;
-                case 2: // FullSnapshot
-                  eventType = "full_snapshot";
-                  break;
-                case 3: // IncrementalSnapshot
-                  eventType = "incremental_snapshot";
-                  break;
-                case 4: // Meta
-                  eventType = "meta";
-                  break;
-                case 5: // Custom
-                  eventType = "custom";
-                  break;
-                default:
-                  eventType = `rrweb_${rrwebEventType}`;
-              }
-
-              await this.screenService.upsert({
-                recordId: roomData.recordId,
-                protocol,
-                timestamp: sessionTimestamp.toString(),
-                type: null,
-                event_type: eventType,
-                sequence: event.data?.sequence || null,
-              } as any);
-
-              // 버퍼에 이벤트 추가 (Buffer 모드만)
-              if (roomData.recordId && data.room.startsWith("Buffer-")) {
-                // Buffer room 정보에서 가져오기
-                const bufferInfo = this.bufferRooms.get(data.room);
-                const deviceId = bufferInfo?.deviceId || "unknown-device";
-                const url = bufferInfo?.url || "unknown-url";
-                const userAgent = bufferInfo?.userAgent || "unknown-useragent";
-                const title = bufferInfo?.title;
-                const sessionStartTime = bufferInfo?.sessionStartTime;
-
-                const bufferEvent = {
-                  method: protocol.method,
-                  params: protocol.params,
-                  timestamp: Number(sessionTimestamp / BigInt(1000000)), // 나노초를 밀리초로 변환
-                };
-
-                this.bufferService.addEvent(
-                  data.room,
-                  roomData.recordId,
-                  deviceId,
-                  url,
-                  userAgent,
-                  title,
-                  sessionStartTime,
-                  bufferEvent,
-                );
-
-                // 자동 flush 제거 - 주기적 flush만 사용
-              }
-            }
-          }
-          // rrweb 배치 이벤트 처리
-          else if (protocol.method === "SessionReplay.rrwebEvents") {
-            const events = protocol.params?.events || [];
-            console.log(`[SessionReplay] 배치 이벤트 저장: ${events.length}개`);
-
-            // 버퍼용 공통 정보 가져오기
-            const bufferInfo = this.bufferRooms.get(data.room);
-            const deviceId = bufferInfo?.deviceId || "unknown-device";
-            const url = bufferInfo?.url || "unknown-url";
-            const userAgent = bufferInfo?.userAgent || "unknown-useragent";
-            const title = bufferInfo?.title;
-            const sessionStartTime = bufferInfo?.sessionStartTime;
-
-            for (const event of events) {
-              const sessionTimestamp =
-                BigInt(event.timestamp || Date.now()) * BigInt(1000000);
-
-              // rrweb 이벤트 타입 매핑
-              const rrwebEventType = event.type;
-              let eventType = null;
-              switch (rrwebEventType) {
-                case 0:
-                  eventType = "dom_loaded";
-                  break;
-                case 1:
-                  eventType = "page_loaded";
-                  break;
-                case 2:
-                  eventType = "full_snapshot";
-                  break;
-                case 3:
-                  eventType = "incremental_snapshot";
-                  break;
-                case 4:
-                  eventType = "meta";
-                  break;
-                case 5:
-                  eventType = "custom";
-                  break;
-                default:
-                  eventType = `rrweb_${rrwebEventType}`;
-              }
-
-              await this.screenService.upsert({
-                recordId: roomData.recordId,
-                protocol: {
-                  method: "SessionReplay.rrwebEvent",
-                  params: { event },
-                },
-                timestamp: sessionTimestamp.toString(),
-                type: null,
-                event_type: eventType,
-                sequence: event.data?.sequence || null,
-              } as any);
-
-              // 버퍼에 이벤트 추가 (Buffer 모드만)
-              if (roomData.recordId && data.room.startsWith("Buffer-")) {
-                const bufferEvent = {
-                  method: "SessionReplay.rrwebEvent",
-                  params: { event },
-                  timestamp: Number(sessionTimestamp / BigInt(1000000)), // 나노초를 밀리초로 변환
-                };
-
-                this.bufferService.addEvent(
-                  data.room,
-                  roomData.recordId,
-                  deviceId,
-                  url,
-                  userAgent,
-                  title,
-                  sessionStartTime,
-                  bufferEvent,
-                );
-
-                // 자동 flush 제거 - 주기적 flush만 사용
-              }
-            }
-          }
-          // 이전 형식 호환성 유지 (마이그레이션 기간 동안)
-          else if (
-            protocol.method === "SessionReplay.snapshot" ||
-            protocol.method === "SessionReplay.interaction"
-          ) {
-            const sdkTimestamp = protocol.params?.timestamp;
-            let sessionTimestamp: bigint;
-
-            if (sdkTimestamp) {
-              sessionTimestamp = BigInt(sdkTimestamp) * BigInt(1000000);
-              this.lastEventTimestamp = sdkTimestamp;
-            } else {
-              sessionTimestamp = BigInt(timestamp);
-            }
-
-            if (protocol.method === "SessionReplay.snapshot") {
-              if (protocol.params?.type === "full_snapshot") {
-                eventType = "full_snapshot";
-              } else {
-                eventType = "incremental_snapshot";
-              }
-            } else if (protocol.method === "SessionReplay.interaction") {
-              eventType = "interaction";
-            }
-
-            await this.screenService.upsert({
-              recordId: roomData.recordId,
-              protocol,
-              timestamp: sessionTimestamp.toString(),
-              type: null,
-              event_type: eventType,
-              sequence: protocol.params?.sequence,
-            } as any);
-          }
-        }
-
-        // 사용자 인터랙션 이벤트 저장
-        if (protocol.method === "user.interaction") {
-          await this.screenService.upsert({
-            recordId: roomData.recordId,
-            protocol,
-            timestamp,
-            type: null,
-            event_type: "user_interaction",
-          });
-        }
-
-        // 스크롤 이벤트 저장
-        if (protocol.method === "user.scroll") {
-          await this.screenService.upsert({
-            recordId: roomData.recordId,
-            protocol,
-            timestamp,
-            type: null,
-            event_type: "viewport_change",
-          });
-        }
-      }
-    } else {
+    if (!roomData) {
       this.sendMessage(client, { event: "error", message: "Room not found" });
+      return;
+    }
+
+    roomData.devtools.forEach((devtools) => devtools.send(data.message));
+
+    if (!roomData.recordId) return;
+
+    const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
+
+    // TODO: Improve domain-based message routing
+    if (protocol.params.requestId) {
+      await this.networkService.create({
+        recordId: roomData.recordId,
+        protocol,
+        requestId: protocol.params.requestId,
+        timestamp,
+      });
+    }
+
+    if (protocol.method.startsWith("DOM.updated")) {
+      await this.domService.upsert({
+        recordId: roomData.recordId,
+        protocol: { root: protocol.params },
+        timestamp,
+        type: "entireDom",
+      });
+    }
+
+    if (protocol.method.startsWith("Runtime.")) {
+      await this.runtimeService.create({
+        recordId: roomData.recordId,
+        protocol,
+        timestamp,
+      });
+    }
+
+    // ScreenPreview -- real-time mirroring (only keep the latest frame)
+    if (protocol.method.startsWith("ScreenPreview.captured")) {
+      let eventType: "full_snapshot" | "incremental_snapshot" =
+        "incremental_snapshot";
+      if (protocol.params?.isFirstSnapshot) {
+        eventType = "full_snapshot";
+      }
+
+      await this.screenService.upsert({
+        recordId: roomData.recordId,
+        protocol,
+        timestamp,
+        type: "screenPreview",
+        eventType: eventType,
+      });
+    }
+
+    // rrweb-based SessionReplay events
+    if (protocol.method.startsWith("SessionReplay.")) {
+      await this.handleSessionReplayProtocol(
+        protocol,
+        roomData,
+        data.room,
+        timestamp,
+      );
+    }
+
+    // User interaction events
+    if (protocol.method === "user.interaction") {
+      await this.screenService.upsert({
+        recordId: roomData.recordId,
+        protocol,
+        timestamp,
+        type: null,
+        eventType: "user_interaction",
+      });
+    }
+
+    // Scroll events
+    if (protocol.method === "user.scroll") {
+      await this.screenService.upsert({
+        recordId: roomData.recordId,
+        protocol,
+        timestamp,
+        type: null,
+        eventType: "viewport_change",
+      });
     }
   }
+
+  // -------------------------------------------------------------------------
+  // SessionReplay event handling (extracted for readability)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Processes SessionReplay protocol messages (rrweb single events, batch events,
+   * and legacy snapshot / interaction formats).
+   */
+  private async handleSessionReplayProtocol(
+    protocol: any,
+    roomData: RoomData,
+    roomName: string,
+    timestamp: number,
+  ): Promise<void> {
+    // Single rrweb event
+    if (protocol.method === "SessionReplay.rrwebEvent") {
+      await this.handleSingleRrwebEvent(protocol, roomData, roomName);
+      return;
+    }
+
+    // Batch rrweb events
+    if (protocol.method === "SessionReplay.rrwebEvents") {
+      await this.handleBatchRrwebEvents(protocol, roomData, roomName);
+      return;
+    }
+
+    // Legacy format compatibility (migration period)
+    if (
+      protocol.method === "SessionReplay.snapshot" ||
+      protocol.method === "SessionReplay.interaction"
+    ) {
+      await this.handleLegacySessionReplay(protocol, roomData, timestamp);
+    }
+  }
+
+  /** Handles a single SessionReplay.rrwebEvent. */
+  private async handleSingleRrwebEvent(
+    protocol: any,
+    roomData: RoomData,
+    roomName: string,
+  ): Promise<void> {
+    const event = protocol.params?.event;
+    if (!event) return;
+
+    const sessionTimestamp =
+      BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
+    const eventType = this.mapRrwebEventType(event.type);
+
+    await this.screenService.upsert({
+      recordId: roomData.recordId,
+      protocol,
+      timestamp: sessionTimestamp.toString(),
+      type: null,
+      eventType: eventType,
+      sequence: event.data?.sequence || null,
+    } as any);
+
+    // Add event to buffer (Buffer rooms only)
+    if (roomData.recordId && roomName.startsWith("Buffer-")) {
+      this.addRrwebEventToBuffer(
+        roomName,
+        roomData.recordId,
+        protocol,
+        sessionTimestamp,
+      );
+    }
+  }
+
+  /** Handles a batch of SessionReplay.rrwebEvents. */
+  private async handleBatchRrwebEvents(
+    protocol: any,
+    roomData: RoomData,
+    roomName: string,
+  ): Promise<void> {
+    const events = protocol.params?.events || [];
+    this.logger.log(`[SessionReplay] Saving batch of ${events.length} events`);
+
+    // Retrieve common buffer info upfront
+    const bufferInfo = this.bufferRooms.get(roomName);
+    const deviceId = bufferInfo?.deviceId || "unknown-device";
+    const url = bufferInfo?.url || "unknown-url";
+    const userAgent = bufferInfo?.userAgent || "unknown-useragent";
+    const title = bufferInfo?.title;
+    const sessionStartTime = bufferInfo?.sessionStartTime;
+
+    for (const event of events) {
+      const sessionTimestamp =
+        BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
+      const eventType = this.mapRrwebEventType(event.type);
+
+      await this.screenService.upsert({
+        recordId: roomData.recordId,
+        protocol: {
+          method: "SessionReplay.rrwebEvent",
+          params: { event },
+        },
+        timestamp: sessionTimestamp.toString(),
+        type: null,
+        eventType: eventType,
+        sequence: event.data?.sequence || null,
+      } as any);
+
+      // Add event to buffer (Buffer rooms only)
+      if (roomData.recordId && roomName.startsWith("Buffer-")) {
+        const bufferEvent = {
+          method: "SessionReplay.rrwebEvent",
+          params: { event },
+          timestamp: Number(sessionTimestamp / BigInt(1_000_000)),
+        };
+
+        this.bufferService.addEvent(
+          roomName,
+          roomData.recordId,
+          deviceId,
+          url,
+          userAgent,
+          title,
+          sessionStartTime,
+          bufferEvent,
+        );
+      }
+    }
+  }
+
+  /** Handles legacy SessionReplay.snapshot / SessionReplay.interaction formats. */
+  private async handleLegacySessionReplay(
+    protocol: any,
+    roomData: RoomData,
+    timestamp: number,
+  ): Promise<void> {
+    const sdkTimestamp = protocol.params?.timestamp;
+    let sessionTimestamp: bigint;
+
+    if (sdkTimestamp) {
+      sessionTimestamp = BigInt(sdkTimestamp) * BigInt(1_000_000);
+      this.lastEventTimestamp = sdkTimestamp;
+    } else {
+      sessionTimestamp = BigInt(timestamp);
+    }
+
+    let eventType: string | null = null;
+    if (protocol.method === "SessionReplay.snapshot") {
+      eventType =
+        protocol.params?.type === "full_snapshot"
+          ? "full_snapshot"
+          : "incremental_snapshot";
+    } else if (protocol.method === "SessionReplay.interaction") {
+      eventType = "interaction";
+    }
+
+    await this.screenService.upsert({
+      recordId: roomData.recordId,
+      protocol,
+      timestamp: sessionTimestamp.toString(),
+      type: null,
+      eventType: eventType,
+      sequence: protocol.params?.sequence,
+    } as any);
+  }
+
+  /** Adds a single rrweb event to the buffer service. */
+  private addRrwebEventToBuffer(
+    roomName: string,
+    recordId: number,
+    protocol: any,
+    sessionTimestamp: bigint,
+  ): void {
+    const bufferInfo = this.bufferRooms.get(roomName);
+    const deviceId = bufferInfo?.deviceId || "unknown-device";
+    const url = bufferInfo?.url || "unknown-url";
+    const userAgent = bufferInfo?.userAgent || "unknown-useragent";
+    const title = bufferInfo?.title;
+    const sessionStartTime = bufferInfo?.sessionStartTime;
+
+    const bufferEvent = {
+      method: protocol.method,
+      params: protocol.params,
+      timestamp: Number(sessionTimestamp / BigInt(1_000_000)),
+    };
+
+    this.bufferService.addEvent(
+      roomName,
+      recordId,
+      deviceId,
+      url,
+      userAgent,
+      title,
+      sessionStartTime,
+      bufferEvent,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Buffer events
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("bufferEvent")
   public async handleBufferEvent(
@@ -715,15 +815,15 @@ export class WebviewGateway
     try {
       const { room, deviceId, event, url, userAgent, title } = data;
 
-      // 녹화 세션/티켓 생성 후에는 버퍼 이벤트 무시
+      // Ignore buffer events after a recording session or ticket has been created
       if (room.startsWith("Record-") || room.startsWith("Live-")) {
         return;
       }
 
-      // Buffer room 정보 저장 (Buffer- 방만)
+      // Persist buffer room info (Buffer- rooms only)
       const existingInfo =
         this.bufferRooms.get(room) || this.lastBufferInfoByDevice.get(deviceId);
-      let sessionStartTime = existingInfo?.sessionStartTime ?? Date.now();
+      const sessionStartTime = existingInfo?.sessionStartTime ?? Date.now();
 
       const bufferInfo: BufferRoomInfo = {
         deviceId,
@@ -741,23 +841,23 @@ export class WebviewGateway
         title,
         sessionStartTime,
       });
-      // 새 버퍼 room 생성 시 화면 이탈 저장 상태 초기화 (새 세션 시작)
+      // Reset visibility-exit save state for the new session
       this.visibilityExitSavedRooms.delete(room);
-      // deviceId → room 매핑도 저장 (Buffer 모드만)
+
+      // Store deviceId -> room mapping (Buffer mode only)
       if (!room.startsWith("Record-")) {
         this.deviceToRoom.set(deviceId, room);
       }
 
-      // 화면 재진입 감지 (화면 이탈 후 다시 이벤트가 들어오면 재진입)
+      // Detect visibility re-entry (user returned after leaving the page)
       if (this.visibilityExitSavedRooms.has(room)) {
         this.visibilityExitSavedRooms.delete(room);
-        sessionStartTime = Date.now();
         this.logger.log(
           `[BUFFER_VISIBILITY_REENTRY] deviceId: ${deviceId}, room: ${room} - user returned, reset save state`,
         );
       }
 
-      // 버퍼에 이벤트 추가
+      // Add event to buffer
       const bufferEvent = {
         method: event.method,
         params: event.params,
@@ -766,7 +866,7 @@ export class WebviewGateway
 
       this.bufferService.addEvent(
         room,
-        0, // Buffer 모드에서는 recordId가 0
+        0, // Buffer mode uses recordId=0
         deviceId,
         url,
         userAgent,
@@ -778,16 +878,17 @@ export class WebviewGateway
       if (this.clientMap.get(client) === "pending") {
         this.clientMap.set(client, room);
       }
-
-      // 자동 flush 제거 - 주기적 flush만 사용
     } catch (error) {
-      console.error(`[BUFFER_EVENT_ERROR] ❌`, error);
       this.logger.error(
-        `[BUFFER_EVENT] Error handling buffer event: ${error.message}`,
-        error.stack,
+        `[BUFFER_EVENT] Error handling buffer event: ${(error as Error).message}`,
+        (error as Error).stack,
       );
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Enable buffering
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("enableBuffering")
   public async handleEnableBuffering(
@@ -803,7 +904,7 @@ export class WebviewGateway
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     try {
-      console.log(
+      this.logger.log(
         `[ENABLE_BUFFERING] Buffer mode enabled for device: ${data.deviceId}`,
       );
 
@@ -813,6 +914,7 @@ export class WebviewGateway
 
       this.clientMap.set(client, bufferRoom);
       this.deviceToRoom.set(data.deviceId, bufferRoom);
+
       const bufferInfo: BufferRoomInfo = {
         deviceId: data.deviceId,
         url: data.url,
@@ -829,22 +931,26 @@ export class WebviewGateway
         title: data.title,
         sessionStartTime,
       });
-      // 새 버퍼 room 생성 시 화면 이탈 저장 상태 초기화 (새 세션 시작)
+      // Reset visibility-exit save state for the new session
       this.visibilityExitSavedRooms.delete(bufferRoom);
 
-      // 성공 응답 전송
+      // Send success response
       this.sendMessage(client, {
         event: "bufferingEnabled",
         message: "Buffer mode activated successfully",
       });
     } catch (error) {
-      console.error(`[ENABLE_BUFFERING_ERROR] ${error}`);
+      this.logger.error(`[ENABLE_BUFFERING_ERROR] ${error}`);
       this.sendMessage(client, {
         event: "error",
         message: "Failed to enable buffer mode",
       });
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Save buffer
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("saveBuffer")
   public async handleSaveBuffer(
@@ -860,11 +966,10 @@ export class WebviewGateway
   ): Promise<void> {
     const { deviceId, trigger, title, timestamp, room, url } = data;
 
-    // 화면 이탈 시 저장 후 상태 추적 (재진입 감지용)
+    // Track visibility-exit saves for re-entry detection
     if (trigger === "visibilitychange") {
       const bufferRoom = this.deviceToRoom.get(deviceId);
       if (bufferRoom) {
-        // 화면 이탈로 인한 저장임을 기록
         this.visibilityExitSavedRooms.add(bufferRoom);
         this.logger.log(
           `[SAVE_BUFFER_VISIBILITY_EXIT] deviceId: ${deviceId}, room: ${bufferRoom} - saved on visibility change`,
@@ -887,6 +992,10 @@ export class WebviewGateway
       );
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Buffer save orchestration
+  // -------------------------------------------------------------------------
 
   public async triggerBufferSave(
     deviceId: string,
@@ -959,13 +1068,21 @@ export class WebviewGateway
       return flushed;
     } catch (error) {
       this.logger.error(
-        `[SAVE_BUFFER_TRIGGER_ERROR] ${error.message}`,
-        error.stack,
+        `[SAVE_BUFFER_TRIGGER_ERROR] ${(error as Error).message}`,
+        (error as Error).stack,
       );
       return false;
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Buffer room collection / cleanup helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Gathers all rooms that should be flushed for a given deviceId,
+   * optionally filtered by reference timestamp, room name, and URL path.
+   */
   private collectRoomsToFlush(
     deviceId: string,
     options: { referenceTimestamp?: number; roomName?: string; url?: string },
@@ -978,14 +1095,9 @@ export class WebviewGateway
     const maybeIncludeRoom = (
       room: string | undefined | null,
       info?: BufferRoomInfo | LastBufferInfo,
-    ) => {
-      if (!room || !info) {
-        return;
-      }
-
-      if (roomName && room !== roomName) {
-        return;
-      }
+    ): void => {
+      if (!room || !info) return;
+      if (roomName && room !== roomName) return;
 
       const normalizedInfo: BufferRoomInfo = {
         deviceId: info.deviceId,
@@ -1016,6 +1128,7 @@ export class WebviewGateway
       rooms.set(room, { room, info: normalizedInfo });
     };
 
+    // 1. Direct deviceId -> room mapping
     const directRoom = this.deviceToRoom.get(deviceId);
     if (directRoom) {
       const info =
@@ -1024,12 +1137,14 @@ export class WebviewGateway
       maybeIncludeRoom(directRoom, info);
     }
 
+    // 2. Scan bufferRooms for matching deviceId
     for (const [room, info] of this.bufferRooms.entries()) {
       if (info.deviceId === deviceId) {
         maybeIncludeRoom(room, info);
       }
     }
 
+    // 3. Scan lastBufferInfoByDevice for matching deviceId
     for (const info of this.lastBufferInfoByDevice.values()) {
       if (info.deviceId === deviceId) {
         maybeIncludeRoom(info.room, info);
@@ -1039,6 +1154,7 @@ export class WebviewGateway
     return Array.from(rooms.values());
   }
 
+  /** Removes all tracking data for a buffer room after it has been flushed. */
   private cleanupBufferRoomAfterFlush(room: string, deviceId: string): void {
     if (this.bufferRooms.has(room)) {
       this.bufferRooms.delete(room);
@@ -1056,10 +1172,9 @@ export class WebviewGateway
     this.visibilityExitSavedRooms.delete(room);
   }
 
+  /** Normalises a URL to origin + pathname (strips query params and fragments). */
   private normalizeUrlPath(url?: string): string | null {
-    if (!url) {
-      return null;
-    }
+    if (!url) return null;
 
     try {
       const parsed = new URL(url);
@@ -1073,6 +1188,10 @@ export class WebviewGateway
       }
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Update response body
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("updateResponseBody")
   public async handleResponseBody(
@@ -1089,6 +1208,10 @@ export class WebviewGateway
     await this.networkService.updateResponseBody({ recordId, ...data });
   }
 
+  // -------------------------------------------------------------------------
+  // Ticket creation
+  // -------------------------------------------------------------------------
+
   @SubscribeMessage("createTicket")
   public async handleCreateTicket(
     @MessageBody()
@@ -1098,20 +1221,20 @@ export class WebviewGateway
     try {
       const { userData, formData } = data;
 
-      // commonInfo가 없으면 디폴트값 세팅
+      // Ensure commonInfo defaults are present
       if (!userData.commonInfo) {
         userData.commonInfo = getDefaultCommonInfo();
       }
 
-      // userData의 URL과 userAgent를 commonInfo에 반영
+      // Reflect userData URL and userAgent into commonInfo
       userData.commonInfo.URL = userData.URL || userData.commonInfo.URL;
       userData.commonInfo.userAgent =
         userData.userAgent || userData.commonInfo.userAgent;
 
       const { commonInfo, URL } = userData;
-      const roomName = `Record-${uuidv4()}`;
+      const roomName = `Record-${randomUUID()}`;
 
-      // Room 정보 저장 (버퍼 flush 시 사용)
+      // Register buffer room info
       const bufferInfo: BufferRoomInfo = {
         deviceId: commonInfo.device.deviceId,
         url: commonInfo.URL,
@@ -1128,7 +1251,7 @@ export class WebviewGateway
         title: bufferInfo.title,
         sessionStartTime: bufferInfo.sessionStartTime,
       });
-      // 새 버퍼 room 생성 시 화면 이탈 저장 상태 초기화 (새 세션 시작)
+      // Reset visibility-exit save state for the new session
       this.visibilityExitSavedRooms.delete(roomName);
 
       this.logger.log(
@@ -1152,7 +1275,7 @@ export class WebviewGateway
         referrer: URL?.split("?")[0],
       });
 
-      const { requestBody, ticketKey, ticketURL } =
+      const { requestBody, ticketKey, ticketUrl } =
         await this.jiraService.createTicket({
           roomName,
           recordId,
@@ -1162,7 +1285,7 @@ export class WebviewGateway
 
       this.logger.log(
         `[TICKET_CREATE_SUCCESS] ${JSON.stringify({
-          ticketURL,
+          ticketUrl,
           recordId,
           roomName,
           deviceId: commonInfo.device.deviceId,
@@ -1170,119 +1293,20 @@ export class WebviewGateway
       );
 
       if (recordId) {
-        // deviceId가 'unknown-'로 시작하지 않는 경우에만 사용자 정보 조회
-        const userInfo = !commonInfo.device.deviceId.startsWith("unknown-")
-          ? await this.userInfoService.getUserInfoByDeviceId(
-              commonInfo.device.deviceId,
-            )
-          : null;
-
-        this.logger.log(
-          `[TICKET_USER_INFO] ${JSON.stringify({
-            deviceId: commonInfo.device.deviceId,
-            userInfoFound: !!userInfo,
-            username: userInfo?.username,
-            slackUserId: userInfo?.slackUserId,
-          })}`,
+        await this.handlePostTicketCreation(
+          client,
+          commonInfo,
+          recordId,
+          roomName,
+          URL,
+          requestBody,
+          ticketKey,
+          ticketUrl,
+          formData,
         );
-
-        if (userInfo?.slackUserId) {
-          await this.slackService.sendCreateTicketDM({
-            slackUserId: userInfo.slackUserId,
-            requestBody,
-            ticketKey,
-            ticketURL,
-          });
-          this.logger.log(
-            `[TICKET_SLACK_DM_SENT] ${JSON.stringify({
-              slackUserId: userInfo.slackUserId,
-              ticketURL,
-            })}`,
-          );
-        }
-
-        this.sendMessage(client, {
-          event: "ticketCreateSuccess",
-          message: "QA 티켓이 성공적으로 생성되었습니다.",
-        });
-
-        // 티켓 생성 로그 저장
-        if (userInfo) {
-          try {
-            const assignee = formData?.assignee ?? userInfo.username;
-
-            const ticketLog = this.ticketLogRepository.create({
-              deviceId: commonInfo.device.deviceId,
-              username: userInfo.username,
-              userDisplayName: userInfo.userDisplayName,
-              recordId,
-              ticketURL,
-              jiraProjectKey: userInfo.jiraProjectKey || "N/A",
-              assignee,
-              parentEpic: formData?.Epic || null,
-              title: requestBody.title,
-              roomName,
-              URL: URL.split("?")[0],
-            });
-
-            await this.ticketLogRepository.save(ticketLog);
-
-            // 컴포넌트들을 별도 테이블에 저장
-            if (formData?.components && formData.components.length > 0) {
-              const componentEntities = formData.components.map(
-                (componentName) =>
-                  this.ticketComponentRepository.create({
-                    ticketLogId: ticketLog.id,
-                    componentName: componentName.trim(), // 공백 제거로 일관성 확보
-                  }),
-              );
-              await this.ticketComponentRepository.save(componentEntities);
-            }
-
-            // 라벨들을 별도 테이블에 저장
-            if (formData?.labels && formData.labels.length > 0) {
-              const labelEntities = formData.labels.map((labelName) =>
-                this.ticketLabelRepository.create({
-                  ticketLogId: ticketLog.id,
-                  labelName: labelName.trim(), // 공백 제거로 일관성 확보
-                }),
-              );
-              await this.ticketLabelRepository.save(labelEntities);
-            }
-
-            this.logger.log(
-              `[TICKET_LOG_SAVED] ${JSON.stringify({
-                ticketLogId: ticketLog.id,
-                URL,
-                deviceId: commonInfo.device.deviceId,
-                assignee,
-                parentEpic: formData?.Epic,
-                components: formData?.components,
-                labels: formData?.labels,
-                jiraProjectKey: userInfo.jiraProjectKey,
-              })}`,
-            );
-          } catch (logError) {
-            this.logger.error(
-              `[TICKET_LOG_ERROR] ${JSON.stringify({
-                deviceId: commonInfo.device.deviceId,
-                ticketURL,
-                error:
-                  logError instanceof Error
-                    ? {
-                        message: logError.message,
-                        stack: logError.stack,
-                        name: logError.name,
-                      }
-                    : JSON.stringify(logError),
-              })}`,
-            );
-            // 로그 저장 실패가 티켓 생성 성공에 영향을 주지 않도록 에러를 throw하지 않음
-          }
-        }
       }
 
-      // 버퍼에서 기록 데이터를 DB로 전송 (티켓 생성 시)
+      // Transfer buffered data to the new record
       if (recordId) {
         await this.transferBufferedDataToRecord(
           commonInfo.device.deviceId,
@@ -1292,41 +1316,199 @@ export class WebviewGateway
 
       this.logger.log(
         `[TICKET_CREATE_COMPLETE] ${JSON.stringify({
-          ticketURL,
+          ticketUrl,
           deviceId: commonInfo.device.deviceId,
         })}`,
       );
     } catch (error) {
-      const originUserData = { ...data.userData };
-      if (!originUserData.commonInfo) {
-        originUserData.commonInfo = getDefaultCommonInfo();
-      }
-
-      this.logger.error(
-        `[TICKET_CREATE_ERROR] ${JSON.stringify({
-          deviceId: originUserData.commonInfo.device.deviceId,
-          URL: originUserData.URL,
-          formData: data.formData ? JSON.stringify(data.formData) : null,
-          error:
-            error instanceof Error
-              ? {
-                  message: error.message,
-                  stack: error.stack,
-                  name: error.name,
-                }
-              : JSON.stringify(error),
-        })}`,
-      );
-      this.sendMessage(client, {
-        event: "ticketCreateError",
-        message: `티켓 생성 실패: ${error.message}`,
-      });
+      this.handleTicketCreationError(data, client, error as Error);
     }
   }
 
   /**
-   * 버퍼를 파일로 강제 flush하는 메서드 (이벤트 수 조건 무시)
+   * Post-ticket-creation tasks: send Slack DM, notify client, and persist ticket log.
    */
+  private async handlePostTicketCreation(
+    client: WebSocket,
+    commonInfo: CommonInfo,
+    recordId: number,
+    roomName: string,
+    URL: string,
+    requestBody: any,
+    ticketKey: string,
+    ticketUrl: string,
+    formData?: TicketFormData,
+  ): Promise<void> {
+    // Only look up user info when deviceId is not the default placeholder
+    const userInfo = !commonInfo.device.deviceId.startsWith("unknown-")
+      ? await this.userInfoService.getUserInfoByDeviceId(
+          commonInfo.device.deviceId,
+        )
+      : null;
+
+    this.logger.log(
+      `[TICKET_USER_INFO] ${JSON.stringify({
+        deviceId: commonInfo.device.deviceId,
+        userInfoFound: !!userInfo,
+        username: userInfo?.username,
+        slackUserId: userInfo?.slackUserId,
+      })}`,
+    );
+
+    if (userInfo?.slackUserId) {
+      await this.slackService.sendCreateTicketDM({
+        slackUserId: userInfo.slackUserId,
+        requestBody,
+        ticketKey,
+        ticketUrl,
+      });
+      this.logger.log(
+        `[TICKET_SLACK_DM_SENT] ${JSON.stringify({
+          slackUserId: userInfo.slackUserId,
+          ticketUrl,
+        })}`,
+      );
+    }
+
+    this.sendMessage(client, {
+      event: "ticketCreateSuccess",
+      message: "QA ticket created successfully.",
+    });
+
+    // Persist ticket log
+    if (userInfo) {
+      await this.persistTicketLog(
+        commonInfo,
+        recordId,
+        roomName,
+        URL,
+        requestBody,
+        ticketUrl,
+        userInfo,
+        formData,
+      );
+    }
+  }
+
+  /**
+   * Persists a ticket creation log entry along with component and label records.
+   */
+  private async persistTicketLog(
+    commonInfo: CommonInfo,
+    recordId: number,
+    roomName: string,
+    URL: string,
+    requestBody: any,
+    ticketUrl: string,
+    userInfo: any,
+    formData?: TicketFormData,
+  ): Promise<void> {
+    try {
+      const assignee = formData?.assignee ?? userInfo.username;
+
+      const ticketLog = this.ticketLogRepository.create({
+        deviceId: commonInfo.device.deviceId,
+        username: userInfo.username,
+        userDisplayName: userInfo.userDisplayName,
+        recordId,
+        ticketUrl,
+        jiraProjectKey: userInfo.jiraProjectKey || "N/A",
+        assignee,
+        parentEpic: formData?.Epic || null,
+        title: requestBody.title,
+        roomName,
+        url: URL.split("?")[0],
+      });
+
+      await this.ticketLogRepository.save(ticketLog);
+
+      // Persist component entries
+      if (formData?.components && formData.components.length > 0) {
+        const componentEntities = formData.components.map((componentName) =>
+          this.ticketComponentRepository.create({
+            ticketLogId: ticketLog.id,
+            componentName: componentName.trim(),
+          }),
+        );
+        await this.ticketComponentRepository.save(componentEntities);
+      }
+
+      // Persist label entries
+      if (formData?.labels && formData.labels.length > 0) {
+        const labelEntities = formData.labels.map((labelName) =>
+          this.ticketLabelRepository.create({
+            ticketLogId: ticketLog.id,
+            labelName: labelName.trim(),
+          }),
+        );
+        await this.ticketLabelRepository.save(labelEntities);
+      }
+
+      this.logger.log(
+        `[TICKET_LOG_SAVED] ${JSON.stringify({
+          ticketLogId: ticketLog.id,
+          URL,
+          deviceId: commonInfo.device.deviceId,
+          assignee,
+          parentEpic: formData?.Epic,
+          components: formData?.components,
+          labels: formData?.labels,
+          jiraProjectKey: userInfo.jiraProjectKey,
+        })}`,
+      );
+    } catch (logError) {
+      this.logger.error(
+        `[TICKET_LOG_ERROR] ${JSON.stringify({
+          deviceId: commonInfo.device.deviceId,
+          ticketUrl,
+          error:
+            logError instanceof Error
+              ? {
+                  message: logError.message,
+                  stack: logError.stack,
+                  name: logError.name,
+                }
+              : JSON.stringify(logError),
+        })}`,
+      );
+      // Log persistence failure must not affect ticket creation success
+    }
+  }
+
+  /** Handles errors during ticket creation and notifies the client. */
+  private handleTicketCreationError(
+    data: { userData: UserData; formData?: TicketFormData },
+    client: WebSocket,
+    error: Error,
+  ): void {
+    const originUserData = { ...data.userData };
+    if (!originUserData.commonInfo) {
+      originUserData.commonInfo = getDefaultCommonInfo();
+    }
+
+    this.logger.error(
+      `[TICKET_CREATE_ERROR] ${JSON.stringify({
+        deviceId: originUserData.commonInfo.device.deviceId,
+        URL: originUserData.URL,
+        formData: data.formData ? JSON.stringify(data.formData) : null,
+        error: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        },
+      })}`,
+    );
+    this.sendMessage(client, {
+      event: "ticketCreateError",
+      message: `Ticket creation failed: ${error.message}`,
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Buffer flush helpers
+  // -------------------------------------------------------------------------
+
+  /** Force-flushes the buffer to S3 storage (ignores minimum event count). */
   private async flushBufferToFileForce(
     room: string,
     recordId: number,
@@ -1360,35 +1542,26 @@ export class WebviewGateway
         return false;
       }
 
-      const uploadData = {
+      await this.uploadBufferToS3(
         room,
         recordId,
         deviceId,
         url,
         userAgent,
-        title: title || flushedBuffer.title,
-        bufferData: flushedBuffer.events,
-        timestamp: flushedBuffer.sessionStartTime,
-        date: new Date(flushedBuffer.sessionStartTime + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-        sessionStartTime: flushedBuffer.sessionStartTime,
-      };
-
-      await this.s3Service.saveBufferDataToFile(uploadData);
+        title || flushedBuffer.title,
+        flushedBuffer,
+      );
       return true;
     } catch (error) {
       this.logger.error(
-        `[FLUSH_FORCE_ERROR] Failed to force flush buffer: ${error.message}`,
-        error.stack,
+        `[FLUSH_FORCE_ERROR] Failed to force flush buffer: ${(error as Error).message}`,
+        (error as Error).stack,
       );
       return false;
     }
   }
 
-  /**
-   * 버퍼를 파일로 flush하는 메서드
-   */
+  /** Flushes the buffer to S3 storage (respects minimum event count). */
   private async flushBufferToFile(
     room: string,
     recordId: number,
@@ -1422,51 +1595,78 @@ export class WebviewGateway
         return false;
       }
 
-      const uploadData = {
+      await this.uploadBufferToS3(
         room,
         recordId,
         deviceId,
         url,
         userAgent,
-        title: title || flushedBuffer.title,
-        bufferData: flushedBuffer.events,
-        timestamp: flushedBuffer.sessionStartTime,
-        date: new Date(flushedBuffer.sessionStartTime + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-        sessionStartTime: flushedBuffer.sessionStartTime,
-      };
-
-      await this.s3Service.saveBufferDataToFile(uploadData);
+        title || flushedBuffer.title,
+        flushedBuffer,
+      );
       return true;
     } catch (error) {
       this.logger.error(
-        `[FLUSH_TO_FILE_ERROR] Failed to flush buffer to file: ${error.message}`,
-        error.stack,
+        `[FLUSH_TO_FILE_ERROR] Failed to flush buffer to file: ${(error as Error).message}`,
+        (error as Error).stack,
       );
       return false;
     }
   }
 
-  /**
-   * 버퍼에서 Screen Preview를 가져와서 실제 recordId로 DB에 저장
-   */
+  /** Builds the upload payload and saves it to S3. */
+  private async uploadBufferToS3(
+    room: string,
+    recordId: number,
+    deviceId: string,
+    url: string,
+    userAgent: string,
+    title: string | undefined,
+    flushedBuffer: {
+      events: BufferEvent[];
+      sessionStartTime: number;
+      title?: string;
+    },
+  ): Promise<void> {
+    const uploadData = {
+      room,
+      recordId,
+      deviceId,
+      url,
+      userAgent,
+      title,
+      bufferData: flushedBuffer.events,
+      timestamp: flushedBuffer.sessionStartTime,
+      date: new Date(flushedBuffer.sessionStartTime + 9 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      sessionStartTime: flushedBuffer.sessionStartTime,
+    };
+
+    await this.s3Service.saveBufferDataToFile(uploadData);
+  }
+
+  // -------------------------------------------------------------------------
+  // Buffer transfer to record
+  // -------------------------------------------------------------------------
+
+  /** Finds the Buffer room associated with a device. */
   private findBufferRoomForDevice(deviceId: string): string | null {
     const direct = this.deviceToRoom.get(deviceId);
-    if (direct) {
-      return direct;
-    }
+    if (direct) return direct;
 
     for (const [room, info] of this.bufferRooms.entries()) {
-      if (info.deviceId === deviceId) {
-        return room;
-      }
+      if (info.deviceId === deviceId) return room;
     }
 
     const lastInfo = this.lastBufferInfoByDevice.get(deviceId);
     return lastInfo?.room ?? null;
   }
 
+  /**
+   * Transfers buffered events from a Buffer room into a permanent record.
+   * Used when a recording session or ticket is created.
+   */
   private async transferBufferedDataToRecord(
     deviceId: string,
     recordId: number,
@@ -1502,9 +1702,7 @@ export class WebviewGateway
       let latestScreenPreview: BufferEvent | null = null;
 
       for (const event of events) {
-        if (!event?.method) {
-          continue;
-        }
+        if (!event?.method) continue;
 
         if (event.method === "ScreenPreview.captured") {
           if (
@@ -1526,37 +1724,16 @@ export class WebviewGateway
         }
       }
 
+      // Persist the latest screen preview separately
       if (latestScreenPreview?.params) {
-        const previewParams = latestScreenPreview.params as {
-          isFirstSnapshot?: boolean;
-        } & Record<string, unknown>;
-        let eventType: "full_snapshot" | "incremental_snapshot" =
-          "incremental_snapshot";
-        if (previewParams.isFirstSnapshot) {
-          eventType = "full_snapshot";
-        }
-
-        const previewTimestampMs =
-          typeof latestScreenPreview.timestamp === "number"
-            ? latestScreenPreview.timestamp
-            : Number(latestScreenPreview.timestamp);
-
-        await this.screenService.upsert({
+        await this.persistLatestScreenPreview(
           recordId,
-          protocol: {
-            method: latestScreenPreview.method,
-            params: previewParams,
-          },
-          timestamp: this.toTimestampNs(previewTimestampMs),
-          type: "screenPreview",
-          event_type: eventType,
-        });
-
-        this.logger.log(
-          `[BUFFER_TRANSFER_SCREEN_PREVIEW] deviceId=${deviceId}, recordId=${recordId}, timestamp=${previewTimestampMs}`,
+          deviceId,
+          latestScreenPreview,
         );
       }
 
+      // Cleanup buffer state
       this.bufferService.clearSessionBuffers(bufferRoom, 0);
       this.bufferRooms.delete(bufferRoom);
       this.deviceToRoom.delete(deviceId);
@@ -1574,6 +1751,50 @@ export class WebviewGateway
     }
   }
 
+  /** Persists the latest ScreenPreview.captured event from the buffer. */
+  private async persistLatestScreenPreview(
+    recordId: number,
+    deviceId: string,
+    latestScreenPreview: BufferEvent,
+  ): Promise<void> {
+    const previewParams = latestScreenPreview.params as {
+      isFirstSnapshot?: boolean;
+    } & Record<string, unknown>;
+
+    let eventType: "full_snapshot" | "incremental_snapshot" =
+      "incremental_snapshot";
+    if (previewParams.isFirstSnapshot) {
+      eventType = "full_snapshot";
+    }
+
+    const previewTimestampMs =
+      typeof latestScreenPreview.timestamp === "number"
+        ? latestScreenPreview.timestamp
+        : Number(latestScreenPreview.timestamp);
+
+    await this.screenService.upsert({
+      recordId,
+      protocol: {
+        method: latestScreenPreview.method,
+        params: previewParams,
+      },
+      timestamp: this.toTimestampNs(previewTimestampMs),
+      type: "screenPreview",
+      eventType: eventType,
+    });
+
+    this.logger.log(
+      `[BUFFER_TRANSFER_SCREEN_PREVIEW] deviceId=${deviceId}, recordId=${recordId}, timestamp=${previewTimestampMs}`,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Event persistence helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Persists a single buffered event to the appropriate service based on its method.
+   */
   private async persistBufferedEvent(
     recordId: number,
     event: BufferEvent,
@@ -1633,7 +1854,7 @@ export class WebviewGateway
         protocol,
         timestamp: timestampNs,
         type: null,
-        event_type: "user_interaction",
+        eventType: "user_interaction",
       });
       return;
     }
@@ -1644,101 +1865,18 @@ export class WebviewGateway
         protocol,
         timestamp: timestampNs,
         type: null,
-        event_type: "viewport_change",
+        eventType: "viewport_change",
       });
       return;
     }
 
     if (method === "SessionReplay.rrwebEvent") {
-      const eventData = params?.event;
-      if (!eventData) {
-        return;
-      }
-
-      const sessionTimestamp =
-        BigInt(eventData.timestamp || Date.now()) * BigInt(1_000_000);
-      const rrwebEventType = eventData.type;
-      let eventType: string | null = null;
-
-      switch (rrwebEventType) {
-        case 0:
-          eventType = "dom_loaded";
-          break;
-        case 1:
-          eventType = "page_loaded";
-          break;
-        case 2:
-          eventType = "full_snapshot";
-          break;
-        case 3:
-          eventType = "incremental_snapshot";
-          break;
-        case 4:
-          eventType = "meta";
-          break;
-        case 5:
-          eventType = "custom";
-          break;
-        default:
-          eventType = `rrweb_${rrwebEventType}`;
-      }
-
-      await this.screenService.upsert({
-        recordId,
-        protocol: {
-          method: "SessionReplay.rrwebEvent",
-          params: { event: eventData },
-        },
-        timestamp: sessionTimestamp.toString(),
-        type: null,
-        event_type: eventType,
-        sequence: eventData.data?.sequence || null,
-      } as any);
+      await this.persistSingleRrwebEvent(recordId, params);
       return;
     }
 
     if (method === "SessionReplay.rrwebEvents") {
-      const events = Array.isArray(params?.events) ? params.events : [];
-      for (const rrEvent of events) {
-        const sessionTimestamp =
-          BigInt(rrEvent.timestamp || Date.now()) * BigInt(1_000_000);
-        let eventType: string | null = null;
-
-        switch (rrEvent.type) {
-          case 0:
-            eventType = "dom_loaded";
-            break;
-          case 1:
-            eventType = "page_loaded";
-            break;
-          case 2:
-            eventType = "full_snapshot";
-            break;
-          case 3:
-            eventType = "incremental_snapshot";
-            break;
-          case 4:
-            eventType = "meta";
-            break;
-          case 5:
-            eventType = "custom";
-            break;
-          default:
-            eventType = `rrweb_${rrEvent.type}`;
-        }
-
-        await this.screenService.upsert({
-          recordId,
-          protocol: {
-            method: "SessionReplay.rrwebEvent",
-            params: { event: rrEvent },
-          },
-          timestamp: sessionTimestamp.toString(),
-          type: null,
-          event_type: eventType,
-          sequence: rrEvent.data?.sequence || null,
-        } as any);
-      }
+      await this.persistBatchRrwebEvents(recordId, params);
       return;
     }
 
@@ -1746,40 +1884,103 @@ export class WebviewGateway
       method === "SessionReplay.snapshot" ||
       method === "SessionReplay.interaction"
     ) {
-      const sdkTimestamp = params?.timestamp;
-      let sessionTimestamp: bigint;
-
-      if (sdkTimestamp) {
-        sessionTimestamp = BigInt(sdkTimestamp) * BigInt(1_000_000);
-        this.lastEventTimestamp = Number(sdkTimestamp);
-      } else {
-        sessionTimestamp = BigInt(Date.now()) * BigInt(1_000_000);
-      }
-
-      let eventType: string | null = null;
-
-      if (method === "SessionReplay.snapshot") {
-        if (params?.type === "full_snapshot") {
-          eventType = "full_snapshot";
-        } else {
-          eventType = "incremental_snapshot";
-        }
-      } else if (method === "SessionReplay.interaction") {
-        eventType = "interaction";
-      }
-
-      await this.screenService.upsert({
-        recordId,
-        protocol,
-        timestamp: sessionTimestamp.toString(),
-        type: null,
-        event_type: eventType,
-        sequence: params?.sequence,
-      } as any);
+      await this.persistLegacySessionReplayEvent(recordId, method, params);
       return;
     }
   }
 
+  /** Persists a single rrweb event from the buffer. */
+  private async persistSingleRrwebEvent(
+    recordId: number,
+    params: any,
+  ): Promise<void> {
+    const eventData = params?.event;
+    if (!eventData) return;
+
+    const sessionTimestamp =
+      BigInt(eventData.timestamp || Date.now()) * BigInt(1_000_000);
+    const eventType = this.mapRrwebEventType(eventData.type);
+
+    await this.screenService.upsert({
+      recordId,
+      protocol: {
+        method: "SessionReplay.rrwebEvent",
+        params: { event: eventData },
+      },
+      timestamp: sessionTimestamp.toString(),
+      type: null,
+      eventType: eventType,
+      sequence: eventData.data?.sequence || null,
+    } as any);
+  }
+
+  /** Persists a batch of rrweb events from the buffer. */
+  private async persistBatchRrwebEvents(
+    recordId: number,
+    params: any,
+  ): Promise<void> {
+    const events = Array.isArray(params?.events) ? params.events : [];
+
+    for (const rrEvent of events) {
+      const sessionTimestamp =
+        BigInt(rrEvent.timestamp || Date.now()) * BigInt(1_000_000);
+      const eventType = this.mapRrwebEventType(rrEvent.type);
+
+      await this.screenService.upsert({
+        recordId,
+        protocol: {
+          method: "SessionReplay.rrwebEvent",
+          params: { event: rrEvent },
+        },
+        timestamp: sessionTimestamp.toString(),
+        type: null,
+        eventType: eventType,
+        sequence: rrEvent.data?.sequence || null,
+      } as any);
+    }
+  }
+
+  /** Persists a legacy SessionReplay.snapshot or SessionReplay.interaction event. */
+  private async persistLegacySessionReplayEvent(
+    recordId: number,
+    method: string,
+    params: any,
+  ): Promise<void> {
+    const sdkTimestamp = params?.timestamp;
+    let sessionTimestamp: bigint;
+
+    if (sdkTimestamp) {
+      sessionTimestamp = BigInt(sdkTimestamp) * BigInt(1_000_000);
+      this.lastEventTimestamp = Number(sdkTimestamp);
+    } else {
+      sessionTimestamp = BigInt(Date.now()) * BigInt(1_000_000);
+    }
+
+    let eventType: string | null = null;
+    if (method === "SessionReplay.snapshot") {
+      eventType =
+        params?.type === "full_snapshot"
+          ? "full_snapshot"
+          : "incremental_snapshot";
+    } else if (method === "SessionReplay.interaction") {
+      eventType = "interaction";
+    }
+
+    await this.screenService.upsert({
+      recordId,
+      protocol: { method, params },
+      timestamp: sessionTimestamp.toString(),
+      type: null,
+      eventType: eventType,
+      sequence: params?.sequence,
+    } as any);
+  }
+
+  // -------------------------------------------------------------------------
+  // Timestamp conversion
+  // -------------------------------------------------------------------------
+
+  /** Converts a millisecond timestamp (number or string) to nanoseconds. */
   private toTimestampNs(value?: number | string): number {
     const parsed = typeof value === "string" ? Number(value) : value;
     if (!Number.isFinite(parsed)) {
@@ -1789,8 +1990,13 @@ export class WebviewGateway
     return Math.trunc(parsed * 1_000_000);
   }
 
+  // -------------------------------------------------------------------------
+  // Buffer persistence eligibility
+  // -------------------------------------------------------------------------
+
   /**
-   * 저장해도 되는 버퍼인지 판단 (너무 적은 이벤트나 의미 없는 이벤트만 있을 때는 저장하지 않음)
+   * Determines whether a buffer contains enough meaningful events to be worth persisting.
+   * Filters out buffers that are too small or contain only noise.
    */
   private shouldPersistBuffer(events: BufferEvent[]): boolean {
     if (!Array.isArray(events) || events.length === 0) {
@@ -1805,11 +2011,10 @@ export class WebviewGateway
     );
 
     if (nonScreenPreviewEvents.length === 0) {
-      // ScreenPreview 이벤트만 있는 경우에는 화면 캡처가 포함돼 있을 때만 저장
-      const hasCapturedSnapshot = screenPreviewEvents.some(
+      // Only ScreenPreview events -- persist only if a captured snapshot exists
+      return screenPreviewEvents.some(
         (event) => event.method === "ScreenPreview.captured",
       );
-      return hasCapturedSnapshot;
     }
 
     const rrwebEvents = nonScreenPreviewEvents.filter((event) =>
@@ -1830,103 +2035,33 @@ export class WebviewGateway
       return typeof rrEvent?.type === "number" && rrEvent.type === 2;
     });
 
-    if (hasFullSnapshot) {
-      return true;
-    }
+    if (hasFullSnapshot) return true;
 
-    // FullSnapshot이 없어도 이벤트가 충분히 많으면 저장 (부분 저장 방지용 임계값)
+    // Persist even without a FullSnapshot if there are enough meaningful events
     const MIN_MEANINGFUL_EVENTS = 5;
     return nonScreenPreviewEvents.length >= MIN_MEANINGFUL_EVENTS;
   }
+
+  // -------------------------------------------------------------------------
+  // Disconnection handling
+  // -------------------------------------------------------------------------
 
   public async handleDisconnect(client: WebSocket): Promise<void> {
     const room = this.clientMap.get(client);
 
     if (room) {
+      // Handle Buffer room disconnect
       if (room.startsWith("Buffer-")) {
-        const directInfo = this.bufferRooms.get(room);
-        const lastInfo =
-          [...this.lastBufferInfoByDevice.values()].find(
-            (info) => info.room === room,
-          ) || null;
-
-        const resolvedDeviceId =
-          directInfo?.deviceId ?? lastInfo?.deviceId ?? "unknown-device";
-        const resolvedUrl = directInfo?.url ?? lastInfo?.url ?? "unknown-url";
-        const resolvedUserAgent =
-          directInfo?.userAgent ?? lastInfo?.userAgent ?? "unknown-useragent";
-        const resolvedTitle = directInfo?.title ?? lastInfo?.title;
-
-        try {
-          await this.flushBufferToFileForce(
-            room,
-            0,
-            resolvedDeviceId,
-            resolvedUrl,
-            resolvedUserAgent,
-            resolvedTitle,
-          );
-        } catch (error) {
-          this.logger.error(
-            `[BUFFER_DISCONNECT_FLUSH_ERROR] ${error.message}`,
-            error.stack,
-          );
-        }
-
-        this.bufferRooms.delete(room);
-        this.deviceToRoom.delete(resolvedDeviceId);
-        // 화면 이탈 저장 상태도 정리 (세션 완전 종료)
-        this.visibilityExitSavedRooms.delete(room);
-        if (directInfo) {
-          this.lastBufferInfoByDevice.delete(directInfo.deviceId);
-        } else if (lastInfo) {
-          this.lastBufferInfoByDevice.delete(lastInfo.deviceId);
-        }
+        await this.handleBufferRoomDisconnect(room);
         this.clientMap.delete(client);
         return;
       }
 
       const roomData = this.rooms.get(room);
 
-      // 세션 종료 이벤트 저장
+      // Persist session end event
       if (roomData?.recordId) {
-        const endTime = Date.now() * 1000000; // 밀리초를 나노초로 변환
-
-        await this.screenService.upsert({
-          recordId: roomData.recordId,
-          protocol: { method: "session_end", params: {} },
-          timestamp: endTime,
-          type: null,
-          event_type: "session_end",
-        });
-
-        // duration 계산 및 업데이트
-        const startEvent = await this.screenService.findScreens(
-          roomData.recordId,
-        );
-        if (startEvent && startEvent.length > 0) {
-          const startTime = startEvent[0].timestamp;
-          const duration = endTime - Number(startTime);
-          await this.recordService.updateDuration(roomData.recordId, duration);
-        }
-
-        // 녹화 세션/티켓 생성된 경우에는 버퍼 flush 하지 않음
-        if (!room.startsWith("Record-") && !room.startsWith("Live-")) {
-          // 연결 해제 시 버퍼 flush (일반 Buffer room만)
-          try {
-            const bufferInfo = this.bufferRooms.get(room);
-            await this.flushBufferToFile(
-              room,
-              roomData.recordId,
-              bufferInfo?.deviceId || "unknown-device",
-              bufferInfo?.url || "unknown-url",
-              bufferInfo?.userAgent || "unknown-useragent",
-              bufferInfo?.title,
-            );
-          } catch (error) {
-            this.logger.error(`[DISCONNECT_FLUSH_ERROR] ${error.message}`);
-          }
-        }
+        await this.handleRecordRoomDisconnect(room, roomData);
       }
 
       if (roomData) {
@@ -1934,9 +2069,10 @@ export class WebviewGateway
         this.rooms.delete(room);
       }
       this.clientMap.delete(client);
-      this.bufferRooms.delete(room); // Buffer room 정보도 삭제
+      this.bufferRooms.delete(room);
       return;
     }
+
     const devtoolsInfo = this.devtoolsMap.get(client);
     if (devtoolsInfo) {
       this.rooms
@@ -1945,7 +2081,96 @@ export class WebviewGateway
       this.devtoolsMap.delete(client);
     }
 
-    // Buffer room들 flush (화면 이탈로 저장되지 않은 것들만)
+    // Flush remaining Buffer rooms that were not saved on visibility exit
+    await this.flushRemainingBufferRooms();
+  }
+
+  /** Handles disconnect cleanup for Buffer rooms. */
+  private async handleBufferRoomDisconnect(room: string): Promise<void> {
+    const directInfo = this.bufferRooms.get(room);
+    const lastInfo =
+      [...this.lastBufferInfoByDevice.values()].find(
+        (info) => info.room === room,
+      ) || null;
+
+    const resolvedDeviceId =
+      directInfo?.deviceId ?? lastInfo?.deviceId ?? "unknown-device";
+    const resolvedUrl = directInfo?.url ?? lastInfo?.url ?? "unknown-url";
+    const resolvedUserAgent =
+      directInfo?.userAgent ?? lastInfo?.userAgent ?? "unknown-useragent";
+    const resolvedTitle = directInfo?.title ?? lastInfo?.title;
+
+    try {
+      await this.flushBufferToFileForce(
+        room,
+        0,
+        resolvedDeviceId,
+        resolvedUrl,
+        resolvedUserAgent,
+        resolvedTitle,
+      );
+    } catch (error) {
+      this.logger.error(
+        `[BUFFER_DISCONNECT_FLUSH_ERROR] ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+    }
+
+    this.bufferRooms.delete(room);
+    this.deviceToRoom.delete(resolvedDeviceId);
+    this.visibilityExitSavedRooms.delete(room);
+    if (directInfo) {
+      this.lastBufferInfoByDevice.delete(directInfo.deviceId);
+    } else if (lastInfo) {
+      this.lastBufferInfoByDevice.delete(lastInfo.deviceId);
+    }
+  }
+
+  /** Handles disconnect cleanup for Record/Live rooms (session end + optional buffer flush). */
+  private async handleRecordRoomDisconnect(
+    room: string,
+    roomData: RoomData,
+  ): Promise<void> {
+    const endTime = Date.now() * 1_000_000; // milliseconds -> nanoseconds
+
+    await this.screenService.upsert({
+      recordId: roomData.recordId,
+      protocol: { method: "session_end", params: {} },
+      timestamp: endTime,
+      type: null,
+      eventType: "session_end",
+    });
+
+    // Calculate and update session duration
+    const startEvent = await this.screenService.findScreens(roomData.recordId);
+    if (startEvent && startEvent.length > 0) {
+      const startTime = startEvent[0].timestamp;
+      const duration = endTime - Number(startTime);
+      await this.recordService.updateDuration(roomData.recordId, duration);
+    }
+
+    // Flush buffer for non-Record, non-Live rooms on disconnect
+    if (!room.startsWith("Record-") && !room.startsWith("Live-")) {
+      try {
+        const bufferInfo = this.bufferRooms.get(room);
+        await this.flushBufferToFile(
+          room,
+          roomData.recordId,
+          bufferInfo?.deviceId || "unknown-device",
+          bufferInfo?.url || "unknown-url",
+          bufferInfo?.userAgent || "unknown-useragent",
+          bufferInfo?.title,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[DISCONNECT_FLUSH_ERROR] ${(error as Error).message}`,
+        );
+      }
+    }
+  }
+
+  /** Flushes any remaining Buffer rooms that were not already saved on visibility exit. */
+  private async flushRemainingBufferRooms(): Promise<void> {
     try {
       for (const [bufferRoom, bufferInfo] of this.bufferRooms.entries()) {
         if (
@@ -1970,15 +2195,21 @@ export class WebviewGateway
         }
       }
     } catch (error) {
-      this.logger.error(`[DISCONNECT_BUFFER_FLUSH_ERROR] ${error.message}`);
+      this.logger.error(
+        `[DISCONNECT_BUFFER_FLUSH_ERROR] ${(error as Error).message}`,
+      );
     }
   }
 }
 
+// ---------------------------------------------------------------------------
+// Exported Types
+// ---------------------------------------------------------------------------
+
 export type CommonInfo = {
   user: {
-    userAppData?: string; // 암호화된 사용자 앱 데이터
-    userBaedal?: string; // 레거시 호환성을 위해 유지
+    userAppData?: string; // Encrypted user app data
+    userBaedal?: string; // Kept for legacy compatibility
     authorization: string;
     memberId: string;
     memberNumber: string;
@@ -1987,25 +2218,25 @@ export type CommonInfo = {
   };
   device: {
     adid: string;
-    att?: number; // ATT 상태 값. iOS 14이상에서만 사용 됨.
+    att?: number; // ATT status value (iOS 14+ only)
     appsflyerId: string;
-    deviceBaedal?: string; // 에뮬레이터/루팅 여부, AOS 에서만 제공됨.
+    deviceBaedal?: string; // Emulator/rooting flag (Android only)
     deviceId: string;
     sessionId: string;
-    /** 12.20.0 이상 */
-    actionTrackingKey?: string; // 마케팅 플랫폼 키
+    /** Available since version 12.20.0 */
+    actionTrackingKey?: string; // Marketing platform key
     osVersion: string;
     webUserAgent: string;
     deviceModel: string;
-    carrier: string; // 통신사 정보,
-    /** 14.4.0 이상 */
+    carrier: string; // Carrier information
+    /** Available since version 14.4.0 */
     idfv?: string;
   };
-  /** 12.5.0 이상 */
+  /** Available since version 12.5.0 */
   supportData: string;
-  /** 웹뷰에서 접근한 URL */
+  /** URL accessed from the webview */
   URL: string;
-  /** 사용자 에이전트 정보 */
+  /** User-Agent string */
   userAgent: string;
 };
 
@@ -2024,7 +2255,7 @@ export type TicketFormData = {
 };
 
 export type UserData = {
-  commonInfo?: CommonInfo; // optional로 변경
+  commonInfo?: CommonInfo;
   userAgent: string;
   URL: string;
   webTitle: string;

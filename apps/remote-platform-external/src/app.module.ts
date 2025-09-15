@@ -9,7 +9,7 @@ import { DatabaseModule, ServicesModule } from "@remote-platform/core";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { FigmaModule } from "./modules/figma/figma.module";
-import { ImageBase64Module } from "./modules/imageBase64/imageBase64.module";
+import { ImageBase64Module } from "./modules/image-base64/image-base64.module";
 import { JiraModule } from "./modules/jira/jira.module";
 import { WebviewGatewayModule } from "./modules/webview/webview.module";
 
