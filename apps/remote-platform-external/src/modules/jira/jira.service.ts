@@ -1,83 +1,102 @@
 import { Injectable, Logger } from "@nestjs/common";
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import * as FormData from "form-data";
 
 import { convertRecordLink, createUserDataText } from "../../utils/utils";
 import { UserInfoService } from "../user-info/user-info.service";
 import { TicketFormData, UserData } from "../webview/webview.gateway";
 
-export type UpdateResponseBody = {
-  recordId: number;
-  requestId: number;
-  body: string;
-  base64Encoded: boolean;
-};
+export interface UpdateResponseBody {
+  readonly recordId: number;
+  readonly requestId: number;
+  readonly body: string;
+  readonly base64Encoded: boolean;
+}
+
+interface AtlassianDocumentNode {
+  readonly type: string;
+  readonly attrs?: Record<string, unknown>;
+  readonly content?: ReadonlyArray<AtlassianDocumentNode>;
+  readonly text?: string;
+  readonly marks?: ReadonlyArray<Record<string, unknown>>;
+}
 
 interface AtlassianDocumentFormat {
-  type: "doc";
-  version: number;
-  content: any[];
+  readonly type: "doc";
+  readonly version: number;
+  readonly content: AtlassianDocumentNode[];
 }
 
 export interface CreateTicketRequestBody {
-  username: string;
-  assignee: string;
-  title: string;
-  priority: string;
-  description: AtlassianDocumentFormat;
-  project: string;
-  components: string[];
-  labels: string[];
-  parent: string;
-  issuetype: string;
+  readonly username: string;
+  readonly assignee: string;
+  readonly title: string;
+  readonly priority: string;
+  readonly description: AtlassianDocumentFormat;
+  readonly project: string;
+  readonly components: string[];
+  readonly labels: string[];
+  readonly parent: string;
+  readonly issuetype: string;
 }
 
-interface CreateTicketResponseBody {
-  code: string;
-  status: string;
-  statusMessage: string;
-  message: string;
-  data: {
-    id: string;
-    key: string;
-    self: string;
-    fields: {
-      summary: string;
-      description: string;
-      status: {
-        self: string;
-        description: string;
-        iconUrl: string;
-        name: string;
-        id: string;
-        statusCategory: {
-          self: string;
-          id: number;
-          key: string;
-          colorName: string;
-          name: string;
-        };
-      };
-    };
-  };
+/** Jira REST API v3 create issue response. */
+interface JiraCreateIssueResponse {
+  readonly id: string;
+  readonly key: string;
+  readonly self: string;
 }
+
+/** Jira REST API v3 user search response. */
+interface JiraUser {
+  readonly accountId: string;
+  readonly displayName: string;
+  readonly emailAddress?: string;
+  readonly active: boolean;
+}
+
+interface UploadedFile {
+  readonly buffer: Buffer;
+  readonly originalname?: string;
+  readonly mimetype: string;
+}
+
+const DEFAULT_ISSUE_TYPE = "\uBC84\uADF8";
 
 @Injectable()
 export class JiraService {
   private readonly logger = new Logger(JiraService.name);
-  private readonly workflowAPIURL = process.env.WORKFLOW_API_URL;
+  private readonly jiraHostUrl = process.env.JIRA_HOST_URL;
+  private readonly jiraClient: AxiosInstance;
 
   constructor(private readonly userInfoService: UserInfoService) {
-    this.logger.log("JiraService 초기화: 어드민 DB 기반 사용자 정보 사용");
+    const email = process.env.JIRA_API_EMAIL;
+    const token = process.env.JIRA_API_TOKEN;
+
+    this.jiraClient = axios.create({
+      baseURL: `${this.jiraHostUrl}/rest/api/3`,
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    this.logger.log(
+      `JiraService initialized: Jira host=${this.jiraHostUrl}, email=${email}`,
+    );
   }
 
+  /**
+   * Creates a Jira ticket for the given room/record session.
+   */
   public async createTicket(data: {
     roomName: string;
     recordId: number;
     userData: UserData;
     formData?: TicketFormData;
   }): Promise<{
-    ticketURL: string;
+    ticketUrl: string;
     ticketKey: string;
     requestBody: CreateTicketRequestBody;
   }> {
@@ -97,8 +116,10 @@ export class JiraService {
         })}`,
       );
 
-      if (!userInfo.jiraProjectKey) {
-        throw new Error("티켓 생성 실패: Jira 프로젝트 키가 없습니다.");
+      if (!userInfo?.jiraProjectKey) {
+        throw new Error(
+          "Ticket creation failed: Jira project key is not configured",
+        );
       }
 
       const requestBody: CreateTicketRequestBody = {
@@ -117,115 +138,128 @@ export class JiraService {
         components: formData?.components ?? [],
         labels: formData?.labels ?? [],
         parent: formData?.Epic,
-        issuetype: "버그",
+        issuetype: DEFAULT_ISSUE_TYPE,
       };
+
+      // Build Jira REST API v3 request body
+      const jiraFields: Record<string, unknown> = {
+        project: { key: requestBody.project },
+        summary: requestBody.title,
+        description: requestBody.description,
+        issuetype: { name: requestBody.issuetype },
+        priority: { id: requestBody.priority },
+        labels: requestBody.labels,
+      };
+
+      if (requestBody.components.length > 0) {
+        jiraFields.components = requestBody.components.map((name) => ({
+          name,
+        }));
+      }
+
+      if (requestBody.parent) {
+        jiraFields.parent = { key: requestBody.parent };
+      }
+
+      // Try to resolve assignee account ID
+      const assigneeAccountId = await this.findUserAccountId(
+        requestBody.assignee,
+      );
+      if (assigneeAccountId) {
+        jiraFields.assignee = { accountId: assigneeAccountId };
+      }
 
       this.logger.log(
         `[JIRA_API_REQUEST] ${JSON.stringify({
-          url: `${this.workflowAPIURL}/atlassian/jira/issues`,
+          url: `${this.jiraHostUrl}/rest/api/3/issue`,
           method: "POST",
-          requestBody: {
-            ...requestBody,
-            description: "[OMITTED_FOR_BREVITY]", // description이 너무 길어서 생략
-          },
+          project: requestBody.project,
+          summary: requestBody.title,
+          assignee: requestBody.assignee,
+          assigneeAccountId,
           deviceId: userData.commonInfo.device.deviceId,
           recordId,
           roomName,
         })}`,
       );
 
-      const response = await axios.post<CreateTicketResponseBody>(
-        `${this.workflowAPIURL}/atlassian/jira/issues`,
-        requestBody,
+      const response = await this.jiraClient.post<JiraCreateIssueResponse>(
+        "/issue",
+        { fields: jiraFields },
       );
 
-      const jiraResponse = response.data;
-
-      this.logger.log(
-        `[JIRA_API_RESPONSE] ${JSON.stringify({
-          status: response.status,
-          statusText: response.statusText,
-          responseData: jiraResponse,
-          ticketKey: jiraResponse.data?.key,
-          ticketId: jiraResponse.data?.id,
-          deviceId: userData.commonInfo.device.deviceId,
-        })}`,
-      );
-
-      if (jiraResponse.status !== "CREATED") {
-        throw new Error(`티켓 생성 실패: ${jiraResponse.message}`);
-      }
-
-      const ticketURL = `${process.env.JIRA_HOST_URL}/browse/${response.data.data.key}`;
+      const ticketUrl = `${this.jiraHostUrl}/browse/${response.data.key}`;
 
       this.logger.log(
         `[JIRA_TICKET_CREATED] ${JSON.stringify({
-          ticketURL,
-          ticketKey: response.data.data.key,
+          ticketUrl,
+          ticketKey: response.data.key,
+          ticketId: response.data.id,
           assignee: requestBody.assignee,
           project: requestBody.project,
-          components: requestBody.components,
-          labels: requestBody.labels,
-          parent: requestBody.parent,
           deviceId: userData.commonInfo.device.deviceId,
         })}`,
       );
 
       return {
-        ticketURL,
-        ticketKey: response.data.data.key,
+        ticketUrl,
+        ticketKey: response.data.key,
         requestBody,
       };
-    } catch (error) {
-      const errorData: any = {
-        message: error.message,
+    } catch (error: unknown) {
+      const err = error as Record<string, unknown>;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      const errorData: Record<string, unknown> = {
+        message: errorMessage,
         deviceId: userData.commonInfo.device.deviceId,
         recordId,
         roomName,
         formData: formData ? JSON.stringify(formData) : null,
       };
 
-      if (error.response) {
+      const axiosResponse = err.response as Record<string, unknown> | undefined;
+      if (axiosResponse) {
         errorData.response = {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data,
-          headers: error.response.headers,
-        };
-      }
-
-      if (error.request && !error.response) {
-        // 요청은 보냈지만 응답이 없는 경우
-        errorData.request = {
-          method: error.request.method,
-          path: error.request.path,
-          headers: error.request.getHeaders?.() || error.request.headers,
-        };
-      }
-
-      if (error.config) {
-        errorData.config = {
-          url: error.config.url,
-          method: error.config.method,
-          data: error.config.data,
-          headers: error.config.headers,
-        };
-      }
-
-      if (error instanceof Error) {
-        errorData.errorDetails = {
-          name: error.name,
-          stack: error.stack,
+          status: axiosResponse.status,
+          statusText: axiosResponse.statusText,
+          data: axiosResponse.data,
         };
       }
 
       this.logger.error(`[JIRA_API_ERROR] ${JSON.stringify(errorData)}`);
 
-      throw new Error(`Jira 티켓 생성 실패: ${error.message}`);
+      throw new Error(`Jira ticket creation failed: ${errorMessage}`);
     }
   }
 
-  // 푸드 + 스토어 양식
+  /**
+   * Searches for a Jira user by display name or email and returns their account ID.
+   */
+  private async findUserAccountId(
+    query: string,
+  ): Promise<string | null> {
+    try {
+      const response = await this.jiraClient.get<JiraUser[]>(
+        "/user/search",
+        { params: { query, maxResults: 1 } },
+      );
+      if (response.data.length > 0 && response.data[0].active) {
+        return response.data[0].accountId;
+      }
+      return null;
+    } catch (error) {
+      this.logger.warn(
+        `[JIRA_USER_SEARCH] Could not find user "${query}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Builds the Atlassian Document Format description for a Jira ticket.
+   */
   private buildTicketDescription({
     roomName,
     recordId,
@@ -237,286 +271,106 @@ export class JiraService {
     userData: UserData;
     jobType?: string;
   }): AtlassianDocumentFormat {
-    const content = [];
+    const content: AtlassianDocumentNode[] = [];
 
-    // [재현환경] 섹션 - 모든 직군에 포함
+    // [Reproduction Environment] section - included for all job types
     content.push(
-      {
-        type: "heading",
-        attrs: { level: 3 },
-        content: [
-          {
-            type: "text",
-            text: "[재현환경]",
-          },
-        ],
-      },
+      this.buildHeading("[Reproduction Environment]"),
       {
         type: "codeBlock",
         attrs: { language: "java" },
-        content: [
-          {
-            type: "text",
-            text: createUserDataText(userData),
-          },
-        ],
+        content: [{ type: "text", text: createUserDataText(userData) }],
       },
       {
         type: "paragraph",
         content: [
           {
             type: "text",
-            text: "녹화 세션 링크",
+            text: "Recording Session Link",
             marks: [
               {
                 type: "link",
                 attrs: {
                   href: convertRecordLink(roomName, recordId),
-                  title: "링크",
+                  title: "Link",
                 },
               },
             ],
           },
         ],
       },
-      {
-        type: "rule",
-      },
+      { type: "rule" },
     );
 
-    // QA, PM 직군에만 추가되는 섹션들
+    // Additional sections for QA and PM roles
     if (jobType === "QA" || jobType === "PM") {
-      // [사전조건] 섹션
       content.push(
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [
-            {
-              type: "text",
-              text: "[사전조건]",
-            },
-          ],
-        },
-        {
-          type: "bulletList",
-          content: [
-            {
-              type: "listItem",
-              content: [
-                {
-                  type: "paragraph",
-                  content: [
-                    {
-                      type: "text",
-                      text: " ",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      );
-
-      // [발견상황] 섹션
-      content.push(
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [
-            {
-              type: "text",
-              text: "[발견상황]",
-            },
-          ],
-        },
+        this.buildHeading("[Preconditions]"),
+        this.buildBulletList(" "),
+        this.buildHeading("[Findings]"),
         {
           type: "blockquote",
           content: [
-            {
-              type: "paragraph",
-              content: [
-                {
-                  type: "text",
-                  text: "-",
-                },
-              ],
-            },
+            { type: "paragraph", content: [{ type: "text", text: "-" }] },
           ],
         },
-      );
-
-      // [예상결과] 섹션
-      content.push(
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [
-            {
-              type: "text",
-              text: "[예상결과]",
-            },
-          ],
-        },
-        {
-          type: "bulletList",
-          content: [
-            {
-              type: "listItem",
-              content: [
-                {
-                  type: "paragraph",
-                  content: [
-                    {
-                      type: "text",
-                      text: "-",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      );
-
-      // [실제결과] 섹션
-      content.push(
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [
-            {
-              type: "text",
-              text: "[실제결과]",
-            },
-          ],
-        },
-        {
-          type: "bulletList",
-          content: [
-            {
-              type: "listItem",
-              content: [
-                {
-                  type: "paragraph",
-                  content: [
-                    {
-                      type: "text",
-                      text: "-",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      );
-
-      // [재현빈도] 섹션
-      content.push(
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [
-            {
-              type: "text",
-              text: "[재현빈도]",
-            },
-          ],
-        },
-        {
-          type: "bulletList",
-          content: [
-            {
-              type: "listItem",
-              content: [
-                {
-                  type: "paragraph",
-                  content: [
-                    {
-                      type: "text",
-                      text: "항상 발생 (10/10)",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
+        this.buildHeading("[Expected Result]"),
+        this.buildBulletList("-"),
+        this.buildHeading("[Actual Result]"),
+        this.buildBulletList("-"),
+        this.buildHeading("[Reproduction Frequency]"),
+        this.buildBulletList("Always (10/10)"),
       );
     }
 
-    // [노트] 섹션 - 모든 직군에 포함
-    content.push(
-      {
-        type: "heading",
-        attrs: { level: 3 },
-        content: [
-          {
-            type: "text",
-            text: "[노트]",
-          },
-        ],
-      },
-      {
-        type: "bulletList",
-        content: [
-          {
-            type: "listItem",
-            content: [
-              {
-                type: "paragraph",
-                content: [
-                  {
-                    type: "text",
-                    text: "-",
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    );
+    // [Notes] section - included for all job types
+    content.push(this.buildHeading("[Notes]"), this.buildBulletList("-"));
 
+    return { type: "doc", version: 1, content };
+  }
+
+  private buildHeading(text: string): AtlassianDocumentNode {
     return {
-      type: "doc",
-      version: 1,
-      content: content,
+      type: "heading",
+      attrs: { level: 3 },
+      content: [{ type: "text", text }],
+    };
+  }
+
+  private buildBulletList(text: string): AtlassianDocumentNode {
+    return {
+      type: "bulletList",
+      content: [
+        {
+          type: "listItem",
+          content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+        },
+      ],
     };
   }
 
   /**
-   * Internal server로 이미지 업로드 요청 바이패스
+   * Uploads an image as an attachment to a Jira issue.
    */
-  public async uploadImageToJira(issueId: string, file: any) {
-    // FormData 생성
+  public async uploadImageToJira(
+    issueId: string,
+    file: UploadedFile,
+  ): Promise<unknown> {
     const formData = new FormData();
-    formData.append("image", file.buffer, {
+    formData.append("file", file.buffer, {
       filename: file.originalname || `capture-${Date.now()}.png`,
       contentType: file.mimetype,
     });
 
-    // Internal server URL (환경변수로 관리)
-    const internalServerUrl = process.env.INTERNAL_SERVER_URL;
-
-    if (!internalServerUrl) {
-      this.logger.error("INTERNAL_SERVER_URL 환경변수가 설정되지 않았습니다");
-      throw new Error("Internal server URL is not set");
-    }
-
-    this.logger.log(
-      `[Upload] Internal Server로 이미지 전송: ${internalServerUrl}/workflow/jira/issues/${issueId}/image`,
-    );
-
-    // Internal server로 바이패스
-    const response = await axios.post(
-      `${internalServerUrl}/workflow/jira/issues/${issueId}/image`,
+    const response = await this.jiraClient.post(
+      `/issue/${issueId}/attachments`,
       formData,
       {
         headers: {
           ...formData.getHeaders(),
+          "X-Atlassian-Token": "no-check",
+          // Override Content-Type from jiraClient default (multipart needed here)
+          "Content-Type": undefined,
         },
         maxBodyLength: Infinity,
         maxContentLength: Infinity,

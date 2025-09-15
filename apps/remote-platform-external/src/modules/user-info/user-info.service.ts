@@ -4,17 +4,17 @@ import { Repository } from "typeorm";
 
 import { DeviceInfoEntity } from "@remote-platform/entity";
 
-// 기존 UserInfo 인터페이스와 호환 유지
+/** User information compatible with the legacy UserInfo interface. */
 interface UserInfo {
-  deviceId: string; // 디바이스 ID
-  username: string;
-  userDisplayName: string;
-  email?: string;
-  slackUserId?: string;
-  jiraProjectKey?: string;
-  TCspreadSheetURL?: string;
-  TCspreadSheetID?: string;
-  jobType?: string; // 직군 정보 추가 (QA, PM, DEVELOPER 등)
+  readonly deviceId: string;
+  readonly username: string;
+  readonly userDisplayName: string;
+  readonly email?: string;
+  readonly slackUserId?: string;
+  readonly jiraProjectKey?: string;
+  readonly tcSheetUrl?: string;
+  readonly tcSheetId?: string;
+  readonly jobType?: string;
 }
 
 @Injectable()
@@ -27,19 +27,18 @@ export class UserInfoService {
   ) {}
 
   /**
-   * 디바이스 ID로 사용자 정보 조회 (어드민 DB에서)
-   * JIRA 티켓 생성 시 사용
+   * Looks up user information by device ID from the admin database.
+   * Used primarily when creating Jira tickets.
    */
   public async getUserInfoByDeviceId(
     deviceId: string,
   ): Promise<UserInfo | null> {
-    const timeStart = Date.now();
+    const startTime = Date.now();
     this.logger.log(
-      `🔍 [UserInfo] getUserInfoByDeviceId 호출됨: "${deviceId}"`,
+      `[USER_INFO_LOOKUP] Looking up user info for deviceId="${deviceId}"`,
     );
 
     try {
-      // 1. 디바이스 ID로 사용자 조회
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
         relations: ["user", "user.ticketTemplateList"],
@@ -47,30 +46,29 @@ export class UserInfoService {
 
       if (!device || !device.user) {
         this.logger.warn(
-          `❌ [UserInfo] 사용자 정보를 찾을 수 없음: ${deviceId}`,
+          `[USER_INFO_LOOKUP] No user found for deviceId=${deviceId}`,
         );
         return null;
       }
 
       const user = device.user;
-      const template = user.ticketTemplateList?.[0]; // 첫 번째 템플릿 사용
+      const template = user.ticketTemplateList?.[0];
 
-      // 2. 기존 UserInfo 형식으로 변환
       const userInfo: UserInfo = {
-        deviceId: deviceId,
+        deviceId,
         username: user.username,
         userDisplayName: user.name,
-        email: undefined, // 어드민 DB에는 이메일 없음
+        email: undefined,
         slackUserId: user.slackId,
         jiraProjectKey: template?.jiraProjectKey || undefined,
-        TCspreadSheetURL: undefined, // 더 이상 사용하지 않음
-        TCspreadSheetID: undefined, // 더 이상 사용하지 않음
-        jobType: user.jobType, // 직군 정보 추가
+        tcSheetUrl: undefined,
+        tcSheetId: undefined,
+        jobType: user.jobType,
       };
 
-      const timeEnd = Date.now();
+      const elapsed = Date.now() - startTime;
       this.logger.log(
-        `✅ [UserInfo] 사용자 정보 조회 성공 (${timeEnd - timeStart}ms): ${JSON.stringify(
+        `[USER_INFO_LOOKUP] User info retrieved in ${elapsed}ms: ${JSON.stringify(
           {
             deviceId,
             username: userInfo.username,
@@ -83,7 +81,10 @@ export class UserInfoService {
 
       return userInfo;
     } catch (error) {
-      this.logger.error(`❌ [UserInfo] getUserInfoByDeviceId 실패:`, error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `[USER_INFO_LOOKUP] Failed to look up user info for deviceId=${deviceId}: ${message}`,
+      );
       return null;
     }
   }

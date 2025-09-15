@@ -6,9 +6,9 @@ import {
   TicketLogEntity,
   TicketComponentEntity,
   TicketLabelEntity,
-  Screen,
-  Record,
-  Dom,
+  ScreenEntity,
+  RecordEntity,
+  DomEntity,
 } from "@remote-platform/entity";
 
 import { BufferModule } from "../buffer/buffer.module";
@@ -27,9 +27,9 @@ import { WebviewGateway } from "./webview.gateway";
       TicketLogEntity,
       TicketComponentEntity,
       TicketLabelEntity,
-      Screen,
-      Record,
-      Dom,
+      ScreenEntity,
+      RecordEntity,
+      DomEntity,
     ]),
     ServicesModule,
     BufferModule,
