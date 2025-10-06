@@ -1,5 +1,8 @@
 export interface PeriodQueryDto {
-  period: "day" | "week" | "month"; // 조회 기간
-  startDate?: string; // 시작일 (YYYY-MM-DD)
-  endDate?: string; // 종료일 (YYYY-MM-DD)
+  /** Query period granularity */
+  readonly period: "day" | "week" | "month";
+  /** Start date (YYYY-MM-DD) */
+  readonly startDate?: string;
+  /** End date (YYYY-MM-DD) */
+  readonly endDate?: string;
 }

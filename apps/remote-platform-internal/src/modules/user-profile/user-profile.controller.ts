@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Put,
 } from "@nestjs/common";
@@ -17,8 +18,13 @@ import { UserProfileService } from "./user-profile.service";
 
 @Controller("api/user-profile")
 export class UserProfileController {
+  private readonly logger = new Logger(UserProfileController.name);
+
   constructor(private readonly userProfileService: UserProfileService) {}
 
+  /**
+   * Retrieve a user profile by employee number.
+   */
   @Get(":empNo")
   public async findOne(@Param("empNo") empNo: string): Promise<{
     success: boolean;
@@ -31,6 +37,9 @@ export class UserProfileController {
     };
   }
 
+  /**
+   * Create or update a user profile by employee number.
+   */
   @Put(":empNo/upsert")
   public async upsert(
     @Param("empNo") empNo: string,
@@ -40,10 +49,9 @@ export class UserProfileController {
     data: UserProfileResponseDto;
     created?: boolean;
   }> {
-    console.log(`[CONTROLLER DEBUG] upsert 요청 - empNo: ${empNo}`);
-    console.log(
-      `[CONTROLLER DEBUG] payload:`,
-      JSON.stringify(updateUserProfileDto, null, 2),
+    this.logger.log(`Upsert request - empNo: ${empNo}`);
+    this.logger.debug(
+      `Upsert payload: ${JSON.stringify(updateUserProfileDto, null, 2)}`,
     );
 
     const result = await this.userProfileService.upsertByEmpNo(
@@ -57,6 +65,9 @@ export class UserProfileController {
     };
   }
 
+  /**
+   * Delete a user profile by employee number.
+   */
   @Delete(":empNo")
   @HttpCode(HttpStatus.NO_CONTENT)
   public async remove(@Param("empNo") empNo: string): Promise<void> {

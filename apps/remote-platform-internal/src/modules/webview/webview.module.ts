@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-extraneous-class */
 import { Logger, Module } from "@nestjs/common";
 
 import { ServicesModule } from "@remote-platform/core";

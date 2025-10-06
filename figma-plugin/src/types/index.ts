@@ -69,7 +69,7 @@ export interface RoomInfo {
 export interface TicketInfo {
   id: number
   roomName: string
-  ticketURL: string
+  ticketUrl: string
   jiraProjectKey: string
   title?: string
   assignee: string | null

@@ -11,8 +11,8 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { GoogleSheetsModule } from "./modules/google-sheets/google-sheets.module";
-import { ImageBase64Module } from "./modules/imageBase64/imageBase64.module";
-import { RemoveRecordService } from "./modules/removeRecord/removeRecord.service";
+import { ImageBase64Module } from "./modules/image-base64/image-base64.module";
+import { RemoveRecordService } from "./modules/remove-record/remove-record.service";
 import { SessionReplayModule } from "./modules/session-replay/session-replay.module";
 import { TicketFormModule } from "./modules/ticket-form/ticket-form.module";
 import { UserInfoModule } from "./modules/user-info/user-info.module";
@@ -34,12 +34,8 @@ const staticModule = ServeStaticModule.forRoot(
     serveRoot: "/tabbed-debug",
   },
   {
-    rootPath: join(process.cwd(), "client/out/rooms"),
-    serveRoot: "/rooms",
-  },
-  {
-    rootPath: join(process.cwd(), "client/out/_next/static"),
-    serveRoot: "/_next/static",
+    rootPath: join(process.cwd(), "client/dist"),
+    serveRoot: "/client",
   },
   {
     rootPath: join(process.cwd(), "sdk/dist"),

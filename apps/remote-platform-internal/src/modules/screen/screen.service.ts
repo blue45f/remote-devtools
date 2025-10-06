@@ -1,29 +1,34 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Screen } from "@remote-platform/entity";
+import { ScreenEntity } from "@remote-platform/entity";
 
 import { RecordService } from "../record/record.service";
 
 @Injectable()
 export class ScreenService {
-  constructor(
-    @InjectRepository(Screen)
-    private screenRepository: Repository<Screen>,
+  private readonly logger = new Logger(ScreenService.name);
 
-    private recordService: RecordService,
+  constructor(
+    @InjectRepository(ScreenEntity)
+    private readonly screenRepository: Repository<ScreenEntity>,
+
+    private readonly recordService: RecordService,
   ) {}
 
+  /**
+   * Insert or update a screen entry for the given record.
+   */
   public async upsert(
-    data: Partial<Screen & { recordId: number }>,
-  ): Promise<Screen> {
+    data: Partial<ScreenEntity & { recordId: number }>,
+  ): Promise<ScreenEntity | undefined> {
     const { recordId, ...screenInfo } = data;
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      console.error("Record not found");
-      return;
+      this.logger.error(`Record not found for id=${recordId}`);
+      return undefined;
     }
 
     const screen = await this.screenRepository.upsert(
@@ -34,14 +39,21 @@ export class ScreenService {
     return this.screenRepository.save(screen.generatedMaps[0]);
   }
 
-  public async findScreens(recordId: number): Promise<Screen[]> {
+  /**
+   * Find all screen entries for a given record (excluding screen previews),
+   * ordered by timestamp ascending.
+   */
+  public async findScreens(recordId: number): Promise<ScreenEntity[]> {
     return this.screenRepository.find({
       where: { record: { id: recordId }, type: null },
       order: { timestamp: "ASC" },
     });
   }
 
-  public async findLatestScreen(recordId: number): Promise<Screen> {
+  /**
+   * Find the most recent screen preview for a given record.
+   */
+  public async findLatestScreen(recordId: number): Promise<ScreenEntity> {
     return this.screenRepository.findOne({
       where: { record: { id: recordId }, type: "screenPreview" },
       order: { timestamp: "DESC" },

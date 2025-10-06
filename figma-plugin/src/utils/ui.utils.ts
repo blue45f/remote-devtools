@@ -183,7 +183,7 @@ export function showTickets() {
               <div class="selector-circle ${isActive ? 'selected' : ''}"></div>
             </div>
             <div class="ticket-title-wrapper">
-              <a href="${ticket.ticketURL}" target="_blank" class="ticket-link" title="${ticket.title || ticket.jiraProjectKey}">
+              <a href="${ticket.ticketUrl}" target="_blank" class="ticket-link" title="${ticket.title || ticket.jiraProjectKey}">
                 ${ticket.title || ticket.jiraProjectKey}
               </a>
             </div>

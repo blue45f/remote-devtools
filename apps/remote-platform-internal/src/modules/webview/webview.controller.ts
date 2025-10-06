@@ -6,7 +6,7 @@ import type { Response } from "express";
 import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
-import { WebviewGateway } from "./webview.gateway"; // Gateway에서 방 목록을 가져오기 위해 import
+import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve room list
 
 @Controller("rooms")
 export class WebviewController {
@@ -16,7 +16,7 @@ export class WebviewController {
     private readonly s3Service: S3Service,
   ) {}
 
-  // GET /rooms - 방 목록 반환
+  // GET /rooms - Return room list
   @Get()
   public getRoomList(): { id: number; name: string }[] {
     return this.webviewGateway.getLiveRoomList();
@@ -30,15 +30,15 @@ export class WebviewController {
     }));
   }
 
-  // GET /rooms/backups - S3 백업 목록 조회 (파일 내용 포함 - 느림)
+  // GET /rooms/backups - List S3 backups (includes file content - slower)
   @Get("backups")
   public async getBackupList(
     @Query("deviceId") deviceId?: string,
     @Query("date") date?: string, // YYYY-MM-DD
     @Query("startDate") startDate?: string, // YYYY-MM-DD
     @Query("endDate") endDate?: string, // YYYY-MM-DD
-    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - 해당 날짜 이전의 백업들만 조회
-    @Query("limit") limitParam?: string, // 숫자를 문자열로 받음
+    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
+    @Query("limit") limitParam?: string, // Number received as string
   ): Promise<
     Array<{
       fileName: string;
@@ -64,15 +64,15 @@ export class WebviewController {
     });
   }
 
-  // GET /rooms/backups-light - S3 백업 목록 경량 조회 (파일 내용 읽지 않음 - 빠름)
+  // GET /rooms/backups-light - Lightweight S3 backup listing (no file content reading - faster)
   @Get("backups-light")
   public async getBackupListLight(
     @Query("deviceId") deviceId?: string,
     @Query("date") date?: string, // YYYY-MM-DD
     @Query("startDate") startDate?: string, // YYYY-MM-DD
     @Query("endDate") endDate?: string, // YYYY-MM-DD
-    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - 해당 날짜 이전의 백업들만 조회
-    @Query("limit") limitParam?: string, // 숫자를 문자열로 받음
+    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
+    @Query("limit") limitParam?: string, // Number received as string
   ): Promise<
     Array<{
       fileName: string;
@@ -97,7 +97,7 @@ export class WebviewController {
     });
   }
 
-  // POST /rooms/backup-urls - 선택된 백업 파일들에서 URL 정보 추출
+  // GET /rooms/backup-urls - Extract URL information from selected backup files
   @Get("backup-urls")
   public async getBackupUrls(@Query("filePaths") filePaths?: string) {
     if (!filePaths) {
@@ -108,13 +108,13 @@ export class WebviewController {
     return this.s3Service.getUrlsFromSelectedFiles(pathArray);
   }
 
-  // GET /rooms/backup-viewer - 백업 뷰어 UI
+  // GET /rooms/backup-viewer - Backup viewer UI
   @Get("backup-viewer")
   public getBackupViewer(@Res() res: Response): void {
     res.sendFile(path.join(__dirname, "backup-viewer.html"));
   }
 
-  // GET /rooms/record/:recordId/info - 특정 기록의 정보 조회
+  // GET /rooms/record/:recordId/info - Retrieve info for a specific record
   @Get("record/:recordId/info")
   public async getRecordInfo(@Param("recordId") recordId: string) {
     const record = await this.recordService.findOne(Number(recordId));
@@ -122,11 +122,11 @@ export class WebviewController {
       return { error: "Record not found" };
     }
 
-    // deviceId 우선순위: record.deviceId > commonInfo.deviceId > 'unknown-device'
+    // deviceId priority: record.deviceId > commonInfo.deviceId > 'unknown-device'
     const deviceId = record.deviceId || "unknown-device";
     const url = record.url || "";
 
-    // 한국시간 기준으로 생성 날짜 변환 (UTC+9)
+    // Convert creation date to KST (UTC+9)
     const createdDate = record.createdAt
       ? new Date(new Date(record.createdAt).getTime() + 9 * 60 * 60 * 1000)
           .toISOString()
@@ -139,11 +139,11 @@ export class WebviewController {
       deviceId,
       url,
       date: createdDate,
-      createdAt: record.createdAt, // 원본 timestamp도 함께 반환
+      createdAt: record.createdAt, // Also return the original timestamp
     };
   }
 
-  // GET /rooms/record/:recordId/previous - 같은 deviceId의 이전 기록들 조회 (DB + S3 백업)
+  // GET /rooms/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
   @Get("record/:recordId/previous")
   public async getPreviousRecords(@Param("recordId") recordId: string) {
     const currentRecord = await this.recordService.findOne(Number(recordId));
@@ -152,15 +152,15 @@ export class WebviewController {
     }
 
     const deviceId = currentRecord.deviceId || "unknown-device";
-    const currentTimestamp = currentRecord.createdAt.getTime(); // 현재 녹화 세션의 실제 생성 시간
+    const currentTimestamp = currentRecord.createdAt.getTime(); // Actual creation time of the current recording session
     const currentDate = currentRecord.createdAt.toISOString().split("T")[0]; // YYYY-MM-DD
 
     const allPreviousRecords = [];
 
-    // S3 백업에서만 같은 deviceId의 이전 기록들 조회 (DB 조회 제외)
+    // Query previous records with the same deviceId from S3 backups only (no DB query)
     // Fetching S3 backup data for deviceId: ${deviceId}
     try {
-      // S3에서만 조회 (같은 날짜, 같은 deviceId, 현재 시간 이전)
+      // Query S3 only (same date, same deviceId, before current timestamp)
       const s3Records = await this.s3Service.getS3BackupData(
         deviceId,
         currentTimestamp,
@@ -180,8 +180,8 @@ export class WebviewController {
           s3Record.sessionStartTime ?? s3Record.timestamp;
 
         allPreviousRecords.push({
-          id: `s3-${sanitizedDeviceId}-${s3Record.timestamp}-${index}`, // S3 백업용 고유 ID
-          name: `S3 백업 (${s3Date.toLocaleString()})`,
+          id: `s3-${sanitizedDeviceId}-${s3Record.timestamp}-${index}`, // Unique ID for S3 backup
+          name: `S3 Backup (${s3Date.toLocaleString()})`,
           deviceId: s3Record.deviceId,
           url: s3Record.url,
           title: s3Record.title,
@@ -190,15 +190,15 @@ export class WebviewController {
           date: s3Date.toISOString().split("T")[0],
           room: s3Record.room,
           bufferDataLength: s3Record.bufferData?.length || 0,
-          fileName: `session_${s3Record.timestamp}.json`, // fileName 추가
-          filePath: `${s3Date.toISOString().split("T")[0]}/${s3Record.deviceId}/session_${s3Record.timestamp}.json`, // filePath 추가
+          fileName: `session_${s3Record.timestamp}.json`,
+          filePath: `${s3Date.toISOString().split("T")[0]}/${s3Record.deviceId}/session_${s3Record.timestamp}.json`,
         });
       });
     } catch (error) {
       console.log(error);
     }
 
-    // 3. 모든 기록을 timestamp 기준으로 정렬 (최신순)
+    // 3. Sort all records by timestamp (newest first)
     allPreviousRecords.sort((a, b) => b.timestamp - a.timestamp);
 
     // Total records: ${allPreviousRecords.length} (S3: ${s3Count})

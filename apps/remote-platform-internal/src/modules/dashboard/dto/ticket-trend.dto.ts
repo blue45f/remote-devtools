@@ -1,20 +1,26 @@
 export interface TicketTrendItem {
-  date: string; // 날짜 (period에 따라 형식 변경)
-  created: number; // 생성된 티켓 수
+  /** Date label (format varies by period) */
+  readonly date: string;
+  /** Number of tickets created */
+  readonly created: number;
 
-  // 직군별 생성 수 (optional - 필요시 제공)
-  developer?: number; // 개발자가 생성한 티켓
-  designer?: number; // 디자이너가 생성한 티켓
-  pm?: number; // PM이 생성한 티켓
-  qa?: number; // QA가 생성한 티켓
-  other?: number; // 기타 직군이 생성한 티켓
+  /** Tickets created by developers (optional) */
+  readonly developer?: number;
+  /** Tickets created by designers (optional) */
+  readonly designer?: number;
+  /** Tickets created by PMs (optional) */
+  readonly pm?: number;
+  /** Tickets created by QA (optional) */
+  readonly qa?: number;
+  /** Tickets created by other roles (optional) */
+  readonly other?: number;
 }
 
 export interface TicketTrendDto {
-  success: boolean;
-  data?: TicketTrendItem[];
-  error?: {
-    code: string;
-    message: string;
+  readonly success: boolean;
+  readonly data?: TicketTrendItem[];
+  readonly error?: {
+    readonly code: string;
+    readonly message: string;
   };
 }
