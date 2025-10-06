@@ -4,39 +4,39 @@ import { Repository } from "typeorm";
 
 import { AssigneeInfo, DeviceInfoEntity } from "@remote-platform/entity";
 
-// 기존 UserInfo 인터페이스와 호환 유지
+/** User information compatible with the legacy UserInfo interface */
 interface UserInfo {
-  deviceId: string; // 디바이스 ID
-  username: string;
-  userDisplayName: string;
-  email?: string;
-  slackUserId?: string;
-  jiraProjectKey?: string;
-  TCspreadSheetURL?: string;
-  TCspreadSheetID?: string;
-  jobType?: string; // 직군 정보 추가 (QA, PM, DEVELOPER 등)
+  readonly deviceId: string;
+  readonly username: string;
+  readonly userDisplayName: string;
+  readonly email?: string;
+  readonly slackUserId?: string;
+  readonly jiraProjectKey?: string;
+  readonly tcSheetUrl?: string;
+  readonly tcSheetId?: string;
+  readonly jobType?: string;
 }
 
-// 기존 SimpleStructuredSheetData 인터페이스와 호환 유지
 interface SimpleCellValue {
-  text: string;
-  userData?: {
-    username: string;
-    userDisplayName: string;
-    email: string;
+  readonly text: string;
+  readonly userData?: {
+    readonly username: string;
+    readonly userDisplayName: string;
+    readonly email: string;
   };
 }
 
 interface SimpleColumnData {
-  header: string;
-  values: SimpleCellValue[];
+  readonly header: string;
+  readonly values: SimpleCellValue[];
 }
 
+/** Structured sheet data format compatible with the legacy interface */
 interface SimpleStructuredSheetData {
-  columns: SimpleColumnData[];
-  totalRows: number;
-  totalColumns: number;
-  spreadsheetTitle?: string; // 스프레드시트 제목 추가
+  readonly columns: SimpleColumnData[];
+  readonly totalRows: number;
+  readonly totalColumns: number;
+  readonly spreadsheetTitle?: string;
 }
 
 @Injectable()
@@ -49,94 +49,83 @@ export class UserInfoService {
   ) {}
 
   /**
-   * 디바이스 ID로 사용자 정보 조회 (어드민 DB에서)
-   * 기존 SheetDataService.getUserInfoByDeviceId와 호환
+   * Retrieve user information by device ID from the admin database.
    */
   public async getUserInfoByDeviceId(
     deviceId: string,
   ): Promise<UserInfo | null> {
     const timeStart = Date.now();
-    this.logger.log(
-      `🔍 [UserInfo] getUserInfoByDeviceId 호출됨: "${deviceId}"`,
-    );
+    this.logger.log(`[UserInfo] getUserInfoByDeviceId called: "${deviceId}"`);
 
     try {
-      // 1. 디바이스 ID로 사용자 조회
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
         relations: ["user", "user.ticketTemplateList"],
       });
 
       if (!device || !device.user) {
-        this.logger.warn(
-          `❌ [UserInfo] 사용자 정보를 찾을 수 없음: ${deviceId}`,
-        );
+        this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
         return null;
       }
 
       const user = device.user;
-      const template = user.ticketTemplateList?.[0]; // 첫 번째 템플릿 사용
+      const template = user.ticketTemplateList?.[0];
 
-      // 2. 기존 UserInfo 형식으로 변환
       const userInfo: UserInfo = {
-        deviceId: deviceId,
+        deviceId,
         username: user.username,
         userDisplayName: user.name,
-        email: undefined, // 어드민 DB에는 이메일 없음
+        email: undefined,
         slackUserId: user.slackId,
         jiraProjectKey: template?.jiraProjectKey || undefined,
-        TCspreadSheetURL: undefined, // 더 이상 사용하지 않음
-        TCspreadSheetID: undefined, // 더 이상 사용하지 않음
-        jobType: user.jobType, // 직군 정보 추가
+        tcSheetUrl: undefined,
+        tcSheetId: undefined,
+        jobType: user.jobType,
       };
 
-      const timeEnd = Date.now();
+      const duration = Date.now() - timeStart;
       this.logger.log(
-        `✅ [UserInfo] 사용자 정보 조회 성공 (${timeEnd - timeStart}ms): ${JSON.stringify(
-          {
-            deviceId,
-            username: userInfo.username,
-            slackUserId: userInfo.slackUserId,
-            jiraProjectKey: userInfo.jiraProjectKey,
-            empNo: user.empNo,
-          },
-        )}`,
+        `[UserInfo] User info retrieved (${duration}ms): ${JSON.stringify({
+          deviceId,
+          username: userInfo.username,
+          slackUserId: userInfo.slackUserId,
+          jiraProjectKey: userInfo.jiraProjectKey,
+          empNo: user.empNo,
+        })}`,
       );
 
       return userInfo;
     } catch (error) {
-      this.logger.error(`❌ [UserInfo] getUserInfoByDeviceId 실패:`, error);
+      this.logger.error(`[UserInfo] getUserInfoByDeviceId failed:`, error);
       return null;
     }
   }
 
   /**
-   * 티켓 폼 데이터 조회 (어드민 DB 기반)
-   * 기존 SheetDataService.getTicketFormData와 호환
+   * Retrieve ticket form data for a device, using the last selected template or falling back to the first.
    */
   public async getTicketFormData(
     deviceId: string,
   ): Promise<SimpleStructuredSheetData> {
     const timeStart = Date.now();
-    this.logger.log(`🎫 [UserInfo] getTicketFormData 호출됨: "${deviceId}"`);
+    this.logger.log(`[UserInfo] getTicketFormData called: "${deviceId}"`);
 
     try {
-      // 1. 디바이스 ID로 사용자와 템플릿 조회
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
         relations: ["user", "user.ticketTemplateList"],
       });
 
       if (!device || !device.user) {
-        this.logger.warn(`❌ [UserInfo] 사용자를 찾을 수 없음: ${deviceId}`);
-        throw new Error("사용자 정보를 찾을 수 없습니다.");
+        this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
+        throw new Error("User information not found.");
       }
 
       const user = device.user;
       const ticketTemplateList = user.ticketTemplateList || [];
 
-      // 마지막 선택 템플릿 찾기 (없으면 첫 번째 템플릿 사용)
-      let template = ticketTemplateList[0]; // 기본값: 첫 번째 템플릿
+      // Use the last selected template, falling back to the first available template
+      let template = ticketTemplateList[0];
 
       if (user.lastSelectedTemplateName) {
         const lastSelectedTemplate = ticketTemplateList.find(
@@ -145,98 +134,37 @@ export class UserInfoService {
         if (lastSelectedTemplate) {
           template = lastSelectedTemplate;
           this.logger.log(
-            `🎯 [UserInfo] 마지막 선택 템플릿 사용: "${user.lastSelectedTemplateName}"`,
+            `[UserInfo] Using last selected template: "${user.lastSelectedTemplateName}"`,
           );
         } else {
           this.logger.warn(
-            `⚠️ [UserInfo] 마지막 선택 템플릿을 찾을 수 없음: "${user.lastSelectedTemplateName}", 첫 번째 템플릿 사용`,
+            `[UserInfo] Last selected template not found: "${user.lastSelectedTemplateName}", using first template`,
           );
         }
       } else {
         this.logger.log(
-          `📋 [UserInfo] 마지막 선택 템플릿이 없어서 첫 번째 템플릿 사용`,
+          `[UserInfo] No last selected template; using first template`,
         );
       }
 
       if (!template) {
         this.logger.warn(
-          `❌ [UserInfo] 티켓 템플릿을 찾을 수 없음: ${deviceId}`,
+          `[UserInfo] No ticket template found for device: ${deviceId}`,
         );
-        throw new Error("티켓 템플릿 정보를 찾을 수 없습니다.");
+        throw new Error("No ticket template found.");
       }
 
-      // 2. 어드민 DB 템플릿 데이터를 SimpleStructuredSheetData 형식으로 변환
-      const columns: SimpleColumnData[] = [];
+      const result = this.buildStructuredSheetData(template);
 
-      // title (제목) 컬럼 - titlePrefix 활용
-      columns.push({
-        header: "제목",
-        values: [{ text: template?.titlePrefix }],
-      });
-
-      // Epic 컬럼 - epicTicket 활용
-      if (template.epicTicket) {
-        columns.push({
-          header: "상위 Epic 티켓",
-          values: [{ text: template.epicTicket }],
-        });
-      }
-
-      // 담당자 컬럼
-      const assigneeData: AssigneeInfo[] =
-        template.assigneeInfoList && template.assigneeInfoList.length > 0
-          ? template.assigneeInfoList
-          : [];
-
-      if (assigneeData.length > 0) {
-        columns.push({
-          header: "담당자",
-          values: assigneeData.map((assignee) => ({
-            text: assignee.displayName, // displayName을 text로 사용
-            userData: {
-              username: assignee.username || "", // 새로운 방식에서는 username 사용 가능
-              userDisplayName: assignee.displayName,
-              email: assignee.email || "", // 이메일도 포함 가능
-            },
-          })),
-        });
-      }
-
-      // 컴포넌트 컬럼
-      if (template.componentList && template.componentList.length > 0) {
-        columns.push({
-          header: "컴포넌트",
-          values: template.componentList.map((component) => ({
-            text: component,
-          })),
-        });
-      }
-
-      // 레이블 컬럼
-      if (template.labelList && template.labelList.length > 0) {
-        columns.push({
-          header: "레이블",
-          values: template.labelList.map((label) => ({
-            text: label,
-          })),
-        });
-      }
-
-      const result: SimpleStructuredSheetData = {
-        columns,
-        totalRows: Math.max(...columns.map((col) => col.values.length), 0),
-        totalColumns: columns.length,
-      };
-
-      const timeEnd = Date.now();
+      const duration = Date.now() - timeStart;
       this.logger.log(
-        `✅ [UserInfo] 티켓 폼 데이터 조회 성공 (${timeEnd - timeStart}ms): ${JSON.stringify(
+        `[UserInfo] Ticket form data retrieved (${duration}ms): ${JSON.stringify(
           {
             deviceId,
             username: user.name,
             empNo: user.empNo,
             templateName: template.name,
-            columnsCount: columns.length,
+            columnsCount: result.columns.length,
             totalRows: result.totalRows,
           },
         )}`,
@@ -244,13 +172,13 @@ export class UserInfoService {
 
       return result;
     } catch (error) {
-      this.logger.error(`❌ [UserInfo] getTicketFormData 실패:`, error);
+      this.logger.error(`[UserInfo] getTicketFormData failed:`, error);
       throw error;
     }
   }
 
   /**
-   * 특정 템플릿 기준으로 티켓 폼 데이터 조회 (SDK 모달용)
+   * Retrieve ticket form data for a specific template (used by the SDK modal).
    */
   public async getTicketFormDataByTemplate(
     deviceId: string,
@@ -258,107 +186,42 @@ export class UserInfoService {
   ): Promise<SimpleStructuredSheetData> {
     const timeStart = Date.now();
     this.logger.log(
-      `🎯 [UserInfo] getTicketFormDataByTemplate 호출됨: "${deviceId}", 템플릿: "${templateName}"`,
+      `[UserInfo] getTicketFormDataByTemplate called: "${deviceId}", template: "${templateName}"`,
     );
 
     try {
-      // 1. 디바이스 ID로 사용자와 템플릿들 조회
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
         relations: ["user", "user.ticketTemplateList"],
       });
 
       if (!device || !device.user) {
-        this.logger.warn(`❌ [UserInfo] 사용자를 찾을 수 없음: ${deviceId}`);
-        throw new Error("사용자 정보를 찾을 수 없습니다.");
+        this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
+        throw new Error("User information not found.");
       }
 
       const user = device.user;
 
-      // 2. 특정 템플릿 찾기
       const template = user.ticketTemplateList?.find(
         (t) => t.name === templateName,
       );
 
       if (!template) {
-        this.logger.warn(
-          `❌ [UserInfo] 템플릿을 찾을 수 없음: ${templateName}`,
-        );
-        throw new Error(`템플릿 '${templateName}'을 찾을 수 없습니다.`);
+        this.logger.warn(`[UserInfo] Template not found: ${templateName}`);
+        throw new Error(`Template '${templateName}' not found.`);
       }
 
-      // 3. 해당 템플릿 데이터를 SimpleStructuredSheetData 형식으로 변환
-      const columns: SimpleColumnData[] = [];
+      const result = this.buildStructuredSheetData(template);
 
-      // title (제목) 컬럼 - titlePrefix 활용
-      columns.push({
-        header: "제목",
-        values: [{ text: template?.titlePrefix }],
-      });
-
-      // Epic 컬럼 - epicTicket 활용
-      if (template.epicTicket) {
-        columns.push({
-          header: "상위 Epic 티켓",
-          values: [{ text: template.epicTicket }],
-        });
-      }
-
-      // 담당자 컬럼
-      const assigneeData: AssigneeInfo[] =
-        template.assigneeInfoList && template.assigneeInfoList.length > 0
-          ? template.assigneeInfoList
-          : [];
-
-      if (assigneeData.length > 0) {
-        columns.push({
-          header: "담당자",
-          values: assigneeData.map((assignee) => ({
-            text: assignee.displayName, // displayName을 text로 사용
-            userData: {
-              username: assignee.username || "", // 새로운 방식에서는 username 사용 가능
-              userDisplayName: assignee.displayName,
-              email: assignee.email || "", // 이메일도 포함 가능
-            },
-          })),
-        });
-      }
-
-      // 컴포넌트 컬럼
-      if (template.componentList && template.componentList.length > 0) {
-        columns.push({
-          header: "컴포넌트",
-          values: template.componentList.map((component) => ({
-            text: component,
-          })),
-        });
-      }
-
-      // 레이블 컬럼
-      if (template.labelList && template.labelList.length > 0) {
-        columns.push({
-          header: "레이블",
-          values: template.labelList.map((label) => ({
-            text: label,
-          })),
-        });
-      }
-
-      const result: SimpleStructuredSheetData = {
-        columns,
-        totalRows: Math.max(...columns.map((col) => col.values.length), 0),
-        totalColumns: columns.length,
-      };
-
-      const timeEnd = Date.now();
+      const duration = Date.now() - timeStart;
       this.logger.log(
-        `✅ [UserInfo] 특정 템플릿 폼 데이터 조회 성공 (${timeEnd - timeStart}ms): ${JSON.stringify(
+        `[UserInfo] Template-specific form data retrieved (${duration}ms): ${JSON.stringify(
           {
             deviceId,
             username: user.name,
             empNo: user.empNo,
             templateName: template.name,
-            columnsCount: columns.length,
+            columnsCount: result.columns.length,
             totalRows: result.totalRows,
           },
         )}`,
@@ -367,10 +230,83 @@ export class UserInfoService {
       return result;
     } catch (error) {
       this.logger.error(
-        `❌ [UserInfo] getTicketFormDataByTemplate 실패:`,
+        `[UserInfo] getTicketFormDataByTemplate failed:`,
         error,
       );
       throw error;
     }
+  }
+
+  /**
+   * Build a SimpleStructuredSheetData from a ticket template entity.
+   */
+  private buildStructuredSheetData(template: {
+    titlePrefix?: string;
+    epicTicket?: string;
+    assigneeInfoList?: AssigneeInfo[];
+    componentList?: string[];
+    labelList?: string[];
+  }): SimpleStructuredSheetData {
+    const columns: SimpleColumnData[] = [];
+
+    // Title column using titlePrefix
+    columns.push({
+      header: "Title",
+      values: [{ text: template?.titlePrefix }],
+    });
+
+    // Epic ticket column
+    if (template.epicTicket) {
+      columns.push({
+        header: "Parent Epic Ticket",
+        values: [{ text: template.epicTicket }],
+      });
+    }
+
+    // Assignee column
+    const assigneeData: AssigneeInfo[] =
+      template.assigneeInfoList && template.assigneeInfoList.length > 0
+        ? template.assigneeInfoList
+        : [];
+
+    if (assigneeData.length > 0) {
+      columns.push({
+        header: "Assignee",
+        values: assigneeData.map((assignee) => ({
+          text: assignee.displayName,
+          userData: {
+            username: assignee.username || "",
+            userDisplayName: assignee.displayName,
+            email: assignee.email || "",
+          },
+        })),
+      });
+    }
+
+    // Component column
+    if (template.componentList && template.componentList.length > 0) {
+      columns.push({
+        header: "Component",
+        values: template.componentList.map((component) => ({
+          text: component,
+        })),
+      });
+    }
+
+    // Label column
+    if (template.labelList && template.labelList.length > 0) {
+      columns.push({
+        header: "Label",
+        values: template.labelList.map((label) => ({
+          text: label,
+        })),
+      });
+    }
+
+    return {
+      columns,
+      totalRows: Math.max(...columns.map((col) => col.values.length), 0),
+      totalColumns: columns.length,
+    };
   }
 }

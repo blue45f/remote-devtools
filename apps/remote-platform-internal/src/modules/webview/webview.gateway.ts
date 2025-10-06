@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
+import { Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,7 +10,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from "@nestjs/websockets";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { Server } from "ws";
 import * as WebSocket from "ws";
 
@@ -24,6 +25,10 @@ import {
 
 import { S3Service } from "../s3/s3.service";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 type RoomData = {
   client: WebSocket;
   devtools: Map<string, WebSocket>;
@@ -36,13 +41,50 @@ type DevtoolsData = {
   devtoolsId: string;
 };
 
+/** Represents a CDP-style protocol message forwarded over WebSocket. */
+type ProtocolMessage = {
+  id?: number;
+  method?: string;
+  params?: Record<string, any>;
+  result?: Record<string, any>;
+  error?: { code?: number; message: string };
+  event?: string;
+  [key: string]: any;
+};
+
+/** A single item produced when converting S3 backup data into a sendable protocol entry. */
+type ProtocolEntry = {
+  protocol: { method: string; params: Record<string, any> };
+  timestamp: number;
+  domain: string;
+  requestId?: number;
+};
+
+// ---------------------------------------------------------------------------
+// Gateway
+// ---------------------------------------------------------------------------
+
 @WebSocketGateway()
 export class WebviewGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
-  private rooms: Map<string, RoomData> = new Map();
-  private clientMap: Map<WebSocket, string> = new Map();
-  private devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
+  private readonly logger = new Logger(WebviewGateway.name);
+
+  private readonly rooms: Map<string, RoomData> = new Map();
+  private readonly clientMap: Map<WebSocket, string> = new Map();
+  private readonly devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
+
+  /** Per-device buffer data storage (used during live streaming). */
+  private readonly bufferStorage: Map<string, any[]> = new Map();
+  /** Tracks flush call counts per device. */
+  private readonly flushCallCount: Map<string, number> = new Map();
+  /** Caches response bodies per client for S3 backup playback. */
+  private readonly s3ResponseBodyCache: Map<
+    WebSocket,
+    Map<number, { body: string; base64Encoded: boolean }>
+  > = new Map();
+  /** Caches full S3 backup data per client for on-demand queries. */
+  private readonly s3BackupCache: Map<WebSocket, any[]> = new Map();
 
   @WebSocketServer() public server: Server;
 
@@ -55,10 +97,18 @@ export class WebviewGateway
     private readonly s3Service: S3Service,
   ) {}
 
-  private sendMessage(socket: WebSocket, data: any): void {
+  // -------------------------------------------------------------------------
+  // Helpers -- sending messages
+  // -------------------------------------------------------------------------
+
+  /**
+   * Safely serialises and sends data over a WebSocket.
+   * Only logs initialisation / error-related messages to reduce noise.
+   */
+  private sendMessage(socket: WebSocket, data: ProtocolMessage): void {
     try {
       if (socket.readyState !== WebSocket.OPEN) {
-        console.warn(
+        this.logger.warn(
           `[SOCKET_NOT_READY] WebSocket closed, skipping: ${data.method || data.event}`,
         );
         return;
@@ -67,48 +117,51 @@ export class WebviewGateway
       const message = JSON.stringify(data);
       socket.send(message);
 
-      // 초기화 및 오류 관련 메시지만 로깅 (상세 로그는 제거)
+      // Only log initialisation and error-related messages
       if (
         data.event ||
         data.method?.includes("enable") ||
         data.method?.includes("Error")
       ) {
-        console.log(`[SOCKET] ${data.method || data.event}`);
+        this.logger.log(`[SOCKET] ${data.method || data.event}`);
       }
     } catch (error) {
-      console.error(
-        `[SOCKET_ERROR] ${data.method || data.event}:`,
-        error.message,
+      this.logger.error(
+        `[SOCKET_ERROR] ${data.method || data.event}: ${(error as Error).message}`,
       );
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Helpers -- object reconstruction (Copy Object in playback)
+  // -------------------------------------------------------------------------
+
   /**
-   * 스냅샷 데이터로부터 객체를 재구성하여 JSON 문자열로 반환
-   * Copy Object 기능에서 사용 (녹화 세션 재생 시)
+   * Reconstructs an object from property snapshots and returns it as a JSON string.
+   * Used by the Copy Object feature during recording session playback.
    */
   private reconstructObjectAsJson(
     objectId: string,
     propertySnapshotsMap: Map<string, any[]>,
     args: any[],
   ): string {
-    // 인자에서 indent 옵션 추출
+    // Extract indentation option from arguments
     let indent: string | number = 2;
     if (args?.[0]?.value?.indent !== undefined) {
       indent = args[0].value.indent;
     }
 
-    // 스냅샷 데이터가 없으면 빈 객체 반환
+    // Return empty object when no snapshot data is available
     const properties = propertySnapshotsMap.get(objectId);
     if (!properties || properties.length === 0) {
-      console.log(
-        `[DEBUG] No snapshot found for objectId: ${objectId}, returning empty object`,
+      this.logger.debug(
+        `No snapshot found for objectId: ${objectId}, returning empty object`,
       );
       return "{}";
     }
 
     try {
-      // PropertyDescriptor[] 형태의 스냅샷으로부터 원본 객체 재구성
+      // Rebuild original object from PropertyDescriptor[] snapshots
       const reconstructed = this.reconstructObjectFromProperties(
         properties,
         propertySnapshotsMap,
@@ -116,84 +169,42 @@ export class WebviewGateway
       );
       return JSON.stringify(reconstructed, null, indent);
     } catch (error) {
-      console.error(`[DEBUG] Failed to reconstruct object: ${error.message}`);
-      // JSON.stringify 실패 시 (순환 참조 등) 스냅샷의 문자열 표현 반환
+      this.logger.error(
+        `Failed to reconstruct object: ${(error as Error).message}`,
+      );
+      // Fallback to a simple string representation on circular reference etc.
       return this.propertiesToSimpleString(properties);
     }
   }
 
   /**
-   * PropertyDescriptor 배열로부터 JavaScript 객체 재구성
+   * Recursively rebuilds a JavaScript object from an array of PropertyDescriptors.
    */
   private reconstructObjectFromProperties(
     properties: any[],
     propertySnapshotsMap: Map<string, any[]>,
     visited: Set<string>,
-  ): any {
-    const result: any = {};
+  ): Record<string, any> {
+    const result: Record<string, any> = {};
 
     for (const prop of properties) {
-      // __proto__는 건너뛰기
       if (prop.name === "__proto__") continue;
 
       const value = prop.value;
       if (!value) continue;
 
-      // 타입에 따라 값 처리
-      if (value.type === "undefined") {
-        result[prop.name] = undefined;
-      } else if (
-        value.type === "string" ||
-        value.type === "number" ||
-        value.type === "boolean"
-      ) {
-        result[prop.name] = value.value;
-      } else if (value.subtype === "null") {
-        result[prop.name] = null;
-      } else if (value.type === "object") {
-        // 객체인 경우 하위 프로퍼티로 재귀
-        if (value.objectId && !visited.has(value.objectId)) {
-          visited.add(value.objectId);
-          const subProperties = propertySnapshotsMap.get(value.objectId);
-
-          if (subProperties && subProperties.length > 0) {
-            // 배열 처리
-            if (value.subtype === "array" || value.className === "Array") {
-              result[prop.name] = this.reconstructArrayFromProperties(
-                subProperties,
-                propertySnapshotsMap,
-                visited,
-              );
-            } else {
-              result[prop.name] = this.reconstructObjectFromProperties(
-                subProperties,
-                propertySnapshotsMap,
-                visited,
-              );
-            }
-          } else {
-            // 하위 스냅샷이 없으면 preview에서 값 추출 시도
-            result[prop.name] = this.extractValueFromPreview(value);
-          }
-        } else {
-          // 방문한 객체이거나 objectId가 없으면 preview에서 추출
-          result[prop.name] = this.extractValueFromPreview(value);
-        }
-      } else if (value.type === "function") {
-        result[prop.name] = "[Function]";
-      } else if (value.type === "symbol") {
-        result[prop.name] = value.description || "[Symbol]";
-      } else {
-        // 그 외 타입
-        result[prop.name] = value.value ?? value.description ?? null;
-      }
+      result[prop.name] = this.resolvePropertyValue(
+        value,
+        propertySnapshotsMap,
+        visited,
+      );
     }
 
     return result;
   }
 
   /**
-   * 배열 객체 재구성
+   * Rebuilds an array object from property descriptors (numeric indices only).
    */
   private reconstructArrayFromProperties(
     properties: any[],
@@ -203,7 +214,6 @@ export class WebviewGateway
     const result: any[] = [];
 
     for (const prop of properties) {
-      // 숫자 인덱스만 처리
       const index = parseInt(prop.name, 10);
       if (isNaN(index) || prop.name === "length" || prop.name === "__proto__")
         continue;
@@ -214,102 +224,133 @@ export class WebviewGateway
         continue;
       }
 
-      // 타입에 따라 값 처리 (객체 재구성과 동일한 로직)
-      if (value.type === "undefined") {
-        result[index] = undefined;
-      } else if (
-        value.type === "string" ||
-        value.type === "number" ||
-        value.type === "boolean"
-      ) {
-        result[index] = value.value;
-      } else if (value.subtype === "null") {
-        result[index] = null;
-      } else if (value.type === "object") {
-        if (value.objectId && !visited.has(value.objectId)) {
-          visited.add(value.objectId);
-          const subProperties = propertySnapshotsMap.get(value.objectId);
-
-          if (subProperties && subProperties.length > 0) {
-            if (value.subtype === "array" || value.className === "Array") {
-              result[index] = this.reconstructArrayFromProperties(
-                subProperties,
-                propertySnapshotsMap,
-                visited,
-              );
-            } else {
-              result[index] = this.reconstructObjectFromProperties(
-                subProperties,
-                propertySnapshotsMap,
-                visited,
-              );
-            }
-          } else {
-            result[index] = this.extractValueFromPreview(value);
-          }
-        } else {
-          result[index] = this.extractValueFromPreview(value);
-        }
-      } else if (value.type === "function") {
-        result[index] = "[Function]";
-      } else {
-        result[index] = value.value ?? value.description ?? null;
-      }
+      result[index] = this.resolvePropertyValue(
+        value,
+        propertySnapshotsMap,
+        visited,
+      );
     }
 
     return result;
   }
 
   /**
-   * RemoteObject의 preview에서 값 추출
+   * Resolves a single RemoteObject value into its JavaScript equivalent.
+   * Handles primitives, null, objects, arrays, functions, and symbols.
+   */
+  private resolvePropertyValue(
+    value: any,
+    propertySnapshotsMap: Map<string, any[]>,
+    visited: Set<string>,
+  ): any {
+    if (value.type === "undefined") return undefined;
+
+    if (
+      value.type === "string" ||
+      value.type === "number" ||
+      value.type === "boolean"
+    ) {
+      return value.value;
+    }
+
+    if (value.subtype === "null") return null;
+
+    if (value.type === "object") {
+      return this.resolveObjectValue(value, propertySnapshotsMap, visited);
+    }
+
+    if (value.type === "function") return "[Function]";
+    if (value.type === "symbol") return value.description || "[Symbol]";
+
+    // Fallback for other types
+    return value.value ?? value.description ?? null;
+  }
+
+  /**
+   * Resolves a RemoteObject of type "object" -- either recursing into child
+   * properties or falling back to the preview / description.
+   */
+  private resolveObjectValue(
+    value: any,
+    propertySnapshotsMap: Map<string, any[]>,
+    visited: Set<string>,
+  ): any {
+    if (value.objectId && !visited.has(value.objectId)) {
+      visited.add(value.objectId);
+      const subProperties = propertySnapshotsMap.get(value.objectId);
+
+      if (subProperties && subProperties.length > 0) {
+        if (value.subtype === "array" || value.className === "Array") {
+          return this.reconstructArrayFromProperties(
+            subProperties,
+            propertySnapshotsMap,
+            visited,
+          );
+        }
+        return this.reconstructObjectFromProperties(
+          subProperties,
+          propertySnapshotsMap,
+          visited,
+        );
+      }
+
+      // No child snapshot available -- extract from preview
+      return this.extractValueFromPreview(value);
+    }
+
+    // Already visited or no objectId -- extract from preview
+    return this.extractValueFromPreview(value);
+  }
+
+  /**
+   * Extracts a value from a RemoteObject's preview (or description fallback).
    */
   private extractValueFromPreview(remoteObject: any): any {
-    // primitive 값이 있으면 바로 반환
+    // Primitive value present -- return it directly
     if (remoteObject.value !== undefined) {
       return remoteObject.value;
     }
 
-    // preview가 있으면 preview에서 추출
+    // Build from preview properties when available
     if (remoteObject.preview?.properties) {
       const result: any = remoteObject.subtype === "array" ? [] : {};
 
       for (const prop of remoteObject.preview.properties) {
         if (prop.name === "__proto__") continue;
 
-        let value: any;
+        let resolved: any;
         if (prop.type === "undefined") {
-          value = undefined;
+          resolved = undefined;
         } else if (
           prop.type === "string" ||
           prop.type === "number" ||
           prop.type === "boolean"
         ) {
-          value = prop.value;
+          resolved = prop.value;
         } else if (prop.subtype === "null") {
-          value = null;
+          resolved = null;
         } else if (prop.type === "object") {
-          // 중첩 객체는 description 사용
-          value = prop.value || prop.description || {};
+          // Nested objects use the description
+          resolved = prop.value || prop.description || {};
         } else {
-          value = prop.value ?? prop.description ?? null;
+          resolved = prop.value ?? prop.description ?? null;
         }
 
         if (remoteObject.subtype === "array") {
           const index = parseInt(prop.name, 10);
           if (!isNaN(index)) {
-            result[index] = value;
+            result[index] = resolved;
           }
         } else {
-          result[prop.name] = value;
+          result[prop.name] = resolved;
         }
       }
 
       return result;
     }
 
-    // description을 파싱하거나 그대로 반환
+    // Parse description or return it as-is
     if (remoteObject.description) {
-      // "Object" 또는 "Array(n)" 같은 경우 빈 객체/배열 반환
       if (remoteObject.description === "Object") return {};
       if (remoteObject.description.startsWith("Array(")) return [];
       return remoteObject.description;
@@ -319,10 +360,10 @@ export class WebviewGateway
   }
 
   /**
-   * 프로퍼티 배열을 간단한 문자열로 변환 (fallback)
+   * Converts a property array to a simple string representation (fallback).
    */
   private propertiesToSimpleString(properties: any[]): string {
-    const result: any = {};
+    const result: Record<string, any> = {};
 
     for (const prop of properties) {
       if (prop.name === "__proto__") continue;
@@ -359,51 +400,213 @@ export class WebviewGateway
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Helpers -- CDP domain initialisation messages
+  // -------------------------------------------------------------------------
+
+  /** Sends the standard set of Network / Runtime / Page enable messages. */
+  private sendRecordModeInitMessages(client: WebSocket): void {
+    // Network domain
+    this.sendMessage(client, {
+      id: MSG_ID.NETWORK.ENABLE,
+      method: "Network.enable",
+      params: { maxPostDataSize: 65536 },
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
+      method: "Network.setAttachDebugStack",
+      params: { enabled: true },
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
+      method: "Network.clearAcceptedEncodingsOverride",
+      params: {},
+    });
+
+    // Runtime domain
+    this.sendMessage(client, {
+      id: MSG_ID.RUNTIME.ENABLE,
+      method: "Runtime.enable",
+      params: {},
+    });
+
+    // Page domain
+    this.sendMessage(client, {
+      id: MSG_ID.PAGE.ENABLE,
+      method: "Page.enable",
+      params: {},
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.PAGE.GET_RESOURCE_TREE,
+      method: "Page.getResourceTree",
+      params: {},
+    });
+  }
+
+  /** Sends DOM.enable and ScreenPreview.startPreview messages. */
+  private sendDomAndScreenInitMessages(client: WebSocket): void {
+    this.sendMessage(client, {
+      id: MSG_ID.DOM.ENABLE,
+      method: "DOM.enable",
+      params: {},
+    });
+    this.sendMessage(client, {
+      id: MSG_ID.SCREEN.START_PREVIEW,
+      method: "ScreenPreview.startPreview",
+      params: {},
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Helpers -- property snapshot collection
+  // -------------------------------------------------------------------------
+
+  /**
+   * Collects property snapshots from Runtime.consoleAPICalled events and
+   * indexes them by objectId for later use during object expansion.
+   * Supports both the new format (objectId-keyed object) and the legacy format (array).
+   */
+  private collectPropertySnapshots(
+    runtimeProtocols: Array<{ protocol: any }>,
+  ): Map<string, any[]> {
+    const propertySnapshotsMap = new Map<string, any[]>();
+
+    for (const protocolData of runtimeProtocols) {
+      const proto = protocolData.protocol;
+      if (
+        proto.method !== "Runtime.consoleAPICalled" ||
+        !proto.params?._propertySnapshots
+      ) {
+        continue;
+      }
+
+      const snapshots = proto.params._propertySnapshots;
+
+      // New format: objectId-keyed object
+      if (typeof snapshots === "object" && !Array.isArray(snapshots)) {
+        for (const [objectId, properties] of Object.entries(snapshots)) {
+          if (Array.isArray(properties)) {
+            propertySnapshotsMap.set(objectId, properties);
+          }
+        }
+      }
+      // Legacy format: array of { objectId, properties }
+      else if (Array.isArray(snapshots)) {
+        for (const snapshot of snapshots) {
+          if (snapshot.objectId && Array.isArray(snapshot.properties)) {
+            propertySnapshotsMap.set(snapshot.objectId, snapshot.properties);
+          }
+        }
+      }
+    }
+
+    this.logger.log(
+      `Collected ${propertySnapshotsMap.size} property snapshots for object expansion`,
+    );
+    return propertySnapshotsMap;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helpers -- DevTools request handlers (shared by DB & S3 playback)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handles Runtime.getProperties requests during playback.
+   * Returns stored snapshot data or an empty result when unavailable.
+   */
+  private handleGetPropertiesRequest(
+    client: WebSocket,
+    protocol: any,
+    propertySnapshotsMap: Map<string, any[]>,
+  ): void {
+    const objectId = protocol.params?.objectId;
+    const properties = propertySnapshotsMap.get(objectId);
+
+    if (properties) {
+      this.logger.debug(`Found properties for objectId: ${objectId}`);
+    } else {
+      this.logger.debug(`No properties found for objectId: ${objectId}`);
+    }
+
+    this.sendMessage(client, {
+      id: protocol.id,
+      result: {
+        result: properties || [],
+        internalProperties: [],
+        privateProperties: [],
+      },
+    });
+  }
+
+  /**
+   * Handles Runtime.callFunctionOn requests during playback.
+   * Supports the Copy Object feature (toStringForClipboard / JSON.stringify).
+   */
+  private handleCallFunctionOnRequest(
+    client: WebSocket,
+    protocol: any,
+    propertySnapshotsMap: Map<string, any[]>,
+    modeLabel: string,
+  ): void {
+    const objectId = protocol.params?.objectId;
+    const functionDeclaration = protocol.params?.functionDeclaration || "";
+    const args = protocol.params?.arguments || [];
+
+    this.logger.debug(
+      `Runtime.callFunctionOn called for objectId: ${objectId}`,
+    );
+
+    const isCopyObjectCall =
+      functionDeclaration.includes("toStringForClipboard") ||
+      functionDeclaration.includes("JSON.stringify");
+
+    if (isCopyObjectCall && objectId) {
+      const jsonResult = this.reconstructObjectAsJson(
+        objectId,
+        propertySnapshotsMap,
+        args,
+      );
+
+      this.sendMessage(client, {
+        id: protocol.id,
+        result: {
+          result: {
+            type: "string",
+            value: jsonResult,
+          },
+        },
+      });
+    } else {
+      // Unsupported callFunctionOn request in playback mode
+      this.sendMessage(client, {
+        id: protocol.id,
+        error: {
+          code: -32601,
+          message: `Method not supported in ${modeLabel} playback mode`,
+        },
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Room management
+  // -------------------------------------------------------------------------
+
   private async createRoom(
     roomName: string,
     client: WebSocket,
     recordMode: boolean,
   ): Promise<void> {
     let recordId: number | null = null;
+
     if (recordMode) {
       const { id } = await this.recordService.create({ name: roomName });
       recordId = id;
-      // 직접 protocol 형태로 전송 (event wrapper 제거)
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.ENABLE,
-        method: "Network.enable",
-        params: { maxPostDataSize: 65536 },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-        method: "Network.setAttachDebugStack",
-        params: { enabled: true },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-        method: "Network.clearAcceptedEncodingsOverride",
-        params: {},
-      });
 
-      // runtime
-      this.sendMessage(client, {
-        id: MSG_ID.Runtime.enable,
-        method: "Runtime.enable",
-        params: {},
-      });
-
-      // page
-      this.sendMessage(client, {
-        id: MSG_ID.Page.enable,
-        method: "Page.enable",
-        params: {},
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.Page.getResourceTree,
-        method: "Page.getResourceTree",
-        params: {},
-      });
+      // Send protocol initialisation messages directly (no event wrapper)
+      this.sendRecordModeInitMessages(client);
     }
+
     this.rooms.set(roomName, {
       client,
       devtools: new Map(),
@@ -412,19 +615,19 @@ export class WebviewGateway
     });
     this.clientMap.set(client, roomName);
 
-    // 녹화 세션 생성 시간 조회 (DB에서)
-    let roomTimestamp = Date.now(); // 기본값
+    // Retrieve the recording session creation timestamp from DB
+    let roomTimestamp = Date.now();
     if (recordId) {
       try {
         const record = await this.recordService.findOne(recordId);
-        if (record && record.createdAt) {
+        if (record?.createdAt) {
           roomTimestamp = record.createdAt.getTime();
-          console.log(
-            `[ROOM_CREATED] 📅 Record ${recordId} created at: ${record.createdAt.toISOString()} (timestamp: ${roomTimestamp})`,
+          this.logger.log(
+            `[ROOM_CREATED] Record ${recordId} created at: ${record.createdAt.toISOString()} (timestamp: ${roomTimestamp})`,
           );
         }
       } catch (error) {
-        console.error(
+        this.logger.error(
           `[ROOM_CREATED_ERROR] Failed to get record timestamp: ${error}`,
         );
       }
@@ -434,24 +637,15 @@ export class WebviewGateway
       event: "roomCreated",
       roomName,
       recordId,
-      timestamp: roomTimestamp, // 녹화 세션 생성 시간 추가
-      createdAt: new Date(roomTimestamp).toISOString(), // 디버그용 ISO 문자열
+      timestamp: roomTimestamp,
+      createdAt: new Date(roomTimestamp).toISOString(),
     });
 
-    // dom 초기화 - 직접 protocol 형태로 전송
-    this.sendMessage(client, {
-      id: MSG_ID.DOM.ENABLE,
-      method: "DOM.enable",
-      params: {},
-    });
-    this.sendMessage(client, {
-      id: MSG_ID.Screen.startPreview,
-      method: "ScreenPreview.startPreview",
-      params: {},
-    });
+    // Initialise DOM and Screen Preview
+    this.sendDomAndScreenInitMessages(client);
 
-    // 세션 시작 이벤트 저장
-    const timestamp = Date.now() * 1000000; // 밀리초를 나노초로 변환
+    // Persist session start event (milliseconds -> nanoseconds)
+    const timestamp = Date.now() * 1_000_000;
     await this.screenService.upsert({
       recordId,
       protocol: {
@@ -460,7 +654,7 @@ export class WebviewGateway
       },
       timestamp,
       type: null,
-      event_type: "session_start",
+      eventType: "session_start",
     } as any);
   }
 
@@ -470,17 +664,13 @@ export class WebviewGateway
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     const { recordMode = false } = data;
-    const room = `${recordMode ? "Record-" : "Live-"}${uuidv4()}`;
+    const room = `${recordMode ? "Record-" : "Live-"}${randomUUID()}`;
     await this.createRoom(room, client, recordMode);
   }
 
-  // 버퍼 이벤트 저장 (실시간 스트리밍)
-  private bufferStorage: Map<string, any[]> = new Map(); // deviceId별 버퍼 데이터 저장
-  private flushCallCount: Map<string, number> = new Map(); // deviceId별 flush 호출 횟수 추적
-  private s3ResponseBodyCache: Map<
-    WebSocket,
-    Map<number, { body: string; base64Encoded: boolean }>
-  > = new Map(); // S3 백업용 responseBody 캐시
+  // -------------------------------------------------------------------------
+  // Buffer events (live streaming)
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("bufferEvent")
   public async handleBufferEvent(
@@ -497,15 +687,15 @@ export class WebviewGateway
     try {
       const { room, deviceId, event } = data;
 
-      // 녹화 세션 만들기 또는 티켓 생성 관련 room은 버퍼링하지 않음 (session.json 생성 방지)
+      // Skip buffer events for Record / Live rooms (prevent session.json creation)
       if (room.startsWith("Record-") || room.startsWith("Live-")) {
-        console.log(
+        this.logger.log(
           `[BUFFER_SKIP] Skipping buffer event for ${room} - record/live room detected`,
         );
         return;
       }
 
-      // deviceId별로 버퍼 데이터 누적
+      // Accumulate buffer data per device
       if (!this.bufferStorage.has(deviceId)) {
         this.bufferStorage.set(deviceId, []);
       }
@@ -513,27 +703,29 @@ export class WebviewGateway
       const deviceBuffer = this.bufferStorage.get(deviceId);
       if (deviceBuffer) {
         deviceBuffer.push(event);
-        console.log(
+        this.logger.log(
           `[BUFFER_EVENT] Stored event for device ${deviceId}: ${event.method}, total: ${deviceBuffer.length}`,
         );
       } else {
-        console.error(
-          `[BUFFER_EVENT_DEBUG] Failed to get device buffer for: ${deviceId}`,
+        this.logger.error(
+          `[BUFFER_EVENT] Failed to get device buffer for: ${deviceId}`,
         );
       }
     } catch (error) {
-      console.error(`[BUFFER_EVENT] Error storing buffer event:`, error);
-      console.error(`[BUFFER_EVENT_DEBUG] Full error:`, error);
+      this.logger.error(
+        `[BUFFER_EVENT] Error storing buffer event: ${(error as Error).message}`,
+      );
     }
   }
 
-  public async handleConnection(client: WebSocket, req: any): Promise<void> {
-    console.log("[WS_CONNECTION] New connection attempt", {
-      url: req?.url,
-      headers: req?.headers,
-    });
+  // -------------------------------------------------------------------------
+  // Connection handling
+  // -------------------------------------------------------------------------
 
-    const devtoolsId = uuidv4();
+  public async handleConnection(client: WebSocket, req: any): Promise<void> {
+    this.logger.log(`[WS_CONNECTION] New connection attempt (url=${req?.url})`);
+
+    const devtoolsId = randomUUID();
     const {
       room,
       recordMode,
@@ -545,20 +737,13 @@ export class WebviewGateway
       filePaths,
     } = this.parseQueryParams(req?.url || "");
 
-    console.log("[WS_CONNECTION] Parsed params:", {
-      room,
-      recordMode,
-      recordId,
-      playbackDevice,
-      s3Backup,
-      deviceId,
-      date,
-      filePaths,
-    });
+    this.logger.log(
+      `[WS_CONNECTION] Parsed params: room=${room}, recordMode=${recordMode}, recordId=${recordId}, s3Backup=${s3Backup}`,
+    );
 
-    // S3 백업 재생 모드 (s3Backup=true이고 filePaths가 있는 경우)
+    // S3 backup playback mode (s3Backup=true with filePaths)
     if (s3Backup === "true" && filePaths) {
-      console.log("[WS_CONNECTION] S3 backup playback mode detected");
+      this.logger.log("[WS_CONNECTION] S3 backup playback mode detected");
       await this.handleS3BackupPlaybackByPaths(
         client,
         room || "unknown",
@@ -570,73 +755,34 @@ export class WebviewGateway
       return;
     }
 
-    // 기존 백업 재생 모드 (playbackDevice가 있는 경우) - 호환성 유지
+    // Legacy backup playback mode (playbackDevice present) -- kept for compatibility
     if (playbackDevice && room && recordId) {
-      console.log(
+      this.logger.log(
         `[WS_CONNECTION] Legacy backup playback mode for device: ${playbackDevice}`,
       );
       await this.handleBackupPlayback(client, room, recordId, playbackDevice);
       return;
     }
 
-    // recordMode가 'true' 또는 true이고 recordId가 있는 경우
+    // Record mode reconnection: recordMode=true and a recordId is provided
     if (recordMode === "true" && recordId) {
-      // 네트워크 도메인 초기화 (재연결 시에도 필요) - 직접 protocol 형태로 전송
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.ENABLE,
-        method: "Network.enable",
-        params: { maxPostDataSize: 65536 },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-        method: "Network.setAttachDebugStack",
-        params: { enabled: true },
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-        method: "Network.clearAcceptedEncodingsOverride",
-        params: {},
-      });
+      this.sendRecordModeInitMessages(client);
+      this.sendDomAndScreenInitMessages(client);
 
-      // runtime 초기화
-      this.sendMessage(client, {
-        id: MSG_ID.Runtime.enable,
-        method: "Runtime.enable",
-        params: {},
-      });
+      // Track whether screen preview is active for this client
+      let screenPreviewActive = true;
 
-      // page 초기화
-      this.sendMessage(client, {
-        id: MSG_ID.Page.enable,
-        method: "Page.enable",
-        params: {},
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.Page.getResourceTree,
-        method: "Page.getResourceTree",
-        params: {},
-      });
-
-      // dom 초기화
-      this.sendMessage(client, {
-        id: MSG_ID.DOM.ENABLE,
-        method: "DOM.enable",
-        params: {},
-      });
-      this.sendMessage(client, {
-        id: MSG_ID.Screen.startPreview,
-        method: "ScreenPreview.startPreview",
-        params: {},
-      });
-
-      // 자동으로 최신 화면 전송 (DB에서)
+      // Automatically send the latest screen data from DB after a short delay
       setTimeout(async () => {
+        if (!screenPreviewActive) return;
         const screen = await this.screenService.findLatestScreen(recordId);
         if (screen) {
           this.sendMessage(client, screen.protocol);
-          console.log("[DB_AUTO_SCREEN] Automatically sent latest screen data");
+          this.logger.log(
+            "[DB_AUTO_SCREEN] Automatically sent latest screen data",
+          );
         }
-      }, 100); // 100ms 후 자동 전송
+      }, 100);
 
       client.on("message", async (message: string) => {
         const protocol = JSON.parse(message);
@@ -644,34 +790,49 @@ export class WebviewGateway
           this.sendMessage(client, { id: protocol.id });
         }
         if (protocol.method === "ScreenPreview.startPreview") {
+          screenPreviewActive = true;
           void this.screenService.findLatestScreen(recordId).then((screen) => {
             if (screen) {
               this.sendMessage(client, screen.protocol);
             }
           });
         }
-        // NOTE: devtools가 dom데이터를 받을 준비가 되었을 때 DB데이터를 전송
+        if (protocol.method === "ScreenPreview.stopPreview") {
+          screenPreviewActive = false;
+        }
+        // When DevTools is ready to receive DOM data, send from DB
         if (this.domService.isGetDomRequestMessage(protocol)) {
           const dom = await this.domService.findEntireDom(recordId);
-          this.sendMessage(client, {
-            result: dom.protocol,
-            id: protocol["id"],
-          });
+          if (dom) {
+            this.sendMessage(client, {
+              result: dom.protocol,
+              id: protocol["id"],
+            });
+          } else {
+            this.logger.warn(
+              `[RECORD_MODE] No DOM data found for recordId=${recordId}`,
+            );
+            this.sendMessage(client, {
+              id: protocol["id"],
+              result: { root: null },
+            });
+          }
         }
       });
       client.on("close", () => this.handleDisconnect(client));
       await this.handleRecordMode(client, recordId);
       return;
     }
+
     if (!room) {
-      console.log(`[DEBUG] No room specified, closing connection`);
+      this.logger.log("No room specified, closing connection");
       client.close();
       return;
     }
 
     const roomData = this.rooms.get(room);
     if (roomData) {
-      console.log(`[DEBUG] Adding devtools client to existing room: ${room}`);
+      this.logger.log(`Adding devtools client to existing room: ${room}`);
       roomData.devtools.set(devtoolsId, client);
       this.devtoolsMap.set(client, { room, devtoolsId });
       client.on("message", (message: string) =>
@@ -679,78 +840,53 @@ export class WebviewGateway
       );
       client.on("close", () => this.handleDisconnect(client));
     } else {
-      console.log(`[DEBUG] Room ${room} not found, closing connection`);
+      this.logger.log(`Room ${room} not found, closing connection`);
       client.close();
     }
   }
 
-  private async handleRecordMode(client: WebSocket, recordId: number) {
-    // 기록 정보 조회 (URL 포함)
+  // -------------------------------------------------------------------------
+  // Record mode playback (DB-based)
+  // -------------------------------------------------------------------------
+
+  private async handleRecordMode(
+    client: WebSocket,
+    recordId: number,
+  ): Promise<void> {
+    // Send URL information if available
     const record = await this.recordService.findOne(recordId);
     if (record?.url) {
-      // URL 정보 전송
       this.sendMessage(client, {
         method: "Page.navigatedWithinDocument",
-        params: {
-          frameId: "main",
-          url: record.url,
-        },
+        params: { frameId: "main", url: record.url },
       });
     }
 
+    // Send stored network records
     const networks = await this.networkService.findNetworks(recordId);
-    console.log(`[DEBUG] Found ${networks.length} network records`);
+    this.logger.log(`Found ${networks.length} network records`);
     networks.forEach(
       (network) =>
         network.protocol && this.sendMessage(client, network.protocol),
     );
 
+    // Send stored runtime records and collect property snapshots
     const runtimes = await this.runtimeService.findRuntimes(recordId);
-    console.log(`[DEBUG] Found ${runtimes.length} runtime records`);
+    this.logger.log(`Found ${runtimes.length} runtime records`);
 
-    // 프로퍼티 스냅샷을 objectId로 인덱싱하여 저장
-    // CDP Runtime.getProperties 스펙 준수
-    const propertySnapshotsMap = new Map<string, any[]>();
-
-    runtimes.forEach((runtime) => {
+    const runtimeEntries = runtimes.map((runtime) => {
       const protocol = runtime.protocol as any;
       this.sendMessage(client, protocol);
-
-      // 프로퍼티 스냅샷 수집 (consoleAPICalled 이벤트에서)
-      // 새 형식: _propertySnapshots가 objectId → PropertyDescriptor[] 맵
-      if (
-        protocol.method === "Runtime.consoleAPICalled" &&
-        protocol.params?._propertySnapshots
-      ) {
-        const snapshots = protocol.params._propertySnapshots;
-
-        // 새 형식 (objectId를 키로 하는 객체)
-        if (typeof snapshots === "object" && !Array.isArray(snapshots)) {
-          for (const [objectId, properties] of Object.entries(snapshots)) {
-            if (Array.isArray(properties)) {
-              propertySnapshotsMap.set(objectId, properties);
-            }
-          }
-        }
-        // 기존 형식 호환 (배열)
-        else if (Array.isArray(snapshots)) {
-          for (const snapshot of snapshots) {
-            if (snapshot.objectId && Array.isArray(snapshot.properties)) {
-              propertySnapshotsMap.set(snapshot.objectId, snapshot.properties);
-            }
-          }
-        }
-      }
+      return { protocol };
     });
 
-    console.log(
-      `[DEBUG] Collected ${propertySnapshotsMap.size} property snapshots for object expansion`,
-    );
+    const propertySnapshotsMap = this.collectPropertySnapshots(runtimeEntries);
 
+    // Handle subsequent DevTools requests
     client.on("message", (message: string) => {
       const protocol = JSON.parse(message);
 
-      // Network.getResponseBody 요청 처리
+      // Network.getResponseBody
       if (protocol.method === "Network.getResponseBody") {
         const data = networks.find(
           (network) =>
@@ -766,121 +902,69 @@ export class WebviewGateway
           return;
         }
 
-        const body = data.responseBody;
-
-        // 이미 SDK에서 minified 형태로 저장한 것을 그대로 전송
-        // DevTools가 자체적으로 pretty print를 수행함
-
+        // Send the stored body as-is; DevTools handles pretty-printing
         this.sendMessage(client, {
           id: protocol.id,
-          result: { body: body, base64Encoded: data.base64Encoded },
+          result: {
+            body: data.responseBody,
+            base64Encoded: data.base64Encoded,
+          },
         });
       }
 
-      // Runtime.getProperties 요청 처리 (녹화 세션 재생 시 객체 확장용)
+      // Runtime.getProperties (object expansion in playback)
       if (protocol.method === "Runtime.getProperties") {
-        const objectId = protocol.params?.objectId;
-        const properties = propertySnapshotsMap.get(objectId);
-
-        if (properties) {
-          console.log(`[DEBUG] Found properties for objectId: ${objectId}`);
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: properties,
-              internalProperties: [],
-              privateProperties: [],
-            },
-          });
-        } else {
-          console.log(`[DEBUG] No properties found for objectId: ${objectId}`);
-          // 프로퍼티를 찾을 수 없는 경우 빈 배열 반환
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: [],
-              internalProperties: [],
-              privateProperties: [],
-            },
-          });
-        }
+        this.handleGetPropertiesRequest(client, protocol, propertySnapshotsMap);
       }
 
-      // Runtime.callFunctionOn 요청 처리 (녹화 세션 재생 시 Copy Object 기능)
+      // Runtime.callFunctionOn (Copy Object in playback)
       if (protocol.method === "Runtime.callFunctionOn") {
-        const objectId = protocol.params?.objectId;
-        const functionDeclaration = protocol.params?.functionDeclaration || "";
-        const args = protocol.params?.arguments || [];
-
-        console.log(
-          `[DEBUG] Runtime.callFunctionOn called for objectId: ${objectId}`,
+        this.handleCallFunctionOnRequest(
+          client,
+          protocol,
+          propertySnapshotsMap,
+          "recording",
         );
-
-        // Copy Object 기능인지 확인 (toStringForClipboard 함수 패턴 감지)
-        const isCopyObjectCall =
-          functionDeclaration.includes("toStringForClipboard") ||
-          functionDeclaration.includes("JSON.stringify");
-
-        if (isCopyObjectCall && objectId) {
-          // 스냅샷 데이터로부터 객체 재구성 후 JSON 반환
-          const jsonResult = this.reconstructObjectAsJson(
-            objectId,
-            propertySnapshotsMap,
-            args,
-          );
-
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: {
-                type: "string",
-                value: jsonResult,
-              },
-            },
-          });
-        } else {
-          // 처리할 수 없는 callFunctionOn 요청
-          this.sendMessage(client, {
-            id: protocol.id,
-            error: {
-              code: -32601,
-              message: "Method not supported in recording playback mode",
-            },
-          });
-        }
       }
     });
   }
 
-  private parseQueryParams(url?: string) {
+  // -------------------------------------------------------------------------
+  // Query parameter parsing
+  // -------------------------------------------------------------------------
+
+  private parseQueryParams(url?: string): {
+    room: string | null;
+    recordMode: string | null;
+    recordId: number | null;
+    playbackDevice: string | null;
+    s3Backup: string | null;
+    deviceId: string | null;
+    date: string | null;
+    fileCount: number | null;
+    filePaths: string | null;
+  } {
+    const empty = {
+      room: null,
+      recordMode: null,
+      recordId: null,
+      playbackDevice: null,
+      s3Backup: null,
+      deviceId: null,
+      date: null,
+      fileCount: null,
+      filePaths: null,
+    };
+
     if (!url) {
-      console.log("[DEBUG] No URL provided for parsing");
-      return {
-        room: null,
-        recordMode: null,
-        recordId: null,
-        playbackDevice: null,
-        s3Backup: null,
-        deviceId: null,
-        date: null,
-        filePaths: null,
-      };
+      this.logger.debug("No URL provided for parsing");
+      return empty;
     }
 
     const urlParts = url.split("?");
     if (urlParts.length < 2) {
-      console.log(`[DEBUG] No query params in URL: ${url}`);
-      return {
-        room: null,
-        recordMode: null,
-        recordId: null,
-        playbackDevice: null,
-        s3Backup: null,
-        deviceId: null,
-        date: null,
-        fileCount: null,
-        filePaths: null,
-      };
+      this.logger.debug(`No query params in URL: ${url}`);
+      return empty;
     }
 
     const queryParams = new URLSearchParams(urlParts[1]);
@@ -899,11 +983,14 @@ export class WebviewGateway
       filePaths: queryParams.get("filePaths"),
     };
 
-    console.log(`[DEBUG] Parsed params:`, result);
+    this.logger.debug(`Parsed params: ${JSON.stringify(result)}`);
     return result;
   }
 
-  // 백업 데이터 재생 처리 (DB 재생 로직과 동일하게)
+  // -------------------------------------------------------------------------
+  // Backup playback (legacy DB-based approach)
+  // -------------------------------------------------------------------------
+
   private async handleBackupPlayback(
     client: WebSocket,
     room: string,
@@ -911,11 +998,11 @@ export class WebviewGateway
     deviceId: string,
   ): Promise<void> {
     try {
-      console.log(
-        `[DEBUG] Loading backup data for device: ${deviceId}, room: ${room}, recordId: ${recordId}`,
+      this.logger.log(
+        `Loading backup data for device: ${deviceId}, room: ${room}, recordId: ${recordId}`,
       );
 
-      // S3에서 특정 디바이스의 백업 데이터 조회
+      // Retrieve device-specific backup data from S3
       const deviceData = await this.s3Service.getBufferDataByDeviceId(
         deviceId,
         room,
@@ -925,93 +1012,81 @@ export class WebviewGateway
       if (!deviceData || deviceData.length === 0) {
         this.sendMessage(client, {
           event: "error",
-          message: `디바이스 ${deviceId}의 백업 데이터를 찾을 수 없습니다.`,
+          message: `No backup data found for device ${deviceId}.`,
         });
         client.close();
         return;
       }
 
-      console.log(
-        `[DEBUG] Found ${deviceData.length} backup sessions for device ${deviceId}`,
+      this.logger.log(
+        `Found ${deviceData.length} backup sessions for device ${deviceId}`,
       );
 
-      // URL 정보 전송 (첫 번째 백업의 URL 사용)
+      // Send URL information from the first backup
       if (deviceData[0]?.url) {
         this.sendMessage(client, {
           method: "Page.navigatedWithinDocument",
-          params: {
-            frameId: "main",
-            url: deviceData[0].url,
-          },
+          params: { frameId: "main", url: deviceData[0].url },
         });
       }
 
-      // S3 백업 데이터를 DB 형식으로 변환하여 스트리밍
-      const allProtocols: any[] = [];
+      // Convert S3 backup data to DB-compatible protocol format and stream
+      const allProtocols: ProtocolEntry[] = [];
       for (const backup of deviceData) {
         for (const event of backup.bufferData) {
-          // CDP 프로토콜 형식으로 변환
           allProtocols.push({
-            protocol: {
-              method: event.method,
-              params: event.params,
-            },
+            protocol: { method: event.method, params: event.params },
             timestamp: event.timestamp,
-            domain: event.method.split(".")[0], // Network, Runtime 등
+            domain: event.method.split(".")[0],
           });
         }
       }
 
-      // timestamp 내림차순 정렬 (최신 먼저)
+      // Sort by timestamp descending (newest first)
       allProtocols.sort((a, b) => b.timestamp - a.timestamp);
 
-      console.log(
-        `[DEBUG] Streaming ${allProtocols.length} protocols to DevTools`,
-      );
+      this.logger.log(`Streaming ${allProtocols.length} protocols to DevTools`);
 
-      // DB 재생과 동일한 방식으로 프로토콜 전송
       allProtocols.forEach((protocolData) => {
         if (protocolData.protocol) {
           this.sendMessage(client, protocolData.protocol);
         }
       });
 
-      // 클라이언트 메시지 핸들러 설정 (DB 모드와 동일)
+      // Handle subsequent DevTools requests
       client.on("message", (message: string) => {
         const protocol = JSON.parse(message);
 
-        // Page.getResourceTree 요청 처리
         if (protocol.method === "Page.getResourceTree") {
           this.sendMessage(client, { id: protocol.id });
         }
 
-        // 기타 DevTools 요청 처리는 향후 필요시 추가
-        console.log("[BACKUP_PLAYBACK] DevTools request:", protocol.method);
+        this.logger.log(
+          `[BACKUP_PLAYBACK] DevTools request: ${protocol.method}`,
+        );
       });
 
-      // 재생 완료 알림
+      // Notify playback completion
       this.sendMessage(client, {
         event: "playbackComplete",
-        data: {
-          room,
-          recordId,
-          deviceId,
-          totalEvents: allProtocols.length,
-        },
+        data: { room, recordId, deviceId, totalEvents: allProtocols.length },
       });
 
-      console.log(`[DEBUG] Backup playback completed for device ${deviceId}`);
+      this.logger.log(`Backup playback completed for device ${deviceId}`);
     } catch (error) {
-      console.error("백업 재생 중 오류:", error);
+      this.logger.error(`Backup playback error: ${(error as Error).message}`);
       this.sendMessage(client, {
         event: "error",
-        message: "백업 데이터 재생 중 오류가 발생했습니다.",
+        message: "An error occurred during backup data playback.",
       });
       client.close();
     }
   }
 
-  // 직접 파일 경로로 S3 백업 재생 (성능 개선)
+  // -------------------------------------------------------------------------
+  // S3 backup playback -- by direct file paths
+  // -------------------------------------------------------------------------
+
   private async handleS3BackupPlaybackByPaths(
     client: WebSocket,
     room: string,
@@ -1021,26 +1096,23 @@ export class WebviewGateway
     filePaths: string,
   ): Promise<void> {
     try {
-      // 파일 경로들을 파싱
       const pathArray = filePaths.split(",").filter((path) => path.trim());
 
-      // 파일 경로로 직접 백업 데이터 조회
       const backupData = await this.s3Service.getS3BackupByPaths(pathArray);
 
       if (!backupData || backupData.length === 0) {
         this.sendMessage(client, {
           event: "error",
-          message: `지정된 파일 경로의 백업 데이터를 찾을 수 없습니다.`,
+          message: "No backup data found for the specified file paths.",
         });
         client.close();
         return;
       }
 
-      console.log(
+      this.logger.log(
         `[S3_DIRECT_PLAYBACK] Found ${backupData.length} backup sessions via direct paths`,
       );
 
-      // 기존 재생 로직과 동일한 처리
       await this.processS3BackupData(
         client,
         room,
@@ -1050,16 +1122,22 @@ export class WebviewGateway
         backupData,
       );
     } catch (error) {
-      console.error("[S3_DIRECT_PLAYBACK_ERROR]", error);
+      this.logger.error(
+        `[S3_DIRECT_PLAYBACK_ERROR] ${(error as Error).message}`,
+      );
       this.sendMessage(client, {
         event: "error",
-        message: "직접 경로 방식 S3 백업 데이터 재생 중 오류가 발생했습니다.",
+        message:
+          "An error occurred during S3 backup playback via direct paths.",
       });
       client.close();
     }
   }
 
-  // S3 백업 재생 처리 (메모리 캐시 활용, DB 재생과 동일한 프로토콜 형식)
+  // -------------------------------------------------------------------------
+  // S3 backup playback -- by room / device lookup
+  // -------------------------------------------------------------------------
+
   private async handleS3BackupPlayback(
     client: WebSocket,
     room: string,
@@ -1068,11 +1146,11 @@ export class WebviewGateway
     date: string,
   ): Promise<void> {
     try {
-      console.log(
+      this.logger.log(
         `[S3_PLAYBACK] Loading data: room=${room}, recordId=${recordId}, deviceId=${deviceId}, date=${date}`,
       );
 
-      // Room 이름에서 현재 시간 추출하여 이전 기록들만 조회 (recordService 전달)
+      // Retrieve backup data filtered by room creation time
       const backupData = await this.s3Service.getS3BackupForPlayback(
         room,
         recordId,
@@ -1085,15 +1163,16 @@ export class WebviewGateway
       if (!backupData || backupData.length === 0) {
         this.sendMessage(client, {
           event: "error",
-          message: `${date} 날짜의 ${deviceId} 백업 데이터를 찾을 수 없습니다.`,
+          message: `No backup data found for device ${deviceId} on ${date}.`,
         });
         client.close();
         return;
       }
 
-      console.log(`[S3_PLAYBACK] Found ${backupData.length} backup sessions`);
+      this.logger.log(
+        `[S3_PLAYBACK] Found ${backupData.length} backup sessions`,
+      );
 
-      // 백업 데이터 처리 로직을 공통 메소드로 분리
       await this.processS3BackupData(
         client,
         room,
@@ -1103,19 +1182,19 @@ export class WebviewGateway
         backupData,
       );
     } catch (error) {
-      console.error("[S3_PLAYBACK_ERROR]", error);
+      this.logger.error(`[S3_PLAYBACK_ERROR] ${(error as Error).message}`);
       this.sendMessage(client, {
         event: "error",
-        message: "S3 백업 데이터 재생 중 오류가 발생했습니다.",
+        message: "An error occurred during S3 backup data playback.",
       });
       client.close();
     }
   }
 
-  // S3 백업 데이터를 메모리에 저장하여 요청에 응답할 수 있도록 함
-  private s3BackupCache: Map<WebSocket, any[]> = new Map();
+  // -------------------------------------------------------------------------
+  // S3 backup playback -- shared processing logic
+  // -------------------------------------------------------------------------
 
-  // S3 백업 데이터 처리 공통 로직
   private async processS3BackupData(
     client: WebSocket,
     room: string,
@@ -1124,154 +1203,172 @@ export class WebviewGateway
     date: string,
     backupData: any[],
   ): Promise<void> {
-    // S3 백업에서 세션 시작 시간 추출 (가장 오래된 백업의 sessionStartTime 사용)
-    let sessionStartTime = null;
-    if (backupData.length > 0) {
-      // sessionStartTime이 있는 백업 찾기
-      const backupWithTime = backupData.find(
-        (backup) => backup.sessionStartTime,
-      );
-      if (backupWithTime) {
-        sessionStartTime = backupWithTime.sessionStartTime;
-      } else if (backupData[0].timestamp) {
-        // sessionStartTime이 없으면 timestamp 사용
-        sessionStartTime = backupData[0].timestamp;
-      }
-    }
+    // Extract session start time from the oldest backup
+    const sessionStartTime = this.extractSessionStartTime(backupData);
 
-    // S3 세션 ID 생성 (s3-deviceId-timestamp-index 형태)
+    // Generate an S3 session ID (s3-deviceId-timestamp-index format)
     const encodedDeviceId = encodeURIComponent(deviceId || "unknown-device");
     const s3SessionId = sessionStartTime
       ? `s3-${encodedDeviceId}-${sessionStartTime}-0`
       : null;
-    console.log(`[S3_PLAYBACK] Generated S3 session ID: ${s3SessionId}`);
+    this.logger.log(`[S3_PLAYBACK] Generated S3 session ID: ${s3SessionId}`);
 
-    // DevTools에 S3 세션 ID 전달 (Session Replay API가 올바른 데이터를 반환하도록)
+    // Send S3 session ID to DevTools so the Session Replay API returns correct data
     if (s3SessionId) {
       this.sendMessage(client, {
         method: "SessionReplay.setSessionId",
         params: { sessionId: s3SessionId },
       });
     }
-    // DevTools 도메인 초기화 (DB 재생과 동일하게 한 번만)
-    this.sendMessage(client, {
-      id: MSG_ID.NETWORK.ENABLE,
-      method: "Network.enable",
-      params: { maxPostDataSize: 65536 },
-    });
-    this.sendMessage(client, {
-      id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-      method: "Network.setAttachDebugStack",
-      params: { enabled: true },
-    });
-    this.sendMessage(client, {
-      id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-      method: "Network.clearAcceptedEncodingsOverride",
-      params: {},
-    });
 
-    // runtime 초기화
-    this.sendMessage(client, {
-      id: MSG_ID.Runtime.enable,
-      method: "Runtime.enable",
-      params: {},
-    });
+    // Initialise DevTools domains (same as DB playback)
+    this.sendRecordModeInitMessages(client);
+    this.sendDomAndScreenInitMessages(client);
 
-    // page 초기화
-    this.sendMessage(client, {
-      id: MSG_ID.Page.enable,
-      method: "Page.enable",
-      params: {},
-    });
-    this.sendMessage(client, {
-      id: MSG_ID.Page.getResourceTree,
-      method: "Page.getResourceTree",
-      params: {},
-    });
-
-    // dom 초기화
-    this.sendMessage(client, {
-      id: MSG_ID.DOM.ENABLE,
-      method: "DOM.enable",
-      params: {},
-    });
-
-    // screen 초기화
-    this.sendMessage(client, {
-      id: MSG_ID.Screen.startPreview,
-      method: "ScreenPreview.startPreview",
-      params: {},
-    });
-
-    // URL 정보 전송 (DB 재생과 동일하게)
+    // Send URL information
     if (backupData[0]?.url) {
       this.sendMessage(client, {
         method: "Page.navigatedWithinDocument",
-        params: {
-          frameId: "main",
-          url: backupData[0].url,
-        },
+        params: { frameId: "main", url: backupData[0].url },
       });
     }
 
-    // 자동으로 최신 화면 전송 (S3에서)
+    // Automatically send the latest screen data from S3 cache after a short delay
     setTimeout(() => {
       const latestScreenData = this.findScreenDataInS3Cache(client);
       if (latestScreenData) {
         this.sendMessage(client, latestScreenData);
-        console.log("[S3_AUTO_SCREEN] Automatically sent latest screen data");
+        this.logger.log(
+          "[S3_AUTO_SCREEN] Automatically sent latest screen data",
+        );
       }
-    }, 100); // 100ms 후 자동 전송
+    }, 100);
 
-    // S3 백업 데이터를 client별로 캐시 (웹소켓 요청 응답용)
+    // Cache backup data per client for subsequent WebSocket request handling
     this.s3BackupCache.set(client, backupData);
 
-    // ResponseBody 캐시 초기화 (DB 방식과 동일한 조회를 위해)
+    // Initialise response body cache (same lookup logic as DB playback)
     const responseBodyCache = new Map<
       number,
       { body: string; base64Encoded: boolean }
     >();
     this.s3ResponseBodyCache.set(client, responseBodyCache);
 
-    // 백업 데이터 구조 확인 (요약만)
-    console.log(`[S3_PLAYBACK] Loading ${backupData.length} sessions from S3`);
-    if (backupData.length > 0) {
-      const totalEvents = backupData.reduce(
-        (sum, backup) =>
-          sum +
-          (Array.isArray(backup.bufferData) ? backup.bufferData.length : 0),
-        0,
-      );
-      console.log(`[S3_PLAYBACK] Total events available: ${totalEvents}`);
-    }
+    // Classify backup events into domain-specific protocol arrays
+    const {
+      networkProtocols,
+      runtimeProtocols,
+      sessionReplayProtocols,
+      otherProtocols,
+    } = this.classifyBackupEvents(backupData, responseBodyCache);
 
-    // S3 백업 데이터를 DB와 동일한 형식으로 변환
-    const networkProtocols: any[] = [];
-    const runtimeProtocols: any[] = [];
-    const sessionReplayProtocols: any[] = [];
-    const otherProtocols: any[] = [];
+    // Sort each group chronologically
+    networkProtocols.sort((a, b) => a.timestamp - b.timestamp);
+    runtimeProtocols.sort((a, b) => a.timestamp - b.timestamp);
+    sessionReplayProtocols.sort((a, b) => a.timestamp - b.timestamp);
+    otherProtocols.sort((a, b) => a.timestamp - b.timestamp);
+
+    const totalProtocols =
+      networkProtocols.length +
+      runtimeProtocols.length +
+      sessionReplayProtocols.length +
+      otherProtocols.length;
+
+    this.logger.log(
+      `[S3_PLAYBACK] Sending ${totalProtocols} protocols (Network:${networkProtocols.length}, Runtime:${runtimeProtocols.length}, SessionReplay:${sessionReplayProtocols.length}, Other:${otherProtocols.length})`,
+    );
+
+    // Merge all protocols and send them in chronological order
+    const allProtocols = [
+      ...networkProtocols,
+      ...runtimeProtocols,
+      ...sessionReplayProtocols,
+      ...otherProtocols,
+    ].sort((a, b) => a.timestamp - b.timestamp);
+
+    this.logProtocolSummary(allProtocols);
+
+    let sentCount = 0;
+    allProtocols.forEach((protocolData) => {
+      try {
+        this.sendMessage(client, protocolData.protocol);
+        sentCount += 1;
+      } catch (error) {
+        this.logger.error(
+          `[S3_PLAYBACK_ERROR] ${protocolData.protocol.method}: ${(error as Error).message}`,
+        );
+      }
+    });
+
+    this.logger.log(
+      `[S3_PLAYBACK] Sent ${sentCount}/${totalProtocols} protocols to DevTools`,
+    );
+
+    // Collect property snapshots from runtime events (for object expansion)
+    const propertySnapshotsMap =
+      this.collectPropertySnapshots(runtimeProtocols);
+
+    // Register DevTools request handler for this S3 playback session
+    this.registerS3PlaybackMessageHandler(
+      client,
+      backupData,
+      deviceId,
+      propertySnapshotsMap,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // S3 backup helpers
+  // -------------------------------------------------------------------------
+
+  /** Extracts the session start time from backup data. */
+  private extractSessionStartTime(backupData: any[]): number | null {
+    if (backupData.length === 0) return null;
+
+    const backupWithTime = backupData.find((backup) => backup.sessionStartTime);
+    if (backupWithTime) return backupWithTime.sessionStartTime;
+    if (backupData[0].timestamp) return backupData[0].timestamp;
+    return null;
+  }
+
+  /** Classifies backup buffer events into domain-specific arrays. */
+  private classifyBackupEvents(
+    backupData: any[],
+    responseBodyCache: Map<number, { body: string; base64Encoded: boolean }>,
+  ): {
+    networkProtocols: ProtocolEntry[];
+    runtimeProtocols: ProtocolEntry[];
+    sessionReplayProtocols: ProtocolEntry[];
+    otherProtocols: ProtocolEntry[];
+  } {
+    const networkProtocols: ProtocolEntry[] = [];
+    const runtimeProtocols: ProtocolEntry[] = [];
+    const sessionReplayProtocols: ProtocolEntry[] = [];
+    const otherProtocols: ProtocolEntry[] = [];
+
+    this.logger.log(
+      `[S3_PLAYBACK] Loading ${backupData.length} sessions from S3`,
+    );
+
+    let totalEvents = 0;
 
     for (const backup of backupData) {
-      // bufferData가 배열인지 확인 (방어 코드)
       if (!backup.bufferData || !Array.isArray(backup.bufferData)) {
-        console.warn(
+        this.logger.warn(
           `[S3_PLAYBACK] Invalid bufferData in session ${backup.room}`,
         );
         continue;
       }
 
+      totalEvents += backup.bufferData.length;
+
       for (const event of backup.bufferData) {
-        // event가 유효한 객체인지 확인
-        if (!event || typeof event !== "object" || !event.method) {
-          continue; // 조용히 스킵
-        }
+        if (!event || typeof event !== "object" || !event.method) continue;
 
-        // buffering.saveSession은 메타데이터이므로 스킵 (실제 CDP 이벤트만 처리)
-        if (event.method === "buffering.saveSession") {
-          continue;
-        }
+        // Skip metadata events (not real CDP events)
+        if (event.method === "buffering.saveSession") continue;
 
-        // updateResponseBody 이벤트를 responseBody 캐시에 저장 (DB 방식과 동일하게)
+        // Cache updateResponseBody events (same lookup logic as DB playback)
         if (event.method === "updateResponseBody" && event.params?.requestId) {
           responseBodyCache.set(event.params.requestId, {
             body: event.params.body || "",
@@ -1279,31 +1376,24 @@ export class WebviewGateway
           });
         }
 
-        // Session Replay 이벤트 별도 처리
+        // Classify Session Replay events separately
         if (event.method.startsWith("SessionReplay.")) {
           sessionReplayProtocols.push({
-            protocol: {
-              method: event.method,
-              params: event.params,
-            },
+            protocol: { method: event.method, params: event.params },
             timestamp: event.timestamp,
             domain: "SessionReplay",
           });
           continue;
         }
 
-        // 기존 CDP 이벤트 처리 (이전 시스템과의 호환성)
-        const protocolData = {
-          protocol: {
-            method: event.method,
-            params: event.params,
-          },
+        // Standard CDP event classification
+        const protocolData: ProtocolEntry = {
+          protocol: { method: event.method, params: event.params },
           timestamp: event.timestamp,
           domain: event.method.split(".")[0],
-          requestId: event.params?.requestId, // requestId 보존
+          requestId: event.params?.requestId,
         };
 
-        // 도메인별로 분류 (DB 재생과 동일)
         if (event.method.startsWith("Network.")) {
           networkProtocols.push(protocolData);
         } else if (event.method.startsWith("Runtime.")) {
@@ -1314,256 +1404,59 @@ export class WebviewGateway
       }
     }
 
-    // timestamp 정렬 (시간순)
-    networkProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    runtimeProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    sessionReplayProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    otherProtocols.sort((a, b) => a.timestamp - b.timestamp);
+    this.logger.log(`[S3_PLAYBACK] Total events available: ${totalEvents}`);
 
-    // DB playback과 동일: 이벤트가 없으면 없는 대로 처리 (기본 이벤트 생성 안함)
+    return {
+      networkProtocols,
+      runtimeProtocols,
+      sessionReplayProtocols,
+      otherProtocols,
+    };
+  }
 
-    // 프로토콜 개수 요약
-    const totalProtocols =
-      networkProtocols.length +
-      runtimeProtocols.length +
-      sessionReplayProtocols.length +
-      otherProtocols.length;
-    console.log(
-      `[S3_PLAYBACK] Sending ${totalProtocols} protocols (N:${networkProtocols.length}, R:${runtimeProtocols.length}, SR:${sessionReplayProtocols.length}, O:${otherProtocols.length})`,
-    );
-
-    // DB 재생과 동일한 방식으로 프로토콜 전송
-    let sentCount = 0;
-
-    // 모든 프로토콜을 하나의 배열로 합치고 timestamp 순으로 정렬
-    const allProtocols = [
-      ...networkProtocols,
-      ...runtimeProtocols,
-      ...sessionReplayProtocols,
-      ...otherProtocols,
-    ].sort((a, b) => a.timestamp - b.timestamp); // 시간순 정렬
-
-    console.log(
-      `[S3_PROTOCOL_ORDER] Sending ${allProtocols.length} protocols in chronological order:`,
+  /** Logs the first few protocols in chronological send order. */
+  private logProtocolSummary(allProtocols: ProtocolEntry[]): void {
+    this.logger.log(
+      `[S3_PROTOCOL_ORDER] Sending ${allProtocols.length} protocols in chronological order`,
     );
     allProtocols.slice(0, 10).forEach((protocolData, index) => {
       const protocolDate = new Date(protocolData.timestamp);
-      console.log(
-        `  ${index + 1}. ${protocolData.protocol.method} → ${protocolDate.toISOString()} (${protocolData.timestamp})`,
+      this.logger.log(
+        `  ${index + 1}. ${protocolData.protocol.method} -> ${protocolDate.toISOString()} (${protocolData.timestamp})`,
       );
     });
     if (allProtocols.length > 10) {
-      console.log(`  ... and ${allProtocols.length - 10} more protocols`);
+      this.logger.log(`  ... and ${allProtocols.length - 10} more protocols`);
     }
+  }
 
-    allProtocols.forEach((protocolData) => {
-      try {
-        this.sendMessage(client, protocolData.protocol);
-        sentCount += 1;
-      } catch (error) {
-        console.error(
-          `[S3_PLAYBACK_ERROR] ${protocolData.protocol.method}:`,
-          error.message,
-        );
-      }
-    });
-
-    console.log(
-      `[S3_PLAYBACK] Sent ${sentCount}/${totalProtocols} protocols to DevTools`,
-    );
-
-    // 프로퍼티 스냅샷을 objectId로 인덱싱하여 저장 (S3 백업 재생용)
-    // CDP Runtime.getProperties 스펙 준수
-    const propertySnapshotsMap = new Map<string, any[]>();
-
-    // Runtime 이벤트에서 프로퍼티 스냅샷 수집
-    for (const protocolData of runtimeProtocols) {
-      const proto = protocolData.protocol as any;
-      if (
-        proto.method === "Runtime.consoleAPICalled" &&
-        proto.params?._propertySnapshots
-      ) {
-        const snapshots = proto.params._propertySnapshots;
-
-        // 새 형식 (objectId를 키로 하는 객체)
-        if (typeof snapshots === "object" && !Array.isArray(snapshots)) {
-          for (const [objectId, properties] of Object.entries(snapshots)) {
-            if (Array.isArray(properties)) {
-              propertySnapshotsMap.set(objectId, properties);
-            }
-          }
-        }
-        // 기존 형식 호환 (배열)
-        else if (Array.isArray(snapshots)) {
-          for (const snapshot of snapshots) {
-            if (snapshot.objectId && Array.isArray(snapshot.properties)) {
-              propertySnapshotsMap.set(snapshot.objectId, snapshot.properties);
-            }
-          }
-        }
-      }
-    }
-
-    console.log(
-      `[S3_PLAYBACK] Collected ${propertySnapshotsMap.size} property snapshots for object expansion`,
-    );
-
-    // DevTools 요청 핸들러 설정 (S3 백업 재생 전용 - 개선된 응답)
+  /**
+   * Registers the on-message handler for a client in S3 backup playback mode.
+   * Handles Page.getResourceTree, DOM.getDocument, ScreenPreview.startPreview,
+   * Network.getResponseBody, Runtime.getProperties, and Runtime.callFunctionOn.
+   */
+  private registerS3PlaybackMessageHandler(
+    client: WebSocket,
+    backupData: any[],
+    deviceId: string,
+    propertySnapshotsMap: Map<string, any[]>,
+  ): void {
     client.on("message", async (message: string) => {
       const protocol = JSON.parse(message);
 
-      // Page.getResourceTree 응답 (더 현실적인 페이지 구조)
       if (protocol.method === "Page.getResourceTree") {
-        const mainUrl = backupData[0]?.url || "https://buffered-session.local";
-
-        try {
-          const parsedUrl = new URL(mainUrl);
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              frameTree: {
-                frame: {
-                  id: "main",
-                  loaderId: `loader-${Date.now()}`,
-                  url: mainUrl,
-                  domainAndRegistry: parsedUrl.hostname,
-                  securityOrigin: parsedUrl.origin,
-                  mimeType: "text/html",
-                  secureContextType: "Secure",
-                  crossOriginIsolatedContextType: "NotIsolated",
-                  gatedAPIFeatures: [],
-                },
-                resources: [
-                  {
-                    url: mainUrl,
-                    type: "Document",
-                    mimeType: "text/html",
-                  },
-                ],
-              },
-            },
-          });
-        } catch (urlError) {
-          // URL 파싱 실패 시 기본값 사용
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              frameTree: {
-                frame: {
-                  id: "main",
-                  loaderId: `loader-${Date.now()}`,
-                  url: "https://buffered-session.local",
-                  domainAndRegistry: "buffered-session.local",
-                  securityOrigin: "https://buffered-session.local",
-                  mimeType: "text/html",
-                  secureContextType: "Secure",
-                  crossOriginIsolatedContextType: "NotIsolated",
-                  gatedAPIFeatures: [],
-                },
-                resources: [
-                  {
-                    url: "https://buffered-session.local",
-                    type: "Document",
-                    mimeType: "text/html",
-                  },
-                ],
-              },
-            },
-          });
-        }
+        this.handlePageGetResourceTree(client, protocol, backupData);
       }
 
-      // DOM.getDocument 응답 (기본 HTML 구조 제공)
       if (protocol.method === "DOM.getDocument") {
-        const domData = this.findDomDataInS3Cache(client);
-        const defaultDom = {
-          root: {
-            nodeId: 1,
-            nodeType: 9, // DOCUMENT_NODE
-            nodeName: "#document",
-            localName: "",
-            nodeValue: "",
-            children: [
-              {
-                nodeId: 2,
-                nodeType: 1, // ELEMENT_NODE
-                nodeName: "HTML",
-                localName: "html",
-                nodeValue: "",
-                children: [
-                  {
-                    nodeId: 3,
-                    nodeType: 1,
-                    nodeName: "HEAD",
-                    localName: "head",
-                    nodeValue: "",
-                    children: [
-                      {
-                        nodeId: 4,
-                        nodeType: 1,
-                        nodeName: "TITLE",
-                        localName: "title",
-                        nodeValue: "",
-                        children: [
-                          {
-                            nodeId: 5,
-                            nodeType: 3, // TEXT_NODE
-                            nodeName: "#text",
-                            nodeValue: "Buffered Session",
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    nodeId: 6,
-                    nodeType: 1,
-                    nodeName: "BODY",
-                    localName: "body",
-                    nodeValue: "",
-                    children: [
-                      {
-                        nodeId: 7,
-                        nodeType: 1,
-                        nodeName: "DIV",
-                        localName: "div",
-                        nodeValue: "",
-                        attributes: [
-                          "id",
-                          "app",
-                          "class",
-                          "remote-debugger-session",
-                        ],
-                        children: [
-                          {
-                            nodeId: 8,
-                            nodeType: 3,
-                            nodeName: "#text",
-                            nodeValue: `Buffered session from device: ${deviceId}`,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        };
-
-        this.sendMessage(client, {
-          id: protocol.id,
-          result: domData || defaultDom,
-        });
+        this.handleDomGetDocument(client, protocol, deviceId);
       }
 
-      // ScreenPreview.startPreview 응답
       if (protocol.method === "ScreenPreview.startPreview") {
         const screenData = this.findScreenDataInS3Cache(client);
         if (screenData) {
           this.sendMessage(client, screenData);
         } else {
-          // 화면 데이터가 없는 경우 플레이스홀더 응답
           this.sendMessage(client, {
             id: protocol.id,
             result: {
@@ -1573,15 +1466,193 @@ export class WebviewGateway
         }
       }
 
-      // Network.getResponseBody 응답 (DB 방식과 동일한 로직)
       if (protocol.method === "Network.getResponseBody") {
-        const responseData = this.findResponseBodyInS3Cache(
+        this.handleNetworkGetResponseBody(
           client,
-          protocol.params?.requestId,
+          protocol,
+          backupData,
+          deviceId,
         );
+      }
 
-        const finalResponse = responseData || {
-          body: `<!DOCTYPE html>
+      if (protocol.method === "Runtime.getProperties") {
+        this.handleGetPropertiesRequest(client, protocol, propertySnapshotsMap);
+      }
+
+      if (protocol.method === "Runtime.callFunctionOn") {
+        this.handleCallFunctionOnRequest(
+          client,
+          protocol,
+          propertySnapshotsMap,
+          "S3 backup",
+        );
+      }
+    });
+  }
+
+  /** Responds to Page.getResourceTree with a realistic page structure. */
+  private handlePageGetResourceTree(
+    client: WebSocket,
+    protocol: any,
+    backupData: any[],
+  ): void {
+    const mainUrl = backupData[0]?.url || "https://buffered-session.local";
+
+    try {
+      const parsedUrl = new URL(mainUrl);
+      this.sendMessage(client, {
+        id: protocol.id,
+        result: {
+          frameTree: {
+            frame: {
+              id: "main",
+              loaderId: `loader-${Date.now()}`,
+              url: mainUrl,
+              domainAndRegistry: parsedUrl.hostname,
+              securityOrigin: parsedUrl.origin,
+              mimeType: "text/html",
+              secureContextType: "Secure",
+              crossOriginIsolatedContextType: "NotIsolated",
+              gatedAPIFeatures: [],
+            },
+            resources: [
+              { url: mainUrl, type: "Document", mimeType: "text/html" },
+            ],
+          },
+        },
+      });
+    } catch {
+      // Fallback when URL parsing fails
+      this.sendMessage(client, {
+        id: protocol.id,
+        result: {
+          frameTree: {
+            frame: {
+              id: "main",
+              loaderId: `loader-${Date.now()}`,
+              url: "https://buffered-session.local",
+              domainAndRegistry: "buffered-session.local",
+              securityOrigin: "https://buffered-session.local",
+              mimeType: "text/html",
+              secureContextType: "Secure",
+              crossOriginIsolatedContextType: "NotIsolated",
+              gatedAPIFeatures: [],
+            },
+            resources: [
+              {
+                url: "https://buffered-session.local",
+                type: "Document",
+                mimeType: "text/html",
+              },
+            ],
+          },
+        },
+      });
+    }
+  }
+
+  /** Responds to DOM.getDocument with cached DOM or a default structure. */
+  private handleDomGetDocument(
+    client: WebSocket,
+    protocol: any,
+    deviceId: string,
+  ): void {
+    const domData = this.findDomDataInS3Cache(client);
+    const defaultDom = {
+      root: {
+        nodeId: 1,
+        nodeType: 9, // DOCUMENT_NODE
+        nodeName: "#document",
+        localName: "",
+        nodeValue: "",
+        children: [
+          {
+            nodeId: 2,
+            nodeType: 1, // ELEMENT_NODE
+            nodeName: "HTML",
+            localName: "html",
+            nodeValue: "",
+            children: [
+              {
+                nodeId: 3,
+                nodeType: 1,
+                nodeName: "HEAD",
+                localName: "head",
+                nodeValue: "",
+                children: [
+                  {
+                    nodeId: 4,
+                    nodeType: 1,
+                    nodeName: "TITLE",
+                    localName: "title",
+                    nodeValue: "",
+                    children: [
+                      {
+                        nodeId: 5,
+                        nodeType: 3, // TEXT_NODE
+                        nodeName: "#text",
+                        nodeValue: "Buffered Session",
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                nodeId: 6,
+                nodeType: 1,
+                nodeName: "BODY",
+                localName: "body",
+                nodeValue: "",
+                children: [
+                  {
+                    nodeId: 7,
+                    nodeType: 1,
+                    nodeName: "DIV",
+                    localName: "div",
+                    nodeValue: "",
+                    attributes: [
+                      "id",
+                      "app",
+                      "class",
+                      "remote-debugger-session",
+                    ],
+                    children: [
+                      {
+                        nodeId: 8,
+                        nodeType: 3,
+                        nodeName: "#text",
+                        nodeValue: `Buffered session from device: ${deviceId}`,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    this.sendMessage(client, {
+      id: protocol.id,
+      result: domData || defaultDom,
+    });
+  }
+
+  /** Responds to Network.getResponseBody with cached data or a fallback HTML page. */
+  private handleNetworkGetResponseBody(
+    client: WebSocket,
+    protocol: any,
+    backupData: any[],
+    deviceId: string,
+  ): void {
+    const responseData = this.findResponseBodyInS3Cache(
+      client,
+      protocol.params?.requestId,
+    );
+
+    const finalResponse = responseData || {
+      body: `<!DOCTYPE html>
 <html>
 <head><title>Buffered Session</title></head>
 <body>
@@ -1593,107 +1664,33 @@ export class WebviewGateway
   </div>
 </body>
 </html>`,
-          base64Encoded: false,
-        };
+      base64Encoded: false,
+    };
 
-        this.sendMessage(client, {
-          id: protocol.id,
-          result: finalResponse,
-        });
-      }
-
-      // Runtime.getProperties 요청 처리 (S3 백업 재생 시 객체 확장용)
-      if (protocol.method === "Runtime.getProperties") {
-        const objectId = protocol.params?.objectId;
-        const properties = propertySnapshotsMap.get(objectId);
-
-        if (properties) {
-          console.log(
-            `[S3_PLAYBACK] Found properties for objectId: ${objectId}`,
-          );
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: properties,
-              internalProperties: [],
-              privateProperties: [],
-            },
-          });
-        } else {
-          console.log(
-            `[S3_PLAYBACK] No properties found for objectId: ${objectId}`,
-          );
-          // 프로퍼티를 찾을 수 없는 경우 빈 배열 반환
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: [],
-              internalProperties: [],
-              privateProperties: [],
-            },
-          });
-        }
-      }
-
-      // Runtime.callFunctionOn 요청 처리 (S3 백업 재생 시 Copy Object 기능)
-      if (protocol.method === "Runtime.callFunctionOn") {
-        const objectId = protocol.params?.objectId;
-        const functionDeclaration = protocol.params?.functionDeclaration || "";
-        const args = protocol.params?.arguments || [];
-
-        console.log(
-          `[S3_PLAYBACK] Runtime.callFunctionOn called for objectId: ${objectId}`,
-        );
-
-        // Copy Object 기능인지 확인 (toStringForClipboard 함수 패턴 감지)
-        const isCopyObjectCall =
-          functionDeclaration.includes("toStringForClipboard") ||
-          functionDeclaration.includes("JSON.stringify");
-
-        if (isCopyObjectCall && objectId) {
-          // 스냅샷 데이터로부터 객체 재구성 후 JSON 반환
-          const jsonResult = this.reconstructObjectAsJson(
-            objectId,
-            propertySnapshotsMap,
-            args,
-          );
-
-          this.sendMessage(client, {
-            id: protocol.id,
-            result: {
-              result: {
-                type: "string",
-                value: jsonResult,
-              },
-            },
-          });
-        } else {
-          // 처리할 수 없는 callFunctionOn 요청
-          this.sendMessage(client, {
-            id: protocol.id,
-            error: {
-              code: -32601,
-              message: "Method not supported in S3 backup playback mode",
-            },
-          });
-        }
-      }
+    this.sendMessage(client, {
+      id: protocol.id,
+      result: finalResponse,
     });
   }
 
-  // S3 백업 캐시에서 requestId에 해당하는 응답 데이터 찾기 (DB 방식과 동일한 로직)
+  // -------------------------------------------------------------------------
+  // S3 cache lookup helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Finds a cached response body for the given requestId.
+   * Uses the per-client response body cache populated during backup event classification.
+   */
   private findResponseBodyInS3Cache(
     client: WebSocket,
     requestId: number,
   ): { body: string; base64Encoded: boolean } | null {
     const responseBodyCache = this.s3ResponseBodyCache.get(client);
-    if (!responseBodyCache) {
-      return null;
-    }
+    if (!responseBodyCache) return null;
 
     const responseData = responseBodyCache.get(requestId);
     if (responseData) {
-      console.log(
+      this.logger.log(
         `[RESPONSE_BODY_FOUND] Found responseBody for requestId ${requestId}`,
       );
       return responseData;
@@ -1702,37 +1699,27 @@ export class WebviewGateway
     return null;
   }
 
-  // S3 백업 캐시에서 DOM 데이터 찾기
+  /** Finds the latest DOM data from the S3 backup cache. */
   private findDomDataInS3Cache(client: WebSocket): any | null {
     const cachedBackupData = this.s3BackupCache.get(client);
-    if (!cachedBackupData) {
-      return null;
-    }
+    if (!cachedBackupData) return null;
 
-    // 모든 DOM.updated 이벤트를 수집하고 timestamp로 정렬해서 최신 것을 반환
     let latestDomData: any = null;
     let latestTimestamp = 0;
 
     for (const backup of cachedBackupData) {
-      // bufferData가 배열인지 확인 (방어 코드)
-      if (!backup.bufferData || !Array.isArray(backup.bufferData)) {
-        continue;
-      }
+      if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
 
       for (const event of backup.bufferData) {
-        // event가 유효한 객체인지 확인
-        if (!event || typeof event !== "object" || !event.method) {
-          continue;
-        }
+        if (!event || typeof event !== "object" || !event.method) continue;
 
         if (event.method === "DOM.updated" && event.params && event.timestamp) {
-          // timestamp가 가장 큰 것(최신)을 찾기
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
             latestDomData = event.params.root || event.params;
           }
         }
-        // 또는 DOM.getDocument 결과 찾기
+
         if (
           event.method === "DOM.getDocument" &&
           event.params?.result?.root &&
@@ -1747,7 +1734,7 @@ export class WebviewGateway
     }
 
     if (latestDomData) {
-      console.log(
+      this.logger.log(
         `[S3_LATEST_DOM] Found latest DOM with timestamp: ${latestTimestamp}`,
       );
     }
@@ -1755,22 +1742,16 @@ export class WebviewGateway
     return latestDomData;
   }
 
-  // S3 백업 캐시에서 Screen 데이터 찾기 (로그 최소화)
+  /** Finds the latest screen capture data from the S3 backup cache. */
   private findScreenDataInS3Cache(client: WebSocket): any | null {
     const cachedBackupData = this.s3BackupCache.get(client);
-    if (!cachedBackupData) {
-      return null;
-    }
+    if (!cachedBackupData) return null;
 
-    // 모든 ScreenPreview.captured 이벤트를 수집하고 timestamp로 정렬해서 최신 것을 반환
     let latestScreenData: any = null;
     let latestTimestamp = 0;
 
     for (const backup of cachedBackupData) {
-      // bufferData가 배열인지 확인 (방어 코드)
-      if (!backup.bufferData || !Array.isArray(backup.bufferData)) {
-        continue;
-      }
+      if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
 
       for (const event of backup.bufferData) {
         if (
@@ -1778,7 +1759,6 @@ export class WebviewGateway
           event.params &&
           event.timestamp
         ) {
-          // timestamp가 가장 큰 것(최신)을 찾기
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
             latestScreenData = {
@@ -1791,13 +1771,17 @@ export class WebviewGateway
     }
 
     if (latestScreenData) {
-      console.log(
+      this.logger.log(
         `[S3_LATEST_SCREEN] Found latest screen with timestamp: ${latestTimestamp}`,
       );
     }
 
     return latestScreenData;
   }
+
+  // -------------------------------------------------------------------------
+  // Message handlers
+  // -------------------------------------------------------------------------
 
   @SubscribeMessage("messageToDevtools")
   public handleMessageToDevtools(
@@ -1808,7 +1792,7 @@ export class WebviewGateway
     const roomData = this.rooms.get(data.room);
     const devtools = roomData?.devtools.get(data.devtoolsId);
     if (devtools) {
-      this.sendMessage(devtools, data.message);
+      this.sendMessage(devtools, data.message as ProtocolMessage);
     } else {
       this.sendMessage(client, {
         event: "error",
@@ -1822,15 +1806,15 @@ export class WebviewGateway
           ? JSON.parse(data.message)
           : data.message;
       if (this.domService.isEnableDomResponseMessage(protocol.id)) {
-        // dom이 enable되면 dom 데이터를 요청함
+        // DOM is enabled -- request DOM data
         this.sendMessage(client, {
           id: MSG_ID.DOM.GET_DOCUMENT,
           method: "DOM.getDocument",
           params: {},
         });
       } else if (this.domService.isGetDomResponseMessage(protocol.id)) {
-        // dom 데이터를 받으면 DB에 저장
-        const timestamp = Date.now() * 1000000; // 밀리초를 나노초로 변환
+        // DOM data received -- persist to DB (milliseconds -> nanoseconds)
+        const timestamp = Date.now() * 1_000_000;
         void this.domService.upsert({
           recordId: roomData.recordId,
           protocol,
@@ -1850,14 +1834,16 @@ export class WebviewGateway
     const roomData = this.rooms.get(data.room);
     if (roomData) {
       roomData.devtools.forEach((devtools) => devtools.send(data.message));
+
       if (roomData.recordMode) {
-        const timestamp = Date.now() * 1000000; // 밀리초를 나노초로 변환
-        // TODO: 도메인별로 메시지를 구분할 수 있도록 수정 필요
+        const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
+
+        // TODO: Improve domain-based message routing
         if (protocol.params.requestId) {
           await this.networkService.create({
             recordId: roomData.recordId,
             protocol,
-            requestId: protocol.params?.requestId || null, // requestId가 없을 수도 있음
+            requestId: protocol.params?.requestId || null,
             timestamp,
           });
         }
@@ -1880,7 +1866,7 @@ export class WebviewGateway
         }
 
         if (protocol.method.startsWith("ScreenPreview.captured")) {
-          // 이벤트 타입 결정
+          // Determine event type
           let eventType = "incremental_snapshot";
           if (protocol.params?.isFirstSnapshot) {
             eventType = "full_snapshot";
@@ -1891,7 +1877,7 @@ export class WebviewGateway
             protocol,
             timestamp,
             type: "screenPreview",
-            event_type: eventType,
+            eventType: eventType,
           } as any);
         }
       }
@@ -1915,24 +1901,28 @@ export class WebviewGateway
     await this.networkService.updateResponseBody({ recordId, ...data });
   }
 
+  // -------------------------------------------------------------------------
+  // Disconnection handling
+  // -------------------------------------------------------------------------
+
   public async handleDisconnect(client: WebSocket): Promise<void> {
     const room = this.clientMap.get(client);
     if (room) {
       const roomData = this.rooms.get(room);
 
-      // 세션 종료 이벤트 저장
+      // Persist session end event
       if (roomData?.recordId) {
-        const endTime = Date.now() * 1000000; // 밀리초를 나노초로 변환
+        const endTime = Date.now() * 1_000_000; // milliseconds -> nanoseconds
 
         await this.screenService.upsert({
           recordId: roomData.recordId,
           protocol: { method: "session_end", params: {} },
           timestamp: endTime,
           type: null,
-          event_type: "session_end",
+          eventType: "session_end",
         } as any);
 
-        // duration 계산 및 업데이트
+        // Calculate and update session duration
         const startEvent = await this.screenService.findScreens(
           roomData.recordId,
         );
@@ -1948,6 +1938,7 @@ export class WebviewGateway
       this.clientMap.delete(client);
       return;
     }
+
     const devtoolsInfo = this.devtoolsMap.get(client);
     if (devtoolsInfo) {
       this.rooms
@@ -1956,10 +1947,14 @@ export class WebviewGateway
       this.devtoolsMap.delete(client);
     }
 
-    // S3 백업 관련 캐시 정리
+    // Clean up S3 backup caches
     this.s3BackupCache.delete(client);
     this.s3ResponseBodyCache.delete(client);
   }
+
+  // -------------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------------
 
   public getLiveRoomList(): { id: number; name: string }[] {
     return Array.from(this.rooms.entries())
@@ -1967,13 +1962,17 @@ export class WebviewGateway
       .map(([name]) => ({ id: 0, name }));
   }
 
+  // -------------------------------------------------------------------------
+  // DevTools message relay
+  // -------------------------------------------------------------------------
+
   private handleDevtoolsMessage(
     devtoolsId: string,
     room: string,
     message: string,
-  ) {
+  ): void {
     const roomData = this.rooms.get(room);
-    // devtools 메시지는 그대로 전달 (protocol wrapper 없이)
+    // Forward devtools messages directly (no protocol wrapper)
     roomData?.client.send(message);
   }
 }

@@ -9,14 +9,14 @@ import {
 
 import { GoogleSheetsService } from "./google-sheets.service";
 
-// 기본 응답 타입
+/** Standard API response wrapper */
 interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  time?: number;
-  error?: string;
-  message?: string;
-  errorCode?: string;
+  readonly success: boolean;
+  readonly data?: T;
+  readonly time?: number;
+  readonly error?: string;
+  readonly message?: string;
+  readonly errorCode?: string;
 }
 
 @Controller("api/google-sheets")
@@ -26,31 +26,31 @@ export class GoogleSheetsController {
   constructor(private readonly googleSheetsService: GoogleSheetsService) {}
 
   /**
-   * 어드민용 TC 시트 링크로 직접 시트 정보 읽어오기
+   * Read TC sheet data directly from a Google Sheets URL (admin use).
    */
   @Get("read-tc-sheet")
   public async readTcSheetFromUrl(
     @Query("sheetUrl") sheetUrl: string,
     @Query("sheetName") sheetName?: string,
   ): Promise<ApiResponse> {
-    this.logger.log(`📋 [ADMIN] TC 시트 직접 읽기: ${sheetUrl}`);
+    this.logger.log(`[ADMIN] Reading TC sheet: ${sheetUrl}`);
     const timeStart = Date.now();
 
     try {
-      // 1. URL에서 스프레드시트 ID 추출
+      // 1. Extract spreadsheet ID from URL
       const spreadsheetId = this.extractSpreadsheetId(sheetUrl);
       if (!spreadsheetId) {
-        throw new BadRequestException("유효하지 않은 구글 시트 URL입니다.");
+        throw new BadRequestException("Invalid Google Sheets URL.");
       }
 
-      // 2. 시트 이름 기본값 설정
+      // 2. Set default sheet name
       const targetSheetName = sheetName || "DebugTools";
 
       this.logger.log(
-        `🔍 [ADMIN] 스프레드시트 ID: ${spreadsheetId}, 시트명: ${targetSheetName}`,
+        `[ADMIN] Spreadsheet ID: ${spreadsheetId}, sheet: ${targetSheetName}`,
       );
 
-      // 3. 먼저 시트의 모든 탭 이름을 조회해서 디버깅
+      // 3. Retrieve all sheet tab names for debugging
       const metadata =
         await this.googleSheetsService.getSpreadsheetMetadata(spreadsheetId);
       const availableSheets: string[] = [];
@@ -64,11 +64,11 @@ export class GoogleSheetsController {
         }
       }
       this.logger.log(
-        `📋 사용 가능한 시트 탭들: ${JSON.stringify(availableSheets)}`,
+        `Available sheet tabs: ${JSON.stringify(availableSheets)}`,
       );
-      this.logger.log(`🎯 찾고 있는 시트: "${targetSheetName}"`);
+      this.logger.log(`Target sheet: "${targetSheetName}"`);
 
-      // 4. Google Sheets API로 데이터 조회
+      // 4. Fetch structured data via Google Sheets API
       const sheetData = await this.googleSheetsService.getStructuredSheetData(
         spreadsheetId,
         targetSheetName,
@@ -76,13 +76,13 @@ export class GoogleSheetsController {
 
       if (!sheetData) {
         throw new BadRequestException(
-          `시트 '${targetSheetName}'에서 데이터를 찾을 수 없습니다.`,
+          `No data found in sheet '${targetSheetName}'.`,
         );
       }
 
       const time = Date.now() - timeStart;
       this.logger.log(
-        `✅ [ADMIN] TC 시트 직접 읽기 성공 (${time}ms): ${sheetData.totalRows}행 ${sheetData.totalColumns}열`,
+        `[ADMIN] TC sheet read succeeded (${time}ms): ${sheetData.totalRows} rows, ${sheetData.totalColumns} columns`,
       );
 
       return {
@@ -92,36 +92,30 @@ export class GoogleSheetsController {
       };
     } catch (error) {
       const time = Date.now() - timeStart;
-      this.logger.error(
-        `❌ [ADMIN] TC 시트 직접 읽기 실패 (${time}ms):`,
-        error,
-      );
+      this.logger.error(`[ADMIN] TC sheet read failed (${time}ms):`, error);
 
-      // 이미 NestJS Exception인 경우 그대로 throw
+      // Re-throw NestJS exceptions as-is
       if (error instanceof BadRequestException) {
         throw error;
       }
 
-      // 그 외의 에러는 InternalServerErrorException으로 처리
       throw new InternalServerErrorException(
         error instanceof Error
           ? error.message
-          : "시트 데이터 조회 중 오류가 발생했습니다.",
+          : "An error occurred while reading sheet data.",
       );
     }
   }
 
   /**
-   * URL에서 스프레드시트 ID 추출
+   * Extract the spreadsheet ID from a Google Sheets URL.
    */
   private extractSpreadsheetId(url: string): string | null {
     try {
-      // URL에서 스프레드시트 ID 추출
-      // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit#gid=0
       const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
       return match ? match[1] : null;
     } catch (error) {
-      this.logger.error("스프레드시트 ID 추출 실패:", error);
+      this.logger.error("Failed to extract spreadsheet ID:", error);
       return null;
     }
   }

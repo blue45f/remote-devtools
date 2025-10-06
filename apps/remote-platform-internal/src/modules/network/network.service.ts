@@ -1,78 +1,92 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Network } from "@remote-platform/entity";
+import { NetworkEntity } from "@remote-platform/entity";
 
 import { RecordService } from "../record/record.service";
 
-export type UpdateResponseBody = {
-  recordId: number;
-  requestId: number;
-  body: string;
-  base64Encoded: boolean;
-};
+export interface UpdateResponseBody {
+  readonly recordId: number;
+  readonly requestId: number;
+  readonly body: string;
+  readonly base64Encoded: boolean;
+}
 
 @Injectable()
 export class NetworkService {
-  constructor(
-    @InjectRepository(Network)
-    private networkRepository: Repository<Network>,
+  private readonly logger = new Logger(NetworkService.name);
 
-    private recordService: RecordService,
+  constructor(
+    @InjectRepository(NetworkEntity)
+    private readonly networkRepository: Repository<NetworkEntity>,
+
+    private readonly recordService: RecordService,
   ) {}
 
-  // TODO: Partial 대신 다른 방법 검토 필요
+  /**
+   * Create a new network entry and associate it with the given record.
+   */
   public async create(
-    data: Partial<Network & { recordId: number }>,
-  ): Promise<Network> {
+    data: Partial<NetworkEntity & { recordId: number }>,
+  ): Promise<NetworkEntity | undefined> {
     const { recordId, ...networkInfo } = data;
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      console.error("Record not found");
-      return;
+      this.logger.error(`Record not found for id=${recordId}`);
+      return undefined;
     }
 
-    // Network 데이터를 만들고 Record와 연결합니다.
     const network = this.networkRepository.create({
       ...networkInfo,
-      record, // Record와 연관시킴
+      record,
     });
 
     return this.networkRepository.save(network);
   }
 
-  public async findNetworks(recordId: number): Promise<Network[]> {
+  /**
+   * Find all network entries for a given record, ordered by timestamp ascending.
+   */
+  public async findNetworks(recordId: number): Promise<NetworkEntity[]> {
     return this.networkRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: "ASC" },
     });
   }
 
-  // findByRecordId 메서드 추가 (findNetworks와 동일한 기능)
-  public async findByRecordId(recordId: number): Promise<Network[]> {
+  /**
+   * Alias for findNetworks (for backward compatibility).
+   */
+  public async findByRecordId(recordId: number): Promise<NetworkEntity[]> {
     return this.findNetworks(recordId);
   }
 
+  /**
+   * Attempt to find a network entry by record and requestId, retrying on failure.
+   */
   private async findNetworkWithRetry(
-    record: any,
+    record: { id: number },
     requestId: number,
     retries = 5,
     delay = 500,
-  ): Promise<Network> {
+  ): Promise<NetworkEntity> {
     for (let attempt = 0; attempt < retries; attempt++) {
       const network = await this.networkRepository.findOne({
-        where: { record, requestId },
+        where: { record: { id: record.id }, requestId },
       });
       if (network) return network;
 
-      // 레코드가 없으면 지연 후 재시도
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
     throw new Error("Network record not found after multiple attempts");
   }
 
+  /**
+   * Update the response body of an existing network entry.
+   * If the body is valid JSON (and not base64-encoded), it is stored in minified form.
+   */
   public async updateResponseBody(data: UpdateResponseBody): Promise<void> {
     const record = await this.recordService.findOne(data.recordId);
     if (!record) {
@@ -80,16 +94,14 @@ export class NetworkService {
     }
     const network = await this.findNetworkWithRetry(record, data.requestId);
 
-    // record와 requestId로 Network를 업데이트합니다.
-    // JSON 유효성 확인 및 minified 형태로 저장
     let bodyToSave = data.body;
     if (!data.base64Encoded && bodyToSave) {
       try {
-        // JSON인 경우 minified 형태로 저장 (DevTools가 pretty print 처리)
+        // Store JSON in minified form (DevTools handles pretty-printing)
         const parsed = JSON.parse(bodyToSave);
         bodyToSave = JSON.stringify(parsed);
       } catch {
-        // JSON이 아닌 경우 원본 그대로
+        // Not JSON; store as-is
       }
     }
 

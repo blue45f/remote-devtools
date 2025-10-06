@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { Record } from "@remote-platform/entity";
+import { RecordEntity } from "@remote-platform/entity";
 
 import { RecordService } from "./record.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Record])],
+  imports: [TypeOrmModule.forFeature([RecordEntity])],
   providers: [RecordService],
   exports: [RecordService],
 })

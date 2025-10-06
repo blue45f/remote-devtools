@@ -1,4 +1,10 @@
-import { Controller, Get, Query, BadRequestException } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Logger,
+  Query,
+  BadRequestException,
+} from "@nestjs/common";
 
 import { DashboardService } from "./dashboard.service";
 import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
@@ -8,10 +14,12 @@ import { TicketTrendDto } from "./dto/ticket-trend.dto";
 
 @Controller("api/dashboard")
 export class DashboardController {
+  private readonly logger = new Logger(DashboardController.name);
+
   constructor(private readonly dashboardService: DashboardService) {}
 
   /**
-   * 대시보드 통계 조회
+   * Retrieve dashboard statistics.
    * GET /api/dashboard/stats
    */
   @Get("stats")
@@ -23,19 +31,21 @@ export class DashboardController {
         data,
       };
     } catch (error) {
+      this.logger.error("Failed to retrieve dashboard statistics", error);
       throw new BadRequestException({
         success: false,
         error: {
           code: "DASHBOARD_STATS_ERROR",
           message:
-            error.message || "대시보드 통계 조회 중 오류가 발생했습니다.",
+            error.message ||
+            "An error occurred while retrieving dashboard statistics.",
         },
       });
     }
   }
 
   /**
-   * 티켓 생성 추이 조회
+   * Retrieve ticket creation trend.
    * GET /api/dashboard/tickets/trend
    */
   @Get("tickets/trend")
@@ -44,12 +54,12 @@ export class DashboardController {
   ): Promise<TicketTrendDto> {
     try {
       if (!query.period) {
-        throw new BadRequestException("period 파라미터는 필수입니다.");
+        throw new BadRequestException("The 'period' parameter is required.");
       }
 
       if (!["day", "week", "month"].includes(query.period)) {
         throw new BadRequestException(
-          "period는 day, week, month 중 하나여야 합니다.",
+          "The 'period' parameter must be one of: day, week, month.",
         );
       }
 
@@ -67,18 +77,21 @@ export class DashboardController {
       if (error instanceof BadRequestException) {
         throw error;
       }
+      this.logger.error("Failed to retrieve ticket trend", error);
       throw new BadRequestException({
         success: false,
         error: {
           code: "TICKET_TREND_ERROR",
-          message: error.message || "티켓 추이 조회 중 오류가 발생했습니다.",
+          message:
+            error.message ||
+            "An error occurred while retrieving the ticket trend.",
         },
       });
     }
   }
 
   /**
-   * 녹화 세션 생성 추이 조회
+   * Retrieve recording session creation trend.
    * GET /api/dashboard/record-rooms/trend
    */
   @Get("record-rooms/trend")
@@ -87,12 +100,12 @@ export class DashboardController {
   ): Promise<RecordRoomTrendDto> {
     try {
       if (!query.period) {
-        throw new BadRequestException("period 파라미터는 필수입니다.");
+        throw new BadRequestException("The 'period' parameter is required.");
       }
 
       if (!["day", "week", "month"].includes(query.period)) {
         throw new BadRequestException(
-          "period는 day, week, month 중 하나여야 합니다.",
+          "The 'period' parameter must be one of: day, week, month.",
         );
       }
 
@@ -110,12 +123,14 @@ export class DashboardController {
       if (error instanceof BadRequestException) {
         throw error;
       }
+      this.logger.error("Failed to retrieve record room trend", error);
       throw new BadRequestException({
         success: false,
         error: {
           code: "RECORD_ROOM_TREND_ERROR",
           message:
-            error.message || "녹화 세션 추이 조회 중 오류가 발생했습니다.",
+            error.message ||
+            "An error occurred while retrieving the recording session trend.",
         },
       });
     }

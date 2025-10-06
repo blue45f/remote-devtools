@@ -2,28 +2,45 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { Record } from "@remote-platform/entity";
+import { RecordEntity } from "@remote-platform/entity";
 
 @Injectable()
 export class RecordService {
-  public async create(data: Partial<Record>): Promise<Record> {
+  constructor(
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
+  ) {}
+
+  /**
+   * Create a new record entry.
+   */
+  public async create(data: Partial<RecordEntity>): Promise<RecordEntity> {
     const record = this.recordRepository.create(data);
     return this.recordRepository.save(record);
   }
 
-  public async findOne(id: number): Promise<Record> {
+  /**
+   * Find a single record by its ID.
+   */
+  public async findOne(id: number): Promise<RecordEntity> {
     return this.recordRepository.findOne({ where: { id } });
   }
 
-  public async findAll(): Promise<Record[]> {
+  /**
+   * Find all records.
+   */
+  public async findAll(): Promise<RecordEntity[]> {
     return this.recordRepository.find();
   }
 
+  /**
+   * Find all previous records for a device, ordered by timestamp descending,
+   * that occurred before the current record's timestamp.
+   */
   public async findPreviousByDeviceId(
     deviceId: string,
     currentRecordId: number,
-  ): Promise<Record[]> {
-    // 현재 기록의 createdAt 시간을 조회
+  ): Promise<RecordEntity[]> {
     const currentRecord = await this.recordRepository.findOne({
       where: { id: currentRecordId },
     });
@@ -31,30 +48,30 @@ export class RecordService {
       return [];
     }
 
-    // timestamp 기준으로 이전 기록들 조회
     return this.recordRepository
       .createQueryBuilder("record")
       .where("record.device_id = :deviceId", { deviceId })
       .andWhere("record.timestamp < :currentTimestamp", {
         currentTimestamp: currentRecord.timestamp,
       })
-      .orderBy("record.timestamp", "DESC") // 생성 시간 기준 내림차순
+      .orderBy("record.timestamp", "DESC")
       .getMany();
   }
 
-  public async findNetworks(id: number): Promise<Record> {
+  /**
+   * Find a record by ID with its associated network entries.
+   */
+  public async findNetworks(id: number): Promise<RecordEntity> {
     return this.recordRepository.findOne({
-      where: { id: id },
+      where: { id },
       relations: ["networks"],
     });
   }
 
+  /**
+   * Update the duration of a record.
+   */
   public async updateDuration(id: number, duration: number): Promise<void> {
     await this.recordRepository.update(id, { duration });
   }
-
-  constructor(
-    @InjectRepository(Record)
-    private recordRepository: Repository<Record>,
-  ) {}
 }

@@ -1,24 +1,27 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
 import { MSG_ID } from "@remote-platform/constants";
-import { Dom } from "@remote-platform/entity";
+import { DomEntity } from "@remote-platform/entity";
 
 import { RecordService } from "../record/record.service";
 
 @Injectable()
 export class DomService {
-  constructor(
-    @InjectRepository(Dom)
-    private domRepository: Repository<Dom>,
+  private readonly logger = new Logger(DomService.name);
 
-    private recordService: RecordService,
+  constructor(
+    @InjectRepository(DomEntity)
+    private readonly domRepository: Repository<DomEntity>,
+
+    private readonly recordService: RecordService,
   ) {}
 
   public isEnableDomResponseMessage(id?: number): boolean {
     return id === MSG_ID.DOM.ENABLE;
   }
+
   public isGetDomResponseMessage(id?: number): boolean {
     return id === MSG_ID.DOM.GET_DOCUMENT;
   }
@@ -27,15 +30,18 @@ export class DomService {
     return message["method"] === "DOM.getDocument";
   }
 
+  /**
+   * Insert or update a DOM entry for the given record.
+   */
   public async upsert(
-    data: Partial<Dom> & { recordId: number } & Pick<Dom, "type">,
-  ): Promise<Dom> {
+    data: Partial<DomEntity> & { recordId: number } & Pick<DomEntity, "type">,
+  ): Promise<DomEntity | undefined> {
     const { recordId, ...domInfo } = data;
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      console.error("Record not found");
-      return;
+      this.logger.error(`Record not found for id=${recordId}`);
+      return undefined;
     }
 
     const dom = await this.domRepository.upsert(
@@ -46,14 +52,20 @@ export class DomService {
     return this.domRepository.save(dom.generatedMaps[0]);
   }
 
-  public async findDoms(recordId: number): Promise<Dom[]> {
+  /**
+   * Find all DOM entries for a given record, ordered by timestamp ascending.
+   */
+  public async findDoms(recordId: number): Promise<DomEntity[]> {
     return this.domRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: "ASC" },
     });
   }
 
-  public async findEntireDom(recordId: number): Promise<Dom> {
+  /**
+   * Find the entire DOM snapshot for a given record.
+   */
+  public async findEntireDom(recordId: number): Promise<DomEntity> {
     return this.domRepository.findOne({
       where: { record: { id: recordId }, type: "entireDom" },
     });

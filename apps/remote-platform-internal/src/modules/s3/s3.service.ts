@@ -22,8 +22,10 @@ export interface BufferUploadData {
     timestamp: number;
   }>;
   timestamp: number;
-  date?: string; // 날짜 정보 추가 (YYYY-MM-DD)
-  sessionStartTime?: number; // 세션 시작 시간
+  date?: string; // Date info (YYYY-MM-DD)
+  sessionStartTime?: number; // Session start time
+  /** Allow additional properties from S3/JSON sources. */
+  [key: string]: unknown;
 }
 
 @Injectable()
@@ -43,7 +45,7 @@ export class S3Service {
     this.runtimeEnv,
   );
 
-  private readonly CACHE_TTL_MS = 60 * 1000; // 60초 TTL
+  private readonly CACHE_TTL_MS = 60 * 1000; // 60s TTL
   private readonly MAX_LIST_CACHE_SIZE = 200;
   private readonly MAX_OBJECT_CACHE_SIZE = 1000;
 
@@ -64,9 +66,9 @@ export class S3Service {
     Promise<BufferUploadData | null>
   >();
 
-  // S3 백업 재생 전용 캐시 (선택된 파일 경로들 기준)
+  // S3 backup playback cache (keyed by selected file paths)
   private s3PlaybackCache = new Map<string, BufferUploadData[]>();
-  private maxS3CacheSize = 500; // 최대 500개 파일 경로 조합 캐싱
+  private maxS3CacheSize = 500; // Max 500 file path combinations cached
 
   private sanitizeMetadata(value: string | undefined): string | undefined {
     if (!value) {
@@ -88,7 +90,7 @@ export class S3Service {
   }
 
   constructor() {
-    // 백업 디렉토리 확인
+    // Ensure backup directory exists
     if (!fs.existsSync(this.backupDir)) {
       fs.mkdirSync(this.backupDir, { recursive: true });
     }
@@ -98,10 +100,10 @@ export class S3Service {
         `resolved=${this.runtimeEnv}, toS3=${this.isRemoteStorageEnabled}`,
     );
 
-    // S3 클라이언트 초기화 (EC2 IAM Role 자동 인증)
+    // Initialize S3 client (EC2 IAM Role auto-authentication)
     this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || "ap-northeast-2", // 서울 리전
-      // EC2 IAM Role 사용 시 credentials 자동 설정 (별도 설정 불필요)
+      region: process.env.AWS_REGION || "ap-northeast-2", // Seoul region
+      // When using EC2 IAM Role, credentials are auto-configured (no additional setup needed)
     });
   }
 
@@ -183,15 +185,15 @@ export class S3Service {
   }
 
   /**
-   * 환경에 따른 데이터 저장 (beta: S3, dev: 로컬 파일)
+   * Save data depending on environment (beta: S3, dev: local file)
    */
   public async saveBufferData(data: BufferUploadData): Promise<void> {
     try {
       if (this.isRemoteStorageEnabled) {
-        // Beta 환경: S3 업로드
+        // Beta environment: upload to S3
         await this.uploadToS3(data);
       } else {
-        // 개발 환경: 로컬 파일 저장
+        // Dev environment: save to local file
         await this.saveToLocalFile(data);
         this.logger.log(`[DEV_MODE] Local file save mode`);
       }
@@ -202,7 +204,7 @@ export class S3Service {
   }
 
   /**
-   * S3에서 백업 데이터 조회 (beta 환경에서)
+   * Retrieve backup data from S3 (in beta environment)
    */
   public async getS3BackupData(
     deviceId: string,
@@ -210,7 +212,7 @@ export class S3Service {
     targetDate?: string,
   ): Promise<BufferUploadData[]> {
     if (this.isRemoteStorageEnabled) {
-      // Beta 환경: S3에서 조회
+      // Beta environment: query from S3
       this.logger.log(
         `[S3_QUERY] Querying S3 for deviceId: ${deviceId}, beforeTimestamp: ${beforeTimestamp}, targetDate: ${targetDate}`,
       );
@@ -251,7 +253,7 @@ export class S3Service {
 
       return records;
     } else {
-      // 개발 환경: 로컬 파일에서 조회
+      // Dev environment: query from local files
       if (!deviceId) {
         return this.getBufferData("", undefined);
       }
@@ -260,7 +262,7 @@ export class S3Service {
   }
 
   /**
-   * 실제 S3에서 백업 데이터 조회
+   * Retrieve backup data from S3 cloud storage
    */
   private async getS3BackupFromCloud(
     deviceId: string,
@@ -401,7 +403,7 @@ export class S3Service {
   }
 
   /**
-   * 로컬 파일 저장
+   * Save to local file
    */
   private async saveToLocalFile(data: BufferUploadData): Promise<void> {
     const date = new Date(data.timestamp).toISOString().split("T")[0];
@@ -411,18 +413,18 @@ export class S3Service {
     const dirPath = path.join(this.backupDir, date, deviceId);
     const filePath = path.join(dirPath, fileName);
 
-    // 디렉토리 생성
+    // Create directory
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // 파일 저장
+    // Save file
     await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
     this.logger.log(`[LOCAL_SAVED] ${filePath}`);
   }
 
   /**
-   * S3 업로드
+   * Upload to S3
    */
   private async uploadToS3(data: BufferUploadData): Promise<void> {
     const date = new Date(data.timestamp).toISOString().split("T")[0];
@@ -564,7 +566,7 @@ export class S3Service {
   }
 
   /**
-   * deviceId 기반 백업 데이터 조회 (새 구조 전용)
+   * Retrieve backup data by device ID (new directory structure only).
    */
   public async getBufferDataByDeviceId(
     deviceId: string,
@@ -574,7 +576,7 @@ export class S3Service {
     try {
       const results: BufferUploadData[] = [];
 
-      // 1. 새 구조에서 검색: date/deviceId/session_timestamp.json
+      // Search in new structure: date/deviceId/session_timestamp.json
       if (!fs.existsSync(this.backupDir)) {
         return results;
       }
@@ -600,9 +602,9 @@ export class S3Service {
               const content = await fs.promises.readFile(filePath, "utf-8");
               const rawData = JSON.parse(content);
 
-              // 새로운 구조인지 확인 (bufferChunks가 있는 경우)
+              // Check if using new structure (bufferChunks present)
               if (rawData.bufferChunks) {
-                // 새 구조를 기존 구조로 변환
+                // Convert new structure to legacy format
                 const convertedData: BufferUploadData = {
                   room: rawData.room,
                   recordId: rawData.recordId,
@@ -613,14 +615,14 @@ export class S3Service {
                   bufferData: [],
                 };
 
-                // 모든 chunk의 이벤트를 하나의 배열로 합치기
+                // Merge all chunk events into a single array
                 for (const chunk of rawData.bufferChunks) {
                   if (chunk.events && Array.isArray(chunk.events)) {
                     convertedData.bufferData.push(...chunk.events);
                   }
                 }
 
-                // 선택적 필터링
+                // Optional filtering
                 if (
                   !room ||
                   !recordId ||
@@ -630,10 +632,10 @@ export class S3Service {
                   results.push(convertedData);
                 }
               } else {
-                // 기존 구조 그대로 사용
+                // Use legacy structure as-is
                 const data = rawData as BufferUploadData;
 
-                // 선택적 필터링
+                // Optional filtering
                 if (
                   !room ||
                   !recordId ||
@@ -651,7 +653,7 @@ export class S3Service {
         }
       }
 
-      // 타임스탬프 순으로 정렬
+      // Sort by timestamp descending
       return results.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
       this.logger.error(
@@ -667,7 +669,7 @@ export class S3Service {
   }
 
   /**
-   * 백업된 버퍼 데이터 조회 (새 구조 전용)
+   * Retrieve backed-up buffer data (new directory structure only).
    */
   public async getBufferData(
     room?: string,
@@ -676,7 +678,7 @@ export class S3Service {
     try {
       const results: BufferUploadData[] = [];
 
-      // 날짜별 디렉토리 스캔 (YYYY-MM-DD/deviceId/session_timestamp.json)
+      // Scan date-based directories (YYYY-MM-DD/deviceId/session_timestamp.json)
       if (!fs.existsSync(this.backupDir)) {
         return results;
       }
@@ -684,7 +686,7 @@ export class S3Service {
       const dateDirs = await fs.promises.readdir(this.backupDir);
 
       for (const dateDir of dateDirs) {
-        // 날짜 형식인지 확인 (YYYY-MM-DD)
+        // Check date format (YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDir)) continue;
 
         const datePath = path.join(this.backupDir, dateDir);
@@ -696,12 +698,12 @@ export class S3Service {
           const devicePath = path.join(datePath, deviceId);
           if (!fs.existsSync(devicePath)) continue;
 
-          // deviceId 디렉토리에서 직접 파일 읽기
+          // Read files directly from deviceId directory
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
             if (file.endsWith(".json")) {
-              // 파일명에서 timestamp 추출 (session_timestamp.json)
+              // Extract timestamp from filename (session_timestamp.json)
               const fileMatch = file.match(/session_(\d+)\.json/);
               if (!fileMatch) continue;
 
@@ -710,9 +712,9 @@ export class S3Service {
                 const content = await fs.promises.readFile(filePath, "utf-8");
                 const rawData = JSON.parse(content);
 
-                // 새로운 구조인지 확인 (bufferChunks가 있는 경우)
+                // Check if using new structure (bufferChunks present)
                 if (rawData.bufferChunks) {
-                  // 새 구조를 기존 구조로 변환
+                  // Convert new structure to legacy format
                   const convertedData: BufferUploadData = {
                     room: rawData.room,
                     recordId: rawData.recordId,
@@ -723,14 +725,14 @@ export class S3Service {
                     bufferData: [],
                   };
 
-                  // 모든 chunk의 이벤트를 하나의 배열로 합치기
+                  // Merge all chunk events into a single array
                   for (const chunk of rawData.bufferChunks) {
                     if (chunk.events && Array.isArray(chunk.events)) {
                       convertedData.bufferData.push(...chunk.events);
                     }
                   }
 
-                  // 선택적 필터링
+                  // Optional filtering
                   if (
                     !room ||
                     !recordId ||
@@ -740,10 +742,10 @@ export class S3Service {
                     results.push(convertedData);
                   }
                 } else {
-                  // 기존 구조 그대로 사용
+                  // Use legacy structure as-is
                   const data = rawData as BufferUploadData;
 
-                  // 선택적 필터링
+                  // Optional filtering
                   if (
                     !room ||
                     !recordId ||
@@ -762,7 +764,7 @@ export class S3Service {
         }
       }
 
-      // 타임스탬프 순으로 정렬
+      // Sort by timestamp descending
       return results.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
       this.logger.error(
@@ -777,7 +779,7 @@ export class S3Service {
   }
 
   /**
-   * 모든 백업 데이터를 디바이스별로 그룹화해서 조회
+   * Retrieve all backup data grouped by device.
    */
   public async getAllBackupDataByDevice(
     room?: string,
@@ -786,7 +788,7 @@ export class S3Service {
     try {
       const deviceMap = new Map<string, BufferUploadData[]>();
 
-      // 새 구조에서 검색: date/deviceId/session_timestamp.json
+      // Search in new structure: date/deviceId/session_timestamp.json
       if (!fs.existsSync(this.backupDir)) {
         return deviceMap;
       }
@@ -796,7 +798,7 @@ export class S3Service {
         .filter((dir) => /^\d{4}-\d{2}-\d{2}$/.test(dir))
         .sort((a, b) => b.localeCompare(a));
 
-      // 모든 날짜와 디바이스 스캔
+      // Scan all dates and devices
       for (const dateDir of dateDirs) {
         const datePath = path.join(this.backupDir, dateDir);
         if (!fs.lstatSync(datePath).isDirectory()) continue;
@@ -821,9 +823,9 @@ export class S3Service {
 
                 let processedData: BufferUploadData;
 
-                // 새로운 구조인지 확인 (bufferChunks가 있는 경우)
+                // Check if using new structure (bufferChunks present)
                 if (rawData.bufferChunks) {
-                  // 새 구조를 기존 구조로 변환
+                  // Convert new structure to legacy format
                   processedData = {
                     room: rawData.room,
                     recordId: rawData.recordId,
@@ -834,18 +836,18 @@ export class S3Service {
                     bufferData: [],
                   };
 
-                  // 모든 chunk의 이벤트를 하나의 배열로 합치기
+                  // Merge all chunk events into a single array
                   for (const chunk of rawData.bufferChunks) {
                     if (chunk.events && Array.isArray(chunk.events)) {
                       processedData.bufferData.push(...chunk.events);
                     }
                   }
                 } else {
-                  // 기존 구조 그대로 사용
+                  // Use legacy structure as-is
                   processedData = rawData as BufferUploadData;
                 }
 
-                // 선택적 필터링 (room과 recordId가 지정된 경우만)
+                // Optional filtering (only when room and recordId are specified)
                 if (
                   !room ||
                   !recordId ||
@@ -866,7 +868,7 @@ export class S3Service {
         }
       }
 
-      // 각 디바이스별로 타임스탬프 내림차순 정렬 (최신 먼저)
+      // Sort each device's data by timestamp descending (newest first)
       for (const [deviceId, data] of deviceMap) {
         deviceMap.set(
           deviceId,
@@ -882,18 +884,18 @@ export class S3Service {
   }
 
   /**
-   * 디바이스별로 그룹화된 백업 데이터 조회 (호환성 유지)
+   * Retrieve backup data grouped by device (backward-compatible wrapper).
    */
   public async getBufferDataByDevice(
     room?: string,
     recordId?: number,
   ): Promise<Map<string, BufferUploadData[]>> {
-    // 새로운 메서드 사용
+    // Delegates to the new method
     return this.getAllBackupDataByDevice(room, recordId);
   }
 
   /**
-   * 백업 데이터를 DB 형식으로 변환
+   * Convert backup data to database format.
    */
   public convertToDbFormat(bufferData: BufferUploadData): Array<{
     protocol: unknown;
@@ -901,7 +903,7 @@ export class S3Service {
     domain: string;
   }> {
     return bufferData.bufferData.map((item) => {
-      // 메서드명에서 도메인 추출
+      // Extract domain from method name
       const [domain] = item.method.split(".");
 
       return {
@@ -916,14 +918,14 @@ export class S3Service {
   }
 
   /**
-   * 백업 파일 목록 조회 (날짜별 인덱싱 지원)
+   * List backup files with date-based indexing support.
    */
   public async listBackupFiles(options?: {
     deviceId?: string;
     date?: string; // YYYY-MM-DD
     startDate?: string; // YYYY-MM-DD
     endDate?: string; // YYYY-MM-DD
-    beforeDate?: string; // YYYY-MM-DD - 해당 날짜 이전의 백업들만 조회
+    beforeDate?: string; // YYYY-MM-DD - only return backups before this date
     limit?: number;
   }): Promise<
     Array<{
@@ -955,21 +957,21 @@ export class S3Service {
         return backupFiles;
       }
 
-      // beforeDate가 지정된 경우 기본 limit을 10으로 설정 (이전 기록 조회)
+      // Default limit to 10 when beforeDate is set (historical lookup)
       const effectiveLimit =
         options?.beforeDate && !options?.limit ? 10 : options?.limit;
 
       const dateDirs = await fs.promises.readdir(this.backupDir);
       const validDateDirs = dateDirs
         .filter((dir) => /^\d{4}-\d{2}-\d{2}$/.test(dir))
-        .sort((a, b) => b.localeCompare(a)); // 최신 날짜부터
+        .sort((a, b) => b.localeCompare(a)); // newest date first
 
       for (const dateDir of validDateDirs) {
-        // 날짜 필터링
+        // Date filtering
         if (options?.date && dateDir !== options.date) continue;
         if (options?.startDate && dateDir < options.startDate) continue;
         if (options?.endDate && dateDir > options.endDate) continue;
-        if (options?.beforeDate && dateDir >= options.beforeDate) continue; // 해당 날짜 이전만
+        if (options?.beforeDate && dateDir >= options.beforeDate) continue; // before this date only
 
         const datePath = path.join(this.backupDir, dateDir);
         if (!fs.lstatSync(datePath).isDirectory()) continue;
@@ -977,13 +979,13 @@ export class S3Service {
         const deviceDirs = await fs.promises.readdir(datePath);
 
         for (const deviceId of deviceDirs) {
-          // deviceId 필터링
+          // Filter by deviceId
           if (options?.deviceId && deviceId !== options.deviceId) continue;
 
           const devicePath = path.join(datePath, deviceId);
           if (!fs.lstatSync(devicePath).isDirectory()) continue;
 
-          // deviceId 디렉토리에서 직접 파일 읽기 (room 폴더 제거)
+          // Read files directly from deviceId directory (room folder removed)
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
@@ -991,13 +993,13 @@ export class S3Service {
               const filePath = path.join(devicePath, file);
               const stat = await fs.promises.stat(filePath);
 
-              // 파일명에서 timestamp 추출 (session_timestamp.json)
+              // Extract timestamp from filename (session_timestamp.json)
               const fileMatch = file.match(/session_(\d+)\.json/);
               if (!fileMatch) continue;
 
               const timestamp = fileMatch[1];
 
-              // 파일 내용에서 eventCount와 URL 추출
+              // Extract eventCount and URL from file contents
               let eventCount = undefined;
               let url = undefined;
               try {
@@ -1006,13 +1008,13 @@ export class S3Service {
                 eventCount = data.bufferData?.length;
                 url = data.url;
               } catch {
-                // 파일 읽기 실패는 무시
+                // Ignore file read failures
               }
 
               backupFiles.push({
                 fileName: file,
-                room: "N/A", // room 폴더 제거됨
-                recordId: "N/A", // recordId 파일명에서 제거됨
+                room: "N/A", // room folder removed
+                recordId: "N/A", // recordId removed from filename
                 deviceId,
                 timestamp,
                 date: dateDir,
@@ -1024,7 +1026,7 @@ export class S3Service {
           }
         }
 
-        // limit 체크 (특정 날짜가 지정된 경우에만 해당 날짜의 모든 파일 가져옴)
+        // Check limit (when a specific date is set, fetch all files for that date)
         if (
           effectiveLimit &&
           backupFiles.length >= effectiveLimit &&
@@ -1034,10 +1036,10 @@ export class S3Service {
         }
       }
 
-      // 타임스탬프 내림차순 정렬 (최신 먼저)
+      // Sort by timestamp descending (newest first)
       backupFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
 
-      // limit 적용
+      // Apply limit
       if (effectiveLimit) {
         return backupFiles.slice(0, effectiveLimit);
       }
@@ -1050,7 +1052,7 @@ export class S3Service {
   }
 
   /**
-   * 선택된 파일들에서 URL 정보만 추출 (필요할 때만 조회)
+   * Extract URL information from selected files (on-demand lookup).
    */
   public async getUrlsFromSelectedFiles(filePaths: string[]): Promise<{
     urlByFilePath: Record<string, string>;
@@ -1061,14 +1063,14 @@ export class S3Service {
 
     try {
       if (this.isRemoteStorageEnabled) {
-        // Beta 환경: S3에서 조회
+        // Beta/production: fetch from S3
         primaryUrl = await this.getUrlsFromS3(
           filePaths,
           urlByFilePath,
           primaryUrl,
         );
       } else {
-        // 개발 환경: 로컬 파일에서 조회
+        // Development: fetch from local files
         primaryUrl = await this.getUrlsFromLocalFiles(
           filePaths,
           urlByFilePath,
@@ -1087,7 +1089,7 @@ export class S3Service {
   }
 
   /**
-   * S3에서 파일들의 URL 정보 추출
+   * Extract URL information from files stored in S3.
    */
   private async getUrlsFromS3(
     filePaths: string[],
@@ -1109,7 +1111,7 @@ export class S3Service {
         try {
           deviceId = decodeURIComponent(rawDeviceId);
         } catch {
-          // 디코딩 실패 시 원본 사용
+          // Fall back to raw value on decode failure
         }
         const timestamp = Number(timestampSegment);
         if (Number.isFinite(timestamp)) {
@@ -1155,7 +1157,7 @@ export class S3Service {
   }
 
   /**
-   * 로컬 파일에서 URL 정보 추출
+   * Extract URL information from local files.
    */
   private async getUrlsFromLocalFiles(
     filePaths: string[],
@@ -1173,7 +1175,7 @@ export class S3Service {
 
           if (data.url) {
             urlByFilePath[relativePath] = data.url;
-            // 첫 번째 유효한 URL을 primary URL로 설정
+            // Use the first valid URL as the primary URL
             if (!resolvedPrimary) {
               resolvedPrimary = data.url;
             }
@@ -1191,14 +1193,14 @@ export class S3Service {
   }
 
   /**
-   * 백업 파일 목록 경량 조회 (기존 + 새로운 구조 모두 지원)
+   * Lightweight backup file listing (supports both legacy and new structure).
    */
   public async listBackupFilesLight(options?: {
     deviceId?: string;
     date?: string; // YYYY-MM-DD
     startDate?: string; // YYYY-MM-DD
     endDate?: string; // YYYY-MM-DD
-    beforeDate?: string; // YYYY-MM-DD - 해당 날짜 이전의 백업들만 조회
+    beforeDate?: string; // YYYY-MM-DD - only return backups before this date
     limit?: number;
   }): Promise<
     Array<{
@@ -1209,7 +1211,7 @@ export class S3Service {
       timestamp: string;
       date: string;
       size: number;
-      filePath: string; // 상대 경로 추가
+      filePath: string; // relative path
     }>
   > {
     const backupFiles: Array<{
@@ -1228,24 +1230,24 @@ export class S3Service {
         return backupFiles;
       }
 
-      // beforeDate가 지정된 경우 기본 limit을 10으로 설정 (이전 기록 조회)
+      // Default limit to 10 when beforeDate is set (historical lookup)
       const effectiveLimit =
         options?.beforeDate && !options?.limit ? 10 : options?.limit;
 
       const allItems = await fs.promises.readdir(this.backupDir);
 
-      // 날짜 디렉토리만 처리 (새로운 구조 전용)
+      // Process date directories only (new structure)
       const dateDirs = allItems
         .filter((dir) => /^\d{4}-\d{2}-\d{2}$/.test(dir))
         .sort((a, b) => b.localeCompare(a));
 
-      // 새로운 구조 처리 (YYYY-MM-DD/deviceId/session_timestamp.json)
+      // New structure: YYYY-MM-DD/deviceId/session_timestamp.json
       for (const dateDir of dateDirs) {
-        // 날짜 필터링
+        // Date filtering
         if (options?.date && dateDir !== options.date) continue;
         if (options?.startDate && dateDir < options.startDate) continue;
         if (options?.endDate && dateDir > options.endDate) continue;
-        if (options?.beforeDate && dateDir >= options.beforeDate) continue; // 해당 날짜 이전만
+        if (options?.beforeDate && dateDir >= options.beforeDate) continue; // before this date only
 
         const datePath = path.join(this.backupDir, dateDir);
         if (!fs.lstatSync(datePath).isDirectory()) continue;
@@ -1253,13 +1255,13 @@ export class S3Service {
         const deviceDirs = await fs.promises.readdir(datePath);
 
         for (const deviceId of deviceDirs) {
-          // deviceId 필터링
+          // Filter by deviceId
           if (options?.deviceId && deviceId !== options.deviceId) continue;
 
           const devicePath = path.join(datePath, deviceId);
           if (!fs.lstatSync(devicePath).isDirectory()) continue;
 
-          // deviceId 디렉토리에서 직접 파일 읽기 (room 폴더 제거)
+          // Read files directly from deviceId directory (room folder removed)
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
@@ -1267,30 +1269,30 @@ export class S3Service {
               const filePath = path.join(devicePath, file);
               const stat = await fs.promises.stat(filePath);
 
-              // 파일명에서 timestamp 추출 (파일 내용 읽지 않음!)
+              // Extract timestamp from filename (does not read file contents)
               const fileMatch = file.match(/session_(\d+)\.json/);
               if (!fileMatch) continue;
 
               const timestamp = fileMatch[1];
 
-              // 상대 경로 구성 (room 제거)
+              // Build relative path (room removed)
               const relativeFilePath = `${dateDir}/${deviceId}/${file}`;
 
               backupFiles.push({
                 fileName: file,
-                room: `Backup-${backupFiles.length + 1}`, // 단순한 순서 번호
-                recordId: `backup-${timestamp}`, // 백업용 ID
+                room: `Backup-${backupFiles.length + 1}`, // simple sequential number
+                recordId: `backup-${timestamp}`, // backup-specific ID
                 deviceId,
                 timestamp,
                 date: dateDir,
                 size: stat.size,
-                filePath: relativeFilePath, // 상대 경로 추가
+                filePath: relativeFilePath, // relative path
               });
             }
           }
         }
 
-        // limit 체크 (특정 날짜가 지정된 경우 해당 날짜의 모든 파일 가져옴)
+        // Check limit (when a specific date is set, fetch all files for that date)
         if (
           effectiveLimit &&
           backupFiles.length >= effectiveLimit &&
@@ -1300,10 +1302,10 @@ export class S3Service {
         }
       }
 
-      // 타임스탬프 내림차순 정렬 (최신 먼저)
+      // Sort by timestamp descending (newest first)
       backupFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
 
-      // limit 적용
+      // Apply limit
       if (effectiveLimit) {
         return backupFiles.slice(0, effectiveLimit);
       }
@@ -1319,16 +1321,16 @@ export class S3Service {
   }
 
   /**
-   * 직접 파일 경로로 S3 백업 데이터 조회 (기존+새로운 구조 모두 지원)
+   * Retrieve S3 backup data by direct file paths (supports both legacy and new structure).
    */
   public async getS3BackupByPaths(
     filePaths: string[],
   ): Promise<BufferUploadData[]> {
-    // 파일 경로들을 정렬하여 캐시 키 생성
+    // Sort file paths to build a deterministic cache key
     const sortedPaths = [...filePaths].sort();
-    const cacheKey = sortedPaths.join("|"); // 파이프로 구분
+    const cacheKey = sortedPaths.join("|"); // pipe-delimited
 
-    // 캐시 확인
+    // Check cache
     if (this.s3PlaybackCache.has(cacheKey)) {
       this.logger.log(`[S3_DIRECT_CACHE_HIT] ${sortedPaths.length} files`);
       return this.s3PlaybackCache.get(cacheKey);
@@ -1338,12 +1340,12 @@ export class S3Service {
 
     try {
       if (this.isRemoteStorageEnabled) {
-        // Beta 환경: S3에서 조회
+        // Beta/production: fetch from S3
         for (const relativePath of filePaths) {
           try {
             const getCommand = new GetObjectCommand({
               Bucket: process.env.AWS_S3_BUCKET || "remote-debug-tools-s3",
-              Key: `backups/${relativePath}`, // backups/ prefix 추가
+              Key: `backups/${relativePath}`, // add backups/ prefix
             });
 
             const getResponse = await this.s3Client.send(getCommand);
@@ -1361,7 +1363,7 @@ export class S3Service {
           }
         }
       } else {
-        // 개발 환경: 로컬 파일에서 조회
+        // Development: fetch from local files
         for (const relativePath of filePaths) {
           const fullPath = path.join(this.backupDir, relativePath);
 
@@ -1370,7 +1372,7 @@ export class S3Service {
               const content = await fs.promises.readFile(fullPath, "utf-8");
               const rawData = JSON.parse(content);
 
-              // 새로운 구조 (bufferChunks)에서 기존 구조로 변환
+              // Convert new structure (bufferChunks) to legacy format
               let convertedData: BufferUploadData;
 
               if (rawData.bufferChunks && Array.isArray(rawData.bufferChunks)) {
@@ -1410,13 +1412,13 @@ export class S3Service {
         }
       }
 
-      // timestamp 순으로 정렬
+      // Sort by timestamp descending
       results.sort((a, b) => b.timestamp - a.timestamp);
 
-      // 캐시에 저장 (선택된 파일 조합별로)
+      // Cache by selected file combination
       this.s3PlaybackCache.set(cacheKey, results);
 
-      // 캐시 크기 제한
+      // Enforce cache size limit
       if (this.s3PlaybackCache.size > this.maxS3CacheSize) {
         const firstKey = this.s3PlaybackCache.keys().next().value;
         this.s3PlaybackCache.delete(firstKey);
@@ -1433,19 +1435,19 @@ export class S3Service {
   }
 
   /**
-   * S3 백업 재생 전용 (현재 시간 기준 이전 기록들만 필터링)
+   * S3 backup playback (filter to records before the current timestamp only).
    */
   public async getS3BackupForPlayback(
     room: string,
     recordId: number,
     deviceId: string,
     date: string,
-    currentTimestamp?: number, // 현재 녹화 세션의 시간 (밀리초)
-    recordService?: any, // Record 서비스 추가 (DB에서 생성 시간 조회용)
+    currentTimestamp?: number, // current recording session timestamp (ms)
+    recordService?: any, // Record service for looking up creation time from DB
   ): Promise<BufferUploadData[]> {
-    // 현재 녹화 세션의 실제 생성 시간 조회
+    // Look up the actual creation time of the current recording session
     if (!currentTimestamp) {
-      // Room 이름에서 timestamp 추출 시도 (Buffer 모드의 경우)
+      // Try to extract timestamp from room name (for Buffer mode)
       const roomTimestampMatch = room.match(
         /(?:Record|Live|Buffer)-(?:\w+-)?(\d+)/,
       );
@@ -1455,11 +1457,11 @@ export class S3Service {
           `[S3_TIMESTAMP_EXTRACTED] Room: ${room} → Current timestamp: ${currentTimestamp}`,
         );
       } else if (recordService && recordId) {
-        // DB에서 녹화 세션의 실제 생성 시간 조회
+        // Look up the actual creation time from DB
         try {
           const record = await recordService.findOne(recordId);
           if (record && record.createdAt) {
-            currentTimestamp = record.createdAt.getTime(); // Date를 밀리초로 변환
+            currentTimestamp = record.createdAt.getTime(); // Convert Date to milliseconds
             this.logger.log(
               `[S3_TIMESTAMP_FROM_DB] RecordId: ${recordId} → Timestamp: ${currentTimestamp} (${record.createdAt.toISOString()})`,
             );
@@ -1479,13 +1481,13 @@ export class S3Service {
         this.logger.warn(
           `[S3_TIMESTAMP_FALLBACK] Cannot extract timestamp from room: ${room}, using current time`,
         );
-        currentTimestamp = Date.now(); // 기본값: 현재 시간
+        currentTimestamp = Date.now(); // fallback: current time
       }
     }
 
     const cacheKey = `${room}_${recordId}_${deviceId}_${date}_${currentTimestamp}`;
 
-    // 캐시 확인
+    // Check cache
     if (this.s3PlaybackCache.has(cacheKey)) {
       this.logger.log(`[S3_CACHE_HIT] ${cacheKey}`);
       return this.s3PlaybackCache.get(cacheKey);
@@ -1494,9 +1496,9 @@ export class S3Service {
     try {
       const results: BufferUploadData[] = [];
 
-      // 현재 녹화 세션의 날짜 추출 (한국시간 기준으로 같은 날짜 폴더에서만 이전 기록 검색)
-      const currentDate = new Date(currentTimestamp + 9 * 60 * 60 * 1000); // UTC+9 (한국시간)
-      const targetDateDir = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD 형태
+      // Extract date from current recording session (KST; search only within the same date folder)
+      const currentDate = new Date(currentTimestamp + 9 * 60 * 60 * 1000); // UTC+9 (KST)
+      const targetDateDir = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
       this.logger.log(`[S3_CURRENT_RECORD] 🎯 Analyzing current record:`);
       this.logger.log(`  ⏰ Input timestamp: ${currentTimestamp}`);
@@ -1506,7 +1508,7 @@ export class S3Service {
         `[S3_PREVIOUS_RECORDS] 🔍 Will search for records BEFORE ${currentTimestamp} in folder ${targetDateDir}/${deviceId}`,
       );
 
-      // 같은 날짜 폴더에서만 이전 기록들 검색
+      // Search for previous records only within the same date folder
       const devicePath = path.join(this.backupDir, targetDateDir, deviceId);
       if (!fs.existsSync(devicePath)) {
         this.logger.log(
@@ -1527,7 +1529,7 @@ export class S3Service {
 
           const fileTimestamp = parseInt(fileMatch[1]);
 
-          // 현재 시간보다 이전 기록만 필터링
+          // Filter to records before the current timestamp only
           const timeDiff = currentTimestamp - fileTimestamp;
           if (fileTimestamp >= currentTimestamp) {
             this.logger.log(`[S3_SKIP_FUTURE_RECORD] ⚠️ Skipping ${file}`);
@@ -1540,7 +1542,7 @@ export class S3Service {
             this.logger.log(
               `  ❌ Reason: File is ${Math.abs(timeDiff)}ms AFTER current time`,
             );
-            continue; // 현재 시간 이후 기록은 제외
+            continue; // exclude records after the current timestamp
           } else {
             this.logger.log(
               `[S3_INCLUDE_PREVIOUS_RECORD] ✅ Including ${file}`,
@@ -1558,11 +1560,11 @@ export class S3Service {
             const content = await fs.promises.readFile(filePath, "utf-8");
             const rawData = JSON.parse(content);
 
-            // 새로운 구조 (bufferChunks)에서 기존 구조로 변환
+            // Convert new structure (bufferChunks) to legacy format
             let convertedData: BufferUploadData;
 
             if (rawData.bufferChunks && Array.isArray(rawData.bufferChunks)) {
-              // 새로운 구조: bufferChunks의 모든 events를 하나로 합침
+              // New structure: merge all chunk events into a single array
               const allEvents = rawData.bufferChunks.flatMap(
                 (chunk: any) => chunk.events || [],
               );
@@ -1573,7 +1575,7 @@ export class S3Service {
                 deviceId: rawData.deviceId,
                 url: rawData.url,
                 userAgent: rawData.userAgent,
-                bufferData: allEvents, // 변환된 이벤트 배열
+                bufferData: allEvents, // converted event array
                 timestamp: rawData.sessionStartTime || rawData.timestamp,
                 date: rawData.date,
                 sessionStartTime: rawData.sessionStartTime,
@@ -1583,17 +1585,17 @@ export class S3Service {
                 `[S3_DATA_CONVERTED] ${file}: ${rawData.bufferChunks.length} chunks → ${allEvents.length} events`,
               );
             } else if (rawData.bufferData) {
-              // 기존 구조: 그대로 사용
+              // Legacy structure: use as-is
               convertedData = rawData as BufferUploadData;
             } else {
-              // 데이터가 없거나 잘못된 구조
+              // Missing or invalid data structure
               this.logger.warn(
                 `[S3_INVALID_STRUCTURE] ${filePath}: No bufferData or bufferChunks found`,
               );
               continue;
             }
 
-            // 이전 기록들만 수집 (같은 날짜, 같은 디바이스의 이전 기록들)
+            // Collect previous records only (same date, same device)
             results.push(convertedData);
             const recordDate = new Date(fileTimestamp);
             this.logger.log(
@@ -1617,7 +1619,7 @@ export class S3Service {
         return [];
       }
 
-      // 정렬 전 상태 로그
+      // Pre-sort state log
       this.logger.log(
         `[S3_BEFORE_SORT] Found ${results.length} previous records in same day:`,
       );
@@ -1629,10 +1631,10 @@ export class S3Service {
         );
       });
 
-      // timestamp 순으로 정렬 (최신순 - 가장 최근 이전 기록이 첫 번째)
+      // Sort by timestamp descending (most recent previous record first)
       results.sort((a, b) => b.timestamp - a.timestamp);
 
-      // 정렬 후 상태 로그
+      // Post-sort state log
       this.logger.log(
         `[S3_AFTER_SORT] Sorted ${results.length} previous records (latest previous first):`,
       );
@@ -1644,10 +1646,10 @@ export class S3Service {
         );
       });
 
-      // 캐시에 저장
+      // Store in cache
       this.s3PlaybackCache.set(cacheKey, results);
 
-      // 캐시 크기 제한
+      // Enforce cache size limit
       if (this.s3PlaybackCache.size > this.maxS3CacheSize) {
         const firstKey = this.s3PlaybackCache.keys().next().value;
         this.s3PlaybackCache.delete(firstKey);
@@ -1677,7 +1679,7 @@ export class S3Service {
   }
 
   /**
-   * 버퍼 데이터를 파일로 저장
+   * Save buffer data to file.
    */
   public async saveBufferDataToFile(
     bufferData: BufferUploadData,
@@ -1694,21 +1696,21 @@ export class S3Service {
         eventCount: bufferData.bufferData?.length || 0,
       });
 
-      // 한국시간 기준 날짜 사용 (date가 없으면 현재 날짜)
+      // Use KST-based date (fall back to current date if not provided)
       const targetDate = date || new Date().toISOString().split("T")[0];
 
-      // 저장 경로: backups/YYYY-MM-DD/deviceId/session_timestamp.json
+      // Save path: backups/YYYY-MM-DD/deviceId/session_timestamp.json
       const devicePath = path.join(this.backupDir, targetDate, deviceId);
 
       console.log(`[BUFFER_SAVE_DEBUG] Target path: ${devicePath}`);
 
-      // 디렉토리 생성
+      // Create directory
       if (!fs.existsSync(devicePath)) {
         console.log(`[BUFFER_SAVE_DEBUG] Creating directory: ${devicePath}`);
         fs.mkdirSync(devicePath, { recursive: true });
       }
 
-      // timestamp로 고유한 파일명 생성 (flush 시점마다 다른 timestamp)
+      // Generate unique filename from timestamp (different timestamp per flush)
       const fileName = `session_${timestamp}.json`;
       const filePath = path.join(devicePath, fileName);
 
@@ -1717,7 +1719,7 @@ export class S3Service {
         `[BUFFER_SAVE_DEBUG] File exists before save: ${fs.existsSync(filePath)}`,
       );
 
-      // 파일이 이미 존재하면 경고하고 덮어쓰기 방지
+      // Warn if file already exists (will be overwritten)
       if (fs.existsSync(filePath)) {
         const existingSize = fs.statSync(filePath).size;
         console.warn(
@@ -1725,14 +1727,14 @@ export class S3Service {
         );
       }
 
-      // 파일 저장
+      // Write file
       await fs.promises.writeFile(
         filePath,
         JSON.stringify(bufferData, null, 2),
         "utf-8",
       );
 
-      // 파일이 실제로 생성되었는지 확인
+      // Verify the file was actually created
       const fileExists = fs.existsSync(filePath);
       const fileSize = fileExists ? fs.statSync(filePath).size : 0;
 

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
   endOfDay,
@@ -13,7 +13,7 @@ import { Between, MoreThanOrEqual, Repository } from "typeorm";
 import {
   DeviceInfoEntity,
   JobType,
-  Record,
+  RecordEntity,
   TicketLogEntity,
   UserEntity,
 } from "@remote-platform/entity";
@@ -22,13 +22,30 @@ import { DashboardStatsData } from "./dto/dashboard-stats.dto";
 import { RecordRoomTrendItem } from "./dto/record-room-trend.dto";
 import { TicketTrendItem } from "./dto/ticket-trend.dto";
 
+type PeriodType = "day" | "week" | "month";
+
+interface DateRange {
+  readonly start: Date;
+  readonly end: Date;
+}
+
+interface JobCounts {
+  developer: number;
+  designer: number;
+  pm: number;
+  qa: number;
+  other: number;
+}
+
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(
     @InjectRepository(TicketLogEntity)
     private readonly ticketLogRepository: Repository<TicketLogEntity>,
-    @InjectRepository(Record)
-    private readonly recordRepository: Repository<Record>,
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(DeviceInfoEntity)
@@ -36,7 +53,7 @@ export class DashboardService {
   ) {}
 
   /**
-   * 대시보드 통계 조회
+   * Retrieve dashboard statistics including ticket and recording session counts.
    */
   public async getDashboardStats(): Promise<DashboardStatsData> {
     const now = new Date();
@@ -44,7 +61,7 @@ export class DashboardService {
     const todayEnd = endOfDay(now);
     const weekAgo = subDays(now, 7);
 
-    // 티켓 관련 통계
+    // Ticket statistics
     const totalTickets = await this.ticketLogRepository.count();
     const todayTickets = await this.ticketLogRepository.count({
       where: {
@@ -52,7 +69,7 @@ export class DashboardService {
       },
     });
 
-    // 주간 평균 계산
+    // Weekly average calculation
     const weeklyTickets = await this.ticketLogRepository.count({
       where: {
         createdAt: MoreThanOrEqual(weekAgo),
@@ -60,7 +77,7 @@ export class DashboardService {
     });
     const weeklyAverage = Math.round(weeklyTickets / 7);
 
-    // 녹화 세션 관련 통계
+    // Recording session statistics
     const totalRecordRooms = await this.recordRepository.count();
     const todayRecordRooms = await this.recordRepository.count({
       where: {
@@ -68,7 +85,7 @@ export class DashboardService {
       },
     });
 
-    // 주간 평균 계산
+    // Weekly average calculation
     const weeklyRecordRooms = await this.recordRepository.count({
       where: {
         timestamp: MoreThanOrEqual(weekAgo),
@@ -87,14 +104,14 @@ export class DashboardService {
   }
 
   /**
-   * 티켓 생성 추이 조회
+   * Retrieve ticket creation trend over the specified period.
    */
   public async getTicketTrend(
-    period: "day" | "week" | "month",
+    period: PeriodType,
     startDate?: string,
     endDate?: string,
   ): Promise<TicketTrendItem[]> {
-    const dateRanges = this.getDateRanges(period, startDate, endDate);
+    const dateRanges = this.buildDateRanges(period, startDate, endDate);
     const result: TicketTrendItem[] = [];
 
     for (const range of dateRanges) {
@@ -104,7 +121,6 @@ export class DashboardService {
         },
       });
 
-      // 직군별 통계 (선택사항)
       const jobStats = await this.getTicketJobStats(range.start, range.end);
 
       result.push({
@@ -118,14 +134,14 @@ export class DashboardService {
   }
 
   /**
-   * 녹화 세션 생성 추이 조회
+   * Retrieve recording session creation trend over the specified period.
    */
   public async getRecordRoomTrend(
-    period: "day" | "week" | "month",
+    period: PeriodType,
     startDate?: string,
     endDate?: string,
   ): Promise<RecordRoomTrendItem[]> {
-    const dateRanges = this.getDateRanges(period, startDate, endDate);
+    const dateRanges = this.buildDateRanges(period, startDate, endDate);
     const result: RecordRoomTrendItem[] = [];
 
     for (const range of dateRanges) {
@@ -135,12 +151,10 @@ export class DashboardService {
         },
       });
 
-      // 메시지 수와 참여자 수는 실제 데이터가 없으므로 임시로 생성
-      // 실제로는 별도의 메시지 테이블이나 참여자 테이블에서 조회해야 함
-      const messages = created * 20; // 임시 계산
-      const participants = created * 3; // 임시 계산
+      // Placeholder calculations until dedicated message/participant tables exist
+      const messages = created * 20;
+      const participants = created * 3;
 
-      // 직군별 통계 (선택사항)
       const jobStats = await this.getRoomJobStats(range.start, range.end);
 
       result.push({
@@ -156,18 +170,18 @@ export class DashboardService {
   }
 
   /**
-   * 기간별 날짜 범위 생성
+   * Build date ranges for the given period granularity.
    */
-  private getDateRanges(
-    period: "day" | "week" | "month",
+  private buildDateRanges(
+    period: PeriodType,
     startDate?: string,
     endDate?: string,
-  ): Array<{ start: Date; end: Date }> {
+  ): DateRange[] {
     const now = new Date();
-    const ranges: Array<{ start: Date; end: Date }> = [];
+    const ranges: DateRange[] = [];
 
     if (period === "day") {
-      // 최근 7일
+      // Last 7 days
       for (let i = 6; i >= 0; i--) {
         const date = subDays(now, i);
         ranges.push({
@@ -176,7 +190,7 @@ export class DashboardService {
         });
       }
     } else if (period === "week") {
-      // 최근 8주
+      // Last 8 weeks
       for (let i = 7; i >= 0; i--) {
         const weekStart = subWeeks(now, i);
         const weekEnd = new Date(weekStart);
@@ -187,7 +201,7 @@ export class DashboardService {
         });
       }
     } else if (period === "month") {
-      // 최근 6개월
+      // Last 6 months
       for (let i = 5; i >= 0; i--) {
         const monthStart = subMonths(now, i);
         monthStart.setDate(1);
@@ -201,7 +215,7 @@ export class DashboardService {
       }
     }
 
-    // startDate와 endDate가 제공된 경우 필터링
+    // Filter by custom start/end dates if provided
     if (startDate || endDate) {
       const start = startDate ? new Date(startDate) : new Date(0);
       const end = endDate ? new Date(endDate) : new Date();
@@ -212,12 +226,9 @@ export class DashboardService {
   }
 
   /**
-   * 날짜 포맷팅
+   * Format a date label according to the period granularity.
    */
-  private formatDateByPeriod(
-    date: Date,
-    period: "day" | "week" | "month",
-  ): string {
+  private formatDateByPeriod(date: Date, period: PeriodType): string {
     if (period === "day") {
       return format(date, "MM-dd");
     } else if (period === "week") {
@@ -225,23 +236,17 @@ export class DashboardService {
       weekEnd.setDate(weekEnd.getDate() + 6);
       return `${format(date, "M/d")}-${format(weekEnd, "M/d")}`;
     } else {
-      return format(date, "yyyy년 M월");
+      return format(date, "yyyy-MM");
     }
   }
 
   /**
-   * 티켓 직군별 통계
+   * Compute ticket counts per job type within a date range.
    */
   private async getTicketJobStats(
     startDate: Date,
     endDate: Date,
-  ): Promise<{
-    developer?: number;
-    designer?: number;
-    pm?: number;
-    qa?: number;
-    other?: number;
-  }> {
+  ): Promise<JobCounts> {
     const tickets = await this.ticketLogRepository.find({
       where: {
         createdAt: Between(startDate, endDate),
@@ -249,7 +254,7 @@ export class DashboardService {
       select: ["username"],
     });
 
-    const jobCounts = {
+    const jobCounts: JobCounts = {
       developer: 0,
       designer: 0,
       pm: 0,
@@ -257,7 +262,7 @@ export class DashboardService {
       other: 0,
     };
 
-    // 성능 최적화: 모든 username을 한 번에 조회
+    // Performance optimization: batch-fetch all users by username
     const usernames = tickets
       .map((t) => t.username)
       .filter((username): username is string => !!username);
@@ -273,29 +278,13 @@ export class DashboardService {
 
     const userMap = new Map(users.map((user) => [user.username, user]));
 
-    // username을 통해 직접 User를 찾는 것이 가장 효율적
-    // (deviceId → DeviceInfoEntity → User보다 빠름)
+    // Look up each ticket's user directly by username for efficiency
     for (const ticket of tickets) {
       if (ticket.username) {
         const user = userMap.get(ticket.username);
 
         if (user) {
-          switch (user.jobType) {
-            case JobType.DEV:
-              jobCounts.developer += 1;
-              break;
-            case JobType.PD:
-              jobCounts.designer += 1;
-              break;
-            case JobType.PM:
-              jobCounts.pm += 1;
-              break;
-            case JobType.QA:
-              jobCounts.qa += 1;
-              break;
-            default:
-              jobCounts.other += 1;
-          }
+          this.incrementJobCount(jobCounts, user.jobType);
         } else {
           jobCounts.other += 1;
         }
@@ -308,18 +297,12 @@ export class DashboardService {
   }
 
   /**
-   * 녹화 세션 직군별 통계
+   * Compute recording session counts per job type within a date range.
    */
   private async getRoomJobStats(
     startDate: Date,
     endDate: Date,
-  ): Promise<{
-    developer?: number;
-    designer?: number;
-    pm?: number;
-    qa?: number;
-    other?: number;
-  }> {
+  ): Promise<JobCounts> {
     const records = await this.recordRepository.find({
       where: {
         timestamp: Between(startDate, endDate),
@@ -327,7 +310,7 @@ export class DashboardService {
       select: ["deviceId"],
     });
 
-    const jobCounts = {
+    const jobCounts: JobCounts = {
       developer: 0,
       designer: 0,
       pm: 0,
@@ -335,7 +318,7 @@ export class DashboardService {
       other: 0,
     };
 
-    // 성능 최적화: 모든 deviceId를 한 번에 조회
+    // Performance optimization: batch-fetch all device info with user relations
     const deviceIds = records
       .map((r) => r.deviceId)
       .filter((deviceId): deviceId is string => !!deviceId);
@@ -352,28 +335,13 @@ export class DashboardService {
 
     const deviceMap = new Map(deviceInfos.map((info) => [info.deviceId, info]));
 
-    // deviceId를 통해 DeviceInfoEntity에서 user 찾기
+    // Look up each record's user via DeviceInfoEntity
     for (const record of records) {
       if (record.deviceId) {
         const deviceInfo = deviceMap.get(record.deviceId);
 
         if (deviceInfo?.user) {
-          switch (deviceInfo.user.jobType) {
-            case JobType.DEV:
-              jobCounts.developer += 1;
-              break;
-            case JobType.PD:
-              jobCounts.designer += 1;
-              break;
-            case JobType.PM:
-              jobCounts.pm += 1;
-              break;
-            case JobType.QA:
-              jobCounts.qa += 1;
-              break;
-            default:
-              jobCounts.other += 1;
-          }
+          this.incrementJobCount(jobCounts, deviceInfo.user.jobType);
         } else {
           jobCounts.other += 1;
         }
@@ -383,5 +351,27 @@ export class DashboardService {
     }
 
     return jobCounts;
+  }
+
+  /**
+   * Increment the appropriate job count based on the user's job type.
+   */
+  private incrementJobCount(jobCounts: JobCounts, jobType: string): void {
+    switch (jobType) {
+      case JobType.DEV:
+        jobCounts.developer += 1;
+        break;
+      case JobType.PD:
+        jobCounts.designer += 1;
+        break;
+      case JobType.PM:
+        jobCounts.pm += 1;
+        break;
+      case JobType.QA:
+        jobCounts.qa += 1;
+        break;
+      default:
+        jobCounts.other += 1;
+    }
   }
 }

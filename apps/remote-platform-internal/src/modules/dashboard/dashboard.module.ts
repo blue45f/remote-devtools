@@ -5,7 +5,7 @@ import {
   TicketLogEntity,
   TicketComponentEntity,
   TicketLabelEntity,
-  Record,
+  RecordEntity,
   UserEntity,
   DeviceInfoEntity,
 } from "@remote-platform/entity";
@@ -19,7 +19,7 @@ import { DashboardService } from "./dashboard.service";
       TicketLogEntity,
       TicketComponentEntity,
       TicketLabelEntity,
-      Record,
+      RecordEntity,
       UserEntity,
       DeviceInfoEntity,
     ]),

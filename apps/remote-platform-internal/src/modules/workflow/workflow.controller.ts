@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Logger,
   Post,
   Param,
   Query,
@@ -13,13 +14,19 @@ import axios from "axios";
 import * as FormData from "form-data";
 
 /**
- * Workflow API proxy controller
- * Configure WORKFLOW_API_URL environment variable for your organization's API
+ * Workflow API proxy controller.
+ * Jira image uploads go directly to the Jira REST API.
+ * Member search uses the WORKFLOW_API_URL proxy.
  */
 @Controller("workflow")
 export class WorkflowController {
+  private readonly logger = new Logger(WorkflowController.name);
   private readonly workflowAPIURL = process.env.WORKFLOW_API_URL;
-  // GET /members - 사내 구성원 리스트 검색
+  private readonly jiraHostUrl = process.env.JIRA_HOST_URL;
+
+  /**
+   * GET /workflow/members - Search internal organization members by name.
+   */
   @Get("members")
   public getMembers(
     @Query("name") name: string,
@@ -32,57 +39,60 @@ export class WorkflowController {
   }
 
   /**
-   * JIRA 이슈에 이미지 업로드 - Workflow API로 바이패스
-   * Internal(여기) → Workflow API
+   * Upload an image to a Jira issue as an attachment (direct Jira REST API v3).
    */
   @Post("jira/issues/:issueId/image")
   @UseInterceptors(FileInterceptor("image"))
-  async uploadImageToJira(
+  public async uploadImageToJira(
     @Param("issueId") issueId: string,
-    @UploadedFile() file: any,
-  ) {
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<unknown> {
     if (!file) {
-      throw new BadRequestException("이미지 파일이 필요합니다");
+      throw new BadRequestException("An image file is required");
     }
 
-    console.log(`[Internal] Workflow API로 이미지 전달: ${issueId}`);
-    console.log(
-      `[Internal] Workflow URL: ${this.workflowAPIURL}/atlassian/jira/issues/${issueId}/image`,
-    );
-    console.log(
-      `[Internal] API Key 설정 여부: ${!!process.env.WORKFLOW_API_KEY}`,
-    );
+    const email = process.env.JIRA_API_EMAIL;
+    const token = process.env.JIRA_API_TOKEN;
 
-    // FormData 생성
+    if (!this.jiraHostUrl || !email || !token) {
+      throw new BadRequestException(
+        "Jira API credentials are not configured (JIRA_HOST_URL, JIRA_API_EMAIL, JIRA_API_TOKEN)",
+      );
+    }
+
+    this.logger.log(`Uploading image to Jira issue: ${issueId}`);
+
     const formData = new FormData();
-    formData.append("image", file.buffer, {
+    formData.append("file", file.buffer, {
       filename: file.originalname || `capture-${Date.now()}.png`,
       contentType: file.mimetype,
     });
 
     try {
-      // Workflow API로 바이패스 (티켓 생성과 동일한 경로 패턴 사용)
       const response = await axios.post(
-        `${this.workflowAPIURL}/atlassian/jira/issues/${issueId}/image`,
+        `${this.jiraHostUrl}/rest/api/3/issue/${issueId}/attachments`,
         formData,
         {
           headers: {
             ...formData.getHeaders(),
-            Authorization: process.env.WORKFLOW_API_KEY || "",
+            Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`,
+            "X-Atlassian-Token": "no-check",
           },
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
         },
       );
 
-      console.log(`[Internal] Workflow API 응답 성공`);
+      this.logger.log(`Jira attachment uploaded for issue: ${issueId}`);
       return response.data;
     } catch (error) {
-      console.error(`[Internal] Workflow API 에러:`, {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
+      const axiosError = error as {
+        response?: { status?: number; statusText?: string; data?: unknown };
+      };
+      this.logger.error(`Jira attachment error for issue ${issueId}:`, {
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
       });
       throw error;
     }
@@ -90,34 +100,34 @@ export class WorkflowController {
 }
 
 interface WorkflowResponse<T> {
-  code: string;
-  message: string;
-  status: string;
-  statusMessage: string;
-  data: T;
+  readonly code: string;
+  readonly message: string;
+  readonly status: string;
+  readonly statusMessage: string;
+  readonly data: T;
 }
 
 interface MemberDTO {
-  items: {
-    updatedAt: string;
-    createdAt: string;
-    deletedAt: string | null;
-    id: number;
-    identification: string;
-    birthDay: string;
-    name: string;
-    email: string;
-    team: string;
-    slackId: string;
-    profile: string;
-    gitlabId: string | null;
-    notionId: string | null;
-    notionMemoryItem: string | null;
-    isPartner: boolean;
-    hasWelcomed: boolean;
-    isWorking: boolean;
-    notification: boolean;
-    mention: boolean;
-    hasMorningAlarm: boolean;
+  readonly items: {
+    readonly updatedAt: string;
+    readonly createdAt: string;
+    readonly deletedAt: string | null;
+    readonly id: number;
+    readonly identification: string;
+    readonly birthDay: string;
+    readonly name: string;
+    readonly email: string;
+    readonly team: string;
+    readonly slackId: string;
+    readonly profile: string;
+    readonly gitlabId: string | null;
+    readonly notionId: string | null;
+    readonly notionMemoryItem: string | null;
+    readonly isPartner: boolean;
+    readonly hasWelcomed: boolean;
+    readonly isWorking: boolean;
+    readonly notification: boolean;
+    readonly mention: boolean;
+    readonly hasMorningAlarm: boolean;
   }[];
 }

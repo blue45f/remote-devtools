@@ -235,7 +235,7 @@ export function initializeRoomHandlers(): void {
 
       if (ticket) {
         // JIRA 이슈 ID 추출
-        const issueIdMatch = ticket.ticketURL.match(/([A-Z]+-\d+)/)
+        const issueIdMatch = ticket.ticketUrl.match(/([A-Z]+-\d+)/)
         const issueId = issueIdMatch ? issueIdMatch[1] : ticket.jiraProjectKey
 
         if (!issueId) {
@@ -342,7 +342,7 @@ function initDropZoneHandlers() {
 
     try {
       // JIRA 이슈 ID 추출
-      const issueIdMatch = ticket.ticketURL.match(/([A-Z]+-\d+)/)
+      const issueIdMatch = ticket.ticketUrl.match(/([A-Z]+-\d+)/)
       const issueId = issueIdMatch ? issueIdMatch[1] : ticket.jiraProjectKey
 
       if (!issueId) {
