@@ -1,191 +1,328 @@
-# 📦 설치 가이드
+# 설치 가이드
 
-이 문서는 Remote Debug Tools의 상세 설치 방법을 안내합니다.
-
-## 목차
-
-- [요구사항](#요구사항)
-- [로컬 개발 환경 설정](#로컬-개발-환경-설정)
-- [프로덕션 배포](#프로덕션-배포)
-- [Docker 배포](#docker-배포)
-- [클라우드 배포](#클라우드-배포)
+Remote DevTools의 로컬 개발 환경 설정 및 배포 방법을 안내한다.
 
 ---
 
 ## 요구사항
 
-### 필수 소프트웨어
+| 소프트웨어 | 버전 | 비고 |
+|-----------|------|------|
+| Node.js | 20 이상 | 22.x 권장 |
+| pnpm | 9 이상 | `corepack enable` 으로 설치 가능 |
+| Docker Desktop | 최신 | PostgreSQL 실행용 |
 
-| 소프트웨어 | 최소 버전 | 권장 버전 | 설명 |
-|-----------|----------|----------|------|
-| Node.js | 20.0.0 | 22.x | JavaScript 런타임 |
-| pnpm | 9.0.0 | 9.x | 패키지 매니저 |
-| Docker | 20.0.0 | 최신 | 컨테이너 런타임 |
-| Docker Compose | 2.0.0 | 최신 | 컨테이너 오케스트레이션 |
+선택 사항:
 
-### 선택적 요구사항
-
-| 소프트웨어 | 용도 |
-|-----------|------|
-| PostgreSQL 15+ | Docker 없이 로컬 DB 사용 시 |
-| AWS CLI | S3 백업 기능 사용 시 |
-
-### 시스템 요구사항
-
-| 환경 | CPU | RAM | 디스크 |
-|------|-----|-----|-------|
-| 개발 | 2코어+ | 4GB+ | 10GB+ |
-| 프로덕션 | 4코어+ | 8GB+ | 50GB+ |
+- PostgreSQL 15+ -- Docker 없이 로컬 DB를 직접 운영할 경우
+- AWS CLI -- S3 백업 기능을 사용할 경우
 
 ---
 
 ## 로컬 개발 환경 설정
 
-### 1. Node.js 설치
-
-#### macOS (Homebrew)
+### 1. Node.js 및 pnpm 설치
 
 ```bash
-# Node.js 설치
+# macOS (Homebrew)
 brew install node@22
 
 # 또는 nvm 사용
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 nvm install 22
 nvm use 22
-```
 
-#### Windows (winget)
-
-```powershell
-winget install OpenJS.NodeJS.LTS
-```
-
-#### Linux (Ubuntu/Debian)
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-### 2. pnpm 설치
-
-```bash
-# npm을 통한 설치
-npm install -g pnpm
-
-# 또는 corepack 사용 (Node.js 16.13+)
+# pnpm 설치
 corepack enable
 corepack prepare pnpm@latest --activate
 ```
 
-### 3. Docker Desktop 설치
-
-- **macOS/Windows**: [Docker Desktop 다운로드](https://www.docker.com/products/docker-desktop)
-- **Linux**: [Docker Engine 설치 가이드](https://docs.docker.com/engine/install/)
-
-### 4. 프로젝트 클론
+### 2. 프로젝트 클론 및 의존성 설치
 
 ```bash
-git clone https://github.com/your-username/remote-debug-tools.git
-cd remote-debug-tools
-```
-
-### 5. 의존성 설치
-
-```bash
-# 모든 워크스페이스 의존성 설치
+git clone <repository-url>
+cd remote-devtools
 pnpm install
 ```
 
-설치 과정에서 다음 항목들이 설치됩니다:
-- 루트 프로젝트 의존성
-- apps/remote-platform-external 의존성
-- apps/remote-platform-internal 의존성
-- sdk 의존성
-- client 의존성
-- figma-plugin 의존성
+pnpm workspace 기반으로 다음이 한번에 설치된다:
 
-### 6. 환경변수 설정
+- `apps/remote-platform-external` -- External 백엔드
+- `apps/remote-platform-internal` -- Internal 백엔드
+- `client` -- React 19 + Vite 클라이언트
+- `sdk` -- 프론트엔드 SDK
+- `figma-plugin` -- Figma 플러그인
+- `libs/*` -- 공유 라이브러리 (core, entity, common, constants, interfaces)
+
+### 3. 환경변수 설정
 
 ```bash
-# 템플릿 파일 복사
 cp .env.example apps/remote-platform-external/src/.env.local
 cp .env.example apps/remote-platform-internal/src/.env.local
 ```
 
-기본 설정으로 로컬 개발이 가능합니다. 필요한 경우 `.env.local` 파일을 수정하세요.
+기본값으로 로컬 개발이 가능하다. 외부 서비스 연동(Jira, Slack, S3 등)이 필요한 경우에만 수정한다.
 
-### 7. 서비스 시작
+주요 환경변수:
 
 ```bash
-# Docker Compose로 모든 서비스 시작
+# 앱 환경 (development, beta, production)
+APP_ENV=development
+
+# 데이터베이스
+DB_WRITER_HOST=localhost
+DB_PORT=5432
+DB_USER=myuser
+DB_PASSWORD=mypassword
+DB_NAME=mydb
+
+# 서버 간 통신
+EXTERNAL_HOST=http://localhost:3001
+INTERNAL_HOST=http://localhost:3000
+
+# Jira (선택) -- REST API v3 직접 호출
+JIRA_HOST_URL=https://your-domain.atlassian.net
+JIRA_API_EMAIL=your-email@example.com
+JIRA_API_TOKEN=your-api-token
+# Jira 프로젝트 키는 사용자별로 DB에서 관리 (jiraProjectKey)
+
+# Slack (선택)
+SLACK_BOT_TOKEN=xoxb-your-token
+SLACK_CHANNEL_ID=C0000000000
+
+# AWS S3 (선택)
+AWS_REGION=ap-northeast-2
+AWS_S3_BUCKET=your-bucket
+
+# Google Sheets (선택)
+GOOGLE_SERVICE_ACCOUNT_EMAIL=service@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_SPREADSHEET_ID=spreadsheet-id
+
+# CORS
+CORS_ALLOWED_ORIGINS=example.com,myapp.com
+```
+
+### 4. 서비스 시작
+
+#### 방법 A: Docker Compose (권장)
+
+```bash
 pnpm compose
 ```
 
-또는 개별 서비스 시작:
+PostgreSQL, External 서버(3001), Internal 서버(3000), PgAdmin(5050)이 한번에 시작된다.
+
+#### 방법 B: 개별 실행
 
 ```bash
-# 터미널 1: 데이터베이스
+# 터미널 1 -- 데이터베이스
 docker-compose up postgres
 
-# 터미널 2: External 서버
+# 터미널 2 -- External 서버
 pnpm start:external:dev
 
-# 터미널 3: Internal 서버
+# 터미널 3 -- Internal 서버
 pnpm start:internal:dev
 
-# 터미널 4: 클라이언트 (선택)
+# 터미널 4 -- 클라이언트 (선택)
 cd client && pnpm dev
 ```
 
-### 8. 설치 확인
+### 5. 설치 확인
 
 ```bash
-# 서비스 상태 확인
+# 서버 헬스 체크
 curl http://localhost:3000/health
 curl http://localhost:3001/health
 
-# 데이터베이스 연결 확인
+# DB 연결 확인
 docker-compose exec postgres pg_isready
+```
+
+| URL | 설명 |
+|-----|------|
+| http://localhost:3000 | Internal 서버 (DevTools UI) |
+| http://localhost:3001 | External 서버 (SDK, API) |
+| http://localhost:5050 | PgAdmin (DB 관리) |
+
+---
+
+## 6. 사용자 프로필 및 Jira 설정 (로컬 개발)
+
+SDK에서 Jira 티켓 생성 기능을 사용하려면 DB에 **사용자 프로필**, **디바이스**, **티켓 템플릿**이 등록되어 있어야 한다. 이 설정이 없으면 SDK에서 "Could not load ticket template data" 에러가 발생한다.
+
+### 데이터 구조
+
+```
+users (사용자)
+  └─ device_info_list (디바이스 -- deviceId로 사용자 식별)
+  └─ ticket_template_list (티켓 템플릿 -- jiraProjectKey 필수)
+```
+
+### 방법 A: REST API 사용 (기존 사용자 업데이트)
+
+기존에 등록된 사용자가 있다면 API로 업데이트한다:
+
+```bash
+curl -X PUT "http://localhost:3000/api/user-profile/{empNo}/upsert" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "홍길동",
+    "username": "gildong.hong",
+    "jobType": "QA",
+    "empNo": "00000001",
+    "email": "user@example.com",
+    "deviceInfoList": [
+      { "deviceId": "unknown-device", "deviceName": "Local Browser" },
+      { "deviceId": "OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1", "deviceName": "SDK Fallback" }
+    ],
+    "ticketTemplateList": [
+      {
+        "name": "기본 템플릿",
+        "jiraProjectKey": "YOUR_PROJECT_KEY",
+        "titlePrefix": "[QA] ",
+        "assigneeInfoList": [],
+        "componentList": [],
+        "labelList": ["QA", "bug"]
+      }
+    ]
+  }'
+```
+
+> **참고**: 신규 사용자 생성 시 Workflow API를 통한 Slack 사용자 조회가 필요하다. Workflow API가 없는 로컬 환경에서는 방법 B를 사용한다.
+
+### 방법 B: SQL 직접 실행 (권장 -- 로컬 개발)
+
+외부 서비스(Slack, Workflow API) 없이 데이터를 직접 등록한다:
+
+```bash
+PGPASSWORD=mypassword psql -h localhost -U myuser -d mydb << 'SQL'
+-- 1. 사용자 생성
+INSERT INTO users (name, username, job_type, slack_id, emp_no, created_at, updated_at)
+VALUES ('홍길동', 'gildong.hong', 'QA', 'local-dev-user', '00000001', NOW(), NOW());
+
+-- 2. 디바이스 등록
+--    SDK는 commonInfo가 없으면 두 가지 fallback deviceId를 사용한다:
+--    - 일반 연결: "unknown-device"
+--    - 티켓 모달: "OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1" (하드코딩)
+INSERT INTO device_info_list (user_id, device_id, device_name, created_at, updated_at)
+SELECT id, 'unknown-device', 'Local Browser', NOW(), NOW()
+FROM users WHERE emp_no = '00000001';
+
+INSERT INTO device_info_list (user_id, device_id, device_name, created_at, updated_at)
+SELECT id, 'OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1', 'SDK Fallback', NOW(), NOW()
+FROM users WHERE emp_no = '00000001';
+
+-- 3. 티켓 템플릿 생성 (jiraProjectKey 필수)
+INSERT INTO ticket_template_list (user_id, name, jira_project_key, title_prefix, assignee_info_list, component_list, label_list, created_at, updated_at)
+SELECT id, '기본 템플릿', 'YOUR_PROJECT_KEY', '[QA] ',
+  '[]'::jsonb, '[]'::jsonb, '["QA", "bug"]'::jsonb,
+  NOW(), NOW()
+FROM users WHERE emp_no = '00000001';
+SQL
+```
+
+### jiraProjectKey 확인 방법
+
+`jiraProjectKey`는 Jira 프로젝트의 고유 키이다. 확인 방법:
+
+1. Jira 보드 URL에서 확인: `https://your-domain.atlassian.net/jira/software/projects/{KEY}/board`
+2. Jira REST API로 조회:
+   ```bash
+   curl -u "email:api-token" "https://your-domain.atlassian.net/rest/api/3/project" | python3 -m json.tool
+   ```
+
+### SDK deviceId 참고사항
+
+| 상황 | 사용되는 deviceId |
+|------|-----------------|
+| 네이티브 앱(웹뷰) | `commonInfo.device.deviceId` (앱에서 전달) |
+| 브라우저 (commonInfo 없음) -- 일반 연결 | `"unknown-device"` |
+| 브라우저 (commonInfo 없음) -- 티켓 모달 | `"OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1"` |
+
+로컬 개발 시 위 두 가지 fallback deviceId를 모두 등록해야 SDK의 모든 기능이 정상 동작한다.
+
+### 설정 확인
+
+```bash
+# 사용자 조회
+curl http://localhost:3000/api/user-profile/00000001
+
+# 티켓 템플릿 로드 테스트 (SDK 티켓 모달이 호출하는 API)
+curl "http://localhost:3000/api/user-templates?deviceId=OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1"
+
+# 티켓 폼 데이터 로드 테스트
+curl "http://localhost:3000/api/ticket-form-data?deviceId=OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1"
+```
+
+모든 요청이 `{"success": true, ...}`로 응답하면 설정이 완료된 것이다.
+
+---
+
+## SDK 빌드
+
+```bash
+cd sdk
+pnpm build
+```
+
+빌드 결과물:
+
+- `dist/index.mjs` -- ES Module
+- `dist/index.umd.js` -- UMD (script 태그용)
+
+프로덕션 SDK 빌드 시 서버 호스트를 지정한다:
+
+```bash
+VITE_INTERNAL_HOST=https://internal.example.com \
+VITE_EXTERNAL_HOST=https://external.example.com \
+pnpm build
 ```
 
 ---
 
-## 프로덕션 배포
-
-### 서버 빌드
+## 프로덕션 빌드
 
 ```bash
-# 모든 서버 빌드
+# 백엔드 빌드
 pnpm build:internal
 pnpm build:external
 
-# SDK 빌드
-cd sdk && pnpm build
+# 또는 동시 빌드
+pnpm build:all
+
+# 클라이언트 빌드
+cd client && pnpm build
 ```
 
-### PM2를 통한 실행
+---
+
+## 배포
+
+### Docker
 
 ```bash
-# PM2 설치
-npm install -g pm2
-
-# 서비스 시작
-pm2 start ecosystem.config.js
-
-# 상태 확인
-pm2 status
-
-# 로그 확인
-pm2 logs
+docker build -t remote-devtools .
+docker run -d \
+  -p 3000:3000 \
+  -p 3001:3001 \
+  -e DB_WRITER_HOST=your-db-host \
+  -e DB_PORT=5432 \
+  -e DB_USER=your-user \
+  -e DB_PASSWORD=your-password \
+  -e DB_NAME=your-db \
+  remote-devtools
 ```
 
-### Nginx 리버스 프록시 설정
+### PM2
+
+```bash
+pnpm start:container
+```
+
+### Nginx 리버스 프록시 예시
 
 ```nginx
-# /etc/nginx/sites-available/remote-debug-tools
-
 upstream internal_server {
     server 127.0.0.1:3000;
 }
@@ -198,14 +335,12 @@ server {
     listen 80;
     server_name debug.example.com;
 
-    # Internal 서버 (DevTools UI)
     location / {
         proxy_pass http://internal_server;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
     }
 }
 
@@ -213,229 +348,36 @@ server {
     listen 80;
     server_name api.debug.example.com;
 
-    # External 서버 (SDK & API)
     location / {
         proxy_pass http://external_server;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
     }
 }
 ```
 
----
-
-## Docker 배포
-
-### 단일 이미지 빌드
-
-```bash
-# 이미지 빌드
-docker build -t remote-debug-tools:latest .
-
-# 컨테이너 실행
-docker run -d \
-  --name remote-debug-tools \
-  -p 3000:3000 \
-  -p 3001:3001 \
-  -e DB_HOST=your-db-host \
-  -e DB_PORT=5432 \
-  -e DB_USERNAME=your-user \
-  -e DB_PASSWORD=your-password \
-  -e DB_DATABASE=your-db \
-  remote-debug-tools:latest
-```
-
-### Docker Compose (프로덕션)
-
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_DATABASE=${DB_DATABASE}
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_DATABASE}
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-```bash
-# 프로덕션 환경 실행
-docker-compose -f docker-compose.prod.yml up -d
-```
-
----
-
-## 클라우드 배포
-
-### AWS ECS 배포
-
-1. **ECR에 이미지 푸시**
-
-```bash
-# ECR 로그인
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com
-
-# 이미지 태그
-docker tag remote-debug-tools:latest YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/remote-debug-tools:latest
-
-# 이미지 푸시
-docker push YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/remote-debug-tools:latest
-```
-
-2. **ECS 태스크 정의 생성**
-
-```json
-{
-  "family": "remote-debug-tools",
-  "networkMode": "awsvpc",
-  "containerDefinitions": [
-    {
-      "name": "app",
-      "image": "YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/remote-debug-tools:latest",
-      "portMappings": [
-        {"containerPort": 3000, "protocol": "tcp"},
-        {"containerPort": 3001, "protocol": "tcp"}
-      ],
-      "environment": [
-        {"name": "NODE_ENV", "value": "production"}
-      ],
-      "secrets": [
-        {"name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:..."}
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/remote-debug-tools",
-          "awslogs-region": "ap-northeast-2",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    }
-  ],
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "1024",
-  "memory": "2048"
-}
-```
-
-### Kubernetes 배포
-
-```yaml
-# k8s/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: remote-debug-tools
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: remote-debug-tools
-  template:
-    metadata:
-      labels:
-        app: remote-debug-tools
-    spec:
-      containers:
-        - name: app
-          image: your-registry/remote-debug-tools:latest
-          ports:
-            - containerPort: 3000
-            - containerPort: 3001
-          env:
-            - name: NODE_ENV
-              value: "production"
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: host
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: remote-debug-tools
-spec:
-  selector:
-    app: remote-debug-tools
-  ports:
-    - name: internal
-      port: 3000
-      targetPort: 3000
-    - name: external
-      port: 3001
-      targetPort: 3001
-  type: LoadBalancer
-```
-
-```bash
-# Kubernetes 배포
-kubectl apply -f k8s/
-```
-
----
-
-## 설치 후 확인사항
-
-### 헬스 체크
-
-```bash
-# Internal 서버
-curl -f http://localhost:3000/health
-
-# External 서버
-curl -f http://localhost:3001/health
-```
-
-### SDK 로드 테스트
-
-```html
-<script src="http://localhost:3001/sdk/index.umd.js"></script>
-<script>
-  console.log('SDK loaded:', !!window.RemoteDebugSdk);
-</script>
-```
-
-### 데이터베이스 연결 확인
-
-PgAdmin(http://localhost:5050)에 접속하여 테이블이 생성되었는지 확인합니다.
+WebSocket 연결을 사용하므로 `Upgrade` 헤더 설정이 필수다.
 
 ---
 
 ## 문제 해결
 
-설치 중 문제가 발생하면 [문제 해결 가이드](./TROUBLESHOOTING.md)를 참조하세요.
+### WebSocket 연결 실패
+
+- 서버가 실행 중인지 확인
+- 방화벽/프록시에서 WebSocket이 허용되어 있는지 확인
+- `CORS_ALLOWED_ORIGINS`에 클라이언트 도메인이 포함되어 있는지 확인
+
+### DB 연결 실패
+
+- `docker-compose ps`로 PostgreSQL 컨테이너 상태 확인
+- `.env.local`의 DB 연결 정보가 정확한지 확인
+- 포트 5432가 다른 프로세스에 점유되어 있지 않은지 확인
+
+### SDK 로드 실패 (`RemoteDebugSdk is not defined`)
+
+- External 서버(3001)가 실행 중인지 확인
+- 스크립트 URL이 올바른지 확인
+- 브라우저 개발자 도구의 Network 탭에서 SDK 파일 로딩 상태 확인
