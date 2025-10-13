@@ -1,752 +1,289 @@
-# 📚 API 참조 문서
+# API 참조 문서
 
-이 문서는 Remote Debug Tools의 REST API와 WebSocket API를 설명합니다.
-
-## 목차
-
-- [개요](#개요)
-- [인증](#인증)
-- [External Server API](#external-server-api)
-- [Internal Server API](#internal-server-api)
-- [WebSocket API](#websocket-api)
-- [에러 처리](#에러-처리)
+Remote DevTools의 REST API 및 WebSocket API 레퍼런스.
 
 ---
 
-## 개요
+## 서버 구성
 
-### Base URLs
-
-| 서버 | URL | 용도 |
-|------|-----|------|
-| External | `http://localhost:3001` | SDK, 데이터 수집 |
-| Internal | `http://localhost:3000` | 관리, 재생 |
-
-### 공통 헤더
-
-```http
-Content-Type: application/json
-Accept: application/json
-```
-
-### 응답 형식
-
-모든 API는 JSON 형식으로 응답합니다:
-
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "요청이 성공적으로 처리되었습니다"
-}
-```
-
-에러 응답:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "에러 메시지",
-    "details": { ... }
-  }
-}
-```
+| 서버 | 포트 | 역할 |
+|------|------|------|
+| External | 3001 | SDK 제공, 데이터 수집, WebSocket 게이트웨이, Jira/Slack 연동 |
+| Internal | 3000 | DevTools UI 제공, 세션 리플레이, 대시보드, 사용자 관리 |
 
 ---
 
-## 인증
-
-현재 버전에서는 인증이 필요하지 않습니다. 프로덕션 환경에서는 적절한 인증 메커니즘을 구현하는 것을 권장합니다.
-
----
-
-## External Server API
+## External Server (포트 3001)
 
 ### 헬스 체크
 
-서버 상태를 확인합니다.
-
-```http
+```
+GET /
 GET /health
 ```
-
-**응답**
-
-```json
-{
-  "status": "ok"
-}
-```
-
----
 
 ### SDK 제공
 
-SDK JavaScript 파일을 제공합니다.
-
-```http
+```
 GET /sdk/index.umd.js
 ```
 
-**응답**: JavaScript 파일
-
----
-
-### 녹화 세션 목록
-
-녹화 세션 목록을 조회합니다.
-
-```http
-GET /rooms
-```
-
-**쿼리 파라미터**
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| type | string | 아니오 | `record` 또는 `live` |
-
-**응답**
-
-```json
-{
-  "rooms": [
-    {
-      "name": "Room-abc123",
-      "id": 1,
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "recordMode": true
-    }
-  ]
-}
-```
-
----
-
-### 녹화 세션 상세
-
-특정 녹화 세션의 상세 정보를 조회합니다.
-
-```http
-GET /webview/:recordId/details
-```
-
-**경로 파라미터**
-
-| 파라미터 | 타입 | 설명 |
-|---------|------|------|
-| recordId | number | 녹화 세션 ID |
-
-**응답**
-
-```json
-{
-  "room": {
-    "id": 1,
-    "name": "Room-abc123",
-    "deviceId": "device-123",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "recordMode": true
-  },
-  "screenPreview": {
-    "snapshot": "...",
-    "width": 375,
-    "height": 812
-  }
-}
-```
-
----
-
-### Jira 티켓 생성
-
-Jira 티켓을 생성합니다.
-
-```http
-POST /jira/create-ticket
-```
-
-**요청 본문**
-
-```json
-{
-  "title": "버그: 로그인 실패",
-  "description": "로그인 시 에러 발생",
-  "projectKey": "PROJECT",
-  "issueType": "Bug",
-  "assignee": "user@example.com",
-  "labels": ["bug", "urgent"],
-  "components": ["Frontend"],
-  "recordLink": "http://localhost:3000/room/abc123"
-}
-```
-
-**응답**
-
-```json
-{
-  "success": true,
-  "ticket": {
-    "key": "PROJECT-123",
-    "url": "https://your-domain.atlassian.net/browse/PROJECT-123"
-  }
-}
-```
-
----
-
-### Slack 알림 전송
-
-Slack 채널에 알림을 전송합니다.
-
-```http
-POST /slack/send
-```
-
-**요청 본문**
-
-```json
-{
-  "roomName": "Room-abc123",
-  "recordLink": "http://localhost:3000/room/abc123",
-  "userData": {
-    "deviceId": "device-123",
-    "platform": "iOS",
-    "appVersion": "1.0.0"
-  }
-}
-```
-
-**응답**
-
-```json
-{
-  "success": true,
-  "messageTs": "1234567890.123456"
-}
-```
-
----
-
-### 버퍼 데이터 저장
-
-페이지 이탈 시 버퍼 데이터를 저장합니다.
-
-```http
-POST /buffer/save
-```
-
-**요청 본문**
-
-```json
-{
-  "deviceId": "device-123",
-  "room": "Buffer-device-123-1704067200000",
-  "url": "https://example.com/page",
-  "userAgent": "Mozilla/5.0...",
-  "bufferData": [
-    {
-      "method": "Network.requestWillBeSent",
-      "params": { ... }
-    }
-  ]
-}
-```
-
-**응답**
-
-```json
-{
-  "success": true,
-  "savedCount": 150
-}
-```
-
----
-
 ### 이미지 Base64 변환
 
-이미지 URL을 Base64로 변환합니다.
-
-```http
-POST /image-base64/convert
+```
+GET /image/image_base64?url={imageUrl}
 ```
 
-**요청 본문**
+### Jira 이미지 업로드
 
-```json
-{
-  "url": "https://example.com/image.png"
-}
+Figma 플러그인에서 Jira 이슈에 이미지를 첨부할 때 사용한다. Internal 서버를 거쳐 Jira REST API v3로 프록시된다.
+
+```
+POST /jira/issues/:issueId/image
+Content-Type: multipart/form-data
 ```
 
-**응답**
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| image | File | 이미지 파일 (최대 10MB) |
 
-```json
-{
-  "success": true,
-  "base64": "data:image/png;base64,iVBORw0KGgo..."
-}
+### Figma 플러그인 API
+
+```
+POST /api/figma/user        -- Figma 사용자 등록, 디바이스 정보 반환
+POST /api/figma/selection    -- Figma 선택 정보 저장
+POST /api/figma/page         -- Figma 페이지 정보 저장
+GET  /api/figma/health       -- Figma API 헬스 체크
+```
+
+### 녹화 세션 / 통계 (rooms 컨트롤러)
+
+```
+GET /rooms/room-detail?roomName={name}       -- 세션 상세 (screenPreview 포함)
+GET /rooms/generate-screenshot?recordId={id} -- 스크린샷 생성 (Playwright 렌더링)
+GET /rooms/ticket-stats                      -- 티켓 생성 통계
+GET /rooms/daily-stats                       -- 일별 티켓 통계 (최근 30일)
+GET /rooms/component-stats                   -- 컴포넌트별 통계
+GET /rooms/label-stats                       -- 라벨별 통계
+GET /rooms/room-stats                        -- 녹화 세션 통계
+GET /rooms/room-daily-stats                  -- 일별 녹화 세션 통계 (최근 30일)
+GET /rooms/user-tickets?deviceId={id}        -- 특정 디바이스 티켓 이력
+GET /rooms/user-rooms?deviceId={id}          -- 특정 디바이스 녹화 이력
+GET /rooms/tickets-by-epic?parentEpic={epic} -- Epic별 티켓 조회
+GET /rooms/tickets-by-url?url={url}          -- URL별 티켓 조회 (부분 일치)
 ```
 
 ---
 
-## Internal Server API
+## Internal Server (포트 3000)
 
 ### 헬스 체크
 
-```http
+```
+GET /
 GET /health
 ```
 
-**응답**
+### 녹화 세션 (rooms 컨트롤러)
 
-```json
-{
-  "status": "ok"
-}
+```
+GET /rooms                                     -- 라이브 룸 목록
+GET /rooms/record                              -- 녹화 세션 목록
+GET /rooms/record/:recordId/info               -- 녹화 세션 정보
+GET /rooms/record/:recordId/previous           -- 동일 디바이스 이전 녹화 목록 (S3)
+GET /rooms/backups?deviceId=&date=&limit=      -- S3 백업 목록 (내용 포함, 느림)
+GET /rooms/backups-light?deviceId=&date=&limit= -- S3 백업 목록 (경량, 빠름)
+GET /rooms/backup-urls?filePaths={paths}       -- 백업 파일 URL 추출
+GET /rooms/backup-viewer                       -- 백업 뷰어 UI
 ```
 
----
+### 대시보드
 
-### 대시보드 통계
-
-전체 통계를 조회합니다.
-
-```http
-GET /dashboard/stats
+```
+GET /api/dashboard/stats                              -- 전체 통계
+GET /api/dashboard/tickets/trend?period={day|week|month} -- 티켓 추이
+GET /api/dashboard/record-rooms/trend?period={day|week|month} -- 녹화 세션 추이
 ```
 
-**응답**
+period 파라미터는 `day`, `week`, `month` 중 하나 (필수).
+startDate, endDate로 기간 필터 가능.
 
-```json
-{
-  "totalRecordRooms": 1500,
-  "todayRecordRooms": 25,
-  "weeklyAverageRecordRooms": 18.5,
-  "totalTickets": 320,
-  "todayTickets": 5
-}
+### 세션 리플레이
+
+```
+GET /api/session-replay/sessions?limit=&offset=&room= -- 세션 목록 (페이지네이션)
+GET /api/session-replay/sessions/:id                   -- 세션 메타데이터
+GET /api/session-replay/sessions/:id/events            -- 세션 이벤트 목록
 ```
 
----
+이벤트 조회 시 id는 DB recordId, S3 세션 ID (`s3-` 접두어), 또는 s3FilePath 쿼리 파라미터를 지원한다.
 
-### 녹화 세션 추이
+### Google Sheets TC 관리
 
-기간별 녹화 세션 생성 추이를 조회합니다.
-
-```http
-GET /dashboard/record-room-trend
+```
+GET /api/google-sheets/read-tc-sheet?sheetUrl={url}&sheetName={name}
 ```
 
-**쿼리 파라미터**
+sheetName 기본값은 `DebugTools`.
 
-| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
-|---------|------|------|--------|------|
-| period | string | 아니오 | week | `week`, `month`, `quarter` |
+### 사용자 프로필
 
-**응답**
-
-```json
-{
-  "trend": [
-    {
-      "date": "2024-01-01",
-      "created": 25,
-      "developer": 10,
-      "designer": 5,
-      "qa": 8,
-      "other": 2
-    }
-  ]
-}
+```
+GET    /api/user-profile/:empNo          -- 사용자 조회
+PUT    /api/user-profile/:empNo/upsert   -- 사용자 생성/수정
+DELETE /api/user-profile/:empNo          -- 사용자 삭제
 ```
 
----
+### 티켓 폼
 
-### 세션 리플레이 데이터
-
-녹화된 세션의 리플레이 데이터를 조회합니다.
-
-```http
-GET /session-replay/:recordId
+```
+GET /api/ticket-form-data?deviceId={id}                          -- 티켓 폼 데이터
+GET /api/user-templates?deviceId={id}                            -- 사용자 템플릿 목록
+GET /api/ticket-form-data-by-template?deviceId={id}&templateName={name} -- 템플릿별 폼 데이터
+PUT /api/select-template                                         -- 마지막 선택 템플릿 업데이트
 ```
 
-**경로 파라미터**
+### Workflow 프록시
 
-| 파라미터 | 타입 | 설명 |
-|---------|------|------|
-| recordId | number | 녹화 세션 ID |
-
-**응답**
-
-```json
-{
-  "metadata": {
-    "id": 1,
-    "roomName": "Room-abc123",
-    "deviceId": "device-123",
-    "startTime": "2024-01-01T00:00:00.000Z",
-    "endTime": "2024-01-01T00:10:00.000Z",
-    "duration": 600000
-  },
-  "events": [
-    {
-      "id": 1,
-      "event_type": "Network.requestWillBeSent",
-      "protocol": { ... },
-      "timestamp": 1704067200000,
-      "relativeTime": 0
-    }
-  ],
-  "rrwebEvents": [
-    {
-      "type": 4,
-      "data": { ... },
-      "timestamp": 1704067200000
-    }
-  ]
-}
 ```
-
----
-
-### Google Sheets 템플릿 조회
-
-Google Sheets에서 티켓 템플릿을 조회합니다.
-
-```http
-GET /google-sheets/templates
-```
-
-**쿼리 파라미터**
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| sheetId | string | 아니오 | 스프레드시트 ID |
-| sheetName | string | 아니오 | 시트 이름 (기본: DebugTools) |
-
-**응답**
-
-```json
-{
-  "templates": [
-    {
-      "id": "template-1",
-      "name": "버그 리포트",
-      "epic": "EPIC-1",
-      "assignee": "user@example.com",
-      "components": ["Frontend"],
-      "labels": ["bug"]
-    }
-  ]
-}
+GET  /workflow/members?name={name}           -- 조직원 검색 (Workflow API 프록시)
+POST /workflow/jira/issues/:issueId/image    -- Jira 이미지 첨부 (Jira REST API v3 직접 호출)
 ```
 
 ---
 
 ## WebSocket API
 
-### 연결
+### External 게이트웨이 (포트 3001)
 
-```javascript
-const ws = new WebSocket('ws://localhost:3001?room=Room-abc123&deviceId=device-123');
+SDK 클라이언트가 접속하여 CDP 데이터를 송수신하는 게이트웨이.
+
+#### 클라이언트 -> 서버 메시지
+
+| 이벤트 | 설명 | 주요 파라미터 |
+|--------|------|--------------|
+| `createRoom` | 녹화/라이브 룸 생성 | `recordMode`, `userData` (commonInfo 포함) |
+| `createTicket` | Jira 티켓 생성 | `userData`, `formData` (Epic, assignee, components, labels) |
+| `protocolToAllDevtools` | CDP 프로토콜을 전체 DevTools로 전달 | `room`, `message` (JSON 문자열) |
+| `messageToDevtools` | 특정 DevTools로 메시지 전달 | `room`, `devtoolsId`, `message` |
+| `updateResponseBody` | 네트워크 응답 본문 업데이트 | `room`, `requestId`, `body`, `base64Encoded` |
+| `enableBuffering` | 버퍼 모드 활성화 | `deviceId`, `url`, `userAgent`, `timestamp` |
+| `bufferEvent` | 버퍼 이벤트 저장 | `room`, `deviceId`, `url`, `userAgent`, `event` |
+| `saveBuffer` | 버퍼 데이터 저장 (페이지 이탈 시) | `deviceId`, `url`, `trigger`, `timestamp` |
+
+#### 서버 -> 클라이언트 메시지
+
+| 이벤트 | 설명 |
+|--------|------|
+| `roomCreated` | 룸 생성 완료 (roomName, recordId 포함) |
+| `ticketCreateSuccess` | 티켓 생성 성공 |
+| `ticketCreateError` | 티켓 생성 실패 |
+| `bufferingEnabled` | 버퍼 모드 활성화 확인 |
+| `protocol` | CDP 프로토콜 초기화 메시지 (Domain.enable 등) |
+| `error` | 오류 메시지 |
+
+### Internal 게이트웨이 (포트 3000)
+
+DevTools UI가 접속하여 녹화 데이터를 재생하는 게이트웨이. 쿼리 파라미터로 접속 모드를 결정한다.
+
 ```
-
-**쿼리 파라미터**
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| room | string | 예 | 방 이름 |
-| deviceId | string | 아니오 | 디바이스 ID |
-| recordMode | boolean | 아니오 | 녹화 모드 여부 |
-| recordId | number | 아니오 | 녹화 세션 ID |
-
----
-
-### 메시지 형식
-
-모든 WebSocket 메시지는 JSON 형식입니다:
-
-```json
-{
-  "id": 1,
-  "method": "Domain.method",
-  "params": { ... }
-}
-```
-
----
-
-### CDP 도메인
-
-#### Network 도메인
-
-```json
-// 요청 시작
-{
-  "method": "Network.requestWillBeSent",
-  "params": {
-    "requestId": "req-1",
-    "request": {
-      "url": "https://api.example.com/data",
-      "method": "GET",
-      "headers": { ... }
-    },
-    "timestamp": 1704067200000
-  }
-}
-
-// 응답 수신
-{
-  "method": "Network.responseReceived",
-  "params": {
-    "requestId": "req-1",
-    "response": {
-      "status": 200,
-      "headers": { ... }
-    }
-  }
-}
-
-// 응답 본문
-{
-  "method": "Network.getResponseBody",
-  "params": {
-    "requestId": "req-1",
-    "body": "{ ... }",
-    "base64Encoded": false
-  }
-}
-```
-
-#### Runtime 도메인
-
-```json
-// 콘솔 로그
-{
-  "method": "Runtime.consoleAPICalled",
-  "params": {
-    "type": "log",
-    "args": [
-      {
-        "type": "string",
-        "value": "Hello World"
-      }
-    ],
-    "timestamp": 1704067200000
-  }
-}
-
-// 에러
-{
-  "method": "Runtime.exceptionThrown",
-  "params": {
-    "exceptionDetails": {
-      "text": "Uncaught Error",
-      "exception": {
-        "description": "Error: Something went wrong"
-      },
-      "stackTrace": {
-        "callFrames": [ ... ]
-      }
-    }
-  }
-}
-```
-
-#### DOM 도메인
-
-```json
-// DOM 스냅샷
-{
-  "method": "DOM.setDocument",
-  "params": {
-    "root": {
-      "nodeId": 1,
-      "nodeName": "HTML",
-      "childNodeCount": 2,
-      "children": [ ... ]
-    }
-  }
-}
-```
-
-#### Page 도메인
-
-```json
-// 페이지 로드
-{
-  "method": "Page.loadEventFired",
-  "params": {
-    "timestamp": 1704067200000
-  }
-}
-
-// 프레임 탐색
-{
-  "method": "Page.frameNavigated",
-  "params": {
-    "frame": {
-      "id": "main",
-      "url": "https://example.com/page"
-    }
-  }
-}
+ws://localhost:3000?room={roomName}                         -- 라이브 룸 참여
+ws://localhost:3000?recordMode=true&recordId={id}           -- DB 녹화 재생
+ws://localhost:3000?s3Backup=true&filePaths={paths}         -- S3 백업 재생
+ws://localhost:3000?room={room}&recordId={id}&playbackDevice={deviceId} -- 레거시 백업 재생
 ```
 
 ---
 
-### 특수 메시지
+## WebSocket 프로토콜 (CDP)
 
-#### 방 생성 요청
+Chrome DevTools Protocol을 기반으로 한다. 모든 메시지는 JSON.
 
-```json
-{
-  "id": 1,
-  "method": "createRoom",
-  "params": {
-    "recordMode": true,
-    "commonInfo": { ... }
-  }
-}
-```
+### 지원 도메인 및 MSG_ID 상수
 
-#### 방 생성 응답
+| 도메인 | 초기화 메시지 | MSG_ID 상수 |
+|--------|-------------|------------|
+| Network | `Network.enable` | `MSG_ID.NETWORK.ENABLE` |
+| Runtime | `Runtime.enable` | `MSG_ID.RUNTIME.ENABLE` |
+| Page | `Page.enable` | `MSG_ID.PAGE.ENABLE` |
+| DOM | `DOM.enable` | `MSG_ID.DOM.ENABLE` |
+| ScreenPreview | `ScreenPreview.startPreview` | `MSG_ID.SCREEN.START_PREVIEW` |
 
-```json
-{
-  "id": 1,
-  "method": "roomCreated",
-  "params": {
-    "roomName": "Room-abc123",
-    "recordId": 1,
-    "timestamp": 1704067200000
-  }
-}
-```
+추가 MSG_ID: `NETWORK.SET_ATTACH_DEBUG_STACK`, `NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE`, `PAGE.GET_RESOURCE_TREE`, `DOM.GET_DOCUMENT`.
 
-#### 티켓 생성 요청
+### 주요 CDP 메시지
+
+**Network 도메인**
 
 ```json
-{
-  "id": 2,
-  "method": "createTicket",
-  "params": {
-    "commonInfo": { ... },
-    "userAgent": "Mozilla/5.0...",
-    "URL": "https://example.com/page",
-    "formData": {
-      "Epic": "EPIC-1",
-      "assignee": "user@example.com"
-    }
-  }
-}
+{ "method": "Network.requestWillBeSent", "params": { "requestId": "...", "request": { "url": "...", "method": "GET" } } }
+{ "method": "Network.responseReceived", "params": { "requestId": "...", "response": { "status": 200 } } }
+{ "method": "Network.getResponseBody", "params": { "requestId": "...", "body": "...", "base64Encoded": false } }
 ```
+
+**Runtime 도메인**
+
+```json
+{ "method": "Runtime.consoleAPICalled", "params": { "type": "log", "args": [...] } }
+{ "method": "Runtime.exceptionThrown", "params": { "exceptionDetails": { "text": "..." } } }
+```
+
+**DOM 도메인**
+
+```json
+{ "method": "DOM.updated", "params": { "nodeId": 1, "nodeName": "HTML", "children": [...] } }
+```
+
+**ScreenPreview 도메인**
+
+```json
+{ "method": "ScreenPreview.captured", "params": { "head": [...], "body": "...", "width": 375, "height": 812, "isFirstSnapshot": true } }
+```
+
+**SessionReplay (rrweb)**
+
+```json
+{ "method": "SessionReplay.rrwebEvent", "params": { "event": { "type": 2, "data": {...}, "timestamp": 1704067200000 } } }
+{ "method": "SessionReplay.rrwebEvents", "params": { "events": [...] } }
+```
+
+rrweb 이벤트 타입: 0=DomContentLoaded, 1=Load, 2=FullSnapshot, 3=IncrementalSnapshot, 4=Meta, 5=Custom.
 
 ---
 
-## 에러 처리
+## 데이터 엔티티
 
-### HTTP 에러 코드
+| 엔티티 | 용도 |
+|--------|------|
+| RecordEntity | 녹화 세션 (name, deviceId, recordMode, url, referrer, duration) |
+| NetworkEntity | 네트워크 요청/응답 (requestId, protocol, responseBody, base64Encoded) |
+| DomEntity | DOM 스냅샷 (type: "entireDom", protocol) |
+| RuntimeEntity | 콘솔 로그, 에러 (protocol) |
+| ScreenEntity | 화면 캡처, rrweb 이벤트, 세션 시작/종료 (type, eventType, sequence) |
+| TicketLogEntity | Jira 티켓 생성 기록 |
+| TicketComponentEntity | 티켓 컴포넌트 |
+| TicketLabelEntity | 티켓 라벨 |
+| UserEntity | 사용자 정보 (name, empNo, slackId, jobType, ticketTemplateList) |
+| DeviceInfoEntity | 디바이스 정보 (deviceId, user 관계) |
 
-| 코드 | 설명 |
+---
+
+## 환경 변수
+
+| 변수 | 설명 |
 |------|------|
-| 400 | 잘못된 요청 |
-| 401 | 인증 필요 |
-| 403 | 접근 거부 |
-| 404 | 리소스 없음 |
-| 500 | 서버 오류 |
-| 503 | 서비스 불가 |
-
-### 에러 코드 목록
-
-| 코드 | 설명 |
-|------|------|
-| AUTH_USER_NOT_FOUND | 사용자를 찾을 수 없음 |
-| AUTH_UNAUTHORIZED | 인증되지 않음 |
-| DEVICE_NOT_FOUND | 디바이스를 찾을 수 없음 |
-| VALIDATION_FAILED | 유효성 검사 실패 |
-| RESOURCE_NOT_FOUND | 리소스를 찾을 수 없음 |
-| EXTERNAL_SERVICE_ERROR | 외부 서비스 오류 |
-| JIRA_ERROR | Jira 연동 오류 |
-| SLACK_ERROR | Slack 연동 오류 |
-
-### 에러 응답 예시
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "녹화 세션을 찾을 수 없습니다",
-    "details": {
-      "recordId": 999
-    }
-  },
-  "statusCode": 404
-}
-```
-
----
-
-## Rate Limiting
-
-현재 버전에서는 Rate Limiting이 구현되어 있지 않습니다. 프로덕션 환경에서는 적절한 Rate Limiting을 구현하는 것을 권장합니다.
-
-권장 설정:
-- API 요청: 100 req/min
-- WebSocket 메시지: 1000 msg/min
-- 파일 업로드: 10 req/min
-
----
-
-## SDK API
-
-### window.RemoteDebugSdk
-
-```typescript
-interface RemoteDebugSdk {
-  createDebugger(
-    onClickCallback?: () => void,
-    autoConnect?: boolean
-  ): void;
-  
-  createTicketDirect(
-    remoteDebugger: RemoteDebugger,
-    commonInfo: CommonInfo | null,
-    formData?: TicketFormData
-  ): void;
-}
-```
-
-### 타입 정의
-
-```typescript
-interface CommonInfo {
-  user: {
-    userAppData?: string;
-    authorization: string;
-    memberId: string;
-    memberNumber: string;
-  };
-  device: {
-    deviceId: string;
-    deviceModel: string;
-    osVersion: string;
-    webUserAgent: string;
-  };
-  URL: string;
-  userAgent: string;
-}
-
-interface TicketFormData {
-  Epic?: string;
-  assignee?: string;
-  title?: string;
-  components?: string[];
-  labels?: string[];
-}
-```
+| `JIRA_HOST_URL` | Jira 인스턴스 URL |
+| `JIRA_API_EMAIL` | Jira API 이메일 |
+| `JIRA_API_TOKEN` | Jira API 토큰 |
+| `WORKFLOW_API_URL` | Workflow API 프록시 URL |
+| `EXTERNAL_HOST` | External 서버 호스트 (프로덕션) |
+| `INTERNAL_HOST` | Internal 서버 호스트 (프로덕션) |
+| `LOCAL_DEVICE_ID` | 로컬 개발용 디바이스 ID |
+| `DB_WRITER_HOST` | 데이터베이스 호스트 (기본값: postgres) |
+| `DB_PORT` | 데이터베이스 포트 (기본값: 5432) |
+| `DB_USER` | 데이터베이스 사용자 |
+| `DB_PASSWORD` | 데이터베이스 비밀번호 |
+| `DB_NAME` | 데이터베이스 이름 |
+| `APP_ENV` | 앱 환경 (development/beta) |
+| `CORS_ALLOWED_ORIGINS` | CORS 허용 도메인 (쉼표 구분) |
+| `SLACK_BOT_TOKEN` | Slack Bot OAuth 토큰 |
