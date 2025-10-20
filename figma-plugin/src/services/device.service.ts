@@ -3,14 +3,14 @@
  */
 
 import { appState } from '../state/app.state'
-import { RoomInfo, TicketInfo } from '../types'
+import { SessionInfo, TicketInfo } from '../types'
 
 /**
  * 디바이스 선택 및 관련 데이터 로드
  */
 export async function selectDevice(deviceId: string): Promise<void> {
   console.log('[selectDevice] 디바이스 선택:', deviceId)
-  
+
   // 이미 선택된 디바이스면 무시
   if (appState.selectedDeviceId === deviceId) {
     console.log('[selectDevice] 이미 선택된 디바이스')
@@ -23,22 +23,22 @@ export async function selectDevice(deviceId: string): Promise<void> {
   // 녹화 세션과 티켓 데이터 동시에 가져오기
   try {
     console.log('[selectDevice] API 호출 시작')
-    const [roomsResponse, ticketsResponse] = await Promise.all([
-      appState.apiClient?.getUserRooms(deviceId),
+    const [sessionsResponse, ticketsResponse] = await Promise.all([
+      appState.apiClient?.getUserSessions(deviceId),
       appState.apiClient?.getUserTickets(deviceId),
     ])
-    
-    console.log('[selectDevice] API 응답:', { 
-      rooms: roomsResponse?.rooms?.length || 0,
-      tickets: ticketsResponse?.tickets?.length || 0 
+
+    console.log('[selectDevice] API 응답:', {
+      sessions: sessionsResponse?.sessions?.length || 0,
+      tickets: ticketsResponse?.tickets?.length || 0
     })
 
     // 녹화 세션 데이터 저장
-    if (roomsResponse?.rooms) {
-      appState.setRooms(roomsResponse.rooms as RoomInfo[])
-      console.log('[selectDevice] 녹화 세션 저장 완료:', roomsResponse.rooms.length)
+    if (sessionsResponse?.sessions) {
+      appState.setSessions(sessionsResponse.sessions as SessionInfo[])
+      console.log('[selectDevice] 녹화 세션 저장 완료:', sessionsResponse.sessions.length)
     } else {
-      appState.setRooms([])
+      appState.setSessions([])
       console.log('[selectDevice] 녹화 세션 없음')
     }
 
@@ -52,7 +52,7 @@ export async function selectDevice(deviceId: string): Promise<void> {
     }
   } catch (error) {
     console.error('[selectDevice] API 호출 실패:', error)
-    appState.setRooms([])
+    appState.setSessions([])
     appState.setTickets([])
   }
 }

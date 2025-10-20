@@ -7,8 +7,7 @@ import { RuntimeEntity } from "@remote-platform/entity";
 import { RecordService } from "./record.service";
 
 /**
- * Service responsible for persisting and querying runtime console
- * messages captured during a recording session.
+ * 녹화 세션 중 캡처된 런타임 콘솔 메시지를 저장하고 조회하는 서비스.
  */
 @Injectable()
 export class RuntimeService {
@@ -21,8 +20,10 @@ export class RuntimeService {
   ) {}
 
   /**
-   * Create a new runtime entry linked to an existing record.
-   * Returns null when the parent record cannot be found.
+   * 기존 녹화 레코드에 연결된 새 런타임 항목을 생성한다.
+   * 부모 레코드를 찾을 수 없으면 null을 반환한다.
+   * @param data - 런타임 엔티티의 부분 데이터 (recordId 포함)
+   * @returns 저장된 RuntimeEntity 또는 null
    */
   public async create(
     data: Partial<RuntimeEntity & { recordId: number }>,
@@ -49,7 +50,11 @@ export class RuntimeService {
     return saved;
   }
 
-  /** Retrieve all runtime entries for a record, ordered by timestamp ascending. */
+  /**
+   * 특정 녹화 레코드의 모든 런타임 항목을 타임스탬프 오름차순으로 조회한다.
+   * @param recordId - 녹화 레코드 ID
+   * @returns RuntimeEntity 배열
+   */
   public async findByRecordId(recordId: number): Promise<RuntimeEntity[]> {
     return this.runtimeRepository.find({
       where: { record: { id: recordId } },
@@ -57,7 +62,11 @@ export class RuntimeService {
     });
   }
 
-  /** Alias for {@link findByRecordId} (retained for backward compatibility). */
+  /**
+   * {@link findByRecordId}의 별칭 (하위 호환성을 위해 유지).
+   * @param recordId - 녹화 레코드 ID
+   * @returns RuntimeEntity 배열
+   */
   public async findRuntimes(recordId: number): Promise<RuntimeEntity[]> {
     return this.findByRecordId(recordId);
   }

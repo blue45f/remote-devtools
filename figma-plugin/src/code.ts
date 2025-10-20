@@ -78,11 +78,11 @@ function base64ToBytes(base64: string): Uint8Array {
 }
 
 // 이미지를 캔버스에 추가하는 함수
-async function addImageToCanvas(imageUrl: string, roomName: string) {
+async function addImageToCanvas(imageUrl: string, sessionName: string) {
   try {
     console.log('========== addImageToCanvas 시작 ==========')
     console.log('URL length:', imageUrl.length)
-    console.log('Room name:', roomName)
+    console.log('Session name:', sessionName)
 
     // URL 시작 부분 로깅
     if (imageUrl.startsWith('data:image')) {
@@ -142,7 +142,7 @@ async function addImageToCanvas(imageUrl: string, roomName: string) {
     // Rectangle 노드 생성
     console.log('Creating rectangle node...')
     const rect = figma.createRectangle()
-    rect.name = `Screenshot - ${roomName}`
+    rect.name = `Screenshot - ${sessionName}`
 
     // 이미지의 원본 크기 가져오기
     console.log('Getting image dimensions...')
@@ -245,7 +245,7 @@ async function addImageToCanvas(imageUrl: string, roomName: string) {
     // 뷰포트를 노드로 이동
     figma.viewport.scrollAndZoomIntoView([rect])
 
-    figma.notify(`"${roomName}" 스크린샷을 추가했습니다`, { timeout: 3000 })
+    figma.notify(`"${sessionName}" 스크린샷을 추가했습니다`, { timeout: 3000 })
     console.log('========== addImageToCanvas 완료 ==========')
   } catch (error: any) {
     console.error('========== 이미지 추가 실패 ==========')
@@ -424,7 +424,7 @@ figma.ui.onmessage = (msg: PluginMessage) => {
       // dataURL 또는 imageUrl 둘 다 지원
       const imageUrl = msg.dataURL || msg.imageUrl
       if (imageUrl) {
-        void addImageToCanvas(imageUrl, msg.roomName)
+        void addImageToCanvas(imageUrl, msg.sessionName)
       } else {
         console.error('No image URL provided in message:', msg)
         figma.notify('이미지 URL이 제공되지 않았습니다', { timeout: 3000, error: true })

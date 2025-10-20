@@ -7,11 +7,11 @@ export interface DashboardStatsData {
   readonly weeklyAverage: number;
 
   /** Total cumulative recording session count */
-  readonly totalRecordRooms: number;
+  readonly totalRecordSessions: number;
   /** Number of recording sessions created today */
-  readonly todayRecordRooms: number;
+  readonly todayRecordSessions: number;
   /** Weekly daily average of recording session creation */
-  readonly weeklyAverageRecordRooms: number;
+  readonly weeklyAverageRecordSessions: number;
 }
 
 export interface DashboardStatsDto {

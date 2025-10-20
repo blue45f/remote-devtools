@@ -9,7 +9,7 @@ import {
 import { DashboardService } from "./dashboard.service";
 import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
 import { PeriodQueryDto } from "./dto/period-query.dto";
-import { RecordRoomTrendDto } from "./dto/record-room-trend.dto";
+import { RecordSessionTrendDto } from "./dto/record-session-trend.dto";
 import { TicketTrendDto } from "./dto/ticket-trend.dto";
 
 @Controller("api/dashboard")
@@ -92,12 +92,12 @@ export class DashboardController {
 
   /**
    * Retrieve recording session creation trend.
-   * GET /api/dashboard/record-rooms/trend
+   * GET /api/dashboard/record-sessions/trend
    */
-  @Get("record-rooms/trend")
-  public async getRecordRoomTrend(
+  @Get("record-sessions/trend")
+  public async getRecordSessionTrend(
     @Query() query: PeriodQueryDto,
-  ): Promise<RecordRoomTrendDto> {
+  ): Promise<RecordSessionTrendDto> {
     try {
       if (!query.period) {
         throw new BadRequestException("The 'period' parameter is required.");
@@ -109,7 +109,7 @@ export class DashboardController {
         );
       }
 
-      const data = await this.dashboardService.getRecordRoomTrend(
+      const data = await this.dashboardService.getRecordSessionTrend(
         query.period,
         query.startDate,
         query.endDate,
@@ -123,11 +123,11 @@ export class DashboardController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error("Failed to retrieve record room trend", error);
+      this.logger.error("Failed to retrieve record session trend", error);
       throw new BadRequestException({
         success: false,
         error: {
-          code: "RECORD_ROOM_TREND_ERROR",
+          code: "RECORD_SESSION_TREND_ERROR",
           message:
             error.message ||
             "An error occurred while retrieving the recording session trend.",

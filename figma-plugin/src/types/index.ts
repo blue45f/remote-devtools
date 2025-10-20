@@ -47,14 +47,14 @@ export interface ApiResponse {
 export interface DOMElements {
   messageContainer: HTMLDivElement | null
   deviceSection: HTMLDivElement | null
-  roomsSection: HTMLDivElement | null
+  sessionsSection: HTMLDivElement | null
   ticketsSection: HTMLDivElement | null
 }
 
 // 녹화 세션 타입
-export interface RoomInfo {
+export interface SessionInfo {
   id: number
-  roomName: string
+  sessionName: string
   recordMode: boolean
   recordId: number | null
   userInfoFound: boolean
@@ -68,7 +68,7 @@ export interface RoomInfo {
 // 티켓 타입
 export interface TicketInfo {
   id: number
-  roomName: string
+  sessionName: string
   ticketUrl: string
   jiraProjectKey: string
   title?: string
@@ -85,7 +85,7 @@ export interface AppState {
   isConnected: boolean
   pendingUser: PluginUser | null
   selectedDeviceId: string | null
-  rooms: RoomInfo[]
+  sessions: SessionInfo[]
   tickets: TicketInfo[]
   activeTicket: TicketInfo | null
   elements: DOMElements
@@ -95,7 +95,7 @@ export interface AppState {
   setPendingUser(user: PluginUser | null): void
   clearPendingUser(): void
   setSelectedDevice(deviceId: string | null): void
-  setRooms(rooms: RoomInfo[]): void
+  setSessions(sessions: SessionInfo[]): void
   setTickets(tickets: TicketInfo[]): void
   setActiveTicket(ticket: TicketInfo | null): void
   getActiveTicket(): TicketInfo | null

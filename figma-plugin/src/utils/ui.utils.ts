@@ -90,40 +90,40 @@ export function showDeviceInfo(response: ApiResponse) {
 /**
  * 녹화 세션 리스트 표시
  */
-export function showRooms() {
-  console.log('[showRooms] 호출, roomsSection:', !!appState.elements.roomsSection)
-  console.log('[showRooms] 녹화 세션 개수:', appState.rooms.length)
+export function showSessions() {
+  console.log('[showSessions] 호출, sessionsSection:', !!appState.elements.sessionsSection)
+  console.log('[showSessions] 녹화 세션 개수:', appState.sessions.length)
 
-  if (!appState.elements.roomsSection) {
-    console.log('[showRooms] roomsSection이 없음')
+  if (!appState.elements.sessionsSection) {
+    console.log('[showSessions] sessionsSection이 없음')
     return
   }
 
-  const rooms = appState.rooms
+  const sessions = appState.sessions
 
   // 탭 배지 업데이트 - 직접 DOM 조작
-  const roomsBadge = document.getElementById('roomsBadge')
-  if (roomsBadge) {
-    if (rooms.length > 0) {
-      roomsBadge.textContent = rooms.length.toString()
-      roomsBadge.style.display = 'inline-block'
+  const sessionsBadge = document.getElementById('sessionsBadge')
+  if (sessionsBadge) {
+    if (sessions.length > 0) {
+      sessionsBadge.textContent = sessions.length.toString()
+      sessionsBadge.style.display = 'inline-block'
     } else {
-      roomsBadge.style.display = 'none'
+      sessionsBadge.style.display = 'none'
     }
   }
 
-  let html = '<div class="rooms-container">'
+  let html = '<div class="sessions-container">'
 
-  if (rooms.length > 0) {
-    html += '<ul class="rooms-list">'
-    rooms.forEach((room) => {
-      const createdDate = new Date(room.createdAt).toLocaleString('ko-KR')
+  if (sessions.length > 0) {
+    html += '<ul class="sessions-list">'
+    sessions.forEach((session) => {
+      const createdDate = new Date(session.createdAt).toLocaleString('ko-KR')
       html += `
-        <li class="room-item" data-room-name="${escapeHtmlAttr(room.roomName)}" style="cursor: pointer;">
-          <div class="room-name">${room.roomName}</div>
-          <div class="room-meta">
-            <span class="room-date">${createdDate}</span>
-            ${room.recordMode ? '<span class="room-badge">녹화</span>' : ''}
+        <li class="session-item" data-session-name="${escapeHtmlAttr(session.sessionName)}" style="cursor: pointer;">
+          <div class="session-name">${session.sessionName}</div>
+          <div class="session-meta">
+            <span class="session-date">${createdDate}</span>
+            ${session.recordMode ? '<span class="session-badge">녹화</span>' : ''}
           </div>
         </li>
       `
@@ -135,10 +135,10 @@ export function showRooms() {
 
   html += '</div>'
 
-  appState.elements.roomsSection.innerHTML = html
+  appState.elements.sessionsSection.innerHTML = html
 
-  console.log('[showRooms] HTML 설정 완료')
-  console.log('[showRooms] innerHTML:', appState.elements.roomsSection.innerHTML.substring(0, 100))
+  console.log('[showSessions] HTML 설정 완료')
+  console.log('[showSessions] innerHTML:', appState.elements.sessionsSection.innerHTML.substring(0, 100))
 }
 
 /**
@@ -176,7 +176,7 @@ export function showTickets() {
 
       html += `
         <li class="ticket-item ${isActive ? 'active' : ''}" 
-            data-room-name="${escapeHtmlAttr(ticket.roomName)}" 
+            data-session-name="${escapeHtmlAttr(ticket.sessionName)}" 
             data-ticket-id="${ticket.id}">
           <div class="ticket-content">
             <div class="ticket-selector" title="티켓 활성화">
@@ -187,7 +187,7 @@ export function showTickets() {
                 ${ticket.title || ticket.jiraProjectKey}
               </a>
             </div>
-            <button class="ticket-image-btn" data-room-name="${escapeHtmlAttr(ticket.roomName)}" title="이미지 불러오기">
+            <button class="ticket-image-btn" data-session-name="${escapeHtmlAttr(ticket.sessionName)}" title="이미지 불러오기">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>

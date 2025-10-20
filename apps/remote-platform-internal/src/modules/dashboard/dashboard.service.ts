@@ -19,7 +19,7 @@ import {
 } from "@remote-platform/entity";
 
 import { DashboardStatsData } from "./dto/dashboard-stats.dto";
-import { RecordRoomTrendItem } from "./dto/record-room-trend.dto";
+import { RecordSessionTrendItem } from "./dto/record-session-trend.dto";
 import { TicketTrendItem } from "./dto/ticket-trend.dto";
 
 type PeriodType = "day" | "week" | "month";
@@ -78,28 +78,28 @@ export class DashboardService {
     const weeklyAverage = Math.round(weeklyTickets / 7);
 
     // Recording session statistics
-    const totalRecordRooms = await this.recordRepository.count();
-    const todayRecordRooms = await this.recordRepository.count({
+    const totalRecordSessions = await this.recordRepository.count();
+    const todayRecordSessions = await this.recordRepository.count({
       where: {
         timestamp: Between(todayStart, todayEnd),
       },
     });
 
     // Weekly average calculation
-    const weeklyRecordRooms = await this.recordRepository.count({
+    const weeklyRecordSessions = await this.recordRepository.count({
       where: {
         timestamp: MoreThanOrEqual(weekAgo),
       },
     });
-    const weeklyAverageRecordRooms = Math.round(weeklyRecordRooms / 7);
+    const weeklyAverageRecordSessions = Math.round(weeklyRecordSessions / 7);
 
     return {
       totalTickets,
       todayTickets,
       weeklyAverage,
-      totalRecordRooms,
-      todayRecordRooms,
-      weeklyAverageRecordRooms,
+      totalRecordSessions,
+      todayRecordSessions,
+      weeklyAverageRecordSessions,
     };
   }
 
@@ -136,13 +136,13 @@ export class DashboardService {
   /**
    * Retrieve recording session creation trend over the specified period.
    */
-  public async getRecordRoomTrend(
+  public async getRecordSessionTrend(
     period: PeriodType,
     startDate?: string,
     endDate?: string,
-  ): Promise<RecordRoomTrendItem[]> {
+  ): Promise<RecordSessionTrendItem[]> {
     const dateRanges = this.buildDateRanges(period, startDate, endDate);
-    const result: RecordRoomTrendItem[] = [];
+    const result: RecordSessionTrendItem[] = [];
 
     for (const range of dateRanges) {
       const created = await this.recordRepository.count({

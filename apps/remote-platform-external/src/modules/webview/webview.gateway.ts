@@ -38,9 +38,17 @@ import { SlackService } from "../slack/slack.service";
 import { UserInfoService } from "../user-info/user-info.service";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types -- WebSocket 룸 및 연결 상태 관련 타입 정의
 // ---------------------------------------------------------------------------
 
+/**
+ * WebSocket 룸의 상태를 나타내는 타입.
+ *
+ * @property client - 룸에 연결된 SDK(클라이언트) WebSocket
+ * @property devtools - 룸에 연결된 DevTools WebSocket 맵 (devtoolsId -> WebSocket)
+ * @property recordMode - 녹화 모드 여부
+ * @property recordId - 녹화 모드일 때 생성된 레코드 ID (비녹화 시 null)
+ */
 type RoomData = {
   client: WebSocket;
   devtools: Map<string, WebSocket>;
@@ -48,11 +56,26 @@ type RoomData = {
   recordId: number | null;
 };
 
+/**
+ * DevTools 연결 정보를 룸에 매핑하는 타입.
+ *
+ * @property room - DevTools가 속한 룸 이름
+ * @property devtoolsId - DevTools 고유 식별자
+ */
 type DevtoolsData = {
   room: string;
   devtoolsId: string;
 };
 
+/**
+ * 버퍼 모드 룸의 메타데이터를 나타내는 타입.
+ *
+ * @property deviceId - 디바이스 고유 식별자
+ * @property url - 현재 페이지 URL
+ * @property userAgent - 사용자 에이전트 문자열
+ * @property title - 페이지 제목 (선택)
+ * @property sessionStartTime - 세션 시작 시간 (밀리초, 선택)
+ */
 type BufferRoomInfo = {
   deviceId: string;
   url: string;
@@ -61,37 +84,77 @@ type BufferRoomInfo = {
   sessionStartTime?: number;
 };
 
+/**
+ * 연결 해제 후에도 유지되는 버퍼 정보 타입.
+ * {@link BufferRoomInfo}를 확장하여 룸 이름을 포함하며,
+ * Beacon API 등 연결 해제 후 저장 요청 시 사용된다.
+ *
+ * @property room - 버퍼 룸 이름
+ */
 type LastBufferInfo = BufferRoomInfo & { room: string };
 
 // ---------------------------------------------------------------------------
-// Gateway
+// Gateway -- SDK와 DevTools 간 WebSocket 통신 게이트웨이
 // ---------------------------------------------------------------------------
 
+/**
+ * SDK와 DevTools 간 WebSocket 통신을 처리하는 메인 게이트웨이.
+ *
+ * 주요 기능:
+ * - 룸 기반 WebSocket 세션 관리 (Record/Live/Buffer 모드)
+ * - CDP(Chrome DevTools Protocol) 메시지 라우팅
+ * - 네트워크, DOM, 런타임, 스크린 데이터 실시간 수집 및 저장
+ * - rrweb 기반 세션 리플레이 녹화
+ * - Jira 티켓 생성 및 Slack 알림
+ * - 페이지 이탈 시 버퍼 데이터 자동 저장 (S3)
+ */
 @WebSocketGateway()
 export class WebviewGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  /** NestJS 로거 인스턴스 */
   private readonly logger = new Logger(WebviewGateway.name);
 
+  /** 활성 WebSocket 룸 관리 (룸 이름 -> 룸 상태) */
   private readonly rooms: Map<string, RoomData> = new Map();
+  /** SDK 클라이언트 WebSocket을 룸 이름에 매핑 */
   private readonly clientMap: Map<WebSocket, string> = new Map();
+  /** DevTools WebSocket 연결을 룸 정보에 매핑 */
   private readonly devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
 
-  /** Tracks rrweb event timestamps for ordering. */
+  /** rrweb 이벤트 타임스탬프 추적 (이벤트 순서 보장용) */
   private lastEventTimestamp = 0;
 
-  // Buffer mode room management
+  /** 버퍼 모드 룸의 메타데이터 관리 (룸 이름 -> 버퍼 룸 정보) */
   private readonly bufferRooms: Map<string, BufferRoomInfo> = new Map();
-  /** Maps deviceId to its current room for fast lookup. */
+  /** deviceId를 현재 룸에 빠르게 매핑 (deviceId -> 룸 이름) */
   private readonly deviceToRoom: Map<string, string> = new Map();
-  /** Preserves the most recent buffer info per device (survives disconnect for Beacon use). */
+  /** 연결 해제 후에도 유지되는 디바이스별 최근 버퍼 정보 (Beacon API 대응) */
   private readonly lastBufferInfoByDevice: Map<string, LastBufferInfo> =
     new Map();
-  /** Tracks rooms already saved due to visibility change (prevents duplicate saves on re-entry). */
+  /** visibility change로 이미 저장된 룸 추적 (중복 저장 방지) */
   private readonly visibilityExitSavedRooms: Set<string> = new Set();
 
+  /** WebSocket 서버 인스턴스 */
   @WebSocketServer() public server: Server;
 
+  /**
+   * 의존성 주입을 통해 각 서비스 및 리포지토리를 초기화한다.
+   *
+   * @param recordService - 녹화 레코드 CRUD 서비스
+   * @param networkService - 네트워크 요청/응답 저장 서비스
+   * @param domService - DOM 스냅샷 저장 서비스
+   * @param runtimeService - 런타임 로그 저장 서비스
+   * @param screenService - 스크린 프리뷰 및 세션 리플레이 저장 서비스
+   * @param bufferService - 버퍼 이벤트 관리 서비스
+   * @param s3Service - S3 파일 업로드 서비스
+   * @param jiraService - Jira 티켓 생성 서비스
+   * @param slackService - Slack 알림 서비스
+   * @param userInfoService - 사용자 정보 조회 서비스
+   * @param ticketLogRepository - 티켓 로그 엔티티 리포지토리
+   * @param ticketComponentRepository - 티켓 컴포넌트 엔티티 리포지토리
+   * @param ticketLabelRepository - 티켓 라벨 엔티티 리포지토리
+   */
   constructor(
     private readonly recordService: RecordService,
     private readonly networkService: NetworkService,
@@ -113,17 +176,39 @@ export class WebviewGateway
   ) {}
 
   // -------------------------------------------------------------------------
-  // Helpers -- sending messages
+  // Helpers -- WebSocket 메시지 전송
   // -------------------------------------------------------------------------
 
+  /**
+   * WebSocket을 통해 JSON 직렬화된 메시지를 전송하는 헬퍼 메서드.
+   *
+   * @param socket - 메시지를 전송할 WebSocket 인스턴스
+   * @param data - 전송할 데이터 (JSON.stringify로 직렬화됨)
+   */
   private sendMessage(socket: WebSocket, data: any): void {
     socket.send(JSON.stringify(data));
   }
 
   // -------------------------------------------------------------------------
-  // Room management
+  // Room management -- 룸 생성 및 초기화
   // -------------------------------------------------------------------------
 
+  /**
+   * 새로운 녹화(Record) 또는 라이브(Live) 룸을 생성한다.
+   *
+   * 녹화 모드일 경우 DB에 레코드를 생성하고, 클라이언트에 roomCreated 메시지를 전송한 뒤
+   * CDP 도메인 활성화 메시지를 보낸다. 이후 DOM/스크린 프리뷰 초기화 메시지를 전송하고
+   * 세션 시작 이벤트를 저장한다.
+   *
+   * @param options - 룸 생성 옵션
+   * @param options.roomName - 생성할 룸 이름
+   * @param options.client - SDK 클라이언트 WebSocket
+   * @param options.recordMode - 녹화 모드 여부
+   * @param options.url - 현재 페이지 URL (선택)
+   * @param options.deviceId - 디바이스 고유 식별자
+   * @param options.referrer - 리퍼러 URL (선택)
+   * @returns 녹화 모드일 경우 생성된 recordId, 아니면 null
+   */
   private async createRoom({
     client,
     recordMode,
@@ -191,10 +276,15 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Helpers -- CDP domain initialisation messages
+  // Helpers -- CDP 도메인 초기화 메시지 전송
   // -------------------------------------------------------------------------
 
-  /** Sends the standard set of Network / Runtime / Page enable messages (wrapped in event: "protocol"). */
+  /**
+   * 녹화 모드 시 필요한 CDP 도메인 활성화 메시지를 전송한다.
+   * Network, Runtime, Page 도메인의 enable 메시지를 순서대로 보낸다.
+   *
+   * @param client - 메시지를 전송할 SDK 클라이언트 WebSocket
+   */
   private sendRecordModeInitMessages(client: WebSocket): void {
     this.sendMessage(client, {
       event: "protocol",
@@ -240,7 +330,12 @@ export class WebviewGateway
     });
   }
 
-  /** Sends DOM.enable and ScreenPreview.startPreview messages (wrapped in event: "protocol"). */
+  /**
+   * DOM 및 스크린 프리뷰 초기화 메시지를 전송한다.
+   * DOM.enable과 ScreenPreview.startPreview 메시지를 보낸다.
+   *
+   * @param client - 메시지를 전송할 SDK 클라이언트 WebSocket
+   */
   private sendDomAndScreenInitMessages(client: WebSocket): void {
     this.sendMessage(client, {
       event: "protocol",
@@ -257,13 +352,22 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // rrweb event type mapping
+  // rrweb 이벤트 타입 매핑
   // -------------------------------------------------------------------------
 
   /**
-   * Maps an rrweb numeric event type to its string label.
-   * 0=DomContentLoaded, 1=Load, 2=FullSnapshot, 3=IncrementalSnapshot,
-   * 4=Meta, 5=Custom, others=rrweb_{type}.
+   * rrweb 숫자 이벤트 타입을 문자열 라벨로 변환한다.
+   *
+   * - 0: DomContentLoaded -> "dom_loaded"
+   * - 1: Load -> "page_loaded"
+   * - 2: FullSnapshot -> "full_snapshot"
+   * - 3: IncrementalSnapshot -> "incremental_snapshot"
+   * - 4: Meta -> "meta"
+   * - 5: Custom -> "custom"
+   * - 기타: "rrweb_{type}"
+   *
+   * @param rrwebType - rrweb 이벤트 숫자 타입
+   * @returns 매핑된 문자열 라벨
    */
   private mapRrwebEventType(rrwebType: number): string {
     switch (rrwebType) {
@@ -285,9 +389,20 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Create Room
+  // Create Room -- "createRoom" WebSocket 메시지 핸들러
   // -------------------------------------------------------------------------
 
+  /**
+   * "createRoom" WebSocket 메시지를 처리하여 새 룸을 생성한다.
+   *
+   * 비녹화 모드일 경우 버퍼 룸 정보를 등록하고, 녹화 모드일 경우
+   * Slack DM 전송 및 기존 버퍼 데이터를 새 레코드로 이전한다.
+   *
+   * @param data - 클라이언트에서 전달받은 룸 생성 데이터
+   * @param data.recordMode - 녹화 모드 여부 (기본값: false)
+   * @param data.userData - 사용자 및 디바이스 정보
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("createRoom")
   public async handleCreateRoom(
     @MessageBody() data: { recordMode?: boolean; userData: UserData },
@@ -414,9 +529,17 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Connection / disconnection
+  // Connection / disconnection -- WebSocket 연결 및 해제 처리
   // -------------------------------------------------------------------------
 
+  /**
+   * 새로운 WebSocket 연결을 처리한다.
+   *
+   * 클라이언트를 "pending" 상태로 등록하고, 에러 및 종료 이벤트 리스너를 설정한다.
+   * 실제 룸 배정은 createRoom 또는 bufferEvent 메시지 수신 시 이루어진다.
+   *
+   * @param client - 새로 연결된 WebSocket 클라이언트
+   */
   public handleConnection(client: WebSocket): void {
     this.logger.log(
       `[CLIENT_CONNECTED] ${JSON.stringify({
@@ -453,9 +576,21 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Message to DevTools
+  // Message to DevTools -- SDK에서 특정 DevTools로 메시지 전달
   // -------------------------------------------------------------------------
 
+  /**
+   * SDK에서 특정 DevTools로 메시지를 전달하는 핸들러.
+   *
+   * 대상 DevTools를 찾아 메시지를 전송하고, 녹화 모드일 경우
+   * DOM enable/getDocument 응답을 처리하여 DB에 저장한다.
+   *
+   * @param data - 전달할 메시지 데이터
+   * @param data.room - 대상 룸 이름
+   * @param data.devtoolsId - 대상 DevTools 식별자
+   * @param data.message - 전달할 메시지 (문자열 또는 객체)
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("messageToDevtools")
   public handleMessageToDevtools(
     @MessageBody()
@@ -503,9 +638,21 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Protocol to all DevTools
+  // Protocol to all DevTools -- SDK에서 모든 DevTools로 브로드캐스트 및 DB 저장
   // -------------------------------------------------------------------------
 
+  /**
+   * SDK에서 수신한 프로토콜 메시지를 룸 내 모든 DevTools에 브로드캐스트하고,
+   * 녹화 모드일 경우 도메인별로 DB에 저장한다.
+   *
+   * 처리하는 도메인: Network, DOM, Runtime, ScreenPreview, SessionReplay,
+   * user.interaction, user.scroll, viewport.change
+   *
+   * @param data - 브로드캐스트할 메시지 데이터
+   * @param data.room - 대상 룸 이름
+   * @param data.message - CDP 프로토콜 메시지 (JSON 문자열)
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("protocolToAllDevtools")
   public async handleProtocolToAllDevtools(
     @MessageBody() data: { room: string; message: string },
@@ -603,12 +750,17 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // SessionReplay event handling (extracted for readability)
+  // SessionReplay event handling -- 세션 리플레이 프로토콜 처리
   // -------------------------------------------------------------------------
 
   /**
-   * Processes SessionReplay protocol messages (rrweb single events, batch events,
-   * and legacy snapshot / interaction formats).
+   * 세션 리플레이 프로토콜 메시지를 처리한다.
+   * rrweb 단일 이벤트, 배치 이벤트, 레거시 스냅샷/인터랙션 형식을 분기하여 처리한다.
+   *
+   * @param protocol - 수신된 CDP 프로토콜 객체
+   * @param roomData - 현재 룸 상태 데이터
+   * @param roomName - 현재 룸 이름
+   * @param timestamp - 이벤트 타임스탬프 (나노초)
    */
   private async handleSessionReplayProtocol(
     protocol: any,
@@ -637,7 +789,14 @@ export class WebviewGateway
     }
   }
 
-  /** Handles a single SessionReplay.rrwebEvent. */
+  /**
+   * 단일 rrweb 이벤트(SessionReplay.rrwebEvent)를 처리한다.
+   * DB에 저장하고, Buffer 룸일 경우 버퍼 서비스에도 추가한다.
+   *
+   * @param protocol - rrweb 이벤트가 포함된 프로토콜 객체
+   * @param roomData - 현재 룸 상태 데이터
+   * @param roomName - 현재 룸 이름
+   */
   private async handleSingleRrwebEvent(
     protocol: any,
     roomData: RoomData,
@@ -670,7 +829,14 @@ export class WebviewGateway
     }
   }
 
-  /** Handles a batch of SessionReplay.rrwebEvents. */
+  /**
+   * 배치 rrweb 이벤트(SessionReplay.rrwebEvents)를 처리한다.
+   * 여러 이벤트를 순회하며 DB에 저장하고, Buffer 룸일 경우 버퍼 서비스에도 추가한다.
+   *
+   * @param protocol - rrweb 이벤트 배열이 포함된 프로토콜 객체
+   * @param roomData - 현재 룸 상태 데이터
+   * @param roomName - 현재 룸 이름
+   */
   private async handleBatchRrwebEvents(
     protocol: any,
     roomData: RoomData,
@@ -726,7 +892,14 @@ export class WebviewGateway
     }
   }
 
-  /** Handles legacy SessionReplay.snapshot / SessionReplay.interaction formats. */
+  /**
+   * 레거시 세션 리플레이 형식(SessionReplay.snapshot / SessionReplay.interaction)을 처리한다.
+   * 마이그레이션 기간 동안의 호환성을 위해 유지된다.
+   *
+   * @param protocol - 레거시 형식의 프로토콜 객체
+   * @param roomData - 현재 룸 상태 데이터
+   * @param timestamp - 기본 타임스탬프 (나노초)
+   */
   private async handleLegacySessionReplay(
     protocol: any,
     roomData: RoomData,
@@ -762,7 +935,15 @@ export class WebviewGateway
     } as any);
   }
 
-  /** Adds a single rrweb event to the buffer service. */
+  /**
+   * 단일 rrweb 이벤트를 버퍼 서비스에 추가한다.
+   * Buffer 룸에서만 호출되며, 버퍼 서비스를 통해 메모리에 이벤트를 축적한다.
+   *
+   * @param roomName - 버퍼 룸 이름
+   * @param recordId - 레코드 ID
+   * @param protocol - rrweb 이벤트가 포함된 프로토콜 객체
+   * @param sessionTimestamp - 세션 타임스탬프 (나노초, BigInt)
+   */
   private addRrwebEventToBuffer(
     roomName: string,
     recordId: number,
@@ -795,9 +976,26 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer events
+  // Buffer events -- 버퍼 이벤트 처리
   // -------------------------------------------------------------------------
 
+  /**
+   * "bufferEvent" WebSocket 메시지를 처리하여 이벤트를 버퍼에 추가한다.
+   *
+   * Record/Live 룸의 이벤트는 무시하고, Buffer 룸의 이벤트만 처리한다.
+   * 버퍼 룸 정보를 갱신하고, visibility 재진입을 감지하며,
+   * pending 상태의 클라이언트를 룸에 할당한다.
+   *
+   * @param data - 버퍼 이벤트 데이터
+   * @param data.room - 버퍼 룸 이름
+   * @param data.recordId - 레코드 ID
+   * @param data.deviceId - 디바이스 고유 식별자
+   * @param data.url - 현재 페이지 URL
+   * @param data.userAgent - 사용자 에이전트 문자열
+   * @param data.title - 페이지 제목 (선택)
+   * @param data.event - 버퍼링할 이벤트 객체
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("bufferEvent")
   public async handleBufferEvent(
     @MessageBody()
@@ -887,9 +1085,24 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Enable buffering
+  // Enable buffering -- 버퍼링 모드 활성화
   // -------------------------------------------------------------------------
 
+  /**
+   * "enableBuffering" WebSocket 메시지를 처리하여 버퍼링 모드를 활성화한다.
+   *
+   * 새로운 Buffer 룸을 생성하고, 클라이언트와 디바이스 매핑을 설정한 뒤
+   * 버퍼 룸 메타데이터를 저장한다. 성공 시 "bufferingEnabled" 응답을 전송한다.
+   *
+   * @param data - 버퍼링 활성화 데이터
+   * @param data.deviceId - 디바이스 고유 식별자
+   * @param data.url - 현재 페이지 URL
+   * @param data.userAgent - 사용자 에이전트 문자열
+   * @param data.timestamp - 세션 시작 타임스탬프
+   * @param data.room - 버퍼 룸 이름 (선택, 미지정 시 자동 생성)
+   * @param data.title - 페이지 제목 (선택)
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("enableBuffering")
   public async handleEnableBuffering(
     @MessageBody()
@@ -949,9 +1162,23 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Save buffer
+  // Save buffer -- 버퍼 저장 트리거
   // -------------------------------------------------------------------------
 
+  /**
+   * "saveBuffer" WebSocket 메시지를 처리하여 버퍼 데이터 저장을 트리거한다.
+   *
+   * visibilitychange 트리거일 경우 중복 저장 방지를 위해 해당 룸을 추적한다.
+   * 실제 저장은 {@link triggerBufferSave}에 위임한다.
+   *
+   * @param data - 버퍼 저장 요청 데이터
+   * @param data.deviceId - 디바이스 고유 식별자
+   * @param data.url - 현재 페이지 URL
+   * @param data.trigger - 저장 트리거 원인 (예: "visibilitychange", "beforeunload")
+   * @param data.timestamp - 저장 요청 타임스탬프
+   * @param data.title - 페이지 제목 (선택)
+   * @param data.room - 버퍼 룸 이름 (선택)
+   */
   @SubscribeMessage("saveBuffer")
   public async handleSaveBuffer(
     @MessageBody()
@@ -994,9 +1221,24 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer save orchestration
+  // Buffer save orchestration -- 버퍼 저장 오케스트레이션
   // -------------------------------------------------------------------------
 
+  /**
+   * 버퍼 저장을 오케스트레이션하는 메서드.
+   *
+   * deviceId에 해당하는 모든 플러시 대상 룸을 수집하고,
+   * 각 룸의 버퍼 데이터를 S3에 강제 저장한 뒤 관련 상태를 정리한다.
+   * HTTP Beacon API 엔드포인트에서도 호출될 수 있다.
+   *
+   * @param deviceId - 디바이스 고유 식별자
+   * @param trigger - 저장 트리거 원인 (선택)
+   * @param title - 페이지 제목 (선택)
+   * @param referenceTimestamp - 기준 타임스탬프 (선택, 이보다 늦게 시작된 세션 제외)
+   * @param roomName - 특정 룸 이름 필터 (선택)
+   * @param requestUrl - 요청 URL 필터 (선택)
+   * @returns 하나 이상의 버퍼가 성공적으로 저장되었으면 true
+   */
   public async triggerBufferSave(
     deviceId: string,
     trigger?: string,
@@ -1076,12 +1318,21 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer room collection / cleanup helpers
+  // Buffer room collection / cleanup helpers -- 플러시 대상 룸 수집 및 정리
   // -------------------------------------------------------------------------
 
   /**
-   * Gathers all rooms that should be flushed for a given deviceId,
-   * optionally filtered by reference timestamp, room name, and URL path.
+   * 지정된 deviceId에 대해 플러시할 모든 룸을 수집한다.
+   *
+   * deviceToRoom 직접 매핑, bufferRooms 스캔, lastBufferInfoByDevice 스캔 세 가지
+   * 경로로 후보 룸을 탐색하며, referenceTimestamp/roomName/URL 경로로 필터링한다.
+   *
+   * @param deviceId - 디바이스 고유 식별자
+   * @param options - 필터 옵션
+   * @param options.referenceTimestamp - 기준 타임스탬프 (이보다 늦게 시작된 세션 제외, 선택)
+   * @param options.roomName - 특정 룸 이름 필터 (선택)
+   * @param options.url - URL 경로 필터 (선택)
+   * @returns 플러시 대상 룸과 버퍼 정보 배열
    */
   private collectRoomsToFlush(
     deviceId: string,
@@ -1154,7 +1405,13 @@ export class WebviewGateway
     return Array.from(rooms.values());
   }
 
-  /** Removes all tracking data for a buffer room after it has been flushed. */
+  /**
+   * 버퍼 플러시 완료 후 해당 룸의 모든 추적 데이터를 제거한다.
+   * bufferRooms, deviceToRoom, lastBufferInfoByDevice, visibilityExitSavedRooms에서 삭제한다.
+   *
+   * @param room - 정리할 버퍼 룸 이름
+   * @param deviceId - 관련 디바이스 식별자
+   */
   private cleanupBufferRoomAfterFlush(room: string, deviceId: string): void {
     if (this.bufferRooms.has(room)) {
       this.bufferRooms.delete(room);
@@ -1172,7 +1429,13 @@ export class WebviewGateway
     this.visibilityExitSavedRooms.delete(room);
   }
 
-  /** Normalises a URL to origin + pathname (strips query params and fragments). */
+  /**
+   * URL을 origin + pathname으로 정규화한다.
+   * 쿼리 파라미터와 프래그먼트를 제거하여 경로만 반환한다.
+   *
+   * @param url - 정규화할 URL 문자열 (선택)
+   * @returns 정규화된 URL 경로, 또는 유효하지 않은 경우 null
+   */
   private normalizeUrlPath(url?: string): string | null {
     if (!url) return null;
 
@@ -1190,9 +1453,19 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Update response body
+  // Update response body -- 네트워크 응답 본문 업데이트
   // -------------------------------------------------------------------------
 
+  /**
+   * "updateResponseBody" WebSocket 메시지를 처리하여 네트워크 응답 본문을 업데이트한다.
+   * 녹화 모드에서 수집된 네트워크 요청의 응답 본문을 DB에 저장한다.
+   *
+   * @param data - 응답 본문 업데이트 데이터
+   * @param data.room - 룸 이름
+   * @param data.requestId - 네트워크 요청 ID
+   * @param data.body - 응답 본문 문자열
+   * @param data.base64Encoded - Base64 인코딩 여부
+   */
   @SubscribeMessage("updateResponseBody")
   public async handleResponseBody(
     @MessageBody()
@@ -1209,9 +1482,21 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Ticket creation
+  // Ticket creation -- Jira 티켓 생성 처리
   // -------------------------------------------------------------------------
 
+  /**
+   * "createTicket" WebSocket 메시지를 처리하여 Jira 티켓을 생성한다.
+   *
+   * 녹화 룸을 생성하고, Jira API를 통해 티켓을 생성한 뒤
+   * Slack DM 전송, 티켓 로그 저장, 버퍼 데이터 이전을 수행한다.
+   * 에러 발생 시 클라이언트에 에러 메시지를 전송한다.
+   *
+   * @param data - 티켓 생성 요청 데이터
+   * @param data.userData - 사용자 및 디바이스 정보
+   * @param data.formData - 티켓 폼 데이터 (선택, Epic/컴포넌트/라벨 등)
+   * @param client - 요청을 보낸 SDK 클라이언트 WebSocket
+   */
   @SubscribeMessage("createTicket")
   public async handleCreateTicket(
     @MessageBody()
@@ -1326,7 +1611,18 @@ export class WebviewGateway
   }
 
   /**
-   * Post-ticket-creation tasks: send Slack DM, notify client, and persist ticket log.
+   * 티켓 생성 후 후처리를 수행한다.
+   * Slack DM 전송, 클라이언트에 성공 메시지 전송, 티켓 로그를 DB에 저장한다.
+   *
+   * @param client - SDK 클라이언트 WebSocket
+   * @param commonInfo - 공통 사용자/디바이스 정보
+   * @param recordId - 생성된 레코드 ID
+   * @param roomName - 룸 이름
+   * @param URL - 페이지 URL
+   * @param requestBody - Jira API 요청 본문
+   * @param ticketKey - 생성된 Jira 티켓 키 (예: "PROJ-123")
+   * @param ticketUrl - 생성된 Jira 티켓 URL
+   * @param formData - 티켓 폼 데이터 (선택)
    */
   private async handlePostTicketCreation(
     client: WebSocket,
@@ -1391,7 +1687,18 @@ export class WebviewGateway
   }
 
   /**
-   * Persists a ticket creation log entry along with component and label records.
+   * 티켓 생성 로그를 DB에 저장한다.
+   * 티켓 로그 엔티티와 함께 관련 컴포넌트 및 라벨 레코드도 저장한다.
+   * 로그 저장 실패 시에도 티켓 생성 성공에는 영향을 주지 않는다.
+   *
+   * @param commonInfo - 공통 사용자/디바이스 정보
+   * @param recordId - 레코드 ID
+   * @param roomName - 룸 이름
+   * @param URL - 페이지 URL
+   * @param requestBody - Jira API 요청 본문
+   * @param ticketUrl - 생성된 Jira 티켓 URL
+   * @param userInfo - 사용자 정보 (사용자명, Slack ID, Jira 프로젝트 키 등)
+   * @param formData - 티켓 폼 데이터 (선택)
    */
   private async persistTicketLog(
     commonInfo: CommonInfo,
@@ -1416,7 +1723,7 @@ export class WebviewGateway
         assignee,
         parentEpic: formData?.Epic || null,
         title: requestBody.title,
-        roomName,
+        sessionName: roomName,
         url: URL.split("?")[0],
       });
 
@@ -1475,7 +1782,13 @@ export class WebviewGateway
     }
   }
 
-  /** Handles errors during ticket creation and notifies the client. */
+  /**
+   * 티켓 생성 중 발생한 에러를 처리하고 클라이언트에 에러 메시지를 전송한다.
+   *
+   * @param data - 원본 티켓 생성 요청 데이터
+   * @param client - SDK 클라이언트 WebSocket
+   * @param error - 발생한 에러 객체
+   */
   private handleTicketCreationError(
     data: { userData: UserData; formData?: TicketFormData },
     client: WebSocket,
@@ -1505,10 +1818,23 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer flush helpers
+  // Buffer flush helpers -- 버퍼 S3 저장 헬퍼
   // -------------------------------------------------------------------------
 
-  /** Force-flushes the buffer to S3 storage (ignores minimum event count). */
+  /**
+   * 버퍼 데이터를 S3에 강제 저장한다 (최소 이벤트 수 무시).
+   *
+   * visibility exit으로 이미 저장된 룸은 중복 저장을 방지한다.
+   * 의미 있는 이벤트가 부족한 경우에도 저장을 건너뛸 수 있다.
+   *
+   * @param room - 버퍼 룸 이름
+   * @param recordId - 레코드 ID
+   * @param deviceId - 디바이스 고유 식별자
+   * @param url - 페이지 URL
+   * @param userAgent - 사용자 에이전트 문자열
+   * @param title - 페이지 제목 (선택)
+   * @returns 저장 성공 여부
+   */
   private async flushBufferToFileForce(
     room: string,
     recordId: number,
@@ -1561,7 +1887,20 @@ export class WebviewGateway
     }
   }
 
-  /** Flushes the buffer to S3 storage (respects minimum event count). */
+  /**
+   * 버퍼 데이터를 S3에 저장한다 (최소 이벤트 수 기준 적용).
+   *
+   * {@link flushBufferToFileForce}와 달리 최소 이벤트 수 기준을 준수한다.
+   * visibility exit으로 이미 저장된 룸은 중복 저장을 방지한다.
+   *
+   * @param room - 버퍼 룸 이름
+   * @param recordId - 레코드 ID
+   * @param deviceId - 디바이스 고유 식별자
+   * @param url - 페이지 URL
+   * @param userAgent - 사용자 에이전트 문자열
+   * @param title - 페이지 제목 (선택)
+   * @returns 저장 성공 여부
+   */
   private async flushBufferToFile(
     room: string,
     recordId: number,
@@ -1614,7 +1953,17 @@ export class WebviewGateway
     }
   }
 
-  /** Builds the upload payload and saves it to S3. */
+  /**
+   * S3 업로드 페이로드를 구성하고 S3에 저장한다.
+   *
+   * @param room - 버퍼 룸 이름
+   * @param recordId - 레코드 ID
+   * @param deviceId - 디바이스 고유 식별자
+   * @param url - 페이지 URL
+   * @param userAgent - 사용자 에이전트 문자열
+   * @param title - 페이지 제목 (선택)
+   * @param flushedBuffer - 플러시된 버퍼 데이터 (이벤트 배열, 세션 시작 시간, 제목)
+   */
   private async uploadBufferToS3(
     room: string,
     recordId: number,
@@ -1647,10 +1996,16 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer transfer to record
+  // Buffer transfer to record -- 버퍼 데이터를 레코드로 이전
   // -------------------------------------------------------------------------
 
-  /** Finds the Buffer room associated with a device. */
+  /**
+   * 디바이스에 연결된 Buffer 룸을 찾는다.
+   * deviceToRoom, bufferRooms, lastBufferInfoByDevice 순으로 탐색한다.
+   *
+   * @param deviceId - 디바이스 고유 식별자
+   * @returns Buffer 룸 이름, 찾지 못한 경우 null
+   */
   private findBufferRoomForDevice(deviceId: string): string | null {
     const direct = this.deviceToRoom.get(deviceId);
     if (direct) return direct;
@@ -1664,8 +2019,12 @@ export class WebviewGateway
   }
 
   /**
-   * Transfers buffered events from a Buffer room into a permanent record.
-   * Used when a recording session or ticket is created.
+   * Buffer 룸의 버퍼 이벤트를 영구 레코드로 이전한다.
+   * 녹화 세션 또는 티켓 생성 시 호출되며, 버퍼에 축적된 이벤트를
+   * 도메인별 서비스를 통해 DB에 저장하고 버퍼 상태를 정리한다.
+   *
+   * @param deviceId - 디바이스 고유 식별자
+   * @param recordId - 이전 대상 레코드 ID
    */
   private async transferBufferedDataToRecord(
     deviceId: string,
@@ -1751,7 +2110,13 @@ export class WebviewGateway
     }
   }
 
-  /** Persists the latest ScreenPreview.captured event from the buffer. */
+  /**
+   * 버퍼에서 가장 최신의 ScreenPreview.captured 이벤트를 DB에 저장한다.
+   *
+   * @param recordId - 레코드 ID
+   * @param deviceId - 디바이스 고유 식별자
+   * @param latestScreenPreview - 최신 스크린 프리뷰 이벤트
+   */
   private async persistLatestScreenPreview(
     recordId: number,
     deviceId: string,
@@ -1789,11 +2154,17 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Event persistence helpers
+  // Event persistence helpers -- 버퍼 이벤트 영속화 헬퍼
   // -------------------------------------------------------------------------
 
   /**
-   * Persists a single buffered event to the appropriate service based on its method.
+   * 단일 버퍼 이벤트를 메서드 종류에 따라 적절한 서비스로 DB에 저장한다.
+   *
+   * 처리하는 도메인: Network, updateResponseBody, DOM, Runtime,
+   * user.interaction, user.scroll, SessionReplay (단일/배치/레거시)
+   *
+   * @param recordId - 레코드 ID
+   * @param event - 저장할 버퍼 이벤트
    */
   private async persistBufferedEvent(
     recordId: number,
@@ -1889,7 +2260,12 @@ export class WebviewGateway
     }
   }
 
-  /** Persists a single rrweb event from the buffer. */
+  /**
+   * 버퍼에서 단일 rrweb 이벤트를 DB에 저장한다.
+   *
+   * @param recordId - 레코드 ID
+   * @param params - rrweb 이벤트 파라미터 (event 객체 포함)
+   */
   private async persistSingleRrwebEvent(
     recordId: number,
     params: any,
@@ -1914,7 +2290,12 @@ export class WebviewGateway
     } as any);
   }
 
-  /** Persists a batch of rrweb events from the buffer. */
+  /**
+   * 버퍼에서 배치 rrweb 이벤트를 DB에 저장한다.
+   *
+   * @param recordId - 레코드 ID
+   * @param params - rrweb 이벤트 배열이 포함된 파라미터 (events 배열 포함)
+   */
   private async persistBatchRrwebEvents(
     recordId: number,
     params: any,
@@ -1940,7 +2321,13 @@ export class WebviewGateway
     }
   }
 
-  /** Persists a legacy SessionReplay.snapshot or SessionReplay.interaction event. */
+  /**
+   * 레거시 SessionReplay.snapshot 또는 SessionReplay.interaction 이벤트를 DB에 저장한다.
+   *
+   * @param recordId - 레코드 ID
+   * @param method - 프로토콜 메서드 이름
+   * @param params - 이벤트 파라미터
+   */
   private async persistLegacySessionReplayEvent(
     recordId: number,
     method: string,
@@ -1977,10 +2364,16 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Timestamp conversion
+  // Timestamp conversion -- 타임스탬프 변환
   // -------------------------------------------------------------------------
 
-  /** Converts a millisecond timestamp (number or string) to nanoseconds. */
+  /**
+   * 밀리초 타임스탬프를 나노초로 변환한다.
+   * 유효하지 않은 값일 경우 process.hrtime()을 사용하여 현재 시간을 반환한다.
+   *
+   * @param value - 밀리초 타임스탬프 (숫자 또는 문자열, 선택)
+   * @returns 나노초 단위의 타임스탬프
+   */
   private toTimestampNs(value?: number | string): number {
     const parsed = typeof value === "string" ? Number(value) : value;
     if (!Number.isFinite(parsed)) {
@@ -1991,12 +2384,18 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Buffer persistence eligibility
+  // Buffer persistence eligibility -- 버퍼 저장 적격성 판단
   // -------------------------------------------------------------------------
 
   /**
-   * Determines whether a buffer contains enough meaningful events to be worth persisting.
-   * Filters out buffers that are too small or contain only noise.
+   * 버퍼가 저장할 만큼 충분한 의미 있는 이벤트를 포함하는지 판단한다.
+   *
+   * - ScreenPreview 이벤트만 있는 경우: captured 스냅샷이 있어야 저장
+   * - FullSnapshot(type=2)이 포함된 경우: 즉시 저장 대상
+   * - 그 외: 최소 의미 있는 이벤트 수(5개) 이상이어야 저장
+   *
+   * @param events - 판단할 버퍼 이벤트 배열
+   * @returns 저장할 가치가 있으면 true
    */
   private shouldPersistBuffer(events: BufferEvent[]): boolean {
     if (!Array.isArray(events) || events.length === 0) {
@@ -2043,9 +2442,20 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Disconnection handling
+  // Disconnection handling -- WebSocket 연결 해제 처리
   // -------------------------------------------------------------------------
 
+  /**
+   * WebSocket 연결 해제를 처리한다.
+   *
+   * 클라이언트 유형에 따라 분기 처리:
+   * - Buffer 룸: 버퍼 데이터를 S3에 강제 저장 후 상태 정리
+   * - Record/Live 룸: 세션 종료 이벤트 저장, DevTools 연결 해제, 룸 삭제
+   * - DevTools: devtoolsMap에서 제거
+   * - 이후 미저장 Buffer 룸 잔여 플러시 수행
+   *
+   * @param client - 연결 해제된 WebSocket 클라이언트
+   */
   public async handleDisconnect(client: WebSocket): Promise<void> {
     const room = this.clientMap.get(client);
 
@@ -2085,7 +2495,12 @@ export class WebviewGateway
     await this.flushRemainingBufferRooms();
   }
 
-  /** Handles disconnect cleanup for Buffer rooms. */
+  /**
+   * Buffer 룸의 연결 해제 시 정리 작업을 수행한다.
+   * 버퍼 데이터를 S3에 강제 저장하고, 관련 매핑 데이터를 모두 삭제한다.
+   *
+   * @param room - 연결 해제된 Buffer 룸 이름
+   */
   private async handleBufferRoomDisconnect(room: string): Promise<void> {
     const directInfo = this.bufferRooms.get(room);
     const lastInfo =
@@ -2126,7 +2541,14 @@ export class WebviewGateway
     }
   }
 
-  /** Handles disconnect cleanup for Record/Live rooms (session end + optional buffer flush). */
+  /**
+   * Record/Live 룸의 연결 해제 시 정리 작업을 수행한다.
+   * 세션 종료 이벤트를 저장하고, 세션 길이를 계산하여 업데이트하며,
+   * Record/Live가 아닌 룸의 경우 버퍼를 S3에 플러시한다.
+   *
+   * @param room - 연결 해제된 룸 이름
+   * @param roomData - 룸 상태 데이터
+   */
   private async handleRecordRoomDisconnect(
     room: string,
     roomData: RoomData,
@@ -2169,7 +2591,10 @@ export class WebviewGateway
     }
   }
 
-  /** Flushes any remaining Buffer rooms that were not already saved on visibility exit. */
+  /**
+   * visibility exit 시 저장되지 않은 잔여 Buffer 룸의 데이터를 플러시한다.
+   * 이미 visibility exit으로 저장된 룸은 건너뛰고 상태만 정리한다.
+   */
   private async flushRemainingBufferRooms(): Promise<void> {
     try {
       for (const [bufferRoom, bufferInfo] of this.bufferRooms.entries()) {
@@ -2203,49 +2628,88 @@ export class WebviewGateway
 }
 
 // ---------------------------------------------------------------------------
-// Exported Types
+// Exported Types -- 외부 모듈에서 사용하는 공유 타입
 // ---------------------------------------------------------------------------
 
+/**
+ * SDK에서 전달되는 공통 사용자/디바이스 정보 타입.
+ * 사용자 인증, 디바이스 식별, 지원 데이터 등을 포함한다.
+ */
 export type CommonInfo = {
+  /** 사용자 인증 및 식별 정보 */
   user: {
-    userAppData?: string; // Encrypted user app data
-    userBaedal?: string; // Kept for legacy compatibility
+    /** 암호화된 사용자 앱 데이터 */
+    userAppData?: string;
+    /** 레거시 호환성을 위해 유지되는 필드 */
+    userBaedal?: string;
+    /** 인증 토큰 */
     authorization: string;
+    /** 회원 ID */
     memberId: string;
+    /** 회원 번호 */
     memberNumber: string;
+    /** Perseus 클라이언트 ID (선택) */
     perseusClientId?: string;
+    /** Perseus 세션 ID (선택) */
     perseusSessionId?: string;
   };
+  /** 디바이스 하드웨어 및 환경 정보 */
   device: {
+    /** 광고 식별자 (ADID) */
     adid: string;
-    att?: number; // ATT status value (iOS 14+ only)
+    /** ATT 상태값 (iOS 14 이상, 선택) */
+    att?: number;
+    /** AppsFlyer 식별자 */
     appsflyerId: string;
-    deviceBaedal?: string; // Emulator/rooting flag (Android only)
+    /** 에뮬레이터/루팅 플래그 (Android 전용, 선택) */
+    deviceBaedal?: string;
+    /** 디바이스 고유 식별자 */
     deviceId: string;
+    /** 세션 식별자 */
     sessionId: string;
-    /** Available since version 12.20.0 */
-    actionTrackingKey?: string; // Marketing platform key
+    /** 마케팅 플랫폼 키 (v12.20.0 이상, 선택) */
+    actionTrackingKey?: string;
+    /** OS 버전 */
     osVersion: string;
+    /** 웹 User-Agent 문자열 */
     webUserAgent: string;
+    /** 디바이스 모델명 */
     deviceModel: string;
-    carrier: string; // Carrier information
-    /** Available since version 14.4.0 */
+    /** 통신사 정보 */
+    carrier: string;
+    /** IDFV (v14.4.0 이상, 선택) */
     idfv?: string;
   };
-  /** Available since version 12.5.0 */
+  /** 지원 데이터 문자열 (v12.5.0 이상) */
   supportData: string;
-  /** URL accessed from the webview */
+  /** 웹뷰에서 접근한 URL */
   URL: string;
-  /** User-Agent string */
+  /** User-Agent 문자열 */
   userAgent: string;
 };
 
+/**
+ * 에이전트(브라우저/OS) 정보 타입.
+ *
+ * @property os - 운영 체제 이름
+ * @property browser - 브라우저 이름
+ * @property URL - 접근한 URL
+ */
 export type AgentInfo = {
   os: string;
   browser: string;
   URL: string;
 };
 
+/**
+ * Jira 티켓 생성 시 사용되는 폼 데이터 타입.
+ *
+ * @property Epic - 상위 에픽 키
+ * @property assignee - 담당자
+ * @property title - 티켓 제목 (선택)
+ * @property components - 컴포넌트 목록
+ * @property labels - 라벨 목록 (선택)
+ */
 export type TicketFormData = {
   Epic: string;
   assignee: string;
@@ -2254,6 +2718,14 @@ export type TicketFormData = {
   labels?: string[];
 };
 
+/**
+ * SDK에서 전달되는 사용자 데이터 타입.
+ *
+ * @property commonInfo - 공통 사용자/디바이스 정보 (선택)
+ * @property userAgent - User-Agent 문자열
+ * @property URL - 현재 페이지 URL
+ * @property webTitle - 웹 페이지 제목
+ */
 export type UserData = {
   commonInfo?: CommonInfo;
   userAgent: string;

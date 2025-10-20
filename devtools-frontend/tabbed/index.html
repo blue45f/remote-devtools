@@ -1012,7 +1012,7 @@
         wsHealthCheckInterval = setInterval(async () => {
           checkCount++
           try {
-            const response = await fetch(`${getApiHost()}/rooms/record/${currentRecordId}/info`, {
+            const response = await fetch(`${getApiHost()}/sessions/record/${currentRecordId}/info`, {
               signal: AbortSignal.timeout(5000)
             })
             if (response.ok) {
@@ -1211,7 +1211,7 @@
       async function getCurrentDeviceId() {
         if (currentDeviceId) return currentDeviceId
         try {
-          const response = await fetch(`${getApiHost()}/rooms/record/${currentRecordId}/info`, {
+          const response = await fetch(`${getApiHost()}/sessions/record/${currentRecordId}/info`, {
             signal: AbortSignal.timeout(10000)
           })
           if (!response.ok) {
@@ -1320,7 +1320,7 @@
         if (!currentRecordId) {
           throw new Error('Current record ID must be loaded first.')
         }
-        const response = await fetch(`${getApiHost()}/rooms/record/${currentRecordId}/previous`, {
+        const response = await fetch(`${getApiHost()}/sessions/record/${currentRecordId}/previous`, {
           signal: AbortSignal.timeout(15000)
         })
         if (!response.ok) {

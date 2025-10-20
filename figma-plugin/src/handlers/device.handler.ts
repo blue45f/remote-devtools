@@ -3,7 +3,7 @@
  */
 
 import { selectDevice } from '../services/device.service'
-import { showRooms, showTickets } from '../utils/ui.utils'
+import { showSessions, showTickets } from '../utils/ui.utils'
 
 /**
  * 디바이스 클릭 이벤트 처리
@@ -33,7 +33,7 @@ export function handleDeviceClick(event: Event) {
     .then(() => {
       console.log('[handleDeviceClick] selectDevice 완료, UI 업데이트 시작')
       // 녹화 세션과 티켓 표시
-      showRooms()
+      showSessions()
       showTickets()
       console.log('[handleDeviceClick] UI 업데이트 완료')
     })
