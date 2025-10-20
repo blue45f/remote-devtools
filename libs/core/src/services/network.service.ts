@@ -7,17 +7,22 @@ import { NetworkEntity } from "@remote-platform/entity";
 
 import { RecordService } from "./record.service";
 
-/** Payload for inserting a response body into an existing network entry. */
+/**
+ * 기존 네트워크 항목에 응답 본문을 삽입하기 위한 페이로드.
+ */
 export interface UpdateResponseBodyData {
+  /** 대상 녹화 레코드 ID */
   readonly recordId: number;
+  /** 대상 요청 ID */
   readonly requestId: number;
+  /** 응답 본문 데이터 */
   readonly body: string;
+  /** Base64 인코딩 여부 */
   readonly base64Encoded: boolean;
 }
 
 /**
- * Service responsible for persisting and querying network traffic
- * captured during a recording session.
+ * 녹화 세션 중 캡처된 네트워크 트래픽을 저장하고 조회하는 서비스.
  */
 @Injectable()
 export class NetworkService {
@@ -30,8 +35,10 @@ export class NetworkService {
   ) {}
 
   /**
-   * Create a new network entry linked to an existing record.
-   * Returns null when required fields are missing or invalid.
+   * 기존 녹화 레코드에 연결된 새 네트워크 항목을 생성한다.
+   * 필수 필드가 누락되었거나 유효하지 않은 경우 null을 반환한다.
+   * @param data - 네트워크 엔티티의 부분 데이터 (recordId 포함)
+   * @returns 저장된 NetworkEntity 또는 null
    */
   public async create(
     data: Partial<NetworkEntity & { recordId: number }>,
@@ -82,7 +89,11 @@ export class NetworkService {
     return saved;
   }
 
-  /** Retrieve all network entries for a record, ordered by timestamp ascending. */
+  /**
+   * 특정 녹화 레코드의 모든 네트워크 항목을 타임스탬프 오름차순으로 조회한다.
+   * @param recordId - 녹화 레코드 ID
+   * @returns NetworkEntity 배열
+   */
   public async findByRecordId(recordId: number): Promise<NetworkEntity[]> {
     return this.networkRepository.find({
       where: { record: { id: recordId } },
@@ -90,16 +101,21 @@ export class NetworkService {
     });
   }
 
-  /** Alias for {@link findByRecordId} (retained for backward compatibility). */
+  /**
+   * {@link findByRecordId}의 별칭 (하위 호환성을 위해 유지).
+   * @param recordId - 녹화 레코드 ID
+   * @returns NetworkEntity 배열
+   */
   public async findNetworks(recordId: number): Promise<NetworkEntity[]> {
     return this.findByRecordId(recordId);
   }
 
   /**
-   * Find and update the response body on an existing network entry.
-   * Uses a retry mechanism because the network entry may not have been
-   * persisted yet when the response body arrives.
-   * If the body is non-base64 JSON, it is re-serialized for normalization.
+   * 기존 네트워크 항목의 응답 본문을 조회하여 업데이트한다.
+   * 응답 본문 도착 시 네트워크 항목이 아직 저장되지 않았을 수 있으므로
+   * 재시도 메커니즘을 사용한다.
+   * Base64가 아닌 JSON 본문은 정규화를 위해 재직렬화한다.
+   * @param data - 응답 본문 업데이트 페이로드
    */
   public async updateResponseBody(data: UpdateResponseBodyData): Promise<void> {
     const record = await this.recordService.findOne(data.recordId);
@@ -145,8 +161,13 @@ export class NetworkService {
   }
 
   /**
-   * Attempts to find a network entry by record and requestId, retrying
-   * up to {@link retries} times with a delay between each attempt.
+   * 레코드와 requestId로 네트워크 항목을 조회하며,
+   * 최대 {@link retries}회까지 각 시도 사이에 지연을 두고 재시도한다.
+   * @param record - 대상 레코드 (id 포함)
+   * @param requestId - 대상 요청 ID
+   * @param retries - 최대 재시도 횟수 (기본값: 5)
+   * @param delay - 재시도 간 지연 시간 (밀리초, 기본값: 500)
+   * @returns 조회된 NetworkEntity 또는 null
    */
   private async findNetworkWithRetry(
     record: { id: number },

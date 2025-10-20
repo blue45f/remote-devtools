@@ -91,14 +91,14 @@ export class ApiClient {
   }
 
   // 녹화 세션 리스트 조회
-  public async getUserRooms(deviceId: string): Promise<any> {
+  public async getUserSessions(deviceId: string): Promise<any> {
     try {
-      const response = await this.client.get('/rooms/user-rooms', {
+      const response = await this.client.get('/sessions/user-sessions', {
         params: { deviceId },
       })
       return response.data
     } catch (error) {
-      console.error('Failed to get user rooms:', error)
+      console.error('Failed to get user sessions:', error)
       throw error
     }
   }
@@ -106,7 +106,7 @@ export class ApiClient {
   // 티켓 리스트 조회
   public async getUserTickets(deviceId: string): Promise<any> {
     try {
-      const response = await this.client.get('/rooms/user-tickets', {
+      const response = await this.client.get('/sessions/user-tickets', {
         params: { deviceId },
       })
       return response.data
@@ -116,15 +116,15 @@ export class ApiClient {
     }
   }
 
-  // 녹화 세션 상세 정보 조회 (screenPreview 포함) - roomName 사용
-  public async getRoomDetail(roomName: string): Promise<any> {
+  // 녹화 세션 상세 정보 조회 (screenPreview 포함) - sessionName 사용
+  public async getSessionDetail(sessionName: string): Promise<any> {
     try {
-      const response = await this.client.get('/rooms/room-detail', {
-        params: { roomName },
+      const response = await this.client.get('/sessions/session-detail', {
+        params: { sessionName },
       })
       return response.data
     } catch (error) {
-      console.error('Failed to get room detail:', error)
+      console.error('Failed to get session detail:', error)
       throw error
     }
   }
@@ -154,7 +154,7 @@ export class ApiClient {
    */
   public async getScreenshot(recordId: number, fullPage: boolean = true): Promise<any> {
     try {
-      const response = await this.client.get('/rooms/generate-screenshot', {
+      const response = await this.client.get('/sessions/generate-screenshot', {
         params: { recordId, fullPage },
       })
       return response.data

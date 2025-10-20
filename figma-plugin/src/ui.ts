@@ -6,7 +6,7 @@ import { API_BASE_URL } from './config/constants'
 import { initializeDeviceHandlers } from './handlers/device.handler'
 import { initJiraHandlers } from './handlers/jira.handler'
 import { initializeMessageHandler, requestUserInfo } from './handlers/message.handler'
-import { initializeRoomHandlers } from './handlers/room.handler'
+import { initializeSessionHandlers } from './handlers/session.handler'
 import { connectToServer } from './services/api.service'
 import { appState } from './state/app.state'
 
@@ -30,7 +30,7 @@ function initialize() {
   initializeDeviceHandlers()
 
   // 녹화 세션/티켓 핸들러 설정
-  initializeRoomHandlers()
+  initializeSessionHandlers()
 
   // JIRA 핸들러 설정
   initJiraHandlers(appState)
@@ -109,7 +109,7 @@ function initializeTabs() {
 }
 
 // updateTabBadges 함수는 더 이상 사용하지 않음
-// 각 showRooms(), showTickets() 함수에서 직접 DOM 업데이트
+// 각 showSessions(), showTickets() 함수에서 직접 DOM 업데이트
 
 // 애플리케이션 시작
 initialize()

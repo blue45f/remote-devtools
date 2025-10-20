@@ -3,7 +3,7 @@
  */
 
 import { ApiClient } from '../api/ApiClient'
-import { PluginUser, DOMElements, RoomInfo, TicketInfo } from '../types'
+import { PluginUser, DOMElements, SessionInfo, TicketInfo } from '../types'
 
 class AppState {
   // API 클라이언트
@@ -19,7 +19,7 @@ class AppState {
   selectedDeviceId: string | null = null
   
   // 녹화 세션 리스트
-  rooms: RoomInfo[] = []
+  sessions: SessionInfo[] = []
   
   // 티켓 리스트
   tickets: TicketInfo[] = []
@@ -34,7 +34,7 @@ class AppState {
   elements: DOMElements = {
     messageContainer: null,
     deviceSection: null,
-    roomsSection: null,
+    sessionsSection: null,
     ticketsSection: null,
   }
 
@@ -45,14 +45,14 @@ class AppState {
     this.elements = {
       messageContainer: document.getElementById('messageContainer') as HTMLDivElement | null,
       deviceSection: document.getElementById('deviceSection') as HTMLDivElement | null,
-      roomsSection: document.getElementById('roomsSection') as HTMLDivElement | null,
+      sessionsSection: document.getElementById('sessionsSection') as HTMLDivElement | null,
       ticketsSection: document.getElementById('ticketsSection') as HTMLDivElement | null,
     }
     
     console.log('[AppState] DOM 요소 초기화:', {
       messageContainer: !!this.elements.messageContainer,
       deviceSection: !!this.elements.deviceSection,
-      roomsSection: !!this.elements.roomsSection,
+      sessionsSection: !!this.elements.sessionsSection,
       ticketsSection: !!this.elements.ticketsSection,
     })
   }
@@ -95,8 +95,8 @@ class AppState {
   /**
    * 녹화 세션 리스트 설정
    */
-  setRooms(rooms: RoomInfo[]) {
-    this.rooms = rooms
+  setSessions(sessions: SessionInfo[]) {
+    this.sessions = sessions
   }
 
   /**

@@ -8,19 +8,22 @@ import {
 
 import { RecordEntity } from "./record.entity";
 
-/** Runtime console message captured for a recording session. */
+/** 녹화 세션에서 캡처된 런타임 콘솔 메시지. */
 @Entity("runtime")
 export class RuntimeEntity {
+  /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   public id: number;
 
+  /** CDP(Chrome DevTools Protocol) 런타임 이벤트 데이터 (JSON). */
   @Column({ type: "jsonb" })
   public protocol: object;
 
+  /** 런타임 이벤트 발생 시각 (bigint 타임스탬프). */
   @Column({ type: "bigint" })
   public timestamp: number;
 
-  /** Each runtime entry belongs to exactly one RecordEntity. */
+  /** 이 런타임 항목이 속한 녹화 세션. */
   @ManyToOne(() => RecordEntity, (record) => record.runtimes, {
     onDelete: "CASCADE",
   })

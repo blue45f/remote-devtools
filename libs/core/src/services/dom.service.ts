@@ -8,8 +8,7 @@ import { DomEntity } from "@remote-platform/entity";
 import { RecordService } from "./record.service";
 
 /**
- * Service responsible for persisting and querying DOM snapshots
- * captured during a recording session.
+ * 녹화 세션 중 캡처된 DOM 스냅샷을 저장하고 조회하는 서비스.
  */
 @Injectable()
 export class DomService {
@@ -21,24 +20,38 @@ export class DomService {
     private readonly recordService: RecordService,
   ) {}
 
-  /** Check whether a CDP response message corresponds to DOM.enable. */
+  /**
+   * CDP 응답 메시지가 DOM.enable에 해당하는지 확인한다.
+   * @param id - CDP 메시지 ID
+   * @returns DOM.enable 응답 여부
+   */
   public isEnableDomResponseMessage(id?: number): boolean {
     return id === MSG_ID.DOM.ENABLE;
   }
 
-  /** Check whether a CDP response message corresponds to DOM.getDocument. */
+  /**
+   * CDP 응답 메시지가 DOM.getDocument에 해당하는지 확인한다.
+   * @param id - CDP 메시지 ID
+   * @returns DOM.getDocument 응답 여부
+   */
   public isGetDomResponseMessage(id?: number): boolean {
     return id === MSG_ID.DOM.GET_DOCUMENT;
   }
 
-  /** Check whether a CDP request message is a DOM.getDocument call. */
+  /**
+   * CDP 요청 메시지가 DOM.getDocument 호출인지 확인한다.
+   * @param message - CDP 요청 메시지 객체
+   * @returns DOM.getDocument 요청 여부
+   */
   public isGetDomRequestMessage(message: Record<string, unknown>): boolean {
     return message["method"] === "DOM.getDocument";
   }
 
   /**
-   * Insert or update a DOM snapshot for the given record.
-   * Conflict resolution is based on the (record, type) pair.
+   * 지정된 녹화 레코드에 대한 DOM 스냅샷을 삽입하거나 업데이트한다.
+   * 충돌 해결은 (record, type) 쌍을 기준으로 한다.
+   * @param data - DOM 엔티티의 부분 데이터 (recordId, type 필수)
+   * @returns 저장된 DomEntity 또는 null
    */
   public async upsert(
     data: Partial<DomEntity> & { recordId: number } & Pick<DomEntity, "type">,
@@ -65,7 +78,11 @@ export class DomService {
     return saved;
   }
 
-  /** Retrieve all DOM entries for a record, ordered by timestamp ascending. */
+  /**
+   * 특정 녹화 레코드의 모든 DOM 항목을 타임스탬프 오름차순으로 조회한다.
+   * @param recordId - 녹화 레코드 ID
+   * @returns DomEntity 배열
+   */
   public async findByRecordId(recordId: number): Promise<DomEntity[]> {
     return this.domRepository.find({
       where: { record: { id: recordId } },
@@ -73,7 +90,11 @@ export class DomService {
     });
   }
 
-  /** Retrieve the full DOM snapshot (type = "entireDom") for a record. */
+  /**
+   * 특정 녹화 레코드의 전체 DOM 스냅샷(type = "entireDom")을 조회한다.
+   * @param recordId - 녹화 레코드 ID
+   * @returns 전체 DOM 스냅샷 DomEntity 또는 null
+   */
   public async findEntireDom(recordId: number): Promise<DomEntity | null> {
     return this.domRepository.findOne({
       where: { record: { id: recordId }, type: "entireDom" },

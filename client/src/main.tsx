@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Test from "./pages/Test";
-import Rooms from "./pages/Rooms";
+import Sessions from "./pages/Sessions";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -13,7 +13,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/test" element={<Test />} />
-        <Route path="/rooms" element={<Rooms />} />
+        <Route path="/sessions" element={<Sessions />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

@@ -45,7 +45,7 @@ describe("NetworkService", () => {
 
   describe("create", () => {
     it("should return null when recordId is missing", async () => {
-      const result = await service.create({ url: "http://test.com" });
+      const result = await service.create({ requestId: 1, timestamp: 123 });
       expect(result).toBeNull();
     });
 
@@ -87,7 +87,6 @@ describe("NetworkService", () => {
         recordId: 1,
         requestId: 42,
         timestamp: 12345,
-        url: "http://example.com",
       });
 
       expect(networkRepository.create).toHaveBeenCalled();

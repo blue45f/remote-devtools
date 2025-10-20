@@ -6,9 +6,9 @@ import type { Response } from "express";
 import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
-import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve room list
+import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve session list
 
-@Controller("rooms")
+@Controller("sessions")
 export class WebviewController {
   constructor(
     private readonly webviewGateway: WebviewGateway,
@@ -16,21 +16,21 @@ export class WebviewController {
     private readonly s3Service: S3Service,
   ) {}
 
-  // GET /rooms - Return room list
+  // GET /sessions - Return session list
   @Get()
-  public getRoomList(): { id: number; name: string }[] {
+  public getSessionList(): { id: number; name: string }[] {
     return this.webviewGateway.getLiveRoomList();
   }
 
   @Get("record")
-  public async getRecordRoomList(): Promise<{ id: number; name: string }[]> {
+  public async getRecordSessionList(): Promise<{ id: number; name: string }[]> {
     return (await this.recordService.findAll()).map((record) => ({
       id: record.id,
       name: record.name,
     }));
   }
 
-  // GET /rooms/backups - List S3 backups (includes file content - slower)
+  // GET /sessions/backups - List S3 backups (includes file content - slower)
   @Get("backups")
   public async getBackupList(
     @Query("deviceId") deviceId?: string,
@@ -64,7 +64,7 @@ export class WebviewController {
     });
   }
 
-  // GET /rooms/backups-light - Lightweight S3 backup listing (no file content reading - faster)
+  // GET /sessions/backups-light - Lightweight S3 backup listing (no file content reading - faster)
   @Get("backups-light")
   public async getBackupListLight(
     @Query("deviceId") deviceId?: string,
@@ -97,7 +97,7 @@ export class WebviewController {
     });
   }
 
-  // GET /rooms/backup-urls - Extract URL information from selected backup files
+  // GET /sessions/backup-urls - Extract URL information from selected backup files
   @Get("backup-urls")
   public async getBackupUrls(@Query("filePaths") filePaths?: string) {
     if (!filePaths) {
@@ -108,13 +108,13 @@ export class WebviewController {
     return this.s3Service.getUrlsFromSelectedFiles(pathArray);
   }
 
-  // GET /rooms/backup-viewer - Backup viewer UI
+  // GET /sessions/backup-viewer - Backup viewer UI
   @Get("backup-viewer")
   public getBackupViewer(@Res() res: Response): void {
     res.sendFile(path.join(__dirname, "backup-viewer.html"));
   }
 
-  // GET /rooms/record/:recordId/info - Retrieve info for a specific record
+  // GET /sessions/record/:recordId/info - Retrieve info for a specific record
   @Get("record/:recordId/info")
   public async getRecordInfo(@Param("recordId") recordId: string) {
     const record = await this.recordService.findOne(Number(recordId));
@@ -143,7 +143,7 @@ export class WebviewController {
     };
   }
 
-  // GET /rooms/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
+  // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
   @Get("record/:recordId/previous")
   public async getPreviousRecords(@Param("recordId") recordId: string) {
     const currentRecord = await this.recordService.findOne(Number(recordId));

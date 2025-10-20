@@ -16,7 +16,7 @@ import { renderHTMLToImage } from "../../utils/html-to-image";
 import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
-@Controller("rooms")
+@Controller("sessions")
 export class WebviewController {
   constructor(
     private readonly recordService: RecordService,
@@ -106,15 +106,15 @@ export class WebviewController {
   /**
    * 녹화 세션 상세 정보 조회 (screenPreview 포함)
    */
-  @Get("room-detail")
-  public async getRoomDetail(@Query("roomName") roomName: string) {
-    if (!roomName) {
-      throw new NotFoundException("roomName is required");
+  @Get("session-detail")
+  public async getSessionDetail(@Query("sessionName") sessionName: string) {
+    if (!sessionName) {
+      throw new NotFoundException("sessionName is required");
     }
 
     // 녹화 세션 정보 조회
     const record = await this.recordRepository.findOne({
-      where: { name: roomName },
+      where: { name: sessionName },
       order: { timestamp: "DESC" }, // 같은 이름이 여러 개일 경우 최신 것 선택
     });
 
@@ -144,12 +144,12 @@ export class WebviewController {
           : "http://localhost:3001";
 
       // 스크린샷 생성 엔드포인트 URL 반환
-      screenPreviewUrl = `${baseUrl}/rooms/generate-screenshot?recordId=${record.id}`;
+      screenPreviewUrl = `${baseUrl}/sessions/generate-screenshot?recordId=${record.id}`;
     }
 
     return {
       id: record.id,
-      roomName: record.name,
+      sessionName: record.name,
       recordId: record.id,
       deviceId: record.deviceId,
       username: null,
@@ -308,7 +308,7 @@ export class WebviewController {
       totalCount: tickets.length,
       tickets: tickets.map((ticket) => ({
         id: ticket.id,
-        roomName: ticket.roomName,
+        sessionName: ticket.sessionName,
         ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         title: ticket.title || "제목 없음",
@@ -423,7 +423,7 @@ export class WebviewController {
         deviceId: ticket.deviceId,
         username: ticket.username,
         userDisplayName: ticket.userDisplayName,
-        roomName: ticket.roomName,
+        sessionName: ticket.sessionName,
         ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         assignee: ticket.assignee,
@@ -457,7 +457,7 @@ export class WebviewController {
         deviceId: ticket.deviceId,
         username: ticket.username,
         userDisplayName: ticket.userDisplayName,
-        roomName: ticket.roomName,
+        sessionName: ticket.sessionName,
         ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
         assignee: ticket.assignee,
@@ -473,8 +473,8 @@ export class WebviewController {
   /**
    * 녹화 세션 생성 통계 조회
    */
-  @Get("room-stats")
-  public async getRoomStats() {
+  @Get("session-stats")
+  public async getSessionStats() {
     // 총 녹화 세션 생성 수
     const totalRooms = await this.recordRepository.count();
 
@@ -537,8 +537,8 @@ export class WebviewController {
   /**
    * 특정 디바이스의 녹화 세션 생성 이력 조회
    */
-  @Get("user-rooms")
-  public async getUserRooms(@Query("deviceId") deviceId: string) {
+  @Get("user-sessions")
+  public async getUserSessions(@Query("deviceId") deviceId: string) {
     if (!deviceId) {
       return { error: "deviceId is required" };
     }
@@ -552,9 +552,9 @@ export class WebviewController {
     return {
       deviceId,
       totalCount: records.length,
-      rooms: records.map((record) => ({
+      sessions: records.map((record) => ({
         id: record.id,
-        roomName: record.name,
+        sessionName: record.name,
         recordMode: record.recordMode,
         recordId: record.id,
         referrer: record.referrer,
@@ -567,8 +567,8 @@ export class WebviewController {
   /**
    * 일별 녹화 세션 생성 통계 (최근 30일)
    */
-  @Get("room-daily-stats")
-  public async getRoomDailyStats() {
+  @Get("session-daily-stats")
+  public async getSessionDailyStats() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
