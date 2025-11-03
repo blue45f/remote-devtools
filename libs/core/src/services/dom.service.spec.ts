@@ -102,7 +102,7 @@ describe("DomService", () => {
       vi.spyOn(domRepository, "upsert").mockResolvedValue({
         generatedMaps: [{ id: 10 }],
       } as any);
-      vi.spyOn(domRepository, "save").mockResolvedValue({ id: 10 } as any);
+      vi.spyOn(domRepository, "findOne").mockResolvedValue({ id: 10 } as any);
 
       const result = await service.upsert({
         recordId: 1,

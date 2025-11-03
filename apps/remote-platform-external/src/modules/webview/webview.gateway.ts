@@ -186,7 +186,9 @@ export class WebviewGateway
    * @param data - 전송할 데이터 (JSON.stringify로 직렬화됨)
    */
   private sendMessage(socket: WebSocket, data: any): void {
-    socket.send(JSON.stringify(data));
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(data));
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -598,7 +600,12 @@ export class WebviewGateway
     @ConnectedSocket() client: WebSocket,
   ): void {
     const roomData = this.rooms.get(data.room);
-    const devtools = roomData?.devtools.get(data.devtoolsId);
+    if (!roomData) {
+      this.sendMessage(client, { event: "error", message: "Room not found" });
+      return;
+    }
+
+    const devtools = roomData.devtools.get(data.devtoolsId);
     if (devtools) {
       this.sendMessage(devtools, data.message);
     } else {
@@ -609,10 +616,16 @@ export class WebviewGateway
     }
 
     if (roomData.recordId) {
-      const protocol =
-        typeof data.message === "string"
-          ? JSON.parse(data.message)
-          : data.message;
+      let protocol: any;
+      try {
+        protocol =
+          typeof data.message === "string"
+            ? JSON.parse(data.message)
+            : data.message;
+      } catch {
+        this.logger.warn(`[messageToDevtools] Invalid JSON message in room ${data.room}`);
+        return;
+      }
 
       if (this.domService.isEnableDomResponseMessage(protocol.id)) {
         // DOM is enabled -- request DOM data
@@ -658,7 +671,13 @@ export class WebviewGateway
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
-    const protocol = JSON.parse(data.message);
+    let protocol: any;
+    try {
+      protocol = JSON.parse(data.message);
+    } catch {
+      this.logger.warn(`[protocolToAllDevtools] Invalid JSON message in room ${data.room}`);
+      return;
+    }
     const roomData = this.rooms.get(data.room);
 
     if (!roomData) {
@@ -673,7 +692,7 @@ export class WebviewGateway
     const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
 
     // TODO: Improve domain-based message routing
-    if (protocol.params.requestId) {
+    if (protocol.params?.requestId) {
       await this.networkService.create({
         recordId: roomData.recordId,
         protocol,

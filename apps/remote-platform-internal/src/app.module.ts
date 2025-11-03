@@ -22,7 +22,7 @@ import { WorkflowModule } from "./modules/workflow/workflow.module";
 
 dotenv.config();
 
-const isDevelopment = process.env.APP_ENV !== "beta";
+const isDevelopment = process.env.APP_ENV === "development";
 
 const staticModule = ServeStaticModule.forRoot(
   {

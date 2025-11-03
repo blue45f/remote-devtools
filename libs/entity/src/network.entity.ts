@@ -33,7 +33,7 @@ export class NetworkEntity {
 
   /** 네트워크 이벤트 발생 시각 (bigint 타임스탬프). */
   @Column({ type: "bigint" })
-  public timestamp: number;
+  public timestamp: string | number;
 
   /** 이 네트워크 항목이 속한 녹화 세션. */
   @ManyToOne(() => RecordEntity, (record) => record.networks, {

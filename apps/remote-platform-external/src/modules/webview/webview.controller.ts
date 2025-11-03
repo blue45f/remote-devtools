@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Query } from "@nestjs/common";
+import { BadRequestException, Controller, Get, NotFoundException, Query } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
 
@@ -178,8 +178,13 @@ export class WebviewController {
     );
 
     // Record 정보 가져오기
+    const parsedRecordId = parseInt(recordId);
+    if (isNaN(parsedRecordId)) {
+      throw new BadRequestException("recordId must be a valid number");
+    }
+
     const record = await this.recordRepository.findOne({
-      where: { id: parseInt(recordId) },
+      where: { id: parsedRecordId },
     });
 
     if (!record) {
@@ -189,7 +194,7 @@ export class WebviewController {
     // ScreenPreview 데이터 가져오기 (실제 HTML)
     const screenData = await this.screenRepository.findOne({
       where: {
-        record: { id: parseInt(recordId) },
+        record: { id: parsedRecordId },
         type: "screenPreview",
       },
       order: { timestamp: "DESC" },
@@ -293,7 +298,7 @@ export class WebviewController {
   @Get("user-tickets")
   public async getUserTickets(@Query("deviceId") deviceId: string) {
     if (!deviceId) {
-      return { error: "deviceId is required" };
+      throw new BadRequestException("deviceId is required");
     }
 
     const tickets = await this.ticketLogRepository.find({
@@ -406,7 +411,7 @@ export class WebviewController {
   @Get("tickets-by-epic")
   public async getTicketsByEpic(@Query("parentEpic") parentEpic: string) {
     if (!parentEpic) {
-      return { error: "parentEpic is required" };
+      throw new BadRequestException("parentEpic is required");
     }
 
     const tickets = await this.ticketLogRepository.find({
@@ -440,11 +445,12 @@ export class WebviewController {
   @Get("tickets-by-url")
   public async getTicketsByUrl(@Query("url") url: string) {
     if (!url) {
-      return { error: "url is required" };
+      throw new BadRequestException("url is required");
     }
 
+    const escapedUrl = url.replace(/%/g, "\\%").replace(/_/g, "\\_");
     const tickets = await this.ticketLogRepository.find({
-      where: { url: Like(`%${url}%`) },
+      where: { url: Like(`%${escapedUrl}%`) },
       order: { createdAt: "DESC" },
       relations: ["components", "labels"], // 컴포넌트 및 라벨 정보 포함
     });

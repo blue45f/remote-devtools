@@ -14,6 +14,7 @@ function createMockHost(url = "/test"): ArgumentsHost {
   const mockRequest = { url, method: "GET" };
 
   return {
+    getType: () => "http",
     switchToHttp: () => ({
       getResponse: () => mockResponse,
       getRequest: () => mockRequest,

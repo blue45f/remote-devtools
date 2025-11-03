@@ -142,8 +142,11 @@ export class JiraService {
       },
     });
 
+    const maskedEmail = email
+      ? `${email[0]}***@${email.split("@")[1] || "***"}`
+      : "undefined";
     this.logger.log(
-      `JiraService initialized: Jira host=${this.jiraHostUrl}, email=${email}`,
+      `JiraService initialized: Jira host=${this.jiraHostUrl}, email=${maskedEmail}`,
     );
   }
 
@@ -437,6 +440,10 @@ export class JiraService {
     issueId: string,
     file: UploadedFile,
   ): Promise<unknown> {
+    if (!/^[A-Z]+-\d+$/.test(issueId)) {
+      throw new Error(`Invalid issueId format: ${issueId}`);
+    }
+
     const formData = new FormData();
     formData.append("file", file.buffer, {
       filename: file.originalname || `capture-${Date.now()}.png`,

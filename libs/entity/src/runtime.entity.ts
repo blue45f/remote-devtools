@@ -21,7 +21,7 @@ export class RuntimeEntity {
 
   /** 런타임 이벤트 발생 시각 (bigint 타임스탬프). */
   @Column({ type: "bigint" })
-  public timestamp: number;
+  public timestamp: string | number;
 
   /** 이 런타임 항목이 속한 녹화 세션. */
   @ManyToOne(() => RecordEntity, (record) => record.runtimes, {

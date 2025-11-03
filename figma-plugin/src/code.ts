@@ -55,10 +55,10 @@ function base64ToBytes(base64: string): Uint8Array {
 
   let p = 0
   for (let i = 0; i < len; i += 4) {
-    const encoded1 = lookup.get(base64[i]) || 0
-    const encoded2 = lookup.get(base64[i + 1]) || 0
-    const encoded3 = lookup.get(base64[i + 2]) || 0
-    const encoded4 = lookup.get(base64[i + 3]) || 0
+    const encoded1 = lookup.get(base64[i]) ?? 0
+    const encoded2 = lookup.get(base64[i + 1]) ?? 0
+    const encoded3 = lookup.get(base64[i + 2]) ?? 0
+    const encoded4 = lookup.get(base64[i + 3]) ?? 0
 
     bytes[p] = (encoded1 << 2) | (encoded2 >> 4)
     p += 1
