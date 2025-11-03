@@ -60,7 +60,7 @@ describe("ScreenService", () => {
       vi.spyOn(screenRepository, "upsert").mockResolvedValue({
         generatedMaps: [{ id: 20 }],
       } as any);
-      vi.spyOn(screenRepository, "save").mockResolvedValue({
+      vi.spyOn(screenRepository, "findOne").mockResolvedValue({
         id: 20,
       } as any);
 

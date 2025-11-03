@@ -38,14 +38,15 @@ export class ScreenService {
       return null;
     }
 
-    const result = await this.screenRepository.upsert(
+    await this.screenRepository.upsert(
       { record: { id: recordId }, type: "screenPreview", ...screenInfo },
       { conflictPaths: { record: true, type: true } },
     );
 
-    const saved = await this.screenRepository.save(result.generatedMaps[0]);
     this.logger.debug(`Screen upserted: recordId=${recordId}`);
-    return saved;
+    return this.screenRepository.findOne({
+      where: { record: { id: recordId }, type: "screenPreview" },
+    });
   }
 
   /**

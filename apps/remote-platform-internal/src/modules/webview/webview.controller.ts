@@ -1,6 +1,6 @@
 import * as path from "path";
 
-import { Controller, Get, Param, Query, Res } from "@nestjs/common";
+import { BadRequestException, Controller, Get, NotFoundException, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 
 import { RecordService } from "@remote-platform/core";
@@ -52,7 +52,10 @@ export class WebviewController {
       url?: string;
     }>
   > {
-    const limit = limitParam ? parseInt(limitParam) : undefined;
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+    if (limit !== undefined && isNaN(limit)) {
+      throw new BadRequestException("Invalid limit parameter");
+    }
 
     return this.s3Service.listBackupFiles({
       deviceId,
@@ -85,7 +88,10 @@ export class WebviewController {
       filePath: string;
     }>
   > {
-    const limit = limitParam ? parseInt(limitParam) : undefined;
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+    if (limit !== undefined && isNaN(limit)) {
+      throw new BadRequestException("Invalid limit parameter");
+    }
 
     return this.s3Service.listBackupFilesLight({
       deviceId,
@@ -117,9 +123,13 @@ export class WebviewController {
   // GET /sessions/record/:recordId/info - Retrieve info for a specific record
   @Get("record/:recordId/info")
   public async getRecordInfo(@Param("recordId") recordId: string) {
-    const record = await this.recordService.findOne(Number(recordId));
+    const id = Number(recordId);
+    if (isNaN(id)) {
+      throw new BadRequestException("Invalid recordId parameter");
+    }
+    const record = await this.recordService.findOne(id);
     if (!record) {
-      return { error: "Record not found" };
+      throw new NotFoundException("Record not found");
     }
 
     // deviceId priority: record.deviceId > commonInfo.deviceId > 'unknown-device'
@@ -146,9 +156,13 @@ export class WebviewController {
   // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
   @Get("record/:recordId/previous")
   public async getPreviousRecords(@Param("recordId") recordId: string) {
-    const currentRecord = await this.recordService.findOne(Number(recordId));
+    const id = Number(recordId);
+    if (isNaN(id)) {
+      throw new BadRequestException("Invalid recordId parameter");
+    }
+    const currentRecord = await this.recordService.findOne(id);
     if (!currentRecord) {
-      return { error: "Record not found" };
+      throw new NotFoundException("Record not found");
     }
 
     const deviceId = currentRecord.deviceId || "unknown-device";

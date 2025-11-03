@@ -24,7 +24,7 @@ export class RecordEntity {
 
   /** 세션 지속 시간 (나노초 단위). */
   @Column({ type: "bigint", nullable: true })
-  public duration: number;
+  public duration: string | number;
 
   /** 녹화 중 캡처된 페이지 URL. */
   @Column({ type: "text", nullable: true })

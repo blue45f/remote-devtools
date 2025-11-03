@@ -43,7 +43,7 @@ export class RecordService {
    * @returns RecordEntity 배열
    */
   public async findAll(): Promise<RecordEntity[]> {
-    return this.recordRepository.find();
+    return this.recordRepository.find({ take: 100 });
   }
 
   /**

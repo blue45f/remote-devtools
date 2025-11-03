@@ -61,6 +61,19 @@ type ProtocolEntry = {
 };
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ---------------------------------------------------------------------------
 // Gateway
 // ---------------------------------------------------------------------------
 
@@ -785,7 +798,13 @@ export class WebviewGateway
       }, 100);
 
       client.on("message", async (message: string) => {
-        const protocol = JSON.parse(message);
+        let protocol: any;
+        try {
+          protocol = JSON.parse(message);
+        } catch (error) {
+          this.logger.error(`[RECORD_MODE_RECONNECT] Failed to parse message: ${(error as Error).message}`);
+          return;
+        }
         if (protocol.method === "Page.getResourceTree") {
           this.sendMessage(client, { id: protocol.id });
         }
@@ -835,9 +854,16 @@ export class WebviewGateway
       this.logger.log(`Adding devtools client to existing room: ${room}`);
       roomData.devtools.set(devtoolsId, client);
       this.devtoolsMap.set(client, { room, devtoolsId });
-      client.on("message", (message: string) =>
-        this.handleDevtoolsMessage(devtoolsId, room, JSON.parse(message)),
-      );
+      client.on("message", (message: string) => {
+        let parsed: any;
+        try {
+          parsed = JSON.parse(message);
+        } catch (error) {
+          this.logger.error(`[DEVTOOLS_MESSAGE] Failed to parse message: ${(error as Error).message}`);
+          return;
+        }
+        this.handleDevtoolsMessage(devtoolsId, room, parsed);
+      });
       client.on("close", () => this.handleDisconnect(client));
     } else {
       this.logger.log(`Room ${room} not found, closing connection`);
@@ -884,7 +910,13 @@ export class WebviewGateway
 
     // Handle subsequent DevTools requests
     client.on("message", (message: string) => {
-      const protocol = JSON.parse(message);
+      let protocol: any;
+      try {
+        protocol = JSON.parse(message);
+      } catch (error) {
+        this.logger.error(`[RECORD_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+        return;
+      }
 
       // Network.getResponseBody
       if (protocol.method === "Network.getResponseBody") {
@@ -1055,7 +1087,13 @@ export class WebviewGateway
 
       // Handle subsequent DevTools requests
       client.on("message", (message: string) => {
-        const protocol = JSON.parse(message);
+        let protocol: any;
+        try {
+          protocol = JSON.parse(message);
+        } catch (error) {
+          this.logger.error(`[BACKUP_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+          return;
+        }
 
         if (protocol.method === "Page.getResourceTree") {
           this.sendMessage(client, { id: protocol.id });
@@ -1442,7 +1480,13 @@ export class WebviewGateway
     propertySnapshotsMap: Map<string, any[]>,
   ): void {
     client.on("message", async (message: string) => {
-      const protocol = JSON.parse(message);
+      let protocol: any;
+      try {
+        protocol = JSON.parse(message);
+      } catch (error) {
+        this.logger.error(`[S3_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+        return;
+      }
 
       if (protocol.method === "Page.getResourceTree") {
         this.handlePageGetResourceTree(client, protocol, backupData);
@@ -1658,9 +1702,9 @@ export class WebviewGateway
 <body>
   <div id="app" class="remote-debugger-session">
     <h1>Buffered Session Data</h1>
-    <p>Device: ${deviceId}</p>
+    <p>Device: ${escapeHtml(deviceId)}</p>
     <p>Sessions: ${backupData.length}</p>
-    <p>URL: ${backupData[0]?.url || "Unknown"}</p>
+    <p>URL: ${escapeHtml(backupData[0]?.url || "Unknown")}</p>
   </div>
 </body>
 </html>`,
@@ -1800,7 +1844,7 @@ export class WebviewGateway
       });
     }
 
-    if (roomData.recordMode) {
+    if (roomData?.recordMode) {
       const protocol =
         typeof data.message === "string"
           ? JSON.parse(data.message)
@@ -1830,7 +1874,13 @@ export class WebviewGateway
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
-    const protocol = JSON.parse(data.message);
+    let protocol: any;
+    try {
+      protocol = JSON.parse(data.message);
+    } catch (error) {
+      this.logger.error(`[PROTOCOL_TO_ALL] Failed to parse message: ${(error as Error).message}`);
+      return;
+    }
     const roomData = this.rooms.get(data.room);
     if (roomData) {
       roomData.devtools.forEach((devtools) => devtools.send(data.message));
@@ -1933,7 +1983,7 @@ export class WebviewGateway
         }
       }
 
-      this.rooms.get(room).devtools.forEach((devtools) => devtools.close());
+      this.rooms.get(room)?.devtools?.forEach((devtools) => devtools.close());
       this.rooms.delete(room);
       this.clientMap.delete(client);
       return;

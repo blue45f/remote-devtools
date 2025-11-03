@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  InternalServerErrorException,
   Logger,
   Query,
   BadRequestException,
@@ -32,12 +33,12 @@ export class DashboardController {
       };
     } catch (error) {
       this.logger.error("Failed to retrieve dashboard statistics", error);
-      throw new BadRequestException({
+      throw new InternalServerErrorException({
         success: false,
         error: {
           code: "DASHBOARD_STATS_ERROR",
           message:
-            error.message ||
+            error instanceof Error ? error.message :
             "An error occurred while retrieving dashboard statistics.",
         },
       });
@@ -78,12 +79,12 @@ export class DashboardController {
         throw error;
       }
       this.logger.error("Failed to retrieve ticket trend", error);
-      throw new BadRequestException({
+      throw new InternalServerErrorException({
         success: false,
         error: {
           code: "TICKET_TREND_ERROR",
           message:
-            error.message ||
+            error instanceof Error ? error.message :
             "An error occurred while retrieving the ticket trend.",
         },
       });
@@ -124,12 +125,12 @@ export class DashboardController {
         throw error;
       }
       this.logger.error("Failed to retrieve record session trend", error);
-      throw new BadRequestException({
+      throw new InternalServerErrorException({
         success: false,
         error: {
           code: "RECORD_SESSION_TREND_ERROR",
           message:
-            error.message ||
+            error instanceof Error ? error.message :
             "An error occurred while retrieving the recording session trend.",
         },
       });

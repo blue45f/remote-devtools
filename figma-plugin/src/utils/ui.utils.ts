@@ -7,6 +7,18 @@ import { appState } from '../state/app.state'
 import { ApiResponse } from '../types'
 
 /**
+ * HTML 텍스트 콘텐츠 이스케이프
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
  * HTML 속성값 이스케이프
  */
 function escapeHtmlAttr(str: string): string {
@@ -67,9 +79,9 @@ export function showDeviceInfo(response: ApiResponse) {
       const deviceName = device.name || '이름 없음'
       const isSelected = appState.selectedDeviceId === device.deviceId
       devicesHtml += `
-        <li class="device-item ${isSelected ? 'selected' : ''}" data-device-id="${device.deviceId}">
-          <strong>${deviceName}</strong>
-          <span class="device-id">${device.deviceId}</span>
+        <li class="device-item ${isSelected ? 'selected' : ''}" data-device-id="${escapeHtmlAttr(device.deviceId)}">
+          <strong>${escapeHtml(deviceName)}</strong>
+          <span class="device-id">${escapeHtml(device.deviceId)}</span>
         </li>
       `
     })
@@ -120,7 +132,7 @@ export function showSessions() {
       const createdDate = new Date(session.createdAt).toLocaleString('ko-KR')
       html += `
         <li class="session-item" data-session-name="${escapeHtmlAttr(session.sessionName)}" style="cursor: pointer;">
-          <div class="session-name">${session.sessionName}</div>
+          <div class="session-name">${escapeHtml(session.sessionName)}</div>
           <div class="session-meta">
             <span class="session-date">${createdDate}</span>
             ${session.recordMode ? '<span class="session-badge">녹화</span>' : ''}
@@ -183,8 +195,8 @@ export function showTickets() {
               <div class="selector-circle ${isActive ? 'selected' : ''}"></div>
             </div>
             <div class="ticket-title-wrapper">
-              <a href="${ticket.ticketUrl}" target="_blank" class="ticket-link" title="${ticket.title || ticket.jiraProjectKey}">
-                ${ticket.title || ticket.jiraProjectKey}
+              <a href="${escapeHtmlAttr(ticket.ticketUrl)}" target="_blank" class="ticket-link" title="${escapeHtmlAttr(ticket.title || ticket.jiraProjectKey)}">
+                ${escapeHtml(ticket.title || ticket.jiraProjectKey)}
               </a>
             </div>
             <button class="ticket-image-btn" data-session-name="${escapeHtmlAttr(ticket.sessionName)}" title="이미지 불러오기">

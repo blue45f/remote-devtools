@@ -64,6 +64,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
    * @param host - NestJS ArgumentsHost (HTTP 컨텍스트 접근용)
    */
   catch(exception: unknown, host: ArgumentsHost) {
+    if (host.getType() === "ws") {
+      const errorMessage =
+        exception instanceof Error
+          ? exception.message
+          : "An unknown error occurred.";
+      this.logger.error(
+        `WebSocket Exception: ${JSON.stringify({
+          message: errorMessage,
+          stack: exception instanceof Error ? exception.stack : undefined,
+        })}`,
+      );
+      return;
+    }
+
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();

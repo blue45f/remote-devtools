@@ -66,16 +66,17 @@ export class DomService {
       return null;
     }
 
-    const result = await this.domRepository.upsert(
+    await this.domRepository.upsert(
       { record: { id: recordId }, ...domInfo },
       { conflictPaths: { record: true, type: true } },
     );
 
-    const saved = await this.domRepository.save(result.generatedMaps[0]);
     this.logger.debug(
       `DOM upserted: recordId=${recordId}, type=${domInfo.type}`,
     );
-    return saved;
+    return this.domRepository.findOne({
+      where: { record: { id: recordId }, type: domInfo.type },
+    });
   }
 
   /**

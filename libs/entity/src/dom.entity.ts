@@ -27,7 +27,7 @@ export class DomEntity {
 
   /** DOM 캡처 시점의 타임스탬프 (bigint). */
   @Column({ type: "bigint" })
-  public timestamp: number;
+  public timestamp: string | number;
 
   /** 이 DOM 항목이 속한 녹화 세션. */
   @ManyToOne(() => RecordEntity, (record) => record.doms, {
