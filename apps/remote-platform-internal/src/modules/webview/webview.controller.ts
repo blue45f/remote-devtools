@@ -1,6 +1,14 @@
 import * as path from "path";
 
-import { BadRequestException, Controller, Get, NotFoundException, Param, Query, Res } from "@nestjs/common";
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  Res,
+} from "@nestjs/common";
 import type { Response } from "express";
 
 import { RecordService } from "@remote-platform/core";

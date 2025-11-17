@@ -2,8 +2,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_HOST: string;
-  readonly VITE_WS_HOST: string;
-  readonly VITE_ENV: string;
 }
 
 interface ImportMeta {
@@ -12,6 +10,6 @@ interface ImportMeta {
 
 interface Window {
   RemoteDebugSdk?: {
-    createDebugger: () => void;
+    createDebugger: (onClick?: () => void) => void;
   };
 }

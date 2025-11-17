@@ -2,186 +2,29 @@ import * as fs from "fs";
 import * as path from "path";
 
 import {
-  S3Client,
   PutObjectCommand,
   ListObjectsV2Command,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Injectable, Logger } from "@nestjs/common";
+import {
+  BaseS3Service,
+  BufferUploadData,
+} from "@remote-platform/core";
 
-export interface BufferUploadData {
-  room: string;
-  recordId: number;
-  deviceId?: string;
-  url?: string;
-  userAgent?: string;
-  title?: string;
-  bufferData: Array<{
-    method: string;
-    params: unknown;
-    timestamp: number;
-  }>;
-  timestamp: number;
-  date?: string; // Date info (YYYY-MM-DD)
-  sessionStartTime?: number; // Session start time
-  /** Allow additional properties from S3/JSON sources. */
-  [key: string]: unknown;
-}
+export { BufferUploadData };
 
 @Injectable()
-export class S3Service {
-  private readonly logger = new Logger(S3Service.name);
-  private readonly backupDir = path.join(process.cwd(), "backups");
-  private readonly s3Client: S3Client;
-  private readonly runtimeEnv = (
-    process.env.APP_ENV ||
-    process.env.NODE_ENV ||
-    "development"
-  )
-    .trim()
-    .toLowerCase();
-  private readonly saveToS3Envs = new Set(["beta", "production", "prod"]);
-  private readonly isRemoteStorageEnabled = this.saveToS3Envs.has(
-    this.runtimeEnv,
-  );
-
-  private readonly CACHE_TTL_MS = 60 * 1000; // 60s TTL
-  private readonly MAX_LIST_CACHE_SIZE = 200;
-  private readonly MAX_OBJECT_CACHE_SIZE = 1000;
-
-  private readonly listCache = new Map<
-    string,
-    { data: BufferUploadData[]; expiresAt: number }
-  >();
-  private readonly objectCache = new Map<
-    string,
-    { data: BufferUploadData; expiresAt: number }
-  >();
-  private readonly listInFlight = new Map<
-    string,
-    Promise<BufferUploadData[]>
-  >();
-  private readonly objectInFlight = new Map<
-    string,
-    Promise<BufferUploadData | null>
-  >();
+export class S3Service extends BaseS3Service {
+  protected readonly logger = new Logger(S3Service.name);
 
   // S3 backup playback cache (keyed by selected file paths)
   private s3PlaybackCache = new Map<string, BufferUploadData[]>();
   private maxS3CacheSize = 500; // Max 500 file path combinations cached
 
-  private sanitizeMetadata(value: string | undefined): string | undefined {
-    if (!value) {
-      return undefined;
-    }
-
-    const sanitized = value
-      .replace(/[\r\n]+/g, " ")
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x1F\x7F]/g, "")
-      .replace(/[\u0080-\uFFFF]/g, "")
-      .trim();
-
-    if (!sanitized) {
-      return undefined;
-    }
-
-    return sanitized.slice(0, 1024);
-  }
-
   constructor() {
-    // Ensure backup directory exists
-    if (!fs.existsSync(this.backupDir)) {
-      fs.mkdirSync(this.backupDir, { recursive: true });
-    }
-
-    this.logger.log(
-      `[S3_INIT] Environment detection: APP_ENV=${process.env.APP_ENV}, NODE_ENV=${process.env.NODE_ENV}, ` +
-        `resolved=${this.runtimeEnv}, toS3=${this.isRemoteStorageEnabled}`,
-    );
-
-    // Initialize S3 client (EC2 IAM Role auto-authentication)
-    this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || "ap-northeast-2", // Seoul region
-      // When using EC2 IAM Role, credentials are auto-configured (no additional setup needed)
-    });
-  }
-
-  private buildListCacheKey(deviceId: string, targetDate?: string): string {
-    return `${deviceId || "ALL"}|${targetDate || "ALL"}`;
-  }
-
-  private buildObjectCacheKey(deviceId: string, timestamp: number): string {
-    return `${deviceId || "unknown-device"}|${timestamp}`;
-  }
-
-  private cloneBufferData(data: BufferUploadData): BufferUploadData {
-    return {
-      ...data,
-      bufferData: Array.isArray(data.bufferData)
-        ? data.bufferData.map((event) => ({ ...event }))
-        : [],
-    };
-  }
-
-  private cloneBufferDataArray(list: BufferUploadData[]): BufferUploadData[] {
-    return list.map((item) => this.cloneBufferData(item));
-  }
-
-  private getCachedList(key: string): BufferUploadData[] | null {
-    const entry = this.listCache.get(key);
-    if (!entry) {
-      return null;
-    }
-
-    if (entry.expiresAt < Date.now()) {
-      this.listCache.delete(key);
-      return null;
-    }
-
-    return this.cloneBufferDataArray(entry.data);
-  }
-
-  private setCachedList(key: string, data: BufferUploadData[]): void {
-    if (this.MAX_LIST_CACHE_SIZE <= 0) return;
-    if (
-      !this.listCache.has(key) &&
-      this.listCache.size >= this.MAX_LIST_CACHE_SIZE
-    ) {
-      const oldestKey = this.listCache.keys().next().value;
-      this.listCache.delete(oldestKey);
-    }
-    this.listCache.set(key, {
-      data: this.cloneBufferDataArray(data),
-      expiresAt: Date.now() + this.CACHE_TTL_MS,
-    });
-  }
-
-  private getCachedObject(key: string): BufferUploadData | null {
-    const entry = this.objectCache.get(key);
-    if (!entry) {
-      return null;
-    }
-    if (entry.expiresAt < Date.now()) {
-      this.objectCache.delete(key);
-      return null;
-    }
-    return this.cloneBufferData(entry.data);
-  }
-
-  private setCachedObject(key: string, data: BufferUploadData): void {
-    if (this.MAX_OBJECT_CACHE_SIZE <= 0) return;
-    if (
-      !this.objectCache.has(key) &&
-      this.objectCache.size >= this.MAX_OBJECT_CACHE_SIZE
-    ) {
-      const oldestKey = this.objectCache.keys().next().value;
-      this.objectCache.delete(oldestKey);
-    }
-    this.objectCache.set(key, {
-      data: this.cloneBufferData(data),
-      expiresAt: Date.now() + this.CACHE_TTL_MS,
-    });
+    super();
+    this.logInit();
   }
 
   /**
@@ -262,9 +105,10 @@ export class S3Service {
   }
 
   /**
-   * Retrieve backup data from S3 cloud storage
+   * Retrieve backup data from S3 cloud storage.
+   * Overrides base: uses regex key parsing, objectEntries sorting, S3_PREVIOUS_LIMIT env var.
    */
-  private async getS3BackupFromCloud(
+  protected override async getS3BackupFromCloud(
     deviceId: string,
     targetDate?: string,
   ): Promise<BufferUploadData[]> {
@@ -403,9 +247,12 @@ export class S3Service {
   }
 
   /**
-   * Save to local file
+   * Save to local file.
+   * Overrides base: uses UTC date instead of KST.
    */
-  private async saveToLocalFile(data: BufferUploadData): Promise<void> {
+  protected override async saveToLocalFile(
+    data: BufferUploadData,
+  ): Promise<string> {
     const date = new Date(data.timestamp).toISOString().split("T")[0];
     const deviceId = data.deviceId || "unknown-device";
     const fileName = `session_${data.timestamp}.json`;
@@ -421,12 +268,17 @@ export class S3Service {
     // Save file
     await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
     this.logger.log(`[LOCAL_SAVED] ${filePath}`);
+
+    return filePath;
   }
 
   /**
-   * Upload to S3
+   * Upload to S3.
+   * Overrides base: uses UTC date.
    */
-  private async uploadToS3(data: BufferUploadData): Promise<void> {
+  protected override async uploadToS3(
+    data: BufferUploadData,
+  ): Promise<string> {
     const date = new Date(data.timestamp).toISOString().split("T")[0];
     const deviceId = data.deviceId || "unknown-device";
     const fileName = `session_${data.timestamp}.json`;
@@ -452,117 +304,8 @@ export class S3Service {
     this.logger.log(
       `[S3_UPLOAD_SUCCESS] deviceId: ${deviceId}, events: ${data.bufferData?.length || 0}`,
     );
-  }
 
-  private buildCandidateDates(timestamp: number, dateHint?: string): string[] {
-    const candidates = new Set<string>();
-
-    if (dateHint) {
-      candidates.add(dateHint);
-    }
-
-    if (Number.isFinite(timestamp)) {
-      const utcDate = new Date(timestamp).toISOString().split("T")[0];
-      candidates.add(utcDate);
-
-      const kstDate = new Date(timestamp + 9 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-      candidates.add(kstDate);
-    }
-
-    return Array.from(candidates);
-  }
-
-  public async getBackupByDeviceAndTimestamp(
-    deviceId: string,
-    timestamp: number,
-    dateHint?: string,
-  ): Promise<BufferUploadData | null> {
-    if (!deviceId || !Number.isFinite(timestamp)) {
-      return null;
-    }
-
-    const candidateDates = this.buildCandidateDates(timestamp, dateHint);
-    if (candidateDates.length === 0) {
-      return null;
-    }
-
-    const fileName = `session_${timestamp}.json`;
-    const cacheKey = this.buildObjectCacheKey(deviceId, timestamp);
-
-    const cached = this.getCachedObject(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    const pending = await this.objectInFlight.get(cacheKey);
-    if (pending) {
-      const result = pending;
-      return result ? this.cloneBufferData(result) : null;
-    }
-
-    const fetchPromise = (async () => {
-      if (this.isRemoteStorageEnabled) {
-        const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
-
-        for (const date of candidateDates) {
-          const key = `backups/${date}/${deviceId}/${fileName}`;
-          try {
-            const command = new GetObjectCommand({
-              Bucket: bucketName,
-              Key: key,
-            });
-            const response = await this.s3Client.send(command);
-            if (response.Body) {
-              const bodyString = await response.Body.transformToString();
-              const parsed = JSON.parse(bodyString) as BufferUploadData;
-              return parsed;
-            }
-          } catch (error: any) {
-            const statusCode = error?.$metadata?.httpStatusCode;
-            if (statusCode === 404 || error?.name === "NoSuchKey") {
-              continue;
-            }
-            this.logger.warn(
-              `[S3_LOOKUP_WARN] Failed to fetch ${key}: ${error?.message || error}`,
-            );
-          }
-        }
-      } else {
-        for (const date of candidateDates) {
-          const filePath = path.join(this.backupDir, date, deviceId, fileName);
-          if (!fs.existsSync(filePath)) {
-            continue;
-          }
-
-          try {
-            const content = await fs.promises.readFile(filePath, "utf-8");
-            const parsed = JSON.parse(content) as BufferUploadData;
-            return parsed;
-          } catch (error) {
-            this.logger.warn(
-              `[LOCAL_LOOKUP_WARN] Failed to read ${filePath}: ${error instanceof Error ? error.message : error}`,
-            );
-          }
-        }
-      }
-
-      return null;
-    })();
-
-    this.objectInFlight.set(cacheKey, fetchPromise);
-
-    try {
-      const result = await fetchPromise;
-      if (result) {
-        this.setCachedObject(cacheKey, result);
-        return this.cloneBufferData(result);
-      }
-      return null;
-    } finally {
-      this.objectInFlight.delete(cacheKey);
-    }
+    return s3Key;
   }
 
   /**

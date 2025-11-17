@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -900,7 +900,7 @@
               const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://'
               fullWsUrl = protocol + decodedWsUrl
             }
-            const [baseUrl, queryString] = fullWsUrl.split('?')
+            const [, queryString] = fullWsUrl.split('?')
             const wsQuery = new URLSearchParams(queryString || '')
             return {
               room: wsQuery.get('room'),
@@ -953,7 +953,6 @@
 
         switch (state) {
           case 'connecting':
-            badge.classList.add('')
             label.textContent = detail || 'Connecting...'
             liveDot.classList.add('dot-reconnecting')
             break
@@ -1215,7 +1214,8 @@
             signal: AbortSignal.timeout(10000)
           })
           if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`)
+            handleDeviceIdError(new Error(`Server responded with ${response.status}`))
+            return currentDeviceId || 'unknown-device'
           }
           const recordInfo = await response.json()
           if (recordInfo && !recordInfo.error) {
@@ -1231,18 +1231,22 @@
             }
             updateCurrentUrlDisplay()
           } else if (recordInfo?.error) {
-            throw new Error(recordInfo.error)
+            handleDeviceIdError(new Error(recordInfo.error))
           }
         } catch (error) {
-          console.error('Device ID fetch failed:', error)
-          setConnectionState('disconnected', 'Connection error')
-          if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-            showToast('Server request timed out. Connection may be slow.', 'warning')
-          } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            showToast('Cannot reach server. Check your network connection.', 'error')
-          }
+          handleDeviceIdError(error)
         }
         return currentDeviceId || 'unknown-device'
+      }
+
+      function handleDeviceIdError(error) {
+        console.error('Device ID fetch failed:', error)
+        setConnectionState('disconnected', 'Connection error')
+        if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+          showToast('Server request timed out. Connection may be slow.', 'warning')
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          showToast('Cannot reach server. Check your network connection.', 'error')
+        }
       }
 
       function updateCurrentUrlDisplay() {
@@ -1269,14 +1273,12 @@
         if (isLoading) {
           button.classList.add('loading')
           button.disabled = true
-          const originalHTML = button.innerHTML
-          button.dataset.originalHtml = originalHTML
+          button.dataset.originalHtml = button.innerHTML
           button.innerHTML = '<span class="spinner"></span> Loading...'
         } else {
           button.classList.remove('loading')
           button.disabled = false
-          const originalHTML = button.dataset.originalHtml || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> <span class="btn-label-wide">Load Previous</span>'
-          button.innerHTML = originalHTML
+          button.innerHTML = button.dataset.originalHtml || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> <span class="btn-label-wide">Load Previous</span>'
         }
       }
 
@@ -1290,9 +1292,9 @@
             await loadPreviousRoomGroups()
           }
           if (!cachedRoomGroups || nextRoomIndex >= cachedRoomGroups.length) {
-            const deviceId = await getCurrentDeviceId()
+            await getCurrentDeviceId()
             showToast(
-              `All ${cachedRoomGroups?.length || 0} previous sessions loaded for device ${deviceId}.`,
+              `All ${cachedRoomGroups?.length || 0} previous sessions loaded for device ${currentDeviceId}.`,
               'info'
             )
             return
@@ -1316,7 +1318,7 @@
       }
 
       async function loadPreviousRoomGroups() {
-        const deviceId = await getCurrentDeviceId()
+        await getCurrentDeviceId()
         if (!currentRecordId) {
           throw new Error('Current record ID must be loaded first.')
         }
@@ -1492,9 +1494,7 @@
         const wsUrl = `${wsHostOnly}?${new URLSearchParams(s3BackupParams).toString()}`
         const isHttps = window.location.protocol === 'https:'
         const protocol = isHttps ? 'wss' : 'ws'
-        const devtoolsUrl = `/devtools/index.html?${protocol}=${encodeURIComponent(wsUrl)}`
-
-        document.getElementById(`${tabId}-frame`).src = devtoolsUrl
+        document.getElementById(`${tabId}-frame`).src = `/devtools/index.html?${protocol}=${encodeURIComponent(wsUrl)}`
         switchTab(tabId)
       }
 

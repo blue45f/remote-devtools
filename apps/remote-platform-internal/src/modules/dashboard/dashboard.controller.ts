@@ -38,8 +38,9 @@ export class DashboardController {
         error: {
           code: "DASHBOARD_STATS_ERROR",
           message:
-            error instanceof Error ? error.message :
-            "An error occurred while retrieving dashboard statistics.",
+            error instanceof Error
+              ? error.message
+              : "An error occurred while retrieving dashboard statistics.",
         },
       });
     }
@@ -84,8 +85,9 @@ export class DashboardController {
         error: {
           code: "TICKET_TREND_ERROR",
           message:
-            error instanceof Error ? error.message :
-            "An error occurred while retrieving the ticket trend.",
+            error instanceof Error
+              ? error.message
+              : "An error occurred while retrieving the ticket trend.",
         },
       });
     }
@@ -130,8 +132,9 @@ export class DashboardController {
         error: {
           code: "RECORD_SESSION_TREND_ERROR",
           message:
-            error instanceof Error ? error.message :
-            "An error occurred while retrieving the recording session trend.",
+            error instanceof Error
+              ? error.message
+              : "An error occurred while retrieving the recording session trend.",
         },
       });
     }

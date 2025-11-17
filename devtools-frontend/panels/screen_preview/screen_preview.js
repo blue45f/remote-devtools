@@ -4,11 +4,12 @@ import * as LitHtml from '../../ui/lit-html/lit-html.js';
 
 let screenPreviewPanelInstance;
 export class ScreenPreviewPanel extends UI.Widget.VBox {
-  started = false;
   startPreviewed = false;
   messages = [];
+  _previousOnMessageReceived = null;
   constructor() {
     super(true);
+    this._boundMessageReceived = this.messageReceived.bind(this);
     this.rendeHtml();
   }
   static instance() {
@@ -19,20 +20,45 @@ export class ScreenPreviewPanel extends UI.Widget.VBox {
   }
   onSend(command, params = {}) {
     const test = ProtocolClient.InspectorBackend.test;
-    test.sendRawMessage(command, params);
+    if (test.sendRawMessage) {
+      test.sendRawMessage(command, params);
+    }
   };
   wasShown() {
-    if (this.started) {
+    // Re-register every time the panel is shown, in case another panel
+    // (e.g. ProtocolMonitor) overwrote the handler while we were hidden
+    const test = ProtocolClient.InspectorBackend.test;
+    const current = test.onMessageReceived;
+
+    // Already our wrapped handler — nothing to do
+    if (current && current._isScreenPreview) {
       return;
     }
-    this.started = true;
-    const test = ProtocolClient.InspectorBackend.test;
-    test.onMessageReceived = this.messageReceived.bind(this);
+
+    // Save whatever handler was there before so we can chain calls
+    this._previousOnMessageReceived = current;
+
+    const self = this;
+    const wrapped = (message, target) => {
+      self._boundMessageReceived(message);
+      if (self._previousOnMessageReceived) {
+        self._previousOnMessageReceived(message, target);
+      }
+    };
+    wrapped._isScreenPreview = true;
+    test.onMessageReceived = wrapped;
   }
   willHide() {
     this.onSend('ScreenPreview.stopPreview');
     this.previewBtn.innerText = '화면 보기';
     this.startPreviewed = false;
+
+    // Restore the previous handler so other panels keep working
+    const test = ProtocolClient.InspectorBackend.test;
+    if (test.onMessageReceived && test.onMessageReceived._isScreenPreview) {
+      test.onMessageReceived = this._previousOnMessageReceived;
+    }
+    this._previousOnMessageReceived = null;
   }
   messageReceived(message) {
     const { method, params } = message;
@@ -50,7 +76,9 @@ export class ScreenPreviewPanel extends UI.Widget.VBox {
     }
   }
   syncScroll({ scrollLeft, scrollTop }) {
-    this.iframe.contentWindow.scrollTo(scrollLeft, scrollTop);
+    if (this.iframe.contentWindow) {
+      this.iframe.contentWindow.scrollTo(scrollLeft, scrollTop);
+    }
   }
   syncMouse({ type, left, top }) {
     this.mouse.style.top = `${top + 10}px`;
@@ -75,8 +103,9 @@ export class ScreenPreviewPanel extends UI.Widget.VBox {
     }, 3000);
 
   }
-  renderPreview({ isMobile, width, height, head, body, bodyClass, baseHref }) {
-    const iframeContent = this.iframe.contentDocument || this.iframe.contentWindow.document;
+  renderPreview({ width, height, head, body, bodyClass, baseHref }) {
+    const iframeContent = this.iframe.contentDocument || this.iframe.contentWindow?.document;
+    if (!iframeContent) return;
 
     const headHtml = Array.isArray(head) ? head.join('\n') : head || '';
     if (iframeContent.head.innerHTML !== headHtml) {

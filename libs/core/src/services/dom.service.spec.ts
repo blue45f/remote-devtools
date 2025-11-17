@@ -59,9 +59,9 @@ describe("DomService", () => {
 
   describe("isGetDomResponseMessage", () => {
     it("should return true for DOM.GET_DOCUMENT id", () => {
-      expect(
-        service.isGetDomResponseMessage(MSG_ID.DOM.GET_DOCUMENT),
-      ).toBe(true);
+      expect(service.isGetDomResponseMessage(MSG_ID.DOM.GET_DOCUMENT)).toBe(
+        true,
+      );
     });
 
     it("should return false for other ids", () => {
@@ -77,9 +77,9 @@ describe("DomService", () => {
     });
 
     it("should return false for other methods", () => {
-      expect(
-        service.isGetDomRequestMessage({ method: "Network.enable" }),
-      ).toBe(false);
+      expect(service.isGetDomRequestMessage({ method: "Network.enable" })).toBe(
+        false,
+      );
     });
   });
 

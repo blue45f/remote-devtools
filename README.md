@@ -98,8 +98,13 @@ pnpm compose
 
 시작되면 다음 서비스에 접근할 수 있다:
 
-- `http://localhost:3000` -- Internal 서버 (DevTools UI)
-- `http://localhost:3001` -- External 서버 (SDK, API)
+- `http://localhost:3000` -- Internal 서버 (DevTools UI, API)
+- `http://localhost:3001` -- External 서버 (SDK 서빙, WebSocket)
+- `http://localhost:8080` -- Client (별도 실행: `cd client && pnpm dev`)
+  - `/` -- SDK 데모 페이지 (NPM 모듈 로드)
+  - `/test` -- SDK 테스트 페이지 (스크립트 태그 로드)
+  - `/sessions` -- 녹화/라이브 세션 목록
+  - `/dashboard` -- 대시보드 (통계 및 트렌드 차트)
 - `http://localhost:5050` -- PgAdmin (DB 관리)
 
 상세 설치 방법은 [docs/INSTALLATION.md](docs/INSTALLATION.md) 참조.

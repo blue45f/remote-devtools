@@ -8,6 +8,17 @@ import { NetworkEntity } from "@remote-platform/entity";
 import { RecordService } from "./record.service";
 
 /**
+ * Maximum number of retry attempts when looking up network entries.
+ * Network response bodies may arrive before the network entry is persisted.
+ */
+const MAX_RETRY_ATTEMPTS = 5;
+
+/**
+ * Delay (in milliseconds) between retry attempts.
+ */
+const RETRY_DELAY_MS = 500;
+
+/**
  * 기존 네트워크 항목에 응답 본문을 삽입하기 위한 페이로드.
  */
 export interface UpdateResponseBodyData {
@@ -165,15 +176,15 @@ export class NetworkService {
    * 최대 {@link retries}회까지 각 시도 사이에 지연을 두고 재시도한다.
    * @param record - 대상 레코드 (id 포함)
    * @param requestId - 대상 요청 ID
-   * @param retries - 최대 재시도 횟수 (기본값: 5)
-   * @param delay - 재시도 간 지연 시간 (밀리초, 기본값: 500)
+   * @param retries - 최대 재시도 횟수 (기본값: MAX_RETRY_ATTEMPTS)
+   * @param delay - 재시도 간 지연 시간 (밀리초, 기본값: RETRY_DELAY_MS)
    * @returns 조회된 NetworkEntity 또는 null
    */
   private async findNetworkWithRetry(
     record: { id: number },
     requestId: number,
-    retries = 5,
-    delay = 500,
+    retries = MAX_RETRY_ATTEMPTS,
+    delay = RETRY_DELAY_MS,
   ): Promise<NetworkEntity | null> {
     for (let attempt = 0; attempt < retries; attempt++) {
       const network = await this.networkRepository.findOne({

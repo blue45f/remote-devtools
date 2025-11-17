@@ -276,6 +276,8 @@ pnpm build
 ```bash
 VITE_INTERNAL_HOST=https://internal.example.com \
 VITE_EXTERNAL_HOST=https://external.example.com \
+VITE_INTERNAL_WS=wss://internal.example.com \
+VITE_EXTERNAL_WS=wss://external.example.com \
 pnpm build
 ```
 
