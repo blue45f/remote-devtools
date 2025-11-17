@@ -124,6 +124,8 @@ QueryFailedError: relation "record" does not exist
 pnpm typeorm migration:run
 ```
 
+> **참고**: 개발 환경에서는 `synchronize: true`가 활성화되어 자동으로 스키마가 동기화됩니다. 이 명령은 프로덕션 환경에서만 필요합니다.
+
 ---
 
 ## WebSocket 관련

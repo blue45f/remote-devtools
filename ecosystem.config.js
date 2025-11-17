@@ -1,4 +1,4 @@
-module.exports = {
+커밋 module.exports = {
   apps: [
     {
       name: 'nest',
@@ -7,6 +7,7 @@ module.exports = {
 
       exec_mode: 'fork',
       instances: 1,
+      max_memory_restart: '512M',
 
       merge_logs: true,
       error_file: '/app/logs/stderr.log',

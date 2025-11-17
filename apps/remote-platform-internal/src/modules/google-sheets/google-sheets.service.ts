@@ -1,3 +1,5 @@
+import https from "https";
+
 import { Injectable, Logger } from "@nestjs/common";
 import { GoogleAuth } from "google-auth-library";
 import { google, sheets_v4 } from "googleapis";
@@ -107,9 +109,6 @@ export class GoogleSheetsService {
       "Authenticating Google Sheets via service account (new client)",
     );
 
-    // Disable SSL verification for Docker environments with self-signed certificates
-    process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-
     // Decode Base64-encoded private key
     const serviceAccountPrivateKey = atob(serviceAccountPrivateKeyEncoded);
 
@@ -120,6 +119,17 @@ export class GoogleSheetsService {
       },
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
+
+    // For Docker environments with self-signed certificates, apply a custom HTTPS agent
+    // scoped to googleapis only (not the entire Node.js process)
+    const isDocker = process.env.RUNNING_IN_DOCKER === "true";
+    if (isDocker) {
+      const agent = new https.Agent({ rejectUnauthorized: false });
+      google.options({ agent });
+      this.logger.warn(
+        "SSL verification disabled for Google API client only (Docker environment)",
+      );
+    }
 
     this.sheetsClient = google.sheets({ version: "v4", auth });
 

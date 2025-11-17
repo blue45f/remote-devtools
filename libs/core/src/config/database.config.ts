@@ -39,14 +39,20 @@ export const ALL_ENTITIES = [
   UserTicketTemplateEntity,
 ] as const;
 
+/** Environments where schema synchronization is allowed. */
+const SYNCHRONIZE_ALLOWED_ENVS = new Set(["local", "development", "dev"]);
+
 /**
  * Build a TypeORM configuration from environment variables.
- * Schema synchronization defaults to enabled outside of the "beta" environment.
+ * Schema synchronization is only enabled in explicit development environments
+ * (local, development, dev). All other environments (beta, production, etc.)
+ * must use migrations to prevent accidental data loss.
  */
 export function createDatabaseConfig(
   options: DatabaseConfigOptions = {},
 ): TypeOrmModuleOptions {
-  const isDevelopment = process.env.APP_ENV !== "beta";
+  const appEnv = (process.env.APP_ENV ?? "local").toLowerCase();
+  const isDevelopment = SYNCHRONIZE_ALLOWED_ENVS.has(appEnv);
 
   return {
     type: "postgres",

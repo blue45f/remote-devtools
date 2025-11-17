@@ -2,6 +2,23 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { DataSource } from "typeorm";
 
+/**
+ * Protected record ID that should never be deleted.
+ * This record contains critical reference data used for system testing and validation.
+ */
+const PROTECTED_RECORD_ID = 3462;
+
+/**
+ * Number of days after which records are eligible for deletion.
+ */
+const RECORD_RETENTION_DAYS = 14;
+
+/**
+ * Maximum number of records to delete in a single batch operation.
+ * Prevents long-running transactions and database locks.
+ */
+const DELETION_BATCH_SIZE = 1000;
+
 @Injectable()
 export class RemoveRecordService {
   private readonly logger = new Logger(RemoveRecordService.name);
@@ -10,7 +27,7 @@ export class RemoveRecordService {
 
   /**
    * Scheduled job: runs on the 1st of every month at 03:00.
-   * Deletes records older than 14 days in batches of 1000, excluding protected records.
+   * Deletes records older than RECORD_RETENTION_DAYS in batches, excluding protected records.
    */
   @Cron("0 3 1 * *")
   public async removeRecordOldRecords(): Promise<void> {
@@ -26,9 +43,9 @@ export class RemoveRecordService {
           DELETE FROM record
           WHERE id IN (
             SELECT id FROM record
-            WHERE timestamp < NOW() - INTERVAL '14 days'
-            AND id <> 3462 -- Protect specific recordId
-            LIMIT 1000
+            WHERE timestamp < NOW() - INTERVAL '${RECORD_RETENTION_DAYS} days'
+            AND id <> ${PROTECTED_RECORD_ID}
+            LIMIT ${DELETION_BATCH_SIZE}
           )
           RETURNING id
         )

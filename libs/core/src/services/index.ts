@@ -5,3 +5,4 @@ export * from "./dom.service";
 export * from "./runtime.service";
 export * from "./screen.service";
 export * from "./image-base64.service";
+export * from "./base-s3.service";

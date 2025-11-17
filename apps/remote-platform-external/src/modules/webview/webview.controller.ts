@@ -1,4 +1,10 @@
-import { BadRequestException, Controller, Get, NotFoundException, Query } from "@nestjs/common";
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Query,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
 
@@ -482,7 +488,7 @@ export class WebviewController {
   @Get("session-stats")
   public async getSessionStats() {
     // 총 녹화 세션 생성 수
-    const totalRooms = await this.recordRepository.count();
+    const totalSessions = await this.recordRepository.count();
 
     // 녹화 모드별 통계
     const recordModeStats = await this.recordRepository
@@ -495,7 +501,7 @@ export class WebviewController {
     // 오늘 생성된 녹화 세션 수
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayRooms = await this.recordRepository
+    const todaySessions = await this.recordRepository
       .createQueryBuilder("record")
       .where("record.timestamp >= :today", { today })
       .getCount();
@@ -523,8 +529,8 @@ export class WebviewController {
       .getRawMany();
 
     return {
-      totalRooms,
-      todayRooms,
+      totalSessions,
+      todaySessions,
       recordModeStats: recordModeStats.map((stat) => ({
         recordMode: stat.recordMode,
         count: parseInt(stat.count),
@@ -546,7 +552,7 @@ export class WebviewController {
   @Get("user-sessions")
   public async getUserSessions(@Query("deviceId") deviceId: string) {
     if (!deviceId) {
-      return { error: "deviceId is required" };
+      throw new BadRequestException("deviceId is required");
     }
 
     const records = await this.recordRepository.find({

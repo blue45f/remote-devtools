@@ -7,7 +7,7 @@ import { Repository } from "typeorm";
 
 import { RecordEntity, ScreenEntity } from "@remote-platform/entity";
 
-import { BufferUploadData, S3Service } from "../s3/s3.service";
+import { S3Service } from "../s3/s3.service";
 
 export interface ReplayEvent {
   readonly id: number;
@@ -84,7 +84,7 @@ export class SessionReplayService {
       .addSelect("MIN(screen.timestamp)", "startTime")
       .addSelect("MAX(screen.timestamp)", "endTime")
       .addSelect(
-        "COUNT(CASE WHEN screen.eventType = 'full_snapshot' THEN 1 END)",
+        "COUNT(CASE WHEN screen.event_type = 'full_snapshot' THEN 1 END)",
         "fullSnapshotCount",
       );
 
@@ -266,7 +266,7 @@ export class SessionReplayService {
       }
 
       return this.convertToReplayEvents(sessionReplayEvents);
-    } catch (error) {
+    } catch {
       throw new NotFoundException(`Failed to load S3 file: ${s3FilePath}`);
     }
   }
@@ -286,13 +286,12 @@ export class SessionReplayService {
     const eventStats = await this.screenRepository
       .createQueryBuilder("screen")
       .where("screen.recordId = :recordId", { recordId })
-      .select([
-        "COUNT(*) as count",
-        "MIN(timestamp) as startTime",
-        "MAX(timestamp) as endTime",
-      ])
+      .select("COUNT(*)", "count")
+      .addSelect("MIN(screen.timestamp)", "startTime")
+      .addSelect("MAX(screen.timestamp)", "endTime")
       .addSelect(
-        "COUNT(CASE WHEN eventType = 'full_snapshot' THEN 1 END) as fullSnapshots",
+        "COUNT(CASE WHEN screen.event_type = 'full_snapshot' THEN 1 END)",
+        "fullSnapshots",
       )
       .getRawOne();
 
@@ -340,15 +339,15 @@ export class SessionReplayService {
   private async loadS3SessionEvents(
     s3SessionId: string,
   ): Promise<ReplayEvent[]> {
+    const parsed = this.parseS3SessionId(s3SessionId);
+
+    if (!parsed) {
+      throw new NotFoundException(
+        `Invalid S3 session ID format: ${s3SessionId}`,
+      );
+    }
+
     try {
-      const parsed = this.parseS3SessionId(s3SessionId);
-
-      if (!parsed) {
-        throw new NotFoundException(
-          `Invalid S3 session ID format: ${s3SessionId}`,
-        );
-      }
-
       if (parsed.format === "device") {
         const direct = await this.s3Service.getBackupByDeviceAndTimestamp(
           parsed.deviceId,

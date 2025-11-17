@@ -305,14 +305,11 @@ export class JiraService {
    * @param query - 검색할 사용자 이름 또는 이메일
    * @returns 활성 사용자의 계정 ID, 미발견 시 null
    */
-  private async findUserAccountId(
-    query: string,
-  ): Promise<string | null> {
+  private async findUserAccountId(query: string): Promise<string | null> {
     try {
-      const response = await this.jiraClient.get<JiraUser[]>(
-        "/user/search",
-        { params: { query, maxResults: 1 } },
-      );
+      const response = await this.jiraClient.get<JiraUser[]>("/user/search", {
+        params: { query, maxResults: 1 },
+      });
       if (response.data.length > 0 && response.data[0].active) {
         return response.data[0].accountId;
       }

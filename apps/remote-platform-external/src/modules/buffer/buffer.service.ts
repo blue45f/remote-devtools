@@ -20,6 +20,21 @@ export interface SessionBuffer {
   screenPreviewIndexes: Record<string, number>;
 }
 
+/** Maximum number of events a single buffer can hold. */
+const MAX_BUFFER_SIZE_PER_SESSION = 50_000;
+
+/** Maximum age of a buffer before it is cleaned up (30 minutes). */
+const MAX_BUFFER_AGE_MS = 30 * 60 * 1000;
+
+/** Interval for periodic cleanup of old buffers (5 minutes). */
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Maximum number of concurrent active sessions. */
+const MAX_CONCURRENT_SESSIONS = 100;
+
+/** Memory usage warning threshold (total events across all buffers). */
+const MEMORY_WARNING_THRESHOLD = 1_000_000;
+
 @Injectable()
 export class BufferService {
   private readonly logger = new Logger(BufferService.name);
@@ -30,18 +45,12 @@ export class BufferService {
   /** Buffers currently being flushed (prevents data loss during async operations). */
   private readonly flushingBuffers = new Map<string, SessionBuffer>();
 
-  /** Maximum number of events a single buffer can hold. */
-  private readonly maxBufferSize = 50000;
-
   /** Event count threshold for auto-flush (disabled: uses periodic flush only). */
   private readonly flushThreshold = Infinity;
 
-  /** Maximum age of a buffer before it is cleaned up (30 minutes). */
-  private readonly maxBufferAge = 30 * 60 * 1000;
-
   constructor() {
     // Periodically clean up stale buffers every 5 minutes
-    setInterval(() => this.cleanupOldBuffers(), 5 * 60 * 1000);
+    setInterval(() => this.cleanupOldBuffers(), CLEANUP_INTERVAL_MS);
 
     this.logger.log(
       "[BUFFER_SERVICE] Periodic auto-save disabled - only save on disconnect",
@@ -258,13 +267,21 @@ export class BufferService {
     }
 
     // Evict the oldest event when the ring buffer is full
-    if (buffer.events.length > this.maxBufferSize) {
+    if (buffer.events.length > MAX_BUFFER_SIZE_PER_SESSION) {
       buffer.events.shift();
       this.adjustScreenPreviewIndexesAfterShift(buffer);
       if (newScreenPreviewIndex !== null) {
         newScreenPreviewIndex -= 1;
       }
     }
+
+    // Check if we need to flush oldest sessions when max concurrent sessions reached
+    if (this.buffers.size > MAX_CONCURRENT_SESSIONS) {
+      this.flushOldestSessions();
+    }
+
+    // Monitor global memory usage
+    this.monitorMemoryUsage();
 
     if (isScreenPreview && screenPreviewMethod) {
       if (newScreenPreviewIndex !== null && newScreenPreviewIndex >= 0) {
@@ -402,7 +419,7 @@ export class BufferService {
 
     for (const [key, buffer] of this.buffers) {
       const age = now - buffer.lastUpdated.getTime();
-      if (age > this.maxBufferAge) {
+      if (age > MAX_BUFFER_AGE_MS) {
         this.buffers.delete(key);
         cleanedCount += 1;
       }
@@ -410,7 +427,7 @@ export class BufferService {
 
     for (const [key, buffer] of this.flushingBuffers) {
       const age = now - buffer.lastUpdated.getTime();
-      if (age > this.maxBufferAge) {
+      if (age > MAX_BUFFER_AGE_MS) {
         this.flushingBuffers.delete(key);
         cleanedCount += 1;
       }
@@ -418,6 +435,55 @@ export class BufferService {
 
     if (cleanedCount > 0) {
       this.logger.log(`[BUFFER_CLEANUP] Removed ${cleanedCount} old buffers`);
+    }
+  }
+
+  /**
+   * Flushes the oldest sessions when MAX_CONCURRENT_SESSIONS is exceeded.
+   */
+  private flushOldestSessions(): void {
+    const sessionsToRemove = this.buffers.size - MAX_CONCURRENT_SESSIONS;
+    if (sessionsToRemove <= 0) {
+      return;
+    }
+
+    // Sort buffers by last updated time (oldest first)
+    const sortedBuffers = Array.from(this.buffers.entries()).sort(
+      ([, a], [, b]) => a.lastUpdated.getTime() - b.lastUpdated.getTime(),
+    );
+
+    let flushedCount = 0;
+    for (let i = 0; i < sessionsToRemove && i < sortedBuffers.length; i++) {
+      const [key, buffer] = sortedBuffers[i];
+      this.logger.warn(
+        `[BUFFER_MAX_SESSIONS] Flushing oldest session: ${key} (${buffer.events.length} events, last updated: ${buffer.lastUpdated.toISOString()})`,
+      );
+      this.setFlushingBuffer(key, buffer);
+      this.buffers.delete(key);
+      flushedCount += 1;
+    }
+
+    if (flushedCount > 0) {
+      this.logger.warn(
+        `[BUFFER_MAX_SESSIONS] Flushed ${flushedCount} oldest sessions (limit: ${MAX_CONCURRENT_SESSIONS})`,
+      );
+    }
+  }
+
+  /**
+   * Monitors global memory usage and logs a warning if threshold is exceeded.
+   */
+  private monitorMemoryUsage(): void {
+    let totalEvents = 0;
+
+    for (const buffer of this.buffers.values()) {
+      totalEvents += buffer.events.length;
+    }
+
+    if (totalEvents > MEMORY_WARNING_THRESHOLD) {
+      this.logger.warn(
+        `[BUFFER_MEMORY_WARNING] Total events across all buffers: ${totalEvents} (threshold: ${MEMORY_WARNING_THRESHOLD}, active sessions: ${this.buffers.size})`,
+      );
     }
   }
 

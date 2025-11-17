@@ -13,8 +13,8 @@ Remote Debug Tools 프로젝트 기여 가이드입니다.
 ### 프로젝트 설정
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/remote-debug-tools.git
-cd remote-debug-tools
+git clone https://github.com/YOUR_USERNAME/remote-devtools.git
+cd remote-devtools
 pnpm install
 
 cp .env.example apps/remote-platform-external/src/.env.local

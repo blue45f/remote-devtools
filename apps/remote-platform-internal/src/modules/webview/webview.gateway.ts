@@ -25,40 +25,22 @@ import {
 
 import { S3Service } from "../s3/s3.service";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { ObjectReconstructionService } from "./object-reconstruction.service";
+import { S3PlaybackService } from "./s3-playback.service";
+import {
+  DevtoolsData,
+  ProtocolEntry,
+  ProtocolMessage,
+  RoomData,
+} from "./webview.types";
 
-type RoomData = {
-  client: WebSocket;
-  devtools: Map<string, WebSocket>;
-  recordMode: boolean;
-  recordId: number | null;
-};
-
-type DevtoolsData = {
-  room: string;
-  devtoolsId: string;
-};
-
-/** Represents a CDP-style protocol message forwarded over WebSocket. */
-type ProtocolMessage = {
-  id?: number;
-  method?: string;
-  params?: Record<string, any>;
-  result?: Record<string, any>;
-  error?: { code?: number; message: string };
-  event?: string;
-  [key: string]: any;
-};
-
-/** A single item produced when converting S3 backup data into a sendable protocol entry. */
-type ProtocolEntry = {
-  protocol: { method: string; params: Record<string, any> };
-  timestamp: number;
-  domain: string;
-  requestId?: number;
-};
+// Re-export types for backward compatibility
+export type {
+  DevtoolsData,
+  ProtocolEntry,
+  ProtocolMessage,
+  RoomData,
+} from "./webview.types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,15 +71,6 @@ export class WebviewGateway
 
   /** Per-device buffer data storage (used during live streaming). */
   private readonly bufferStorage: Map<string, any[]> = new Map();
-  /** Tracks flush call counts per device. */
-  private readonly flushCallCount: Map<string, number> = new Map();
-  /** Caches response bodies per client for S3 backup playback. */
-  private readonly s3ResponseBodyCache: Map<
-    WebSocket,
-    Map<number, { body: string; base64Encoded: boolean }>
-  > = new Map();
-  /** Caches full S3 backup data per client for on-demand queries. */
-  private readonly s3BackupCache: Map<WebSocket, any[]> = new Map();
 
   @WebSocketServer() public server: Server;
 
@@ -108,6 +81,8 @@ export class WebviewGateway
     private readonly runtimeService: RuntimeService,
     private readonly screenService: ScreenService,
     private readonly s3Service: S3Service,
+    private readonly objectReconstructionService: ObjectReconstructionService,
+    private readonly s3PlaybackService: S3PlaybackService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -146,270 +121,84 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // Helpers -- object reconstruction (Copy Object in playback)
+  // Helpers -- DevTools request handlers (shared by DB & S3 playback)
   // -------------------------------------------------------------------------
 
   /**
-   * Reconstructs an object from property snapshots and returns it as a JSON string.
-   * Used by the Copy Object feature during recording session playback.
+   * Handles Runtime.getProperties requests during playback.
+   * Returns stored snapshot data or an empty result when unavailable.
    */
-  private reconstructObjectAsJson(
-    objectId: string,
+  private handleGetPropertiesRequest(
+    client: WebSocket,
+    protocol: any,
     propertySnapshotsMap: Map<string, any[]>,
-    args: any[],
-  ): string {
-    // Extract indentation option from arguments
-    let indent: string | number = 2;
-    if (args?.[0]?.value?.indent !== undefined) {
-      indent = args[0].value.indent;
-    }
-
-    // Return empty object when no snapshot data is available
+  ): void {
+    const objectId = protocol.params?.objectId;
     const properties = propertySnapshotsMap.get(objectId);
-    if (!properties || properties.length === 0) {
-      this.logger.debug(
-        `No snapshot found for objectId: ${objectId}, returning empty object`,
-      );
-      return "{}";
+
+    if (properties) {
+      this.logger.debug(`Found properties for objectId: ${objectId}`);
+    } else {
+      this.logger.debug(`No properties found for objectId: ${objectId}`);
     }
 
-    try {
-      // Rebuild original object from PropertyDescriptor[] snapshots
-      const reconstructed = this.reconstructObjectFromProperties(
-        properties,
+    this.sendMessage(client, {
+      id: protocol.id,
+      result: {
+        result: properties || [],
+        internalProperties: [],
+        privateProperties: [],
+      },
+    });
+  }
+
+  /**
+   * Handles Runtime.callFunctionOn requests during playback.
+   * Supports the Copy Object feature (toStringForClipboard / JSON.stringify).
+   */
+  private handleCallFunctionOnRequest(
+    client: WebSocket,
+    protocol: any,
+    propertySnapshotsMap: Map<string, any[]>,
+    modeLabel: string,
+  ): void {
+    const objectId = protocol.params?.objectId;
+    const functionDeclaration = protocol.params?.functionDeclaration || "";
+    const args = protocol.params?.arguments || [];
+
+    this.logger.debug(
+      `Runtime.callFunctionOn called for objectId: ${objectId}`,
+    );
+
+    const isCopyObjectCall =
+      functionDeclaration.includes("toStringForClipboard") ||
+      functionDeclaration.includes("JSON.stringify");
+
+    if (isCopyObjectCall && objectId) {
+      const jsonResult = this.objectReconstructionService.reconstructObjectAsJson(
+        objectId,
         propertySnapshotsMap,
-        new Set(),
+        args,
       );
-      return JSON.stringify(reconstructed, null, indent);
-    } catch (error) {
-      this.logger.error(
-        `Failed to reconstruct object: ${(error as Error).message}`,
-      );
-      // Fallback to a simple string representation on circular reference etc.
-      return this.propertiesToSimpleString(properties);
-    }
-  }
 
-  /**
-   * Recursively rebuilds a JavaScript object from an array of PropertyDescriptors.
-   */
-  private reconstructObjectFromProperties(
-    properties: any[],
-    propertySnapshotsMap: Map<string, any[]>,
-    visited: Set<string>,
-  ): Record<string, any> {
-    const result: Record<string, any> = {};
-
-    for (const prop of properties) {
-      if (prop.name === "__proto__") continue;
-
-      const value = prop.value;
-      if (!value) continue;
-
-      result[prop.name] = this.resolvePropertyValue(
-        value,
-        propertySnapshotsMap,
-        visited,
-      );
-    }
-
-    return result;
-  }
-
-  /**
-   * Rebuilds an array object from property descriptors (numeric indices only).
-   */
-  private reconstructArrayFromProperties(
-    properties: any[],
-    propertySnapshotsMap: Map<string, any[]>,
-    visited: Set<string>,
-  ): any[] {
-    const result: any[] = [];
-
-    for (const prop of properties) {
-      const index = parseInt(prop.name, 10);
-      if (isNaN(index) || prop.name === "length" || prop.name === "__proto__")
-        continue;
-
-      const value = prop.value;
-      if (!value) {
-        result[index] = undefined;
-        continue;
-      }
-
-      result[index] = this.resolvePropertyValue(
-        value,
-        propertySnapshotsMap,
-        visited,
-      );
-    }
-
-    return result;
-  }
-
-  /**
-   * Resolves a single RemoteObject value into its JavaScript equivalent.
-   * Handles primitives, null, objects, arrays, functions, and symbols.
-   */
-  private resolvePropertyValue(
-    value: any,
-    propertySnapshotsMap: Map<string, any[]>,
-    visited: Set<string>,
-  ): any {
-    if (value.type === "undefined") return undefined;
-
-    if (
-      value.type === "string" ||
-      value.type === "number" ||
-      value.type === "boolean"
-    ) {
-      return value.value;
-    }
-
-    if (value.subtype === "null") return null;
-
-    if (value.type === "object") {
-      return this.resolveObjectValue(value, propertySnapshotsMap, visited);
-    }
-
-    if (value.type === "function") return "[Function]";
-    if (value.type === "symbol") return value.description || "[Symbol]";
-
-    // Fallback for other types
-    return value.value ?? value.description ?? null;
-  }
-
-  /**
-   * Resolves a RemoteObject of type "object" -- either recursing into child
-   * properties or falling back to the preview / description.
-   */
-  private resolveObjectValue(
-    value: any,
-    propertySnapshotsMap: Map<string, any[]>,
-    visited: Set<string>,
-  ): any {
-    if (value.objectId && !visited.has(value.objectId)) {
-      visited.add(value.objectId);
-      const subProperties = propertySnapshotsMap.get(value.objectId);
-
-      if (subProperties && subProperties.length > 0) {
-        if (value.subtype === "array" || value.className === "Array") {
-          return this.reconstructArrayFromProperties(
-            subProperties,
-            propertySnapshotsMap,
-            visited,
-          );
-        }
-        return this.reconstructObjectFromProperties(
-          subProperties,
-          propertySnapshotsMap,
-          visited,
-        );
-      }
-
-      // No child snapshot available -- extract from preview
-      return this.extractValueFromPreview(value);
-    }
-
-    // Already visited or no objectId -- extract from preview
-    return this.extractValueFromPreview(value);
-  }
-
-  /**
-   * Extracts a value from a RemoteObject's preview (or description fallback).
-   */
-  private extractValueFromPreview(remoteObject: any): any {
-    // Primitive value present -- return it directly
-    if (remoteObject.value !== undefined) {
-      return remoteObject.value;
-    }
-
-    // Build from preview properties when available
-    if (remoteObject.preview?.properties) {
-      const result: any = remoteObject.subtype === "array" ? [] : {};
-
-      for (const prop of remoteObject.preview.properties) {
-        if (prop.name === "__proto__") continue;
-
-        let resolved: any;
-        if (prop.type === "undefined") {
-          resolved = undefined;
-        } else if (
-          prop.type === "string" ||
-          prop.type === "number" ||
-          prop.type === "boolean"
-        ) {
-          resolved = prop.value;
-        } else if (prop.subtype === "null") {
-          resolved = null;
-        } else if (prop.type === "object") {
-          // Nested objects use the description
-          resolved = prop.value || prop.description || {};
-        } else {
-          resolved = prop.value ?? prop.description ?? null;
-        }
-
-        if (remoteObject.subtype === "array") {
-          const index = parseInt(prop.name, 10);
-          if (!isNaN(index)) {
-            result[index] = resolved;
-          }
-        } else {
-          result[prop.name] = resolved;
-        }
-      }
-
-      return result;
-    }
-
-    // Parse description or return it as-is
-    if (remoteObject.description) {
-      if (remoteObject.description === "Object") return {};
-      if (remoteObject.description.startsWith("Array(")) return [];
-      return remoteObject.description;
-    }
-
-    return null;
-  }
-
-  /**
-   * Converts a property array to a simple string representation (fallback).
-   */
-  private propertiesToSimpleString(properties: any[]): string {
-    const result: Record<string, any> = {};
-
-    for (const prop of properties) {
-      if (prop.name === "__proto__") continue;
-
-      const value = prop.value;
-      if (!value) {
-        result[prop.name] = null;
-        continue;
-      }
-
-      if (value.type === "undefined") {
-        result[prop.name] = undefined;
-      } else if (
-        value.type === "string" ||
-        value.type === "number" ||
-        value.type === "boolean"
-      ) {
-        result[prop.name] = value.value;
-      } else if (value.subtype === "null") {
-        result[prop.name] = null;
-      } else if (value.type === "object") {
-        result[prop.name] = value.description || "[Object]";
-      } else if (value.type === "function") {
-        result[prop.name] = "[Function]";
-      } else {
-        result[prop.name] = value.value ?? value.description ?? null;
-      }
-    }
-
-    try {
-      return JSON.stringify(result, null, 2);
-    } catch {
-      return "{}";
+      this.sendMessage(client, {
+        id: protocol.id,
+        result: {
+          result: {
+            type: "string",
+            value: jsonResult,
+          },
+        },
+      });
+    } else {
+      // Unsupported callFunctionOn request in playback mode
+      this.sendMessage(client, {
+        id: protocol.id,
+        error: {
+          code: -32601,
+          message: `Method not supported in ${modeLabel} playback mode`,
+        },
+      });
     }
   }
 
@@ -468,137 +257,6 @@ export class WebviewGateway
       method: "ScreenPreview.startPreview",
       params: {},
     });
-  }
-
-  // -------------------------------------------------------------------------
-  // Helpers -- property snapshot collection
-  // -------------------------------------------------------------------------
-
-  /**
-   * Collects property snapshots from Runtime.consoleAPICalled events and
-   * indexes them by objectId for later use during object expansion.
-   * Supports both the new format (objectId-keyed object) and the legacy format (array).
-   */
-  private collectPropertySnapshots(
-    runtimeProtocols: Array<{ protocol: any }>,
-  ): Map<string, any[]> {
-    const propertySnapshotsMap = new Map<string, any[]>();
-
-    for (const protocolData of runtimeProtocols) {
-      const proto = protocolData.protocol;
-      if (
-        proto.method !== "Runtime.consoleAPICalled" ||
-        !proto.params?._propertySnapshots
-      ) {
-        continue;
-      }
-
-      const snapshots = proto.params._propertySnapshots;
-
-      // New format: objectId-keyed object
-      if (typeof snapshots === "object" && !Array.isArray(snapshots)) {
-        for (const [objectId, properties] of Object.entries(snapshots)) {
-          if (Array.isArray(properties)) {
-            propertySnapshotsMap.set(objectId, properties);
-          }
-        }
-      }
-      // Legacy format: array of { objectId, properties }
-      else if (Array.isArray(snapshots)) {
-        for (const snapshot of snapshots) {
-          if (snapshot.objectId && Array.isArray(snapshot.properties)) {
-            propertySnapshotsMap.set(snapshot.objectId, snapshot.properties);
-          }
-        }
-      }
-    }
-
-    this.logger.log(
-      `Collected ${propertySnapshotsMap.size} property snapshots for object expansion`,
-    );
-    return propertySnapshotsMap;
-  }
-
-  // -------------------------------------------------------------------------
-  // Helpers -- DevTools request handlers (shared by DB & S3 playback)
-  // -------------------------------------------------------------------------
-
-  /**
-   * Handles Runtime.getProperties requests during playback.
-   * Returns stored snapshot data or an empty result when unavailable.
-   */
-  private handleGetPropertiesRequest(
-    client: WebSocket,
-    protocol: any,
-    propertySnapshotsMap: Map<string, any[]>,
-  ): void {
-    const objectId = protocol.params?.objectId;
-    const properties = propertySnapshotsMap.get(objectId);
-
-    if (properties) {
-      this.logger.debug(`Found properties for objectId: ${objectId}`);
-    } else {
-      this.logger.debug(`No properties found for objectId: ${objectId}`);
-    }
-
-    this.sendMessage(client, {
-      id: protocol.id,
-      result: {
-        result: properties || [],
-        internalProperties: [],
-        privateProperties: [],
-      },
-    });
-  }
-
-  /**
-   * Handles Runtime.callFunctionOn requests during playback.
-   * Supports the Copy Object feature (toStringForClipboard / JSON.stringify).
-   */
-  private handleCallFunctionOnRequest(
-    client: WebSocket,
-    protocol: any,
-    propertySnapshotsMap: Map<string, any[]>,
-    modeLabel: string,
-  ): void {
-    const objectId = protocol.params?.objectId;
-    const functionDeclaration = protocol.params?.functionDeclaration || "";
-    const args = protocol.params?.arguments || [];
-
-    this.logger.debug(
-      `Runtime.callFunctionOn called for objectId: ${objectId}`,
-    );
-
-    const isCopyObjectCall =
-      functionDeclaration.includes("toStringForClipboard") ||
-      functionDeclaration.includes("JSON.stringify");
-
-    if (isCopyObjectCall && objectId) {
-      const jsonResult = this.reconstructObjectAsJson(
-        objectId,
-        propertySnapshotsMap,
-        args,
-      );
-
-      this.sendMessage(client, {
-        id: protocol.id,
-        result: {
-          result: {
-            type: "string",
-            value: jsonResult,
-          },
-        },
-      });
-    } else {
-      // Unsupported callFunctionOn request in playback mode
-      this.sendMessage(client, {
-        id: protocol.id,
-        error: {
-          code: -32601,
-          message: `Method not supported in ${modeLabel} playback mode`,
-        },
-      });
-    }
   }
 
   // -------------------------------------------------------------------------
@@ -746,7 +404,6 @@ export class WebviewGateway
       playbackDevice,
       s3Backup,
       deviceId,
-      date,
       filePaths,
     } = this.parseQueryParams(req?.url || "");
 
@@ -759,10 +416,7 @@ export class WebviewGateway
       this.logger.log("[WS_CONNECTION] S3 backup playback mode detected");
       await this.handleS3BackupPlaybackByPaths(
         client,
-        room || "unknown",
-        recordId || 0,
         deviceId || "unknown",
-        date || "",
         filePaths,
       );
       return;
@@ -802,7 +456,9 @@ export class WebviewGateway
         try {
           protocol = JSON.parse(message);
         } catch (error) {
-          this.logger.error(`[RECORD_MODE_RECONNECT] Failed to parse message: ${(error as Error).message}`);
+          this.logger.error(
+            `[RECORD_MODE_RECONNECT] Failed to parse message: ${(error as Error).message}`,
+          );
           return;
         }
         if (protocol.method === "Page.getResourceTree") {
@@ -859,10 +515,12 @@ export class WebviewGateway
         try {
           parsed = JSON.parse(message);
         } catch (error) {
-          this.logger.error(`[DEVTOOLS_MESSAGE] Failed to parse message: ${(error as Error).message}`);
+          this.logger.error(
+            `[DEVTOOLS_MESSAGE] Failed to parse message: ${(error as Error).message}`,
+          );
           return;
         }
-        this.handleDevtoolsMessage(devtoolsId, room, parsed);
+        this.handleDevtoolsMessage(room, parsed);
       });
       client.on("close", () => this.handleDisconnect(client));
     } else {
@@ -906,7 +564,8 @@ export class WebviewGateway
       return { protocol };
     });
 
-    const propertySnapshotsMap = this.collectPropertySnapshots(runtimeEntries);
+    const propertySnapshotsMap =
+      this.objectReconstructionService.collectPropertySnapshots(runtimeEntries);
 
     // Handle subsequent DevTools requests
     client.on("message", (message: string) => {
@@ -914,7 +573,9 @@ export class WebviewGateway
       try {
         protocol = JSON.parse(message);
       } catch (error) {
-        this.logger.error(`[RECORD_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+        this.logger.error(
+          `[RECORD_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
+        );
         return;
       }
 
@@ -1091,7 +752,9 @@ export class WebviewGateway
         try {
           protocol = JSON.parse(message);
         } catch (error) {
-          this.logger.error(`[BACKUP_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+          this.logger.error(
+            `[BACKUP_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
+          );
           return;
         }
 
@@ -1127,10 +790,7 @@ export class WebviewGateway
 
   private async handleS3BackupPlaybackByPaths(
     client: WebSocket,
-    room: string,
-    recordId: number,
     deviceId: string,
-    date: string,
     filePaths: string,
   ): Promise<void> {
     try {
@@ -1151,14 +811,7 @@ export class WebviewGateway
         `[S3_DIRECT_PLAYBACK] Found ${backupData.length} backup sessions via direct paths`,
       );
 
-      await this.processS3BackupData(
-        client,
-        room,
-        recordId,
-        deviceId,
-        date,
-        backupData,
-      );
+      await this.processS3BackupData(client, deviceId, backupData);
     } catch (error) {
       this.logger.error(
         `[S3_DIRECT_PLAYBACK_ERROR] ${(error as Error).message}`,
@@ -1173,82 +826,23 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // S3 backup playback -- by room / device lookup
-  // -------------------------------------------------------------------------
-
-  private async handleS3BackupPlayback(
-    client: WebSocket,
-    room: string,
-    recordId: number,
-    deviceId: string,
-    date: string,
-  ): Promise<void> {
-    try {
-      this.logger.log(
-        `[S3_PLAYBACK] Loading data: room=${room}, recordId=${recordId}, deviceId=${deviceId}, date=${date}`,
-      );
-
-      // Retrieve backup data filtered by room creation time
-      const backupData = await this.s3Service.getS3BackupForPlayback(
-        room,
-        recordId,
-        deviceId,
-        date,
-        undefined,
-        this.recordService,
-      );
-
-      if (!backupData || backupData.length === 0) {
-        this.sendMessage(client, {
-          event: "error",
-          message: `No backup data found for device ${deviceId} on ${date}.`,
-        });
-        client.close();
-        return;
-      }
-
-      this.logger.log(
-        `[S3_PLAYBACK] Found ${backupData.length} backup sessions`,
-      );
-
-      await this.processS3BackupData(
-        client,
-        room,
-        recordId,
-        deviceId,
-        date,
-        backupData,
-      );
-    } catch (error) {
-      this.logger.error(`[S3_PLAYBACK_ERROR] ${(error as Error).message}`);
-      this.sendMessage(client, {
-        event: "error",
-        message: "An error occurred during S3 backup data playback.",
-      });
-      client.close();
-    }
-  }
-
-  // -------------------------------------------------------------------------
   // S3 backup playback -- shared processing logic
   // -------------------------------------------------------------------------
 
   private async processS3BackupData(
     client: WebSocket,
-    room: string,
-    recordId: number,
     deviceId: string,
-    date: string,
     backupData: any[],
   ): Promise<void> {
     // Extract session start time from the oldest backup
-    const sessionStartTime = this.extractSessionStartTime(backupData);
+    const sessionStartTime =
+      this.s3PlaybackService.extractSessionStartTime(backupData);
 
     // Generate an S3 session ID (s3-deviceId-timestamp-index format)
-    const encodedDeviceId = encodeURIComponent(deviceId || "unknown-device");
-    const s3SessionId = sessionStartTime
-      ? `s3-${encodedDeviceId}-${sessionStartTime}-0`
-      : null;
+    const s3SessionId = this.s3PlaybackService.generateS3SessionId(
+      deviceId,
+      sessionStartTime,
+    );
     this.logger.log(`[S3_PLAYBACK] Generated S3 session ID: ${s3SessionId}`);
 
     // Send S3 session ID to DevTools so the Session Replay API returns correct data
@@ -1273,7 +867,8 @@ export class WebviewGateway
 
     // Automatically send the latest screen data from S3 cache after a short delay
     setTimeout(() => {
-      const latestScreenData = this.findScreenDataInS3Cache(client);
+      const latestScreenData =
+        this.s3PlaybackService.findScreenDataInS3Cache(client);
       if (latestScreenData) {
         this.sendMessage(client, latestScreenData);
         this.logger.log(
@@ -1283,14 +878,15 @@ export class WebviewGateway
     }, 100);
 
     // Cache backup data per client for subsequent WebSocket request handling
-    this.s3BackupCache.set(client, backupData);
+    this.s3PlaybackService.initializeClientCaches(client, backupData);
 
-    // Initialise response body cache (same lookup logic as DB playback)
-    const responseBodyCache = new Map<
-      number,
-      { body: string; base64Encoded: boolean }
-    >();
-    this.s3ResponseBodyCache.set(client, responseBodyCache);
+    // Get the response body cache for this client
+    const responseBodyCache =
+      this.s3PlaybackService.getResponseBodyCache(client);
+    if (!responseBodyCache) {
+      this.logger.error("[S3_PLAYBACK] Failed to initialize response body cache");
+      return;
+    }
 
     // Classify backup events into domain-specific protocol arrays
     const {
@@ -1298,13 +894,16 @@ export class WebviewGateway
       runtimeProtocols,
       sessionReplayProtocols,
       otherProtocols,
-    } = this.classifyBackupEvents(backupData, responseBodyCache);
+    } = this.s3PlaybackService.classifyBackupEvents(
+      backupData,
+      responseBodyCache,
+    );
 
     // Sort each group chronologically
-    networkProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    runtimeProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    sessionReplayProtocols.sort((a, b) => a.timestamp - b.timestamp);
-    otherProtocols.sort((a, b) => a.timestamp - b.timestamp);
+    this.s3PlaybackService.sortProtocolsByTimestamp(networkProtocols);
+    this.s3PlaybackService.sortProtocolsByTimestamp(runtimeProtocols);
+    this.s3PlaybackService.sortProtocolsByTimestamp(sessionReplayProtocols);
+    this.s3PlaybackService.sortProtocolsByTimestamp(otherProtocols);
 
     const totalProtocols =
       networkProtocols.length +
@@ -1322,9 +921,10 @@ export class WebviewGateway
       ...runtimeProtocols,
       ...sessionReplayProtocols,
       ...otherProtocols,
-    ].sort((a, b) => a.timestamp - b.timestamp);
+    ];
+    this.s3PlaybackService.sortProtocolsByTimestamp(allProtocols);
 
-    this.logProtocolSummary(allProtocols);
+    this.s3PlaybackService.logProtocolSummary(allProtocols);
 
     let sentCount = 0;
     allProtocols.forEach((protocolData) => {
@@ -1344,7 +944,7 @@ export class WebviewGateway
 
     // Collect property snapshots from runtime events (for object expansion)
     const propertySnapshotsMap =
-      this.collectPropertySnapshots(runtimeProtocols);
+      this.objectReconstructionService.collectPropertySnapshots(runtimeProtocols);
 
     // Register DevTools request handler for this S3 playback session
     this.registerS3PlaybackMessageHandler(
@@ -1356,117 +956,8 @@ export class WebviewGateway
   }
 
   // -------------------------------------------------------------------------
-  // S3 backup helpers
+  // S3 backup playback -- message handler registration
   // -------------------------------------------------------------------------
-
-  /** Extracts the session start time from backup data. */
-  private extractSessionStartTime(backupData: any[]): number | null {
-    if (backupData.length === 0) return null;
-
-    const backupWithTime = backupData.find((backup) => backup.sessionStartTime);
-    if (backupWithTime) return backupWithTime.sessionStartTime;
-    if (backupData[0].timestamp) return backupData[0].timestamp;
-    return null;
-  }
-
-  /** Classifies backup buffer events into domain-specific arrays. */
-  private classifyBackupEvents(
-    backupData: any[],
-    responseBodyCache: Map<number, { body: string; base64Encoded: boolean }>,
-  ): {
-    networkProtocols: ProtocolEntry[];
-    runtimeProtocols: ProtocolEntry[];
-    sessionReplayProtocols: ProtocolEntry[];
-    otherProtocols: ProtocolEntry[];
-  } {
-    const networkProtocols: ProtocolEntry[] = [];
-    const runtimeProtocols: ProtocolEntry[] = [];
-    const sessionReplayProtocols: ProtocolEntry[] = [];
-    const otherProtocols: ProtocolEntry[] = [];
-
-    this.logger.log(
-      `[S3_PLAYBACK] Loading ${backupData.length} sessions from S3`,
-    );
-
-    let totalEvents = 0;
-
-    for (const backup of backupData) {
-      if (!backup.bufferData || !Array.isArray(backup.bufferData)) {
-        this.logger.warn(
-          `[S3_PLAYBACK] Invalid bufferData in session ${backup.room}`,
-        );
-        continue;
-      }
-
-      totalEvents += backup.bufferData.length;
-
-      for (const event of backup.bufferData) {
-        if (!event || typeof event !== "object" || !event.method) continue;
-
-        // Skip metadata events (not real CDP events)
-        if (event.method === "buffering.saveSession") continue;
-
-        // Cache updateResponseBody events (same lookup logic as DB playback)
-        if (event.method === "updateResponseBody" && event.params?.requestId) {
-          responseBodyCache.set(event.params.requestId, {
-            body: event.params.body || "",
-            base64Encoded: event.params.base64Encoded || false,
-          });
-        }
-
-        // Classify Session Replay events separately
-        if (event.method.startsWith("SessionReplay.")) {
-          sessionReplayProtocols.push({
-            protocol: { method: event.method, params: event.params },
-            timestamp: event.timestamp,
-            domain: "SessionReplay",
-          });
-          continue;
-        }
-
-        // Standard CDP event classification
-        const protocolData: ProtocolEntry = {
-          protocol: { method: event.method, params: event.params },
-          timestamp: event.timestamp,
-          domain: event.method.split(".")[0],
-          requestId: event.params?.requestId,
-        };
-
-        if (event.method.startsWith("Network.")) {
-          networkProtocols.push(protocolData);
-        } else if (event.method.startsWith("Runtime.")) {
-          runtimeProtocols.push(protocolData);
-        } else {
-          otherProtocols.push(protocolData);
-        }
-      }
-    }
-
-    this.logger.log(`[S3_PLAYBACK] Total events available: ${totalEvents}`);
-
-    return {
-      networkProtocols,
-      runtimeProtocols,
-      sessionReplayProtocols,
-      otherProtocols,
-    };
-  }
-
-  /** Logs the first few protocols in chronological send order. */
-  private logProtocolSummary(allProtocols: ProtocolEntry[]): void {
-    this.logger.log(
-      `[S3_PROTOCOL_ORDER] Sending ${allProtocols.length} protocols in chronological order`,
-    );
-    allProtocols.slice(0, 10).forEach((protocolData, index) => {
-      const protocolDate = new Date(protocolData.timestamp);
-      this.logger.log(
-        `  ${index + 1}. ${protocolData.protocol.method} -> ${protocolDate.toISOString()} (${protocolData.timestamp})`,
-      );
-    });
-    if (allProtocols.length > 10) {
-      this.logger.log(`  ... and ${allProtocols.length - 10} more protocols`);
-    }
-  }
 
   /**
    * Registers the on-message handler for a client in S3 backup playback mode.
@@ -1484,7 +975,9 @@ export class WebviewGateway
       try {
         protocol = JSON.parse(message);
       } catch (error) {
-        this.logger.error(`[S3_PLAYBACK] Failed to parse message: ${(error as Error).message}`);
+        this.logger.error(
+          `[S3_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
+        );
         return;
       }
 
@@ -1497,7 +990,8 @@ export class WebviewGateway
       }
 
       if (protocol.method === "ScreenPreview.startPreview") {
-        const screenData = this.findScreenDataInS3Cache(client);
+        const screenData =
+          this.s3PlaybackService.findScreenDataInS3Cache(client);
         if (screenData) {
           this.sendMessage(client, screenData);
         } else {
@@ -1601,7 +1095,7 @@ export class WebviewGateway
     protocol: any,
     deviceId: string,
   ): void {
-    const domData = this.findDomDataInS3Cache(client);
+    const domData = this.s3PlaybackService.findDomDataInS3Cache(client);
     const defaultDom = {
       root: {
         nodeId: 1,
@@ -1690,14 +1184,14 @@ export class WebviewGateway
     backupData: any[],
     deviceId: string,
   ): void {
-    const responseData = this.findResponseBodyInS3Cache(
+    const responseData = this.s3PlaybackService.findResponseBodyInS3Cache(
       client,
       protocol.params?.requestId,
     );
 
     const finalResponse = responseData || {
       body: `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head><title>Buffered Session</title></head>
 <body>
   <div id="app" class="remote-debugger-session">
@@ -1715,112 +1209,6 @@ export class WebviewGateway
       id: protocol.id,
       result: finalResponse,
     });
-  }
-
-  // -------------------------------------------------------------------------
-  // S3 cache lookup helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Finds a cached response body for the given requestId.
-   * Uses the per-client response body cache populated during backup event classification.
-   */
-  private findResponseBodyInS3Cache(
-    client: WebSocket,
-    requestId: number,
-  ): { body: string; base64Encoded: boolean } | null {
-    const responseBodyCache = this.s3ResponseBodyCache.get(client);
-    if (!responseBodyCache) return null;
-
-    const responseData = responseBodyCache.get(requestId);
-    if (responseData) {
-      this.logger.log(
-        `[RESPONSE_BODY_FOUND] Found responseBody for requestId ${requestId}`,
-      );
-      return responseData;
-    }
-
-    return null;
-  }
-
-  /** Finds the latest DOM data from the S3 backup cache. */
-  private findDomDataInS3Cache(client: WebSocket): any | null {
-    const cachedBackupData = this.s3BackupCache.get(client);
-    if (!cachedBackupData) return null;
-
-    let latestDomData: any = null;
-    let latestTimestamp = 0;
-
-    for (const backup of cachedBackupData) {
-      if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
-
-      for (const event of backup.bufferData) {
-        if (!event || typeof event !== "object" || !event.method) continue;
-
-        if (event.method === "DOM.updated" && event.params && event.timestamp) {
-          if (event.timestamp > latestTimestamp) {
-            latestTimestamp = event.timestamp;
-            latestDomData = event.params.root || event.params;
-          }
-        }
-
-        if (
-          event.method === "DOM.getDocument" &&
-          event.params?.result?.root &&
-          event.timestamp
-        ) {
-          if (event.timestamp > latestTimestamp) {
-            latestTimestamp = event.timestamp;
-            latestDomData = event.params.result.root;
-          }
-        }
-      }
-    }
-
-    if (latestDomData) {
-      this.logger.log(
-        `[S3_LATEST_DOM] Found latest DOM with timestamp: ${latestTimestamp}`,
-      );
-    }
-
-    return latestDomData;
-  }
-
-  /** Finds the latest screen capture data from the S3 backup cache. */
-  private findScreenDataInS3Cache(client: WebSocket): any | null {
-    const cachedBackupData = this.s3BackupCache.get(client);
-    if (!cachedBackupData) return null;
-
-    let latestScreenData: any = null;
-    let latestTimestamp = 0;
-
-    for (const backup of cachedBackupData) {
-      if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
-
-      for (const event of backup.bufferData) {
-        if (
-          event.method === "ScreenPreview.captured" &&
-          event.params &&
-          event.timestamp
-        ) {
-          if (event.timestamp > latestTimestamp) {
-            latestTimestamp = event.timestamp;
-            latestScreenData = {
-              method: "ScreenPreview.captured",
-              params: event.params,
-            };
-          }
-        }
-      }
-    }
-
-    if (latestScreenData) {
-      this.logger.log(
-        `[S3_LATEST_SCREEN] Found latest screen with timestamp: ${latestTimestamp}`,
-      );
-    }
-
-    return latestScreenData;
   }
 
   // -------------------------------------------------------------------------
@@ -1878,7 +1266,9 @@ export class WebviewGateway
     try {
       protocol = JSON.parse(data.message);
     } catch (error) {
-      this.logger.error(`[PROTOCOL_TO_ALL] Failed to parse message: ${(error as Error).message}`);
+      this.logger.error(
+        `[PROTOCOL_TO_ALL] Failed to parse message: ${(error as Error).message}`,
+      );
       return;
     }
     const roomData = this.rooms.get(data.room);
@@ -1998,8 +1388,7 @@ export class WebviewGateway
     }
 
     // Clean up S3 backup caches
-    this.s3BackupCache.delete(client);
-    this.s3ResponseBodyCache.delete(client);
+    this.s3PlaybackService.clearClientCaches(client);
   }
 
   // -------------------------------------------------------------------------
@@ -2016,13 +1405,10 @@ export class WebviewGateway
   // DevTools message relay
   // -------------------------------------------------------------------------
 
-  private handleDevtoolsMessage(
-    devtoolsId: string,
-    room: string,
-    message: string,
-  ): void {
+  private handleDevtoolsMessage(room: string, message: unknown): void {
     const roomData = this.rooms.get(room);
     // Forward devtools messages directly (no protocol wrapper)
-    roomData?.client.send(message);
+    const raw = typeof message === "string" ? message : JSON.stringify(message);
+    roomData?.client.send(raw);
   }
 }

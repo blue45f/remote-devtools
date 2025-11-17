@@ -26,8 +26,6 @@ interface UserAppInfo {
   readonly address: { readonly label: string; readonly value: string };
 }
 
-const EMPTY_FIELD = { label: "", value: "N/A" };
-
 const EMPTY_USER_APP_INFO: UserAppInfo = {
   appVersion: { label: "App Version", value: "N/A" },
   osVersion: { label: "OS Version", value: "N/A" },
@@ -70,7 +68,9 @@ export const decryptUserAppData = (userAppData: string): UserAppInfo => {
       memberNo: { label: "Member No", value: fields[7] || "N/A" },
       address: {
         label: "Address",
-        value: `${fields[9] || ""} ${fields[10] || ""} ${fields[11] || ""}`.trim() || "N/A",
+        value:
+          `${fields[9] || ""} ${fields[10] || ""} ${fields[11] || ""}`.trim() ||
+          "N/A",
       },
     };
   } catch {
@@ -96,22 +96,6 @@ export const convertRecordLink = (
   const protocol = host.startsWith("https") ? "wss" : "ws";
   return `${host}/tabbed-debug/?${protocol}=${wsUrl}`;
 };
-
-/**
- * Extracts the spreadsheet ID from a Google Sheets URL.
- * @param url - A Google Sheets URL (e.g. https://docs.google.com/spreadsheets/d/<ID>/edit...)
- * @returns The spreadsheet ID, or null if the URL is invalid.
- */
-export function extractGoogleSheetsId(url: string): string | null {
-  if (!url || typeof url !== "string") {
-    return null;
-  }
-
-  const regex = /\/d\/([a-zA-Z0-9-_]+)\/edit/;
-  const match = url.match(regex);
-
-  return match ? match[1] : null;
-}
 
 /**
  * Parses a User-Agent string to extract OS and browser information.
