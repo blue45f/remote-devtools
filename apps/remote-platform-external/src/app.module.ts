@@ -1,6 +1,7 @@
 import { join } from "path";
 
 import { Module } from "@nestjs/common";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import * as dotenv from "dotenv";
 
@@ -22,6 +23,7 @@ const staticModule = ServeStaticModule.forRoot({
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     DatabaseModule.forRoot({ synchronize: false }),
     ServicesModule,
     staticModule,

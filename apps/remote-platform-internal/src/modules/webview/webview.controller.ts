@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Logger,
   NotFoundException,
   Param,
   Query,
@@ -18,6 +19,7 @@ import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retriev
 
 @Controller("sessions")
 export class WebviewController {
+  private readonly logger = new Logger(WebviewController.name);
   constructor(
     private readonly webviewGateway: WebviewGateway,
     private readonly recordService: RecordService,
@@ -217,7 +219,7 @@ export class WebviewController {
         });
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(`Failed to fetch S3 records: ${error}`);
     }
 
     // 3. Sort all records by timestamp (newest first)
