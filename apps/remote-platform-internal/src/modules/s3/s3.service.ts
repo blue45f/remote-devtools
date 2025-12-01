@@ -1430,14 +1430,9 @@ export class S3Service extends BaseS3Service {
     try {
       const { deviceId, timestamp, date } = bufferData;
 
-      console.log(
-        `[BUFFER_SAVE_DEBUG] Starting save - deviceId: ${deviceId}, timestamp: ${timestamp}, date: ${date}`,
+      this.logger.debug(
+        `[BUFFER_SAVE] Starting save - deviceId: ${deviceId}, timestamp: ${timestamp}, date: ${date}`,
       );
-      console.log(`[BUFFER_SAVE_DEBUG] bufferData:`, {
-        room: bufferData.room,
-        recordId: bufferData.recordId,
-        eventCount: bufferData.bufferData?.length || 0,
-      });
 
       // Use KST-based date (fall back to current date if not provided)
       const targetDate = date || new Date().toISOString().split("T")[0];
@@ -1445,11 +1440,8 @@ export class S3Service extends BaseS3Service {
       // Save path: backups/YYYY-MM-DD/deviceId/session_timestamp.json
       const devicePath = path.join(this.backupDir, targetDate, deviceId);
 
-      console.log(`[BUFFER_SAVE_DEBUG] Target path: ${devicePath}`);
-
       // Create directory
       if (!fs.existsSync(devicePath)) {
-        console.log(`[BUFFER_SAVE_DEBUG] Creating directory: ${devicePath}`);
         fs.mkdirSync(devicePath, { recursive: true });
       }
 
@@ -1457,16 +1449,11 @@ export class S3Service extends BaseS3Service {
       const fileName = `session_${timestamp}.json`;
       const filePath = path.join(devicePath, fileName);
 
-      console.log(`[BUFFER_SAVE_DEBUG] Saving to file: ${filePath}`);
-      console.log(
-        `[BUFFER_SAVE_DEBUG] File exists before save: ${fs.existsSync(filePath)}`,
-      );
-
       // Warn if file already exists (will be overwritten)
       if (fs.existsSync(filePath)) {
         const existingSize = fs.statSync(filePath).size;
-        console.warn(
-          `[BUFFER_SAVE_DEBUG] File already exists! Size: ${existingSize} bytes, will be overwritten`,
+        this.logger.warn(
+          `[BUFFER_SAVE] File already exists (${existingSize} bytes), will be overwritten: ${filePath}`,
         );
       }
 
@@ -1477,13 +1464,6 @@ export class S3Service extends BaseS3Service {
         "utf-8",
       );
 
-      // Verify the file was actually created
-      const fileExists = fs.existsSync(filePath);
-      const fileSize = fileExists ? fs.statSync(filePath).size : 0;
-
-      console.log(
-        `[BUFFER_SAVE_DEBUG] File created: ${fileExists}, size: ${fileSize} bytes`,
-      );
       this.logger.log(
         `[BUFFER_SAVED] ${filePath}, events: ${bufferData.bufferData?.length || 0}`,
       );
@@ -1491,7 +1471,6 @@ export class S3Service extends BaseS3Service {
       this.logger.error(
         `[BUFFER_SAVE_ERROR] Failed to save buffer data: ${error}`,
       );
-      console.error(`[BUFFER_SAVE_DEBUG] Full error:`, error);
       throw error;
     }
   }

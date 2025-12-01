@@ -1376,6 +1376,7 @@ export class WebviewGateway
       this.rooms.get(room)?.devtools?.forEach((devtools) => devtools.close());
       this.rooms.delete(room);
       this.clientMap.delete(client);
+      this.bufferStorage.delete(room);
       return;
     }
 

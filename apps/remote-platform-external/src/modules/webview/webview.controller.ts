@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Logger,
   NotFoundException,
   Query,
 } from "@nestjs/common";
@@ -24,6 +25,8 @@ import { S3Service } from "../s3/s3.service";
 
 @Controller("sessions")
 export class WebviewController {
+  private readonly logger = new Logger(WebviewController.name);
+
   constructor(
     private readonly recordService: RecordService,
     private readonly s3Service: S3Service,
@@ -178,9 +181,8 @@ export class WebviewController {
       throw new NotFoundException("recordId is required");
     }
 
-    console.log(
-      "[Screenshot] Starting screenshot generation for recordId:",
-      recordId,
+    this.logger.log(
+      `[Screenshot] Starting screenshot generation for recordId: ${recordId}`,
     );
 
     // Record 정보 가져오기
@@ -210,17 +212,16 @@ export class WebviewController {
 
     try {
       if (screenData && screenData.protocol) {
-        console.log("[Screenshot] Found ScreenPreview data");
+        this.logger.debug("[Screenshot] Found ScreenPreview data");
 
         // ScreenPreview protocol의 구조 확인
         const protocol = screenData.protocol as any;
-        console.log("[Screenshot] Protocol keys:", Object.keys(protocol));
+        this.logger.debug(`[Screenshot] Protocol keys: ${Object.keys(protocol).join(", ")}`);
 
         // protocol이 ScreenPreview.captured 형식인지 확인
         if (protocol.method === "ScreenPreview.captured" && protocol.params) {
           const params = protocol.params;
-          console.log("[Screenshot] Found ScreenPreview.captured data");
-          console.log("[Screenshot] Using Playwright to render actual HTML");
+          this.logger.debug("[Screenshot] Found ScreenPreview.captured data, rendering HTML");
 
           if (params.body) {
             // head는 배열 형태로 저장되어 있으므로 join
@@ -234,15 +235,9 @@ export class WebviewController {
             const height = params.height || 600;
             const bodyClass = params.bodyClass || "";
 
-            console.log("[Screenshot] Rendering HTML with dimensions:", {
-              width,
-              height,
-            });
-            console.log(
-              "[Screenshot] Body preview:",
-              bodyHtml.substring(0, 200),
+            this.logger.debug(
+              `[Screenshot] Rendering ${width}x${height}, fullPage: ${fullPage === "true"}`,
             );
-            console.log("[Screenshot] Full page mode:", fullPage === "true");
 
             // 실제 HTML을 브라우저로 렌더링
             dataURL = await renderHTMLToImage(
@@ -255,28 +250,22 @@ export class WebviewController {
               fullPage === "true", // Query 파라미터가 'true'이면 전체 페이지 캡처
             );
 
-            console.log("[Screenshot] Successfully rendered HTML to image");
+            this.logger.debug("[Screenshot] Successfully rendered HTML to image");
           } else {
-            console.log(
-              "[Screenshot] No body in params, generating error message",
-            );
             throw new Error("ScreenPreview에 body 데이터가 없습니다");
           }
         } else {
-          console.log(
-            "[Screenshot] Protocol structure:",
-            JSON.stringify(protocol).substring(0, 500),
-          );
+          this.logger.warn("[Screenshot] Protocol is not ScreenPreview.captured format");
           throw new Error("ScreenPreview.captured 형식이 아닙니다");
         }
       } else {
-        console.log("[Screenshot] No ScreenPreview data found");
+        this.logger.warn("[Screenshot] No ScreenPreview data found");
         throw new NotFoundException(
           `녹화 세션 ${record.name}에 ScreenPreview 데이터가 없습니다`,
         );
       }
     } catch (error) {
-      console.error("[Screenshot] Image generation failed:", error);
+      this.logger.error(`[Screenshot] Image generation failed: ${error}`);
 
       // 에러가 NotFoundException이면 그대로 throw
       if (error instanceof NotFoundException) {
@@ -287,10 +276,7 @@ export class WebviewController {
       throw new Error(`스크린샷 생성 실패: ${error.message}`);
     }
 
-    console.log(
-      "[Screenshot] Successfully generated image for record:",
-      record.name,
-    );
+    this.logger.log(`[Screenshot] Successfully generated image for record: ${record.name}`);
 
     return {
       dataURL,
