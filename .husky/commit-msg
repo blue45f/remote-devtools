@@ -1,0 +1,87 @@
+COMMIT_MSG_FILE=$1
+BRANCH_NAME=$(git symbolic-ref --short HEAD)
+
+# 커밋 타입 정의
+PREFIXES="(feat|fix|refactor|docs|chore|test|ci)"
+
+# 브랜치 이름에서 이슈 번호 추출 (예: feat/COMMFEPLAT-315 -> [COMMFEPLAT-315])
+if [[ $BRANCH_NAME =~ (WOOWAQA-[0-9]+|COMMFEPLAT-[0-9]+|DESIGNQA-[0-9]+) ]]; then
+    ISSUE_TAG="[${BASH_REMATCH[1]}]"
+else
+    ISSUE_TAG=""
+fi
+
+# 브랜치 이름에서 커밋 타입 (예: feat, fix, chore 등) 추출
+if [[ $BRANCH_NAME =~ ^${PREFIXES} ]]; then
+    BRANCH_PREFIX="${BASH_REMATCH[1]}"
+else
+    BRANCH_PREFIX="feat"  # 기본값으로 'feat'을 사용
+fi
+
+# 변경된 파일 경로에서 특정 디렉토리 추출
+FILES=$(git diff --cached --name-only)
+APP_DIRS=""
+
+
+for FILE in $FILES; do
+    if [[ $FILE =~ apps/bmart/.*/baemin-store ]]; then
+        NAME="baemin-store"
+    elif [[ $FILE =~ (apps|packages)/([^/]+)/ ]]; then
+        # 일반적인 경우에 두 번째 디렉토리 이름 추출
+        NAME="${BASH_REMATCH[2]}"
+    else
+        # apps/packages 가 아닌 경우 root로 간주
+        NAME="root"
+    fi
+    
+    # APP_DIRS에 맵핑된 이름 추가, 중복 제거를 위해 배열 사용
+    if [[ -z $APP_DIRS ]]; then
+        APP_DIRS="$NAME"
+    elif [[ ! $APP_DIRS =~ $NAME ]]; then
+        APP_DIRS="$APP_DIRS, $NAME"
+    fi
+done
+
+# 중복된 디렉토리 이름 제거 및 포맷팅
+APP_DIRS=$(echo "$APP_DIRS" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//;s/^,//;s/,,/,/g')
+
+# 공백 제거
+APP_DIRS=$(echo "$APP_DIRS" | sed 's/^ *//;s/ *$//;s/ *, */, /g')
+
+ORIGINAL_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# 이미 이슈 번호가 있는지 확인
+if [[ $ORIGINAL_MSG =~ \[(WOOWAQA-[0-9]+|COMMFEPLAT-[0-9]+|DESIGNQA-[0-9]+)\] ]]; then
+    ISSUE_TAG=""  # 이미 이슈 번호가 있으면 추가하지 않음
+fi
+
+# 이미 커밋 메시지에 타입이 있는지 확인 (예: feat: test)
+if echo "$ORIGINAL_MSG" | grep -qE "^${PREFIXES}: "; then
+    # 타입만 추출
+    TYPE=$(echo "$ORIGINAL_MSG" | grep -oE "^${PREFIXES}: " | sed 's/: //')
+    # 원래 커밋 메시지에서는 제거
+    ORIGINAL_MSG=$(echo "$ORIGINAL_MSG" | sed -E "s/^${PREFIXES}: //")
+    PREFIX="$TYPE($APP_DIRS): "
+
+# 이미 타입과 스코프가 있으면 추가하지 않음 (ex. feat(bmart): 메시지)
+elif echo "$ORIGINAL_MSG" | grep -qE "^${PREFIXES}\([^)]*\): "; then
+    PREFIX=""
+
+# 스코프만 있고 타입이 없는 경우, 브랜치 타입을 추가 (ex. (bmart): 메시지)
+elif echo "$ORIGINAL_MSG" | grep -qE '^\([^)]*\):'; then
+    # 사용자가 입력한 스코프 추출 (예: (bmart))
+    USER_SCOPE=$(echo "$ORIGINAL_MSG" | grep -oE '^\([^)]*\)' | sed 's/[()]//g')
+
+    # USER_SCOPE를 제외한 나머지 ORIGINAL_MSG 출력
+    ORIGINAL_MSG=$(echo "$ORIGINAL_MSG" | sed "s/^($USER_SCOPE)//")
+
+    # 브랜치 타입과 사용자가 입력한 스코프를 결합하여 PREFIX 설정
+    PREFIX="$BRANCH_PREFIX($USER_SCOPE)"
+
+# 타입과 스코프가 모두 없는 경우, 브랜치 타입과 디렉토리 정보를 추가
+else
+    PREFIX="$BRANCH_PREFIX($APP_DIRS): "
+fi
+
+
+echo "$PREFIX$ORIGINAL_MSG $ISSUE_TAG" > "$COMMIT_MSG_FILE"

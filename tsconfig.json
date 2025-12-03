@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2015",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "moduleResolution": "Node",
+    "jsx": "preserve",
+    "paths": {
+      "@remote-platform/entity": [
+        "libs/entity/src"
+      ],
+      "@remote-platform/entity/*": [
+        "libs/entity/src/*"
+      ],
+      "@remote-platform/constants": [
+        "libs/constants/src"
+      ],
+      "@remote-platform/constants/*": [
+        "libs/constants/src/*"
+      ]
+    }
+  },
+  "exclude": [
+    "figma-plugin/**/*",
+    "node_modules",
+    "dist",
+    "sdk",
+    "sdk/**/*"
+  ],
+  "include": [
+    "apps/**/*.ts",
+    "libs/**/*.ts",
+    "scripts/**/*.ts",
+    "ecosystem.config.ts"
+  ]
+}
