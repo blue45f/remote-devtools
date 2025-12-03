@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  node-internal:
+    build:
+      context: .
+    ports:
+      # internal 개발 서버 포트
+      - '3000:3000'
+      # 어드민 HTTPS 포트 추가
+      - '3443:3443'
+    env_file:
+      - ./apps/remote-platform-internal/src/.env.local # 로컬 개발용 환경변수 파일
+    depends_on:
+      - postgres
+    # Dockerfile의 CMD를 오버라이드 (compose는 개발용으로 사용 중)
+    command: npm run start:internal:dev
+    networks:
+      - my_network
+    volumes:
+      - .:/usr/src/app
+      - ./certs:/usr/src/app/certs # SSL 인증서 마운트
+
+  node-external:
+    build:
+      context: .
+    ports:
+      # external 개발 서버 포트
+      - '3001:3001'
+    env_file:
+      - ./apps/remote-platform-external/src/.env.local # 로컬 개발용 환경변수 파일
+    depends_on:
+      - postgres
+    # Dockerfile의 CMD를 오버라이드 (compose는 개발용으로 사용 중)
+    command: npm run start:external:dev
+    networks:
+      - my_network
+    volumes:
+      - .:/usr/src/app
+
+  # PostgreSQL 데이터베이스 서비스
+  postgres:
+    container_name: postgres
+    image: postgres:15
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  # pgAdmin 서비스 (선택 사항)
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - my_network
+
+# 네트워크 설정
+networks:
+  my_network:
+
+# 데이터베이스 볼륨 설정
+volumes:
+  db_data:
