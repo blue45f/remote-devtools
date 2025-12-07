@@ -1,6 +1,7 @@
 import { Logger, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { ServicesModule } from "@remote-platform/core";
 import {
   TicketLogEntity,
   TicketComponentEntity,
@@ -11,13 +12,8 @@ import {
 } from "@remote-platform/entity";
 
 import { BufferModule } from "../buffer/buffer.module";
-import { DomModule } from "../dom/dom.module";
 import { JiraModule } from "../jira/jira.module";
-import { NetworkModule } from "../network/network.module";
-import { RecordModule } from "../record/record.module";
-import { RuntimeModule } from "../runtime/runtime.module";
 import { S3Module } from "../s3/s3.module";
-import { ScreenModule } from "../screen/screen.module";
 import { SlackModule } from "../slack/slack.module";
 import { UserInfoModule } from "../user-info/user-info.module";
 
@@ -35,11 +31,7 @@ import { WebviewGateway } from "./webview.gateway";
       Record,
       Dom,
     ]),
-    RecordModule,
-    NetworkModule,
-    DomModule,
-    RuntimeModule,
-    ScreenModule,
+    ServicesModule,
     BufferModule,
     S3Module,
     JiraModule,
