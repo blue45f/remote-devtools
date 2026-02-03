@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -10,6 +11,7 @@ import { RecordEntity } from "./record.entity";
 
 /** 녹화 세션에서 캡처된 네트워크 요청/응답 항목. */
 @Entity("network")
+@Index(["record", "timestamp"])
 export class NetworkEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()

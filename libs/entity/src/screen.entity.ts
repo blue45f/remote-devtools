@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -12,6 +13,7 @@ import { RecordEntity } from "./record.entity";
 /** 녹화 세션의 화면 캡처 스냅샷. */
 @Entity("screen")
 @Unique(["record", "type"])
+@Index(["record", "timestamp"])
 export class ScreenEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
