@@ -5,7 +5,11 @@ import { WsAdapter } from "@nestjs/platform-ws";
 import * as express from "express";
 import helmet from "helmet";
 
-import { AllExceptionsFilter } from "@remote-platform/common";
+import {
+  AllExceptionsFilter,
+  HttpExceptionFilter,
+  QueryFailedExceptionFilter,
+} from "@remote-platform/common";
 
 import { AppModule } from "./app.module";
 
@@ -63,7 +67,11 @@ async function bootstrap() {
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   });
 
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(),
+    new QueryFailedExceptionFilter(),
+  );
 
   await app.listen(process.env.PORT || 3001);
 

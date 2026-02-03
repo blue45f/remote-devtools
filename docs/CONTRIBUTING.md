@@ -116,6 +116,38 @@ pnpm test:watch
 pnpm test:cov
 ```
 
+### 테스트 작성 가이드
+
+- 새 서비스/컨트롤러 추가 시 `.spec.ts` 테스트 파일을 함께 작성한다
+- `@nestjs/testing`의 `Test.createTestingModule()`을 사용한다
+- TypeORM Repository는 `getRepositoryToken()`으로 목킹한다
+- 외부 API(Jira, Slack, Google 등) 호출은 반드시 목킹한다
+
+## CI/CD 파이프라인
+
+GitHub Actions가 모든 push/PR에서 자동 실행된다 (`.github/workflows/ci.yml`):
+
+| 단계 | 명령어 | 설명 |
+|------|--------|------|
+| Lint | `pnpm lint` | ESLint + Prettier 검사 |
+| Type Check | `pnpm typecheck` | TypeScript 타입 검사 |
+| Test | `pnpm test:cov` | Vitest 테스트 + 커버리지 리포트 |
+| Build | `pnpm build:all` | NestJS 프로덕션 빌드 (모든 검사 통과 후) |
+
+### Docker 로컬 테스트
+
+```bash
+# PostgreSQL + pgAdmin 실행
+docker-compose up -d
+
+# 전체 스택 (앱 포함)
+docker-compose up
+```
+
+## 보안
+
+보안 관련 설정과 가이드는 [SECURITY.md](./SECURITY.md)를 참고한다.
+
 ## 커밋 컨벤션
 
 커밋 메시지 형식은 `type: description`을 따른다.

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
@@ -13,6 +14,8 @@ import { ScreenEntity } from "./screen.entity";
 
 /** 녹화 세션 하나를 나타내는 엔티티. */
 @Entity("record")
+@Index(["deviceId", "timestamp"])
+@Index(["timestamp"])
 export class RecordEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()

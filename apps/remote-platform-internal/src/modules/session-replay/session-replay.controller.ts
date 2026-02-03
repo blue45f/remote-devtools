@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Logger,
@@ -96,7 +97,7 @@ export class SessionReplayController {
     // Standard DB record ID
     const recordId = parseInt(id);
     if (isNaN(recordId)) {
-      throw new Error(`Invalid session ID: ${id}`);
+      throw new BadRequestException(`Invalid session ID: ${id}`);
     }
 
     if (startTime && endTime) {

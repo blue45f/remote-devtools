@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -12,6 +13,7 @@ import { RecordEntity } from "./record.entity";
 /** 녹화 세션에서 캡처된 DOM 스냅샷. */
 @Entity("dom")
 @Unique(["record", "type"])
+@Index(["record", "timestamp"])
 export class DomEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
