@@ -98,8 +98,9 @@ export class UpdateUserProfileDto {
   @IsNotEmpty()
   readonly email: string;
 
+  @IsOptional()
   @IsArray()
-  readonly deviceInfoList: DeviceInfo[];
+  readonly deviceInfoList?: DeviceInfo[];
 
   @IsOptional()
   @IsArray()
