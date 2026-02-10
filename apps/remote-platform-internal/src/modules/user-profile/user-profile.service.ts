@@ -89,7 +89,7 @@ export class UserProfileService {
     // Validate device IDs
     for (const device of deviceInfoList) {
       if (!device.deviceId || device.deviceId.trim() === "") {
-        throw new ConflictException(
+        throw new BadRequestException(
           `Device ID is required but got: '${device.deviceId}'`,
         );
       }
@@ -518,7 +518,7 @@ export class UserProfileService {
     }
 
     if (errors.length > 0) {
-      throw new ConflictException(`Validation failed: ${errors.join(", ")}`);
+      throw new BadRequestException(`Validation failed: ${errors.join(", ")}`);
     }
   }
 
