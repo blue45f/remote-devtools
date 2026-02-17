@@ -26,5 +26,13 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ["recharts"],
+          router: ["react-router-dom"],
+        },
+      },
+    },
   },
 });
