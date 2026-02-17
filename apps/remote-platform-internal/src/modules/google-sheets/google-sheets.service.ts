@@ -155,11 +155,14 @@ export class GoogleSheetsService {
       );
       const apiStartTime = Date.now();
 
-      const response = await sheets.spreadsheets.get({
-        spreadsheetId,
-        ranges: [fullRange],
-        includeGridData: true,
-      });
+      const response = await sheets.spreadsheets.get(
+        {
+          spreadsheetId,
+          ranges: [fullRange],
+          includeGridData: true,
+        },
+        { timeout: 30_000 },
+      );
 
       const apiDuration = Date.now() - apiStartTime;
       this.logger.log(`Google Sheets API call duration: ${apiDuration}ms`);
@@ -192,10 +195,13 @@ export class GoogleSheetsService {
     try {
       const sheets = this.getOrCreateSheetsClient();
 
-      const response = await sheets.spreadsheets.get({
-        spreadsheetId,
-        fields: "properties.title,sheets.properties.title",
-      });
+      const response = await sheets.spreadsheets.get(
+        {
+          spreadsheetId,
+          fields: "properties.title,sheets.properties.title",
+        },
+        { timeout: 30_000 },
+      );
 
       const title = response.data.properties?.title || "Unknown Spreadsheet";
       const sheetList = response.data.sheets || [];
