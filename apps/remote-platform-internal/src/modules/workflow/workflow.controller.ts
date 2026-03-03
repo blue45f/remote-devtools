@@ -35,6 +35,7 @@ export class WorkflowController {
     return axios
       .get<WorkflowResponse<MemberDTO>>(`${this.workflowAPIURL}/members`, {
         params: { name },
+        timeout: 30_000,
       })
       .then((res) => res.data);
   }
@@ -81,6 +82,7 @@ export class WorkflowController {
           },
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
+          timeout: 60_000,
         },
       );
 
@@ -95,7 +97,9 @@ export class WorkflowController {
         statusText: axiosError.response?.statusText,
         data: axiosError.response?.data,
       });
-      throw error;
+      throw new BadRequestException(
+        `Failed to upload attachment to Jira issue ${issueId}: ${axiosError.response?.statusText || "Unknown error"}`,
+      );
     }
   }
 }
