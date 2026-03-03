@@ -75,6 +75,20 @@ export enum ErrorCode {
   /** Google Sheets 읽기 실패 */
   SHEETS_READ_FAILED = "SHEETS_003",
 
+  // S3 스토리지 에러 (S3_xxx)
+  /** S3 업로드 실패 */
+  S3_UPLOAD_FAILED = "S3_001",
+  /** S3 다운로드 실패 */
+  S3_DOWNLOAD_FAILED = "S3_002",
+  /** S3 파일을 찾을 수 없음 */
+  S3_FILE_NOT_FOUND = "S3_003",
+
+  // 버퍼/녹화 에러 (BUFFER_xxx)
+  /** 버퍼 플러시 실패 */
+  BUFFER_FLUSH_FAILED = "BUFFER_001",
+  /** 버퍼 데이터 저장 실패 */
+  BUFFER_SAVE_FAILED = "BUFFER_002",
+
   // 시스템 에러 (SYSTEM_xxx)
   /** 내부 서버 에러 */
   INTERNAL_SERVER_ERROR = "SYSTEM_001",
@@ -134,6 +148,15 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.SHEETS_CONNECTION_FAILED]: "Failed to connect to Google Sheets.",
   [ErrorCode.SHEETS_WRITE_FAILED]: "Failed to write to Google Sheets.",
   [ErrorCode.SHEETS_READ_FAILED]: "Failed to read from Google Sheets.",
+
+  // S3
+  [ErrorCode.S3_UPLOAD_FAILED]: "Failed to upload to S3.",
+  [ErrorCode.S3_DOWNLOAD_FAILED]: "Failed to download from S3.",
+  [ErrorCode.S3_FILE_NOT_FOUND]: "S3 file not found.",
+
+  // 버퍼
+  [ErrorCode.BUFFER_FLUSH_FAILED]: "Failed to flush buffer data.",
+  [ErrorCode.BUFFER_SAVE_FAILED]: "Failed to save buffer data.",
 
   // 시스템
   [ErrorCode.INTERNAL_SERVER_ERROR]: "An internal server error occurred.",

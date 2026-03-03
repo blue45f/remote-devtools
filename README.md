@@ -1,5 +1,7 @@
 # Remote DevTools
 
+[![CI](https://github.com/blue45f/remote-devtools/actions/workflows/ci.yml/badge.svg)](https://github.com/blue45f/remote-devtools/actions/workflows/ci.yml)
+
 웹 애플리케이션을 위한 원격 디버깅 플랫폼. Chrome DevTools Protocol(CDP) 기반으로 실시간 모니터링, 세션 녹화/재생, 이슈 트래킹 연동을 지원한다.
 
 ## 기술 스택
@@ -25,6 +27,28 @@
 - **AWS S3 백업** -- 세션 데이터 자동 백업 및 복구
 - **Figma 플러그인** -- 디자이너-개발자 협업 도구
 - **네트워크 리라이트** -- SDK에서 API 응답을 모킹하여 테스트
+
+## 보안
+
+- **Helmet** -- HTTP 보안 헤더 자동 설정 (X-Content-Type-Options, HSTS 등)
+- **Rate Limiting** -- `@nestjs/throttler`로 60초당 100요청 제한
+- **Input Validation** -- `class-validator` + `ValidationPipe`로 모든 요청 자동 검증
+- **CORS** -- 환경변수 기반 동적 Origin 검증
+- **Exception Filters** -- `AllExceptions`, `HttpException`, `QueryFailed` 3중 에러 처리
+- **Nginx** -- 보안 헤더 (X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- **Docker** -- 멀티스테이지 빌드, non-root 유저, 헬스체크
+
+자세한 내용은 [docs/SECURITY.md](docs/SECURITY.md)를 참고한다.
+
+## 테스트
+
+```bash
+pnpm test          # 전체 테스트 실행
+pnpm test:watch    # watch 모드
+pnpm test:cov      # 커버리지 리포트
+```
+
+Vitest 기반, 현재 20+ 테스트 파일 / 230+ 테스트 케이스.
 
 ## 아키텍처
 
