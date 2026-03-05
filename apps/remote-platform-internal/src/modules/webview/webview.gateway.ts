@@ -175,11 +175,12 @@ export class WebviewGateway
       functionDeclaration.includes("JSON.stringify");
 
     if (isCopyObjectCall && objectId) {
-      const jsonResult = this.objectReconstructionService.reconstructObjectAsJson(
-        objectId,
-        propertySnapshotsMap,
-        args,
-      );
+      const jsonResult =
+        this.objectReconstructionService.reconstructObjectAsJson(
+          objectId,
+          propertySnapshotsMap,
+          args,
+        );
 
       this.sendMessage(client, {
         id: protocol.id,
@@ -884,7 +885,9 @@ export class WebviewGateway
     const responseBodyCache =
       this.s3PlaybackService.getResponseBodyCache(client);
     if (!responseBodyCache) {
-      this.logger.error("[S3_PLAYBACK] Failed to initialize response body cache");
+      this.logger.error(
+        "[S3_PLAYBACK] Failed to initialize response body cache",
+      );
       return;
     }
 
@@ -944,7 +947,9 @@ export class WebviewGateway
 
     // Collect property snapshots from runtime events (for object expansion)
     const propertySnapshotsMap =
-      this.objectReconstructionService.collectPropertySnapshots(runtimeProtocols);
+      this.objectReconstructionService.collectPropertySnapshots(
+        runtimeProtocols,
+      );
 
     // Register DevTools request handler for this S3 playback session
     this.registerS3PlaybackMessageHandler(

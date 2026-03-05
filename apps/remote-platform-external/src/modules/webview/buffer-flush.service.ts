@@ -361,7 +361,14 @@ export class BufferFlushService {
       lastBufferInfoByDevice: Map<string, LastBufferInfo>;
     },
   ): Array<{ room: string; info: BufferRoomInfo }> {
-    const { referenceTimestamp, roomName, url, bufferRooms, deviceToRoom, lastBufferInfoByDevice } = options;
+    const {
+      referenceTimestamp,
+      roomName,
+      url,
+      bufferRooms,
+      deviceToRoom,
+      lastBufferInfoByDevice,
+    } = options;
     const normalizedRequestedPath = this.normalizeUrlPath(url);
 
     const rooms = new Map<string, { room: string; info: BufferRoomInfo }>();
@@ -500,7 +507,6 @@ export class BufferFlushService {
       event.method.startsWith("SessionReplay.rrweb"),
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasFullSnapshot = rrwebEvents.some((event) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const params = event.params as any;

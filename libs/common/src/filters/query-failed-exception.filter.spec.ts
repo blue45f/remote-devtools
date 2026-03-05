@@ -6,7 +6,10 @@ import { QueryFailedExceptionFilter } from "./query-failed-exception.filter";
 
 describe("QueryFailedExceptionFilter", () => {
   let filter: QueryFailedExceptionFilter;
-  let mockResponse: { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
+  let mockResponse: {
+    status: ReturnType<typeof vi.fn>;
+    json: ReturnType<typeof vi.fn>;
+  };
   let mockHost: any;
 
   beforeEach(() => {
@@ -92,7 +95,9 @@ describe("QueryFailedExceptionFilter", () => {
     const error = new QueryFailedError(
       "INSERT INTO record",
       [],
-      new Error("duplicate key value violates unique constraint some_other_field"),
+      new Error(
+        "duplicate key value violates unique constraint some_other_field",
+      ),
     );
 
     filter.catch(error, mockHost);

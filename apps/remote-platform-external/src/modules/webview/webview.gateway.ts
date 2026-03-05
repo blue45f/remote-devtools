@@ -48,7 +48,12 @@ import type {
 } from "./webview.types";
 
 // Re-export types for backward compatibility
-export type { CommonInfo, AgentInfo, TicketFormData, UserData } from "./webview.types";
+export type {
+  CommonInfo,
+  AgentInfo,
+  TicketFormData,
+  UserData,
+} from "./webview.types";
 
 // ---------------------------------------------------------------------------
 // Gateway -- SDK와 DevTools 간 WebSocket 통신 게이트웨이
@@ -362,8 +367,7 @@ export class WebviewGateway
           roomName,
           recordId,
           deviceId: commonInfo.device.deviceId,
-          error:
-            error instanceof Error ? error.message : JSON.stringify(error),
+          error: error instanceof Error ? error.message : JSON.stringify(error),
         })}`,
       );
     }
@@ -494,11 +498,7 @@ export class WebviewGateway
 
     // rrweb-based SessionReplay events
     if (protocol.method.startsWith("SessionReplay.")) {
-      await this.handleSessionReplayProtocol(
-        protocol,
-        roomData,
-        data.room,
-      );
+      await this.handleSessionReplayProtocol(protocol, roomData, data.room);
     }
   }
 
@@ -729,7 +729,8 @@ export class WebviewGateway
       // Override sessionStartTime from client
       const info = this.bufferRooms.get(bufferRoom)!;
       info.sessionStartTime = sessionStartTime;
-      this.lastBufferInfoByDevice.get(data.deviceId)!.sessionStartTime = sessionStartTime;
+      this.lastBufferInfoByDevice.get(data.deviceId)!.sessionStartTime =
+        sessionStartTime;
 
       this.sendMessage(client, {
         event: "bufferingEnabled",

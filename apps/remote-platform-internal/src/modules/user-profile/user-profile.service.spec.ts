@@ -1,6 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { DeviceInfoEntity, JobType, UserEntity } from "@remote-platform/entity";
@@ -12,11 +16,13 @@ describe("UserProfileService", () => {
 
   const mockTransactionManager = {
     create: vi.fn().mockImplementation((_entity, data) => data),
-    save: vi.fn().mockImplementation((data) =>
-      Array.isArray(data)
-        ? data.map((d, i) => ({ ...d, id: i + 1 }))
-        : { ...data, id: 1 },
-    ),
+    save: vi
+      .fn()
+      .mockImplementation((data) =>
+        Array.isArray(data)
+          ? data.map((d, i) => ({ ...d, id: i + 1 }))
+          : { ...data, id: 1 },
+      ),
     remove: vi.fn(),
   };
 
@@ -24,7 +30,9 @@ describe("UserProfileService", () => {
     findOne: vi.fn(),
     find: vi.fn(),
     manager: {
-      transaction: vi.fn().mockImplementation((cb) => cb(mockTransactionManager)),
+      transaction: vi
+        .fn()
+        .mockImplementation((cb) => cb(mockTransactionManager)),
     },
   };
 
@@ -40,7 +48,10 @@ describe("UserProfileService", () => {
       providers: [
         UserProfileService,
         { provide: getRepositoryToken(UserEntity), useValue: mockUserRepo },
-        { provide: getRepositoryToken(DeviceInfoEntity), useValue: mockDeviceRepo },
+        {
+          provide: getRepositoryToken(DeviceInfoEntity),
+          useValue: mockDeviceRepo,
+        },
       ],
     }).compile();
 
@@ -50,7 +61,7 @@ describe("UserProfileService", () => {
   const validCreateDto = {
     name: "Test User",
     username: "testuser",
-    jobType: JobType.DEVELOPER,
+    jobType: JobType.DEV,
     slackId: "U12345",
     empNo: "22010083",
     deviceInfoList: [{ deviceId: "device-1", name: "iPhone 15" }],

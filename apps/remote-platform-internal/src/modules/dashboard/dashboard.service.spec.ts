@@ -24,10 +24,16 @@ describe("DashboardService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
-        { provide: getRepositoryToken(TicketLogEntity), useValue: mockTicketLogRepo },
+        {
+          provide: getRepositoryToken(TicketLogEntity),
+          useValue: mockTicketLogRepo,
+        },
         { provide: getRepositoryToken(RecordEntity), useValue: mockRecordRepo },
         { provide: getRepositoryToken(UserEntity), useValue: mockUserRepo },
-        { provide: getRepositoryToken(DeviceInfoEntity), useValue: mockDeviceInfoRepo },
+        {
+          provide: getRepositoryToken(DeviceInfoEntity),
+          useValue: mockDeviceInfoRepo,
+        },
       ],
     }).compile();
 
@@ -38,11 +44,11 @@ describe("DashboardService", () => {
     it("should return all dashboard statistics", async () => {
       mockTicketLogRepo.count
         .mockResolvedValueOnce(100) // totalTickets
-        .mockResolvedValueOnce(5)   // todayTickets
+        .mockResolvedValueOnce(5) // todayTickets
         .mockResolvedValueOnce(35); // weeklyTickets
       mockRecordRepo.count
         .mockResolvedValueOnce(200) // totalRecordSessions
-        .mockResolvedValueOnce(8)   // todayRecordSessions
+        .mockResolvedValueOnce(8) // todayRecordSessions
         .mockResolvedValueOnce(56); // weeklyRecordSessions
 
       const result = await service.getDashboardStats();

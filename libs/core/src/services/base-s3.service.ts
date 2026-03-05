@@ -136,17 +136,11 @@ export abstract class BaseS3Service {
   // Cache key builders
   // -------------------------------------------------------------------------
 
-  protected buildListCacheKey(
-    deviceId: string,
-    targetDate?: string,
-  ): string {
+  protected buildListCacheKey(deviceId: string, targetDate?: string): string {
     return `${deviceId || "ALL"}|${targetDate || "ALL"}`;
   }
 
-  protected buildObjectCacheKey(
-    deviceId: string,
-    timestamp: number,
-  ): string {
+  protected buildObjectCacheKey(deviceId: string, timestamp: number): string {
     return `${deviceId || "unknown-device"}|${timestamp}`;
   }
 
@@ -163,9 +157,7 @@ export abstract class BaseS3Service {
     };
   }
 
-  protected cloneBufferDataArray(
-    list: BufferUploadData[],
-  ): BufferUploadData[] {
+  protected cloneBufferDataArray(list: BufferUploadData[]): BufferUploadData[] {
     return list.map((item) => this.cloneBufferData(item));
   }
 
@@ -245,8 +237,7 @@ export abstract class BaseS3Service {
     targetDate?: string,
   ): Promise<BufferUploadData[]> {
     try {
-      const bucketName =
-        process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+      const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
       const results: BufferUploadData[] = [];
 
       const searchDates = this.buildSearchDates(targetDate);
@@ -277,8 +268,7 @@ export abstract class BaseS3Service {
             const getResponse = await this.s3Client.send(getCommand);
 
             if (getResponse.Body) {
-              const bodyString =
-                await getResponse.Body.transformToString();
+              const bodyString = await getResponse.Body.transformToString();
               const data = JSON.parse(bodyString) as BufferUploadData;
 
               if (!deviceId || data.deviceId === deviceId) {
@@ -307,9 +297,7 @@ export abstract class BaseS3Service {
       results.sort((a, b) => b.timestamp - a.timestamp);
       return results;
     } catch (error) {
-      this.logger.error(
-        `[S3_CLOUD_QUERY_ERROR] Failed to query S3: ${error}`,
-      );
+      this.logger.error(`[S3_CLOUD_QUERY_ERROR] Failed to query S3: ${error}`);
       return [];
     }
   }
@@ -322,9 +310,7 @@ export abstract class BaseS3Service {
       const { deviceId, timestamp, date } = data;
       const targetDate =
         date ||
-        new Date(Date.now() + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0];
+        new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
       const fileName = `session_${timestamp}.json`;
       const s3Key = `backups/${targetDate}/${deviceId || "unknown-device"}/${fileName}`;
 
@@ -344,9 +330,7 @@ export abstract class BaseS3Service {
       await this.s3Client.send(command);
       return s3Key;
     } catch (error) {
-      this.logger.error(
-        `[S3_UPLOAD_ERROR] Failed to upload to S3: ${error}`,
-      );
+      this.logger.error(`[S3_UPLOAD_ERROR] Failed to upload to S3: ${error}`);
       throw error;
     }
   }
@@ -388,8 +372,7 @@ export abstract class BaseS3Service {
 
     const fetchPromise = (async (): Promise<BufferUploadData | null> => {
       if (this.isRemoteStorageEnabled) {
-        const bucketName =
-          process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+        const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
 
         for (const date of candidateDates) {
           const key = `backups/${date}/${deviceId}/${fileName}`;
@@ -420,12 +403,7 @@ export abstract class BaseS3Service {
         }
       } else {
         for (const date of candidateDates) {
-          const filePath = path.join(
-            this.backupDir,
-            date,
-            deviceId,
-            fileName,
-          );
+          const filePath = path.join(this.backupDir, date, deviceId, fileName);
           if (!fs.existsSync(filePath)) {
             continue;
           }
@@ -491,10 +469,7 @@ export abstract class BaseS3Service {
       bufferData: data.bufferData,
     };
 
-    await fs.promises.writeFile(
-      filePath,
-      JSON.stringify(sessionData, null, 2),
-    );
+    await fs.promises.writeFile(filePath, JSON.stringify(sessionData, null, 2));
 
     this.logger.log(
       `[LOCAL_SAVE_SUCCESS] ${JSON.stringify({
