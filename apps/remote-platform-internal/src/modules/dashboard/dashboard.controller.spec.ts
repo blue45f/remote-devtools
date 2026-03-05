@@ -1,12 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  vi,
-} from "vitest";
-import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
+  BadRequestException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 
 import { DashboardController } from "./dashboard.controller";
 import { DashboardService } from "./dashboard.service";
@@ -63,7 +60,15 @@ describe("DashboardController", () => {
   describe("getTicketTrend", () => {
     it("should return ticket trend data", async () => {
       const mockTrend = [
-        { date: "2026-04-01", created: 5, developer: 2, designer: 1, pm: 1, qa: 1, other: 0 },
+        {
+          date: "2026-04-01",
+          created: 5,
+          developer: 2,
+          designer: 1,
+          pm: 1,
+          qa: 1,
+          other: 0,
+        },
       ];
       mockDashboardService.getTicketTrend.mockResolvedValue(mockTrend);
 

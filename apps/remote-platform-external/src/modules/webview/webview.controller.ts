@@ -216,12 +216,16 @@ export class WebviewController {
 
         // ScreenPreview protocol의 구조 확인
         const protocol = screenData.protocol as any;
-        this.logger.debug(`[Screenshot] Protocol keys: ${Object.keys(protocol).join(", ")}`);
+        this.logger.debug(
+          `[Screenshot] Protocol keys: ${Object.keys(protocol).join(", ")}`,
+        );
 
         // protocol이 ScreenPreview.captured 형식인지 확인
         if (protocol.method === "ScreenPreview.captured" && protocol.params) {
           const params = protocol.params;
-          this.logger.debug("[Screenshot] Found ScreenPreview.captured data, rendering HTML");
+          this.logger.debug(
+            "[Screenshot] Found ScreenPreview.captured data, rendering HTML",
+          );
 
           if (params.body) {
             // head는 배열 형태로 저장되어 있으므로 join
@@ -250,12 +254,16 @@ export class WebviewController {
               fullPage === "true", // Query 파라미터가 'true'이면 전체 페이지 캡처
             );
 
-            this.logger.debug("[Screenshot] Successfully rendered HTML to image");
+            this.logger.debug(
+              "[Screenshot] Successfully rendered HTML to image",
+            );
           } else {
             throw new Error("ScreenPreview에 body 데이터가 없습니다");
           }
         } else {
-          this.logger.warn("[Screenshot] Protocol is not ScreenPreview.captured format");
+          this.logger.warn(
+            "[Screenshot] Protocol is not ScreenPreview.captured format",
+          );
           throw new Error("ScreenPreview.captured 형식이 아닙니다");
         }
       } else {
@@ -276,7 +284,9 @@ export class WebviewController {
       throw new Error(`스크린샷 생성 실패: ${error.message}`);
     }
 
-    this.logger.log(`[Screenshot] Successfully generated image for record: ${record.name}`);
+    this.logger.log(
+      `[Screenshot] Successfully generated image for record: ${record.name}`,
+    );
 
     return {
       dataURL,

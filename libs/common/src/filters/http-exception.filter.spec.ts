@@ -12,7 +12,10 @@ import { HttpExceptionFilter } from "./http-exception.filter";
 
 describe("HttpExceptionFilter", () => {
   let filter: HttpExceptionFilter;
-  let mockResponse: { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
+  let mockResponse: {
+    status: ReturnType<typeof vi.fn>;
+    json: ReturnType<typeof vi.fn>;
+  };
   let mockHost: any;
 
   beforeEach(() => {
@@ -63,10 +66,7 @@ describe("HttpExceptionFilter", () => {
   });
 
   it("should map INTERNAL_SERVER_ERROR to INTERNAL_ERROR", () => {
-    filter.catch(
-      new InternalServerErrorException("Server error"),
-      mockHost,
-    );
+    filter.catch(new InternalServerErrorException("Server error"), mockHost);
 
     expect(mockResponse.status).toHaveBeenCalledWith(
       HttpStatus.INTERNAL_SERVER_ERROR,

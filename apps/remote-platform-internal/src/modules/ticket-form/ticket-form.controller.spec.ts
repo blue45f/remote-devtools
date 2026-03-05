@@ -26,7 +26,10 @@ describe("TicketFormController", () => {
       controllers: [TicketFormController],
       providers: [
         { provide: UserInfoService, useValue: mockUserInfoService },
-        { provide: getRepositoryToken(DeviceInfoEntity), useValue: mockDeviceRepo },
+        {
+          provide: getRepositoryToken(DeviceInfoEntity),
+          useValue: mockDeviceRepo,
+        },
       ],
     }).compile();
 
@@ -62,9 +65,9 @@ describe("TicketFormController", () => {
         BusinessException.deviceNotFound({ deviceId: "bad-device" }),
       );
 
-      await expect(
-        controller.getTicketFormData("bad-device"),
-      ).rejects.toThrow(BusinessException);
+      await expect(controller.getTicketFormData("bad-device")).rejects.toThrow(
+        BusinessException,
+      );
     });
 
     it("should wrap unknown errors in internalError", async () => {
@@ -72,9 +75,9 @@ describe("TicketFormController", () => {
         new Error("DB connection lost"),
       );
 
-      await expect(
-        controller.getTicketFormData("device-123"),
-      ).rejects.toThrow(BusinessException);
+      await expect(controller.getTicketFormData("device-123")).rejects.toThrow(
+        BusinessException,
+      );
     });
   });
 
@@ -107,17 +110,17 @@ describe("TicketFormController", () => {
     it("should throw when device not found", async () => {
       mockDeviceRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        controller.getUserTemplates("nonexistent"),
-      ).rejects.toThrow(BusinessException);
+      await expect(controller.getUserTemplates("nonexistent")).rejects.toThrow(
+        BusinessException,
+      );
     });
 
     it("should throw when device has no user", async () => {
       mockDeviceRepo.findOne.mockResolvedValue({ user: null });
 
-      await expect(
-        controller.getUserTemplates("device-123"),
-      ).rejects.toThrow(BusinessException);
+      await expect(controller.getUserTemplates("device-123")).rejects.toThrow(
+        BusinessException,
+      );
     });
   });
 

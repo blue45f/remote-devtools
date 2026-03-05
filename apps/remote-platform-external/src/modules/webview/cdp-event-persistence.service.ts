@@ -152,8 +152,11 @@ export class CdpEventPersistenceService {
   /**
    * 단일 rrweb 이벤트를 DB에 저장한다.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async persistSingleRrwebEvent(protocol: any, recordId: number | null): Promise<{
+
+  async persistSingleRrwebEvent(
+    protocol: any,
+    recordId: number | null,
+  ): Promise<{
     sessionTimestamp: bigint;
   } | null> {
     const event = protocol.params?.event;
@@ -216,7 +219,7 @@ export class CdpEventPersistenceService {
   /**
    * 레거시 세션 리플레이 형식을 DB에 저장한다.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   async persistLegacySessionReplay(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protocol: any,
@@ -261,7 +264,10 @@ export class CdpEventPersistenceService {
   /**
    * 단일 버퍼 이벤트를 메서드 종류에 따라 적절한 서비스로 DB에 저장한다.
    */
-  async persistBufferedEvent(recordId: number, event: BufferEvent): Promise<void> {
+  async persistBufferedEvent(
+    recordId: number,
+    event: BufferEvent,
+  ): Promise<void> {
     const method = event.method;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any = event.params ?? {};
@@ -396,8 +402,10 @@ export class CdpEventPersistenceService {
   // Private helpers for buffered event persistence
   // -------------------------------------------------------------------------
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async persistBufferedSingleRrwebEvent(recordId: number, params: any): Promise<void> {
+  private async persistBufferedSingleRrwebEvent(
+    recordId: number,
+    params: any,
+  ): Promise<void> {
     const eventData = params?.event;
     if (!eventData) return;
 
@@ -419,8 +427,10 @@ export class CdpEventPersistenceService {
     } as any);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async persistBufferedBatchRrwebEvents(recordId: number, params: any): Promise<void> {
+  private async persistBufferedBatchRrwebEvents(
+    recordId: number,
+    params: any,
+  ): Promise<void> {
     const events = Array.isArray(params?.events) ? params.events : [];
 
     for (const rrEvent of events) {

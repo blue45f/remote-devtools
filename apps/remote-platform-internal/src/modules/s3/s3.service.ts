@@ -7,10 +7,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Injectable, Logger } from "@nestjs/common";
-import {
-  BaseS3Service,
-  BufferUploadData,
-} from "@remote-platform/core";
+import { BaseS3Service, BufferUploadData } from "@remote-platform/core";
 
 export { BufferUploadData };
 
@@ -276,9 +273,7 @@ export class S3Service extends BaseS3Service {
    * Upload to S3.
    * Overrides base: uses UTC date.
    */
-  protected override async uploadToS3(
-    data: BufferUploadData,
-  ): Promise<string> {
+  protected override async uploadToS3(data: BufferUploadData): Promise<string> {
     const date = new Date(data.timestamp).toISOString().split("T")[0];
     const deviceId = data.deviceId || "unknown-device";
     const fileName = `session_${data.timestamp}.json`;

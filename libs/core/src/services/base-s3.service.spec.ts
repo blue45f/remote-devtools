@@ -156,10 +156,7 @@ describe("BaseS3Service", () => {
 
   describe("buildObjectCacheKey", () => {
     it("should build correct key with deviceId and timestamp", () => {
-      const result = service["buildObjectCacheKey"](
-        "device-1",
-        1700000000000,
-      );
+      const result = service["buildObjectCacheKey"]("device-1", 1700000000000);
       expect(result).toBe("device-1|1700000000000");
     });
 

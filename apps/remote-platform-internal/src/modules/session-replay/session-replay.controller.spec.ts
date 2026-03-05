@@ -20,9 +20,7 @@ describe("SessionReplayController", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SessionReplayController],
-      providers: [
-        { provide: SessionReplayService, useValue: mockService },
-      ],
+      providers: [{ provide: SessionReplayService, useValue: mockService }],
     }).compile();
 
     controller = module.get<SessionReplayController>(SessionReplayController);
@@ -103,9 +101,9 @@ describe("SessionReplayController", () => {
     });
 
     it("should throw BadRequestException for invalid ID", async () => {
-      await expect(
-        controller.getSessionEvents("not-a-number"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.getSessionEvents("not-a-number")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

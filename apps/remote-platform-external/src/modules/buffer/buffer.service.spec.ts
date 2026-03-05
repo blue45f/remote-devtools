@@ -427,11 +427,7 @@ describe("BufferService", () => {
         makeEvent("DOM.childNodeInserted", 1000),
       );
 
-      const flushed = service.flushBufferForce(
-        "Session-room1",
-        1,
-        "device-2",
-      );
+      const flushed = service.flushBufferForce("Session-room1", 1, "device-2");
 
       expect(flushed).not.toBeNull();
       expect(flushed!.deviceId).toBe("device-2");
@@ -751,12 +747,7 @@ describe("BufferService", () => {
         makeEvent("DOM.childNodeRemoved", 2000),
       ];
 
-      service.mergeSessionData(
-        "Session-room1",
-        1,
-        "device-1",
-        previousEvents,
-      );
+      service.mergeSessionData("Session-room1", 1, "device-1", previousEvents);
 
       const buffers = service.getSessionBuffers("Session-room1", 1);
       expect(buffers).toHaveLength(1);
@@ -804,12 +795,7 @@ describe("BufferService", () => {
         makeEvent("DOM.documentUpdated", 2000),
       ];
 
-      service.mergeSessionData(
-        "Session-room1",
-        1,
-        "device-1",
-        previousEvents,
-      );
+      service.mergeSessionData("Session-room1", 1, "device-1", previousEvents);
 
       const buffers = service.getSessionBuffers("Session-room1", 1);
       expect(buffers[0].events).toHaveLength(3);
