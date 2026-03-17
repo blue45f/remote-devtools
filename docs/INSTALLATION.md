@@ -112,6 +112,9 @@ pnpm compose
 
 PostgreSQL, External 서버(3001), Internal 서버(3000), PgAdmin(5050)이 한번에 시작된다.
 
+> **Docker 보안**: Dockerfile은 멀티스테이지 빌드를 사용하며, 프로덕션 이미지는 non-root 사용자(`appuser`)로 실행된다.
+> 헬스체크가 내장되어 있어 External 서버(3001)의 응답을 30초 간격으로 확인한다.
+
 #### 방법 B: 개별 실행
 
 ```bash

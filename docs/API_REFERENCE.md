@@ -4,6 +4,44 @@ Remote DevTools의 REST API 및 WebSocket API 레퍼런스.
 
 ---
 
+## 응답 형식
+
+### 성공 응답 (StandardResponse)
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "time": 42
+}
+```
+
+### 에러 응답
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "deviceId is required"
+  }
+}
+```
+
+### 주요 에러 코드
+
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| `VALIDATION_ERROR` | 400 | 입력값 유효성 검증 실패 |
+| `NOT_FOUND` | 404 | 리소스를 찾을 수 없음 |
+| `CONFLICT_ERROR` | 409 | 중복 리소스 |
+| `DATABASE_ERROR` | 409 | 데이터베이스 제약 조건 위반 |
+| `INTERNAL_ERROR` | 500 | 내부 서버 에러 |
+
+전체 에러 코드 목록: `libs/common/src/exceptions/error-codes.enum.ts`
+
+---
+
 ## 서버 구성
 
 | 서버       | 포트   | 역할                                                       |
