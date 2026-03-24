@@ -33,10 +33,25 @@ export class WebviewController {
   }
 
   @Get("record")
-  public async getRecordSessionList(): Promise<{ id: number; name: string }[]> {
+  public async getRecordSessionList(): Promise<
+    {
+      id: number;
+      name: string;
+      url?: string;
+      deviceId?: string;
+      duration?: string | number;
+      recordMode?: boolean;
+      timestamp?: Date;
+    }[]
+  > {
     return (await this.recordService.findAll()).map((record) => ({
       id: record.id,
       name: record.name,
+      url: record.url || undefined,
+      deviceId: record.deviceId || undefined,
+      duration: record.duration || undefined,
+      recordMode: record.recordMode,
+      timestamp: record.timestamp,
     }));
   }
 
