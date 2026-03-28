@@ -19,6 +19,7 @@ const SessionsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
+  const [fetchKey, setFetchKey] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -40,7 +41,9 @@ const SessionsPage = () => {
         setSessions([]);
         setLoading(false);
       });
-  }, [selectedTab]);
+  }, [selectedTab, fetchKey]);
+
+  const retry = () => setFetchKey((k) => k + 1);
 
   const filteredSessions = useMemo(() => {
     let result = sessions;
@@ -166,7 +169,7 @@ const SessionsPage = () => {
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           <button
             type="button"
-            onClick={() => setSelectedTab(selectedTab)}
+            onClick={retry}
             className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
           >
             Retry
