@@ -18,6 +18,7 @@ import { SessionReplayModule } from "./modules/session-replay/session-replay.mod
 import { TicketFormModule } from "./modules/ticket-form/ticket-form.module";
 import { UserInfoModule } from "./modules/user-info/user-info.module";
 import { UserProfileModule } from "./modules/user-profile/user-profile.module";
+import { HealthModule } from "./modules/health/health.module";
 import { WebviewGatewayModule } from "./modules/webview/webview.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
 
@@ -60,6 +61,7 @@ const staticModule = ServeStaticModule.forRoot(
     ScheduleModule.forRoot(),
     WorkflowModule,
     DashboardModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService, RemoveRecordService],

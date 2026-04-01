@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
@@ -11,6 +12,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+
+import { apiFetch } from "../lib/api";
 
 interface DashboardStats {
   totalTickets: number;
@@ -49,47 +52,37 @@ const JOB_COLORS = {
 };
 
 const DashboardPage = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [ticketTrend, setTicketTrend] = useState<TrendItem[]>([]);
-  const [recordTrend, setRecordTrend] = useState<RecordTrendItem[]>([]);
   const [ticketPeriod, setTicketPeriod] = useState<Period>("day");
   const [recordPeriod, setRecordPeriod] = useState<Period>("day");
-  const [liveSessions, setLiveSessions] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetch(`${API_HOST}/api/dashboard/stats`).then((r) => r.json()),
-      fetch(`${API_HOST}/sessions`).then((r) => r.json()).catch(() => []),
-    ])
-      .then(([statsRes, sessions]) => {
-        setStats(statsRes.data);
-        setLiveSessions(Array.isArray(sessions) ? sessions.length : 0);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load dashboard statistics.");
-        setLoading(false);
-      });
-  }, []);
+  const { data: statsData, isLoading: loading, error: statsError } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => apiFetch<{ data: DashboardStats }>("/api/dashboard/stats"),
+  });
 
-  const fetchTicketTrend = useCallback((period: Period) => {
-    void fetch(`${API_HOST}/api/dashboard/tickets/trend?period=${period}`)
-      .then((res) => res.json())
-      .then((res) => setTicketTrend(res.data || []))
-      .catch(() => setTicketTrend([]));
-  }, []);
+  const { data: liveData } = useQuery({
+    queryKey: ["live-sessions"],
+    queryFn: () => apiFetch<unknown[]>("/sessions").catch(() => []),
+    refetchInterval: 30_000,
+  });
 
-  const fetchRecordTrend = useCallback((period: Period) => {
-    void fetch(`${API_HOST}/api/dashboard/record-sessions/trend?period=${period}`)
-      .then((res) => res.json())
-      .then((res) => setRecordTrend(res.data || []))
-      .catch(() => setRecordTrend([]));
-  }, []);
+  const { data: ticketData } = useQuery({
+    queryKey: ["ticket-trend", ticketPeriod],
+    queryFn: () =>
+      apiFetch<{ data: TrendItem[] }>(`/api/dashboard/tickets/trend?period=${ticketPeriod}`),
+  });
 
-  useEffect(() => { fetchTicketTrend(ticketPeriod); }, [ticketPeriod, fetchTicketTrend]);
-  useEffect(() => { fetchRecordTrend(recordPeriod); }, [recordPeriod, fetchRecordTrend]);
+  const { data: recordData } = useQuery({
+    queryKey: ["record-trend", recordPeriod],
+    queryFn: () =>
+      apiFetch<{ data: RecordTrendItem[] }>(`/api/dashboard/record-sessions/trend?period=${recordPeriod}`),
+  });
+
+  const stats = statsData?.data ?? null;
+  const liveSessions = Array.isArray(liveData) ? liveData.length : 0;
+  const ticketTrend = ticketData?.data ?? [];
+  const recordTrend = recordData?.data ?? [];
+  const error = statsError ? "Failed to load dashboard statistics." : null;
 
   if (loading) {
     return (
@@ -114,7 +107,7 @@ const DashboardPage = () => {
           </svg>
         </div>
         <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button type="button" onClick={() => window.location.reload()} className="text-sm text-violet-600 hover:underline">Retry</button>
+        <button type="button" onClick={() => window.location.reload()} className="text-sm text-violet-600 dark:text-violet-400 hover:underline">Retry</button>
       </div>
     );
   }
