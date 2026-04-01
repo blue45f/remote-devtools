@@ -6,6 +6,7 @@ import {
   Query,
   BadRequestException,
 } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 
 import { DashboardService } from "./dashboard.service";
 import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
@@ -13,6 +14,7 @@ import { PeriodQueryDto } from "./dto/period-query.dto";
 import { RecordSessionTrendDto } from "./dto/record-session-trend.dto";
 import { TicketTrendDto } from "./dto/ticket-trend.dto";
 
+@ApiTags("Dashboard")
 @Controller("api/dashboard")
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
@@ -24,6 +26,8 @@ export class DashboardController {
    * GET /api/dashboard/stats
    */
   @Get("stats")
+  @ApiOperation({ summary: "대시보드 통계 조회" })
+  @ApiResponse({ status: 200, description: "통계 데이터 반환" })
   public async getStats(): Promise<DashboardStatsDto> {
     try {
       const data = await this.dashboardService.getDashboardStats();

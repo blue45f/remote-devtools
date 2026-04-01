@@ -2,6 +2,7 @@ import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { WsAdapter } from "@nestjs/platform-ws";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as express from "express";
 import helmet from "helmet";
 
@@ -71,6 +72,18 @@ async function bootstrap() {
     new AllExceptionsFilter(),
     new HttpExceptionFilter(),
     new QueryFailedExceptionFilter(),
+  );
+
+  // Swagger API documentation
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("Remote DevTools - External API")
+    .setDescription("외부 플랫폼 API (SDK, CDP 데이터 수집, Jira/Slack 연동)")
+    .setVersion("1.0")
+    .build();
+  SwaggerModule.setup(
+    "api/docs",
+    app,
+    SwaggerModule.createDocument(app, swaggerConfig),
   );
 
   await app.listen(process.env.PORT || 3001);

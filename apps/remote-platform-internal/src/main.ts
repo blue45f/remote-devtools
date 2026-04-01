@@ -2,6 +2,7 @@ import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { WsAdapter } from "@nestjs/platform-ws";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as express from "express";
 import helmet from "helmet";
 
@@ -72,6 +73,18 @@ async function bootstrap() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   });
+
+  // Swagger API documentation
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("Remote DevTools - Internal API")
+    .setDescription("내부 플랫폼 API (세션 리플레이, 대시보드, 사용자 관리)")
+    .setVersion("1.0")
+    .build();
+  SwaggerModule.setup(
+    "api/docs",
+    app,
+    SwaggerModule.createDocument(app, swaggerConfig),
+  );
 
   await app.listen(process.env.PORT || 3000);
 

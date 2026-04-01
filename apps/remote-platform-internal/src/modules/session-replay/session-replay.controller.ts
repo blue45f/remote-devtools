@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   HttpStatus,
 } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 
 import {
   SessionReplayService,
@@ -15,6 +16,7 @@ import {
   SessionMetadata,
 } from "./session-replay.service";
 
+@ApiTags("Session Replay")
 @Controller("api/session-replay")
 export class SessionReplayController {
   private readonly logger = new Logger(SessionReplayController.name);

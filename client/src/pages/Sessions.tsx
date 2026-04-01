@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-const API_HOST = import.meta.env.VITE_HOST || "http://localhost:3000";
+import { apiFetch } from "../lib/api";
 
 interface SessionRecord {
   id: number;
@@ -13,37 +14,25 @@ interface SessionRecord {
 }
 
 const SessionsPage = () => {
-  const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [selectedTab, setSelectedTab] = useState<"record" | "live">("record");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
-  const [fetchKey, setFetchKey] = useState(0);
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
+  const {
+    data: sessions = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["sessions", selectedTab],
+    queryFn: () =>
+      apiFetch<SessionRecord[]>(
+        selectedTab === "record" ? "/sessions/record" : "/sessions",
+      ),
+  });
 
-    const endpoint =
-      selectedTab === "record"
-        ? `${API_HOST}/sessions/record`
-        : `${API_HOST}/sessions`;
-
-    void fetch(endpoint)
-      .then((response) => response.json())
-      .then((data) => {
-        setSessions(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load session list.");
-        setSessions([]);
-        setLoading(false);
-      });
-  }, [selectedTab, fetchKey]);
-
-  const retry = () => setFetchKey((k) => k + 1);
+  const error = queryError ? "Failed to load session list." : null;
+  const retry = () => void refetch();
 
   const filteredSessions = useMemo(() => {
     let result = sessions;

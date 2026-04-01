@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
+import { useAppStore } from "../lib/store";
+
 const navItems = [
   { to: "/", label: "Home", icon: HomeIcon },
   { to: "/sessions", label: "Sessions", icon: SessionsIcon },
@@ -9,7 +11,7 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, setSidebarOpen } = useAppStore();
   const [dark, setDark] = useState(() => {
     if (typeof window === "undefined") return false;
     return (
