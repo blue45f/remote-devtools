@@ -22,6 +22,12 @@ export default defineConfig({
         "**/*.types.ts",
         "**/*.interface.ts",
       ],
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 40,
+        statements: 50,
+      },
     },
   },
   plugins: [tsconfigPaths(), swc.vite({ module: { type: "es6" } })],

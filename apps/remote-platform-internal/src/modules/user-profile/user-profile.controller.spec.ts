@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { NotFoundException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -52,7 +53,13 @@ describe("UserProfileController", () => {
       };
       mockService.upsertByEmpNo.mockResolvedValue(mockResult);
 
-      const dto = { name: "New User", username: "newuser", jobType: "DEV" as any, empNo: "22010083", email: "test@test.com" };
+      const dto = {
+        name: "New User",
+        username: "newuser",
+        jobType: "DEV" as any,
+        empNo: "22010083",
+        email: "test@test.com",
+      };
       const result = await controller.upsert("22010083", dto);
 
       expect(result.success).toBe(true);
@@ -67,7 +74,13 @@ describe("UserProfileController", () => {
       };
       mockService.upsertByEmpNo.mockResolvedValue(mockResult);
 
-      const dto = { name: "Updated", username: "user", jobType: "QA" as any, empNo: "22010083", email: "t@t.com" };
+      const dto = {
+        name: "Updated",
+        username: "user",
+        jobType: "QA" as any,
+        empNo: "22010083",
+        email: "t@t.com",
+      };
       const result = await controller.upsert("22010083", dto);
 
       expect(result.created).toBe(false);

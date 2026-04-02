@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -17,7 +18,10 @@ describe("FigmaController", () => {
       controllers: [FigmaController],
       providers: [
         { provide: getRepositoryToken(UserEntity), useValue: mockUserRepo },
-        { provide: getRepositoryToken(DeviceInfoEntity), useValue: mockDeviceRepo },
+        {
+          provide: getRepositoryToken(DeviceInfoEntity),
+          useValue: mockDeviceRepo,
+        },
       ],
     }).compile();
     controller = module.get<FigmaController>(FigmaController);

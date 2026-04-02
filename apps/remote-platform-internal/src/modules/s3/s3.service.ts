@@ -7,6 +7,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Injectable, Logger } from "@nestjs/common";
+import { getLocalDate, getLocalDateString } from "@remote-platform/constants";
 import { BaseS3Service, BufferUploadData } from "@remote-platform/core";
 
 export { BufferUploadData };
@@ -122,7 +123,6 @@ export class S3Service extends BaseS3Service {
         }
       } else {
         for (let i = 0; i < 2; i++) {
-          const { getLocalDate } = require("@remote-platform/constants");
           const date = getLocalDate();
           date.setDate(date.getDate() - i);
           searchDates.push(date.toISOString().split("T")[0]);
@@ -1236,7 +1236,6 @@ export class S3Service extends BaseS3Service {
       const results: BufferUploadData[] = [];
 
       // Extract date from current recording session (local timezone)
-      const { getLocalDateString } = require("@remote-platform/constants");
       const targetDateDir = getLocalDateString(currentTimestamp);
 
       this.logger.log(`[S3_CURRENT_RECORD] 🎯 Analyzing current record:`);

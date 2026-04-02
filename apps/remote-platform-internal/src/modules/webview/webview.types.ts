@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import * as WebSocket from "ws";
+import type * as WebSocket from "ws";
 
 // ---------------------------------------------------------------------------
 // Types

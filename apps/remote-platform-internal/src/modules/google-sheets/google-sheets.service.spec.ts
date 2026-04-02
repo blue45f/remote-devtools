@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { GoogleSheetsService } from "./google-sheets.service";
@@ -29,7 +30,8 @@ describe("GoogleSheetsService", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = "test@test.iam.gserviceaccount.com";
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL =
+      "test@test.iam.gserviceaccount.com";
     process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = btoa("fake-private-key");
 
     const module: TestingModule = await Test.createTestingModule({
@@ -53,7 +55,8 @@ describe("GoogleSheetsService", () => {
       const freshModule = await Test.createTestingModule({
         providers: [GoogleSheetsService],
       }).compile();
-      const freshService = freshModule.get<GoogleSheetsService>(GoogleSheetsService);
+      const freshService =
+        freshModule.get<GoogleSheetsService>(GoogleSheetsService);
 
       const result = await freshService.getSpreadsheetMetadata("bad-id");
       // Service catches errors and returns null

@@ -12,6 +12,7 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 
+import { getLocalDateString } from "@remote-platform/constants";
 import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
@@ -162,7 +163,6 @@ export class WebviewController {
     const url = record.url || "";
 
     // Convert creation date to local timezone
-    const { getLocalDateString } = require("@remote-platform/constants");
     const createdDate = record.createdAt
       ? getLocalDateString(new Date(record.createdAt).getTime())
       : getLocalDateString();

@@ -1,4 +1,4 @@
-import { CommonInfo } from "../modules/webview/webview.gateway";
+import type { CommonInfo } from "../modules/webview/webview.gateway";
 
 /**
  * Returns a CommonInfo object populated with safe default/unknown values.
