@@ -55,7 +55,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "devtools-protocol": "^0.0.1340018",
+    "devtools-protocol": "^0.0.1608973",
     "dotenv": "^16.6.1",
     "escape-html": "^1.0.3",
     "express": "^5.2.1",
