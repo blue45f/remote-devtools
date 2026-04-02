@@ -9,6 +9,7 @@ import {
   Param,
   Put,
 } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 
 import {
   UpdateUserProfileDto,
@@ -16,6 +17,7 @@ import {
 } from "./user-profile.dto";
 import { UserProfileService } from "./user-profile.service";
 
+@ApiTags("User Profile")
 @Controller("api/user-profile")
 export class UserProfileController {
   private readonly logger = new Logger(UserProfileController.name);

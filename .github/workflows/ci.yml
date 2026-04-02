@@ -58,3 +58,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:all
+      - name: Build client
+        working-directory: client
+        run: pnpm build

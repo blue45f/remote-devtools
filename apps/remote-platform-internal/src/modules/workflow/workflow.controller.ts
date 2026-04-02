@@ -10,6 +10,7 @@ import {
   UploadedFile,
   BadRequestException,
 } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 import { FileInterceptor } from "@nestjs/platform-express";
 import axios from "axios";
 import * as FormData from "form-data";
@@ -19,6 +20,7 @@ import * as FormData from "form-data";
  * Jira image uploads go directly to the Jira REST API.
  * Member search uses the WORKFLOW_API_URL proxy.
  */
+@ApiTags("Workflow")
 @Controller("workflow")
 export class WorkflowController {
   private readonly logger = new Logger(WorkflowController.name);

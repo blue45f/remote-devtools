@@ -6,6 +6,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 
 import { GoogleSheetsService } from "./google-sheets.service";
 
@@ -19,6 +20,7 @@ interface ApiResponse<T = unknown> {
   readonly errorCode?: string;
 }
 
+@ApiTags("Google Sheets")
 @Controller("api/google-sheets")
 export class GoogleSheetsController {
   private readonly logger = new Logger(GoogleSheetsController.name);
