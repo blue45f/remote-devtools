@@ -1,13 +1,13 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as SDK from '../../core/sdk/sdk.js';
+import { TracingManager } from './TracingManager.js';
 export class PerformanceTracing {
     #traceEvents = [];
     #tracingManager = null;
     #delegate;
     constructor(target, delegate) {
-        this.#tracingManager = target.model(SDK.TracingManager.TracingManager);
+        this.#tracingManager = target.model(TracingManager);
         this.#delegate = delegate;
     }
     async start() {
@@ -37,7 +37,7 @@ export class PerformanceTracing {
             'v8.execute',
             'v8',
         ].join(',');
-        const started = await this.#tracingManager.start(this, categories, '');
+        const started = await this.#tracingManager.start(this, categories);
         if (!started) {
             throw new Error('Unable to start tracing.');
         }
@@ -46,9 +46,6 @@ export class PerformanceTracing {
         return this.#tracingManager?.stop();
     }
     // Start of implementation of SDK.TracingManager.TracingManagerClient
-    getTraceEvents() {
-        return this.#traceEvents;
-    }
     traceEventsCollected(events) {
         this.#traceEvents.push(...events);
     }
@@ -62,7 +59,7 @@ export class PerformanceTracing {
         this.#delegate.tracingComplete(this.#traceEvents);
     }
 }
-// Used by an implementation of Common.Revealer to transfer data from the recorder to the performance panel.
+/** Used by an implementation of Common.Revealer to transfer data from the recorder to the performance panel. **/
 export class RawTraceEvents {
     events;
     constructor(events) {

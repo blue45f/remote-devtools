@@ -1,4 +1,4 @@
-// Copyright (c) 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,9 @@
  * This file is auto-generated, do not edit manually. *
  * Re-generate with: npm run generate-protocol-resources.
  */
+
+
+import type * as Protocol from './protocol.js'
 
 /**
  * Mappings from protocol event and command names to the types required for them.
@@ -33,7 +36,15 @@ export namespace ProtocolMapping {
      * Event for animation that has been started.
      */
     'Animation.animationStarted': [Protocol.Animation.AnimationStartedEvent];
+    /**
+     * Event for animation that has been updated.
+     */
+    'Animation.animationUpdated': [Protocol.Animation.AnimationUpdatedEvent];
     'Audits.issueAdded': [Protocol.Audits.IssueAddedEvent];
+    /**
+     * Emitted when an address form is filled.
+     */
+    'Autofill.addressFormFilled': [Protocol.Autofill.AddressFormFilledEvent];
     /**
      * Called when the recording state for the service has been updated.
      */
@@ -43,6 +54,23 @@ export namespace ProtocolMapping {
      * events afterwards if enabled and recording.
      */
     'BackgroundService.backgroundServiceEventReceived': [Protocol.BackgroundService.BackgroundServiceEventReceivedEvent];
+    /**
+     * Event for when a GATT operation of |type| to the peripheral with |address|
+     * happened.
+     */
+    'BluetoothEmulation.gattOperationReceived': [Protocol.BluetoothEmulation.GattOperationReceivedEvent];
+    /**
+     * Event for when a characteristic operation of |type| to the characteristic
+     * respresented by |characteristicId| happened. |data| and |writeType| is
+     * expected to exist when |type| is write.
+     */
+    'BluetoothEmulation.characteristicOperationReceived': [Protocol.BluetoothEmulation.CharacteristicOperationReceivedEvent];
+    /**
+     * Event for when a descriptor operation of |type| to the descriptor
+     * respresented by |descriptorId| happened. |data| is expected to exist when
+     * |type| is write.
+     */
+    'BluetoothEmulation.descriptorOperationReceived': [Protocol.BluetoothEmulation.DescriptorOperationReceivedEvent];
     /**
      * Fired when page is about to start a download.
      */
@@ -73,6 +101,7 @@ export namespace ProtocolMapping {
      * Fired whenever an active document stylesheet is removed.
      */
     'CSS.styleSheetRemoved': [Protocol.CSS.StyleSheetRemovedEvent];
+    'CSS.computedStyleUpdated': [Protocol.CSS.ComputedStyleUpdatedEvent];
     /**
      * This is fired whenever the list of available sinks changes. A sink is a
      * device or a software surface that you can cast to.
@@ -87,6 +116,10 @@ export namespace ProtocolMapping {
      * Fired when `Element`'s attribute is modified.
      */
     'DOM.attributeModified': [Protocol.DOM.AttributeModifiedEvent];
+    /**
+     * Fired when `Element`'s adoptedStyleSheets are modified.
+     */
+    'DOM.adoptedStyleSheetsModified': [Protocol.DOM.AdoptedStyleSheetsModifiedEvent];
     /**
      * Fired when `Element`'s attribute is removed.
      */
@@ -128,6 +161,18 @@ export namespace ProtocolMapping {
      */
     'DOM.topLayerElementsUpdated': [];
     /**
+     * Fired when a node's scrollability state changes.
+     */
+    'DOM.scrollableFlagUpdated': [Protocol.DOM.ScrollableFlagUpdatedEvent];
+    /**
+     * Fired when a node's ad related state changes.
+     */
+    'DOM.adRelatedStateUpdated': [Protocol.DOM.AdRelatedStateUpdatedEvent];
+    /**
+     * Fired when a node's starting styles changes.
+     */
+    'DOM.affectedByStartingStylesFlagUpdated': [Protocol.DOM.AffectedByStartingStylesFlagUpdatedEvent];
+    /**
      * Called when a pseudo element is removed from an element.
      */
     'DOM.pseudoElementRemoved': [Protocol.DOM.PseudoElementRemovedEvent];
@@ -148,11 +193,46 @@ export namespace ProtocolMapping {
     'DOMStorage.domStorageItemRemoved': [Protocol.DOMStorage.DomStorageItemRemovedEvent];
     'DOMStorage.domStorageItemUpdated': [Protocol.DOMStorage.DomStorageItemUpdatedEvent];
     'DOMStorage.domStorageItemsCleared': [Protocol.DOMStorage.DomStorageItemsClearedEvent];
-    'Database.addDatabase': [Protocol.Database.AddDatabaseEvent];
+    /**
+     * A device request opened a user prompt to select a device. Respond with the
+     * selectPrompt or cancelPrompt command.
+     */
+    'DeviceAccess.deviceRequestPrompted': [Protocol.DeviceAccess.DeviceRequestPromptedEvent];
     /**
      * Notification sent after the virtual time budget for the current VirtualTimePolicy has run out.
      */
     'Emulation.virtualTimeBudgetExpired': [];
+    /**
+     * Fired when a page calls screen.orientation.lock() or screen.orientation.unlock()
+     * while device emulation is enabled. This allows the DevTools frontend to update the
+     * emulated device orientation accordingly.
+     */
+    'Emulation.screenOrientationLockChanged': [Protocol.Emulation.ScreenOrientationLockChangedEvent];
+    'FedCm.dialogShown': [Protocol.FedCm.DialogShownEvent];
+    /**
+     * Triggered when a dialog is closed, either by user action, JS abort,
+     * or a command below.
+     */
+    'FedCm.dialogClosed': [Protocol.FedCm.DialogClosedEvent];
+    /**
+     * Issued when the domain is enabled and the request URL matches the
+     * specified filter. The request is paused until the client responds
+     * with one of continueRequest, failRequest or fulfillRequest.
+     * The stage of the request can be determined by presence of responseErrorReason
+     * and responseStatusCode -- the request is at the response stage if either
+     * of these fields is present and in the request stage otherwise.
+     * Redirect responses and subsequent requests are reported similarly to regular
+     * responses and requests. Redirect responses may be distinguished by the value
+     * of `responseStatusCode` (which is one of 301, 302, 303, 307, 308) along with
+     * presence of the `location` header. Requests resulting from a redirect will
+     * have `redirectedRequestId` field set.
+     */
+    'Fetch.requestPaused': [Protocol.Fetch.RequestPausedEvent];
+    /**
+     * Issued when the domain is enabled with handleAuthRequests set to true.
+     * The request is paused until client responds with continueWithAuth.
+     */
+    'Fetch.authRequired': [Protocol.Fetch.AuthRequiredEvent];
     /**
      * Emitted only when `Input.setInterceptDrags` is enabled. Use this data with `Input.dispatchDragEvent` to
      * restore normal drag and drop behavior.
@@ -170,12 +250,40 @@ export namespace ProtocolMapping {
      * Fired when debugging target has reloaded after crash
      */
     'Inspector.targetReloadedAfterCrash': [];
+    /**
+     * Fired on worker targets when main worker script and any imported scripts have been evaluated.
+     */
+    'Inspector.workerScriptLoaded': [];
     'LayerTree.layerPainted': [Protocol.LayerTree.LayerPaintedEvent];
     'LayerTree.layerTreeDidChange': [Protocol.LayerTree.LayerTreeDidChangeEvent];
     /**
      * Issued when new message was logged.
      */
     'Log.entryAdded': [Protocol.Log.EntryAddedEvent];
+    /**
+     * This can be called multiple times, and can be used to set / override /
+     * remove player properties. A null propValue indicates removal.
+     */
+    'Media.playerPropertiesChanged': [Protocol.Media.PlayerPropertiesChangedEvent];
+    /**
+     * Send events as a list, allowing them to be batched on the browser for less
+     * congestion. If batched, events must ALWAYS be in chronological order.
+     */
+    'Media.playerEventsAdded': [Protocol.Media.PlayerEventsAddedEvent];
+    /**
+     * Send a list of any messages that need to be delivered.
+     */
+    'Media.playerMessagesLogged': [Protocol.Media.PlayerMessagesLoggedEvent];
+    /**
+     * Send a list of any errors that need to be delivered.
+     */
+    'Media.playerErrorsRaised': [Protocol.Media.PlayerErrorsRaisedEvent];
+    /**
+     * Called whenever a player is created, or when a new agent joins and receives
+     * a list of active players. If an agent is restored, it will receive one
+     * event for each active player.
+     */
+    'Media.playerCreated': [Protocol.Media.PlayerCreatedEvent];
     /**
      * Fired when data chunk was received over the network.
      */
@@ -259,6 +367,56 @@ export namespace ProtocolMapping {
      */
     'Network.webTransportClosed': [Protocol.Network.WebTransportClosedEvent];
     /**
+     * Fired upon direct_socket.TCPSocket creation.
+     */
+    'Network.directTCPSocketCreated': [Protocol.Network.DirectTCPSocketCreatedEvent];
+    /**
+     * Fired when direct_socket.TCPSocket connection is opened.
+     */
+    'Network.directTCPSocketOpened': [Protocol.Network.DirectTCPSocketOpenedEvent];
+    /**
+     * Fired when direct_socket.TCPSocket is aborted.
+     */
+    'Network.directTCPSocketAborted': [Protocol.Network.DirectTCPSocketAbortedEvent];
+    /**
+     * Fired when direct_socket.TCPSocket is closed.
+     */
+    'Network.directTCPSocketClosed': [Protocol.Network.DirectTCPSocketClosedEvent];
+    /**
+     * Fired when data is sent to tcp direct socket stream.
+     */
+    'Network.directTCPSocketChunkSent': [Protocol.Network.DirectTCPSocketChunkSentEvent];
+    /**
+     * Fired when data is received from tcp direct socket stream.
+     */
+    'Network.directTCPSocketChunkReceived': [Protocol.Network.DirectTCPSocketChunkReceivedEvent];
+    'Network.directUDPSocketJoinedMulticastGroup': [Protocol.Network.DirectUDPSocketJoinedMulticastGroupEvent];
+    'Network.directUDPSocketLeftMulticastGroup': [Protocol.Network.DirectUDPSocketLeftMulticastGroupEvent];
+    /**
+     * Fired upon direct_socket.UDPSocket creation.
+     */
+    'Network.directUDPSocketCreated': [Protocol.Network.DirectUDPSocketCreatedEvent];
+    /**
+     * Fired when direct_socket.UDPSocket connection is opened.
+     */
+    'Network.directUDPSocketOpened': [Protocol.Network.DirectUDPSocketOpenedEvent];
+    /**
+     * Fired when direct_socket.UDPSocket is aborted.
+     */
+    'Network.directUDPSocketAborted': [Protocol.Network.DirectUDPSocketAbortedEvent];
+    /**
+     * Fired when direct_socket.UDPSocket is closed.
+     */
+    'Network.directUDPSocketClosed': [Protocol.Network.DirectUDPSocketClosedEvent];
+    /**
+     * Fired when message is sent to udp direct socket stream.
+     */
+    'Network.directUDPSocketChunkSent': [Protocol.Network.DirectUDPSocketChunkSentEvent];
+    /**
+     * Fired when message is received from udp direct socket stream.
+     */
+    'Network.directUDPSocketChunkReceived': [Protocol.Network.DirectUDPSocketChunkReceivedEvent];
+    /**
      * Fired when additional information about a requestWillBeSent event is available from the
      * network stack. Not every requestWillBeSent event will have an additional
      * requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
@@ -272,6 +430,12 @@ export namespace ProtocolMapping {
      */
     'Network.responseReceivedExtraInfo': [Protocol.Network.ResponseReceivedExtraInfoEvent];
     /**
+     * Fired when 103 Early Hints headers is received in addition to the common response.
+     * Not every responseReceived event will have an responseReceivedEarlyHints fired.
+     * Only one responseReceivedEarlyHints may be fired for eached responseReceived event.
+     */
+    'Network.responseReceivedEarlyHints': [Protocol.Network.ResponseReceivedEarlyHintsEvent];
+    /**
      * Fired exactly once for each Trust Token operation. Depending on
      * the type of the operation and whether the operation succeeded or
      * failed, the event is fired before the corresponding request was sent
@@ -279,23 +443,9 @@ export namespace ProtocolMapping {
      */
     'Network.trustTokenOperationDone': [Protocol.Network.TrustTokenOperationDoneEvent];
     /**
-     * Fired once when parsing the .wbn file has succeeded.
-     * The event contains the information about the web bundle contents.
+     * Fired once security policy has been updated.
      */
-    'Network.subresourceWebBundleMetadataReceived': [Protocol.Network.SubresourceWebBundleMetadataReceivedEvent];
-    /**
-     * Fired once when parsing the .wbn file has failed.
-     */
-    'Network.subresourceWebBundleMetadataError': [Protocol.Network.SubresourceWebBundleMetadataErrorEvent];
-    /**
-     * Fired when handling requests for resources within a .wbn file.
-     * Note: this will only be fired for resources that are requested by the webpage.
-     */
-    'Network.subresourceWebBundleInnerResponseParsed': [Protocol.Network.SubresourceWebBundleInnerResponseParsedEvent];
-    /**
-     * Fired when request for resources within a .wbn file failed.
-     */
-    'Network.subresourceWebBundleInnerResponseError': [Protocol.Network.SubresourceWebBundleInnerResponseErrorEvent];
+    'Network.policyUpdated': [];
     /**
      * Is sent whenever a new report is added.
      * And after 'enableReportingApi' for all existing reports.
@@ -303,6 +453,14 @@ export namespace ProtocolMapping {
     'Network.reportingApiReportAdded': [Protocol.Network.ReportingApiReportAddedEvent];
     'Network.reportingApiReportUpdated': [Protocol.Network.ReportingApiReportUpdatedEvent];
     'Network.reportingApiEndpointsChangedForOrigin': [Protocol.Network.ReportingApiEndpointsChangedForOriginEvent];
+    /**
+     * Triggered when the initial set of device bound sessions is added.
+     */
+    'Network.deviceBoundSessionsAdded': [Protocol.Network.DeviceBoundSessionsAddedEvent];
+    /**
+     * Triggered when a device bound session event occurs.
+     */
+    'Network.deviceBoundSessionEventOccurred': [Protocol.Network.DeviceBoundSessionEventOccurredEvent];
     /**
      * Fired when the node should be inspected. This happens after call to `setInspectMode` or when
      * user manually inspects an element.
@@ -316,6 +474,14 @@ export namespace ProtocolMapping {
      * Fired when user asks to capture screenshot of some area on the page.
      */
     'Overlay.screenshotRequested': [Protocol.Overlay.ScreenshotRequestedEvent];
+    /**
+     * Fired when user asks to show the Inspect panel.
+     */
+    'Overlay.inspectPanelShowRequested': [Protocol.Overlay.InspectPanelShowRequestedEvent];
+    /**
+     * Fired when user asks to restore the Inspected Element floating window.
+     */
+    'Overlay.inspectedElementWindowRestored': [Protocol.Overlay.InspectedElementWindowRestoredEvent];
     /**
      * Fired when user cancels the inspect mode.
      */
@@ -338,6 +504,11 @@ export namespace ProtocolMapping {
      */
     'Page.frameDetached': [Protocol.Page.FrameDetachedEvent];
     /**
+     * Fired before frame subtree is detached. Emitted before any frame of the
+     * subtree is actually detached.
+     */
+    'Page.frameSubtreeWillBeDetached': [Protocol.Page.FrameSubtreeWillBeDetachedEvent];
+    /**
      * Fired once navigation of the frame has completed. Frame is now associated with the new loader.
      */
     'Page.frameNavigated': [Protocol.Page.FrameNavigatedEvent];
@@ -346,6 +517,16 @@ export namespace ProtocolMapping {
      */
     'Page.documentOpened': [Protocol.Page.DocumentOpenedEvent];
     'Page.frameResized': [];
+    /**
+     * Fired when a navigation starts. This event is fired for both
+     * renderer-initiated and browser-initiated navigations. For renderer-initiated
+     * navigations, the event is fired after `frameRequestedNavigation`.
+     * Navigation may still be cancelled after the event is issued. Multiple events
+     * can be fired for a single navigation, for example, when a same-document
+     * navigation becomes a cross-document navigation (such as in the case of a
+     * frameset).
+     */
+    'Page.frameStartedNavigating': [Protocol.Page.FrameStartedNavigatingEvent];
     /**
      * Fired when a renderer-initiated navigation is requested.
      * Navigation may still be cancelled after the event is issued.
@@ -392,7 +573,8 @@ export namespace ProtocolMapping {
      */
     'Page.javascriptDialogOpening': [Protocol.Page.JavascriptDialogOpeningEvent];
     /**
-     * Fired for top level page lifecycle events such as navigation, load, paint, etc.
+     * Fired for lifecycle events (navigation, load, paint, etc) in the current
+     * target (including local frames).
      */
     'Page.lifecycleEvent': [Protocol.Page.LifecycleEventEvent];
     /**
@@ -421,8 +603,7 @@ export namespace ProtocolMapping {
      */
     'Page.windowOpen': [Protocol.Page.WindowOpenEvent];
     /**
-     * Issued for every compilation cache generated. Is only available
-     * if Page.setGenerateCompilationCache is enabled.
+     * Issued for every compilation cache generated.
      */
     'Page.compilationCacheProduced': [Protocol.Page.CompilationCacheProducedEvent];
     /**
@@ -433,6 +614,27 @@ export namespace ProtocolMapping {
      * Sent when a performance timeline event is added. See reportPerformanceTimeline method.
      */
     'PerformanceTimeline.timelineEventAdded': [Protocol.PerformanceTimeline.TimelineEventAddedEvent];
+    /**
+     * Upsert. Currently, it is only emitted when a rule set added.
+     */
+    'Preload.ruleSetUpdated': [Protocol.Preload.RuleSetUpdatedEvent];
+    'Preload.ruleSetRemoved': [Protocol.Preload.RuleSetRemovedEvent];
+    /**
+     * Fired when a preload enabled state is updated.
+     */
+    'Preload.preloadEnabledStateUpdated': [Protocol.Preload.PreloadEnabledStateUpdatedEvent];
+    /**
+     * Fired when a prefetch attempt is updated.
+     */
+    'Preload.prefetchStatusUpdated': [Protocol.Preload.PrefetchStatusUpdatedEvent];
+    /**
+     * Fired when a prerender attempt is updated.
+     */
+    'Preload.prerenderStatusUpdated': [Protocol.Preload.PrerenderStatusUpdatedEvent];
+    /**
+     * Send a list of sources for all preloading attempts in a document.
+     */
+    'Preload.preloadingAttemptSourcesUpdated': [Protocol.Preload.PreloadingAttemptSourcesUpdatedEvent];
     /**
      * There is a certificate error. If overriding certificate errors is enabled, then it should be
      * handled with the `handleCertificateError` command. Note: this event does not fire if the
@@ -452,6 +654,118 @@ export namespace ProtocolMapping {
     'ServiceWorker.workerRegistrationUpdated': [Protocol.ServiceWorker.WorkerRegistrationUpdatedEvent];
     'ServiceWorker.workerVersionUpdated': [Protocol.ServiceWorker.WorkerVersionUpdatedEvent];
     /**
+     * Fired when |SCardEstablishContext| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaa1b8970169fd4883a6dc4a8f43f19b67
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardestablishcontext
+     */
+    'SmartCardEmulation.establishContextRequested': [Protocol.SmartCardEmulation.EstablishContextRequestedEvent];
+    /**
+     * Fired when |SCardReleaseContext| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga6aabcba7744c5c9419fdd6404f73a934
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardreleasecontext
+     */
+    'SmartCardEmulation.releaseContextRequested': [Protocol.SmartCardEmulation.ReleaseContextRequestedEvent];
+    /**
+     * Fired when |SCardListReaders| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga93b07815789b3cf2629d439ecf20f0d9
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardlistreadersa
+     */
+    'SmartCardEmulation.listReadersRequested': [Protocol.SmartCardEmulation.ListReadersRequestedEvent];
+    /**
+     * Fired when |SCardGetStatusChange| is called. Timeout is specified in milliseconds.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga33247d5d1257d59e55647c3bb717db24
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetstatuschangea
+     */
+    'SmartCardEmulation.getStatusChangeRequested': [Protocol.SmartCardEmulation.GetStatusChangeRequestedEvent];
+    /**
+     * Fired when |SCardCancel| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaacbbc0c6d6c0cbbeb4f4debf6fbeeee6
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardcancel
+     */
+    'SmartCardEmulation.cancelRequested': [Protocol.SmartCardEmulation.CancelRequestedEvent];
+    /**
+     * Fired when |SCardConnect| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga4e515829752e0a8dbc4d630696a8d6a5
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardconnecta
+     */
+    'SmartCardEmulation.connectRequested': [Protocol.SmartCardEmulation.ConnectRequestedEvent];
+    /**
+     * Fired when |SCardDisconnect| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga4be198045c73ec0deb79e66c0ca1738a
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scarddisconnect
+     */
+    'SmartCardEmulation.disconnectRequested': [Protocol.SmartCardEmulation.DisconnectRequestedEvent];
+    /**
+     * Fired when |SCardTransmit| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga9a2d77242a271310269065e64633ab99
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardtransmit
+     */
+    'SmartCardEmulation.transmitRequested': [Protocol.SmartCardEmulation.TransmitRequestedEvent];
+    /**
+     * Fired when |SCardControl| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gac3454d4657110fd7f753b2d3d8f4e32f
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardcontrol
+     */
+    'SmartCardEmulation.controlRequested': [Protocol.SmartCardEmulation.ControlRequestedEvent];
+    /**
+     * Fired when |SCardGetAttrib| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaacfec51917255b7a25b94c5104961602
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetattrib
+     */
+    'SmartCardEmulation.getAttribRequested': [Protocol.SmartCardEmulation.GetAttribRequestedEvent];
+    /**
+     * Fired when |SCardSetAttrib| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga060f0038a4ddfd5dd2b8fadf3c3a2e4f
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardsetattrib
+     */
+    'SmartCardEmulation.setAttribRequested': [Protocol.SmartCardEmulation.SetAttribRequestedEvent];
+    /**
+     * Fired when |SCardStatus| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gae49c3c894ad7ac12a5b896bde70d0382
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardstatusa
+     */
+    'SmartCardEmulation.statusRequested': [Protocol.SmartCardEmulation.StatusRequestedEvent];
+    /**
+     * Fired when |SCardBeginTransaction| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaddb835dce01a0da1d6ca02d33ee7d861
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardbegintransaction
+     */
+    'SmartCardEmulation.beginTransactionRequested': [Protocol.SmartCardEmulation.BeginTransactionRequestedEvent];
+    /**
+     * Fired when |SCardEndTransaction| is called.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gae8742473b404363e5c587f570d7e2f3b
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardendtransaction
+     */
+    'SmartCardEmulation.endTransactionRequested': [Protocol.SmartCardEmulation.EndTransactionRequestedEvent];
+    /**
      * A cache's contents have been modified.
      */
     'Storage.cacheStorageContentUpdated': [Protocol.Storage.CacheStorageContentUpdatedEvent];
@@ -468,14 +782,32 @@ export namespace ProtocolMapping {
      */
     'Storage.indexedDBListUpdated': [Protocol.Storage.IndexedDBListUpdatedEvent];
     /**
-     * One of the interest groups was accessed by the associated page.
+     * One of the interest groups was accessed. Note that these events are global
+     * to all targets sharing an interest group store.
      */
     'Storage.interestGroupAccessed': [Protocol.Storage.InterestGroupAccessedEvent];
+    /**
+     * An auction involving interest groups is taking place. These events are
+     * target-specific.
+     */
+    'Storage.interestGroupAuctionEventOccurred': [Protocol.Storage.InterestGroupAuctionEventOccurredEvent];
+    /**
+     * Specifies which auctions a particular network fetch may be related to, and
+     * in what role. Note that it is not ordered with respect to
+     * Network.requestWillBeSent (but will happen before loadingFinished
+     * loadingFailed).
+     */
+    'Storage.interestGroupAuctionNetworkRequestCreated': [Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent];
     /**
      * Shared storage was accessed by the associated page.
      * The following parameters are included in all events.
      */
     'Storage.sharedStorageAccessed': [Protocol.Storage.SharedStorageAccessedEvent];
+    /**
+     * A shared storage run or selectURL operation finished its execution.
+     * The following parameters are included in all events.
+     */
+    'Storage.sharedStorageWorkletOperationExecutionFinished': [Protocol.Storage.SharedStorageWorkletOperationExecutionFinishedEvent];
     'Storage.storageBucketCreatedOrUpdated': [Protocol.Storage.StorageBucketCreatedOrUpdatedEvent];
     'Storage.storageBucketDeleted': [Protocol.Storage.StorageBucketDeletedEvent];
     /**
@@ -524,20 +856,6 @@ export namespace ProtocolMapping {
      * delivered via dataCollected events.
      */
     'Tracing.tracingComplete': [Protocol.Tracing.TracingCompleteEvent];
-    /**
-     * Issued when the domain is enabled and the request URL matches the
-     * specified filter. The request is paused until the client responds
-     * with one of continueRequest, failRequest or fulfillRequest.
-     * The stage of the request can be determined by presence of responseErrorReason
-     * and responseStatusCode -- the request is at the response stage if either
-     * of these fields is present and in the request stage otherwise.
-     */
-    'Fetch.requestPaused': [Protocol.Fetch.RequestPausedEvent];
-    /**
-     * Issued when the domain is enabled with handleAuthRequests set to true.
-     * The request is paused until client responds with continueWithAuth.
-     */
-    'Fetch.authRequired': [Protocol.Fetch.AuthRequiredEvent];
     /**
      * Notifies that a new BaseAudioContext has been created.
      */
@@ -595,66 +913,38 @@ export namespace ProtocolMapping {
      */
     'WebAuthn.credentialAdded': [Protocol.WebAuthn.CredentialAddedEvent];
     /**
+     * Triggered when a credential is deleted, e.g. through
+     * PublicKeyCredential.signalUnknownCredential().
+     */
+    'WebAuthn.credentialDeleted': [Protocol.WebAuthn.CredentialDeletedEvent];
+    /**
+     * Triggered when a credential is updated, e.g. through
+     * PublicKeyCredential.signalCurrentUserDetails().
+     */
+    'WebAuthn.credentialUpdated': [Protocol.WebAuthn.CredentialUpdatedEvent];
+    /**
      * Triggered when a credential is used in a webauthn assertion.
      */
     'WebAuthn.credentialAsserted': [Protocol.WebAuthn.CredentialAssertedEvent];
     /**
-     * This can be called multiple times, and can be used to set / override /
-     * remove player properties. A null propValue indicates removal.
+     * Event fired when new tools are added.
      */
-    'Media.playerPropertiesChanged': [Protocol.Media.PlayerPropertiesChangedEvent];
+    'WebMCP.toolsAdded': [Protocol.WebMCP.ToolsAddedEvent];
     /**
-     * Send events as a list, allowing them to be batched on the browser for less
-     * congestion. If batched, events must ALWAYS be in chronological order.
+     * Event fired when tools are removed.
      */
-    'Media.playerEventsAdded': [Protocol.Media.PlayerEventsAddedEvent];
+    'WebMCP.toolsRemoved': [Protocol.WebMCP.ToolsRemovedEvent];
     /**
-     * Send a list of any messages that need to be delivered.
+     * Event fired when a tool invocation starts.
      */
-    'Media.playerMessagesLogged': [Protocol.Media.PlayerMessagesLoggedEvent];
+    'WebMCP.toolInvoked': [Protocol.WebMCP.ToolInvokedEvent];
     /**
-     * Send a list of any errors that need to be delivered.
+     * Event fired when a tool invocation completes or fails.
      */
-    'Media.playerErrorsRaised': [Protocol.Media.PlayerErrorsRaisedEvent];
-    /**
-     * Called whenever a player is created, or when a new agent joins and receives
-     * a list of active players. If an agent is restored, it will receive the full
-     * list of player ids and all events again.
-     */
-    'Media.playersCreated': [Protocol.Media.PlayersCreatedEvent];
-    /**
-     * A device request opened a user prompt to select a device. Respond with the
-     * selectPrompt or cancelPrompt command.
-     */
-    'DeviceAccess.deviceRequestPrompted': [Protocol.DeviceAccess.DeviceRequestPromptedEvent];
-    /**
-     * Upsert. Currently, it is only emitted when a rule set added.
-     */
-    'Preload.ruleSetUpdated': [Protocol.Preload.RuleSetUpdatedEvent];
-    'Preload.ruleSetRemoved': [Protocol.Preload.RuleSetRemovedEvent];
-    /**
-     * Fired when a prerender attempt is completed.
-     */
-    'Preload.prerenderAttemptCompleted': [Protocol.Preload.PrerenderAttemptCompletedEvent];
-    /**
-     * Fired when a preload enabled state is updated.
-     */
-    'Preload.preloadEnabledStateUpdated': [Protocol.Preload.PreloadEnabledStateUpdatedEvent];
-    /**
-     * Fired when a prefetch attempt is updated.
-     */
-    'Preload.prefetchStatusUpdated': [Protocol.Preload.PrefetchStatusUpdatedEvent];
-    /**
-     * Fired when a prerender attempt is updated.
-     */
-    'Preload.prerenderStatusUpdated': [Protocol.Preload.PrerenderStatusUpdatedEvent];
-    /**
-     * Send a list of sources for all preloading attempts in a document.
-     */
-    'Preload.preloadingAttemptSourcesUpdated': [Protocol.Preload.PreloadingAttemptSourcesUpdatedEvent];
-    'FedCm.dialogShown': [Protocol.FedCm.DialogShownEvent];
+    'WebMCP.toolResponded': [Protocol.WebMCP.ToolRespondedEvent];
     /**
      * Fired when breakpoint is resolved to an actual script and location.
+     * Deprecated in favor of `resolvedBreakpoints` in the `scriptParsed` event.
      */
     'Debugger.breakpointResolved': [Protocol.Debugger.BreakpointResolvedEvent];
     /**
@@ -791,7 +1081,7 @@ export namespace ProtocolMapping {
     /**
      * Query a DOM node's accessibility subtree for accessible name and role.
      * This command computes the name and role for all nodes in the subtree, including those that are
-     * ignored for accessibility, and returns those that mactch the specified name and role. If no DOM
+     * ignored for accessibility, and returns those that match the specified name and role. If no DOM
      * node is specified, or the DOM node does not exist, the command returns an error. If neither
      * `accessibleName` or `role` is specified, it returns all the accessibility nodes in the subtree.
      */
@@ -893,14 +1183,6 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Runs the contrast check for the target page. Found issues are reported
-     * using Audits.issueAdded event.
-     */
-    'Audits.checkContrast': {
-      paramsType: [Protocol.Audits.CheckContrastRequest?];
-      returnType: void;
-    };
-    /**
      * Runs the form issues check for the target page. Found issues are reported
      * using Audits.issueAdded event.
      */
@@ -921,6 +1203,20 @@ export namespace ProtocolMapping {
      */
     'Autofill.setAddresses': {
       paramsType: [Protocol.Autofill.SetAddressesRequest];
+      returnType: void;
+    };
+    /**
+     * Disables autofill domain notifications.
+     */
+    'Autofill.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Enables autofill domain notifications.
+     */
+    'Autofill.enable': {
+      paramsType: [];
       returnType: void;
     };
     /**
@@ -952,14 +1248,135 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Set permission settings for given origin.
+     * Enable the BluetoothEmulation domain.
+     */
+    'BluetoothEmulation.enable': {
+      paramsType: [Protocol.BluetoothEmulation.EnableRequest];
+      returnType: void;
+    };
+    /**
+     * Set the state of the simulated central.
+     */
+    'BluetoothEmulation.setSimulatedCentralState': {
+      paramsType: [Protocol.BluetoothEmulation.SetSimulatedCentralStateRequest];
+      returnType: void;
+    };
+    /**
+     * Disable the BluetoothEmulation domain.
+     */
+    'BluetoothEmulation.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Simulates a peripheral with |address|, |name| and |knownServiceUuids|
+     * that has already been connected to the system.
+     */
+    'BluetoothEmulation.simulatePreconnectedPeripheral': {
+      paramsType: [Protocol.BluetoothEmulation.SimulatePreconnectedPeripheralRequest];
+      returnType: void;
+    };
+    /**
+     * Simulates an advertisement packet described in |entry| being received by
+     * the central.
+     */
+    'BluetoothEmulation.simulateAdvertisement': {
+      paramsType: [Protocol.BluetoothEmulation.SimulateAdvertisementRequest];
+      returnType: void;
+    };
+    /**
+     * Simulates the response code from the peripheral with |address| for a
+     * GATT operation of |type|. The |code| value follows the HCI Error Codes from
+     * Bluetooth Core Specification Vol 2 Part D 1.3 List Of Error Codes.
+     */
+    'BluetoothEmulation.simulateGATTOperationResponse': {
+      paramsType: [Protocol.BluetoothEmulation.SimulateGATTOperationResponseRequest];
+      returnType: void;
+    };
+    /**
+     * Simulates the response from the characteristic with |characteristicId| for a
+     * characteristic operation of |type|. The |code| value follows the Error
+     * Codes from Bluetooth Core Specification Vol 3 Part F 3.4.1.1 Error Response.
+     * The |data| is expected to exist when simulating a successful read operation
+     * response.
+     */
+    'BluetoothEmulation.simulateCharacteristicOperationResponse': {
+      paramsType: [Protocol.BluetoothEmulation.SimulateCharacteristicOperationResponseRequest];
+      returnType: void;
+    };
+    /**
+     * Simulates the response from the descriptor with |descriptorId| for a
+     * descriptor operation of |type|. The |code| value follows the Error
+     * Codes from Bluetooth Core Specification Vol 3 Part F 3.4.1.1 Error Response.
+     * The |data| is expected to exist when simulating a successful read operation
+     * response.
+     */
+    'BluetoothEmulation.simulateDescriptorOperationResponse': {
+      paramsType: [Protocol.BluetoothEmulation.SimulateDescriptorOperationResponseRequest];
+      returnType: void;
+    };
+    /**
+     * Adds a service with |serviceUuid| to the peripheral with |address|.
+     */
+    'BluetoothEmulation.addService': {
+      paramsType: [Protocol.BluetoothEmulation.AddServiceRequest];
+      returnType: Protocol.BluetoothEmulation.AddServiceResponse;
+    };
+    /**
+     * Removes the service respresented by |serviceId| from the simulated central.
+     */
+    'BluetoothEmulation.removeService': {
+      paramsType: [Protocol.BluetoothEmulation.RemoveServiceRequest];
+      returnType: void;
+    };
+    /**
+     * Adds a characteristic with |characteristicUuid| and |properties| to the
+     * service represented by |serviceId|.
+     */
+    'BluetoothEmulation.addCharacteristic': {
+      paramsType: [Protocol.BluetoothEmulation.AddCharacteristicRequest];
+      returnType: Protocol.BluetoothEmulation.AddCharacteristicResponse;
+    };
+    /**
+     * Removes the characteristic respresented by |characteristicId| from the
+     * simulated central.
+     */
+    'BluetoothEmulation.removeCharacteristic': {
+      paramsType: [Protocol.BluetoothEmulation.RemoveCharacteristicRequest];
+      returnType: void;
+    };
+    /**
+     * Adds a descriptor with |descriptorUuid| to the characteristic respresented
+     * by |characteristicId|.
+     */
+    'BluetoothEmulation.addDescriptor': {
+      paramsType: [Protocol.BluetoothEmulation.AddDescriptorRequest];
+      returnType: Protocol.BluetoothEmulation.AddDescriptorResponse;
+    };
+    /**
+     * Removes the descriptor with |descriptorId| from the simulated central.
+     */
+    'BluetoothEmulation.removeDescriptor': {
+      paramsType: [Protocol.BluetoothEmulation.RemoveDescriptorRequest];
+      returnType: void;
+    };
+    /**
+     * Simulates a GATT disconnection from the peripheral with |address|.
+     */
+    'BluetoothEmulation.simulateGATTDisconnection': {
+      paramsType: [Protocol.BluetoothEmulation.SimulateGATTDisconnectionRequest];
+      returnType: void;
+    };
+    /**
+     * Set permission settings for given embedding and embedded origins.
      */
     'Browser.setPermission': {
       paramsType: [Protocol.Browser.SetPermissionRequest];
       returnType: void;
     };
     /**
-     * Grant specific permissions to the given origin and reject all others.
+     * Grant specific permissions to the given origin and reject all others. Deprecated. Use
+     * setPermission instead.
      */
     'Browser.grantPermissions': {
       paramsType: [Protocol.Browser.GrantPermissionsRequest];
@@ -1058,6 +1475,13 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Set size of the browser contents resizing browser window as necessary.
+     */
+    'Browser.setContentsSize': {
+      paramsType: [Protocol.Browser.SetContentsSizeRequest];
+      returnType: void;
+    };
+    /**
      * Set dock tile details, platform-specific.
      */
     'Browser.setDockTile': {
@@ -1077,6 +1501,16 @@ export namespace ProtocolMapping {
      */
     'Browser.addPrivacySandboxEnrollmentOverride': {
       paramsType: [Protocol.Browser.AddPrivacySandboxEnrollmentOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Configures encryption keys used with a given privacy sandbox API to talk
+     * to a trusted coordinator.  Since this is intended for test automation only,
+     * coordinatorOrigin must be a .test domain. No existing coordinator
+     * configuration for the origin may exist.
+     */
+    'Browser.addPrivacySandboxCoordinatorKeyConfig': {
+      paramsType: [Protocol.Browser.AddPrivacySandboxCoordinatorKeyConfigRequest];
       returnType: void;
     };
     /**
@@ -1124,6 +1558,13 @@ export namespace ProtocolMapping {
       paramsType: [Protocol.CSS.ForcePseudoStateRequest];
       returnType: void;
     };
+    /**
+     * Ensures that the given node is in its starting-style state.
+     */
+    'CSS.forceStartingStyle': {
+      paramsType: [Protocol.CSS.ForceStartingStyleRequest];
+      returnType: void;
+    };
     'CSS.getBackgroundColors': {
       paramsType: [Protocol.CSS.GetBackgroundColorsRequest];
       returnType: Protocol.CSS.GetBackgroundColorsResponse;
@@ -1136,6 +1577,27 @@ export namespace ProtocolMapping {
       returnType: Protocol.CSS.GetComputedStyleForNodeResponse;
     };
     /**
+     * Resolve the specified values in the context of the provided element.
+     * For example, a value of '1em' is evaluated according to the computed
+     * 'font-size' of the element and a value 'calc(1px + 2px)' will be
+     * resolved to '3px'.
+     * If the `propertyName` was specified the `values` are resolved as if
+     * they were property's declaration. If a value cannot be parsed according
+     * to the provided property syntax, the value is parsed using combined
+     * syntax as if null `propertyName` was provided. If the value cannot be
+     * resolved even then, return the provided value without any changes.
+     * Note: this function currently does not resolve CSS random() function,
+     * it returns unmodified random() function parts.`
+     */
+    'CSS.resolveValues': {
+      paramsType: [Protocol.CSS.ResolveValuesRequest];
+      returnType: Protocol.CSS.ResolveValuesResponse;
+    };
+    'CSS.getLonghandProperties': {
+      paramsType: [Protocol.CSS.GetLonghandPropertiesRequest];
+      returnType: Protocol.CSS.GetLonghandPropertiesResponse;
+    };
+    /**
      * Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
      * attributes) for a DOM node identified by `nodeId`.
      */
@@ -1144,11 +1606,26 @@ export namespace ProtocolMapping {
       returnType: Protocol.CSS.GetInlineStylesForNodeResponse;
     };
     /**
+     * Returns the styles coming from animations & transitions
+     * including the animation & transition styles coming from inheritance chain.
+     */
+    'CSS.getAnimatedStylesForNode': {
+      paramsType: [Protocol.CSS.GetAnimatedStylesForNodeRequest];
+      returnType: Protocol.CSS.GetAnimatedStylesForNodeResponse;
+    };
+    /**
      * Returns requested styles for a DOM node identified by `nodeId`.
      */
     'CSS.getMatchedStylesForNode': {
       paramsType: [Protocol.CSS.GetMatchedStylesForNodeRequest];
       returnType: Protocol.CSS.GetMatchedStylesForNodeResponse;
+    };
+    /**
+     * Returns the values of the default UA-defined environment variables used in env()
+     */
+    'CSS.getEnvironmentVariables': {
+      paramsType: [];
+      returnType: Protocol.CSS.GetEnvironmentVariablesResponse;
     };
     /**
      * Returns all media queries parsed by the rendering engine.
@@ -1183,6 +1660,26 @@ export namespace ProtocolMapping {
       returnType: Protocol.CSS.GetLayersForNodeResponse;
     };
     /**
+     * Given a CSS selector text and a style sheet ID, getLocationForSelector
+     * returns an array of locations of the CSS selector in the style sheet.
+     */
+    'CSS.getLocationForSelector': {
+      paramsType: [Protocol.CSS.GetLocationForSelectorRequest];
+      returnType: Protocol.CSS.GetLocationForSelectorResponse;
+    };
+    /**
+     * Starts tracking the given node for the computed style updates
+     * and whenever the computed style is updated for node, it queues
+     * a `computedStyleUpdated` event with throttling.
+     * There can only be 1 node tracked for computed style updates
+     * so passing a new node id removes tracking from the previous node.
+     * Pass `undefined` to disable tracking.
+     */
+    'CSS.trackComputedStyleUpdatesForNode': {
+      paramsType: [Protocol.CSS.TrackComputedStyleUpdatesForNodeRequest?];
+      returnType: void;
+    };
+    /**
      * Starts tracking the given computed styles for updates. The specified array of properties
      * replaces the one previously specified. Pass empty array to disable tracking.
      * Use takeComputedStyleUpdates to retrieve the list of nodes that had properties modified.
@@ -1208,6 +1705,13 @@ export namespace ProtocolMapping {
     'CSS.setEffectivePropertyValueForNode': {
       paramsType: [Protocol.CSS.SetEffectivePropertyValueForNodeRequest];
       returnType: void;
+    };
+    /**
+     * Modifies the property rule property name.
+     */
+    'CSS.setPropertyRulePropertyName': {
+      paramsType: [Protocol.CSS.SetPropertyRulePropertyNameRequest];
+      returnType: Protocol.CSS.SetPropertyRulePropertyNameResponse;
     };
     /**
      * Modifies the keyframe rule key text.
@@ -1236,6 +1740,13 @@ export namespace ProtocolMapping {
     'CSS.setSupportsText': {
       paramsType: [Protocol.CSS.SetSupportsTextRequest];
       returnType: Protocol.CSS.SetSupportsTextResponse;
+    };
+    /**
+     * Modifies the expression of a navigation at-rule.
+     */
+    'CSS.setNavigationText': {
+      paramsType: [Protocol.CSS.SetNavigationTextRequest];
+      returnType: Protocol.CSS.SetNavigationTextResponse;
     };
     /**
      * Modifies the expression of a scope at-rule.
@@ -1376,6 +1887,13 @@ export namespace ProtocolMapping {
     'Cast.stopCasting': {
       paramsType: [Protocol.Cast.StopCastingRequest];
       returnType: void;
+    };
+    /**
+     * Returns all entries in the CrashReportContext across all frames in the page.
+     */
+    'CrashReportContext.getEntries': {
+      paramsType: [];
+      returnType: Protocol.CrashReportContext.GetEntriesResponse;
     };
     /**
      * Collects class names for the node with given id and all of it's child nodes.
@@ -1595,6 +2113,13 @@ export namespace ProtocolMapping {
       returnType: Protocol.DOM.GetTopLayerElementsResponse;
     };
     /**
+     * Returns the NodeId of the matched element according to certain relations.
+     */
+    'DOM.getElementByRelation': {
+      paramsType: [Protocol.DOM.GetElementByRelationRequest];
+      returnType: Protocol.DOM.GetElementByRelationResponse;
+    };
+    /**
      * Re-does the last undone action.
      */
     'DOM.redo': {
@@ -1685,6 +2210,13 @@ export namespace ProtocolMapping {
       returnType: Protocol.DOM.GetFileInfoResponse;
     };
     /**
+     * Returns list of detached nodes
+     */
+    'DOM.getDetachedDomNodes': {
+      paramsType: [];
+      returnType: Protocol.DOM.GetDetachedDomNodesResponse;
+    };
+    /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
      */
@@ -1729,9 +2261,10 @@ export namespace ProtocolMapping {
     };
     /**
      * Returns the query container of the given node based on container query
-     * conditions: containerName, physical, and logical axes. If no axes are
-     * provided, the style container is returned, which is the direct parent or the
-     * closest element with a matching container-name.
+     * conditions: containerName, physical and logical axes, and whether it queries
+     * scroll-state or anchored elements. If no axes are provided and
+     * queriesScrollState is false, the style container is returned, which is the
+     * direct parent or the closest element with a matching container-name.
      */
     'DOM.getContainerForNode': {
       paramsType: [Protocol.DOM.GetContainerForNodeRequest];
@@ -1744,6 +2277,22 @@ export namespace ProtocolMapping {
     'DOM.getQueryingDescendantsForContainer': {
       paramsType: [Protocol.DOM.GetQueryingDescendantsForContainerRequest];
       returnType: Protocol.DOM.GetQueryingDescendantsForContainerResponse;
+    };
+    /**
+     * Returns the target anchor element of the given anchor query according to
+     * https://www.w3.org/TR/css-anchor-position-1/#target.
+     */
+    'DOM.getAnchorElement': {
+      paramsType: [Protocol.DOM.GetAnchorElementRequest];
+      returnType: Protocol.DOM.GetAnchorElementResponse;
+    };
+    /**
+     * When enabling, this API force-opens the popover identified by nodeId
+     * and keeps it open until disabled.
+     */
+    'DOM.forceShowPopover': {
+      paramsType: [Protocol.DOM.ForceShowPopoverRequest];
+      returnType: Protocol.DOM.ForceShowPopoverResponse;
     };
     /**
      * Returns event listeners of the given object.
@@ -1816,20 +2365,6 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Sets breakpoint on particular native event.
-     */
-    'EventBreakpoints.setInstrumentationBreakpoint': {
-      paramsType: [Protocol.EventBreakpoints.SetInstrumentationBreakpointRequest];
-      returnType: void;
-    };
-    /**
-     * Removes breakpoint on particular native event.
-     */
-    'EventBreakpoints.removeInstrumentationBreakpoint': {
-      paramsType: [Protocol.EventBreakpoints.RemoveInstrumentationBreakpointRequest];
-      returnType: void;
-    };
-    /**
      * Disables DOM snapshot agent for the given page.
      */
     'DOMSnapshot.disable': {
@@ -1894,26 +2429,32 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Disables database tracking, prevents database events from being sent to the client.
+     * Enable events in this domain.
      */
-    'Database.disable': {
+    'DeviceAccess.enable': {
       paramsType: [];
       returnType: void;
     };
     /**
-     * Enables database tracking, database events will now be delivered to the client.
+     * Disable events in this domain.
      */
-    'Database.enable': {
+    'DeviceAccess.disable': {
       paramsType: [];
       returnType: void;
     };
-    'Database.executeSQL': {
-      paramsType: [Protocol.Database.ExecuteSQLRequest];
-      returnType: Protocol.Database.ExecuteSQLResponse;
+    /**
+     * Select a device in response to a DeviceAccess.deviceRequestPrompted event.
+     */
+    'DeviceAccess.selectPrompt': {
+      paramsType: [Protocol.DeviceAccess.SelectPromptRequest];
+      returnType: void;
     };
-    'Database.getDatabaseTableNames': {
-      paramsType: [Protocol.Database.GetDatabaseTableNamesRequest];
-      returnType: Protocol.Database.GetDatabaseTableNamesResponse;
+    /**
+     * Cancel a prompt in response to a DeviceAccess.deviceRequestPrompted event.
+     */
+    'DeviceAccess.cancelPrompt': {
+      paramsType: [Protocol.DeviceAccess.CancelPromptRequest];
+      returnType: void;
     };
     /**
      * Clears the overridden Device Orientation.
@@ -1987,12 +2528,56 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Overrides the values for env(safe-area-inset-*) and env(safe-area-max-inset-*). Unset values will cause the
+     * respective variables to be undefined, even if previously overridden.
+     */
+    'Emulation.setSafeAreaInsetsOverride': {
+      paramsType: [Protocol.Emulation.SetSafeAreaInsetsOverrideRequest];
+      returnType: void;
+    };
+    /**
      * Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
      * window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
      * query results).
      */
     'Emulation.setDeviceMetricsOverride': {
       paramsType: [Protocol.Emulation.SetDeviceMetricsOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Start reporting the given posture value to the Device Posture API.
+     * This override can also be set in setDeviceMetricsOverride().
+     */
+    'Emulation.setDevicePostureOverride': {
+      paramsType: [Protocol.Emulation.SetDevicePostureOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Clears a device posture override set with either setDeviceMetricsOverride()
+     * or setDevicePostureOverride() and starts using posture information from the
+     * platform again.
+     * Does nothing if no override is set.
+     */
+    'Emulation.clearDevicePostureOverride': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Start using the given display features to pupulate the Viewport Segments API.
+     * This override can also be set in setDeviceMetricsOverride().
+     */
+    'Emulation.setDisplayFeaturesOverride': {
+      paramsType: [Protocol.Emulation.SetDisplayFeaturesOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Clears the display features override set with either setDeviceMetricsOverride()
+     * or setDisplayFeaturesOverride() and starts using display features from the
+     * platform again.
+     * Does nothing if no override is set.
+     */
+    'Emulation.clearDisplayFeaturesOverride': {
+      paramsType: [];
       returnType: void;
     };
     'Emulation.setScrollbarsHidden': {
@@ -2022,11 +2607,70 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
-     * unavailable.
+     * Emulates the given OS text scale.
+     */
+    'Emulation.setEmulatedOSTextScale': {
+      paramsType: [Protocol.Emulation.SetEmulatedOSTextScaleRequest?];
+      returnType: void;
+    };
+    /**
+     * Overrides the Geolocation Position or Error. Omitting latitude, longitude or
+     * accuracy emulates position unavailable.
      */
     'Emulation.setGeolocationOverride': {
       paramsType: [Protocol.Emulation.SetGeolocationOverrideRequest?];
+      returnType: void;
+    };
+    'Emulation.getOverriddenSensorInformation': {
+      paramsType: [Protocol.Emulation.GetOverriddenSensorInformationRequest];
+      returnType: Protocol.Emulation.GetOverriddenSensorInformationResponse;
+    };
+    /**
+     * Overrides a platform sensor of a given type. If |enabled| is true, calls to
+     * Sensor.start() will use a virtual sensor as backend rather than fetching
+     * data from a real hardware sensor. Otherwise, existing virtual
+     * sensor-backend Sensor objects will fire an error event and new calls to
+     * Sensor.start() will attempt to use a real sensor instead.
+     */
+    'Emulation.setSensorOverrideEnabled': {
+      paramsType: [Protocol.Emulation.SetSensorOverrideEnabledRequest];
+      returnType: void;
+    };
+    /**
+     * Updates the sensor readings reported by a sensor type previously overridden
+     * by setSensorOverrideEnabled.
+     */
+    'Emulation.setSensorOverrideReadings': {
+      paramsType: [Protocol.Emulation.SetSensorOverrideReadingsRequest];
+      returnType: void;
+    };
+    /**
+     * Overrides a pressure source of a given type, as used by the Compute
+     * Pressure API, so that updates to PressureObserver.observe() are provided
+     * via setPressureStateOverride instead of being retrieved from
+     * platform-provided telemetry data.
+     */
+    'Emulation.setPressureSourceOverrideEnabled': {
+      paramsType: [Protocol.Emulation.SetPressureSourceOverrideEnabledRequest];
+      returnType: void;
+    };
+    /**
+     * TODO: OBSOLETE: To remove when setPressureDataOverride is merged.
+     * Provides a given pressure state that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     */
+    'Emulation.setPressureStateOverride': {
+      paramsType: [Protocol.Emulation.SetPressureStateOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Provides a given pressure data set that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     */
+    'Emulation.setPressureDataOverride': {
+      paramsType: [Protocol.Emulation.SetPressureDataOverrideRequest];
       returnType: void;
     };
     /**
@@ -2106,12 +2750,20 @@ export namespace ProtocolMapping {
       paramsType: [Protocol.Emulation.SetDisabledImageTypesRequest];
       returnType: void;
     };
+    /**
+     * Override the value of navigator.connection.saveData
+     */
+    'Emulation.setDataSaverOverride': {
+      paramsType: [Protocol.Emulation.SetDataSaverOverrideRequest?];
+      returnType: void;
+    };
     'Emulation.setHardwareConcurrencyOverride': {
       paramsType: [Protocol.Emulation.SetHardwareConcurrencyOverrideRequest];
       returnType: void;
     };
     /**
      * Allows overriding user agent with the given string.
+     * `userAgentMetadata` must be set for Client Hint headers to be sent.
      */
     'Emulation.setUserAgentOverride': {
       paramsType: [Protocol.Emulation.SetUserAgentOverrideRequest];
@@ -2123,6 +2775,262 @@ export namespace ProtocolMapping {
     'Emulation.setAutomationOverride': {
       paramsType: [Protocol.Emulation.SetAutomationOverrideRequest];
       returnType: void;
+    };
+    /**
+     * Allows overriding the difference between the small and large viewport sizes, which determine the
+     * value of the `svh` and `lvh` unit, respectively. Only supported for top-level frames.
+     */
+    'Emulation.setSmallViewportHeightDifferenceOverride': {
+      paramsType: [Protocol.Emulation.SetSmallViewportHeightDifferenceOverrideRequest];
+      returnType: void;
+    };
+    /**
+     * Returns device's screen configuration. In headful mode, the physical screens configuration is returned,
+     * whereas in headless mode, a virtual headless screen configuration is provided instead.
+     */
+    'Emulation.getScreenInfos': {
+      paramsType: [];
+      returnType: Protocol.Emulation.GetScreenInfosResponse;
+    };
+    /**
+     * Add a new screen to the device. Only supported in headless mode.
+     */
+    'Emulation.addScreen': {
+      paramsType: [Protocol.Emulation.AddScreenRequest];
+      returnType: Protocol.Emulation.AddScreenResponse;
+    };
+    /**
+     * Updates specified screen parameters. Only supported in headless mode.
+     */
+    'Emulation.updateScreen': {
+      paramsType: [Protocol.Emulation.UpdateScreenRequest];
+      returnType: Protocol.Emulation.UpdateScreenResponse;
+    };
+    /**
+     * Remove screen from the device. Only supported in headless mode.
+     */
+    'Emulation.removeScreen': {
+      paramsType: [Protocol.Emulation.RemoveScreenRequest];
+      returnType: void;
+    };
+    /**
+     * Set primary screen. Only supported in headless mode.
+     * Note that this changes the coordinate system origin to the top-left
+     * of the new primary screen, updating the bounds and work areas
+     * of all existing screens accordingly.
+     */
+    'Emulation.setPrimaryScreen': {
+      paramsType: [Protocol.Emulation.SetPrimaryScreenRequest];
+      returnType: void;
+    };
+    /**
+     * Sets breakpoint on particular native event.
+     */
+    'EventBreakpoints.setInstrumentationBreakpoint': {
+      paramsType: [Protocol.EventBreakpoints.SetInstrumentationBreakpointRequest];
+      returnType: void;
+    };
+    /**
+     * Removes breakpoint on particular native event.
+     */
+    'EventBreakpoints.removeInstrumentationBreakpoint': {
+      paramsType: [Protocol.EventBreakpoints.RemoveInstrumentationBreakpointRequest];
+      returnType: void;
+    };
+    /**
+     * Removes all breakpoints
+     */
+    'EventBreakpoints.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Runs an extension default action.
+     * Available if the client is connected using the --remote-debugging-pipe
+     * flag and the --enable-unsafe-extension-debugging flag is set.
+     */
+    'Extensions.triggerAction': {
+      paramsType: [Protocol.Extensions.TriggerActionRequest];
+      returnType: void;
+    };
+    /**
+     * Installs an unpacked extension from the filesystem similar to
+     * --load-extension CLI flags. Returns extension ID once the extension
+     * has been installed. Available if the client is connected using the
+     * --remote-debugging-pipe flag and the --enable-unsafe-extension-debugging
+     * flag is set.
+     */
+    'Extensions.loadUnpacked': {
+      paramsType: [Protocol.Extensions.LoadUnpackedRequest];
+      returnType: Protocol.Extensions.LoadUnpackedResponse;
+    };
+    /**
+     * Gets a list of all unpacked extensions.
+     * Available if the client is connected using the --remote-debugging-pipe flag
+     * and the --enable-unsafe-extension-debugging flag is set.
+     */
+    'Extensions.getExtensions': {
+      paramsType: [];
+      returnType: Protocol.Extensions.GetExtensionsResponse;
+    };
+    /**
+     * Uninstalls an unpacked extension (others not supported) from the profile.
+     * Available if the client is connected using the --remote-debugging-pipe flag
+     * and the --enable-unsafe-extension-debugging.
+     */
+    'Extensions.uninstall': {
+      paramsType: [Protocol.Extensions.UninstallRequest];
+      returnType: void;
+    };
+    /**
+     * Gets data from extension storage in the given `storageArea`. If `keys` is
+     * specified, these are used to filter the result.
+     */
+    'Extensions.getStorageItems': {
+      paramsType: [Protocol.Extensions.GetStorageItemsRequest];
+      returnType: Protocol.Extensions.GetStorageItemsResponse;
+    };
+    /**
+     * Removes `keys` from extension storage in the given `storageArea`.
+     */
+    'Extensions.removeStorageItems': {
+      paramsType: [Protocol.Extensions.RemoveStorageItemsRequest];
+      returnType: void;
+    };
+    /**
+     * Clears extension storage in the given `storageArea`.
+     */
+    'Extensions.clearStorageItems': {
+      paramsType: [Protocol.Extensions.ClearStorageItemsRequest];
+      returnType: void;
+    };
+    /**
+     * Sets `values` in extension storage in the given `storageArea`. The provided `values`
+     * will be merged with existing values in the storage area.
+     */
+    'Extensions.setStorageItems': {
+      paramsType: [Protocol.Extensions.SetStorageItemsRequest];
+      returnType: void;
+    };
+    'FedCm.enable': {
+      paramsType: [Protocol.FedCm.EnableRequest?];
+      returnType: void;
+    };
+    'FedCm.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    'FedCm.selectAccount': {
+      paramsType: [Protocol.FedCm.SelectAccountRequest];
+      returnType: void;
+    };
+    'FedCm.clickDialogButton': {
+      paramsType: [Protocol.FedCm.ClickDialogButtonRequest];
+      returnType: void;
+    };
+    'FedCm.openUrl': {
+      paramsType: [Protocol.FedCm.OpenUrlRequest];
+      returnType: void;
+    };
+    'FedCm.dismissDialog': {
+      paramsType: [Protocol.FedCm.DismissDialogRequest];
+      returnType: void;
+    };
+    /**
+     * Resets the cooldown time, if any, to allow the next FedCM call to show
+     * a dialog even if one was recently dismissed by the user.
+     */
+    'FedCm.resetCooldown': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Disables the fetch domain.
+     */
+    'Fetch.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Enables issuing of requestPaused events. A request will be paused until client
+     * calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth.
+     */
+    'Fetch.enable': {
+      paramsType: [Protocol.Fetch.EnableRequest?];
+      returnType: void;
+    };
+    /**
+     * Causes the request to fail with specified reason.
+     */
+    'Fetch.failRequest': {
+      paramsType: [Protocol.Fetch.FailRequestRequest];
+      returnType: void;
+    };
+    /**
+     * Provides response to the request.
+     */
+    'Fetch.fulfillRequest': {
+      paramsType: [Protocol.Fetch.FulfillRequestRequest];
+      returnType: void;
+    };
+    /**
+     * Continues the request, optionally modifying some of its parameters.
+     */
+    'Fetch.continueRequest': {
+      paramsType: [Protocol.Fetch.ContinueRequestRequest];
+      returnType: void;
+    };
+    /**
+     * Continues a request supplying authChallengeResponse following authRequired event.
+     */
+    'Fetch.continueWithAuth': {
+      paramsType: [Protocol.Fetch.ContinueWithAuthRequest];
+      returnType: void;
+    };
+    /**
+     * Continues loading of the paused response, optionally modifying the
+     * response headers. If either responseCode or headers are modified, all of them
+     * must be present.
+     */
+    'Fetch.continueResponse': {
+      paramsType: [Protocol.Fetch.ContinueResponseRequest];
+      returnType: void;
+    };
+    /**
+     * Causes the body of the response to be received from the server and
+     * returned as a single string. May only be issued for a request that
+     * is paused in the Response stage and is mutually exclusive with
+     * takeResponseBodyForInterceptionAsStream. Calling other methods that
+     * affect the request or disabling fetch domain before body is received
+     * results in an undefined behavior.
+     * Note that the response body is not available for redirects. Requests
+     * paused in the _redirect received_ state may be differentiated by
+     * `responseCode` and presence of `location` response header, see
+     * comments to `requestPaused` for details.
+     */
+    'Fetch.getResponseBody': {
+      paramsType: [Protocol.Fetch.GetResponseBodyRequest];
+      returnType: Protocol.Fetch.GetResponseBodyResponse;
+    };
+    /**
+     * Returns a handle to the stream representing the response body.
+     * The request must be paused in the HeadersReceived stage.
+     * Note that after this command the request can't be continued
+     * as is -- client either needs to cancel it or to provide the
+     * response body.
+     * The stream only supports sequential read, IO.read will fail if the position
+     * is specified.
+     * This method is mutually exclusive with getResponseBody.
+     * Calling other methods that affect the request or disabling fetch
+     * domain before body is received results in an undefined behavior.
+     */
+    'Fetch.takeResponseBodyAsStream': {
+      paramsType: [Protocol.Fetch.TakeResponseBodyAsStreamRequest];
+      returnType: Protocol.Fetch.TakeResponseBodyAsStreamResponse;
+    };
+    'FileSystem.getDirectory': {
+      paramsType: [Protocol.FileSystem.GetDirectoryRequest];
+      returnType: Protocol.FileSystem.GetDirectoryResponse;
     };
     /**
      * Sends a BeginFrame to the target and returns when the frame was completed. Optionally captures a
@@ -2255,7 +3163,7 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * This method sets the current candidate text for ime.
+     * This method sets the current candidate text for IME.
      * Use imeCommitComposition to commit the final text.
      * Use imeSetComposition with empty string as text to cancel composition.
      */
@@ -2275,6 +3183,13 @@ export namespace ProtocolMapping {
      */
     'Input.dispatchTouchEvent': {
       paramsType: [Protocol.Input.DispatchTouchEventRequest];
+      returnType: void;
+    };
+    /**
+     * Cancels any active dragging in the page.
+     */
+    'Input.cancelDragging': {
+      paramsType: [];
       returnType: void;
     };
     /**
@@ -2430,10 +3345,38 @@ export namespace ProtocolMapping {
       paramsType: [];
       returnType: void;
     };
+    /**
+     * Enables the Media domain
+     */
+    'Media.enable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Disables the Media domain.
+     */
+    'Media.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Retruns current DOM object counters.
+     */
     'Memory.getDOMCounters': {
       paramsType: [];
       returnType: Protocol.Memory.GetDOMCountersResponse;
     };
+    /**
+     * Retruns DOM object counters after preparing renderer for leak detection.
+     */
+    'Memory.getDOMCountersForLeakDetection': {
+      paramsType: [];
+      returnType: Protocol.Memory.GetDOMCountersForLeakDetectionResponse;
+    };
+    /**
+     * Prepares for leak detection by terminating workers, stopping spellcheckers,
+     * dropping non-essential internal caches, running garbage collections, etc.
+     */
     'Memory.prepareForLeakDetection': {
       paramsType: [];
       returnType: void;
@@ -2558,7 +3501,7 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Deletes browser cookies with matching name and url or domain/path pair.
+     * Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
      */
     'Network.deleteCookies': {
       paramsType: [Protocol.Network.DeleteCookiesRequest];
@@ -2572,10 +3515,27 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Activates emulation of network conditions.
+     * Activates emulation of network conditions. This command is deprecated in favor of the emulateNetworkConditionsByRule
+     * and overrideNetworkState commands, which can be used together to the same effect.
      */
     'Network.emulateNetworkConditions': {
       paramsType: [Protocol.Network.EmulateNetworkConditionsRequest];
+      returnType: void;
+    };
+    /**
+     * Activates emulation of network conditions for individual requests using URL match patterns. Unlike the deprecated
+     * Network.emulateNetworkConditions this method does not affect `navigator` state. Use Network.overrideNetworkState to
+     * explicitly modify `navigator` behavior.
+     */
+    'Network.emulateNetworkConditionsByRule': {
+      paramsType: [Protocol.Network.EmulateNetworkConditionsByRuleRequest];
+      returnType: Protocol.Network.EmulateNetworkConditionsByRuleResponse;
+    };
+    /**
+     * Override the state of navigator.onLine and navigator.connection.
+     */
+    'Network.overrideNetworkState': {
+      paramsType: [Protocol.Network.OverrideNetworkStateRequest];
       returnType: void;
     };
     /**
@@ -2583,6 +3543,15 @@ export namespace ProtocolMapping {
      */
     'Network.enable': {
       paramsType: [Protocol.Network.EnableRequest?];
+      returnType: void;
+    };
+    /**
+     * Configures storing response bodies outside of renderer, so that these survive
+     * a cross-process navigation.
+     * If maxTotalBufferSize is not set, durable messages are disabled.
+     */
+    'Network.configureDurableMessages': {
+      paramsType: [Protocol.Network.ConfigureDurableMessagesRequest?];
       returnType: void;
     };
     /**
@@ -2660,7 +3629,7 @@ export namespace ProtocolMapping {
      * Blocks URLs from loading.
      */
     'Network.setBlockedURLs': {
-      paramsType: [Protocol.Network.SetBlockedURLsRequest];
+      paramsType: [Protocol.Network.SetBlockedURLsRequest?];
       returnType: void;
     };
     /**
@@ -2721,6 +3690,14 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Enables streaming of the response for the given requestId.
+     * If enabled, the dataReceived event contains the data that was received during streaming.
+     */
+    'Network.streamResourceContent': {
+      paramsType: [Protocol.Network.StreamResourceContentRequest];
+      returnType: Protocol.Network.StreamResourceContentResponse;
+    };
+    /**
      * Returns information about the COEP/COOP isolation status.
      */
     'Network.getSecurityIsolationStatus': {
@@ -2736,11 +3713,33 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Sets up tracking device bound sessions and fetching of initial set of sessions.
+     */
+    'Network.enableDeviceBoundSessions': {
+      paramsType: [Protocol.Network.EnableDeviceBoundSessionsRequest];
+      returnType: void;
+    };
+    /**
+     * Fetches the schemeful site for a specific origin.
+     */
+    'Network.fetchSchemefulSite': {
+      paramsType: [Protocol.Network.FetchSchemefulSiteRequest];
+      returnType: Protocol.Network.FetchSchemefulSiteResponse;
+    };
+    /**
      * Fetches the resource and returns the content.
      */
     'Network.loadNetworkResource': {
       paramsType: [Protocol.Network.LoadNetworkResourceRequest];
       returnType: Protocol.Network.LoadNetworkResourceResponse;
+    };
+    /**
+     * Sets Controls for third-party cookie access
+     * Page reload is required before the new cookie behavior will be observed
+     */
+    'Network.setCookieControls': {
+      paramsType: [Protocol.Network.SetCookieControlsRequest];
+      returnType: void;
     };
     /**
      * Disables domain notifications.
@@ -2786,8 +3785,8 @@ export namespace ProtocolMapping {
     };
     /**
      * Highlights owner element of the frame with given id.
-     * Deprecated: Doesn't work reliablity and cannot be fixed due to process
-     * separatation (the owner node might be in a different process). Determine
+     * Deprecated: Doesn't work reliably and cannot be fixed due to process
+     * separation (the owner node might be in a different process). Determine
      * the owner node in the client and use highlightNode.
      */
     'Overlay.highlightFrame': {
@@ -2811,6 +3810,9 @@ export namespace ProtocolMapping {
     };
     /**
      * Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+     * Issue: the method does not handle device pixel ratio (DPR) correctly.
+     * The coordinates currently have to be adjusted by the client
+     * if DPR is not 1 (see crbug.com/437807128).
      */
     'Overlay.highlightRect': {
       paramsType: [Protocol.Overlay.HighlightRectRequest];
@@ -2876,6 +3878,10 @@ export namespace ProtocolMapping {
       paramsType: [Protocol.Overlay.SetShowContainerQueryOverlaysRequest];
       returnType: void;
     };
+    'Overlay.setShowInspectedElementAnchor': {
+      paramsType: [Protocol.Overlay.SetShowInspectedElementAnchorRequest];
+      returnType: void;
+    };
     /**
      * Requests that backend shows paint rectangles
      */
@@ -2905,7 +3911,7 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Request that backend shows an overlay with web vital metrics.
+     * Deprecated, no longer has any effect.
      */
     'Overlay.setShowWebVitals': {
       paramsType: [Protocol.Overlay.SetShowWebVitalsRequest];
@@ -2930,6 +3936,111 @@ export namespace ProtocolMapping {
      */
     'Overlay.setShowIsolatedElements': {
       paramsType: [Protocol.Overlay.SetShowIsolatedElementsRequest];
+      returnType: void;
+    };
+    /**
+     * Show Window Controls Overlay for PWA
+     */
+    'Overlay.setShowWindowControlsOverlay': {
+      paramsType: [Protocol.Overlay.SetShowWindowControlsOverlayRequest?];
+      returnType: void;
+    };
+    /**
+     * Returns the following OS state for the given manifest id.
+     */
+    'PWA.getOsAppState': {
+      paramsType: [Protocol.PWA.GetOsAppStateRequest];
+      returnType: Protocol.PWA.GetOsAppStateResponse;
+    };
+    /**
+     * Installs the given manifest identity, optionally using the given installUrlOrBundleUrl
+     *
+     * IWA-specific install description:
+     * manifestId corresponds to isolated-app:// + web_package::SignedWebBundleId
+     *
+     * File installation mode:
+     * The installUrlOrBundleUrl can be either file:// or http(s):// pointing
+     * to a signed web bundle (.swbn). In this case SignedWebBundleId must correspond to
+     * The .swbn file's signing key.
+     *
+     * Dev proxy installation mode:
+     * installUrlOrBundleUrl must be http(s):// that serves dev mode IWA.
+     * web_package::SignedWebBundleId must be of type dev proxy.
+     *
+     * The advantage of dev proxy mode is that all changes to IWA
+     * automatically will be reflected in the running app without
+     * reinstallation.
+     *
+     * To generate bundle id for proxy mode:
+     * 1. Generate 32 random bytes.
+     * 2. Add a specific suffix at the end following the documentation
+     *    https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
+     * 3. Encode the entire sequence using Base32 without padding.
+     *
+     * If Chrome is not in IWA dev
+     * mode, the installation will fail, regardless of the state of the allowlist.
+     */
+    'PWA.install': {
+      paramsType: [Protocol.PWA.InstallRequest];
+      returnType: void;
+    };
+    /**
+     * Uninstalls the given manifest_id and closes any opened app windows.
+     */
+    'PWA.uninstall': {
+      paramsType: [Protocol.PWA.UninstallRequest];
+      returnType: void;
+    };
+    /**
+     * Launches the installed web app, or an url in the same web app instead of the
+     * default start url if it is provided. Returns a page Target.TargetID which
+     * can be used to attach to via Target.attachToTarget or similar APIs.
+     */
+    'PWA.launch': {
+      paramsType: [Protocol.PWA.LaunchRequest];
+      returnType: Protocol.PWA.LaunchResponse;
+    };
+    /**
+     * Opens one or more local files from an installed web app identified by its
+     * manifestId. The web app needs to have file handlers registered to process
+     * the files. The API returns one or more page Target.TargetIDs which can be
+     * used to attach to via Target.attachToTarget or similar APIs.
+     * If some files in the parameters cannot be handled by the web app, they will
+     * be ignored. If none of the files can be handled, this API returns an error.
+     * If no files are provided as the parameter, this API also returns an error.
+     *
+     * According to the definition of the file handlers in the manifest file, one
+     * Target.TargetID may represent a page handling one or more files. The order
+     * of the returned Target.TargetIDs is not guaranteed.
+     *
+     * TODO(crbug.com/339454034): Check the existences of the input files.
+     */
+    'PWA.launchFilesInApp': {
+      paramsType: [Protocol.PWA.LaunchFilesInAppRequest];
+      returnType: Protocol.PWA.LaunchFilesInAppResponse;
+    };
+    /**
+     * Opens the current page in its web app identified by the manifest id, needs
+     * to be called on a page target. This function returns immediately without
+     * waiting for the app to finish loading.
+     */
+    'PWA.openCurrentPageInApp': {
+      paramsType: [Protocol.PWA.OpenCurrentPageInAppRequest];
+      returnType: void;
+    };
+    /**
+     * Changes user settings of the web app identified by its manifestId. If the
+     * app was not installed, this command returns an error. Unset parameters will
+     * be ignored; unrecognized values will cause an error.
+     *
+     * Unlike the ones defined in the manifest files of the web apps, these
+     * settings are provided by the browser and controlled by the users, they
+     * impact the way the browser handling the web apps.
+     *
+     * See the comment of each parameter.
+     */
+    'PWA.changeAppUserSettings': {
+      paramsType: [Protocol.PWA.ChangeAppUserSettingsRequest];
       returnType: void;
     };
     /**
@@ -3014,11 +4125,18 @@ export namespace ProtocolMapping {
      * Enables page domain notifications.
      */
     'Page.enable': {
-      paramsType: [];
+      paramsType: [Protocol.Page.EnableRequest?];
       returnType: void;
     };
+    /**
+     * Gets the processed manifest for this current document.
+     *   This API always waits for the manifest to be loaded.
+     *   If manifestId is provided, and it does not match the manifest of the
+     *     current document, this API errors out.
+     *   If there is not a loaded page, this API errors out immediately.
+     */
     'Page.getAppManifest': {
-      paramsType: [];
+      paramsType: [Protocol.Page.GetAppManifestRequest?];
       returnType: Protocol.Page.GetAppManifestResponse;
     };
     'Page.getInstallabilityErrors': {
@@ -3040,18 +4158,9 @@ export namespace ProtocolMapping {
       paramsType: [];
       returnType: Protocol.Page.GetAppIdResponse;
     };
-    'Page.getAdScriptId': {
-      paramsType: [Protocol.Page.GetAdScriptIdRequest];
-      returnType: Protocol.Page.GetAdScriptIdResponse;
-    };
-    /**
-     * Returns all browser cookies for the page and all of its subframes. Depending
-     * on the backend support, will return detailed cookie information in the
-     * `cookies` field.
-     */
-    'Page.getCookies': {
-      paramsType: [];
-      returnType: Protocol.Page.GetCookiesResponse;
+    'Page.getAdScriptAncestry': {
+      paramsType: [Protocol.Page.GetAdScriptAncestryRequest];
+      returnType: Protocol.Page.GetAdScriptAncestryResponse;
     };
     /**
      * Returns present frame tree structure.
@@ -3298,7 +4407,7 @@ export namespace ProtocolMapping {
     };
     /**
      * Requests backend to produce compilation cache for the specified scripts.
-     * `scripts` are appeneded to the list of scripts for which the cache
+     * `scripts` are appended to the list of scripts for which the cache
      * would be produced. The list may be reset during page navigation.
      * When script with a matching URL is encountered, the cache is optionally
      * produced upon backend discretion, based on internal heuristics.
@@ -3376,6 +4485,14 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Get the annotated page content for the main frame.
+     * This is an experimental command that is subject to change.
+     */
+    'Page.getAnnotatedPageContent': {
+      paramsType: [Protocol.Page.GetAnnotatedPageContentRequest?];
+      returnType: Protocol.Page.GetAnnotatedPageContentResponse;
+    };
+    /**
      * Disable collecting and reporting metrics.
      */
     'Performance.disable': {
@@ -3411,6 +4528,14 @@ export namespace ProtocolMapping {
      */
     'PerformanceTimeline.enable': {
       paramsType: [Protocol.PerformanceTimeline.EnableRequest];
+      returnType: void;
+    };
+    'Preload.enable': {
+      paramsType: [];
+      returnType: void;
+    };
+    'Preload.disable': {
+      paramsType: [];
       returnType: void;
     };
     /**
@@ -3469,10 +4594,6 @@ export namespace ProtocolMapping {
       paramsType: [];
       returnType: void;
     };
-    'ServiceWorker.inspectWorker': {
-      paramsType: [Protocol.ServiceWorker.InspectWorkerRequest];
-      returnType: void;
-    };
     'ServiceWorker.setForceUpdateOnPageLoad': {
       paramsType: [Protocol.ServiceWorker.SetForceUpdateOnPageLoadRequest];
       returnType: void;
@@ -3502,11 +4623,165 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Enables the |SmartCardEmulation| domain.
+     */
+    'SmartCardEmulation.enable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Disables the |SmartCardEmulation| domain.
+     */
+    'SmartCardEmulation.disable': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardEstablishContext| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaa1b8970169fd4883a6dc4a8f43f19b67
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardestablishcontext
+     */
+    'SmartCardEmulation.reportEstablishContextResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportEstablishContextResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardReleaseContext| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga6aabcba7744c5c9419fdd6404f73a934
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardreleasecontext
+     */
+    'SmartCardEmulation.reportReleaseContextResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportReleaseContextResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardListReaders| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga93b07815789b3cf2629d439ecf20f0d9
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardlistreadersa
+     */
+    'SmartCardEmulation.reportListReadersResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportListReadersResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardGetStatusChange| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga33247d5d1257d59e55647c3bb717db24
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetstatuschangea
+     */
+    'SmartCardEmulation.reportGetStatusChangeResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportGetStatusChangeResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the result of a |SCardBeginTransaction| call.
+     * On success, this creates a new transaction object.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaddb835dce01a0da1d6ca02d33ee7d861
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardbegintransaction
+     */
+    'SmartCardEmulation.reportBeginTransactionResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportBeginTransactionResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a call that returns only a result code.
+     * Used for: |SCardCancel|, |SCardDisconnect|, |SCardSetAttrib|, |SCardEndTransaction|.
+     *
+     * This maps to:
+     * 1. SCardCancel
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaacbbc0c6d6c0cbbeb4f4debf6fbeeee6
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardcancel
+     *
+     * 2. SCardDisconnect
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga4be198045c73ec0deb79e66c0ca1738a
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scarddisconnect
+     *
+     * 3. SCardSetAttrib
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga060f0038a4ddfd5dd2b8fadf3c3a2e4f
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardsetattrib
+     *
+     * 4. SCardEndTransaction
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gae8742473b404363e5c587f570d7e2f3b
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardendtransaction
+     */
+    'SmartCardEmulation.reportPlainResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportPlainResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardConnect| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga4e515829752e0a8dbc4d630696a8d6a5
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardconnecta
+     */
+    'SmartCardEmulation.reportConnectResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportConnectResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a call that sends back data on success.
+     * Used for |SCardTransmit|, |SCardControl|, and |SCardGetAttrib|.
+     *
+     * This maps to:
+     * 1. SCardTransmit
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#ga9a2d77242a271310269065e64633ab99
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardtransmit
+     *
+     * 2. SCardControl
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gac3454d4657110fd7f753b2d3d8f4e32f
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardcontrol
+     *
+     * 3. SCardGetAttrib
+     *    PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gaacfec51917255b7a25b94c5104961602
+     *    Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetattrib
+     */
+    'SmartCardEmulation.reportDataResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportDataResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports the successful result of a |SCardStatus| call.
+     *
+     * This maps to:
+     * PC/SC Lite: https://pcsclite.apdu.fr/api/group__API.html#gae49c3c894ad7ac12a5b896bde70d0382
+     * Microsoft: https://learn.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardstatusa
+     */
+    'SmartCardEmulation.reportStatusResult': {
+      paramsType: [Protocol.SmartCardEmulation.ReportStatusResultRequest];
+      returnType: void;
+    };
+    /**
+     * Reports an error result for the given request.
+     */
+    'SmartCardEmulation.reportError': {
+      paramsType: [Protocol.SmartCardEmulation.ReportErrorRequest];
+      returnType: void;
+    };
+    /**
      * Returns a storage key given a frame id.
+     * Deprecated. Please use Storage.getStorageKey instead.
      */
     'Storage.getStorageKeyForFrame': {
       paramsType: [Protocol.Storage.GetStorageKeyForFrameRequest];
       returnType: Protocol.Storage.GetStorageKeyForFrameResponse;
+    };
+    /**
+     * Returns storage key for the given frame. If no frame ID is provided,
+     * the storage key of the target executing this command is returned.
+     */
+    'Storage.getStorageKey': {
+      paramsType: [Protocol.Storage.GetStorageKeyRequest?];
+      returnType: Protocol.Storage.GetStorageKeyResponse;
     };
     /**
      * Clears storage for origin.
@@ -3644,6 +4919,14 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Enables/Disables issuing of interestGroupAuctionEventOccurred and
+     * interestGroupAuctionNetworkRequestCreated.
+     */
+    'Storage.setInterestGroupAuctionTracking': {
+      paramsType: [Protocol.Storage.SetInterestGroupAuctionTrackingRequest];
+      returnType: void;
+    };
+    /**
      * Gets metadata for an origin's shared storage.
      */
     'Storage.getSharedStorageMetadata': {
@@ -3714,6 +4997,27 @@ export namespace ProtocolMapping {
       returnType: Protocol.Storage.RunBounceTrackingMitigationsResponse;
     };
     /**
+     * Returns the effective Related Website Sets in use by this profile for the browser
+     * session. The effective Related Website Sets will not change during a browser session.
+     */
+    'Storage.getRelatedWebsiteSets': {
+      paramsType: [];
+      returnType: Protocol.Storage.GetRelatedWebsiteSetsResponse;
+    };
+    /**
+     * Returns the list of URLs from a page and its embedded resources that match
+     * existing grace period URL pattern rules.
+     * https://developers.google.com/privacy-sandbox/cookies/temporary-exceptions/grace-period
+     */
+    'Storage.getAffectedUrlsForThirdPartyCookieMetadata': {
+      paramsType: [Protocol.Storage.GetAffectedUrlsForThirdPartyCookieMetadataRequest];
+      returnType: Protocol.Storage.GetAffectedUrlsForThirdPartyCookieMetadataResponse;
+    };
+    'Storage.setProtectedAudienceKAnonymity': {
+      paramsType: [Protocol.Storage.SetProtectedAudienceKAnonymityRequest];
+      returnType: void;
+    };
+    /**
      * Returns information about the system.
      */
     'SystemInfo.getInfo': {
@@ -3768,7 +5072,7 @@ export namespace ProtocolMapping {
      *
      * Injected object will be available as `window[bindingName]`.
      *
-     * The object has the follwing API:
+     * The object has the following API:
      * - `binding.send(json)` - a method to send messages over the remote debugging protocol
      * - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
      */
@@ -3837,11 +5141,14 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Controls whether to automatically attach to new targets which are considered to be related to
-     * this one. When turned on, attaches to all existing related targets as well. When turned off,
+     * Controls whether to automatically attach to new targets which are considered
+     * to be directly related to this one (for example, iframes or workers).
+     * When turned on, attaches to all existing related targets as well. When turned off,
      * automatically detaches from all currently attached targets.
      * This also clears all targets added by `autoAttachRelated` from the list of targets to watch
      * for creation of related targets.
+     * You might want to call this recursively for auto-attached targets to attach
+     * to all available targets.
      */
     'Target.setAutoAttach': {
       paramsType: [Protocol.Target.SetAutoAttachRequest];
@@ -3875,6 +5182,21 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
+     * Gets the targetId of the DevTools page target opened for the given target
+     * (if any).
+     */
+    'Target.getDevToolsTarget': {
+      paramsType: [Protocol.Target.GetDevToolsTargetRequest];
+      returnType: Protocol.Target.GetDevToolsTargetResponse;
+    };
+    /**
+     * Opens a DevTools window for the target.
+     */
+    'Target.openDevTools': {
+      paramsType: [Protocol.Target.OpenDevToolsRequest];
+      returnType: Protocol.Target.OpenDevToolsResponse;
+    };
+    /**
      * Request browser port binding.
      */
     'Tethering.bind': {
@@ -3903,6 +5225,13 @@ export namespace ProtocolMapping {
       returnType: Protocol.Tracing.GetCategoriesResponse;
     };
     /**
+     * Return a descriptor for all available tracing categories.
+     */
+    'Tracing.getTrackEventDescriptor': {
+      paramsType: [];
+      returnType: Protocol.Tracing.GetTrackEventDescriptorResponse;
+    };
+    /**
      * Record a clock sync marker in the trace.
      */
     'Tracing.recordClockSyncMarker': {
@@ -3922,86 +5251,6 @@ export namespace ProtocolMapping {
     'Tracing.start': {
       paramsType: [Protocol.Tracing.StartRequest?];
       returnType: void;
-    };
-    /**
-     * Disables the fetch domain.
-     */
-    'Fetch.disable': {
-      paramsType: [];
-      returnType: void;
-    };
-    /**
-     * Enables issuing of requestPaused events. A request will be paused until client
-     * calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth.
-     */
-    'Fetch.enable': {
-      paramsType: [Protocol.Fetch.EnableRequest?];
-      returnType: void;
-    };
-    /**
-     * Causes the request to fail with specified reason.
-     */
-    'Fetch.failRequest': {
-      paramsType: [Protocol.Fetch.FailRequestRequest];
-      returnType: void;
-    };
-    /**
-     * Provides response to the request.
-     */
-    'Fetch.fulfillRequest': {
-      paramsType: [Protocol.Fetch.FulfillRequestRequest];
-      returnType: void;
-    };
-    /**
-     * Continues the request, optionally modifying some of its parameters.
-     */
-    'Fetch.continueRequest': {
-      paramsType: [Protocol.Fetch.ContinueRequestRequest];
-      returnType: void;
-    };
-    /**
-     * Continues a request supplying authChallengeResponse following authRequired event.
-     */
-    'Fetch.continueWithAuth': {
-      paramsType: [Protocol.Fetch.ContinueWithAuthRequest];
-      returnType: void;
-    };
-    /**
-     * Continues loading of the paused response, optionally modifying the
-     * response headers. If either responseCode or headers are modified, all of them
-     * must be present.
-     */
-    'Fetch.continueResponse': {
-      paramsType: [Protocol.Fetch.ContinueResponseRequest];
-      returnType: void;
-    };
-    /**
-     * Causes the body of the response to be received from the server and
-     * returned as a single string. May only be issued for a request that
-     * is paused in the Response stage and is mutually exclusive with
-     * takeResponseBodyForInterceptionAsStream. Calling other methods that
-     * affect the request or disabling fetch domain before body is received
-     * results in an undefined behavior.
-     */
-    'Fetch.getResponseBody': {
-      paramsType: [Protocol.Fetch.GetResponseBodyRequest];
-      returnType: Protocol.Fetch.GetResponseBodyResponse;
-    };
-    /**
-     * Returns a handle to the stream representing the response body.
-     * The request must be paused in the HeadersReceived stage.
-     * Note that after this command the request can't be continued
-     * as is -- client either needs to cancel it or to provide the
-     * response body.
-     * The stream only supports sequential read, IO.read will fail if the position
-     * is specified.
-     * This method is mutually exclusive with getResponseBody.
-     * Calling other methods that affect the request or disabling fetch
-     * domain before body is received results in an undefined behavior.
-     */
-    'Fetch.takeResponseBodyAsStream': {
-      paramsType: [Protocol.Fetch.TakeResponseBodyAsStreamRequest];
-      returnType: Protocol.Fetch.TakeResponseBodyAsStreamResponse;
     };
     /**
      * Enables the WebAudio domain and starts sending context lifetime events.
@@ -4113,76 +5362,25 @@ export namespace ProtocolMapping {
       returnType: void;
     };
     /**
-     * Enables the Media domain
+     * Allows setting credential properties.
+     * https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
      */
-    'Media.enable': {
+    'WebAuthn.setCredentialProperties': {
+      paramsType: [Protocol.WebAuthn.SetCredentialPropertiesRequest];
+      returnType: void;
+    };
+    /**
+     * Enables the WebMCP domain, allowing events to be sent. Enabling the domain will trigger a toolsAdded event for
+     * all currently registered tools.
+     */
+    'WebMCP.enable': {
       paramsType: [];
       returnType: void;
     };
     /**
-     * Disables the Media domain.
+     * Disables the WebMCP domain.
      */
-    'Media.disable': {
-      paramsType: [];
-      returnType: void;
-    };
-    /**
-     * Enable events in this domain.
-     */
-    'DeviceAccess.enable': {
-      paramsType: [];
-      returnType: void;
-    };
-    /**
-     * Disable events in this domain.
-     */
-    'DeviceAccess.disable': {
-      paramsType: [];
-      returnType: void;
-    };
-    /**
-     * Select a device in response to a DeviceAccess.deviceRequestPrompted event.
-     */
-    'DeviceAccess.selectPrompt': {
-      paramsType: [Protocol.DeviceAccess.SelectPromptRequest];
-      returnType: void;
-    };
-    /**
-     * Cancel a prompt in response to a DeviceAccess.deviceRequestPrompted event.
-     */
-    'DeviceAccess.cancelPrompt': {
-      paramsType: [Protocol.DeviceAccess.CancelPromptRequest];
-      returnType: void;
-    };
-    'Preload.enable': {
-      paramsType: [];
-      returnType: void;
-    };
-    'Preload.disable': {
-      paramsType: [];
-      returnType: void;
-    };
-    'FedCm.enable': {
-      paramsType: [Protocol.FedCm.EnableRequest?];
-      returnType: void;
-    };
-    'FedCm.disable': {
-      paramsType: [];
-      returnType: void;
-    };
-    'FedCm.selectAccount': {
-      paramsType: [Protocol.FedCm.SelectAccountRequest];
-      returnType: void;
-    };
-    'FedCm.dismissDialog': {
-      paramsType: [Protocol.FedCm.DismissDialogRequest];
-      returnType: void;
-    };
-    /**
-     * Resets the cooldown time, if any, to allow the next FedCM call to show
-     * a dialog even if one was recently dismissed by the user.
-     */
-    'FedCm.resetCooldown': {
+    'WebMCP.disable': {
       paramsType: [];
       returnType: void;
     };
@@ -4314,6 +5512,15 @@ export namespace ProtocolMapping {
      */
     'Debugger.setAsyncCallStackDepth': {
       paramsType: [Protocol.Debugger.SetAsyncCallStackDepthRequest];
+      returnType: void;
+    };
+    /**
+     * Replace previous blackbox execution contexts with passed ones. Forces backend to skip
+     * stepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by
+     * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
+     */
+    'Debugger.setBlackboxExecutionContexts': {
+      paramsType: [Protocol.Debugger.SetBlackboxExecutionContextsRequest];
       returnType: void;
     };
     /**

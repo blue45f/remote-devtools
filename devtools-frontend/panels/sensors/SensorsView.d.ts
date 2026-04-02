@@ -1,8 +1,6 @@
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class SensorsView extends UI.Widget.VBox {
-    private readonly LocationSetting;
-    private Location;
-    private LocationOverrideEnabled;
+    #private;
     private fieldsetElement;
     private timezoneError;
     private locationSelectElement;
@@ -10,12 +8,9 @@ export declare class SensorsView extends UI.Widget.VBox {
     private longitudeInput;
     private timezoneInput;
     private localeInput;
-    private latitudeSetter;
-    private longitudeSetter;
-    private timezoneSetter;
-    private localeSetter;
+    private accuracyInput;
     private localeError;
-    private customLocationsGroup;
+    private accuracyError;
     private readonly deviceOrientationSetting;
     private deviceOrientation;
     private deviceOrientationOverrideEnabled;
@@ -25,23 +20,18 @@ export declare class SensorsView extends UI.Widget.VBox {
     private alphaElement;
     private betaElement;
     private gammaElement;
-    private alphaSetter;
-    private betaSetter;
-    private gammaSetter;
     private orientationLayer;
-    private boxElement?;
     private boxMatrix?;
     private mouseDownVector?;
     private originalBoxMatrix?;
     constructor();
-    static instance(): SensorsView;
-    wasShown(): void;
-    private createLocationSection;
-    private LocationSelectChanged;
+    private createPanelSeparator;
+    private renderLocationSection;
     private applyLocationUserInput;
     private applyLocation;
     private clearFieldsetElementInputs;
     private createDeviceOrientationSection;
+    private createPressureSection;
     private enableOrientationFields;
     private orientationSelectChanged;
     private applyDeviceOrientation;
@@ -49,40 +39,33 @@ export declare class SensorsView extends UI.Widget.VBox {
     private applyDeviceOrientationUserInput;
     private resetDeviceOrientation;
     private setDeviceOrientation;
-    private createAxisInput;
-    private createDeviceOrientationOverrideElement;
     private setBoxOrientation;
     private onBoxDrag;
     private onBoxDragStart;
     private calculateRadiusVector;
     private appendTouchControl;
     private appendIdleEmulator;
+    private createHardwareConcurrencySection;
 }
 export declare const enum DeviceOrientationModificationSource {
-    UserInput = "userInput",
-    UserDrag = "userDrag",
-    ResetButton = "resetButton",
-    SelectPreset = "selectPreset"
+    USER_INPUT = "userInput",
+    USER_DRAG = "userDrag",
+    RESET_BUTTON = "resetButton",
+    SELECT_PRESET = "selectPreset"
 }
-/** {string} */
+export declare const PressureOptions: {
+    NoOverride: string;
+    Nominal: string;
+    Fair: string;
+    Serious: string;
+    Critical: string;
+};
 export declare const NonPresetOptions: {
     NoOverride: string;
     Custom: string;
     Unavailable: string;
 };
-export declare class PresetOrientations {
-    static get Orientations(): {
-        title: string;
-        value: {
-            title: string;
-            orientation: string;
-        }[];
-    }[];
-}
 export declare class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate {
     handleAction(_context: UI.Context.Context, _actionId: string): boolean;
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ShowActionDelegate;
 }
 export declare const ShiftDragOrientationSpeed = 16;

@@ -1,3 +1,4 @@
+import '../../kit/kit.js';
 export interface MarkdownImageData {
     key: string;
     title: string;
@@ -9,8 +10,6 @@ export interface MarkdownImageData {
  */
 export declare class MarkdownImage extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
-    connectedCallback(): void;
     set data(data: MarkdownImageData);
 }
 declare global {

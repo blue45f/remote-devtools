@@ -1,13 +1,14 @@
 import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import { type LitTemplate } from '../../../lit/lit.js';
 import * as UI from '../../legacy.js';
 declare const FilteredListWidget_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.Hidden>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.Hidden>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.Hidden>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.Hidden): boolean;
-    dispatchEventToListeners<T_3 extends Events.Hidden>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.HIDDEN>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.HIDDEN>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.HIDDEN>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.HIDDEN): boolean;
+    dispatchEventToListeners<T extends Events.HIDDEN>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class FilteredListWidget extends FilteredListWidget_base implements UI.ListControl.ListDelegate<number> {
     private promptHistory;
@@ -30,14 +31,10 @@ export declare class FilteredListWidget extends FilteredListWidget_base implemen
     private provider;
     private readonly queryChangedCallback?;
     constructor(provider: Provider | null, promptHistory?: string[], queryChangedCallback?: ((arg0: string) => void));
-    static highlightRanges(element: Element, query: string, caseInsensitive?: boolean): boolean;
+    static getHighlightRanges(text: string, query: string, caseInsensitive?: boolean): string;
     setCommandPrefix(commandPrefix: string): void;
     setCommandSuggestion(suggestion: string): void;
     setHintElement(hint: string): void;
-    /**
-     * Sets the text prompt's accessible title. By default, it is "Quick open prompt".
-     */
-    setPromptTitle(title: string): void;
     showAsDialog(dialogTitle?: string): void;
     setPrefix(prefix: string): void;
     setProvider(provider: Provider | null): void;
@@ -70,21 +67,21 @@ export declare class FilteredListWidget extends FilteredListWidget_base implemen
     private selectItem;
 }
 export declare const enum Events {
-    Hidden = "hidden"
+    HIDDEN = "hidden"
 }
-export type EventTypes = {
-    [Events.Hidden]: void;
-};
+export interface EventTypes {
+    [Events.HIDDEN]: void;
+}
 export declare class Provider {
     private refreshCallback;
-    constructor();
+    jslogContext: string;
     setRefreshCallback(refreshCallback: () => void): void;
     attach(): void;
     itemCount(): number;
     itemKeyAt(_itemIndex: number): string;
     itemScoreAt(_itemIndex: number, _query: string): number;
-    renderItem(_itemIndex: number, _query: string, _titleElement: Element, _subtitleElement: Element): void;
-    renderAsTwoRows(): boolean;
+    renderItem(_itemIndex: number, _query: string): LitTemplate;
+    jslogContextAt(_itemIndex: number): string;
     selectItem(_itemIndex: number | null, _promptValue: string): void;
     refresh(): void;
     rewriteQuery(query: string): string;
@@ -97,9 +94,10 @@ export declare function getRegisteredProviders(): ProviderRegistration[];
 export interface ProviderRegistration {
     prefix: string;
     iconName: string;
-    iconWidth: string;
     provider: () => Promise<Provider>;
+    helpTitle: (() => string);
     titlePrefix: (() => string);
     titleSuggestion?: (() => string);
+    jslogContext: string;
 }
 export {};

@@ -1,8 +1,11 @@
-import { KnownEventName, type TraceEventHandlerName } from './types.js';
+import * as Helpers from '../helpers/helpers.js';
 import * as Types from '../types/types.js';
+import * as HandlerHelpers from './helpers.js';
+import { type FrameProcessData } from './MetaHandler.js';
+import type { HandlerName } from './types.js';
+export declare function handleUserConfig(userConfig: Types.Configuration.Configuration): void;
 export declare function reset(): void;
-export declare function initialize(): void;
-export declare function handleEvent(event: Types.TraceEvents.TraceEventData): void;
+export declare function handleEvent(event: Types.Events.Event): void;
 export declare function finalize(): Promise<void>;
 export declare function data(): RendererHandlerData;
 /**
@@ -11,42 +14,34 @@ export declare function data(): RendererHandlerData;
  * collecting each one of their threads' name. This meta handler's data is
  * assigned to the renderer handler's data.
  */
-export declare function assignMeta(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>, mainFrameId: string, rendererProcessesByFrame: Map<string, Map<Types.TraceEvents.ProcessID, {
-    frame: Types.TraceEvents.TraceFrame;
-}>>, threadsInProcess: Map<Types.TraceEvents.ProcessID, Map<Types.TraceEvents.ThreadID, Types.TraceEvents.TraceEventThreadName>>): void;
+export declare function assignMeta(processes: Map<Types.Events.ProcessID, RendererProcess>, mainFrameId: string, rendererProcessesByFrame: FrameProcessData, threadsInProcess: Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.ThreadName>>): void;
 /**
  * Assigns origins to all threads in all processes.
  * @see assignMeta
  */
-export declare function assignOrigin(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>, mainFrameId: string, rendererProcessesByFrame: Map<string, Map<Types.TraceEvents.ProcessID, {
-    frame: Types.TraceEvents.TraceFrame;
-}>>): void;
+export declare function assignOrigin(processes: Map<Types.Events.ProcessID, RendererProcess>, rendererProcessesByFrame: FrameProcessData): void;
 /**
  * Assigns whether or not a thread is the main frame to all threads in all processes.
  * @see assignMeta
  */
-export declare function assignIsMainFrame(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>, mainFrameId: string, rendererProcessesByFrame: Map<string, Map<Types.TraceEvents.ProcessID, {
-    frame: Types.TraceEvents.TraceFrame;
-}>>): void;
+export declare function assignIsMainFrame(processes: Map<Types.Events.ProcessID, RendererProcess>, mainFrameId: string, rendererProcessesByFrame: FrameProcessData): void;
 /**
  * Assigns the thread name to all threads in all processes.
  * @see assignMeta
  */
-export declare function assignThreadName(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>, rendererProcessesByFrame: Map<string, Map<Types.TraceEvents.ProcessID, {
-    frame: Types.TraceEvents.TraceFrame;
-}>>, threadsInProcess: Map<Types.TraceEvents.ProcessID, Map<Types.TraceEvents.ThreadID, Types.TraceEvents.TraceEventThreadName>>): void;
+export declare function assignThreadName(processes: Map<Types.Events.ProcessID, RendererProcess>, threadsInProcess: Map<Types.Events.ProcessID, Map<Types.Events.ThreadID, Types.Events.ThreadName>>): void;
 /**
  * Removes unneeded trace data opportunistically stored while handling events.
  * This currently does the following:
- *  - Deletes processes with an unkonwn origin.
+ *  - Deletes processes with an unknown origin.
  */
-export declare function sanitizeProcesses(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>): void;
+export declare function sanitizeProcesses(processes: Map<Types.Events.ProcessID, RendererProcess>): void;
 /**
  * Removes unneeded trace data opportunistically stored while handling events.
  * This currently does the following:
  *  - Deletes threads with no roots.
  */
-export declare function sanitizeThreads(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>): void;
+export declare function sanitizeThreads(processes: Map<Types.Events.ProcessID, RendererProcess>): void;
 /**
  * Creates a hierarchical structure from the trace events. Each thread in each
  * process will contribute to their own individual hierarchy.
@@ -69,69 +64,37 @@ export declare function sanitizeThreads(processes: Map<Types.TraceEvents.Process
  *  |-- Task B --||-- Task D --|
  *   |- Task C -|
  */
-export declare function buildHierarchy(processes: Map<Types.TraceEvents.ProcessID, RendererProcess>, options: {
+export declare function buildHierarchy(processes: Map<Types.Events.ProcessID, RendererProcess>, options?: {
     filter: {
-        has: (name: KnownEventName) => boolean;
+        has: (name: Types.Events.Name) => boolean;
     };
 }): void;
-/**
- * Builds a hierarchy of the trace events in a particular thread of a
- * particular process, assuming that they're sorted, by iterating through all of
- * the events in order.
- *
- * The approach is analogous to how a parser would be implemented. A stack
- * maintains local context. A scanner peeks and pops from the data stream.
- * Various "tokens" (events) are treated as "whitespace" (ignored).
- *
- * The tree starts out empty and is populated as the hierarchy is built. The
- * nodes are also assumed to be created empty, with no known parent or children.
- *
- * Complexity: O(n), where n = number of events
- */
-export declare function treify(events: RendererTraceEvent[], options: {
-    filter: {
-        has: (name: KnownEventName) => boolean;
-    };
-}): RendererEventTree;
-export declare const FORCED_LAYOUT_EVENT_NAMES: Set<KnownEventName>;
-export declare const FORCED_RECALC_STYLE_EVENTS: Set<KnownEventName>;
-export declare function deps(): TraceEventHandlerName[];
+export declare function makeCompleteEvent(event: Types.Events.Begin | Types.Events.End): Types.Events.SyntheticComplete | null;
+export declare function deps(): HandlerName[];
 export interface RendererHandlerData {
-    processes: Map<Types.TraceEvents.ProcessID, RendererProcess>;
-    traceEventToNode: Map<RendererTraceEvent, RendererEventNode>;
-    allRendererEvents: RendererTraceEvent[];
+    processes: Map<Types.Events.ProcessID, RendererProcess>;
+    /**
+     * A map of all compositor workers (which we show in the UI as Rasterizers)
+     * by the process ID.
+     */
+    compositorTileWorkers: Map<Types.Events.ProcessID, Types.Events.ThreadID[]>;
+    entryToNode: Map<Types.Events.Event, Helpers.TreeHelpers.TraceEntryNode>;
+    entityMappings: HandlerHelpers.EntityMappings;
 }
 export interface RendererProcess {
     url: string | null;
     isOnMainFrame: boolean;
-    threads: Map<Types.TraceEvents.ThreadID, RendererThread>;
+    threads: Map<Types.Events.ThreadID, RendererThread>;
 }
 export interface RendererThread {
     name: string | null;
-    events: RendererTraceEvent[];
-    tree?: RendererEventTree;
+    /**
+     * Contains trace events and synthetic profile calls made from
+     * samples.
+     */
+    entries: Types.Events.Event[];
+    profileCalls: Types.Events.SyntheticProfileCall[];
+    layoutEvents: Types.Events.Layout[];
+    recalcStyleEvents: Types.Events.RecalcStyle[];
+    tree?: Helpers.TreeHelpers.TraceEntryTree;
 }
-interface RendererEventData {
-    selfTime: Types.Timing.MicroSeconds;
-    initiator: RendererTraceEvent;
-    parent?: RendererTraceEvent;
-    hotFunctionsStackTraces: Types.TraceEvents.TraceEventCallFrame[][];
-}
-export type RendererTraceEvent = Types.TraceEvents.TraceEventRendererData & Partial<RendererEventData>;
-export interface RendererEventTree {
-    nodes: Map<RendererEventNodeId, RendererEventNode>;
-    roots: Set<RendererEventNodeId>;
-    maxDepth: number;
-}
-export interface RendererEventNode {
-    event: RendererTraceEvent;
-    depth: number;
-    id: RendererEventNodeId;
-    parentId?: RendererEventNodeId | null;
-    childrenIds: Set<RendererEventNodeId>;
-}
-declare class RendererEventNodeIdTag {
-    #private;
-}
-export type RendererEventNodeId = number & RendererEventNodeIdTag;
-export {};

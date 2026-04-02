@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2015 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -6,7 +6,7 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 const UIStrings = {
     /**
-     *@description Text in Layer View Host of the Layers panel
+     * @description Text in Layer View Host of the Layers panel
      */
     showInternalLayers: 'Show internal layers',
 };
@@ -16,10 +16,10 @@ export class LayerView {
 }
 export class Selection {
     typeInternal;
-    layerInternal;
+    #layer;
     constructor(type, layer) {
         this.typeInternal = type;
-        this.layerInternal = layer;
+        this.#layer = layer;
     }
     static isEqual(a, b) {
         return a && b ? a.isEqual(b) : a === b;
@@ -28,7 +28,7 @@ export class Selection {
         return this.typeInternal;
     }
     layer() {
-        return this.layerInternal;
+        return this.#layer;
     }
     isEqual(_other) {
         return false;
@@ -37,50 +37,49 @@ export class Selection {
 export class LayerSelection extends Selection {
     constructor(layer) {
         console.assert(Boolean(layer), 'LayerSelection with empty layer');
-        super("Layer" /* Type.Layer */, layer);
+        super("Layer" /* Type.LAYER */, layer);
     }
     isEqual(other) {
-        return other.typeInternal === "Layer" /* Type.Layer */ && other.layer().id() === this.layer().id();
+        return other.typeInternal === "Layer" /* Type.LAYER */ && other.layer().id() === this.layer().id();
     }
 }
 export class ScrollRectSelection extends Selection {
     scrollRectIndex;
     constructor(layer, scrollRectIndex) {
-        super("ScrollRect" /* Type.ScrollRect */, layer);
+        super("ScrollRect" /* Type.SCROLL_RECT */, layer);
         this.scrollRectIndex = scrollRectIndex;
     }
     isEqual(other) {
-        return other.typeInternal === "ScrollRect" /* Type.ScrollRect */ && this.layer().id() === other.layer().id() &&
+        return other.typeInternal === "ScrollRect" /* Type.SCROLL_RECT */ && this.layer().id() === other.layer().id() &&
             this.scrollRectIndex === other.scrollRectIndex;
     }
 }
 export class SnapshotSelection extends Selection {
-    snapshotInternal;
+    #snapshot;
     constructor(layer, snapshot) {
-        super("Snapshot" /* Type.Snapshot */, layer);
-        this.snapshotInternal = snapshot;
+        super("Snapshot" /* Type.SNAPSHOT */, layer);
+        this.#snapshot = snapshot;
     }
     isEqual(other) {
-        return other.typeInternal === "Snapshot" /* Type.Snapshot */ && this.layer().id() === other.layer().id() &&
-            this.snapshotInternal === other.snapshotInternal;
+        return other.typeInternal === "Snapshot" /* Type.SNAPSHOT */ && this.layer().id() === other.layer().id() &&
+            this.#snapshot === other.#snapshot;
     }
     snapshot() {
-        return this.snapshotInternal;
+        return this.#snapshot;
     }
 }
 export class LayerViewHost {
     views;
     selectedObject;
     hoveredObject;
-    showInternalLayersSettingInternal;
+    #showInternalLayersSetting;
     snapshotLayers;
-    target;
     constructor() {
         this.views = [];
         this.selectedObject = null;
         this.hoveredObject = null;
-        this.showInternalLayersSettingInternal =
-            Common.Settings.Settings.instance().createSetting('layersShowInternalLayers', false);
+        this.#showInternalLayersSetting =
+            Common.Settings.Settings.instance().createSetting('layers-show-internal-layers', false);
         this.snapshotLayers = new Map();
     }
     registerView(layerView) {
@@ -96,13 +95,12 @@ export class LayerViewHost {
         if (!layerTree) {
             return;
         }
-        this.target = layerTree.target();
-        const selectedLayer = this.selectedObject && this.selectedObject.layer();
-        if (selectedLayer && (!layerTree || !layerTree.layerById(selectedLayer.id()))) {
+        const selectedLayer = this.selectedObject?.layer();
+        if (selectedLayer && (!layerTree?.layerById(selectedLayer.id()))) {
             this.selectObject(null);
         }
-        const hoveredLayer = this.hoveredObject && this.hoveredObject.layer();
-        if (hoveredLayer && (!layerTree || !layerTree.layerById(hoveredLayer.id()))) {
+        const hoveredLayer = this.hoveredObject?.layer();
+        if (hoveredLayer && (!layerTree?.layerById(hoveredLayer.id()))) {
             this.hoverObject(null);
         }
         for (const view of this.views) {
@@ -114,7 +112,7 @@ export class LayerViewHost {
             return;
         }
         this.hoveredObject = selection;
-        const layer = selection && selection.layer();
+        const layer = selection?.layer();
         this.toggleNodeHighlight(layer ? layer.nodeForSelfOrAncestor() : null);
         for (const view of this.views) {
             view.hoverObject(selection);
@@ -133,18 +131,21 @@ export class LayerViewHost {
         return this.selectedObject;
     }
     showContextMenu(contextMenu, selection) {
-        contextMenu.defaultSection().appendCheckboxItem(i18nString(UIStrings.showInternalLayers), this.toggleShowInternalLayers.bind(this), this.showInternalLayersSettingInternal.get());
-        const node = selection && selection.layer() && selection.layer().nodeForSelfOrAncestor();
+        contextMenu.defaultSection().appendCheckboxItem(i18nString(UIStrings.showInternalLayers), this.toggleShowInternalLayers.bind(this), {
+            checked: this.#showInternalLayersSetting.get(),
+            jslogContext: this.#showInternalLayersSetting.name,
+        });
+        const node = selection?.layer()?.nodeForSelfOrAncestor();
         if (node) {
             contextMenu.appendApplicableItems(node);
         }
         void contextMenu.show();
     }
     showInternalLayersSetting() {
-        return this.showInternalLayersSettingInternal;
+        return this.#showInternalLayersSetting;
     }
     toggleShowInternalLayers() {
-        this.showInternalLayersSettingInternal.set(!this.showInternalLayersSettingInternal.get());
+        this.#showInternalLayersSetting.set(!this.#showInternalLayersSetting.get());
     }
     toggleNodeHighlight(node) {
         if (node) {

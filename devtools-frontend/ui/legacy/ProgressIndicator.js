@@ -1,88 +1,73 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-import * as Utils from './utils/utils.js';
-import progressIndicatorStyles from './progressIndicator.css.legacy.js';
-export class ProgressIndicator {
-    element;
-    shadowRoot;
-    contentElement;
-    labelElement;
-    progressElement;
-    stopButton;
-    isCanceledInternal;
-    worked;
-    isDone;
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+import progressIndicatorStyles from './progressIndicator.css.js';
+import { createShadowRootWithCoreStyles } from './UIUtils.js';
+export class ProgressIndicator extends HTMLElement {
+    #shadowRoot;
+    #contentElement;
+    #labelElement;
+    #progressElement;
+    #stopButton;
+    #isCanceled = false;
+    #worked = 0;
+    #isDone = false;
     constructor() {
-        this.element = document.createElement('div');
-        this.element.classList.add('progress-indicator');
-        this.shadowRoot = Utils.createShadowRootWithCoreStyles(this.element, { cssFile: progressIndicatorStyles, delegatesFocus: undefined });
-        this.contentElement = this.shadowRoot.createChild('div', 'progress-indicator-shadow-container');
-        this.labelElement = this.contentElement.createChild('div', 'title');
-        this.progressElement = this.contentElement.createChild('progress');
-        this.progressElement.value = 0;
-        this.stopButton = this.contentElement.createChild('button', 'progress-indicator-shadow-stop-button');
-        this.stopButton.addEventListener('click', this.cancel.bind(this));
-        this.isCanceledInternal = false;
-        this.worked = 0;
+        super();
+        this.#shadowRoot = createShadowRootWithCoreStyles(this, { cssFile: progressIndicatorStyles });
+        this.#contentElement = this.#shadowRoot.createChild('div', 'progress-indicator-shadow-container');
+        this.#labelElement = this.#contentElement.createChild('div', 'title');
+        this.#progressElement = this.#contentElement.createChild('progress');
+        this.#progressElement.value = 0;
     }
-    show(parent) {
-        parent.appendChild(this.element);
+    connectedCallback() {
+        this.classList.add('progress-indicator');
+        // By default we show the stop button, but this can be controlled by
+        // using the 'no-stop-button' attribute on the element.
+        if (!this.hasAttribute('no-stop-button')) {
+            this.#stopButton = this.#contentElement.createChild('button', 'progress-indicator-shadow-stop-button');
+            this.#stopButton.addEventListener('click', () => {
+                this.canceled = true;
+            });
+        }
     }
-    done() {
-        if (this.isDone) {
+    set done(done) {
+        if (this.#isDone === done) {
             return;
         }
-        this.isDone = true;
-        this.element.remove();
-    }
-    cancel() {
-        this.isCanceledInternal = true;
-    }
-    isCanceled() {
-        return this.isCanceledInternal;
-    }
-    setTitle(title) {
-        this.labelElement.textContent = title;
-    }
-    setTotalWork(totalWork) {
-        this.progressElement.max = totalWork;
-    }
-    setWorked(worked, title) {
-        this.worked = worked;
-        this.progressElement.value = worked;
-        if (title) {
-            this.setTitle(title);
+        this.#isDone = done;
+        if (done) {
+            this.remove();
         }
     }
-    incrementWorked(worked) {
-        this.setWorked(this.worked + (worked || 1));
+    get done() {
+        return this.#isDone;
+    }
+    set canceled(value) {
+        this.#isCanceled = value;
+    }
+    get canceled() {
+        return this.#isCanceled;
+    }
+    set title(title) {
+        this.#labelElement.textContent = title;
+    }
+    get title() {
+        return this.#labelElement.textContent;
+    }
+    set totalWork(totalWork) {
+        this.#progressElement.max = totalWork;
+    }
+    get totalWork() {
+        return this.#progressElement.max;
+    }
+    set worked(worked) {
+        this.#worked = worked;
+        this.#progressElement.value = worked;
+    }
+    get worked() {
+        return this.#worked;
     }
 }
+customElements.define('devtools-progress', ProgressIndicator);
 //# sourceMappingURL=ProgressIndicator.js.map

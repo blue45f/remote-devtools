@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
@@ -7,17 +7,17 @@ import { throttlingManager } from './ThrottlingManager.js';
 import { ThrottlingPresets, } from './ThrottlingPresets.js';
 const UIStrings = {
     /**
-     *@description Mobile throttling is disabled. The user can select this option to run mobile
+     * @description Mobile throttling is disabled. The user can select this option to run mobile
      *emulation at a normal speed instead of throttled.
      */
     disabled: 'Disabled',
     /**
-     *@description Title for a group of pre-decided configuration options for mobile throttling. These
+     * @description Title for a group of pre-decided configuration options for mobile throttling. These
      *are useful default options that users might want.
      */
     presets: 'Presets',
     /**
-     *@description Title for a group of advanced configuration options for mobile throttling, which
+     * @description Title for a group of advanced configuration options for mobile throttling, which
      *might not be applicable to every user or situation.
      */
     advanced: 'Advanced',
@@ -31,14 +31,14 @@ export class MobileThrottlingSelector {
     constructor(populateCallback, selectCallback) {
         this.populateCallback = populateCallback;
         this.selectCallback = selectCallback;
-        SDK.CPUThrottlingManager.CPUThrottlingManager.instance().addEventListener(SDK.CPUThrottlingManager.Events.RateChanged, this.conditionsChanged, this);
-        SDK.NetworkManager.MultitargetNetworkManager.instance().addEventListener(SDK.NetworkManager.MultitargetNetworkManager.Events.ConditionsChanged, this.conditionsChanged, this);
+        SDK.CPUThrottlingManager.CPUThrottlingManager.instance().addEventListener("RateChanged" /* SDK.CPUThrottlingManager.Events.RATE_CHANGED */, this.conditionsChanged, this);
+        SDK.NetworkManager.MultitargetNetworkManager.instance().addEventListener("ConditionsChanged" /* SDK.NetworkManager.MultitargetNetworkManager.Events.CONDITIONS_CHANGED */, this.conditionsChanged, this);
         this.options = this.populateOptions();
         this.conditionsChanged();
     }
     optionSelected(conditions) {
         SDK.NetworkManager.MultitargetNetworkManager.instance().setNetworkConditions(conditions.network);
-        throttlingManager().setCPUThrottlingRate(conditions.cpuThrottlingRate);
+        throttlingManager().setCPUThrottlingOption(conditions.cpuThrottlingOption);
     }
     populateOptions() {
         const disabledGroup = {
@@ -50,12 +50,13 @@ export class MobileThrottlingSelector {
         return this.populateCallback([disabledGroup, presetsGroup, advancedGroup]);
     }
     conditionsChanged() {
+        this.populateOptions();
         const networkConditions = SDK.NetworkManager.MultitargetNetworkManager.instance().networkConditions();
-        const cpuThrottlingRate = SDK.CPUThrottlingManager.CPUThrottlingManager.instance().cpuThrottlingRate();
+        const cpuThrottlingOption = SDK.CPUThrottlingManager.CPUThrottlingManager.instance().cpuThrottlingOption();
         for (let index = 0; index < this.options.length; ++index) {
             const option = this.options[index];
             if (option && 'network' in option && option.network === networkConditions &&
-                option.cpuThrottlingRate === cpuThrottlingRate) {
+                option.cpuThrottlingOption === cpuThrottlingOption) {
                 this.selectCallback(index);
                 return;
             }

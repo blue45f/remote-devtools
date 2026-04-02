@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /**
@@ -30,19 +30,20 @@ export function* arrayOfObjectsJsonGenerator(arrayOfObjects) {
     yield '\n]';
 }
 /**
- * Generates a JSON representation of traceData line-by-line for a nicer printed
+ * Generates a JSON representation of the TraceObject file line-by-line for a nicer printed
  * version with one trace event per line.
  */
 export function* traceJsonGenerator(traceEvents, metadata) {
-    yield '{"traceEvents": ';
+    // Ensure that enhancedTraceVersion is placed at the top of metadata. See `maximumTraceFileLengthToDetermineEnhancedTraces`
+    if (metadata?.enhancedTraceVersion) {
+        metadata = {
+            enhancedTraceVersion: metadata.enhancedTraceVersion,
+            ...metadata,
+        };
+    }
+    yield `{"metadata": ${JSON.stringify(metadata || {}, null, 2)}`;
+    yield ',\n"traceEvents": ';
     yield* arrayOfObjectsJsonGenerator(traceEvents);
-    yield `,\n"metadata": ${JSON.stringify(metadata || {}, null, 2)}`;
     yield '}\n';
-}
-/**
- * Generates a JSON representation of CPU profile.
- */
-export function cpuprofileJsonGenerator(cpuprofile) {
-    return JSON.stringify(cpuprofile);
 }
 //# sourceMappingURL=SaveFileFormatter.js.map

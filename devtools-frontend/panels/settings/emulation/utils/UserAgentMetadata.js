@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
@@ -62,12 +62,12 @@ export function serializeBrandsList(brands) {
 export function validateAsStructuredHeadersString(value, errorString) {
     const parsedResult = serializeItem({
         kind: 4 /* ResultKind.ITEM */,
-        value: { kind: 7 /* ResultKind.STRING */, value: value },
+        value: { kind: 7 /* ResultKind.STRING */, value },
         parameters: { kind: 3 /* ResultKind.PARAMETERS */, items: [] },
     });
     if (parsedResult.kind === 0 /* ResultKind.ERROR */) {
         return { valid: false, errorMessage: errorString };
     }
-    return { valid: true, errorMessage: undefined };
+    return { valid: true };
 }
 //# sourceMappingURL=UserAgentMetadata.js.map

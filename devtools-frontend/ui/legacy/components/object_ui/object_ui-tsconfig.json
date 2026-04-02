@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../../../front_end/ui/legacy/components/object_ui",
     "skipLibCheck": true,
@@ -26,6 +31,7 @@
     "target": "esnext",
     "tsBuildInfoFile": "object_ui-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
@@ -36,7 +42,6 @@
     "../../../../../../../../front_end/ui/legacy/components/object_ui/RemoteObjectPreviewFormatter.ts",
     "../../../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
@@ -65,25 +70,43 @@
       "path": "../../../../models/formatter/bundle-tsconfig.json"
     },
     {
+      "path": "../../../../models/geometry/bundle-tsconfig.json"
+    },
+    {
       "path": "../../../../models/source_map_scopes/bundle-tsconfig.json"
     },
     {
       "path": "../../../../models/text_utils/bundle-tsconfig.json"
     },
     {
-      "path": "../../../components/icon_button/bundle-tsconfig.json"
+      "path": "../../../../third_party/acorn/acorn-tsconfig.json"
     },
     {
-      "path": "../../../components/linear_memory_inspector/bundle-tsconfig.json"
+      "path": "../../../../third_party/acorn/bundle-tsconfig.json"
     },
     {
       "path": "../../../components/text_editor/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../i18n/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../kit/bundle-tsconfig.json"
     },
     {
       "path": "../../bundle-tsconfig.json"
     },
     {
       "path": "../utils/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../components/highlighting/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../visual_logging/bundle-tsconfig.json"
     }
   ]
 }

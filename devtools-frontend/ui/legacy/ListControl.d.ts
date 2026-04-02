@@ -16,6 +16,7 @@ export declare enum ListMode {
     VariousHeightItems = "UI.ListMode.VariousHeightItems"
 }
 export declare class ListControl<T> {
+    #private;
     element: HTMLDivElement;
     private topElement;
     private bottomElement;
@@ -26,8 +27,6 @@ export declare class ListControl<T> {
     private bottomHeight;
     private model;
     private itemToElement;
-    private selectedIndexInternal;
-    private selectedItemInternal;
     private delegate;
     private readonly mode;
     private fixedHeight;
@@ -50,12 +49,14 @@ export declare class ListControl<T> {
     selectNextItem(canWrap?: boolean, center?: boolean): boolean;
     selectItemPreviousPage(center?: boolean): boolean;
     selectItemNextPage(center?: boolean): boolean;
+    selectFirstItem(center?: boolean): boolean;
+    selectLastItem(center?: boolean): boolean;
     private scrollIntoView;
     private onClick;
     private onKeyDown;
     private totalHeight;
     private indexAtOffset;
-    private elementAtIndex;
+    elementAtIndex(index: number): Element;
     private refreshARIA;
     private updateElementARIA;
     private offsetAtIndex;

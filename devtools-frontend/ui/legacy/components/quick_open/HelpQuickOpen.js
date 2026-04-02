@@ -1,8 +1,8 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as IconButton from '../../../components/icon_button/icon_button.js';
-import * as UI from '../../legacy.js';
+import '../../../kit/kit.js';
+import { html } from '../../../lit/lit.js';
 import { getRegisteredProviders, Provider, registerProvider } from './FilteredListWidget.js';
 import { QuickOpenImpl } from './QuickOpen.js';
 export class HelpQuickOpen extends Provider {
@@ -12,15 +12,17 @@ export class HelpQuickOpen extends Provider {
         this.providers = [];
         getRegisteredProviders().forEach(this.addProvider.bind(this));
     }
-    addProvider(extension) {
-        if (extension.titleSuggestion) {
-            this.providers.push({
-                prefix: extension.prefix || '',
-                iconName: extension.iconName,
-                iconWidth: extension.iconWidth,
-                title: extension.titlePrefix() + ' ' + extension.titleSuggestion(),
-            });
+    async addProvider(extension) {
+        // We want to exclude Help menu as we are already in it.
+        if (extension.prefix === '?') {
+            return;
         }
+        this.providers.push({
+            prefix: extension.prefix || '',
+            iconName: extension.iconName,
+            title: extension.helpTitle(),
+            jslogContext: extension.jslogContext,
+        });
     }
     itemCount() {
         return this.providers.length;
@@ -31,32 +33,31 @@ export class HelpQuickOpen extends Provider {
     itemScoreAt(itemIndex, _query) {
         return -this.providers[itemIndex].prefix.length;
     }
-    renderItem(itemIndex, _query, titleElement, _subtitleElement) {
+    renderItem(itemIndex, _query) {
         const provider = this.providers[itemIndex];
-        const iconElement = new IconButton.Icon.Icon();
-        iconElement.data = {
-            iconName: provider.iconName,
-            color: 'var(--icon-default)',
-            width: provider.iconWidth,
-        };
-        titleElement.parentElement?.parentElement?.insertBefore(iconElement, titleElement.parentElement);
-        UI.UIUtils.createTextChild(titleElement, provider.title);
+        // clang-format off
+        return html `
+      <devtools-icon class="large" name=${provider.iconName}></devtools-icon>
+      <div>
+        <div>${provider.title}</div>
+      </div>`;
+        // clang-format on
+    }
+    jslogContextAt(itemIndex) {
+        return this.providers[itemIndex].jslogContext;
     }
     selectItem(itemIndex, _promptValue) {
         if (itemIndex !== null) {
             QuickOpenImpl.show(this.providers[itemIndex].prefix);
         }
     }
-    renderAsTwoRows() {
-        return false;
-    }
 }
 registerProvider({
     prefix: '?',
     iconName: 'help',
-    iconWidth: '20px',
     provider: () => Promise.resolve(new HelpQuickOpen()),
+    helpTitle: () => 'Help',
     titlePrefix: () => 'Help',
-    titleSuggestion: undefined,
+    jslogContext: 'help',
 });
 //# sourceMappingURL=HelpQuickOpen.js.map

@@ -1,40 +1,16 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2013 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Platform from '../../core/platform/platform.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import { ConsoleViewMessage, getMessageForElement } from './ConsoleViewMessage.js';
 export class ConsoleViewport {
     element;
     topGapElement;
     topGapElementActive;
-    contentElementInternal;
+    #contentElement;
     bottomGapElement;
     bottomGapElementActive;
     provider;
@@ -49,7 +25,7 @@ export class ConsoleViewport {
     muteCopyHandler;
     observer;
     observerConfig;
-    stickToBottomInternal;
+    #stickToBottom;
     selectionIsBackward;
     lastSelectedElement;
     cachedProviderElements;
@@ -60,7 +36,7 @@ export class ConsoleViewport {
         this.topGapElement.style.height = '0px';
         this.topGapElement.style.color = 'transparent';
         this.topGapElementActive = false;
-        this.contentElementInternal = this.element.createChild('div');
+        this.#contentElement = this.element.createChild('div');
         this.bottomGapElement = this.element.createChild('div');
         this.bottomGapElement.style.height = '0px';
         this.bottomGapElement.style.color = 'transparent';
@@ -69,17 +45,17 @@ export class ConsoleViewport {
         // Use Unicode ZERO WIDTH NO-BREAK SPACE, which avoids contributing any height to the element's layout overflow.
         this.topGapElement.textContent = '\uFEFF';
         this.bottomGapElement.textContent = '\uFEFF';
-        UI.ARIAUtils.markAsHidden(this.topGapElement);
-        UI.ARIAUtils.markAsHidden(this.bottomGapElement);
+        UI.ARIAUtils.setHidden(this.topGapElement, true);
+        UI.ARIAUtils.setHidden(this.bottomGapElement, true);
         this.provider = provider;
         this.element.addEventListener('scroll', this.onScroll.bind(this), false);
         this.element.addEventListener('copy', this.onCopy.bind(this), false);
         this.element.addEventListener('dragstart', this.onDragStart.bind(this), false);
-        this.contentElementInternal.addEventListener('focusin', this.onFocusIn.bind(this), false);
-        this.contentElementInternal.addEventListener('focusout', this.onFocusOut.bind(this), false);
-        this.contentElementInternal.addEventListener('keydown', this.onKeyDown.bind(this), false);
+        this.#contentElement.addEventListener('focusin', this.onFocusIn.bind(this), false);
+        this.#contentElement.addEventListener('focusout', this.onFocusOut.bind(this), false);
+        this.#contentElement.addEventListener('keydown', this.onKeyDown.bind(this), false);
         this.virtualSelectedIndex = -1;
-        this.contentElementInternal.tabIndex = -1;
+        this.#contentElement.tabIndex = -1;
         this.firstActiveIndex = -1;
         this.lastActiveIndex = -1;
         this.renderedItems = [];
@@ -93,16 +69,16 @@ export class ConsoleViewport {
         // if they change the scroll height.
         this.observer = new MutationObserver(this.refresh.bind(this));
         this.observerConfig = { childList: true, subtree: true };
-        this.stickToBottomInternal = false;
+        this.#stickToBottom = false;
         this.selectionIsBackward = false;
     }
     stickToBottom() {
-        return this.stickToBottomInternal;
+        return this.#stickToBottom;
     }
     setStickToBottom(value) {
-        this.stickToBottomInternal = value;
-        if (this.stickToBottomInternal) {
-            this.observer.observe(this.contentElementInternal, this.observerConfig);
+        this.#stickToBottom = value;
+        if (this.#stickToBottom) {
+            this.observer.observe(this.#contentElement, this.observerConfig);
         }
         else {
             this.observer.disconnect();
@@ -140,7 +116,7 @@ export class ConsoleViewport {
         let focusLastChild = false;
         // Make default selection when moving from external (e.g. prompt) to the container.
         if (this.virtualSelectedIndex === -1 && this.isOutsideViewport(event.relatedTarget) &&
-            event.target === this.contentElementInternal && this.itemCount) {
+            event.target === this.#contentElement && this.itemCount) {
             focusLastChild = true;
             this.virtualSelectedIndex = this.itemCount - 1;
             // Update stick to bottom before scrolling into view.
@@ -156,7 +132,7 @@ export class ConsoleViewport {
         this.updateFocusedItem();
     }
     isOutsideViewport(element) {
-        return element !== null && !element.isSelfOrDescendant(this.contentElementInternal);
+        return element !== null && !element.isSelfOrDescendant(this.#contentElement);
     }
     onDragStart(event) {
         const text = this.selectedText();
@@ -209,12 +185,16 @@ export class ConsoleViewport {
     updateFocusedItem(focusLastChild) {
         const selectedElement = this.renderedElementAt(this.virtualSelectedIndex);
         const changed = this.lastSelectedElement !== selectedElement;
-        const containerHasFocus = this.contentElementInternal === Platform.DOMUtilities.deepActiveElement(this.element.ownerDocument);
+        const containerHasFocus = this.#contentElement === UI.DOMUtilities.deepActiveElement(this.element.ownerDocument);
         if (this.lastSelectedElement && changed) {
             this.lastSelectedElement.classList.remove('console-selected');
         }
         if (selectedElement && (focusLastChild || changed || containerHasFocus) && this.element.hasFocus()) {
             selectedElement.classList.add('console-selected');
+            const consoleViewMessage = getMessageForElement(selectedElement);
+            if (consoleViewMessage) {
+                UI.Context.Context.instance().setFlavor(ConsoleViewMessage, consoleViewMessage);
+            }
             // Do not focus the message if something within holds focus (e.g. object).
             if (focusLastChild) {
                 this.setStickToBottom(false);
@@ -224,16 +204,16 @@ export class ConsoleViewport {
                 selectedElement.focus({ preventScroll: true });
             }
         }
-        if (this.itemCount && !this.contentElementInternal.hasFocus()) {
-            this.contentElementInternal.tabIndex = 0;
+        if (this.itemCount && !this.#contentElement.hasFocus()) {
+            this.#contentElement.tabIndex = 0;
         }
         else {
-            this.contentElementInternal.tabIndex = -1;
+            this.#contentElement.tabIndex = -1;
         }
         this.lastSelectedElement = selectedElement;
     }
     contentElement() {
-        return this.contentElementInternal;
+        return this.#contentElement;
     }
     invalidate() {
         delete this.cachedProviderElements;
@@ -294,7 +274,7 @@ export class ConsoleViewport {
         return index === 0 ? this.cumulativeHeights[0] : this.cumulativeHeights[index] - this.cumulativeHeights[index - 1];
     }
     isSelectionBackwards(selection) {
-        if (!selection || !selection.rangeCount || !selection.anchorNode || !selection.focusNode) {
+        if (!selection?.rangeCount || !selection.anchorNode || !selection.focusNode) {
             return false;
         }
         const range = document.createRange();
@@ -303,10 +283,10 @@ export class ConsoleViewport {
         return range.collapsed;
     }
     createSelectionModel(itemIndex, node, offset) {
-        return { item: itemIndex, node: node, offset: offset };
+        return { item: itemIndex, node, offset };
     }
     updateSelectionModel(selection) {
-        const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
         if (!range || (!selection || selection.isCollapsed) || !this.element.hasSelection()) {
             this.headSelection = null;
             this.anchorSelection = null;
@@ -341,8 +321,8 @@ export class ConsoleViewport {
         let firstSelected = null;
         let lastSelected = null;
         if (hasVisibleSelection) {
-            firstSelected = this.createSelectionModel(firstSelectedIndex, range.startContainer, range.startOffset);
-            lastSelected = this.createSelectionModel(lastSelectedIndex, range.endContainer, range.endOffset);
+            firstSelected = this.createSelectionModel(firstSelectedIndex, (range.startContainer), range.startOffset);
+            lastSelected = this.createSelectionModel(lastSelectedIndex, (range.endContainer), range.endOffset);
         }
         if (topOverlap && bottomOverlap && hasVisibleSelection) {
             firstSelected = (firstSelected && firstSelected.item < startSelection.item) ? firstSelected : startSelection;
@@ -392,7 +372,7 @@ export class ConsoleViewport {
         const end = this.selectionIsBackward ? this.anchorSelection.item : this.headSelection.item;
         for (let i = start; i <= end; i++) {
             const element = this.providerElement(i);
-            if (element && element.consoleMessage().type === 'table') {
+            if (element?.consoleMessage().type === 'table') {
                 return true;
             }
         }
@@ -400,12 +380,12 @@ export class ConsoleViewport {
     }
     refresh() {
         this.observer.disconnect();
-        this.innerRefresh();
-        if (this.stickToBottomInternal) {
-            this.observer.observe(this.contentElementInternal, this.observerConfig);
+        this.#refresh();
+        if (this.#stickToBottom) {
+            this.observer.observe(this.#contentElement, this.observerConfig);
         }
     }
-    innerRefresh() {
+    #refresh() {
         if (!this.visibleHeight()) {
             return;
         } // Do nothing for invisible controls.
@@ -414,7 +394,7 @@ export class ConsoleViewport {
                 this.renderedItems[i].willHide();
             }
             this.renderedItems = [];
-            this.contentElementInternal.removeChildren();
+            this.#contentElement.removeChildren();
             this.topGapElement.style.height = '0px';
             this.bottomGapElement.style.height = '0px';
             this.firstActiveIndex = -1;
@@ -431,7 +411,7 @@ export class ConsoleViewport {
         // When the viewport is scrolled to the bottom, using the cumulative heights estimate is not
         // precise enough to determine next visible indices. This stickToBottom check avoids extra
         // calls to refresh in those cases.
-        if (this.stickToBottomInternal) {
+        if (this.#stickToBottom) {
             this.firstActiveIndex = Math.max(this.itemCount - Math.ceil(activeHeight / this.provider.minimumRowHeight()), 0);
             this.lastActiveIndex = this.itemCount - 1;
         }
@@ -448,15 +428,15 @@ export class ConsoleViewport {
             this.bottomGapElement.style.height = bottomGapHeight + 'px';
             this.topGapElementActive = Boolean(topGapHeight);
             this.bottomGapElementActive = Boolean(bottomGapHeight);
-            this.contentElementInternal.style.setProperty('height', '10000000px');
+            this.#contentElement.style.setProperty('height', '10000000px');
         }
         this.partialViewportUpdate(prepare.bind(this));
-        this.contentElementInternal.style.removeProperty('height');
+        this.#contentElement.style.removeProperty('height');
         // Should be the last call in the method as it might force layout.
         if (shouldRestoreSelection) {
             this.restoreSelection(selection);
         }
-        if (this.stickToBottomInternal) {
+        if (this.#stickToBottom) {
             this.element.scrollTop = 10000000;
         }
     }
@@ -480,7 +460,7 @@ export class ConsoleViewport {
             willBeHidden[i].element().remove();
         }
         const wasShown = [];
-        let anchor = this.contentElementInternal.firstChild;
+        let anchor = this.#contentElement.firstChild;
         for (const viewportElement of itemsToRender) {
             const element = viewportElement.element();
             if (element !== anchor) {
@@ -488,7 +468,7 @@ export class ConsoleViewport {
                 if (shouldCallWasShown) {
                     wasShown.push(viewportElement);
                 }
-                this.contentElementInternal.insertBefore(element, anchor);
+                this.#contentElement.insertBefore(element, anchor);
             }
             else {
                 anchor = anchor.nextSibling;
@@ -499,7 +479,7 @@ export class ConsoleViewport {
         }
         this.renderedItems = Array.from(itemsToRender);
         if (hadFocus) {
-            this.contentElementInternal.focus();
+            this.#contentElement.focus();
         }
         this.updateFocusedItem();
     }
@@ -530,16 +510,16 @@ export class ConsoleViewport {
             textLines.push(lineContent);
         }
         const endProviderElement = this.providerElement(endSelection.item);
-        const endSelectionElement = endProviderElement && endProviderElement.element();
-        if (endSelectionElement && endSelection.node && endSelection.node.isSelfOrDescendant(endSelectionElement)) {
+        const endSelectionElement = endProviderElement?.element();
+        if (endSelectionElement && endSelection.node?.isSelfOrDescendant(endSelectionElement)) {
             const itemTextOffset = this.textOffsetInNode(endSelectionElement, endSelection.node, endSelection.offset);
             if (textLines.length > 0) {
                 textLines[textLines.length - 1] = textLines[textLines.length - 1].substring(0, itemTextOffset);
             }
         }
         const startProviderElement = this.providerElement(startSelection.item);
-        const startSelectionElement = startProviderElement && startProviderElement.element();
-        if (startSelectionElement && startSelection.node && startSelection.node.isSelfOrDescendant(startSelectionElement)) {
+        const startSelectionElement = startProviderElement?.element();
+        if (startSelectionElement && startSelection.node?.isSelfOrDescendant(startSelectionElement)) {
             const itemTextOffset = this.textOffsetInNode(startSelectionElement, startSelection.node, startSelection.offset);
             textLines[0] = textLines[0].substring(itemTextOffset);
         }

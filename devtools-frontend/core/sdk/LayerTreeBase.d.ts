@@ -1,7 +1,7 @@
 import type * as Protocol from '../../generated/protocol.js';
 import { type DOMNode } from './DOMModel.js';
-import { type SnapshotWithRect } from './PaintProfiler.js';
-import { type Target } from './Target.js';
+import type { SnapshotWithRect } from './PaintProfiler.js';
+import type { Target } from './Target.js';
 export interface Layer {
     id(): string;
     parentId(): string | null;
@@ -27,15 +27,15 @@ export interface Layer {
     requestCompositingReasons(): Promise<string[]>;
     requestCompositingReasonIds(): Promise<string[]>;
     drawsContent(): boolean;
-    snapshots(): Promise<SnapshotWithRect | null>[];
+    snapshots(): Array<Promise<SnapshotWithRect | null>>;
 }
 export declare namespace Layer {
-    enum ScrollRectType {
-        NonFastScrollable = "NonFastScrollable",
-        TouchEventHandler = "TouchEventHandler",
-        WheelEventHandler = "WheelEventHandler",
-        RepaintsOnScroll = "RepaintsOnScroll",
-        MainThreadScrollingReason = "MainThreadScrollingReason"
+    const enum ScrollRectType {
+        NON_FAST_SCROLLABLE = "NonFastScrollable",
+        TOUCH_EVENT_HANDLER = "TouchEventHandler",
+        WHEEL_EVENT_HANDLER = "WheelEventHandler",
+        REPAINTS_ON_SCROLL = "RepaintsOnScroll",
+        MAIN_THREAD_SCROLL_REASON = "MainThreadScrollingReason"
     }
 }
 export declare class StickyPositionConstraint {
@@ -67,5 +67,4 @@ export declare class LayerTreeBase {
         width: number;
         height: number;
     } | undefined;
-    private nodeForId;
 }

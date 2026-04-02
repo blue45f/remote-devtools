@@ -1,8 +1,40 @@
 import * as Protocol from '../../generated/protocol.js';
 import * as Common from '../common/common.js';
+import * as Platform from '../platform/platform.js';
+import type { DOMModel } from './DOMModel.js';
+export declare const enum HighlightType {
+    FLEX = "FLEX",
+    GRID = "GRID",
+    SCROLL_SNAP = "SCROLL_SNAP",
+    CONTAINER_QUERY = "CONTAINER_QUERY",
+    ISOLATED_ELEMENT = "ISOLATED_ELEMENT"
+}
+export interface PersistentHighlightSettingItem {
+    url: Platform.DevToolsPath.UrlString;
+    path: string;
+    type: HighlightType;
+}
+export interface PersistentHighlighterCallbacks {
+    onGridOverlayStateChanged: ({ nodeId, enabled }: {
+        nodeId: Protocol.DOM.NodeId;
+        enabled: boolean;
+    }) => void;
+    onFlexOverlayStateChanged: ({ nodeId, enabled }: {
+        nodeId: Protocol.DOM.NodeId;
+        enabled: boolean;
+    }) => void;
+    onScrollSnapOverlayStateChanged: ({ nodeId, enabled }: {
+        nodeId: Protocol.DOM.NodeId;
+        enabled: boolean;
+    }) => void;
+    onContainerQueryOverlayStateChanged: ({ nodeId, enabled }: {
+        nodeId: Protocol.DOM.NodeId;
+        enabled: boolean;
+    }) => void;
+}
 export declare class OverlayPersistentHighlighter {
     #private;
-    constructor(model: OverlayModel, flexEnabled?: boolean);
+    constructor(model: OverlayModel, settings: Common.Settings.Settings, callbacks: PersistentHighlighterCallbacks);
     private onSettingChange;
     private buildGridHighlightConfig;
     private buildFlexContainerHighlightConfig;
@@ -28,7 +60,7 @@ export declare class OverlayPersistentHighlighter {
     hideIsolatedElementInOverlay(nodeId: Protocol.DOM.NodeId): void;
     isIsolatedElementHighlighted(nodeId: Protocol.DOM.NodeId): boolean;
     private buildIsolationModeHighlightConfig;
-    hideAllInOverlay(): void;
+    hideAllInOverlayWithoutSave(): void;
     refreshHighlights(): void;
     private updateHighlightsForDeletedNodes;
     resetOverlay(): void;
@@ -38,9 +70,10 @@ export declare class OverlayPersistentHighlighter {
     private updateScrollSnapHighlightsInOverlay;
     updateContainerQueryHighlightsInOverlay(): void;
     updateIsolatedElementHighlightsInOverlay(): void;
-}
-export interface DOMModel {
-    nodeForId(nodeId: Protocol.DOM.NodeId): void;
+    restoreHighlightsForDocument(): Promise<void>;
+    private currentUrl;
+    private getPersistentHighlightSettingForOneType;
+    private savePersistentHighlightSetting;
 }
 export interface OverlayAgent {
     invoke_setShowGridOverlays(param: {

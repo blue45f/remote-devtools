@@ -18,7 +18,6 @@ export declare class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWr
     private readonly history;
     private readonly uriToUISourceCode;
     private readonly idToUISourceCode;
-    private currentFileInternal;
     private currentView;
     private scrollTimer?;
     private reentrantShow;
@@ -41,7 +40,6 @@ export declare class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWr
     private removeViewListeners;
     private onScrollChanged;
     private onEditorUpdate;
-    private innerShowFile;
     private titleForFile;
     private maybeCloseTab;
     closeTabs(ids: string[], forceCloseDirtyTabs?: boolean): void;
@@ -68,9 +66,9 @@ export declare class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWr
     private generateTabId;
     currentFile(): Workspace.UISourceCode.UISourceCode | null;
 }
-export declare enum Events {
-    EditorSelected = "EditorSelected",
-    EditorClosed = "EditorClosed"
+export declare const enum Events {
+    EDITOR_SELECTED = "EditorSelected",
+    EDITOR_CLOSED = "EditorClosed"
 }
 export interface EditorSelectedEvent {
     currentFile: Workspace.UISourceCode.UISourceCode;
@@ -78,10 +76,10 @@ export interface EditorSelectedEvent {
     previousView: UI.Widget.Widget | null;
     userGesture: boolean | undefined;
 }
-export type EventTypes = {
-    [Events.EditorSelected]: EditorSelectedEvent;
-    [Events.EditorClosed]: Workspace.UISourceCode.UISourceCode;
-};
+export interface EventTypes {
+    [Events.EDITOR_SELECTED]: EditorSelectedEvent;
+    [Events.EDITOR_CLOSED]: Workspace.UISourceCode.UISourceCode;
+}
 interface SerializedHistoryItem {
     url: string;
     resourceTypeName: string;
@@ -113,7 +111,7 @@ export declare class History {
     update(keys: HistoryItemKey[]): void;
     remove(key: HistoryItemKey): void;
     toObject(): SerializedHistoryItem[];
-    keys(): ReadonlyArray<HistoryItemKey>;
+    keys(): HistoryItemKey[];
 }
 export declare class EditorContainerTabDelegate implements UI.TabbedPane.TabbedPaneTabDelegate {
     private readonly editorContainer;

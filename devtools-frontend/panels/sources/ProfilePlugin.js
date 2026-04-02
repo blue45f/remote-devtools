@@ -1,24 +1,25 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
+import * as Workspace from '../../models/workspace/workspace.js';
 import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
-import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import { Plugin } from './Plugin.js';
 // Defines plugins that show profiling information in the editor
 // gutter when available.
 const UIStrings = {
     /**
-     *@description The milisecond unit
+     * @description The milisecond unit
      */
     ms: 'ms',
     /**
-     *@description Unit for data size in DevTools
+     * @description Unit for data size in DevTools
      */
     mb: 'MB',
     /**
-     *@description A unit
+     * @description A unit
      */
     kb: 'kB',
 };
@@ -81,22 +82,29 @@ class PerformanceMarker extends CodeMirror.GutterMarker {
     }
 }
 function markersFromProfileData(map, state, type) {
-    const markerType = type === SourceFrame.SourceFrame.DecoratorType.PERFORMANCE ? PerformanceMarker : MemoryMarker;
+    const markerType = type === "performance" /* Workspace.UISourceCode.DecoratorType.PERFORMANCE */ ? PerformanceMarker : MemoryMarker;
     const markers = [];
+    const aggregatedByLine = new Map();
     for (const [line, value] of map) {
         if (line <= state.doc.lines) {
-            const { from } = state.doc.line(line);
-            markers.push(new markerType(value).range(from));
+            for (const [, data] of value) {
+                aggregatedByLine.set(line, (aggregatedByLine.get(line) || 0) + data);
+            }
         }
+    }
+    for (const [line, value] of aggregatedByLine) {
+        const { from } = state.doc.line(line);
+        markers.push(new markerType(value).range(from));
     }
     return CodeMirror.RangeSet.of(markers, true);
 }
-const makeLineLevelProfilePlugin = (type) => class extends Plugin {
+const makeLineLevelProfilePlugin = (type) => class ProfilePlugin extends Plugin {
     updateEffect = CodeMirror.StateEffect.define();
     field;
     gutter;
     compartment = new CodeMirror.Compartment();
-    constructor(uiSourceCode) {
+    #transformer;
+    constructor(uiSourceCode, transformer) {
         super(uiSourceCode);
         this.field = CodeMirror.StateField.define({
             create() {
@@ -109,15 +117,23 @@ const makeLineLevelProfilePlugin = (type) => class extends Plugin {
             },
         });
         this.gutter = CodeMirror.gutter({
-            markers: (view) => view.state.field(this.field),
+            markers: view => view.state.field(this.field),
             class: `cm-${type}Gutter`,
         });
+        this.#transformer = transformer;
     }
     static accepts(uiSourceCode) {
         return uiSourceCode.contentType().hasScripts();
     }
     getLineMap() {
-        return this.uiSourceCode.getDecorationData(type);
+        const uiSourceCodeProfileMap = this.uiSourceCode.getDecorationData(type);
+        if (!uiSourceCodeProfileMap) {
+            return undefined;
+        }
+        return Workspace.UISourceCode.createMappedProfileData(uiSourceCodeProfileMap, (line, column) => {
+            const editorLocation = this.#transformer.uiLocationToEditorLocation(line, column);
+            return [editorLocation.lineNumber, editorLocation.columnNumber];
+        });
     }
     editorExtension() {
         const map = this.getLineMap();
@@ -142,14 +158,18 @@ const makeLineLevelProfilePlugin = (type) => class extends Plugin {
     }
 };
 const theme = CodeMirror.EditorView.baseTheme({
+    '.cm-line::selection': {
+        backgroundColor: 'transparent',
+        color: 'currentColor',
+    },
     '.cm-performanceGutter': {
         width: '60px',
-        backgroundColor: 'var(--color-background)',
+        backgroundColor: 'var(--sys-color-cdt-base-container)',
         marginLeft: '3px',
     },
     '.cm-memoryGutter': {
         width: '48px',
-        backgroundColor: 'var(--color-background)',
+        backgroundColor: 'var(--sys-color-cdt-base-container)',
         marginLeft: '3px',
     },
     '.cm-profileMarker': {
@@ -157,11 +177,11 @@ const theme = CodeMirror.EditorView.baseTheme({
         paddingRight: '3px',
     },
     '.cm-profileMarker .cm-units': {
-        color: 'var(--color-text-secondary)',
+        color: 'var(--sys-color-token-subtle)',
         fontSize: '75%',
         marginLeft: '3px',
     },
 });
-export const MemoryProfilePlugin = makeLineLevelProfilePlugin(SourceFrame.SourceFrame.DecoratorType.MEMORY);
-export const PerformanceProfilePlugin = makeLineLevelProfilePlugin(SourceFrame.SourceFrame.DecoratorType.PERFORMANCE);
+export const MemoryProfilePlugin = makeLineLevelProfilePlugin("memory" /* Workspace.UISourceCode.DecoratorType.MEMORY */);
+export const PerformanceProfilePlugin = makeLineLevelProfilePlugin("performance" /* Workspace.UISourceCode.DecoratorType.PERFORMANCE */);
 //# sourceMappingURL=ProfilePlugin.js.map

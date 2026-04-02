@@ -1,37 +1,12 @@
-/*
- * Copyright (C) 2014 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2014 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 export const HeapSnapshotProgressEvent = {
     Update: 'ProgressUpdate',
     BrokenSnapshot: 'BrokenSnapshot',
 };
 export const baseSystemDistance = 100000000;
+export const baseUnreachableDistance = baseSystemDistance * 2;
 export class AllocationNodeCallers {
     nodesWithSingleCaller;
     branchingCallers;
@@ -88,9 +63,10 @@ export class Node {
     retainedSize;
     selfSize;
     type;
-    canBeQueried;
-    detachedDOMTreeNode;
-    isAddedNotRemoved;
+    canBeQueried = false;
+    detachedDOMTreeNode = false;
+    isAddedNotRemoved = null;
+    ignored = false;
     constructor(id, name, distance, nodeIndex, retainedSize, selfSize, type) {
         this.id = id;
         this.name = name;
@@ -99,9 +75,6 @@ export class Node {
         this.retainedSize = retainedSize;
         this.selfSize = selfSize;
         this.type = type;
-        this.canBeQueried = false;
-        this.detachedDOMTreeNode = false;
-        this.isAddedNotRemoved = null;
     }
 }
 export class Edge {
@@ -109,64 +82,38 @@ export class Edge {
     node;
     type;
     edgeIndex;
-    isAddedNotRemoved;
+    isAddedNotRemoved = null;
     constructor(name, node, type, edgeIndex) {
         this.name = name;
         this.node = node;
         this.type = type;
         this.edgeIndex = edgeIndex;
-        this.isAddedNotRemoved = null;
-    }
-}
-export class Aggregate {
-    count;
-    distance;
-    self;
-    maxRet;
-    type;
-    name;
-    idxs;
-    constructor() {
     }
 }
 export class AggregateForDiff {
+    name;
     indexes;
     ids;
     selfSizes;
     constructor() {
+        this.name = '';
         this.indexes = [];
         this.ids = [];
         this.selfSizes = [];
     }
 }
 export class Diff {
-    addedCount;
-    removedCount;
-    addedSize;
-    removedSize;
-    deletedIndexes;
-    addedIndexes;
+    name;
+    addedCount = 0;
+    removedCount = 0;
+    addedSize = 0;
+    removedSize = 0;
+    deletedIndexes = [];
+    addedIndexes = [];
     countDelta;
     sizeDelta;
-    constructor() {
-        this.addedCount = 0;
-        this.removedCount = 0;
-        this.addedSize = 0;
-        this.removedSize = 0;
-        this.deletedIndexes = [];
-        this.addedIndexes = [];
-    }
-}
-export class DiffForClass {
-    addedCount;
-    removedCount;
-    addedSize;
-    removedSize;
-    deletedIndexes;
-    addedIndexes;
-    countDelta;
-    sizeDelta;
-    constructor() {
+    constructor(name) {
+        this.name = name;
     }
 }
 export class ComparatorConfig {
@@ -179,19 +126,6 @@ export class ComparatorConfig {
         this.ascending1 = ascending1;
         this.fieldName2 = fieldName2;
         this.ascending2 = ascending2;
-    }
-}
-export class WorkerCommand {
-    callId;
-    disposition;
-    objectId;
-    newObjectId;
-    methodName;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    methodArguments;
-    source;
-    constructor() {
     }
 }
 export class ItemsRange {
@@ -218,39 +152,31 @@ export class StaticData {
         this.maxJSObjectId = maxJSObjectId;
     }
 }
-export class Statistics {
-    total;
-    v8heap;
-    native;
-    code;
-    jsArrays;
-    strings;
-    system;
-    constructor() {
-    }
-}
 export class NodeFilter {
     minNodeId;
     maxNodeId;
     allocationNodeId;
+    filterName;
     constructor(minNodeId, maxNodeId) {
         this.minNodeId = minNodeId;
         this.maxNodeId = maxNodeId;
     }
     equals(o) {
         return this.minNodeId === o.minNodeId && this.maxNodeId === o.maxNodeId &&
-            this.allocationNodeId === o.allocationNodeId;
+            this.allocationNodeId === o.allocationNodeId && this.filterName === o.filterName;
     }
 }
 export class SearchConfig {
     query;
     caseSensitive;
+    wholeWord;
     isRegex;
     shouldJump;
     jumpBackward;
-    constructor(query, caseSensitive, isRegex, shouldJump, jumpBackward) {
+    constructor(query, caseSensitive, wholeWord, isRegex, shouldJump, jumpBackward) {
         this.query = query;
         this.caseSensitive = caseSensitive;
+        this.wholeWord = wholeWord;
         this.isRegex = isRegex;
         this.shouldJump = shouldJump;
         this.jumpBackward = jumpBackward;

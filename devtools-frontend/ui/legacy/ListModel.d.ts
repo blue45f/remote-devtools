@@ -2,7 +2,7 @@ import * as Common from '../../core/common/common.js';
 export declare class ListModel<T> extends Common.ObjectWrapper.ObjectWrapper<EventTypes<T>> implements Iterable<T> {
     private items;
     constructor(items?: T[]);
-    [Symbol.iterator](): Iterator<T, any, undefined>;
+    [Symbol.iterator](): Iterator<T>;
     get length(): number;
     at(index: number): T;
     every(callback: (arg0: T) => boolean): boolean;
@@ -21,8 +21,8 @@ export declare class ListModel<T> extends Common.ObjectWrapper.ObjectWrapper<Eve
     some(callback: (arg0: T) => boolean): boolean;
     private replaced;
 }
-export declare enum Events {
-    ItemsReplaced = "ItemsReplaced"
+export declare const enum Events {
+    ITEMS_REPLACED = "ItemsReplaced"
 }
 export interface ItemsReplacedEvent<T> {
     index: number;
@@ -30,6 +30,6 @@ export interface ItemsReplacedEvent<T> {
     inserted: number;
     keepSelectedIndex?: boolean;
 }
-export type EventTypes<T> = {
-    [Events.ItemsReplaced]: ItemsReplacedEvent<T>;
-};
+export interface EventTypes<T> {
+    [Events.ITEMS_REPLACED]: ItemsReplacedEvent<T>;
+}

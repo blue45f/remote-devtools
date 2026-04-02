@@ -1,17 +1,16 @@
 import * as Common from '../../core/common/common.js';
-import type * as Platform from '../../core/platform/platform.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as Root from '../../core/root/root.js';
 import { Context } from './Context.js';
 export interface ActionDelegate {
-    handleAction(_context: Context, _actionId: string): boolean;
+    handleAction(context: Context, actionId: string, opts?: Record<string, unknown>): boolean;
 }
 export declare class Action extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private enabledInternal;
-    private toggledInternal;
+    #private;
     private actionRegistration;
     constructor(actionRegistration: ActionRegistration);
     id(): string;
-    execute(): Promise<boolean>;
+    execute(opts?: Record<string, unknown>): Promise<boolean>;
     icon(): string | undefined;
     toggledIcon(): string | undefined;
     toggleWithRedColor(): boolean;
@@ -23,35 +22,38 @@ export declare class Action extends Common.ObjectWrapper.ObjectWrapper<EventType
     title(): Common.UIString.LocalizedString;
     toggled(): boolean;
     setToggled(toggled: boolean): void;
-    options(): undefined | Array<ExtensionOption>;
-    contextTypes(): undefined | Array<Function>;
+    options(): undefined | ExtensionOption[];
+    contextTypes(): undefined | Array<Platform.Constructor.Constructor<unknown>>;
     canInstantiate(): boolean;
-    bindings(): Array<Binding> | undefined;
+    bindings(): Binding[] | undefined;
+    configurableBindings(): boolean;
     experiment(): string | undefined;
-    condition(): string | undefined;
+    featurePromotionId(): string | undefined;
+    setting(): string | undefined;
+    condition(): Root.Runtime.Condition | undefined;
     order(): number | undefined;
 }
 export declare function registerActionExtension(registration: ActionRegistration): void;
 export declare function reset(): void;
-export declare function getRegisteredActionExtensions(): Array<Action>;
+export declare function getRegisteredActionExtensions(): Action[];
 export declare function maybeRemoveActionExtension(actionId: string): boolean;
 export declare const enum Platforms {
-    All = "All platforms",
-    Mac = "mac",
-    WindowsLinux = "windows,linux",
-    Android = "Android",
-    Windows = "windows"
+    ALL = "All platforms",
+    MAC = "mac",
+    WINDOWS_LINUX = "windows,linux",
+    ANDROID = "Android",
+    WINDOWS = "windows"
 }
 export declare const enum Events {
-    Enabled = "Enabled",
-    Toggled = "Toggled"
+    ENABLED = "Enabled",
+    TOGGLED = "Toggled"
 }
-export type EventTypes = {
-    [Events.Enabled]: boolean;
-    [Events.Toggled]: boolean;
-};
-export declare enum ActionCategory {
-    NONE = "",
+export interface EventTypes {
+    [Events.ENABLED]: boolean;
+    [Events.TOGGLED]: boolean;
+}
+export declare const enum ActionCategory {
+    NONE = "",// `NONE` must be a falsy value. Legacy code uses if-checks for the category.
     ELEMENTS = "ELEMENTS",
     SCREENSHOT = "SCREENSHOT",
     NETWORK = "NETWORK",
@@ -70,7 +72,9 @@ export declare enum ActionCategory {
     SETTINGS = "SETTINGS",
     DEBUGGER = "DEBUGGER",
     SOURCES = "SOURCES",
-    RENDERING = "RENDERING"
+    RENDERING = "RENDERING",
+    RECORDER = "RECORDER",
+    CHANGES = "CHANGES"
 }
 export declare function getLocalizedActionCategory(category: ActionCategory): Platform.UIString.LocalizedString;
 export declare const enum IconClass {
@@ -85,6 +89,7 @@ export declare const enum IconClass {
     DOWNLOAD = "download",
     LARGEICON_PAUSE = "pause",
     LARGEICON_RESUME = "resume",
+    MOP = "mop",
     BIN = "bin",
     LARGEICON_SETTINGS_GEAR = "gear",
     LARGEICON_STEP_OVER = "step-over",
@@ -93,7 +98,10 @@ export declare const enum IconClass {
     LARGE_ICON_STEP_OUT = "step-out",
     BREAKPOINT_CROSSED_FILLED = "breakpoint-crossed-filled",
     BREAKPOINT_CROSSED = "breakpoint-crossed",
-    PLUS = "plus"
+    PLUS = "plus",
+    UNDO = "undo",
+    COPY = "copy",
+    IMPORT = "import"
 }
 export declare const enum KeybindSet {
     DEVTOOLS_DEFAULT = "devToolsDefault",
@@ -107,7 +115,7 @@ export interface ExtensionOption {
 export interface Binding {
     platform?: Platforms;
     shortcut: string;
-    keybindSets?: Array<KeybindSet>;
+    keybindSets?: KeybindSet[];
 }
 /**
  * The representation of an action extension to be registered.
@@ -162,7 +170,7 @@ export interface ActionRegistration {
      *   <...>
      *    async loadActionDelegate() {
      *      const Elements = await loadElementsModule();
-     *      return Elements.ElementsPanel.ElementsActionDelegate.instance();
+     *      return new Elements.ElementsPanel.ElementsActionDelegate();
      *    },
      *   <...>
      *  });
@@ -210,11 +218,11 @@ export interface ActionRegistration {
      * });
      * ```
      */
-    contextTypes?: () => Array<Function>;
+    contextTypes?: () => Array<Platform.Constructor.Constructor<unknown>>;
     /**
      * The descriptions for each of the two states in which a toggleable action can be.
      */
-    options?: Array<ExtensionOption>;
+    options?: ExtensionOption[];
     /**
      * The description of the variables (e.g. platform, keys and keybind sets) under which a keyboard shortcut triggers the action.
      * If a keybind must be available on all platforms, its 'platform' property must be undefined. The same applies to keybind sets
@@ -223,19 +231,36 @@ export interface ActionRegistration {
      * Keybinds also depend on the context types of their corresponding action, and so they will only be available when such context types
      * are flavors of the current appliaction context.
      */
-    bindings?: Array<Binding>;
+    bindings?: Binding[];
+    /**
+     * Whether the action's bindings should be displayed for configuration in the
+     * Settings UI. Setting this to `false` will hide the action from the Shortcuts
+     * tab. Defaults to `true`.
+     */
+    configurableBindings?: boolean;
     /**
      * The name of the experiment an action is associated with. Enabling and disabling the declared
      * experiment will enable and disable the action respectively.
      */
-    experiment?: Root.Runtime.ExperimentName;
+    experiment?: Root.ExperimentNames.ExperimentName;
     /**
-     * A condition represented as a string the action's availability depends on. Conditions come
-     * from the queryParamsObject defined in Runtime and just as the experiment field, they determine the availability
-     * of the setting. A condition can be negated by prepending a ‘!’ to the value of the condition
-     * property and in that case the behaviour of the action's availability will be inverted.
+     * Whether an action needs to be promoted. A new badge is shown next to the menu items then.
      */
-    condition?: Root.Runtime.ConditionName;
+    featurePromotionId?: string;
+    /**
+     * The name of the setting an action is associated with. Enabling and
+     * disabling the declared setting will enable and disable the action
+     * respectively. Note that changing the setting requires a reload for it to
+     * apply to action registration.
+     */
+    setting?: string;
+    /**
+     * A condition is a function that will make the action available if it
+     * returns true, and not available, otherwise. Make sure that objects you
+     * access from inside the condition function are ready at the time when the
+     * setting conditions are checked.
+     */
+    condition?: Root.Runtime.Condition;
     /**
      * Used to sort actions when all registered actions are queried.
      */

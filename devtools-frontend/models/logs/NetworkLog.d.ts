@@ -3,16 +3,7 @@ import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 export declare class NetworkLog extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.SDKModelObserver<SDK.NetworkManager.NetworkManager> {
-    private requestsInternal;
-    private sentNetworkRequests;
-    private receivedNetworkResponses;
-    private requestsSet;
-    private readonly requestsMap;
-    private readonly pageLoadForManager;
-    private isRecording;
-    private readonly modelListeners;
-    private readonly initiatorData;
-    private readonly unresolvedPreflightRequests;
+    #private;
     constructor();
     static instance(): NetworkLog;
     static removeInstance(): void;
@@ -35,6 +26,7 @@ export declare class NetworkLog extends Common.ObjectWrapper.ObjectWrapper<Event
     private willReloadPage;
     private onPrimaryPageChanged;
     private addRequest;
+    private removeRequest;
     private tryResolvePreflightRequests;
     importRequests(requests: SDK.NetworkRequest.NetworkRequest[]): void;
     private onRequestStarted;
@@ -52,16 +44,25 @@ export declare class NetworkLog extends Common.ObjectWrapper.ObjectWrapper<Event
 export declare enum Events {
     Reset = "Reset",
     RequestAdded = "RequestAdded",
-    RequestUpdated = "RequestUpdated"
+    RequestUpdated = "RequestUpdated",
+    RequestRemoved = "RequestRemoved"
 }
 export interface ResetEvent {
     clearIfPreserved: boolean;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.Reset]: ResetEvent;
-    [Events.RequestAdded]: SDK.NetworkRequest.NetworkRequest;
-    [Events.RequestUpdated]: SDK.NetworkRequest.NetworkRequest;
-};
+    [Events.RequestAdded]: {
+        request: SDK.NetworkRequest.NetworkRequest;
+        preserveLog?: boolean;
+    };
+    [Events.RequestUpdated]: {
+        request: SDK.NetworkRequest.NetworkRequest;
+    };
+    [Events.RequestRemoved]: {
+        request: SDK.NetworkRequest.NetworkRequest;
+    };
+}
 export interface InitiatorData {
     info: InitiatorInfo | null;
     chain: Set<SDK.NetworkRequest.NetworkRequest> | null;

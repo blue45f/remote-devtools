@@ -1,12 +1,13 @@
+import type * as Protocol from '../../generated/protocol.js';
 import * as Platform from '../platform/platform.js';
 import * as ProtocolClient from '../protocol_client/protocol_client.js';
-import type * as Protocol from '../../generated/protocol.js';
-import { type TargetManager } from './TargetManager.js';
-import { SDKModel } from './SDKModel.js';
+import { SDKModel, type SDKModelConstructor } from './SDKModel.js';
+import type { TargetManager } from './TargetManager.js';
 export declare class Target extends ProtocolClient.InspectorBackend.TargetBase {
     #private;
-    constructor(targetManager: TargetManager, id: Protocol.Target.TargetID | 'main', name: string, type: Type, parentTarget: Target | null, sessionId: string, suspended: boolean, connection: ProtocolClient.InspectorBackend.Connection | null, targetInfo?: Protocol.Target.TargetInfo);
-    createModels(required: Set<new (arg1: Target) => SDKModel>): void;
+    constructor(targetManager: TargetManager, id: Protocol.Target.TargetID | 'main', name: string, type: Type, parentTarget: Target | null, sessionId: string, suspended: boolean, connection: ProtocolClient.CDPConnection.CDPConnection | null, targetInfo?: Protocol.Target.TargetInfo);
+    /** Creates the models in the order in which they are provided */
+    createModels(models: SDKModelConstructor[]): void;
     id(): Protocol.Target.TargetID | 'main';
     name(): string;
     setName(name: string): void;
@@ -22,6 +23,8 @@ export declare class Target extends ProtocolClient.InspectorBackend.TargetBase {
     models(): Map<new (arg1: Target) => SDKModel, SDKModel>;
     inspectedURL(): Platform.DevToolsPath.UrlString;
     setInspectedURL(inspectedURL: Platform.DevToolsPath.UrlString): void;
+    hasCrashed(): boolean;
+    setHasCrashed(isCrashed: boolean): void;
     suspend(reason?: string): Promise<void>;
     resume(): Promise<void>;
     suspended(): boolean;
@@ -29,35 +32,40 @@ export declare class Target extends ProtocolClient.InspectorBackend.TargetBase {
     targetInfo(): Protocol.Target.TargetInfo | undefined;
 }
 export declare enum Type {
-    Frame = "frame",
+    FRAME = "frame",
     ServiceWorker = "service-worker",
     Worker = "worker",
-    SharedWorker = "shared-worker",
-    Node = "node",
-    Browser = "browser",
-    AuctionWorklet = "auction-worklet",
-    Tab = "tab"
+    SHARED_WORKER = "shared-worker",
+    SHARED_STORAGE_WORKLET = "shared-storage-worklet",
+    NODE = "node",
+    BROWSER = "browser",
+    AUCTION_WORKLET = "auction-worklet",
+    WORKLET = "worklet",
+    TAB = "tab",
+    NODE_WORKER = "node-worker"
 }
-export declare enum Capability {
-    Browser = 1,
+export declare const enum Capability {
+    BROWSER = 1,
     DOM = 2,
     JS = 4,
-    Log = 8,
-    Network = 16,
-    Target = 32,
-    ScreenCapture = 64,
-    Tracing = 128,
-    Emulation = 256,
-    Security = 512,
-    Input = 1024,
-    Inspector = 2048,
-    DeviceEmulation = 4096,
-    Storage = 8192,
-    ServiceWorker = 16384,
-    Audits = 32768,
-    WebAuthn = 65536,
+    LOG = 8,
+    NETWORK = 16,
+    TARGET = 32,
+    SCREEN_CAPTURE = 64,
+    TRACING = 128,
+    EMULATION = 256,
+    SECURITY = 512,
+    INPUT = 1024,
+    INSPECTOR = 2048,
+    DEVICE_EMULATION = 4096,
+    STORAGE = 8192,
+    SERVICE_WORKER = 16384,
+    AUDITS = 32768,
+    WEB_AUTHN = 65536,
     IO = 131072,
-    Media = 262144,
-    EventBreakpoints = 524288,
-    None = 0
+    MEDIA = 262144,
+    EVENT_BREAKPOINTS = 524288,
+    DOM_STORAGE = 1048576,
+    WEB_MCP = 2097152,
+    NONE = 0
 }

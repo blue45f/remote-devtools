@@ -6,27 +6,31 @@ import * as UI from '../../ui/legacy/legacy.js';
 import { ApplicationPanelTreeElement, ExpandableApplicationPanelTreeElement } from './ApplicationPanelTreeElement.js';
 import { BackgroundServiceModel } from './BackgroundServiceModel.js';
 import { BounceTrackingMitigationsTreeElement } from './BounceTrackingMitigationsTreeElement.js';
-import { type PreloadingResultView, type PreloadingRuleSetView, type PreloadingAttemptView } from './preloading/PreloadingView.js';
-import { PreloadingTreeElement } from './PreloadingTreeElement.js';
-import { ServiceWorkerCacheTreeElement } from './ServiceWorkerCacheTreeElement.js';
-import { type Database as DatabaseModelDatabase } from './DatabaseModel.js';
+import { DeviceBoundSessionsModel } from './DeviceBoundSessionsModel.js';
+import { RootTreeElement as DeviceBoundSessionsRootTreeElement } from './DeviceBoundSessionsTreeElement.js';
 import { type DOMStorage } from './DOMStorageModel.js';
-import { IndexedDBModel, type Database as IndexedDBModelDatabase, type DatabaseId, type Index, type ObjectStore } from './IndexedDBModel.js';
+import { type ExtensionStorage } from './ExtensionStorageModel.js';
+import { type Database as IndexedDBModelDatabase, type DatabaseId, type Index, IndexedDBModel, type ObjectStore } from './IndexedDBModel.js';
 import { InterestGroupTreeElement } from './InterestGroupTreeElement.js';
-import { type ResourcesPanel } from './ResourcesPanel.js';
-import { SharedStorageListTreeElement } from './SharedStorageListTreeElement.js';
-import { TrustTokensTreeElement } from './TrustTokensTreeElement.js';
+import type * as PreloadingHelper from './preloading/helper/helper.js';
+import { PreloadingSummaryTreeElement } from './PreloadingTreeElement.js';
 import { ReportingApiTreeElement } from './ReportingApiTreeElement.js';
+import type { ResourcesPanel } from './ResourcesPanel.js';
+import { ServiceWorkerCacheTreeElement } from './ServiceWorkerCacheTreeElement.js';
+import { SharedStorageListTreeElement } from './SharedStorageListTreeElement.js';
+import { StorageBucketsTreeParentElement } from './StorageBucketsTreeElement.js';
+import { TrustTokensTreeElement } from './TrustTokensTreeElement.js';
+import { WebMCPTreeElement } from './WebMCPTreeElement.js';
 export declare namespace SharedStorageTreeElementDispatcher {
-    enum Events {
-        SharedStorageTreeElementAdded = "SharedStorageTreeElementAdded"
+    const enum Events {
+        SHARED_STORAGE_TREE_ELEMENT_ADDED = "SharedStorageTreeElementAdded"
     }
     interface SharedStorageTreeElementAddedEvent {
         origin: string;
     }
-    type EventTypes = {
-        [Events.SharedStorageTreeElementAdded]: SharedStorageTreeElementAddedEvent;
-    };
+    interface EventTypes {
+        [Events.SHARED_STORAGE_TREE_ELEMENT_ADDED]: SharedStorageTreeElementAddedEvent;
+    }
 }
 export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements SDK.TargetManager.Observer {
     panel: ResourcesPanel;
@@ -35,13 +39,14 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     serviceWorkersTreeElement: ServiceWorkersTreeElement;
     localStorageListTreeElement: ExpandableApplicationPanelTreeElement;
     sessionStorageListTreeElement: ExpandableApplicationPanelTreeElement;
+    extensionStorageListTreeElement: ExpandableApplicationPanelTreeElement;
     indexedDBListTreeElement: IndexedDBTreeElement;
     interestGroupTreeElement: InterestGroupTreeElement;
-    databasesListTreeElement: ExpandableApplicationPanelTreeElement;
     cookieListTreeElement: ExpandableApplicationPanelTreeElement;
     trustTokensTreeElement: TrustTokensTreeElement;
     cacheStorageListTreeElement: ServiceWorkerCacheTreeElement;
     sharedStorageListTreeElement: SharedStorageListTreeElement;
+    storageBucketsTreeElement: StorageBucketsTreeParentElement | undefined;
     private backForwardCacheListTreeElement?;
     backgroundFetchTreeElement: BackgroundServiceTreeElement;
     backgroundSyncTreeElement: BackgroundServiceTreeElement;
@@ -51,18 +56,18 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     periodicBackgroundSyncTreeElement: BackgroundServiceTreeElement;
     pushMessagingTreeElement: BackgroundServiceTreeElement;
     reportingApiTreeElement: ReportingApiTreeElement;
-    preloadingRuleSetTreeElement: PreloadingTreeElement<PreloadingRuleSetView> | undefined;
-    preloadingAttemptTreeElement: PreloadingTreeElement<PreloadingAttemptView> | undefined;
-    preloadingResultTreeElement: PreloadingTreeElement<PreloadingResultView> | undefined;
+    webMcpTreeElement?: WebMCPTreeElement;
+    deviceBoundSessionsRootTreeElement: DeviceBoundSessionsRootTreeElement | undefined;
+    deviceBoundSessionsModel: DeviceBoundSessionsModel | undefined;
+    preloadingSummaryTreeElement: PreloadingSummaryTreeElement | undefined;
     private readonly resourcesSection;
-    private readonly databaseTableViews;
-    private databaseQueryViews;
-    private readonly databaseTreeElements;
     private domStorageTreeElements;
+    private extensionIdToStorageTreeParentElement;
+    private extensionStorageModels;
+    private extensionStorageTreeElements;
     private sharedStorageTreeElements;
     private domains;
     private target?;
-    private databaseModel?;
     private previousHoveredElement?;
     readonly sharedStorageTreeElementDispatcher: Common.ObjectWrapper.ObjectWrapper<SharedStorageTreeElementDispatcher.EventTypes>;
     constructor(panel: ResourcesPanel);
@@ -73,65 +78,54 @@ export declare class ApplicationPanelSidebar extends UI.Widget.VBox implements S
     private initialize;
     private domStorageModelAdded;
     private domStorageModelRemoved;
+    private extensionStorageModelAdded;
+    private extensionStorageModelRemoved;
+    private indexedDBModelAdded;
+    private indexedDBModelRemoved;
     private interestGroupModelAdded;
     private interestGroupModelRemoved;
     private sharedStorageModelAdded;
     private sharedStorageModelRemoved;
+    private storageBucketsModelAdded;
+    private storageBucketsModelRemoved;
     private resetWithFrames;
-    private resetWebSQL;
     private treeElementAdded;
     private reset;
     private frameNavigated;
-    private databaseAdded;
     private interestGroupAccess;
     private addCookieDocument;
     private domStorageAdded;
     private addDOMStorage;
     private domStorageRemoved;
     private removeDOMStorage;
+    private extensionStorageAdded;
+    private useTreeViewForExtensionStorage;
+    private getExtensionStorageAreaParent;
+    private addExtensionStorage;
+    private extensionStorageRemoved;
+    private removeExtensionStorage;
     private sharedStorageAdded;
     private addSharedStorage;
     private sharedStorageRemoved;
     private removeSharedStorage;
     private sharedStorageAccess;
-    selectDatabase(database: DatabaseModelDatabase): void;
     showResource(resource: SDK.Resource.Resource, line?: number, column?: number): Promise<void>;
     showFrame(frame: SDK.ResourceTreeModel.ResourceTreeFrame): void;
-    showDatabase(database: DatabaseModelDatabase, tableName?: string): void;
-    showFileSystem(view: UI.Widget.Widget): void;
-    private innerShowView;
-    private updateDatabaseTables;
+    showPreloadingRuleSetView(revealInfo: PreloadingHelper.PreloadingForward.RuleSetView): void;
+    showPreloadingAttemptViewWithFilter(filter: PreloadingHelper.PreloadingForward.AttemptViewWithFilter): void;
     private onmousemove;
     private onmouseleave;
-    wasShown(): void;
 }
 export declare class BackgroundServiceTreeElement extends ApplicationPanelTreeElement {
+    #private;
     private serviceName;
     private view;
     private model;
-    private selectedInternal;
     constructor(storagePanel: ResourcesPanel, serviceName: Protocol.BackgroundService.ServiceName);
     private getIconType;
     initialize(model: BackgroundServiceModel | null): void;
     get itemURL(): Platform.DevToolsPath.UrlString;
     get selectable(): boolean;
-    onselect(selectedByUser?: boolean): boolean;
-}
-export declare class DatabaseTreeElement extends ApplicationPanelTreeElement {
-    private readonly sidebar;
-    private readonly database;
-    constructor(sidebar: ApplicationPanelSidebar, database: DatabaseModelDatabase);
-    get itemURL(): Platform.DevToolsPath.UrlString;
-    onselect(selectedByUser?: boolean): boolean;
-    onexpand(): void;
-    updateChildren(): Promise<void>;
-}
-export declare class DatabaseTableTreeElement extends ApplicationPanelTreeElement {
-    private readonly sidebar;
-    private readonly database;
-    private readonly tableName;
-    constructor(sidebar: ApplicationPanelSidebar, database: DatabaseModelDatabase, tableName: string);
-    get itemURL(): Platform.DevToolsPath.UrlString;
     onselect(selectedByUser?: boolean): boolean;
 }
 export declare class ServiceWorkersTreeElement extends ApplicationPanelTreeElement {
@@ -147,14 +141,6 @@ export declare class AppManifestTreeElement extends ApplicationPanelTreeElement 
     onselect(selectedByUser?: boolean): boolean;
     generateChildren(): void;
     onInvoke(): void;
-    showManifestView(): void;
-}
-export declare class ManifestChildTreeElement extends ApplicationPanelTreeElement {
-    #private;
-    constructor(storagePanel: ResourcesPanel, element: Element, childTitle: string, fieldElement: HTMLElement);
-    get itemURL(): Platform.DevToolsPath.UrlString;
-    onInvoke(): void;
-    onInvokeElementKeydown(event: KeyboardEvent): void;
 }
 export declare class ClearStorageTreeElement extends ApplicationPanelTreeElement {
     private view?;
@@ -164,12 +150,15 @@ export declare class ClearStorageTreeElement extends ApplicationPanelTreeElement
 }
 export declare class IndexedDBTreeElement extends ExpandableApplicationPanelTreeElement {
     private idbDatabaseTreeElements;
-    constructor(storagePanel: ResourcesPanel);
+    private storageBucket?;
+    constructor(storagePanel: ResourcesPanel, storageBucket?: Protocol.Storage.StorageBucket);
     private initialize;
+    addIndexedDBForModel(model: IndexedDBModel): void;
     removeIndexedDBForModel(model: IndexedDBModel): void;
     onattach(): void;
     private handleContextMenuEvent;
     refreshIndexedDB(): void;
+    private databaseInTree;
     private indexedDBAdded;
     private addIndexedDB;
     private indexedDBRemoved;
@@ -241,10 +230,24 @@ export declare class DOMStorageTreeElement extends ApplicationPanelTreeElement {
     onattach(): void;
     private handleContextMenuEvent;
 }
+export declare class ExtensionStorageTreeElement extends ApplicationPanelTreeElement {
+    private readonly extensionStorage;
+    constructor(storagePanel: ResourcesPanel, extensionStorage: ExtensionStorage);
+    get storageArea(): Protocol.Extensions.StorageArea;
+    get itemURL(): Platform.DevToolsPath.UrlString;
+    onselect(selectedByUser?: boolean): boolean;
+    onattach(): void;
+    private handleContextMenuEvent;
+}
+export declare class ExtensionStorageTreeParentElement extends ApplicationPanelTreeElement {
+    private readonly extensionId;
+    constructor(storagePanel: ResourcesPanel, extensionId: string, extensionName: string);
+    get itemURL(): Platform.DevToolsPath.UrlString;
+}
 export declare class CookieTreeElement extends ApplicationPanelTreeElement {
+    #private;
     private readonly target;
-    private readonly cookieDomainInternal;
-    constructor(storagePanel: ResourcesPanel, frame: SDK.ResourceTreeModel.ResourceTreeFrame, cookieDomain: string);
+    constructor(storagePanel: ResourcesPanel, frame: SDK.ResourceTreeModel.ResourceTreeFrame, cookieUrl: Common.ParsedURL.ParsedURL);
     get itemURL(): Platform.DevToolsPath.UrlString;
     cookieDomain(): string;
     onattach(): void;
@@ -253,9 +256,9 @@ export declare class CookieTreeElement extends ApplicationPanelTreeElement {
 }
 export declare class StorageCategoryView extends UI.Widget.VBox {
     private emptyWidget;
-    private linkElement;
     constructor();
     setText(text: string): void;
+    setHeadline(header: string): void;
     setLink(link: Platform.DevToolsPath.UrlString | null): void;
 }
 export declare class ResourcesSection implements SDK.TargetManager.Observer {
@@ -284,7 +287,6 @@ export declare class ResourcesSection implements SDK.TargetManager.Observer {
 export declare class FrameTreeElement extends ApplicationPanelTreeElement {
     private section;
     private frame;
-    private frameId;
     private readonly categoryElements;
     private readonly treeElementForResource;
     private treeElementForWindow;

@@ -1,26 +1,30 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import { cssMetadata } from './CSSMetadata.js';
 import { CSSProperty } from './CSSProperty.js';
 export class CSSStyleDeclaration {
-    #cssModelInternal;
+    #cssModel;
     parentRule;
-    #allPropertiesInternal;
+    #allProperties = [];
     styleSheetId;
-    range;
+    range = null;
     cssText;
-    #shorthandValues;
-    #shorthandIsImportant;
-    #activePropertyMap;
-    #leadingPropertiesInternal;
+    #shorthandValues = new Map();
+    #shorthandIsImportant = new Set();
+    #activePropertyMap = new Map();
+    #leadingProperties = null;
     type;
-    constructor(cssModel, parentRule, payload, type) {
-        this.#cssModelInternal = cssModel;
+    // For CSSStyles coming from animations,
+    // This holds the name of the animation.
+    #animationName;
+    constructor(cssModel, parentRule, payload, type, animationName) {
+        this.#cssModel = cssModel;
         this.parentRule = parentRule;
         this.#reinitialize(payload);
         this.type = type;
+        this.#animationName = animationName;
     }
     rebase(edit) {
         if (this.styleSheetId !== edit.styleSheetId || !this.range) {
@@ -31,10 +35,13 @@ export class CSSStyleDeclaration {
         }
         else {
             this.range = this.range.rebaseAfterTextEdit(edit.oldRange, edit.newRange);
-            for (let i = 0; i < this.#allPropertiesInternal.length; ++i) {
-                this.#allPropertiesInternal[i].rebase(edit);
+            for (let i = 0; i < this.#allProperties.length; ++i) {
+                this.#allProperties[i].rebase(edit);
             }
         }
+    }
+    animationName() {
+        return this.#animationName;
     }
     #reinitialize(payload) {
         this.styleSheetId = payload.styleSheetId;
@@ -48,116 +55,43 @@ export class CSSStyleDeclaration {
                 this.#shorthandIsImportant.add(shorthandEntries[i].name);
             }
         }
-        this.#allPropertiesInternal = [];
+        this.#allProperties = [];
         if (payload.cssText && this.range) {
-            const cssText = new TextUtils.Text.Text(payload.cssText);
-            let start = { line: this.range.startLine, column: this.range.startColumn };
             const longhands = [];
             for (const cssProperty of payload.cssProperties) {
                 const range = cssProperty.range;
                 if (!range) {
                     continue;
                 }
-                this.#parseUnusedText(cssText, start.line, start.column, range.startLine, range.startColumn);
-                start = { line: range.endLine, column: range.endColumn };
-                const parsedProperty = CSSProperty.parsePayload(this, this.#allPropertiesInternal.length, cssProperty);
-                this.#allPropertiesInternal.push(parsedProperty);
+                const parsedProperty = CSSProperty.parsePayload(this, this.#allProperties.length, cssProperty);
+                this.#allProperties.push(parsedProperty);
                 for (const longhand of parsedProperty.getLonghandProperties()) {
                     longhands.push(longhand);
                 }
             }
             for (const longhand of longhands) {
-                longhand.index = this.#allPropertiesInternal.length;
-                this.#allPropertiesInternal.push(longhand);
+                longhand.index = this.#allProperties.length;
+                this.#allProperties.push(longhand);
             }
-            this.#parseUnusedText(cssText, start.line, start.column, this.range.endLine, this.range.endColumn);
         }
         else {
             for (const cssProperty of payload.cssProperties) {
-                this.#allPropertiesInternal.push(CSSProperty.parsePayload(this, this.#allPropertiesInternal.length, cssProperty));
+                this.#allProperties.push(CSSProperty.parsePayload(this, this.#allProperties.length, cssProperty));
             }
         }
         this.#generateSyntheticPropertiesIfNeeded();
         this.#computeInactiveProperties();
         // TODO(changhaohan): verify if this #activePropertyMap is still necessary, or if it is
-        // providing different information against the activeness in allPropertiesInternal.
+        // providing different information against the activeness in #allProperties.
         this.#activePropertyMap = new Map();
-        for (const property of this.#allPropertiesInternal) {
+        for (const property of this.#allProperties) {
             if (!property.activeInStyle()) {
                 continue;
             }
             this.#activePropertyMap.set(property.name, property);
         }
         this.cssText = payload.cssText;
-        this.#leadingPropertiesInternal = null;
-    }
-    #parseUnusedText(cssText, startLine, startColumn, endLine, endColumn) {
-        const tr = new TextUtils.TextRange.TextRange(startLine, startColumn, endLine, endColumn);
-        if (!this.range) {
-            return;
-        }
-        const missingText = cssText.extract(tr.relativeTo(this.range.startLine, this.range.startColumn));
-        // Try to fit the malformed css into properties.
-        const lines = missingText.split('\n');
-        const context = {
-            inComment: false,
-            nestedBlocks: 0,
-            validContent: '',
-        };
-        for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
-            skipBlocks(lines[lineNumber], context);
-            if (context.nestedBlocks > 0 || !context.validContent) {
-                // We skip the whole line if we have entered a nested block.
-                continue;
-            }
-            let column = 0;
-            for (const property of context.validContent.split(';')) {
-                const trimmedProperty = property.trim();
-                if (trimmedProperty) {
-                    let name;
-                    let value;
-                    const colonIndex = trimmedProperty.indexOf(':');
-                    if (colonIndex === -1) {
-                        name = trimmedProperty;
-                        value = '';
-                    }
-                    else {
-                        name = trimmedProperty.substring(0, colonIndex).trim();
-                        value = trimmedProperty.substring(colonIndex + 1).trim();
-                    }
-                    const range = new TextUtils.TextRange.TextRange(lineNumber, column, lineNumber, column + property.length);
-                    this.#allPropertiesInternal.push(new CSSProperty(this, this.#allPropertiesInternal.length, name, value, false, false, false, false, property, range.relativeFrom(startLine, startColumn)));
-                }
-                column += property.length + 1;
-            }
-        }
-        function skipBlocks(text, context) {
-            context.validContent = '';
-            for (let i = 0; i < text.length; i++) {
-                if (!context.inComment) {
-                    if (text[i] === '{') {
-                        context.nestedBlocks++;
-                        // Since we don't retrospectively parse the block's selector, we treat anything
-                        // between the last `;` and `{` as the block's selector and ignore it.
-                        context.validContent = context.validContent.substring(0, context.validContent.lastIndexOf(';') + 1);
-                    }
-                    else if (text[i] === '}') {
-                        context.nestedBlocks--;
-                    }
-                    else if (text.substring(i, i + 2) === '/*') {
-                        context.inComment = true;
-                        i++;
-                    }
-                    else if (context.nestedBlocks === 0) {
-                        context.validContent += text[i];
-                    }
-                }
-                else if (text.substring(i, i + 2) === '*/') {
-                    context.inComment = false;
-                    i++;
-                }
-            }
-        }
+        this.#leadingProperties = null;
     }
     #generateSyntheticPropertiesIfNeeded() {
         if (this.range) {
@@ -167,12 +101,12 @@ export class CSSStyleDeclaration {
             return;
         }
         const propertiesSet = new Set();
-        for (const property of this.#allPropertiesInternal) {
+        for (const property of this.#allProperties) {
             propertiesSet.add(property.name);
         }
         const generatedProperties = [];
         // For style-based properties, generate #shorthands with values when possible.
-        for (const property of this.#allPropertiesInternal) {
+        for (const property of this.#allProperties) {
             // For style-based properties, try generating #shorthands.
             const shorthands = cssMetadata().getShorthands(property.name) || [];
             for (const shorthand of shorthands) {
@@ -190,17 +124,17 @@ export class CSSStyleDeclaration {
                 propertiesSet.add(shorthand);
             }
         }
-        this.#allPropertiesInternal = this.#allPropertiesInternal.concat(generatedProperties);
+        this.#allProperties = this.#allProperties.concat(generatedProperties);
     }
     #computeLeadingProperties() {
         function propertyHasRange(property) {
             return Boolean(property.range);
         }
         if (this.range) {
-            return this.#allPropertiesInternal.filter(propertyHasRange);
+            return this.#allProperties.filter(propertyHasRange);
         }
         const leadingProperties = [];
-        for (const property of this.#allPropertiesInternal) {
+        for (const property of this.#allProperties) {
             const shorthands = cssMetadata().getShorthands(property.name) || [];
             let belongToAnyShorthand = false;
             for (const shorthand of shorthands) {
@@ -216,16 +150,16 @@ export class CSSStyleDeclaration {
         return leadingProperties;
     }
     leadingProperties() {
-        if (!this.#leadingPropertiesInternal) {
-            this.#leadingPropertiesInternal = this.#computeLeadingProperties();
+        if (!this.#leadingProperties) {
+            this.#leadingProperties = this.#computeLeadingProperties();
         }
-        return this.#leadingPropertiesInternal;
+        return this.#leadingProperties;
     }
     target() {
-        return this.#cssModelInternal.target();
+        return this.#cssModel.target();
     }
     cssModel() {
-        return this.#cssModelInternal;
+        return this.#cssModel;
     }
     #computeInactiveProperties() {
         const activeProperties = new Map();
@@ -233,16 +167,21 @@ export class CSSStyleDeclaration {
         // 1. regular property, including shorthands
         // 2. longhand components from shorthands, in the order of their shorthands.
         const processedLonghands = new Set();
-        for (const property of this.#allPropertiesInternal) {
+        for (const property of this.#allProperties) {
+            const metadata = cssMetadata();
+            const canonicalName = metadata.canonicalPropertyName(property.name);
             if (property.disabled || !property.parsedOk) {
+                if (!property.disabled && metadata.isCustomProperty(property.name)) {
+                    // Variable declarations that aren't parsedOk still "overload" other previous active declarations.
+                    activeProperties.get(canonicalName)?.setActive(false);
+                    activeProperties.delete(canonicalName);
+                }
                 property.setActive(false);
                 continue;
             }
             if (processedLonghands.has(property)) {
                 continue;
             }
-            const metadata = cssMetadata();
-            const canonicalName = metadata.canonicalPropertyName(property.name);
             for (const longhand of property.getLonghandProperties()) {
                 const activeLonghand = activeProperties.get(longhand.name);
                 if (!activeLonghand) {
@@ -271,7 +210,7 @@ export class CSSStyleDeclaration {
         }
     }
     allProperties() {
-        return this.#allPropertiesInternal;
+        return this.#allProperties;
     }
     hasActiveProperty(name) {
         return this.#activePropertyMap.has(name);
@@ -297,7 +236,7 @@ export class CSSStyleDeclaration {
     }
     #insertionRange(index) {
         const property = this.propertyAt(index);
-        if (property && property.range) {
+        if (property?.range) {
             return property.range.collapseToStart();
         }
         if (!this.range) {
@@ -314,7 +253,7 @@ export class CSSStyleDeclaration {
         if (!this.range || !this.styleSheetId) {
             return Promise.resolve(false);
         }
-        return this.#cssModelInternal.setStyleText(this.styleSheetId, this.range, text, majorChange);
+        return this.#cssModel.setStyleText(this.styleSheetId, this.range, text, majorChange);
     }
     insertPropertyAt(index, name, value, userCallback) {
         void this.newBlankProperty(index).setText(name + ': ' + value + ';', false, true).then(userCallback);
@@ -323,12 +262,15 @@ export class CSSStyleDeclaration {
         this.insertPropertyAt(this.allProperties().length, name, value, userCallback);
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Type;
 (function (Type) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     Type["Regular"] = "Regular";
     Type["Inline"] = "Inline";
     Type["Attributes"] = "Attributes";
+    Type["Pseudo"] = "Pseudo";
+    Type["Transition"] = "Transition";
+    Type["Animation"] = "Animation";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Type || (Type = {}));
 //# sourceMappingURL=CSSStyleDeclaration.js.map

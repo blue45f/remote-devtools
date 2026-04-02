@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { createTokenizer } from './FormatterWorker.js';
@@ -22,7 +22,7 @@ export class JSONFormatter {
         const tokenize = createTokenizer('application/json');
         tokenize(text.substring(this.fromOffset, this.toOffset), this.tokenCallback.bind(this));
     }
-    tokenCallback(token, type, startPosition) {
+    tokenCallback(token, _type, startPosition) {
         switch (token.charAt(0)) {
             case '{':
             case '[':

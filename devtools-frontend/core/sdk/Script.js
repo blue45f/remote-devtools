@@ -1,18 +1,43 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/*
+ * Copyright (C) 2008 Apple Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+import * as Platform from '../../core/platform/platform.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as i18n from '../i18n/i18n.js';
-import { Location, COND_BREAKPOINT_SOURCE_URL, LOGPOINT_SOURCE_URL, Events, } from './DebuggerModel.js';
+import { COND_BREAKPOINT_SOURCE_URL, Events, Location, LOGPOINT_SOURCE_URL, } from './DebuggerModel.js';
 import { ResourceTreeModel } from './ResourceTreeModel.js';
 const UIStrings = {
     /**
-     *@description Error message for when a script can't be loaded which had been previously
+     * @description Error message for when a script can't be loaded which had been previously
      */
     scriptRemovedOrDeleted: 'Script removed or deleted.',
     /**
-     *@description Error message when failing to load a script source text
+     * @description Error message when failing to load a script source text
      */
     unableToFetchScriptSource: 'Unable to fetch script source.',
 };
@@ -22,6 +47,10 @@ let scriptCacheInstance = null;
 export class Script {
     debuggerModel;
     scriptId;
+    /**
+     * The URL of the script. When `hasSourceURL` is true, this value comes from a `//# sourceURL=` directive. Otherwise,
+     * it's the original `src` URL from which the script was loaded.
+     */
     sourceURL;
     lineOffset;
     columnOffset;
@@ -29,19 +58,20 @@ export class Script {
     endColumn;
     executionContextId;
     hash;
-    #isContentScriptInternal;
-    #isLiveEditInternal;
+    #isContentScript;
+    #isLiveEdit;
     sourceMapURL;
     debugSymbols;
     hasSourceURL;
     contentLength;
     originStackTrace;
-    #codeOffsetInternal;
+    #codeOffset;
     #language;
     #contentPromise;
-    #embedderNameInternal;
+    #embedderName;
     isModule;
-    constructor(debuggerModel, scriptId, sourceURL, startLine, startColumn, endLine, endColumn, executionContextId, hash, isContentScript, isLiveEdit, sourceMapURL, hasSourceURL, length, isModule, originStackTrace, codeOffset, scriptLanguage, debugSymbols, embedderName) {
+    buildId;
+    constructor(debuggerModel, scriptId, sourceURL, startLine, startColumn, endLine, endColumn, executionContextId, hash, isContentScript, isLiveEdit, sourceMapURL, hasSourceURL, length, isModule, originStackTrace, codeOffset, scriptLanguage, debugSymbols, embedderName, buildId) {
         this.debuggerModel = debuggerModel;
         this.scriptId = scriptId;
         this.sourceURL = sourceURL;
@@ -50,22 +80,23 @@ export class Script {
         this.endLine = endLine;
         this.endColumn = endColumn;
         this.isModule = isModule;
+        this.buildId = buildId;
         this.executionContextId = executionContextId;
         this.hash = hash;
-        this.#isContentScriptInternal = isContentScript;
-        this.#isLiveEditInternal = isLiveEdit;
+        this.#isContentScript = isContentScript;
+        this.#isLiveEdit = isLiveEdit;
         this.sourceMapURL = sourceMapURL;
         this.debugSymbols = debugSymbols;
         this.hasSourceURL = hasSourceURL;
         this.contentLength = length;
         this.originStackTrace = originStackTrace;
-        this.#codeOffsetInternal = codeOffset;
+        this.#codeOffset = codeOffset;
         this.#language = scriptLanguage;
         this.#contentPromise = null;
-        this.#embedderNameInternal = embedderName;
+        this.#embedderName = embedderName;
     }
     embedderName() {
-        return this.#embedderNameInternal;
+        return this.#embedderName;
     }
     target() {
         return this.debuggerModel.target();
@@ -89,10 +120,10 @@ export class Script {
         return source.substr(0, sourceURLLineIndex);
     }
     isContentScript() {
-        return this.#isContentScriptInternal;
+        return this.#isContentScript;
     }
     codeOffset() {
-        return this.#codeOffsetInternal;
+        return this.#codeOffset;
     }
     isJavaScript() {
         return this.#language === "JavaScript" /* Protocol.Debugger.ScriptLanguage.JavaScript */;
@@ -107,7 +138,7 @@ export class Script {
         return this.debuggerModel.runtimeModel().executionContext(this.executionContextId);
     }
     isLiveEdit() {
-        return this.#isLiveEditInternal;
+        return this.#isLiveEdit;
     }
     contentURL() {
         return this.sourceURL;
@@ -122,15 +153,15 @@ export class Script {
         }
         const { scriptSource, bytecode } = result;
         if (bytecode) {
-            return { content: bytecode, isEncoded: true };
+            return new TextUtils.ContentData.ContentData(bytecode, /* isBase64 */ true, 'application/wasm');
         }
         let content = scriptSource || '';
-        if (this.hasSourceURL && this.sourceURL.startsWith('snippet://')) {
+        if (this.hasSourceURL && Common.ParsedURL.schemeIs(this.sourceURL, 'snippet:')) {
             // TODO(crbug.com/1330846): Find a better way to establish the snippet automapping binding then adding
             // a sourceURL comment before evaluation and removing it here.
             content = Script.trimSourceURLComment(content);
         }
-        return { content, isEncoded: false };
+        return new TextUtils.ContentData.ContentData(content, /* isBase64 */ false, 'text/javascript');
     }
     async loadWasmContent() {
         if (!this.isWasm()) {
@@ -139,8 +170,9 @@ export class Script {
         const result = await this.debuggerModel.target().debuggerAgent().invoke_disassembleWasmModule({ scriptId: this.scriptId });
         if (result.getError()) {
             // Fall through to text content loading if v8-based disassembly fails. This is to ensure backwards compatibility with
-            // older v8 versions;
-            return this.loadTextContent();
+            // older v8 versions.
+            const contentData = await this.loadTextContent();
+            return await disassembleWasm(contentData.base64);
         }
         const { streamId, functionBodyOffsets, chunk: { lines, bytecodeOffsets } } = result;
         const lineChunks = [];
@@ -174,13 +206,12 @@ export class Script {
         for (let i = 0; i < functionBodyOffsets.length; i += 2) {
             functionBodyRanges.push({ start: functionBodyOffsets[i], end: functionBodyOffsets[i + 1] });
         }
-        const wasmDisassemblyInfo = new Common.WasmDisassembly.WasmDisassembly(lines.concat(...lineChunks), bytecodeOffsets.concat(...bytecodeOffsetChunks), functionBodyRanges);
-        return { content: '', isEncoded: false, wasmDisassemblyInfo };
+        return new TextUtils.WasmDisassembly.WasmDisassembly(lines.concat(...lineChunks), bytecodeOffsets.concat(...bytecodeOffsetChunks), functionBodyRanges);
     }
-    requestContent() {
+    requestContentData() {
         if (!this.#contentPromise) {
             const fileSizeToCache = 65535; // We won't bother cacheing files under 64K
-            if (this.hash && !this.#isLiveEditInternal && this.contentLength > fileSizeToCache) {
+            if (this.hash && !this.#isLiveEdit && this.contentLength > fileSizeToCache) {
                 // For large files that aren't live edits and have a hash, we keep a content-addressed cache
                 // so we don't need to load multiple copies or disassemble wasm modules multiple times.
                 if (!scriptCacheInstance) {
@@ -198,7 +229,7 @@ export class Script {
                     this.columnOffset,
                     this.endLine,
                     this.endColumn,
-                    this.#codeOffsetInternal,
+                    this.#codeOffset,
                     this.hash,
                 ].join(':');
                 const cachedContentPromise = scriptCacheInstance.cache.get(fullHash)?.deref();
@@ -206,44 +237,43 @@ export class Script {
                     this.#contentPromise = cachedContentPromise;
                 }
                 else {
-                    this.#contentPromise = this.requestContentInternal();
+                    this.#contentPromise = this.#requestContent();
                     scriptCacheInstance.cache.set(fullHash, new WeakRef(this.#contentPromise));
                     scriptCacheInstance.registry.register(this.#contentPromise, fullHash);
                 }
             }
             else {
-                this.#contentPromise = this.requestContentInternal();
+                this.#contentPromise = this.#requestContent();
             }
         }
         return this.#contentPromise;
     }
-    async requestContentInternal() {
+    async #requestContent() {
         if (!this.scriptId) {
-            return { content: null, error: i18nString(UIStrings.scriptRemovedOrDeleted), isEncoded: false };
+            return { error: i18nString(UIStrings.scriptRemovedOrDeleted) };
         }
         try {
             return this.isWasm() ? await this.loadWasmContent() : await this.loadTextContent();
         }
-        catch (err) {
+        catch {
             // TODO(bmeurer): Propagate errors as exceptions / rejections.
-            return { content: null, error: i18nString(UIStrings.unableToFetchScriptSource), isEncoded: false };
+            return { error: i18nString(UIStrings.unableToFetchScriptSource) };
         }
     }
     async getWasmBytecode() {
         const base64 = await this.debuggerModel.target().debuggerAgent().invoke_getWasmBytecode({ scriptId: this.scriptId });
         const response = await fetch(`data:application/wasm;base64,${base64.bytecode}`);
-        return response.arrayBuffer();
+        return await response.arrayBuffer();
     }
     originalContentProvider() {
-        return new TextUtils.StaticContentProvider.StaticContentProvider(this.contentURL(), this.contentType(), () => this.requestContent());
+        return new TextUtils.StaticContentProvider.StaticContentProvider(this.contentURL(), this.contentType(), () => this.requestContentData());
     }
     async searchInContent(query, caseSensitive, isRegex) {
         if (!this.scriptId) {
             return [];
         }
         const matches = await this.debuggerModel.target().debuggerAgent().invoke_searchInContent({ scriptId: this.scriptId, query, caseSensitive, isRegex });
-        return (matches.result || [])
-            .map(match => new TextUtils.ContentProvider.SearchMatch(match.lineNumber, match.lineContent));
+        return TextUtils.TextUtils.performSearchInSearchMatches(matches.result || [], query, caseSensitive, isRegex);
     }
     appendSourceURLCommentIfNeeded(source) {
         if (!this.hasSourceURL) {
@@ -255,7 +285,7 @@ export class Script {
         newSource = Script.trimSourceURLComment(newSource);
         // We append correct #sourceURL to script for consistency only. It's not actually needed for things to work correctly.
         newSource = this.appendSourceURLCommentIfNeeded(newSource);
-        const { content: oldSource } = await this.requestContent();
+        const oldSource = TextUtils.ContentData.ContentData.textOr(await this.requestContentData(), null);
         if (oldSource === newSource) {
             return { changed: false, status: "Ok" /* Protocol.Debugger.SetScriptSourceResponseStatus.Ok */ };
         }
@@ -266,7 +296,8 @@ export class Script {
             throw new Error(`Script#editSource failed for script with id ${this.scriptId}: ${response.getError()}`);
         }
         if (!response.getError() && response.status === "Ok" /* Protocol.Debugger.SetScriptSourceResponseStatus.Ok */) {
-            this.#contentPromise = Promise.resolve({ content: newSource, isEncoded: false });
+            this.#contentPromise =
+                Promise.resolve(new TextUtils.ContentData.ContentData(newSource, /* isBase64 */ false, 'text/javascript'));
         }
         this.debuggerModel.dispatchEventToListeners(Events.ScriptSourceWasEdited, { script: this, status: response.status });
         return { changed: true, status: response.status, exceptionDetails: response.exceptionDetails };
@@ -311,8 +342,18 @@ export class Script {
     get isBreakpointCondition() {
         return [COND_BREAKPOINT_SOURCE_URL, LOGPOINT_SOURCE_URL].includes(this.sourceURL);
     }
+    /**
+     * @returns the currently attached source map for this Script or `undefined` if there is none or it
+     * hasn't loaded yet.
+     */
+    sourceMap() {
+        return this.debuggerModel.sourceMapManager().sourceMapForClient(this);
+    }
     createPageResourceLoadInitiator() {
         return { target: this.target(), frameId: this.frameId, initiatorUrl: this.embedderName() };
+    }
+    debugId() {
+        return this.buildId;
     }
     rawLocationToRelativeLocation(rawLocation) {
         let { lineNumber, columnNumber } = rawLocation;
@@ -343,10 +384,38 @@ function frameIdForScript(script) {
     }
     // This is to overcome compilation cache which doesn't get reset.
     const resourceTreeModel = script.debuggerModel.target().model(ResourceTreeModel);
-    if (!resourceTreeModel || !resourceTreeModel.mainFrame) {
+    if (!resourceTreeModel?.mainFrame) {
         return null;
     }
     return resourceTreeModel.mainFrame.id;
 }
-export const sourceURLRegex = /^[\040\t]*\/\/[@#] sourceURL=\s*(\S*?)\s*$/;
+export const sourceURLRegex = /^[\x20\t]*\/\/[@#] sourceURL=\s*(\S*?)\s*$/;
+export async function disassembleWasm(content) {
+    const worker = Platform.HostRuntime.HOST_RUNTIME.createWorker(new URL('../../entrypoints/wasmparser_worker/wasmparser_worker-entrypoint.js', import.meta.url).toString());
+    const promise = new Promise((resolve, reject) => {
+        worker.onmessage = ({ data }) => {
+            if ('method' in data) {
+                switch (data.method) {
+                    case 'disassemble':
+                        if ('error' in data) {
+                            reject(data.error);
+                        }
+                        else if ('result' in data) {
+                            const { lines, offsets, functionBodyOffsets } = data.result;
+                            resolve(new TextUtils.WasmDisassembly.WasmDisassembly(lines, offsets, functionBodyOffsets));
+                        }
+                        break;
+                }
+            }
+        };
+        worker.onerror = reject;
+    });
+    worker.postMessage({ method: 'disassemble', params: { content } });
+    try {
+        return await promise; // The await is important here or we terminate the worker too early.
+    }
+    finally {
+        worker.terminate();
+    }
+}
 //# sourceMappingURL=Script.js.map

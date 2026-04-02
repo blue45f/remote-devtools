@@ -1,22 +1,16 @@
-import type * as Bindings from '../../models/bindings/bindings.js';
 import * as Common from '../../core/common/common.js';
-import type * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
+import type * as Bindings from '../../models/bindings/bindings.js';
+import type * as UI from '../../ui/legacy/legacy.js';
 export declare class ProfileHeader extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    readonly profileTypeInternal: ProfileType;
+    #private;
     title: string;
     uid: number;
-    fromFileInternal: boolean;
     tempFile: Bindings.TempFile.TempFile | null;
     constructor(profileType: ProfileType, title: string);
     setTitle(title: string): void;
     profileType(): ProfileType;
     updateStatus(subtitle: string | null, wait?: boolean): void;
-    /**
-     * Must be implemented by subclasses.
-     */
-    createSidebarTreeElement(_dataDisplayDelegate: DataDisplayDelegate): UI.TreeOutline.TreeElement;
-    createView(_dataDisplayDelegate: DataDisplayDelegate): UI.Widget.Widget;
     removeTempFile(): void;
     dispose(): void;
     canSaveToFile(): boolean;
@@ -31,22 +25,17 @@ export declare class StatusUpdate {
     wait: boolean | undefined;
     constructor(subtitle: string | null, wait: boolean | undefined);
 }
-export declare enum Events {
-    UpdateStatus = "UpdateStatus",
-    ProfileReceived = "ProfileReceived",
-    ProfileTitleChanged = "ProfileTitleChanged"
+export declare const enum Events {
+    UPDATE_STATUS = "UpdateStatus",
+    PROFILE_TITLE_CHANGED = "ProfileTitleChanged"
 }
-export type EventTypes = {
-    [Events.UpdateStatus]: StatusUpdate;
-    [Events.ProfileReceived]: void;
-    [Events.ProfileTitleChanged]: ProfileHeader;
-};
+export interface EventTypes {
+    [Events.UPDATE_STATUS]: StatusUpdate;
+    [Events.PROFILE_TITLE_CHANGED]: ProfileHeader;
+}
 export declare class ProfileType extends Common.ObjectWrapper.ObjectWrapper<ProfileEventTypes> {
-    readonly idInternal: string;
-    readonly nameInternal: string;
+    #private;
     profiles: ProfileHeader[];
-    profileBeingRecordedInternal: ProfileHeader | null;
-    nextProfileUidInternal: number;
     constructor(id: string, name: string);
     typeName(): string;
     nextProfileUid(): number;
@@ -64,7 +53,6 @@ export declare class ProfileType extends Common.ObjectWrapper.ObjectWrapper<Prof
     getProfiles(): ProfileHeader[];
     customContent(): Element | null;
     setCustomContentEnabled(_enable: boolean): void;
-    getProfile(uid: number): ProfileHeader | null;
     loadFromFile(file: File): Promise<Error | DOMError | null>;
     createProfileLoadedFromFile(_title: string): ProfileHeader;
     addProfile(profile: ProfileHeader): void;
@@ -76,18 +64,18 @@ export declare class ProfileType extends Common.ObjectWrapper.ObjectWrapper<Prof
     reset(): void;
     disposeProfile(profile: ProfileHeader): void;
 }
-export declare enum ProfileEvents {
-    AddProfileHeader = "add-profile-header",
-    ProfileComplete = "profile-complete",
-    RemoveProfileHeader = "remove-profile-header",
-    ViewUpdated = "view-updated"
+export declare const enum ProfileEvents {
+    ADD_PROFILE_HEADER = "add-profile-header",
+    PROFILE_COMPLETE = "profile-complete",
+    REMOVE_PROFILE_HEADER = "remove-profile-header",
+    VIEW_UPDATED = "view-updated"
 }
-export type ProfileEventTypes = {
-    [ProfileEvents.AddProfileHeader]: ProfileHeader;
-    [ProfileEvents.ProfileComplete]: ProfileHeader;
-    [ProfileEvents.RemoveProfileHeader]: ProfileHeader;
-    [ProfileEvents.ViewUpdated]: void;
-};
+export interface ProfileEventTypes {
+    [ProfileEvents.ADD_PROFILE_HEADER]: ProfileHeader;
+    [ProfileEvents.PROFILE_COMPLETE]: ProfileHeader;
+    [ProfileEvents.REMOVE_PROFILE_HEADER]: ProfileHeader;
+    [ProfileEvents.VIEW_UPDATED]: void;
+}
 export interface DataDisplayDelegate {
     showProfile(profile: ProfileHeader | null): UI.Widget.Widget | null;
     showObject(snapshotObjectId: string, perspectiveName: string): void;

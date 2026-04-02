@@ -1,61 +1,48 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
-import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as Extensions from '../../models/extensions/extensions.js';
 import * as Persistence from '../../models/persistence/persistence.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
+import * as Tooltips from '../../ui/components/tooltips/tooltips.js';
+import * as uiI18n from '../../ui/i18n/i18n.js';
+import { Icon, Link } from '../../ui/kit/kit.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+import { html } from '../../ui/lit/lit.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+import * as PanelCommon from '../common/common.js';
 import * as Snippets from '../snippets/snippets.js';
-import * as Bindings from '../../models/bindings/bindings.js';
 import { SourcesView } from './SourcesView.js';
 import { UISourceCodeFrame } from './UISourceCodeFrame.js';
 const UIStrings = {
     /**
-     *@description Text in Tabbed Editor Container of the Sources panel
-     *@example {example.file} PH1
+     * @description Text in Tabbed Editor Container of the Sources panel
+     * @example {example.file} PH1
      */
     areYouSureYouWantToCloseUnsaved: 'Are you sure you want to close unsaved file: {PH1}?',
     /**
-     *@description Error message for tooltip showing that a file in Sources could not be loaded
+     * @description Error message for tooltip showing that a file in Sources could not be loaded
      */
     unableToLoadThisContent: 'Unable to load this content.',
     /**
-     *@description Icon title in Tabbed Editor Container of the Sources panel
+     * @description Tooltip shown for the warning icon on an editor tab in the Sources panel
+     *              when the developer saved changes via Ctrl+S/Cmd+S, while there was an
+     *              automatic workspace detected, but not connected.
+     * @example {FolderName} PH1
      */
-    changesToThisFileWereNotSavedTo: 'Changes to this file were not saved to file system.',
+    changesWereNotSavedToFileSystemToSaveAddFolderToWorkspace: 'Changes weren\'t saved to file system. To save, add {PH1} to your Workspace.',
+    /**
+     * @description Tooltip shown for the warning icon on an editor tab in the Sources panel
+     *              when the developer saved changes via Ctrl+S/Cmd+S, but didn't have a Workspace
+     *              set up, or the Workspace didn't have a match for this file, and therefore the
+     *              changes couldn't be persisted.
+     * @example {Workspace} PH1
+     */
+    changesWereNotSavedToFileSystemToSaveSetUpYourWorkspace: 'Changes weren\'t saved to file system. To save, set up your {PH1}.',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/sources/TabbedEditorContainer.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -69,7 +56,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
     history;
     uriToUISourceCode;
     idToUISourceCode;
-    currentFileInternal;
+    #currentFile;
     currentView;
     scrollTimer;
     reentrantShow;
@@ -83,9 +70,10 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         this.tabbedPane.setAllowTabReorder(true, true);
         this.tabbedPane.addEventListener(UI.TabbedPane.Events.TabClosed, this.tabClosed, this);
         this.tabbedPane.addEventListener(UI.TabbedPane.Events.TabSelected, this.tabSelected, this);
+        this.tabbedPane.headerElement().setAttribute('jslog', `${VisualLogging.toolbar('top').track({ keydown: 'ArrowUp|ArrowLeft|ArrowDown|ArrowRight|Enter|Space' })}`);
         Persistence.Persistence.PersistenceImpl.instance().addEventListener(Persistence.Persistence.Events.BindingCreated, this.onBindingCreated, this);
         Persistence.Persistence.PersistenceImpl.instance().addEventListener(Persistence.Persistence.Events.BindingRemoved, this.onBindingRemoved, this);
-        Persistence.NetworkPersistenceManager.NetworkPersistenceManager.instance().addEventListener(Persistence.NetworkPersistenceManager.Events.RequestsForHeaderOverridesFileChanged, this.#onRequestsForHeaderOverridesFileChanged, this);
+        Persistence.NetworkPersistenceManager.NetworkPersistenceManager.instance().addEventListener("RequestsForHeaderOverridesFileChanged" /* Persistence.NetworkPersistenceManager.Events.REQUEST_FOR_HEADER_OVERRIDES_FILE_CHANGED */, this.#onRequestsForHeaderOverridesFileChanged, this);
         this.tabIds = new Map();
         this.files = new Map();
         this.previouslyViewedFilesSetting = setting;
@@ -99,7 +87,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         this.updateFileTitle(binding.fileSystem);
         const networkTabId = this.tabIds.get(binding.network);
         let fileSystemTabId = this.tabIds.get(binding.fileSystem);
-        const wasSelectedInNetwork = this.currentFileInternal === binding.network;
+        const wasSelectedInNetwork = this.#currentFile === binding.network;
         const networkKey = historyItemKey(binding.network);
         const currentSelectionRange = this.history.selectionRange(networkKey);
         const currentScrollLineNumber = this.history.scrollLineNumber(networkKey);
@@ -158,23 +146,12 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         // If the content has already been set and the current frame is showing
         // the incoming uiSourceCode, then fire the event that the file has been loaded.
         // Otherwise, this event will fire as soon as the content has been set.
-        if (frame?.currentSourceFrame()?.contentSet && this.currentFileInternal === uiSourceCode &&
+        if (frame?.currentSourceFrame()?.contentSet && this.#currentFile === uiSourceCode &&
             frame?.currentUISourceCode() === uiSourceCode) {
             Common.EventTarget.fireEvent('source-file-loaded', uiSourceCode.displayName(true));
         }
         else {
-            if (uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Debugger) {
-                const script = Bindings.DefaultScriptMapping.DefaultScriptMapping.scriptForUISourceCode(uiSourceCode);
-                if (script && script.isInlineScript() && !script.hasSourceURL) {
-                    if (script.isModule) {
-                        Host.userMetrics.vmInlineScriptContentShown(0 /* Host.UserMetrics.VMInlineScriptType.MODULE_SCRIPT */);
-                    }
-                    else {
-                        Host.userMetrics.vmInlineScriptContentShown(1 /* Host.UserMetrics.VMInlineScriptType.CLASSIC_SCRIPT */);
-                    }
-                }
-            }
-            this.innerShowFile(uiSourceCode, true);
+            this.#showFile(uiSourceCode, true);
         }
     }
     closeFile(uiSourceCode) {
@@ -207,15 +184,15 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         if (!this.currentView || !(this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl)) {
             return;
         }
-        this.currentView.addEventListener("EditorUpdate" /* SourceFrame.SourceFrame.Events.EditorUpdate */, this.onEditorUpdate, this);
-        this.currentView.addEventListener("EditorScroll" /* SourceFrame.SourceFrame.Events.EditorScroll */, this.onScrollChanged, this);
+        this.currentView.addEventListener("EditorUpdate" /* SourceFrame.SourceFrame.Events.EDITOR_UPDATE */, this.onEditorUpdate, this);
+        this.currentView.addEventListener("EditorScroll" /* SourceFrame.SourceFrame.Events.EDITOR_SCROLL */, this.onScrollChanged, this);
     }
     removeViewListeners() {
         if (!this.currentView || !(this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl)) {
             return;
         }
-        this.currentView.removeEventListener("EditorUpdate" /* SourceFrame.SourceFrame.Events.EditorUpdate */, this.onEditorUpdate, this);
-        this.currentView.removeEventListener("EditorScroll" /* SourceFrame.SourceFrame.Events.EditorScroll */, this.onScrollChanged, this);
+        this.currentView.removeEventListener("EditorUpdate" /* SourceFrame.SourceFrame.Events.EDITOR_UPDATE */, this.onEditorUpdate, this);
+        this.currentView.removeEventListener("EditorScroll" /* SourceFrame.SourceFrame.Events.EDITOR_SCROLL */, this.onScrollChanged, this);
     }
     onScrollChanged() {
         if (this.currentView instanceof SourceFrame.SourceFrame.SourceFrameImpl) {
@@ -223,11 +200,11 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
                 clearTimeout(this.scrollTimer);
             }
             this.scrollTimer = window.setTimeout(() => this.previouslyViewedFilesSetting.set(this.history.toObject()), 100);
-            if (this.currentFileInternal) {
+            if (this.#currentFile) {
                 const { editor } = this.currentView.textEditor;
                 const topBlock = editor.lineBlockAtHeight(editor.scrollDOM.getBoundingClientRect().top - editor.documentTop);
                 const topLine = editor.state.doc.lineAt(topBlock.from).number - 1;
-                this.history.updateScrollLineNumber(historyItemKey(this.currentFileInternal), topLine);
+                this.history.updateScrollLineNumber(historyItemKey(this.#currentFile), topLine);
             }
         }
     }
@@ -236,27 +213,27 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             const { main } = update.state.selection;
             const lineFrom = update.state.doc.lineAt(main.from), lineTo = update.state.doc.lineAt(main.to);
             const range = new TextUtils.TextRange.TextRange(lineFrom.number - 1, main.from - lineFrom.from, lineTo.number - 1, main.to - lineTo.from);
-            if (this.currentFileInternal) {
-                this.history.updateSelectionRange(historyItemKey(this.currentFileInternal), range);
+            if (this.#currentFile) {
+                this.history.updateSelectionRange(historyItemKey(this.#currentFile), range);
             }
             this.previouslyViewedFilesSetting.set(this.history.toObject());
-            if (this.currentFileInternal) {
-                Extensions.ExtensionServer.ExtensionServer.instance().sourceSelectionChanged(this.currentFileInternal.url(), range);
+            if (this.#currentFile) {
+                PanelCommon.ExtensionServer.ExtensionServer.instance().sourceSelectionChanged(this.#currentFile.url(), range);
             }
         }
     }
-    innerShowFile(uiSourceCode, userGesture) {
+    #showFile(uiSourceCode, userGesture) {
         if (this.reentrantShow) {
             return;
         }
         const canonicalSourceCode = this.canonicalUISourceCode(uiSourceCode);
         const binding = Persistence.Persistence.PersistenceImpl.instance().binding(uiSourceCode);
         uiSourceCode = binding ? binding.fileSystem : uiSourceCode;
-        if (this.currentFileInternal === uiSourceCode) {
+        if (this.#currentFile === uiSourceCode) {
             return;
         }
         this.removeViewListeners();
-        this.currentFileInternal = uiSourceCode;
+        this.#currentFile = uiSourceCode;
         try {
             // Selecting the tab may cause showFile to be called again, but with the canonical source code,
             // which is not what we want, so we prevent reentrant calls.
@@ -284,12 +261,12 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             }
         }
         const eventData = {
-            currentFile: this.currentFileInternal,
+            currentFile: this.#currentFile,
             currentView: this.currentView,
-            previousView: previousView,
-            userGesture: userGesture,
+            previousView,
+            userGesture,
         };
-        this.dispatchEventToListeners(Events.EditorSelected, eventData);
+        this.dispatchEventToListeners("EditorSelected" /* Events.EDITOR_SELECTED */, eventData);
     }
     titleForFile(uiSourceCode) {
         const maxDisplayNameLength = 30;
@@ -350,12 +327,12 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
     }
     canonicalUISourceCode(uiSourceCode) {
         // Check if we have already a UISourceCode for this url
-        const existingSourceCode = this.idToUISourceCode.get(uiSourceCode.canononicalScriptId());
+        const existingSourceCode = this.idToUISourceCode.get(uiSourceCode.canonicalScriptId());
         if (existingSourceCode) {
             // Ignore incoming uiSourceCode, we already have this file.
             return existingSourceCode;
         }
-        this.idToUISourceCode.set(uiSourceCode.canononicalScriptId(), uiSourceCode);
+        this.idToUISourceCode.set(uiSourceCode.canonicalScriptId(), uiSourceCode);
         this.uriToUISourceCode.set(uiSourceCode.url(), uiSourceCode);
         return uiSourceCode;
     }
@@ -367,7 +344,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         if (duplicated && uiSourceCode.project().type() !== Workspace.Workspace.projectTypes.FileSystem) {
             uiSourceCode.disableEdit();
         }
-        if (this.currentFileInternal?.canononicalScriptId() === uiSourceCode.canononicalScriptId()) {
+        if (this.#currentFile?.canonicalScriptId() === uiSourceCode.canonicalScriptId()) {
             return;
         }
         const index = this.history.index(historyItemKey(uiSourceCode));
@@ -379,17 +356,16 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         }
         // Select tab if this file was the last to be shown.
         if (!index) {
-            this.innerShowFile(uiSourceCode, false);
+            this.#showFile(uiSourceCode, false);
             return;
         }
-        if (!this.currentFileInternal) {
+        if (!this.#currentFile) {
             return;
         }
-        const currentProjectIsSnippets = Snippets.ScriptSnippetFileSystem.isSnippetsUISourceCode(this.currentFileInternal);
+        const currentProjectIsSnippets = Snippets.ScriptSnippetFileSystem.isSnippetsUISourceCode(this.#currentFile);
         const addedProjectIsSnippets = Snippets.ScriptSnippetFileSystem.isSnippetsUISourceCode(uiSourceCode);
-        if (this.history.index(historyItemKey(this.currentFileInternal)) && currentProjectIsSnippets &&
-            !addedProjectIsSnippets) {
-            this.innerShowFile(uiSourceCode, false);
+        if (this.history.index(historyItemKey(this.#currentFile)) && currentProjectIsSnippets && !addedProjectIsSnippets) {
+            this.#showFile(uiSourceCode, false);
         }
     }
     removeUISourceCode(uiSourceCode) {
@@ -405,8 +381,8 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             if (this.uriToUISourceCode.get(uiSourceCode.url()) === uiSourceCode) {
                 this.uriToUISourceCode.delete(uiSourceCode.url());
             }
-            if (this.idToUISourceCode.get(uiSourceCode.canononicalScriptId()) === uiSourceCode) {
-                this.idToUISourceCode.delete(uiSourceCode.canononicalScriptId());
+            if (this.idToUISourceCode.get(uiSourceCode.canonicalScriptId()) === uiSourceCode) {
+                this.idToUISourceCode.delete(uiSourceCode.canonicalScriptId());
             }
         }
         this.tabbedPane.closeTabs(tabIds);
@@ -445,15 +421,15 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             const savedScrollLineNumber = this.history.scrollLineNumber(historyItemKey(uiSourceCode));
             this.restoreEditorProperties(view, savedSelectionRange, savedScrollLineNumber);
         }
-        this.tabbedPane.appendTab(tabId, title, view, tooltip, userGesture, undefined, undefined, index);
+        this.tabbedPane.appendTab(tabId, title, view, tooltip, userGesture, undefined, undefined, index, 'editor');
         this.updateFileTitle(uiSourceCode);
         this.addUISourceCodeListeners(uiSourceCode);
         if (uiSourceCode.loadError()) {
             this.addLoadErrorIcon(tabId);
         }
         else if (!uiSourceCode.contentLoaded()) {
-            void uiSourceCode.requestContent().then(_content => {
-                if (uiSourceCode.loadError()) {
+            void uiSourceCode.requestContentData().then(contentDataOrError => {
+                if (TextUtils.ContentData.ContentData.isError(contentDataOrError)) {
                     this.addLoadErrorIcon(tabId);
                 }
             });
@@ -461,17 +437,17 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         return tabId;
     }
     addLoadErrorIcon(tabId) {
-        const icon = new IconButton.Icon.Icon();
-        icon.data = { iconName: 'cross-circle-filled', color: 'var(--icon-error)', width: '14px', height: '14px' };
-        UI.Tooltip.Tooltip.install(icon, i18nString(UIStrings.unableToLoadThisContent));
+        // clang-format off
+        const icon = html `<devtools-icon class="small" name="cross-circle-filled"
+                                     title=${i18nString(UIStrings.unableToLoadThisContent)}>
+                      </devtools-icon>`;
+        // clang-format on
         if (this.tabbedPane.tabView(tabId)) {
-            this.tabbedPane.setTabIcon(tabId, icon);
+            this.tabbedPane.setTrailingTabIcon(tabId, icon);
         }
     }
     restoreEditorProperties(editorView, selection, firstLineNumber) {
-        const sourceFrame = editorView instanceof SourceFrame.SourceFrame.SourceFrameImpl ?
-            editorView :
-            null;
+        const sourceFrame = editorView instanceof SourceFrame.SourceFrame.SourceFrameImpl ? editorView : null;
         if (!sourceFrame) {
             return;
         }
@@ -485,11 +461,10 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
     tabClosed(event) {
         const { tabId, isUserGesture } = event.data;
         const uiSourceCode = this.files.get(tabId);
-        if (this.currentFileInternal &&
-            this.currentFileInternal.canononicalScriptId() === uiSourceCode?.canononicalScriptId()) {
+        if (this.#currentFile && this.#currentFile.canonicalScriptId() === uiSourceCode?.canonicalScriptId()) {
             this.removeViewListeners();
             this.currentView = null;
-            this.currentFileInternal = null;
+            this.#currentFile = null;
         }
         if (uiSourceCode) {
             this.tabIds.delete(uiSourceCode);
@@ -497,7 +472,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         this.files.delete(tabId);
         if (uiSourceCode) {
             this.removeUISourceCodeListeners(uiSourceCode);
-            this.dispatchEventToListeners(Events.EditorClosed, uiSourceCode);
+            this.dispatchEventToListeners("EditorClosed" /* Events.EDITOR_CLOSED */, uiSourceCode);
             if (isUserGesture) {
                 this.editorClosedByUserAction(uiSourceCode);
             }
@@ -507,7 +482,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         const { tabId, isUserGesture } = event.data;
         const uiSourceCode = this.files.get(tabId);
         if (uiSourceCode) {
-            this.innerShowFile(uiSourceCode, isUserGesture);
+            this.#showFile(uiSourceCode, isUserGesture);
         }
     }
     addUISourceCodeListeners(uiSourceCode) {
@@ -526,21 +501,51 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             const title = this.titleForFile(uiSourceCode);
             const tooltip = this.tooltipForFile(uiSourceCode);
             this.tabbedPane.changeTabTitle(tabId, title, tooltip);
-            let icon = null;
             if (uiSourceCode.loadError()) {
-                icon = new IconButton.Icon.Icon();
-                icon.data = { iconName: 'cross-circle-filled', color: 'var(--icon-error)', width: '14px', height: '14px' };
-                UI.Tooltip.Tooltip.install(icon, i18nString(UIStrings.unableToLoadThisContent));
+                // clang-format off
+                const icon = html `<devtools-icon class="small" name="cross-circle-filled"
+                                         title=${i18nString(UIStrings.unableToLoadThisContent)}>
+                          </devtools-icon>`;
+                // clang-format on
+                this.tabbedPane.setTrailingTabIcon(tabId, icon);
             }
             else if (Persistence.Persistence.PersistenceImpl.instance().hasUnsavedCommittedChanges(uiSourceCode)) {
-                icon = new IconButton.Icon.Icon();
-                icon.data = { iconName: 'warning-filled', color: 'var(--icon-warning)', width: '14px', height: '14px' };
-                UI.Tooltip.Tooltip.install(icon, i18nString(UIStrings.changesToThisFileWereNotSavedTo));
+                /* eslint-disable @devtools/no-imperative-dom-api --
+                 * This is a temporary solution using the <devtools-tooltip>
+                 * and we will use a toast instead once available.
+                 **/
+                const suffixElement = document.createElement('div');
+                const icon = new Icon();
+                icon.name = 'warning-filled';
+                icon.classList.add('small');
+                const id = `tab-tooltip-${nextTooltipId++}`;
+                icon.setAttribute('aria-describedby', id);
+                const tooltip = new Tooltips.Tooltip.Tooltip({ id, anchor: icon, variant: 'rich' });
+                const automaticFileSystemManager = Persistence.AutomaticFileSystemManager.AutomaticFileSystemManager.instance();
+                const { automaticFileSystem } = automaticFileSystemManager;
+                if (automaticFileSystem?.state === 'disconnected') {
+                    const link = document.createElement('a');
+                    link.className = 'devtools-link';
+                    link.textContent = Common.ParsedURL.ParsedURL.extractName(automaticFileSystem.root);
+                    link.addEventListener('click', async (event) => {
+                        event.consume();
+                        await UI.ViewManager.ViewManager.instance().showView('navigator-files');
+                        await automaticFileSystemManager.connectAutomaticFileSystem(/* addIfMissing= */ true);
+                    });
+                    tooltip.append(uiI18n.getFormatLocalizedString(str_, UIStrings.changesWereNotSavedToFileSystemToSaveAddFolderToWorkspace, { PH1: link }));
+                }
+                else {
+                    const link = Link.create('https://developer.chrome.com/docs/devtools/workspaces/', 'Workspace');
+                    tooltip.append(uiI18n.getFormatLocalizedString(str_, UIStrings.changesWereNotSavedToFileSystemToSaveSetUpYourWorkspace, { PH1: link }));
+                }
+                suffixElement.append(icon, tooltip);
+                /* eslint-enable @devtools/no-imperative-dom-api */
+                this.tabbedPane.setSuffixElement(tabId, suffixElement);
             }
             else {
-                icon = Persistence.PersistenceUtils.PersistenceUtils.iconForUISourceCode(uiSourceCode);
+                const icon = PanelCommon.PersistenceUtils.PersistenceUtils.iconForUISourceCode(uiSourceCode);
+                this.tabbedPane.setTrailingTabIcon(tabId, icon);
             }
-            this.tabbedPane.setTabIcon(tabId, icon);
         }
     }
     uiSourceCodeTitleChanged(event) {
@@ -555,7 +560,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         }
         // Remove from map under old id if it has changed.
         for (const [k, v] of this.idToUISourceCode) {
-            if (v === uiSourceCode && k !== v.canononicalScriptId()) {
+            if (v === uiSourceCode && k !== v.canonicalScriptId()) {
                 this.idToUISourceCode.delete(k);
             }
         }
@@ -571,19 +576,13 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
         this.updateFileTitle(uiSourceCode);
     }
     generateTabId() {
-        return 'tab_' + (tabId++);
+        return 'tab-' + (tabId++);
     }
     currentFile() {
-        return this.currentFileInternal || null;
+        return this.#currentFile || null;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["EditorSelected"] = "EditorSelected";
-    Events["EditorClosed"] = "EditorClosed";
-})(Events || (Events = {}));
+let nextTooltipId = 1;
 const MAX_PREVIOUSLY_VIEWED_FILES_COUNT = 30;
 const MAX_SERIALIZABLE_URL_LENGTH = 4096;
 function historyItemKey(uiSourceCode) {
@@ -706,7 +705,6 @@ export class History {
         }
         return serializedHistoryItems;
     }
-    // eslint-disable-next-line rulesdir/prefer_readonly_keyword
     keys() {
         return this.items;
     }

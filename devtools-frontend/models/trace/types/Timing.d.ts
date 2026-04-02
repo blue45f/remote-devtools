@@ -1,27 +1,20 @@
-declare class MicroSecondsTag {
-    #private;
-}
-export type MicroSeconds = number & MicroSecondsTag;
-export declare function MicroSeconds(value: number): MicroSeconds;
-declare class MilliSecondsTag {
-    #private;
-}
-export type MilliSeconds = number & MilliSecondsTag;
-export declare function MilliSeconds(value: number): MilliSeconds;
-declare class SecondsTag {
-    #private;
-}
-export type Seconds = number & SecondsTag;
+export type Micro = number & {
+    _tag: 'MicroSeconds';
+};
+export declare function Micro(value: number): Micro;
+export type Milli = number & {
+    _tag: 'MilliSeconds';
+};
+export declare function Milli(value: number): Milli;
+export type Seconds = number & {
+    _tag: 'Seconds';
+};
 export declare function Seconds(value: number): Seconds;
-export declare const enum TimeUnit {
-    MICROSECONDS = 0,
-    MILLISECONDS = 1,
-    SECONDS = 2,
-    MINUTES = 3
+export interface TraceWindow<TimeFormat extends Micro | Milli> {
+    min: TimeFormat;
+    max: TimeFormat;
+    range: TimeFormat;
 }
-export interface TraceWindow {
-    min: MicroSeconds;
-    max: MicroSeconds;
-    range: MicroSeconds;
-}
-export {};
+/** See front_end/models/trace/helpers/Timing.ts for helpful utility functions like traceWindowFromMicroSeconds **/
+export type TraceWindowMicro = TraceWindow<Micro>;
+export type TraceWindowMilli = TraceWindow<Milli>;

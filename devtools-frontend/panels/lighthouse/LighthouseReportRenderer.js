@@ -1,26 +1,29 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as LighthouseReport from '../../third_party/lighthouse/report/report.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
-import * as Timeline from '../timeline/timeline.js';
+import { html, nothing, render } from '../../ui/lit/lit.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+import * as PanelsCommon from '../common/common.js';
 const MaxLengthForLinks = 40;
 export class LighthouseReportRenderer {
     static renderLighthouseReport(lhr, artifacts, opts) {
         let onViewTrace = undefined;
         if (artifacts) {
             onViewTrace = async () => {
-                const defaultPassTrace = artifacts.traces.defaultPass;
                 Host.userMetrics.actionTaken(Host.UserMetrics.Action.LighthouseViewTrace);
-                await UI.InspectorView.InspectorView.instance().showPanel('timeline');
-                Timeline.TimelinePanel.TimelinePanel.instance().loadFromEvents(defaultPassTrace.traceEvents);
+                const trace = new SDK.TraceObject.TraceObject(artifacts.Trace.traceEvents);
+                void Common.Revealer.reveal(trace);
             };
         }
         async function onSaveFileOverride(blob) {
@@ -29,8 +32,10 @@ export class LighthouseReportRenderer {
             const timestamp = Platform.DateUtilities.toISO8601Compact(new Date(lhr.fetchTime));
             const ext = blob.type.match('json') ? '.json' : '.html';
             const basename = `${sanitizedDomain}-${timestamp}${ext}`;
-            const text = await blob.text();
-            void Workspace.FileManager.FileManager.instance().save(basename, text, true /* forceSaveAs */);
+            const base64 = await blob.arrayBuffer().then(Common.Base64.encode);
+            await Workspace.FileManager.FileManager.instance().save(basename, new TextUtils.ContentData.ContentData(base64, /* isBase64= */ true, blob.type), 
+            /* forceSaveAs=*/ true);
+            Workspace.FileManager.FileManager.instance().close(basename);
         }
         async function onPrintOverride(rootEl) {
             const clonedReport = rootEl.cloneNode(true);
@@ -65,10 +70,13 @@ export class LighthouseReportRenderer {
         };
         ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, updateDarkModeIfNecessary);
         updateDarkModeIfNecessary();
-        // @ts-ignore Expose LHR on DOM for e2e tests
+        // @ts-expect-error Expose LHR on DOM for e2e tests
         reportEl._lighthouseResultForTesting = lhr;
-        // @ts-ignore Expose Artifacts on DOM for e2e tests
+        // @ts-expect-error Expose Artifacts on DOM for e2e tests
         reportEl._lighthouseArtifactsForTesting = artifacts;
+        // This should block the report rendering as we need visual logging ready
+        // before the user starts interacting with the report.
+        LighthouseReportRenderer.installVisualLogging(reportEl);
         // Linkifying requires the target be loaded. Do not block the report
         // from rendering, as this is just an embellishment and the main target
         // could take awhile to load.
@@ -112,14 +120,11 @@ export class LighthouseReportRenderer {
             if (!node) {
                 continue;
             }
-            const element = await Common.Linkifier.Linkifier.linkify(node, { tooltip: detailsItem.snippet, preventKeyboardFocus: undefined });
+            const element = PanelsCommon.DOMLinkifier.Linkifier.instance().linkify(node, { tooltip: detailsItem.snippet, preventKeyboardFocus: undefined });
             UI.Tooltip.Tooltip.install(origHTMLElement, '');
             const screenshotElement = origHTMLElement.querySelector('.lh-element-screenshot');
             origHTMLElement.textContent = '';
-            if (screenshotElement) {
-                origHTMLElement.append(screenshotElement);
-            }
-            origHTMLElement.appendChild(element);
+            render(html `${screenshotElement ?? nothing}${element}`, origHTMLElement);
         }
     }
     static async linkifySourceLocationDetails(el) {
@@ -132,7 +137,7 @@ export class LighthouseReportRenderer {
             const url = detailsItem.sourceUrl;
             const line = Number(detailsItem.sourceLine);
             const column = Number(detailsItem.sourceColumn);
-            const element = await Components.Linkifier.Linkifier.linkifyURL(url, {
+            const element = Components.Linkifier.Linkifier.linkifyURL(url, {
                 lineNumber: line,
                 columnNumber: column,
                 showColumnNumber: false,
@@ -142,6 +147,40 @@ export class LighthouseReportRenderer {
             UI.Tooltip.Tooltip.install(origHTMLElement, '');
             origHTMLElement.textContent = '';
             origHTMLElement.appendChild(element);
+        }
+    }
+    static installVisualLogging(el) {
+        for (const auditEl of el.getElementsByClassName('lh-audit')) {
+            const summaryEl = auditEl.querySelector('summary');
+            if (!summaryEl) {
+                continue;
+            }
+            const id = auditEl.id;
+            if (!id) {
+                continue;
+            }
+            auditEl.setAttribute('jslog', `${VisualLogging.item(`lighthouse.audit.${id}`).track({ resize: true })}`);
+            let state;
+            for (const className of auditEl.classList) {
+                switch (className) {
+                    case 'lh-audit--pass':
+                        state = 'pass';
+                        break;
+                    case 'lh-audit--average':
+                        state = 'average';
+                        break;
+                    case 'lh-audit--fail':
+                        state = 'fail';
+                        break;
+                    case 'lh-audit--informative':
+                        state = 'informative';
+                        break;
+                }
+            }
+            if (!state) {
+                continue;
+            }
+            summaryEl.setAttribute('jslog', `${VisualLogging.expand(`lighthouse.audit-summary.${state}`).track({ click: true })}`);
         }
     }
 }

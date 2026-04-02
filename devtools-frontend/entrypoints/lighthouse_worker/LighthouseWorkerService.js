@@ -1,63 +1,25 @@
-// Copyright (c) 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as ProtocolClient from '../../core/protocol_client/protocol_client.js';
 import * as Root from '../../core/root/root.js';
 import * as PuppeteerService from '../../services/puppeteer/puppeteer.js';
+import * as ThirdPartyWeb from '../../third_party/third-party-web/third-party-web.js';
 function disableLoggingForTest() {
     console.log = () => undefined; // eslint-disable-line no-console
 }
 /**
- * LegacyPort is provided to Lighthouse as the CDP connection in legacyNavigation mode.
- * Its complement is https://github.com/GoogleChrome/lighthouse/blob/v9.3.1/lighthouse-core/gather/connections/raw.js
- * It speaks pure CDP via notifyFrontendViaWorkerMessage
- *
- * Any message that comes back from Lighthouse has to go via a so-called "port".
- * This class holds the relevant callbacks that Lighthouse provides and that
- * can be called in the onmessage callback of the worker, so that the frontend
- * can communicate to Lighthouse. Lighthouse itself communicates to the frontend
- * via status updates defined below.
+ * WorkerConnectionTransport is a DevTools `ConnectionTransport` implementation that talks
+ * CDP via web worker postMessage. The system is described in LighthouseProtocolService.
  */
-class LegacyPort {
-    onMessage;
-    onClose;
-    on(eventName, callback) {
-        if (eventName === 'message') {
-            this.onMessage = callback;
-        }
-        else if (eventName === 'close') {
-            this.onClose = callback;
-        }
-    }
-    send(message) {
-        notifyFrontendViaWorkerMessage('sendProtocolMessage', { message });
-    }
-    close() {
-    }
-}
-/**
- * ConnectionProxy is a SDK interface, but the implementation has no knowledge it's a parallelConnection.
- * The CDP traffic is smuggled back and forth by the system described in LighthouseProtocolService
- */
-class ConnectionProxy {
-    sessionId;
-    onMessage;
-    onDisconnect;
-    constructor(sessionId) {
-        this.sessionId = sessionId;
-        this.onMessage = null;
-        this.onDisconnect = null;
-    }
+class WorkerConnectionTransport {
+    onMessage = null;
+    onDisconnect = null;
     setOnMessage(onMessage) {
         this.onMessage = onMessage;
     }
     setOnDisconnect(onDisconnect) {
         this.onDisconnect = onDisconnect;
-    }
-    getOnDisconnect() {
-        return this.onDisconnect;
-    }
-    getSessionId() {
-        return this.sessionId;
     }
     sendRawMessage(message) {
         notifyFrontendViaWorkerMessage('sendProtocolMessage', { message });
@@ -68,8 +30,7 @@ class ConnectionProxy {
         this.onMessage = null;
     }
 }
-const legacyPort = new LegacyPort();
-let cdpConnection;
+let cdpTransport;
 let endTimespan;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function invokeLH(action, args) {
@@ -98,59 +59,38 @@ async function invokeLH(action, args) {
         flags.logLevel = flags.logLevel || 'info';
         flags.channel = 'devtools';
         flags.locale = locale;
-        // TODO: Remove this filter once pubads is mode restricted
-        // https://github.com/googleads/publisher-ads-lighthouse-plugin/pull/339
-        if (action === 'startTimespan' || action === 'snapshot') {
-            args.categoryIDs = args.categoryIDs.filter((c) => c !== 'lighthouse-plugin-publisher-ads');
-        }
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
         const config = args.config || self.createConfig(args.categoryIDs, flags.formFactor);
         const url = args.url;
-        // Handle legacy Lighthouse runner path.
-        if (action === 'navigation' && flags.legacyNavigation) {
-            // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            const connection = self.setUpWorkerConnection(legacyPort);
-            // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            return await self.runLighthouse(url, flags, config, connection);
-        }
-        const { mainFrameId, mainSessionId, targetInfos } = args;
-        cdpConnection = new ConnectionProxy(mainSessionId);
-        puppeteerHandle = await PuppeteerService.PuppeteerConnection.PuppeteerConnectionHelper.connectPuppeteerToConnection({
-            connection: cdpConnection,
-            mainFrameId,
-            targetInfos,
-            // For the most part, defer to Lighthouse for which targets are important.
-            // Excluding devtools targets is required for e2e tests to work, and LH doesn't support auditing DT targets anyway.
-            targetFilterCallback: targetInfo => {
-                if (targetInfo.url.startsWith('https://i0.devtools-frontend') || targetInfo.url.startsWith('devtools://')) {
-                    return false;
-                }
-                // TODO only connect to iframes that are related to the main target. This requires refactoring in Puppeteer: https://github.com/puppeteer/puppeteer/issues/3667.
-                return (targetInfo.targetId === mainFrameId || targetInfo.openerId === mainFrameId || targetInfo.type === 'iframe');
-            },
-            // Lighthouse can only audit normal pages.
-            isPageTargetCallback: targetInfo => targetInfo.type === 'page',
-        });
+        // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
+        self.thirdPartyWeb.provideThirdPartyWeb(ThirdPartyWeb.ThirdPartyWeb);
+        const { rootTargetId, mainSessionId } = args;
+        cdpTransport = new WorkerConnectionTransport();
+        const connection = new ProtocolClient.DevToolsCDPConnection.DevToolsCDPConnection(cdpTransport);
+        puppeteerHandle =
+            await PuppeteerService.PuppeteerConnection.PuppeteerConnectionHelper.connectPuppeteerToConnectionViaTab({
+                connection,
+                targetId: rootTargetId,
+                sessionId: mainSessionId,
+                // Lighthouse can only audit normal pages.
+                isPageTargetCallback: targetInfo => targetInfo.type === 'page',
+            });
         const { page } = puppeteerHandle;
-        const configContext = {
-            logLevel: flags.logLevel,
-            settingsOverrides: flags,
-        };
+        if (!page) {
+            throw new Error('Could not create page handle for the target page');
+        }
         if (action === 'snapshot') {
-            // TODO: Remove `configContext` once Lighthouse roll removes it
             // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            return await self.runLighthouseSnapshot({ config, page, configContext, flags });
+            return await self.snapshot(page, { config, flags });
         }
         if (action === 'startTimespan') {
-            // TODO: Remove `configContext` once Lighthouse roll removes it
             // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            const timespan = await self.startLighthouseTimespan({ config, page, configContext, flags });
+            const timespan = await self.startTimespan(page, { config, flags });
             endTimespan = timespan.endTimespan;
             return;
         }
-        // TODO: Remove `configContext` once Lighthouse roll removes it
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-        return await self.runLighthouseNavigation(url, { config, page, configContext, flags });
+        return await self.navigation(page, url, { config, flags });
     }
     catch (err) {
         return ({
@@ -162,7 +102,7 @@ async function invokeLH(action, args) {
     finally {
         // endTimespan will need to use the same connection as startTimespan.
         if (action !== 'startTimespan') {
-            puppeteerHandle?.browser.disconnect();
+            await puppeteerHandle?.browser.disconnect();
         }
     }
 }
@@ -182,13 +122,13 @@ async function fetchLocaleData(locales) {
     try {
         const remoteBase = Root.Runtime.getRemoteBase();
         let localeUrl;
-        if (remoteBase && remoteBase.base) {
+        if (remoteBase?.base) {
             localeUrl = `${remoteBase.base}third_party/lighthouse/locales/${locale}.json`;
         }
         else {
             localeUrl = new URL(`../../third_party/lighthouse/locales/${locale}.json`, import.meta.url).toString();
         }
-        const timeoutPromise = new Promise((resolve, reject) => setTimeout(() => reject(new Error('timed out fetching locale')), 5000));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timed out fetching locale')), 5000));
         const localeData = await Promise.race([timeoutPromise, fetch(localeUrl).then(result => result.json())]);
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
         self.registerLocaleData(locale, localeData);
@@ -232,8 +172,7 @@ async function onFrontendMessage(event) {
             break;
         }
         case 'dispatchProtocolMessage': {
-            cdpConnection?.onMessage?.(messageFromFrontend.args.message);
-            legacyPort.onMessage?.(JSON.stringify(messageFromFrontend.args.message));
+            cdpTransport?.onMessage?.(messageFromFrontend.args.message);
             break;
         }
         default: {
@@ -243,7 +182,6 @@ async function onFrontendMessage(event) {
 }
 self.onmessage = onFrontendMessage;
 // Make lighthouse and traceviewer happy.
-// @ts-ignore https://github.com/GoogleChrome/lighthouse/issues/11628
 globalThis.global = self;
 // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
 globalThis.global.isVinn = true;

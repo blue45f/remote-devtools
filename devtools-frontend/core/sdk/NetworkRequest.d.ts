@@ -2,21 +2,9 @@ import * as Protocol from '../../generated/protocol.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as Platform from '../platform/platform.js';
-import { Attributes, type Cookie } from './Cookie.js';
+import { Attribute, type Cookie } from './Cookie.js';
 import { ServerTiming } from './ServerTiming.js';
-export declare enum MIME_TYPE {
-    HTML = "text/html",
-    XML = "text/xml",
-    PLAIN = "text/plain",
-    XHTML = "application/xhtml+xml",
-    SVG = "image/svg+xml",
-    CSS = "text/css",
-    XSL = "text/xsl",
-    VTT = "text/vtt",
-    PDF = "application/pdf",
-    EVENTSTREAM = "text/event-stream"
-}
-export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements TextUtils.ContentProvider.ContentProvider {
+export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements TextUtils.ContentProvider.StreamingContentProvider {
     #private;
     statusCode: number;
     statusText: string;
@@ -29,9 +17,12 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     connectionReused: boolean;
     hasNetworkData: boolean;
     localizedFailDescription: string | null;
-    private constructor();
+    responseReceivedPromise?: Promise<void>;
+    responseReceivedPromiseResolve?: () => void;
+    directSocketInfo?: DirectSocketInfo;
+    constructor(requestId: string, backendRequestId: Protocol.Network.RequestId | undefined, url: Platform.DevToolsPath.UrlString, documentURL: Platform.DevToolsPath.UrlString, frameId: Protocol.Page.FrameId | null, loaderId: Protocol.Network.LoaderId | null, initiator: Protocol.Network.Initiator | null, hasUserGesture?: boolean);
     static create(backendRequestId: Protocol.Network.RequestId, url: Platform.DevToolsPath.UrlString, documentURL: Platform.DevToolsPath.UrlString, frameId: Protocol.Page.FrameId | null, loaderId: Protocol.Network.LoaderId | null, initiator: Protocol.Network.Initiator | null, hasUserGesture?: boolean): NetworkRequest;
-    static createForWebSocket(backendRequestId: Protocol.Network.RequestId, requestURL: Platform.DevToolsPath.UrlString, initiator?: Protocol.Network.Initiator): NetworkRequest;
+    static createForSocket(backendRequestId: Protocol.Network.RequestId, requestURL: Platform.DevToolsPath.UrlString, initiator?: Protocol.Network.Initiator): NetworkRequest;
     static createWithoutBackendRequest(requestId: string, url: Platform.DevToolsPath.UrlString, documentURL: Platform.DevToolsPath.UrlString, initiator: Protocol.Network.Initiator | null): NetworkRequest;
     identityCompare(other: NetworkRequest): number;
     requestId(): string;
@@ -43,6 +34,7 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     get parsedURL(): Common.ParsedURL.ParsedURL;
     get frameId(): Protocol.Page.FrameId | null;
     get loaderId(): Protocol.Network.LoaderId | null;
+    get appliedNetworkConditionsId(): string | undefined;
     setRemoteAddress(ip: string, port: number): void;
     remoteAddress(): string;
     remoteAddressSpace(): Protocol.Network.IPAddressSpace;
@@ -92,6 +84,8 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     set preserved(x: boolean);
     blockedReason(): Protocol.Network.BlockedReason | undefined;
     setBlockedReason(reason: Protocol.Network.BlockedReason): void;
+    setRenderBlockingBehavior(renderBlocking: Protocol.Network.RenderBlockingBehavior): void;
+    renderBlockingBehavior(): Protocol.Network.RenderBlockingBehavior | undefined;
     corsErrorStatus(): Protocol.Network.CorsErrorStatus | undefined;
     setCorsErrorStatus(corsErrorStatus: Protocol.Network.CorsErrorStatus): void;
     wasBlocked(): boolean;
@@ -102,12 +96,21 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     get fromDiskCache(): boolean | undefined;
     setFromDiskCache(): void;
     setFromPrefetchCache(): void;
+    fromEarlyHints(): boolean;
+    setFromEarlyHints(): void;
     /**
      * Returns true if the request was intercepted by a service worker and it
      * provided its own response.
      */
     get fetchedViaServiceWorker(): boolean;
     set fetchedViaServiceWorker(x: boolean);
+    get serviceWorkerRouterInfo(): Protocol.Network.ServiceWorkerRouterInfo | undefined;
+    set serviceWorkerRouterInfo(x: Protocol.Network.ServiceWorkerRouterInfo);
+    /**
+     * Returns true if the request was matched to a route when using the
+     * ServiceWorker static routing API.
+     */
+    hasMatchingServiceWorkerRouter(): boolean;
     /**
      * Returns true if the request was sent by a service worker.
      */
@@ -115,8 +118,8 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     get timing(): Protocol.Network.ResourceTiming | undefined;
     set timing(timingInfo: Protocol.Network.ResourceTiming | undefined);
     private setConnectTimingFromExtraInfo;
-    get mimeType(): MIME_TYPE;
-    set mimeType(x: MIME_TYPE);
+    get mimeType(): string;
+    set mimeType(x: string);
     get displayName(): string;
     name(): string;
     path(): string;
@@ -127,6 +130,7 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     setResourceType(resourceType: Common.ResourceType.ResourceType): void;
     get domain(): string;
     get scheme(): string;
+    getInferredStatusText(): string;
     redirectSource(): NetworkRequest | null;
     setRedirectSource(originatingRequest: NetworkRequest | null): void;
     preflightRequest(): NetworkRequest | null;
@@ -147,6 +151,8 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     requestHttpVersion(): string;
     get responseHeaders(): NameValue[];
     set responseHeaders(x: NameValue[]);
+    get earlyHintsHeaders(): NameValue[];
+    set earlyHintsHeaders(x: NameValue[]);
     get originalResponseHeaders(): Protocol.Fetch.HeaderEntry[];
     set originalResponseHeaders(headers: Protocol.Fetch.HeaderEntry[]);
     get setCookieHeaders(): Protocol.Fetch.HeaderEntry[];
@@ -155,11 +161,16 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     set responseHeadersText(x: string);
     get sortedResponseHeaders(): NameValue[];
     get sortedOriginalResponseHeaders(): NameValue[];
+    get overrideTypes(): OverrideType[];
+    get hasOverriddenContent(): boolean;
+    set hasOverriddenContent(value: boolean);
     hasOverriddenHeaders(): boolean;
     responseHeaderValue(headerName: string): string | undefined;
     wasIntercepted(): boolean;
     setWasIntercepted(wasIntercepted: boolean): void;
+    setEarlyHintsHeaders(headers: NameValue[]): void;
     get responseCookies(): Cookie[];
+    set responseCookies(responseCookies: Cookie[]);
     responseLastModified(): string | undefined;
     allCookiesIncludingBlockedOnes(): Cookie[];
     get serverTimings(): ServerTiming[] | null;
@@ -184,14 +195,14 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
      */
     private parseMultipartFormDataParameters;
     private computeHeaderValue;
-    contentData(): Promise<ContentData>;
-    setContentDataProvider(dataProvider: () => Promise<ContentData>): void;
+    requestContentData(): Promise<TextUtils.ContentData.ContentDataOrError>;
+    setContentDataProvider(dataProvider: () => Promise<TextUtils.ContentData.ContentDataOrError>): void;
+    requestStreamingContent(): Promise<TextUtils.StreamingContentData.StreamingContentDataOrError>;
     contentURL(): Platform.DevToolsPath.UrlString;
     contentType(): Common.ResourceType.ResourceType;
-    requestContent(): Promise<TextUtils.ContentProvider.DeferredContent>;
     searchInContent(query: string, caseSensitive: boolean, isRegex: boolean): Promise<TextUtils.ContentProvider.SearchMatch[]>;
-    isHttpFamily(): boolean;
     requestContentType(): string | undefined;
+    requestContentEncoding(): string | undefined;
     hasErrorStatusCode(): boolean;
     setInitialPriority(priority: Protocol.Network.ResourcePriority): void;
     initialPriority(): Protocol.Network.ResourcePriority | null;
@@ -199,10 +210,6 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     priority(): Protocol.Network.ResourcePriority | null;
     setSignedExchangeInfo(info: Protocol.Network.SignedExchangeInfo): void;
     signedExchangeInfo(): Protocol.Network.SignedExchangeInfo | null;
-    setWebBundleInfo(info: WebBundleInfo | null): void;
-    webBundleInfo(): WebBundleInfo | null;
-    setWebBundleInnerRequestInfo(info: WebBundleInnerRequestInfo | null): void;
-    webBundleInnerRequestInfo(): WebBundleInnerRequestInfo | null;
     populateImageSource(image: HTMLImageElement): Promise<void>;
     initiator(): Protocol.Network.Initiator | null;
     hasUserGesture(): boolean | null;
@@ -210,23 +217,31 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     addProtocolFrameError(errorMessage: string, time: number): void;
     addProtocolFrame(response: Protocol.Network.WebSocketFrame, time: number, sent: boolean): void;
     addFrame(frame: WebSocketFrame): void;
-    eventSourceMessages(): EventSourceMessage[];
+    directSocketChunks(): DirectSocketChunk[];
+    addDirectSocketChunk(chunk: DirectSocketChunk): void;
+    eventSourceMessages(): readonly EventSourceMessage[];
     addEventSourceMessage(time: number, eventName: string, eventId: string, data: string): void;
     markAsRedirect(redirectCount: number): void;
     isRedirect(): boolean;
     setRequestIdForTest(requestId: Protocol.Network.RequestId): void;
     charset(): string | null;
+    setCharset(charset: string): void;
     addExtraRequestInfo(extraRequestInfo: ExtraRequestInfo): void;
+    setAppliedNetworkConditions(appliedNetworkConditionsId: string): void;
+    getDeviceBoundSessionUsages(): Protocol.Network.DeviceBoundSessionWithUsage[];
     hasExtraRequestInfo(): boolean;
     blockedRequestCookies(): BlockedCookieWithReason[];
-    includedRequestCookies(): Cookie[];
+    setIncludedRequestCookies(includedRequestCookies: IncludedCookieWithReason[]): void;
+    includedRequestCookies(): IncludedCookieWithReason[];
     hasRequestCookies(): boolean;
     siteHasCookieInOtherPartition(): boolean;
     static parseStatusTextFromResponseHeadersText(responseHeadersText: string): string;
     addExtraResponseInfo(extraResponseInfo: ExtraResponseInfo): void;
     hasExtraResponseInfo(): boolean;
     blockedResponseCookies(): BlockedSetCookieWithReason[];
-    responseCookiesPartitionKey(): string | null;
+    exemptedResponseCookies(): ExemptedSetCookieWithReason[];
+    nonBlockedResponseCookies(): Cookie[];
+    responseCookiesPartitionKey(): Protocol.Network.CookiePartitionKey | null;
     responseCookiesPartitionKeyOpaque(): boolean | null;
     redirectSourceSignedExchangeInfoHasNoErrors(): boolean;
     clientSecurityState(): Protocol.Network.ClientSecurityState | undefined;
@@ -236,48 +251,57 @@ export declare class NetworkRequest extends Common.ObjectWrapper.ObjectWrapper<E
     trustTokenOperationDoneEvent(): Protocol.Network.TrustTokenOperationDoneEvent | undefined;
     setIsSameSite(isSameSite: boolean): void;
     isSameSite(): boolean | null;
+    setIsAdRelated(isAdRelated: boolean): void;
+    isAdRelated(): boolean;
     getAssociatedData(key: string): object | null;
     setAssociatedData(key: string, data: object): void;
     deleteAssociatedData(key: string): void;
+    hasThirdPartyCookiePhaseoutIssue(): boolean;
+    addDataReceivedEvent({ timestamp, dataLength, encodedDataLength, data, }: Protocol.Network.DataReceivedEvent): void;
+    waitForResponseReceived(): Promise<void>;
 }
 export declare enum Events {
-    FinishedLoading = "FinishedLoading",
-    TimingChanged = "TimingChanged",
-    RemoteAddressChanged = "RemoteAddressChanged",
-    RequestHeadersChanged = "RequestHeadersChanged",
-    ResponseHeadersChanged = "ResponseHeadersChanged",
-    WebsocketFrameAdded = "WebsocketFrameAdded",
-    EventSourceMessageAdded = "EventSourceMessageAdded",
-    TrustTokenResultAdded = "TrustTokenResultAdded"
+    FINISHED_LOADING = "FinishedLoading",
+    TIMING_CHANGED = "TimingChanged",
+    REMOTE_ADDRESS_CHANGED = "RemoteAddressChanged",
+    REQUEST_HEADERS_CHANGED = "RequestHeadersChanged",
+    RESPONSE_HEADERS_CHANGED = "ResponseHeadersChanged",
+    WEBSOCKET_FRAME_ADDED = "WebsocketFrameAdded",
+    DIRECTSOCKET_CHUNK_ADDED = "DirectsocketChunkAdded",
+    EVENT_SOURCE_MESSAGE_ADDED = "EventSourceMessageAdded",
+    TRUST_TOKEN_RESULT_ADDED = "TrustTokenResultAdded"
 }
-export type EventTypes = {
-    [Events.FinishedLoading]: NetworkRequest;
-    [Events.TimingChanged]: NetworkRequest;
-    [Events.RemoteAddressChanged]: NetworkRequest;
-    [Events.RequestHeadersChanged]: void;
-    [Events.ResponseHeadersChanged]: void;
-    [Events.WebsocketFrameAdded]: WebSocketFrame;
-    [Events.EventSourceMessageAdded]: EventSourceMessage;
-    [Events.TrustTokenResultAdded]: void;
-};
-export declare enum InitiatorType {
-    Other = "other",
-    Parser = "parser",
-    Redirect = "redirect",
-    Script = "script",
-    Preload = "preload",
-    SignedExchange = "signedExchange",
-    Preflight = "preflight"
+export interface EventTypes {
+    [Events.FINISHED_LOADING]: NetworkRequest;
+    [Events.TIMING_CHANGED]: NetworkRequest;
+    [Events.REMOTE_ADDRESS_CHANGED]: NetworkRequest;
+    [Events.REQUEST_HEADERS_CHANGED]: void;
+    [Events.RESPONSE_HEADERS_CHANGED]: void;
+    [Events.WEBSOCKET_FRAME_ADDED]: WebSocketFrame;
+    [Events.DIRECTSOCKET_CHUNK_ADDED]: DirectSocketChunk;
+    [Events.DIRECTSOCKET_CHUNK_ADDED]: DirectSocketChunk;
+    [Events.EVENT_SOURCE_MESSAGE_ADDED]: EventSourceMessage;
+    [Events.TRUST_TOKEN_RESULT_ADDED]: void;
+}
+export declare const enum InitiatorType {
+    OTHER = "other",
+    PARSER = "parser",
+    REDIRECT = "redirect",
+    SCRIPT = "script",
+    PRELOAD = "preload",
+    SIGNED_EXCHANGE = "signedExchange",
+    PREFLIGHT = "preflight"
 }
 export declare enum WebSocketFrameType {
     Send = "send",
     Receive = "receive",
     Error = "error"
 }
+export declare const cookieExemptionReasonToUiString: (exemptionReason: Protocol.Network.CookieExemptionReason) => string;
 export declare const cookieBlockedReasonToUiString: (blockedReason: Protocol.Network.CookieBlockedReason) => string;
 export declare const setCookieBlockedReasonToUiString: (blockedReason: Protocol.Network.SetCookieBlockedReason) => string;
-export declare const cookieBlockedReasonToAttribute: (blockedReason: Protocol.Network.CookieBlockedReason) => Attributes | null;
-export declare const setCookieBlockedReasonToAttribute: (blockedReason: Protocol.Network.SetCookieBlockedReason) => Attributes | null;
+export declare const cookieBlockedReasonToAttribute: (blockedReason: Protocol.Network.CookieBlockedReason) => Attribute | null;
+export declare const setCookieBlockedReasonToAttribute: (blockedReason: Protocol.Network.SetCookieBlockedReason) => Attribute | null;
 export interface NameValue {
     name: string;
     value: string;
@@ -295,13 +319,17 @@ export interface BlockedSetCookieWithReason {
     cookie: Cookie | null;
 }
 export interface BlockedCookieWithReason {
-    blockedReasons: Protocol.Network.CookieBlockedReason[];
     cookie: Cookie;
+    blockedReasons: Protocol.Network.CookieBlockedReason[];
 }
-export interface ContentData {
-    error: string | null;
-    content: string | null;
-    encoded: boolean;
+export interface IncludedCookieWithReason {
+    cookie: Cookie;
+    exemptionReason?: Protocol.Network.CookieExemptionReason;
+}
+export interface ExemptedSetCookieWithReason {
+    cookie: Cookie;
+    cookieLine: string;
+    exemptionReason: Protocol.Network.CookieExemptionReason;
 }
 export interface EventSourceMessage {
     time: number;
@@ -310,34 +338,87 @@ export interface EventSourceMessage {
     data: string;
 }
 export interface ExtraRequestInfo {
-    blockedRequestCookies: {
+    blockedRequestCookies: Array<{
         blockedReasons: Protocol.Network.CookieBlockedReason[];
         cookie: Cookie;
-    }[];
+    }>;
     requestHeaders: NameValue[];
-    includedRequestCookies: Cookie[];
+    includedRequestCookies: IncludedCookieWithReason[];
+    deviceBoundSessionUsages?: Protocol.Network.DeviceBoundSessionWithUsage[];
     clientSecurityState?: Protocol.Network.ClientSecurityState;
     connectTiming: Protocol.Network.ConnectTiming;
     siteHasCookieInOtherPartition?: boolean;
+    appliedNetworkConditionsId?: string;
 }
 export interface ExtraResponseInfo {
-    blockedResponseCookies: {
+    blockedResponseCookies: Array<{
         blockedReasons: Protocol.Network.SetCookieBlockedReason[];
         cookieLine: string;
         cookie: Cookie | null;
-    }[];
+    }>;
     responseHeaders: NameValue[];
     responseHeadersText?: string;
     resourceIPAddressSpace: Protocol.Network.IPAddressSpace;
     statusCode: number | undefined;
-    cookiePartitionKey: string | undefined;
+    cookiePartitionKey?: Protocol.Network.CookiePartitionKey;
     cookiePartitionKeyOpaque: boolean | undefined;
+    exemptedResponseCookies: Array<{
+        cookie: Cookie;
+        cookieLine: string;
+        exemptionReason: Protocol.Network.CookieExemptionReason;
+    }> | undefined;
 }
-export interface WebBundleInfo {
-    resourceUrls?: Platform.DevToolsPath.UrlString[];
-    errorMessage?: string;
+export interface EarlyHintsInfo {
+    responseHeaders: NameValue[];
 }
-export interface WebBundleInnerRequestInfo {
-    bundleRequestId?: string;
+export type OverrideType = 'content' | 'headers';
+export declare enum DirectSocketType {
+    TCP = 1,
+    UDP_BOUND = 2,
+    UDP_CONNECTED = 3
+}
+export declare enum DirectSocketStatus {
+    OPENING = 1,
+    OPEN = 2,
+    CLOSED = 3,
+    ABORTED = 4
+}
+export interface DirectSocketCreateOptions {
+    remoteAddr?: string;
+    remotePort?: number;
+    localAddr?: string;
+    localPort?: number;
+    noDelay?: boolean;
+    keepAliveDelay?: number;
+    sendBufferSize?: number;
+    receiveBufferSize?: number;
+    dnsQueryType?: Protocol.Network.DirectSocketDnsQueryType;
+    multicastLoopback?: boolean;
+    multicastTimeToLive?: number;
+    multicastAllowAddressSharing?: boolean;
+}
+export interface DirectSocketOpenInfo {
+    remoteAddr?: string;
+    remotePort?: number;
+    localAddr?: string;
+    localPort?: number;
+}
+export interface DirectSocketInfo {
+    type: DirectSocketType;
+    status: DirectSocketStatus;
     errorMessage?: string;
+    createOptions: DirectSocketCreateOptions;
+    openInfo?: DirectSocketOpenInfo;
+    joinedMulticastGroups?: Set<string>;
+}
+export interface DirectSocketChunk {
+    data: string;
+    type: DirectSocketChunkType;
+    timestamp: number;
+    remoteAddress?: string;
+    remotePort?: number;
+}
+export declare enum DirectSocketChunkType {
+    SEND = "send",
+    RECEIVE = "receive"
 }

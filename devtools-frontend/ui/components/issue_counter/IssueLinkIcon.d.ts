@@ -1,4 +1,4 @@
-import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
+import '../../../ui/kit/kit.js';
 import type * as Protocol from '../../../generated/protocol.js';
 import * as IssuesManager from '../../../models/issues_manager/issues_manager.js';
 export interface IssueLinkIconData {
@@ -6,16 +6,13 @@ export interface IssueLinkIconData {
     issueId?: Protocol.Audits.IssueId;
     issueResolver?: IssuesManager.IssueResolver.IssueResolver;
     additionalOnClickAction?: () => void;
-    revealOverride?: (revealable: Object | null, omitFocus?: boolean | undefined) => Promise<void>;
+    revealOverride?: (revealable: unknown, omitFocus?: boolean) => Promise<void>;
 }
 export declare const extractShortPath: (path: string) => string;
 export declare class IssueLinkIcon extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     set data(data: IssueLinkIconData);
-    connectedCallback(): void;
     get data(): IssueLinkIconData;
-    iconData(): IconButton.Icon.IconData;
     handleClick(event: MouseEvent): void;
 }
 declare global {

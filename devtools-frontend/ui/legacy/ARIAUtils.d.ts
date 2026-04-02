@@ -35,11 +35,9 @@ export declare function markAsMultiSelectable(element: Element): void;
  */
 export declare function markAsOption(element: Element): void;
 export declare function markAsRadioGroup(element: Element): void;
-export declare function markAsHidden(element: Element): void;
 export declare function markAsSlider(element: Element, min?: number | undefined, max?: number | undefined): void;
 export declare function markAsHeading(element: Element, level: number): void;
 export declare function markAsPoliteLiveRegion(element: Element, isAtomic: boolean): void;
-export declare function markAsLog(element: Element): void;
 export declare function hasRole(element: Element): boolean;
 export declare function removeRole(element: Element): void;
 export declare function setPlaceholder(element: Element, placeholder: string | null): void;
@@ -57,22 +55,22 @@ export declare function setExpanded(element: Element, value: boolean): void;
 export declare function unsetExpandable(element: Element): void;
 export declare function setHidden(element: Element, value: boolean): void;
 export declare function setLevel(element: Element, level: number): void;
-export declare enum AutocompleteInteractionModel {
-    inline = "inline",
-    list = "list",
-    both = "both",
-    none = "none"
+export declare const enum AutocompleteInteractionModel {
+    INLINE = "inline",
+    LIST = "list",
+    BOTH = "both",
+    NONE = "none"
 }
-export declare function setAutocomplete(element: Element, interactionModel?: AutocompleteInteractionModel | undefined): void;
+export declare function setAutocomplete(element: Element, interactionModel?: AutocompleteInteractionModel): void;
 export declare function clearAutocomplete(element: Element): void;
 export declare const enum PopupRole {
-    False = "false",
-    True = "true",
-    Menu = "menu",
-    ListBox = "listbox",
-    Tree = "tree",
-    Grid = "grid",
-    Dialog = "dialog"
+    FALSE = "false",// (default) Indicates the element does not have a popup.
+    TRUE = "true",// Indicates the popup is a menu.
+    MENU = "menu",// Indicates the popup is a menu.
+    LIST_BOX = "listbox",// Indicates the popup is a listbox.
+    TREE = "tree",// Indicates the popup is a tree.
+    GRID = "grid",// Indicates the popup is a grid.
+    DIALOG = "dialog"
 }
 export declare function setHasPopup(element: Element, value?: PopupRole): void;
 export declare function setSelected(element: Element, value: boolean): void;
@@ -87,14 +85,17 @@ export declare function setDescription(element: Element, description: string): v
 export declare function setActiveDescendant(element: Element, activedescendant: Element | null): void;
 export declare function setSetSize(element: Element, size: number): void;
 export declare function setPositionInSet(element: Element, position: number): void;
-/**
- * This function instantiates and switches off returning one of two offscreen alert elements.
- * We utilize two alert elements to ensure that alerts with the same string are still registered
- * as changes and trigger screen reader announcement.
- */
-export declare function alertElementInstance(): HTMLElement;
-/**
- * This function is used to announce a message with the screen reader.
- * Setting the textContent would allow the SR to access the offscreen element via browse mode
- */
-export declare function alert(message: string): void;
+export declare const enum AnnouncerRole {
+    ALERT = "alert",
+    STATUS = "status"
+}
+export declare class LiveAnnouncer {
+    #private;
+    static getOrCreateAnnouncerElement(container: HTMLElement | undefined, role: AnnouncerRole, opts?: {
+        force: boolean;
+    }): HTMLElement;
+    static initializeAnnouncerElements(container?: HTMLElement): void;
+    static removeAnnouncerElements(container?: HTMLElement): void;
+    static alert(message: string): void;
+    static status(message: string): void;
+}

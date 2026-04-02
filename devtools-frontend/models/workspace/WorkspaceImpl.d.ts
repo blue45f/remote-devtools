@@ -1,14 +1,8 @@
 import * as Common from '../../core/common/common.js';
 import type * as Platform from '../../core/platform/platform.js';
 import type * as TextUtils from '../text_utils/text_utils.js';
+import type { SearchConfig } from './SearchConfig.js';
 import { UISourceCode, type UISourceCodeMetadata } from './UISourceCode.js';
-export interface ProjectSearchConfig {
-    query(): string;
-    ignoreCase(): boolean;
-    isRegex(): boolean;
-    queries(): string[];
-    filePathMatchesFileQuery(filePath: Platform.DevToolsPath.RawPathString | Platform.DevToolsPath.EncodedPathString | Platform.DevToolsPath.UrlString): boolean;
-}
 export interface Project {
     workspace(): WorkspaceImpl;
     id(): string;
@@ -16,7 +10,7 @@ export interface Project {
     isServiceProject(): boolean;
     displayName(): string;
     requestMetadata(uiSourceCode: UISourceCode): Promise<UISourceCodeMetadata | null>;
-    requestFileContent(uiSourceCode: UISourceCode): Promise<TextUtils.ContentProvider.DeferredContent>;
+    requestFileContent(uiSourceCode: UISourceCode): Promise<TextUtils.ContentData.ContentDataOrError>;
     canSetFileContent(): boolean;
     setFileContent(uiSourceCode: UISourceCode, newContent: string, isBase64: boolean): Promise<void>;
     fullDisplayName(uiSourceCode: UISourceCode): string;
@@ -28,9 +22,11 @@ export interface Project {
     createFile(path: Platform.DevToolsPath.EncodedPathString, name: string | null, content: string, isBase64?: boolean): Promise<UISourceCode | null>;
     canCreateFile(): boolean;
     deleteFile(uiSourceCode: UISourceCode): void;
+    deleteDirectoryRecursively(path: Platform.DevToolsPath.EncodedPathString): Promise<boolean>;
     remove(): void;
+    removeUISourceCode(url: Platform.DevToolsPath.UrlString): void;
     searchInFileContent(uiSourceCode: UISourceCode, query: string, caseSensitive: boolean, isRegex: boolean): Promise<TextUtils.ContentProvider.SearchMatch[]>;
-    findFilesMatchingSearchRequest(searchConfig: ProjectSearchConfig, filesMatchingFileQuery: Platform.DevToolsPath.UrlString[], progress: Common.Progress.Progress): Promise<string[]>;
+    findFilesMatchingSearchRequest(searchConfig: SearchConfig, filesMatchingFileQuery: UISourceCode[], progress: Common.Progress.Progress): Promise<Map<UISourceCode, TextUtils.ContentProvider.SearchMatch[] | null>>;
     indexContent(progress: Common.Progress.Progress): void;
     uiSourceCodeForURL(url: Platform.DevToolsPath.UrlString): UISourceCode | null;
     /**
@@ -39,7 +35,7 @@ export interface Project {
      * {@link UISourceCode}s while iterating, these will no longer show up, and will have no effect
      * on the other entries.
      *
-     * @return an iterator for the sources provided by this project.
+     * @returns an iterator for the sources provided by this project.
      */
     uiSourceCodes(): Iterable<UISourceCode>;
 }
@@ -48,15 +44,12 @@ export declare enum projectTypes {
     Formatter = "formatter",
     Network = "network",
     FileSystem = "filesystem",
+    ConnectableFileSystem = "connectablefilesystem",
     ContentScripts = "contentscripts",
     Service = "service"
 }
 export declare abstract class ProjectStore implements Project {
     #private;
-    private readonly workspaceInternal;
-    private readonly idInternal;
-    private readonly typeInternal;
-    private readonly displayNameInternal;
     constructor(workspace: WorkspaceImpl, id: string, type: projectTypes, displayName: string);
     id(): string;
     type(): projectTypes;
@@ -72,11 +65,12 @@ export declare abstract class ProjectStore implements Project {
     rename(_uiSourceCode: UISourceCode, _newName: string, _callback: (arg0: boolean, arg1?: string, arg2?: Platform.DevToolsPath.UrlString, arg3?: Common.ResourceType.ResourceType) => void): void;
     excludeFolder(_path: Platform.DevToolsPath.UrlString): void;
     deleteFile(_uiSourceCode: UISourceCode): void;
+    deleteDirectoryRecursively(_path: Platform.DevToolsPath.EncodedPathString): Promise<boolean>;
     remove(): void;
     indexContent(_progress: Common.Progress.Progress): void;
     abstract isServiceProject(): boolean;
     abstract requestMetadata(uiSourceCode: UISourceCode): Promise<UISourceCodeMetadata | null>;
-    abstract requestFileContent(uiSourceCode: UISourceCode): Promise<TextUtils.ContentProvider.DeferredContent>;
+    abstract requestFileContent(uiSourceCode: UISourceCode): Promise<TextUtils.ContentData.ContentDataOrError>;
     abstract canSetFileContent(): boolean;
     abstract setFileContent(uiSourceCode: UISourceCode, newContent: string, isBase64: boolean): Promise<void>;
     abstract fullDisplayName(uiSourceCode: UISourceCode): string;
@@ -86,12 +80,10 @@ export declare abstract class ProjectStore implements Project {
     abstract createFile(path: Platform.DevToolsPath.EncodedPathString, name: string | null, content: string, isBase64?: boolean): Promise<UISourceCode | null>;
     abstract canCreateFile(): boolean;
     abstract searchInFileContent(uiSourceCode: UISourceCode, query: string, caseSensitive: boolean, isRegex: boolean): Promise<TextUtils.ContentProvider.SearchMatch[]>;
-    abstract findFilesMatchingSearchRequest(searchConfig: ProjectSearchConfig, filesMatchingFileQuery: Platform.DevToolsPath.UrlString[], progress: Common.Progress.Progress): Promise<string[]>;
+    abstract findFilesMatchingSearchRequest(searchConfig: SearchConfig, filesMatchingFileQuery: UISourceCode[], progress: Common.Progress.Progress): Promise<Map<UISourceCode, TextUtils.ContentProvider.SearchMatch[] | null>>;
 }
 export declare class WorkspaceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private projectsInternal;
-    private hasResourceContentTrackingExtensionsInternal;
-    private constructor();
+    #private;
     static instance(opts?: {
         forceNew: boolean | null;
     }): WorkspaceImpl;
@@ -103,8 +95,9 @@ export declare class WorkspaceImpl extends Common.ObjectWrapper.ObjectWrapper<Ev
     addProject(project: Project): void;
     removeProject(project: Project): void;
     project(projectId: string): Project | null;
+    projectForFileSystemRoot(root: Platform.DevToolsPath.RawPathString): Project | null;
     projects(): Project[];
-    projectsForType(type: string): Project[];
+    projectsForType(type: projectTypes): Project[];
     uiSourceCodes(): UISourceCode[];
     setHasResourceContentTrackingExtensions(hasExtensions: boolean): void;
     hasResourceContentTrackingExtensions(): boolean;
@@ -126,18 +119,18 @@ export interface UISourceCodeRenamedEvent {
 export interface WorkingCopyChangedEvent {
     uiSourceCode: UISourceCode;
 }
-export interface WorkingCopyCommitedEvent {
+export interface WorkingCopyCommittedEvent {
     uiSourceCode: UISourceCode;
     content: string;
     encoded?: boolean;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.UISourceCodeAdded]: UISourceCode;
     [Events.UISourceCodeRemoved]: UISourceCode;
     [Events.UISourceCodeRenamed]: UISourceCodeRenamedEvent;
     [Events.WorkingCopyChanged]: WorkingCopyChangedEvent;
-    [Events.WorkingCopyCommitted]: WorkingCopyCommitedEvent;
-    [Events.WorkingCopyCommittedByUser]: WorkingCopyCommitedEvent;
+    [Events.WorkingCopyCommitted]: WorkingCopyCommittedEvent;
+    [Events.WorkingCopyCommittedByUser]: WorkingCopyCommittedEvent;
     [Events.ProjectAdded]: Project;
     [Events.ProjectRemoved]: Project;
-};
+}

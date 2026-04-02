@@ -1,16 +1,16 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '../../panels/network/network-legacy.js';
-
+import * as SDK from '../../core/sdk/sdk.js';
 import * as HAR from '../../models/har/har.js';
 import * as Logs from '../../models/logs/logs.js';
+import * as Network from '../../panels/network/network.js';
 import {ConsoleTestRunner} from '../console_test_runner/console_test_runner.js';
 import {TestRunner} from '../test_runner/test_runner.js';
 
 /**
- * @fileoverview using private properties isn't a Closure violation in tests.
+ * @file using private properties isn't a Closure violation in tests.
  */
 export const NetworkTestRunner = {};
 
@@ -25,7 +25,7 @@ NetworkTestRunner.waitForRequestResponse = function(request) {
 };
 
 NetworkTestRunner.waitForNetworkLogViewNodeForRequest = function(request) {
-  const networkLogView = UI.panels.network.networkLogView;
+  const networkLogView = Network.NetworkPanel.NetworkPanel.instance().networkLogView;
   const node = networkLogView.nodeForRequest(request);
 
   if (node) {
@@ -48,7 +48,7 @@ NetworkTestRunner.waitForWebsocketFrameReceived = function(wsRequest, message) {
     }
   }
 
-  return TestRunner.waitForEvent(SDK.NetworkRequest.Events.WebsocketFrameAdded, wsRequest, checkFrame);
+  return TestRunner.waitForEvent(SDK.NetworkRequest.Events.WEBSOCKET_FRAME_ADDED, wsRequest, checkFrame);
 
   function checkFrame(frame) {
     return frame.type === SDK.NetworkRequest.WebSocketFrameType.Receive && frame.text === message;
@@ -56,11 +56,11 @@ NetworkTestRunner.waitForWebsocketFrameReceived = function(wsRequest, message) {
 };
 
 NetworkTestRunner.recordNetwork = function() {
-  UI.panels.network.networkLogView.setRecording(true);
+  Network.NetworkPanel.NetworkPanel.instance().networkLogView.setRecording(true);
 };
 
 NetworkTestRunner.networkWaterfallColumn = function() {
-  return UI.panels.network.networkLogView.columns().waterfallColumn;
+  return Network.NetworkPanel.NetworkPanel.instance().networkLogView.columns().waterfallColumn;
 };
 
 NetworkTestRunner.networkRequests = function() {
@@ -175,8 +175,9 @@ NetworkTestRunner.makeFetchInWorker = function(url, requestInitializer, callback
 NetworkTestRunner.clearNetworkCache = function() {
   // This turns cache off and then on, effectively clearning the memory cache.
   return Promise.all([
-    TestRunner.NetworkAgent.clearBrowserCache(),
-    TestRunner.NetworkAgent.setCacheDisabled(true).then(() => TestRunner.NetworkAgent.setCacheDisabled(false))
+    TestRunner.NetworkAgent.invoke_clearBrowserCache(),
+    TestRunner.NetworkAgent.invoke_setCacheDisabled({cacheDisabled: true})
+        .then(() => TestRunner.NetworkAgent.invoke_setCacheDisabled({cacheDisabled: false}))
   ]);
 };
 
@@ -195,6 +196,7 @@ NetworkTestRunner.HARPropertyFormatters = {
   timings: 'formatAsTypeName',
   version: 'formatAsTypeName',
   wait: 'formatAsTypeName',
+  _connectionId: 'formatAsTypeName',
   _transferSize: 'formatAsTypeName',
   _error: 'skip',
   _initiator: 'formatAsTypeName',

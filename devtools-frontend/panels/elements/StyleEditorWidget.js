@@ -1,7 +1,8 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+/* eslint-disable @devtools/no-imperative-dom-api */
+import { createIcon } from '../../ui/kit/kit.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { StylePropertyTreeElement } from './StylePropertyTreeElement.js';
 let instance = null;
@@ -10,12 +11,12 @@ let instance = null;
  */
 export class StyleEditorWidget extends UI.Widget.VBox {
     editor;
-    pane;
+    stylesContainer;
     section;
     editorContainer;
     #triggerKey;
     constructor() {
-        super(true);
+        super({ useShadowDom: true });
         this.contentElement.tabIndex = 0;
         this.setDefaultFocusedElement(this.contentElement);
         this.editorContainer = document.createElement('div');
@@ -34,7 +35,7 @@ export class StyleEditorWidget extends UI.Widget.VBox {
         target.property.value = event.data.value;
         target.updateTitle();
         await target.applyStyleText(target.renderedPropertyText(), false);
-        await this.render();
+        this.requestUpdate();
     }
     async onPropertyDeselected(event) {
         if (!this.section) {
@@ -42,10 +43,10 @@ export class StyleEditorWidget extends UI.Widget.VBox {
         }
         const target = ensureTreeElementForProperty(this.section, event.data.name);
         await target.applyStyleText('', false);
-        await this.render();
+        this.requestUpdate();
     }
-    bindContext(pane, section) {
-        this.pane = pane;
+    bindContext(stylesContainer, section) {
+        this.stylesContainer = stylesContainer;
         this.section = section;
         this.editor?.addEventListener('propertyselected', this.onPropertySelected);
         this.editor?.addEventListener('propertydeselected', this.onPropertyDeselected);
@@ -57,7 +58,7 @@ export class StyleEditorWidget extends UI.Widget.VBox {
         return this.#triggerKey;
     }
     unbindContext() {
-        this.pane = undefined;
+        this.stylesContainer = undefined;
         this.section = undefined;
         this.editor?.removeEventListener('propertyselected', this.onPropertySelected);
         this.editor?.removeEventListener('propertydeselected', this.onPropertyDeselected);
@@ -69,8 +70,12 @@ export class StyleEditorWidget extends UI.Widget.VBox {
         this.editor.data = {
             authoredProperties: this.section ? getAuthoredStyles(this.section, this.editor.getEditableProperties()) :
                 new Map(),
-            computedProperties: this.pane ? await fetchComputedStyles(this.pane) : new Map(),
+            computedProperties: this.stylesContainer ? await fetchComputedStyles(this.stylesContainer) : new Map(),
         };
+    }
+    async performUpdate() {
+        await super.performUpdate();
+        await this.render();
     }
     static instance() {
         if (!instance) {
@@ -85,46 +90,43 @@ export class StyleEditorWidget extends UI.Widget.VBox {
             this.contentElement.appendChild(this.editor);
         }
     }
-    static createTriggerButton(pane, section, editorClass, buttonTitle, triggerKey) {
-        const triggerButton = createButton(buttonTitle);
+    static createTriggerButton(stylesContainer, section, editorClass, buttonTitle, triggerKey) {
+        const triggerButton = createIcon('flex-wrap', 'styles-pane-button');
+        triggerButton.title = buttonTitle;
+        triggerButton.role = 'button';
         triggerButton.onclick = async (event) => {
             event.stopPropagation();
-            const popoverHelper = pane.swatchPopoverHelper();
+            const popoverHelper = stylesContainer.swatchPopoverHelper();
             const widget = StyleEditorWidget.instance();
+            widget.element.classList.toggle('with-padding', true);
             widget.setEditor(editorClass);
-            widget.bindContext(pane, section);
+            widget.bindContext(stylesContainer, section);
             widget.setTriggerKey(triggerKey);
             await widget.render();
+            widget.focus();
             const scrollerElement = triggerButton.enclosingNodeOrSelfWithClass('style-panes-wrapper');
             const onScroll = () => {
                 popoverHelper.hide(true);
             };
+            const onStylesUpdateCompleted = widget.requestUpdate.bind(widget);
+            stylesContainer.addStyleUpdateListener(onStylesUpdateCompleted);
             popoverHelper.show(widget, triggerButton, () => {
                 widget.unbindContext();
                 if (scrollerElement) {
                     scrollerElement.removeEventListener('scroll', onScroll);
                 }
+                stylesContainer.removeStyleUpdateListener(onStylesUpdateCompleted);
             });
             if (scrollerElement) {
                 scrollerElement.addEventListener('scroll', onScroll);
             }
         };
+        triggerButton.onmouseup = event => {
+            // Stop propagation to prevent the property editor from being activated.
+            event.stopPropagation();
+        };
         return triggerButton;
     }
-}
-function createButton(buttonTitle) {
-    const button = document.createElement('button');
-    button.classList.add('styles-pane-button');
-    button.tabIndex = 0;
-    button.title = buttonTitle;
-    button.onmouseup = (event) => {
-        // Stop propagation to prevent the property editor from being activated.
-        event.stopPropagation();
-    };
-    const icon = new IconButton.Icon.Icon();
-    icon.data = { iconName: 'flex-wrap', color: 'var(--color-text-secondary)', width: '16px', height: '16px' };
-    button.appendChild(icon);
-    return button;
 }
 function ensureTreeElementForProperty(section, propertyName) {
     const target = section.propertiesTreeOutline.rootElement().children().find(child => child instanceof StylePropertyTreeElement && child.property.name === propertyName);
@@ -135,8 +137,8 @@ function ensureTreeElementForProperty(section, propertyName) {
     newTarget.property.name = propertyName;
     return newTarget;
 }
-async function fetchComputedStyles(pane) {
-    const computedStyleModel = pane.computedStyleModel();
+async function fetchComputedStyles(stylesContainer) {
+    const computedStyleModel = stylesContainer.computedStyleModel();
     const style = await computedStyleModel.fetchComputedStyle();
     return style ? style.computedStyle : new Map();
 }

@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../../core/common/common.js';
@@ -9,7 +9,6 @@ const UIStrings = {
      * @description This string is used to generate the default name for the create recording form in the Recording panel.
      * The format is similar to the one used by MacOS to generate names for screenshots. Both {DATE} and {TIME} are localized
      * using the current locale.
-     *
      * @example {2022-08-04} DATE
      * @example {10:32:48} TIME
      */
@@ -18,14 +17,14 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('panels/recorder/models/RecorderSettings.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class RecorderSettings {
-    #selectorAttribute = Common.Settings.Settings.instance().createSetting('recorderSelectorAttribute', '');
-    #speed = Common.Settings.Settings.instance().createSetting('recorderPanelReplaySpeed', "normal" /* PlayRecordingSpeed.Normal */);
-    #replayExtension = Common.Settings.Settings.instance().createSetting('recorderPanelReplayExtension', '');
+    #selectorAttribute = Common.Settings.Settings.instance().createSetting('recorder-selector-attribute', '');
+    #speed = Common.Settings.Settings.instance().createSetting('recorder-panel-replay-speed', "normal" /* PlayRecordingSpeed.NORMAL */);
+    #replayExtension = Common.Settings.Settings.instance().createSetting('recorder-panel-replay-extension', '');
     #selectorTypes = new Map();
-    #preferredCopyFormat = Common.Settings.Settings.instance().createSetting('recorder_preferred_copy_format', "json" /* ConverterIds.JSON */);
+    #preferredCopyFormat = Common.Settings.Settings.instance().createSetting('recorder-preferred-copy-format', "json" /* ConverterIds.JSON */);
     constructor() {
         for (const selectorType of Object.values(SelectorType)) {
-            this.#selectorTypes.set(selectorType, Common.Settings.Settings.instance().createSetting(`recorder${selectorType}SelectorEnabled`, true));
+            this.#selectorTypes.set(selectorType, Common.Settings.Settings.instance().createSetting(`recorder-${selectorType}-selector-enabled`, true));
         }
     }
     get selectorAttribute() {

@@ -1,16 +1,15 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class CSSFontFace {
     #fontFamily;
     #fontVariationAxes;
-    #fontVariationAxesByTag;
+    #fontVariationAxesByTag = new Map();
     #src;
     #fontDisplay;
     constructor(payload) {
         this.#fontFamily = payload.fontFamily;
         this.#fontVariationAxes = payload.fontVariationAxes || [];
-        this.#fontVariationAxesByTag = new Map();
         this.#src = payload.src;
         this.#fontDisplay = payload.fontDisplay;
         for (const axis of this.#fontVariationAxes) {

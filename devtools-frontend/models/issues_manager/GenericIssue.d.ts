@@ -2,23 +2,15 @@ import type * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import { Issue, IssueCategory, IssueKind } from './Issue.js';
 import { type MarkdownIssueDescription } from './MarkdownIssueDescription.js';
-export declare class GenericIssue extends Issue {
-    #private;
-    constructor(issueDetails: Protocol.Audits.GenericIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel, issueId?: Protocol.Audits.IssueId);
+export declare class GenericIssue extends Issue<Protocol.Audits.GenericIssueDetails> {
+    constructor(issueDetails: Protocol.Audits.GenericIssueDetails, issuesModel: SDK.IssuesModel.IssuesModel | null, issueId?: Protocol.Audits.IssueId);
+    requests(): Iterable<Protocol.Audits.AffectedRequest>;
     getCategory(): IssueCategory;
     primaryKey(): string;
     getDescription(): MarkdownIssueDescription | null;
-    details(): Protocol.Audits.GenericIssueDetails;
     getKind(): IssueKind;
-    static fromInspectorIssue(issuesModel: SDK.IssuesModel.IssuesModel, inspectorIssue: Protocol.Audits.InspectorIssue): GenericIssue[];
+    static fromInspectorIssue(issuesModel: SDK.IssuesModel.IssuesModel | null, inspectorIssue: Protocol.Audits.InspectorIssue): GenericIssue[];
 }
-export declare const genericCrossOriginPortalPostMessageError: {
-    file: string;
-    links: {
-        link: string;
-        linkTitle: () => import("../../core/platform/UIString.js").LocalizedString;
-    }[];
-};
 export declare const genericFormLabelForNameError: {
     file: string;
     links: {
@@ -41,7 +33,7 @@ export declare const genericFormDuplicateIdForInputError: {
         linkTitle: () => import("../../core/platform/UIString.js").LocalizedString;
     }[];
 };
-export declare const genericFormAriaLabelledByToNonExistingId: {
+export declare const genericFormAriaLabelledByToNonExistingIdError: {
     file: string;
     links: {
         link: string;
@@ -76,7 +68,21 @@ export declare const genericFormLabelForMatchesNonExistingIdError: {
         linkTitle: () => import("../../core/platform/UIString.js").LocalizedString;
     }[];
 };
-export declare const genericFormLabelHasNeitherForNorNestedInput: {
+export declare const genericFormLabelHasNeitherForNorNestedInputError: {
+    file: string;
+    links: {
+        link: string;
+        linkTitle: () => import("../../core/platform/UIString.js").LocalizedString;
+    }[];
+};
+export declare const genericResponseWasBlockedbyORB: {
+    file: string;
+    links: {
+        link: string;
+        linkTitle: () => import("../../core/platform/UIString.js").LocalizedString;
+    }[];
+};
+export declare const genericNavigationEntryMarkedSkippable: {
     file: string;
     links: {
         link: string;

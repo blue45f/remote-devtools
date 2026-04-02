@@ -1,3 +1,4 @@
+import * as Platform from '../../../core/platform/platform.js';
 /**
  * The `Report` component can be used to display static information. A report
  * usually consists of multiple sections where each section has rows of name/value
@@ -6,7 +7,7 @@
  *
  * Example:
  * ```
- *   <devtools-report .data=${{reportTitle: 'Optional Title'} as Components.ReportView.ReportData}>
+ *   <devtools-report .data=${{reportTitle: 'Optional Title'}}>
  *     <devtools-report-section-header>Some Header</devtools-report-section-header>
  *     <devtools-report-key>Key (rendered in the left column)</devtools-report-key>
  *     <devtools-report-value>Value (rendered in the right column)</devtools-report-value>
@@ -19,11 +20,11 @@
  */
 export interface ReportData {
     reportTitle: string;
+    reportUrl?: Platform.DevToolsPath.UrlString;
 }
 export declare class Report extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
-    set data({ reportTitle }: ReportData);
+    set data({ reportTitle, reportUrl }: ReportData);
     connectedCallback(): void;
 }
 export interface ReportSectionData {
@@ -31,27 +32,22 @@ export interface ReportSectionData {
 }
 export declare class ReportSection extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
 }
 export declare class ReportSectionHeader extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
 }
 export declare class ReportSectionDivider extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
 }
 export declare class ReportKey extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
 }
 export declare class ReportValue extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
 }
 declare global {

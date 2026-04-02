@@ -3,7 +3,7 @@ import { type EditorAction, type SourcesView } from './SourcesView.js';
 export declare class InplaceFormatterEditorAction implements EditorAction {
     private button;
     private sourcesView;
-    constructor();
+    private uiSourceCodeTitleChangedEvent;
     static instance(opts?: {
         forceNew: boolean | null;
     }): InplaceFormatterEditorAction;
@@ -14,8 +14,4 @@ export declare class InplaceFormatterEditorAction implements EditorAction {
     private isFormattable;
     private formatSourceInPlace;
     private contentLoaded;
-    /**
-     * Post-format callback
-     */
-    private formattingComplete;
 }

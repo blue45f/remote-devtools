@@ -1,26 +1,2 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as Platform from '../../../core/platform/platform.js';
-import * as SharedObject from './SharedObject.js';
-let isDebugBuild;
-try {
-    Platform.DCHECK(() => false);
-    isDebugBuild = false;
-}
-catch {
-    isDebugBuild = true;
-}
-const DEVTOOLS_RECORDER_WORLD_NAME = 'devtools_recorder';
-class InjectedScript {
-    static #injectedScript;
-    static async get() {
-        if (!this.#injectedScript) {
-            this.#injectedScript = (await fetch(new URL('../injected/injected.generated.js', import.meta.url)))
-                .text();
-        }
-        return this.#injectedScript;
-    }
-}
-export { isDebugBuild, InjectedScript, DEVTOOLS_RECORDER_WORLD_NAME, SharedObject };
+var c=Object.defineProperty;var h=(s,t)=>{for(var e in t)c(s,e,{get:t[e],enumerable:!0})};var a={};h(a,{SharedObject:()=>i});import*as r from"./../../../core/common/common.js";var i=class{#t=new r.Mutex.Mutex;#e=0;#s;#i;#r;constructor(t,e){this.#i=t,this.#r=e}async acquire(){return await this.#t.run(async()=>{this.#e===0&&(this.#s=await this.#i()),++this.#e}),[this.#s,this.#a.bind(this,{released:!1})]}async run(t){let[e,o]=await this.acquire();try{return await t(e)}finally{await o()}}async#a(t){if(t.released)throw new Error("Attempted to release object multiple times.");try{t.released=!0,await this.#t.run(async()=>{this.#e===1&&(await this.#r(this.#s),this.#s=void 0),--this.#e})}catch(e){throw t.released=!1,e}}};var d=!1,m="devtools_recorder",n=class{static#t;static async get(){return this.#t||(this.#t=(await fetch(new URL("../injected/injected.generated.js",import.meta.url))).text()),await this.#t}};export{m as DEVTOOLS_RECORDER_WORLD_NAME,n as InjectedScript,a as SharedObject,d as isDebugBuild};
 //# sourceMappingURL=util.js.map

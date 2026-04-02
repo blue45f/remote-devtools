@@ -1,41 +1,16 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import { IsolatedFileSystem } from './IsolatedFileSystem.js';
+import { PlatformFileSystemType } from './PlatformFileSystem.js';
 const UIStrings = {
     /**
-     *@description Text in Isolated File System Manager of the Workspace settings in Settings
-     *@example {folder does not exist} PH1
+     * @description Text in Isolated File System Manager of the Workspace settings in Settings
+     * @example {folder does not exist} PH1
      */
     unableToAddFilesystemS: 'Unable to add filesystem: {PH1}',
 };
@@ -43,15 +18,15 @@ const str_ = i18n.i18n.registerUIStrings('models/persistence/IsolatedFileSystemM
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let isolatedFileSystemManagerInstance;
 export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrapper {
-    fileSystemsInternal;
+    #fileSystems;
     callbacks;
     progresses;
-    workspaceFolderExcludePatternSettingInternal;
+    #workspaceFolderExcludePatternSetting;
     fileSystemRequestResolve;
     fileSystemsLoadedPromise;
     constructor() {
         super();
-        this.fileSystemsInternal = new Map();
+        this.#fileSystems = new Map();
         this.callbacks = new Map();
         this.progresses = new Map();
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.FileSystemRemoved, this.onFileSystemRemoved, this);
@@ -66,7 +41,6 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         // Initialize exclude pattern settings
         const defaultCommonExcludedFolders = [
             '/node_modules/',
-            '/bower_components/',
             '/\\.devtools',
             '/\\.git/',
             '/\\.sass-cache/',
@@ -75,6 +49,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             '/\\.svn/',
             '/\\.cache/',
             '/\\.project/',
+            '/\\.next/',
         ];
         const defaultWinExcludedFolders = ['/Thumbs.db$', '/ehthumbs.db$', '/Desktop.ini$', '/\\$RECYCLE.BIN/'];
         const defaultMacExcludedFolders = [
@@ -98,7 +73,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             defaultExcludedFolders = defaultExcludedFolders.concat(defaultLinuxExcludedFolders);
         }
         const defaultExcludedFoldersPattern = defaultExcludedFolders.join('|');
-        this.workspaceFolderExcludePatternSettingInternal = Common.Settings.Settings.instance().createRegExpSetting('workspaceFolderExcludePattern', defaultExcludedFoldersPattern, Host.Platform.isWin() ? 'i' : '');
+        this.#workspaceFolderExcludePatternSetting = Common.Settings.Settings.instance().createRegExpSetting('workspace-folder-exclude-pattern', defaultExcludedFoldersPattern, Host.Platform.isWin() ? 'i' : '');
         this.fileSystemRequestResolve = null;
         this.fileSystemsLoadedPromise = this.requestFileSystems();
     }
@@ -113,10 +88,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         isolatedFileSystemManagerInstance = null;
     }
     requestFileSystems() {
-        let fulfill;
-        const promise = new Promise(f => {
-            fulfill = f;
-        });
+        const { resolve, promise } = Promise.withResolvers();
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.FileSystemsLoaded, onFileSystemsLoaded, this);
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.requestFileSystems();
         return promise;
@@ -124,40 +96,41 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             const fileSystems = event.data;
             const promises = [];
             for (let i = 0; i < fileSystems.length; ++i) {
-                promises.push(this.innerAddFileSystem(fileSystems[i], false));
+                promises.push(this.#addFileSystem(fileSystems[i], false));
             }
             void Promise.all(promises).then(onFileSystemsAdded);
         }
         function onFileSystemsAdded(fileSystems) {
-            fulfill(fileSystems.filter(fs => Boolean(fs)));
+            resolve(fileSystems.filter(fs => !!fs));
         }
     }
     addFileSystem(type) {
-        Host.userMetrics.actionTaken(type === 'overrides' ? Host.UserMetrics.Action.AddFileSystemForOverrides :
-            Host.UserMetrics.Action.AddFileSystemToWorkspace);
+        Host.userMetrics.actionTaken(type === 'overrides' ? Host.UserMetrics.Action.OverrideTabAddFolder :
+            Host.UserMetrics.Action.WorkspaceTabAddFolder);
         return new Promise(resolve => {
             this.fileSystemRequestResolve = resolve;
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.addFileSystem(type || '');
         });
     }
     removeFileSystem(fileSystem) {
-        Host.userMetrics.actionTaken(fileSystem.type() === 'overrides' ? Host.UserMetrics.Action.RemoveFileSystemForOverrides :
-            Host.UserMetrics.Action.RemoveFileSystemFromWorkspace);
+        Host.userMetrics.actionTaken(fileSystem.type() === PlatformFileSystemType.OVERRIDES ? Host.UserMetrics.Action.OverrideTabRemoveFolder :
+            Host.UserMetrics.Action.WorkspaceTabRemoveFolder);
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.removeFileSystem(fileSystem.embedderPath());
     }
     waitForFileSystems() {
         return this.fileSystemsLoadedPromise;
     }
-    innerAddFileSystem(fileSystem, dispatchEvent) {
+    #addFileSystem(fileSystem, dispatchEvent) {
         const embedderPath = fileSystem.fileSystemPath;
         const fileSystemURL = Common.ParsedURL.ParsedURL.rawPathToUrlString(fileSystem.fileSystemPath);
-        const promise = IsolatedFileSystem.create(this, fileSystemURL, embedderPath, fileSystem.type, fileSystem.fileSystemName, fileSystem.rootURL);
+        const promise = IsolatedFileSystem.create(this, fileSystemURL, embedderPath, hostFileSystemTypeToPlatformFileSystemType(fileSystem.type), fileSystem.fileSystemName, fileSystem.rootURL, fileSystem.type === 'automatic');
         return promise.then(storeFileSystem.bind(this));
         function storeFileSystem(fileSystem) {
             if (!fileSystem) {
                 return null;
             }
-            this.fileSystemsInternal.set(fileSystemURL, fileSystem);
+            this.#fileSystems.set(fileSystemURL, fileSystem);
+            fileSystem.addEventListener("file-system-error" /* PlatformFileSystemEvents.FILE_SYSTEM_ERROR */, this.#onFileSystemError, this);
             if (dispatchEvent) {
                 this.dispatchEventToListeners(Events.FileSystemAdded, fileSystem);
             }
@@ -165,13 +138,14 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         }
     }
     addPlatformFileSystem(fileSystemURL, fileSystem) {
-        this.fileSystemsInternal.set(fileSystemURL, fileSystem);
+        this.#fileSystems.set(fileSystemURL, fileSystem);
+        fileSystem.addEventListener("file-system-error" /* PlatformFileSystemEvents.FILE_SYSTEM_ERROR */, this.#onFileSystemError, this);
         this.dispatchEventToListeners(Events.FileSystemAdded, fileSystem);
     }
     onFileSystemAdded(event) {
         const { errorMessage, fileSystem } = event.data;
         if (errorMessage) {
-            if (errorMessage !== '<selection cancelled>') {
+            if (errorMessage !== '<selection cancelled>' && errorMessage !== '<permission denied>') {
                 Common.Console.Console.instance().error(i18nString(UIStrings.unableToAddFilesystemS, { PH1: errorMessage }));
             }
             if (!this.fileSystemRequestResolve) {
@@ -181,7 +155,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             this.fileSystemRequestResolve = null;
         }
         else if (fileSystem) {
-            void this.innerAddFileSystem(fileSystem, true).then(fileSystem => {
+            void this.#addFileSystem(fileSystem, true).then(fileSystem => {
                 if (this.fileSystemRequestResolve) {
                     this.fileSystemRequestResolve.call(null, fileSystem);
                     this.fileSystemRequestResolve = null;
@@ -189,14 +163,18 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             });
         }
     }
+    #onFileSystemError(event) {
+        this.dispatchEventToListeners(Events.FileSystemError, event.data);
+    }
     onFileSystemRemoved(event) {
         const embedderPath = event.data;
         const fileSystemPath = Common.ParsedURL.ParsedURL.rawPathToUrlString(embedderPath);
-        const isolatedFileSystem = this.fileSystemsInternal.get(fileSystemPath);
+        const isolatedFileSystem = this.#fileSystems.get(fileSystemPath);
         if (!isolatedFileSystem) {
             return;
         }
-        this.fileSystemsInternal.delete(fileSystemPath);
+        this.#fileSystems.delete(fileSystemPath);
+        isolatedFileSystem.removeEventListener("file-system-error" /* PlatformFileSystemEvents.FILE_SYSTEM_ERROR */, this.#onFileSystemError, this);
         isolatedFileSystem.fileSystemRemoved();
         this.dispatchEventToListeners(Events.FileSystemRemoved, isolatedFileSystem);
     }
@@ -211,10 +189,9 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
             const paths = new Platform.MapUtilities.Multimap();
             for (const embedderPath of embedderPaths) {
                 const filePath = Common.ParsedURL.ParsedURL.rawPathToUrlString(embedderPath);
-                for (const fileSystemPath of this.fileSystemsInternal.keys()) {
-                    const fileSystem = this.fileSystemsInternal.get(fileSystemPath);
-                    if (fileSystem &&
-                        fileSystem.isFileExcluded(Common.ParsedURL.ParsedURL.rawPathToEncodedPathString(embedderPath))) {
+                for (const fileSystemPath of this.#fileSystems.keys()) {
+                    const fileSystem = this.#fileSystems.get(fileSystemPath);
+                    if (fileSystem?.isFileExcluded(Common.ParsedURL.ParsedURL.rawPathToEncodedPathString(embedderPath))) {
                         continue;
                     }
                     const pathPrefix = fileSystemPath.endsWith('/') ? fileSystemPath : fileSystemPath + '/';
@@ -228,13 +205,13 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         }
     }
     fileSystems() {
-        return [...this.fileSystemsInternal.values()];
+        return [...this.#fileSystems.values()];
     }
     fileSystem(fileSystemPath) {
-        return this.fileSystemsInternal.get(fileSystemPath) || null;
+        return this.#fileSystems.get(fileSystemPath) || null;
     }
     workspaceFolderExcludePatternSetting() {
-        return this.workspaceFolderExcludePatternSettingInternal;
+        return this.#workspaceFolderExcludePatternSetting;
     }
     registerCallback(callback) {
         const requestId = ++lastRequestId;
@@ -252,7 +229,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         if (!progress) {
             return;
         }
-        progress.setTotalWork(totalWork);
+        progress.totalWork = totalWork;
     }
     onIndexingWorked(event) {
         const { requestId, worked } = event.data;
@@ -260,8 +237,8 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         if (!progress) {
             return;
         }
-        progress.incrementWorked(worked);
-        if (progress.isCanceled()) {
+        progress.worked += worked;
+        if (progress.canceled) {
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.stopIndexing(requestId);
             this.onIndexingDone(event);
         }
@@ -272,7 +249,7 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         if (!progress) {
             return;
         }
-        progress.done();
+        progress.done = true;
         this.progresses.delete(requestId);
     }
     onSearchCompleted(event) {
@@ -285,15 +262,26 @@ export class IsolatedFileSystemManager extends Common.ObjectWrapper.ObjectWrappe
         this.callbacks.delete(requestId);
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Events;
 (function (Events) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     Events["FileSystemAdded"] = "FileSystemAdded";
     Events["FileSystemRemoved"] = "FileSystemRemoved";
     Events["FileSystemFilesChanged"] = "FileSystemFilesChanged";
     Events["ExcludedFolderAdded"] = "ExcludedFolderAdded";
     Events["ExcludedFolderRemoved"] = "ExcludedFolderRemoved";
+    Events["FileSystemError"] = "FileSystemError";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Events || (Events = {}));
 let lastRequestId = 0;
+function hostFileSystemTypeToPlatformFileSystemType(type) {
+    switch (type) {
+        case 'snippets':
+            return PlatformFileSystemType.SNIPPETS;
+        case 'overrides':
+            return PlatformFileSystemType.OVERRIDES;
+        default:
+            return PlatformFileSystemType.WORKSPACE_PROJECT;
+    }
+}
 //# sourceMappingURL=IsolatedFileSystemManager.js.map

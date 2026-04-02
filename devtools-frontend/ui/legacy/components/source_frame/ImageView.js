@@ -1,6 +1,7 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 /*
  * Copyright (C) 2007, 2008 Apple Inc.  All rights reserved.
  *
@@ -34,46 +35,47 @@ import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as Workspace from '../../../../models/workspace/workspace.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
-import imageViewStyles from './imageView.css.legacy.js';
+import imageViewStyles from './imageView.css.js';
 const UIStrings = {
     /**
-     *@description Text in Image View of the Sources panel
+     * @description Text in Image View of the Sources panel
      */
     image: 'Image',
     /**
-     *@description Text that appears when user drag and drop something (for example, a file) in Image View of the Sources panel
+     * @description Text that appears when user drag and drop something (for example, a file) in Image View of the Sources panel
      */
     dropImageFileHere: 'Drop image file here',
     /**
-     *@description Text to indicate the source of an image
-     *@example {example.com} PH1
+     * @description Text to indicate the source of an image
+     * @example {example.com} PH1
      */
     imageFromS: 'Image from {PH1}',
     /**
-     *@description Text in Image View of the Sources panel
-     *@example {2} PH1
-     *@example {2} PH2
+     * @description Text in Image View of the Sources panel
+     * @example {2} PH1
+     * @example {2} PH2
      */
     dD: '{PH1} × {PH2}',
     /**
-     *@description A context menu item in the Image View of the Sources panel
+     * @description A context menu item in the Image View of the Sources panel
      */
     copyImageUrl: 'Copy image URL',
     /**
-     *@description A context menu item in the Image View of the Sources panel
+     * @description A context menu item in the Image View of the Sources panel
      */
     copyImageAsDataUri: 'Copy image as data URI',
     /**
-     *@description A context menu item in the Image View of the Sources panel
+     * @description A context menu item in the Image View of the Sources panel
      */
     openImageInNewTab: 'Open image in new tab',
     /**
-     *@description A context menu item in the Image Preview
+     * @description A context menu item in the Image Preview
      */
-    saveImageAs: 'Save image as...',
+    saveImageAs: 'Save image as…',
     /**
-     *@description The default file name when downloading a file
+     * @description The default file name when downloading a file
      */
     download: 'download',
 };
@@ -82,7 +84,6 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ImageView extends UI.View.SimpleView {
     url;
     parsedURL;
-    mimeType;
     contentProvider;
     uiSourceCode;
     sizeLabel;
@@ -93,17 +94,18 @@ export class ImageView extends UI.View.SimpleView {
     imagePreviewElement;
     cachedContent;
     constructor(mimeType, contentProvider) {
-        super(i18nString(UIStrings.image));
+        super({
+            title: i18nString(UIStrings.image),
+            viewId: 'image',
+            jslog: `${VisualLogging.pane('image-view')}}`,
+        });
         this.registerRequiredCSS(imageViewStyles);
         this.element.tabIndex = -1;
         this.element.classList.add('image-view');
         this.url = contentProvider.contentURL();
         this.parsedURL = new Common.ParsedURL.ParsedURL(this.url);
-        this.mimeType = mimeType;
         this.contentProvider = contentProvider;
-        this.uiSourceCode = contentProvider instanceof Workspace.UISourceCode.UISourceCode ?
-            contentProvider :
-            null;
+        this.uiSourceCode = contentProvider instanceof Workspace.UISourceCode.UISourceCode ? contentProvider : null;
         if (this.uiSourceCode) {
             this.uiSourceCode.addEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this);
             new UI.DropTarget.DropTarget(this.element, [UI.DropTarget.Type.ImageFile, UI.DropTarget.Type.URI], i18nString(UIStrings.dropImageFileHere), this.handleDrop.bind(this));
@@ -129,6 +131,7 @@ export class ImageView extends UI.View.SimpleView {
         ];
     }
     wasShown() {
+        super.wasShown();
         void this.updateContentIfNeeded();
     }
     disposeView() {
@@ -140,20 +143,19 @@ export class ImageView extends UI.View.SimpleView {
         void this.updateContentIfNeeded();
     }
     async updateContentIfNeeded() {
-        const content = await this.contentProvider.requestContent();
-        if (this.cachedContent?.content === content.content) {
+        const content = await this.contentProvider.requestContentData();
+        if (TextUtils.ContentData.ContentData.isError(content) || this.cachedContent?.contentEqualTo(content)) {
             return;
         }
         this.cachedContent = content;
-        const imageSrc = TextUtils.ContentProvider.contentAsDataURL(content.content, this.mimeType, content.isEncoded) || this.url;
+        const imageSrc = content.asDataUrl() ?? this.url;
         const loadPromise = new Promise(x => {
             this.imagePreviewElement.onload = x;
         });
         this.imagePreviewElement.src = imageSrc;
         this.imagePreviewElement.alt = i18nString(UIStrings.imageFromS, { PH1: this.url });
-        const size = content.content && !content.isEncoded ? content.content.length :
-            Platform.StringUtilities.base64ToSize(content.content);
-        this.sizeLabel.setText(Platform.NumberUtilities.bytesToString(size));
+        const size = content.isTextContent ? content.text.length : Platform.StringUtilities.base64ToSize(content.base64);
+        this.sizeLabel.setText(i18n.ByteUtilities.bytesToString(size));
         await loadPromise;
         this.dimensionsLabel.setText(i18nString(UIStrings.dD, { PH1: this.imagePreviewElement.naturalWidth, PH2: this.imagePreviewElement.naturalHeight }));
         this.aspectRatioLabel.setText(Platform.NumberUtilities.aspectRatio(this.imagePreviewElement.naturalWidth, this.imagePreviewElement.naturalHeight));
@@ -162,14 +164,20 @@ export class ImageView extends UI.View.SimpleView {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
         const parsedSrc = new Common.ParsedURL.ParsedURL(this.imagePreviewElement.src);
         if (!this.parsedURL.isDataURL()) {
-            contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageUrl), this.copyImageURL.bind(this));
+            contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageUrl), this.copyImageURL.bind(this), {
+                jslogContext: 'image-view.copy-image-url',
+            });
         }
         if (parsedSrc.isDataURL()) {
-            contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageAsDataUri), this.copyImageAsDataURL.bind(this));
+            contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyImageAsDataUri), this.copyImageAsDataURL.bind(this), {
+                jslogContext: 'image-view.copy-image-as-data-url',
+            });
         }
-        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.openImageInNewTab), this.openInNewTab.bind(this));
-        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.saveImageAs), async () => {
-            await this.saveImage();
+        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.openImageInNewTab), this.openInNewTab.bind(this), {
+            jslogContext: 'image-view.open-in-new-tab',
+        });
+        contextMenu.clipboardSection().appendItem(i18nString(UIStrings.saveImageAs), this.saveImage.bind(this), {
+            jslogContext: 'image-view.save-image',
         });
         void contextMenu.show();
     }
@@ -180,23 +188,35 @@ export class ImageView extends UI.View.SimpleView {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(this.url);
     }
     async saveImage() {
-        if (!this.cachedContent || !this.cachedContent.content) {
-            return;
-        }
-        const imageDataURL = TextUtils.ContentProvider.contentAsDataURL(this.cachedContent.content, this.mimeType, this.cachedContent.isEncoded, '', false);
+        const imageDataURL = this.cachedContent?.asDataUrl();
         if (!imageDataURL) {
             return;
         }
-        const link = document.createElement('a');
-        link.href = imageDataURL;
-        // If it is a Base64 image, set a default file name.
-        // When chrome saves a file, the file name characters that are not supported
-        // by the OS will be replaced automatically. For example, in the Mac,
-        // `:` it will be replaced with `_`.
-        link.download =
-            this.parsedURL.isDataURL() ? i18nString(UIStrings.download) : decodeURIComponent(this.parsedURL.displayName);
-        link.click();
-        link.remove();
+        let suggestedName = '';
+        if (this.parsedURL.isDataURL()) {
+            suggestedName = i18nString(UIStrings.download);
+            const { type, subtype } = this.parsedURL.extractDataUrlMimeType();
+            if (type === 'image' && subtype) {
+                suggestedName += '.' + subtype;
+            }
+        }
+        else {
+            suggestedName = decodeURIComponent(this.parsedURL.displayName);
+        }
+        const blob = await fetch(imageDataURL).then(r => r.blob());
+        try {
+            const handle = await window.showSaveFilePicker({ suggestedName });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        }
+        catch (error) {
+            // If the user aborts the action no need to report it, otherwise do.
+            if (error.name === 'AbortError') {
+                return;
+            }
+            throw error;
+        }
     }
     openInNewTab() {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.openInNewTab(this.url);

@@ -1,10 +1,10 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { Logger } from './Logger.js';
 import { SelectorComputer } from './SelectorComputer.js';
 import { queryCSSSelectorAll } from './selectors/CSSSelector.js';
-import { getClickableTargetFromEvent, haultImmediateEvent, assert, createClickAttributes, } from './util.js';
+import { assert, createClickAttributes, getClickableTargetFromEvent, haultImmediateEvent, } from './util.js';
 /**
  * Determines whether an element is ignorable as an input.
  *
@@ -32,7 +32,7 @@ const isIgnorableInputElement = (element) => {
     return false;
 };
 const getShortcutLength = (shortcut) => {
-    return Object.values(shortcut).filter(key => Boolean(key)).length.toString();
+    return Object.values(shortcut).filter(key => !!key).length.toString();
 };
 class RecordingClient {
     static defaultSetupOptions = Object.freeze({
@@ -206,7 +206,7 @@ class RecordingClient {
         });
     };
     #onBeforeUnload = (event) => {
-        this.#logger.log('Unloading...');
+        this.#logger.log('Unloading…');
         if (!this.#isTrustedEvent(event)) {
             return;
         }

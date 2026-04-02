@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../../front_end/ui/components/tree_outline",
     "skipLibCheck": true,
@@ -26,6 +31,7 @@
     "target": "esnext",
     "tsBuildInfoFile": "tree_outline-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
@@ -33,12 +39,14 @@
     "../../../../../../../front_end/ui/components/tree_outline/TreeOutlineUtils.ts",
     "../../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
     {
       "path": "../../../core/platform/bundle-tsconfig.json"
+    },
+    {
+      "path": "../buttons/bundle-tsconfig.json"
     },
     {
       "path": "../helpers/bundle-tsconfig.json"
@@ -47,7 +55,13 @@
       "path": "../render_coordinator/bundle-tsconfig.json"
     },
     {
-      "path": "../../lit-html/bundle-tsconfig.json"
+      "path": "../../legacy/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../visual_logging/bundle-tsconfig.json"
     },
     {
       "path": "../code_highlighter/bundle-tsconfig.json"

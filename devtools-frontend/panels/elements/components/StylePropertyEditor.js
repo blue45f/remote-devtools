@@ -1,12 +1,15 @@
-// Copyright (c) 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view */
+import '../../../ui/kit/kit.js';
+import '../../../ui/legacy/legacy.js';
 import * as i18n from '../../../core/i18n/i18n.js';
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as IconButton from '../../../ui/components/icon_button/icon_button.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
-import stylePropertyEditorStyles from './stylePropertyEditor.css.js';
+import * as Input from '../../../ui/components/input/input.js';
+import * as Lit from '../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 import { findFlexContainerIcon, findGridContainerIcon } from './CSSPropertyIconResolver.js';
+import stylePropertyEditorStyles from './stylePropertyEditor.css.js';
 const UIStrings = {
     /**
      * @description Title of the button that selects a flex property.
@@ -20,10 +23,14 @@ const UIStrings = {
      * @example {row} propertyValue
      */
     deselectButton: 'Remove {propertyName}: {propertyValue}',
+    /**
+     * @description Label for the dense checkbox in the grid-auto-flow editor.
+     */
+    denseLabel: 'Dense',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/components/StylePropertyEditor.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-const { render, html, Directives } = LitHtml;
+const { render, html, Directives } = Lit;
 export class PropertySelectedEvent extends Event {
     static eventName = 'propertyselected';
     data;
@@ -40,18 +47,11 @@ export class PropertyDeselectedEvent extends Event {
         this.data = { name, value };
     }
 }
-// eslint-disable-next-line rulesdir/check_component_naming
 export class StylePropertyEditor extends HTMLElement {
     #shadow = this.attachShadow({ mode: 'open' });
     #authoredProperties = new Map();
     #computedProperties = new Map();
     editableProperties = [];
-    constructor() {
-        super();
-    }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [stylePropertyEditorStyles];
-    }
     getEditableProperties() {
         return this.editableProperties;
     }
@@ -64,6 +64,8 @@ export class StylePropertyEditor extends HTMLElement {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
         render(html `
+      <style>${stylePropertyEditorStyles}</style>
+      <style>${Input.checkboxStyles}</style>
       <div class="container">
         ${this.editableProperties.map(prop => this.#renderProperty(prop))}
       </div>
@@ -80,6 +82,10 @@ export class StylePropertyEditor extends HTMLElement {
             'property-value': true,
             'not-authored': notAuthored,
         });
+        // Special handling for grid-auto-flow with dense checkbox
+        if (prop.propertyName === 'grid-auto-flow') {
+            return this.#renderGridAutoFlowProperty(prop, shownValue, classes);
+        }
         return html `<div class="row">
       <div class="property">
         <span class="property-name">${prop.propertyName}</span>: <span class=${classes}>${shownValue}</span>
@@ -89,6 +95,48 @@ export class StylePropertyEditor extends HTMLElement {
       </div>
     </div>`;
     }
+    #renderGridAutoFlowProperty(prop, shownValue, classes) {
+        const authoredValue = this.#authoredProperties.get(prop.propertyName);
+        const isDense = authoredValue === 'dense' || authoredValue === 'row dense' || authoredValue === 'column dense';
+        const isRow = authoredValue === 'row' || authoredValue === 'row dense';
+        const isColumn = authoredValue === 'column' || authoredValue === 'column dense';
+        return html `<div class="row">
+      <div class="property">
+        <span class="property-name">${prop.propertyName}</span>: <span class=${classes}>${shownValue}</span>
+      </div>
+      <div class="buttons">
+        ${this.#renderButton('row', prop.propertyName, isRow)}
+        ${this.#renderButton('column', prop.propertyName, isColumn)}
+        <devtools-checkbox
+          .checked=${isDense}
+          @change=${(e) => this.#onDenseCheckboxChange(e, isRow, isColumn)}
+        >
+          ${i18nString(UIStrings.denseLabel)}
+        </devtools-checkbox>
+      </div>
+    </div>`;
+    }
+    #onDenseCheckboxChange(e, isRow, isColumn) {
+        const checked = e.target.checked;
+        const propertyName = 'grid-auto-flow';
+        const currentValue = this.#authoredProperties.get(propertyName);
+        let newValue = '';
+        if (isRow) {
+            newValue = checked ? 'row dense' : 'row';
+        }
+        else if (isColumn) {
+            newValue = checked ? 'column dense' : 'column';
+        }
+        else {
+            newValue = checked ? 'dense' : '';
+        }
+        if (currentValue) {
+            this.dispatchEvent(new PropertyDeselectedEvent(propertyName, currentValue));
+        }
+        if (newValue) {
+            this.dispatchEvent(new PropertySelectedEvent(propertyName, newValue));
+        }
+    }
     #renderButton(propertyValue, propertyName, selected = false) {
         const query = `${propertyName}: ${propertyValue}`;
         const iconInfo = this.findIcon(query, this.#computedProperties);
@@ -97,17 +145,43 @@ export class StylePropertyEditor extends HTMLElement {
         }
         const transform = `transform: rotate(${iconInfo.rotate}deg) scale(${iconInfo.scaleX}, ${iconInfo.scaleY})`;
         const classes = Directives.classMap({
-            'button': true,
-            'selected': selected,
+            button: true,
+            selected,
         });
         const values = { propertyName, propertyValue };
         const title = selected ? i18nString(UIStrings.deselectButton, values) : i18nString(UIStrings.selectButton, values);
-        return html `<button title=${title} class=${classes} @click=${() => this.#onButtonClick(propertyName, propertyValue, selected)}>
-       <${IconButton.Icon.Icon.litTagName} style=${transform} .data=${{ iconName: iconInfo.iconName, color: 'var(--icon-color)', width: '20px', height: '20px' }}></${IconButton.Icon.Icon.litTagName}>
-    </button>`;
+        return html `
+      <button title=${title}
+              class=${classes}
+              jslog=${VisualLogging.item().track({ click: true, resize: true }).context(`${propertyName}-${propertyValue}`)}
+              @click=${() => this.#onButtonClick(propertyName, propertyValue, selected)}>
+        <devtools-icon style=${transform} name=${iconInfo.iconName}>
+        </devtools-icon>
+      </button>
+    `;
     }
     #onButtonClick(propertyName, propertyValue, selected) {
-        if (selected) {
+        if (propertyName === 'grid-auto-flow') {
+            const currentValue = this.#authoredProperties.get(propertyName);
+            const isDense = currentValue?.includes('dense') || false;
+            if (selected) {
+                const newValue = isDense ? 'dense' : '';
+                if (currentValue) {
+                    this.dispatchEvent(new PropertyDeselectedEvent(propertyName, currentValue));
+                }
+                if (newValue) {
+                    this.dispatchEvent(new PropertySelectedEvent(propertyName, newValue));
+                }
+            }
+            else {
+                const newValue = isDense ? `${propertyValue} dense` : propertyValue;
+                if (currentValue) {
+                    this.dispatchEvent(new PropertyDeselectedEvent(propertyName, currentValue));
+                }
+                this.dispatchEvent(new PropertySelectedEvent(propertyName, newValue));
+            }
+        }
+        else if (selected) {
             this.dispatchEvent(new PropertyDeselectedEvent(propertyName, propertyValue));
         }
         else {
@@ -119,19 +193,29 @@ export class StylePropertyEditor extends HTMLElement {
     }
 }
 export class FlexboxEditor extends StylePropertyEditor {
+    jslogContext = 'cssFlexboxEditor';
     editableProperties = FlexboxEditableProperties;
     findIcon(query, computedProperties) {
         return findFlexContainerIcon(query, computedProperties);
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-flexbox-editor', FlexboxEditor);
+customElements.define('devtools-flexbox-editor', FlexboxEditor);
 export class GridEditor extends StylePropertyEditor {
+    jslogContext = 'cssGridEditor';
     editableProperties = GridEditableProperties;
     findIcon(query, computedProperties) {
         return findGridContainerIcon(query, computedProperties);
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-grid-editor', GridEditor);
+customElements.define('devtools-grid-editor', GridEditor);
+export class GridLanesEditor extends StylePropertyEditor {
+    jslogContext = 'cssGridLanesEditor';
+    editableProperties = GridLanesEditableProperties;
+    findIcon(query, computedProperties) {
+        return findGridContainerIcon(query, computedProperties);
+    }
+}
+customElements.define('devtools-grid-lanes-editor', GridLanesEditor);
 export const FlexboxEditableProperties = [
     {
         propertyName: 'flex-direction',
@@ -184,9 +268,18 @@ export const FlexboxEditableProperties = [
 ];
 export const GridEditableProperties = [
     {
+        propertyName: 'grid-auto-flow',
+        propertyValues: [
+            'row',
+            'column',
+        ],
+    },
+    {
         propertyName: 'align-content',
         propertyValues: [
             'center',
+            'start',
+            'end',
             'space-between',
             'space-around',
             'space-evenly',
@@ -202,6 +295,7 @@ export const GridEditableProperties = [
             'space-between',
             'space-around',
             'space-evenly',
+            'stretch',
         ],
     },
     {
@@ -212,6 +306,50 @@ export const GridEditableProperties = [
             'end',
             'stretch',
             'baseline',
+        ],
+    },
+    {
+        propertyName: 'justify-items',
+        propertyValues: [
+            'center',
+            'start',
+            'end',
+            'stretch',
+        ],
+    },
+];
+export const GridLanesEditableProperties = [
+    {
+        propertyName: 'align-content',
+        propertyValues: [
+            'center',
+            'start',
+            'end',
+            'space-between',
+            'space-around',
+            'space-evenly',
+            'stretch',
+        ],
+    },
+    {
+        propertyName: 'justify-content',
+        propertyValues: [
+            'center',
+            'start',
+            'end',
+            'space-between',
+            'space-around',
+            'space-evenly',
+            'stretch',
+        ],
+    },
+    {
+        propertyName: 'align-items',
+        propertyValues: [
+            'center',
+            'start',
+            'end',
+            'stretch',
         ],
     },
     {

@@ -1,11 +1,13 @@
 import type * as Protocol from '../../generated/protocol.js';
-import { type CSSModel } from './CSSModel.js';
+import type { CSSModel } from './CSSModel.js';
 import { CSSQuery } from './CSSQuery.js';
-import { type DOMNode } from './DOMModel.js';
+import type { DOMNode } from './DOMModel.js';
 export declare class CSSContainerQuery extends CSSQuery {
     name?: string;
     physicalAxes?: Protocol.DOM.PhysicalAxes;
     logicalAxes?: Protocol.DOM.LogicalAxes;
+    queriesScrollState?: boolean;
+    queriesAnchored?: boolean;
     static parseContainerQueriesPayload(cssModel: CSSModel, payload: Protocol.CSS.CSSContainerQuery[]): CSSContainerQuery[];
     constructor(cssModel: CSSModel, payload: Protocol.CSS.CSSContainerQuery);
     reinitialize(payload: Protocol.CSS.CSSContainerQuery): void;
@@ -17,7 +19,7 @@ export declare class CSSContainerQueryContainer {
     constructor(containerNode: DOMNode);
     getContainerSizeDetails(): Promise<ContainerQueriedSizeDetails | undefined>;
 }
-export declare const getQueryAxis: (propertyValue: string) => QueryAxis;
+export declare const getQueryAxisFromContainerType: (propertyValue: string) => QueryAxis;
 export declare const getPhysicalAxisFromQueryAxis: (queryAxis: QueryAxis, writingMode: string) => PhysicalAxis;
 export interface ContainerQueriedSizeDetails {
     queryAxis: QueryAxis;
@@ -26,14 +28,14 @@ export interface ContainerQueriedSizeDetails {
     height?: string;
 }
 export declare const enum QueryAxis {
-    None = "",
-    Inline = "inline-size",
-    Block = "block-size",
-    Both = "size"
+    NONE = "",
+    INLINE = "inline-size",
+    BLOCK = "block-size",
+    BOTH = "size"
 }
 export declare const enum PhysicalAxis {
-    None = "",
-    Horizontal = "Horizontal",
-    Vertical = "Vertical",
-    Both = "Both"
+    NONE = "",
+    HORIZONTAL = "Horizontal",
+    VERTICAL = "Vertical",
+    BOTH = "Both"
 }

@@ -21,14 +21,10 @@ export declare class NetworkOverview extends PerfUI.TimelineOverviewPane.Timelin
     private bandId;
     updateRequest(request: SDK.NetworkRequest.NetworkRequest): void;
     wasShown(): void;
-    calculator(): PerfUI.TimelineOverviewPane.TimelineOverviewCalculator;
+    calculator(): PerfUI.TimelineOverviewCalculator.TimelineOverviewCalculator;
     onResize(): void;
     reset(): void;
     scheduleUpdate(): void;
     update(): void;
 }
-export declare const RequestTimeRangeNameToColor: {
-    [key: string]: string;
-};
-export declare const _bandHeight: number;
-export declare const _padding: number;
+export declare const RequestTimeRangeNameToColor: Record<string, string>;

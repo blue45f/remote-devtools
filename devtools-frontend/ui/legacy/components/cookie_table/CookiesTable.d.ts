@@ -1,55 +1,79 @@
-import * as Platform from '../../../../core/platform/platform.js';
+import '../data_grid/data_grid.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
+import { Icon } from '../../../kit/kit.js';
 import * as UI from '../../legacy.js';
-import * as DataGrid from '../data_grid/data_grid.js';
+interface ViewInput {
+    data: CookieData[];
+    selectedKey?: string;
+    editable?: boolean;
+    renderInline?: boolean;
+    portBindingEnabled?: boolean;
+    schemeBindingEnabled?: boolean;
+    onEdit: (data: CookieData, columnId: string, valueBeforeEditing: string, newText: string) => void;
+    onCreate: (data: CookieData) => void;
+    onRefresh: () => void;
+    onDelete: (data: CookieData) => void;
+    onContextMenu: (data: CookieData, menu: UI.ContextMenu.ContextMenu) => void;
+    onSelect: (key: string | undefined) => void;
+}
+type ViewFunction = (input: ViewInput, output: object, target: HTMLElement) => void;
+type AttributeWithIcon = SDK.Cookie.Attribute.NAME | SDK.Cookie.Attribute.VALUE | SDK.Cookie.Attribute.DOMAIN | SDK.Cookie.Attribute.PATH | SDK.Cookie.Attribute.SECURE | SDK.Cookie.Attribute.SAME_SITE;
+type CookieData = Partial<Record<SDK.Cookie.Attribute, string>> & {
+    name: string;
+    value: string;
+} & {
+    key?: string;
+    flagged?: boolean;
+    icons?: Partial<Record<AttributeWithIcon, Icon>>;
+    priorityValue?: number;
+    expiresTooltip?: string;
+    dirty?: boolean;
+    inactive?: boolean;
+};
+export interface CookiesTableData {
+    cookies: SDK.Cookie.Cookie[];
+    cookieToBlockedReasons?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.BlockedReason[]>;
+    cookieToExemptionReason?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.ExemptionReason>;
+}
 export declare class CookiesTable extends UI.Widget.VBox {
-    private saveCallback?;
-    private readonly refreshCallback?;
-    private readonly deleteCallback?;
-    private dataGrid;
+    #private;
     private lastEditedColumnId;
     private data;
-    private cookieDomain;
+    private cookies;
     private cookieToBlockedReasons;
-    constructor(renderInline?: boolean, saveCallback?: ((arg0: SDK.Cookie.Cookie, arg1: SDK.Cookie.Cookie | null) => Promise<boolean>), refreshCallback?: (() => void), selectedCallback?: (() => void), deleteCallback?: ((arg0: SDK.Cookie.Cookie, arg1: () => void) => void));
-    wasShown(): void;
-    setCookies(cookies: SDK.Cookie.Cookie[], cookieToBlockedReasons?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.BlockedReason[]>): void;
-    setCookieFolders(cookieFolders: {
-        folderName: string | null;
-        cookies: Array<SDK.Cookie.Cookie> | null;
-    }[], cookieToBlockedReasons?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.BlockedReason[]>): void;
-    setCookieDomain(cookieDomain: string): void;
+    private cookieToExemptionReason;
+    private readonly view;
+    private selectedKey?;
+    private renderInline;
+    private readonly schemeBindingEnabled;
+    private readonly portBindingEnabled;
+    constructor(element?: HTMLElement, renderInline?: boolean, saveCallback?: ((arg0: SDK.Cookie.Cookie, arg1: SDK.Cookie.Cookie | null) => Promise<boolean>), refreshCallback?: (() => void), selectedCallback?: ((arg0: SDK.Cookie.Cookie | null) => void), deleteCallback?: ((arg0: SDK.Cookie.Cookie, arg1: () => void) => void), view?: ViewFunction);
+    set cookiesData(data: CookiesTableData);
+    set saveCallback(callback: (arg0: SDK.Cookie.Cookie, arg1: SDK.Cookie.Cookie | null) => Promise<boolean>);
+    set refreshCallback(callback: () => void);
+    set selectedCallback(callback: (arg0: SDK.Cookie.Cookie | null) => void);
+    set deleteCallback(callback: (arg0: SDK.Cookie.Cookie, arg1: () => void) => void);
+    set editable(value: boolean);
+    set inline(value: boolean);
+    setCookies(cookies: SDK.Cookie.Cookie[], cookieToBlockedReasons?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.BlockedReason[]>, cookieToExemptionReason?: ReadonlyMap<SDK.Cookie.Cookie, SDK.CookieModel.ExemptionReason>): void;
+    set cookieDomain(cookieDomain: string);
     selectedCookie(): SDK.Cookie.Cookie | null;
-    private getSelectionCookies;
     willHide(): void;
-    private findSelectedCookie;
-    private isSameCookie;
-    private rebuildTable;
-    private populateNode;
-    private addInactiveNode;
-    private totalSize;
-    private sortCookies;
-    private createGridNode;
+    performUpdate(): void;
+    private onSelect;
     private onDeleteCookie;
     private onUpdateCookie;
+    private onCreateCookie;
     private setDefaults;
-    private saveNode;
+    private saveCookie;
     private createCookieFromData;
+    private createCookieData;
     private isValidCookieData;
     private isValidDomain;
     private isValidPath;
     private isValidDate;
+    private isValidPartitionKey;
     private refresh;
     private populateContextMenu;
 }
-export declare class DataGridNode extends DataGrid.DataGrid.DataGridNode<DataGridNode> {
-    cookie: SDK.Cookie.Cookie;
-    private readonly blockedReasons;
-    private expiresTooltip?;
-    constructor(data: {
-        [x: string]: string | number | boolean;
-    }, cookie: SDK.Cookie.Cookie, blockedReasons: SDK.CookieModel.BlockedReason[] | null);
-    createCells(element: Element): void;
-    setExpiresTooltip(tooltip: Platform.UIString.LocalizedString): void;
-    createCell(columnId: string): HTMLElement;
-}
+export {};

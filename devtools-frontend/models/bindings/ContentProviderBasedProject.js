@@ -1,33 +1,9 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2013 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
+import * as Platform from '../../core/platform/platform.js';
+import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 const UIStrings = {
     /**
@@ -38,49 +14,27 @@ const UIStrings = {
 const str_ = i18n.i18n.registerUIStrings('models/bindings/ContentProviderBasedProject.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ContentProviderBasedProject extends Workspace.Workspace.ProjectStore {
-    #isServiceProjectInternal;
-    #uiSourceCodeToData;
+    #isServiceProject;
+    #uiSourceCodeToData = new WeakMap();
     constructor(workspace, id, type, displayName, isServiceProject) {
         super(workspace, id, type, displayName);
-        this.#isServiceProjectInternal = isServiceProject;
-        this.#uiSourceCodeToData = new WeakMap();
+        this.#isServiceProject = isServiceProject;
         workspace.addProject(this);
     }
     async requestFileContent(uiSourceCode) {
         const { contentProvider } = this.#uiSourceCodeToData.get(uiSourceCode);
         try {
-            const content = await contentProvider.requestContent();
-            if ('error' in content) {
-                return {
-                    error: content.error,
-                    isEncoded: content.isEncoded,
-                    content: null,
-                };
-            }
-            const wasmDisassemblyInfo = 'wasmDisassemblyInfo' in content ? content.wasmDisassemblyInfo : undefined;
-            if (wasmDisassemblyInfo && content.isEncoded === false) {
-                return {
-                    content: '',
-                    wasmDisassemblyInfo,
-                    isEncoded: false,
-                };
-            }
-            return {
-                content: content.content,
-                isEncoded: content.isEncoded,
-            };
+            return await contentProvider.requestContentData();
         }
         catch (err) {
             // TODO(rob.paveza): CRBug 1013683 - Consider propagating exceptions full-stack
             return {
-                content: null,
-                isEncoded: false,
                 error: err ? String(err) : i18nString(UIStrings.unknownErrorLoadingFile),
             };
         }
     }
     isServiceProject() {
-        return this.#isServiceProjectInternal;
+        return this.#isServiceProject;
     }
     async requestMetadata(uiSourceCode) {
         const { metadata } = this.#uiSourceCodeToData.get(uiSourceCode);
@@ -96,7 +50,7 @@ export class ContentProviderBasedProject extends Workspace.Workspace.ProjectStor
         try {
             parentPath = decodeURI(parentPath);
         }
-        catch (e) {
+        catch {
         }
         return parentPath + '/' + uiSourceCode.displayName(true);
     }
@@ -107,14 +61,8 @@ export class ContentProviderBasedProject extends Workspace.Workspace.ProjectStor
     canRename() {
         return false;
     }
-    rename(uiSourceCode, newName, callback) {
-        const path = uiSourceCode.url();
-        this.performRename(path, newName, (success, newName) => {
-            if (success && newName) {
-                this.renameUISourceCode(uiSourceCode, newName);
-            }
-            callback(success, newName);
-        });
+    rename(_uiSourceCode, _newName, callback) {
+        callback(false);
     }
     excludeFolder(_path) {
     }
@@ -131,39 +79,37 @@ export class ContentProviderBasedProject extends Workspace.Workspace.ProjectStor
     }
     remove() {
     }
-    performRename(path, newName, callback) {
-        callback(false);
-    }
     searchInFileContent(uiSourceCode, query, caseSensitive, isRegex) {
         const { contentProvider } = this.#uiSourceCodeToData.get(uiSourceCode);
         return contentProvider.searchInContent(query, caseSensitive, isRegex);
     }
     async findFilesMatchingSearchRequest(searchConfig, filesMatchingFileQuery, progress) {
-        const result = [];
-        progress.setTotalWork(filesMatchingFileQuery.length);
+        const result = new Map();
+        progress.totalWork = filesMatchingFileQuery.length;
         await Promise.all(filesMatchingFileQuery.map(searchInContent.bind(this)));
-        progress.done();
+        progress.done = true;
         return result;
-        async function searchInContent(path) {
-            const uiSourceCode = this.uiSourceCodeForURL(path);
-            if (uiSourceCode) {
-                let allMatchesFound = true;
-                for (const query of searchConfig.queries().slice()) {
-                    const searchMatches = await this.searchInFileContent(uiSourceCode, query, !searchConfig.ignoreCase(), searchConfig.isRegex());
-                    if (!searchMatches.length) {
-                        allMatchesFound = false;
-                        break;
-                    }
+        async function searchInContent(uiSourceCode) {
+            let allMatchesFound = true;
+            let matches = [];
+            for (const query of searchConfig.queries().slice()) {
+                const searchMatches = await this.searchInFileContent(uiSourceCode, query, !searchConfig.ignoreCase(), searchConfig.isRegex());
+                if (!searchMatches.length) {
+                    allMatchesFound = false;
+                    break;
                 }
-                if (allMatchesFound) {
-                    result.push(path);
-                }
+                matches = Platform.ArrayUtilities.mergeOrdered(matches, searchMatches, TextUtils.ContentProvider.SearchMatch.comparator);
             }
-            progress.incrementWorked(1);
+            if (allMatchesFound) {
+                result.set(uiSourceCode, matches);
+            }
+            ++progress.worked;
         }
     }
     indexContent(progress) {
-        queueMicrotask(progress.done.bind(progress));
+        queueMicrotask(() => {
+            progress.done = true;
+        });
     }
     addUISourceCodeWithProvider(uiSourceCode, contentProvider, metadata, mimeType) {
         this.#uiSourceCodeToData.set(uiSourceCode, { mimeType, metadata, contentProvider });

@@ -1,8 +1,14 @@
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import { type Issue, type IssueKind } from './Issue.js';
+import * as Protocol from '../../generated/protocol.js';
+import type { Issue, IssueKind } from './Issue.js';
 import { Events } from './IssuesManagerEvents.js';
 export { Events } from './IssuesManagerEvents.js';
+/**
+ * Each issue reported by the backend can result in multiple `Issue` instances.
+ * Handlers are simple functions hard-coded into a map.
+ */
+export declare function createIssuesFromProtocolIssue(issuesModel: SDK.IssuesModel.IssuesModel | null, inspectorIssue: Protocol.Audits.InspectorIssue): Issue[];
 export interface IssuesManagerCreationOptions {
     forceNew: boolean;
     /** Throw an error if this is not the first instance created */
@@ -10,12 +16,10 @@ export interface IssuesManagerCreationOptions {
     showThirdPartyIssuesSetting?: Common.Settings.Setting<boolean>;
     hideIssueSetting?: Common.Settings.Setting<HideIssueMenuSetting>;
 }
-export type HideIssueMenuSetting = {
-    [x: string]: IssueStatus;
-};
+export type HideIssueMenuSetting = Record<string, IssueStatus>;
 export declare const enum IssueStatus {
-    Hidden = "Hidden",
-    Unhidden = "Unhidden"
+    HIDDEN = "Hidden",
+    UNHIDDEN = "Unhidden"
 }
 export declare function defaultHideIssueByCodeSetting(): HideIssueMenuSetting;
 export declare function getHideIssueByCodeSetting(): Common.Settings.Setting<HideIssueMenuSetting>;
@@ -37,19 +41,13 @@ export declare class IssuesManager extends Common.ObjectWrapper.ObjectWrapper<Ev
     constructor(showThirdPartyIssuesSetting?: Common.Settings.Setting<boolean> | undefined, hideIssueSetting?: Common.Settings.Setting<HideIssueMenuSetting> | undefined);
     static instance(opts?: IssuesManagerCreationOptions): IssuesManager;
     static removeInstance(): void;
-    /**
-     * Once we have seen at least one `PrimaryPageChanged` event, we can be reasonably sure
-     * that we also collected issues that were reported during the navigation to the current
-     * page. If we haven't seen a main frame navigated, we might have missed issues that arose
-     * during navigation.
-     */
-    reloadForAccurateInformationRequired(): boolean;
     modelAdded(issuesModel: SDK.IssuesModel.IssuesModel): void;
     modelRemoved(issuesModel: SDK.IssuesModel.IssuesModel): void;
     addIssue(issuesModel: SDK.IssuesModel.IssuesModel, issue: Issue): void;
     issues(): Iterable<Issue>;
     numberOfIssues(kind?: IssueKind): number;
     numberOfHiddenIssues(kind?: IssueKind): number;
+    numberOfThirdPartyCookiePhaseoutIssues(kind?: IssueKind): number;
     numberOfAllStoredIssues(): number;
     unhideAllIssues(): void;
     getIssueById(id: string): Issue | undefined;
@@ -58,8 +56,8 @@ export interface IssueAddedEvent {
     issuesModel: SDK.IssuesModel.IssuesModel;
     issue: Issue;
 }
-export type EventTypes = {
-    [Events.IssuesCountUpdated]: void;
-    [Events.FullUpdateRequired]: void;
-    [Events.IssueAdded]: IssueAddedEvent;
-};
+export interface EventTypes {
+    [Events.ISSUES_COUNT_UPDATED]: void;
+    [Events.FULL_UPDATE_REQUIRED]: void;
+    [Events.ISSUE_ADDED]: IssueAddedEvent;
+}

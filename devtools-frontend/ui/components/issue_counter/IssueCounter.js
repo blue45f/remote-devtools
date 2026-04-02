@@ -1,70 +1,82 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
+import '../icon_button/icon_button.js';
 import * as Common from '../../../core/common/common.js';
 import * as i18n from '../../../core/i18n/i18n.js';
 import * as IssuesManager from '../../../models/issues_manager/issues_manager.js';
-import * as ComponentHelpers from '../../components/helpers/helpers.js';
-import * as LitHtml from '../../lit-html/lit-html.js';
+import { html, render } from '../../lit/lit.js';
 import issueCounterStyles from './issueCounter.css.js';
 const UIStrings = {
     /**
-     *@description Label for link to Issues tab, specifying how many issues there are.
+     * @description Label for link to Issues tab, specifying how many issues there are.
      */
     pageErrors: '{issueCount, plural, =1 {# page error} other {# page errors}}',
     /**
-     *@description Label for link to Issues tab, specifying how many issues there are.
+     * @description Label for link to Issues tab, specifying how many issues there are.
      */
     breakingChanges: '{issueCount, plural, =1 {# breaking change} other {# breaking changes}}',
     /**
-     *@description Label for link to Issues tab, specifying how many issues there are.
+     * @description Label for link to Issues tab, specifying how many issues there are.
      */
     possibleImprovements: '{issueCount, plural, =1 {# possible improvement} other {# possible improvements}}',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/components/issue_counter/IssueCounter.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export function getIssueKindIconData(issueKind) {
+export function getIssueKindIconName(issueKind) {
     switch (issueKind) {
-        case IssuesManager.Issue.IssueKind.PageError:
-            return { iconName: 'issue-cross-filled', color: 'var(--icon-error)', width: '20px', height: '20px' };
-        case IssuesManager.Issue.IssueKind.BreakingChange:
-            return { iconName: 'issue-exclamation-filled', color: 'var(--icon-warning)', width: '20px', height: '20px' };
-        case IssuesManager.Issue.IssueKind.Improvement:
-            return { iconName: 'issue-text-filled', color: 'var(--icon-info)', width: '20px', height: '20px' };
+        case "PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */:
+            return 'issue-cross-filled';
+        case "BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */:
+            return 'issue-exclamation-filled';
+        case "Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */:
+            return 'issue-text-filled';
     }
 }
-function toIconGroup({ iconName, color, width, height }, sizeOverride) {
+function toIconGroup(iconName, sizeOverride) {
     if (sizeOverride) {
-        return { iconName, iconColor: color, iconWidth: sizeOverride, iconHeight: sizeOverride };
+        return { iconName, iconWidth: sizeOverride, iconHeight: sizeOverride };
     }
-    return { iconName, iconColor: color, iconWidth: width, iconHeight: height };
+    return { iconName };
 }
-// @ts-ignore Remove this comment once Intl.ListFormat is in type defs.
-const listFormat = new Intl.ListFormat(navigator.language, { type: 'unit', style: 'short' });
+// Lazily instantiate the formatter as the constructor takes 50ms+
+// TODO: move me and others like me to i18n module
+const listFormatter = (function defineFormatter() {
+    let intlListFormat;
+    return {
+        format(...args) {
+            if (!intlListFormat) {
+                const opts = { type: 'unit', style: 'short' };
+                intlListFormat = new Intl.ListFormat(i18n.DevToolsLocale.DevToolsLocale.instance().locale, opts);
+            }
+            return intlListFormat.format(...args);
+        },
+    };
+})();
 export function getIssueCountsEnumeration(issuesManager, omitEmpty = true) {
     const counts = [
-        issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.PageError),
-        issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.BreakingChange),
-        issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.Improvement),
+        issuesManager.numberOfIssues("PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */),
+        issuesManager.numberOfIssues("BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */),
+        issuesManager.numberOfIssues("Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */),
     ];
     const phrases = [
         i18nString(UIStrings.pageErrors, { issueCount: counts[0] }),
         i18nString(UIStrings.breakingChanges, { issueCount: counts[1] }),
         i18nString(UIStrings.possibleImprovements, { issueCount: counts[2] }),
     ];
-    return listFormat.format(phrases.filter((_, i) => omitEmpty ? counts[i] > 0 : true));
+    return listFormatter.format(phrases.filter((_, i) => omitEmpty ? counts[i] > 0 : true));
 }
 export class IssueCounter extends HTMLElement {
-    static litTagName = LitHtml.literal `issue-counter`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #clickHandler = undefined;
-    #tooltipCallback = undefined;
+    #clickHandler;
+    #tooltipCallback;
     #leadingText = '';
     #throttler;
     #counts = [0, 0, 0];
-    #displayMode = "OmitEmpty" /* DisplayMode.OmitEmpty */;
-    #issuesManager = undefined;
-    #accessibleName = undefined;
+    #displayMode = "OmitEmpty" /* DisplayMode.OMIT_EMPTY */;
+    #issuesManager;
+    #accessibleName;
     #throttlerTimeout;
     #compact = false;
     scheduleUpdate() {
@@ -75,21 +87,18 @@ export class IssueCounter extends HTMLElement {
             this.#render();
         }
     }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [issueCounterStyles];
-    }
     set data(data) {
         this.#clickHandler = data.clickHandler;
         this.#leadingText = data.leadingText ?? '';
         this.#tooltipCallback = data.tooltipCallback;
-        this.#displayMode = data.displayMode ?? "OmitEmpty" /* DisplayMode.OmitEmpty */;
+        this.#displayMode = data.displayMode ?? "OmitEmpty" /* DisplayMode.OMIT_EMPTY */;
         this.#accessibleName = data.accessibleName;
         this.#throttlerTimeout = data.throttlerTimeout;
         this.#compact = Boolean(data.compact);
         if (this.#issuesManager !== data.issuesManager) {
-            this.#issuesManager?.removeEventListener("IssuesCountUpdated" /* IssuesManager.IssuesManager.Events.IssuesCountUpdated */, this.scheduleUpdate, this);
+            this.#issuesManager?.removeEventListener("IssuesCountUpdated" /* IssuesManager.IssuesManager.Events.ISSUES_COUNT_UPDATED */, this.scheduleUpdate, this);
             this.#issuesManager = data.issuesManager;
-            this.#issuesManager.addEventListener("IssuesCountUpdated" /* IssuesManager.IssuesManager.Events.IssuesCountUpdated */, this.scheduleUpdate, this);
+            this.#issuesManager.addEventListener("IssuesCountUpdated" /* IssuesManager.IssuesManager.Events.ISSUES_COUNT_UPDATED */, this.scheduleUpdate, this);
         }
         if (data.throttlerTimeout !== 0) {
             this.#throttler = new Common.Throttler.Throttler(data.throttlerTimeout ?? 100);
@@ -116,23 +125,23 @@ export class IssueCounter extends HTMLElement {
             return;
         }
         this.#counts = [
-            this.#issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.PageError),
-            this.#issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.BreakingChange),
-            this.#issuesManager.numberOfIssues(IssuesManager.Issue.IssueKind.Improvement),
+            this.#issuesManager.numberOfIssues("PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */),
+            this.#issuesManager.numberOfIssues("BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */),
+            this.#issuesManager.numberOfIssues("Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */),
         ];
         const importance = [
-            IssuesManager.Issue.IssueKind.PageError,
-            IssuesManager.Issue.IssueKind.BreakingChange,
-            IssuesManager.Issue.IssueKind.Improvement,
+            "PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */,
+            "BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */,
+            "Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */,
         ];
         const mostImportant = importance[this.#counts.findIndex(x => x > 0) ?? 2];
         const countToString = (kind, count) => {
             switch (this.#displayMode) {
-                case "OmitEmpty" /* DisplayMode.OmitEmpty */:
+                case "OmitEmpty" /* DisplayMode.OMIT_EMPTY */:
                     return count > 0 ? `${count}` : undefined;
-                case "ShowAlways" /* DisplayMode.ShowAlways */:
+                case "ShowAlways" /* DisplayMode.SHOW_ALWAYS */:
                     return `${count}`;
-                case "OnlyMostImportant" /* DisplayMode.OnlyMostImportant */:
+                case "OnlyMostImportant" /* DisplayMode.ONLY_MOST_IMPORTANT */:
                     return kind === mostImportant ? `${count}` : undefined;
             }
         };
@@ -140,16 +149,16 @@ export class IssueCounter extends HTMLElement {
         const data = {
             groups: [
                 {
-                    ...toIconGroup(getIssueKindIconData(IssuesManager.Issue.IssueKind.PageError), iconSize),
-                    text: countToString(IssuesManager.Issue.IssueKind.PageError, this.#counts[0]),
+                    ...toIconGroup(getIssueKindIconName("PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */), iconSize),
+                    text: countToString("PageError" /* IssuesManager.Issue.IssueKind.PAGE_ERROR */, this.#counts[0]),
                 },
                 {
-                    ...toIconGroup(getIssueKindIconData(IssuesManager.Issue.IssueKind.BreakingChange), iconSize),
-                    text: countToString(IssuesManager.Issue.IssueKind.BreakingChange, this.#counts[1]),
+                    ...toIconGroup(getIssueKindIconName("BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */), iconSize),
+                    text: countToString("BreakingChange" /* IssuesManager.Issue.IssueKind.BREAKING_CHANGE */, this.#counts[1]),
                 },
                 {
-                    ...toIconGroup(getIssueKindIconData(IssuesManager.Issue.IssueKind.Improvement), iconSize),
-                    text: countToString(IssuesManager.Issue.IssueKind.Improvement, this.#counts[2]),
+                    ...toIconGroup(getIssueKindIconName("Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */), iconSize),
+                    text: countToString("Improvement" /* IssuesManager.Issue.IssueKind.IMPROVEMENT */, this.#counts[2]),
                 },
             ],
             clickHandler: this.#clickHandler,
@@ -157,11 +166,12 @@ export class IssueCounter extends HTMLElement {
             accessibleName: this.#accessibleName,
             compact: this.#compact,
         };
-        LitHtml.render(LitHtml.html `
+        render(html `
+        <style>${issueCounterStyles}</style>
         <icon-button .data=${data} .accessibleName=${this.#accessibleName}></icon-button>
         `, this.#shadow, { host: this });
         this.#tooltipCallback?.();
     }
 }
-ComponentHelpers.CustomElements.defineComponent('issue-counter', IssueCounter);
+customElements.define('devtools-issue-counter', IssueCounter);
 //# sourceMappingURL=IssueCounter.js.map

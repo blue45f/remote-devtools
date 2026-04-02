@@ -1,15 +1,29 @@
-import type * as IconButton from '../components/icon_button/icon_button.js';
-import { type ActionDelegate as ActionDelegateInterface } from './ActionRegistration.js';
-import { type Context } from './Context.js';
-import { type ContextMenu } from './ContextMenu.js';
-import { type Icon } from './Icon.js';
-import { type Panel } from './Panel.js';
+import type { ActionDelegate as ActionDelegateInterface } from './ActionRegistration.js';
+import type { Context } from './Context.js';
+import type { ContextMenu } from './ContextMenu.js';
+import type { Panel } from './Panel.js';
 import { SplitWidget } from './SplitWidget.js';
 import { type TabbedPane, type TabbedPaneTabDelegate } from './TabbedPane.js';
-import { type View, type ViewLocation, type ViewLocationResolver } from './View.js';
+import type { View, ViewLocation, ViewLocationResolver } from './View.js';
 import { VBox, type Widget } from './Widget.js';
+export declare enum DrawerOrientation {
+    VERTICAL = "vertical",
+    HORIZONTAL = "horizontal",
+    UNSET = "unset"
+}
+export declare enum DockMode {
+    BOTTOM = "bottom",
+    SIDE = "side",// For LEFT and RIGHT
+    UNDOCKED = "undocked"
+}
+export interface DrawerOrientationByDockMode {
+    [DockMode.BOTTOM]: DrawerOrientation;
+    [DockMode.SIDE]: DrawerOrientation;
+    [DockMode.UNDOCKED]: DrawerOrientation;
+}
 export declare class InspectorView extends VBox implements ViewLocationResolver {
     #private;
+    private readonly drawerOrientationByDockSetting;
     private readonly drawerSplitWidget;
     private readonly tabDelegate;
     private readonly drawerTabbedLocation;
@@ -28,6 +42,7 @@ export declare class InspectorView extends VBox implements ViewLocationResolver 
     } | undefined): InspectorView;
     static maybeGetInspectorViewInstance(): InspectorView | null;
     static removeInstance(): void;
+    applyDrawerOrientationForDockSideForTest(): void;
     wasShown(): void;
     willHide(): void;
     resolveLocation(locationName: string): ViewLocation | null;
@@ -38,16 +53,25 @@ export declare class InspectorView extends VBox implements ViewLocationResolver 
     onSuspendStateChanged(allTargetsSuspended: boolean): void;
     canSelectPanel(panelName: string): boolean;
     showPanel(panelName: string): Promise<void>;
-    setPanelIcon(tabId: string, icon: Icon | IconButton.Icon.Icon | null): void;
-    private emitDrawerChangeEvent;
+    setPanelWarnings(tabId: string, warnings: string[]): void;
     private getTabbedPaneForTabId;
     currentPanelDeprecated(): Widget | null;
-    showDrawer(focus: boolean): void;
+    showDrawer({ focus, hasTargetDrawer }: {
+        focus: boolean;
+        hasTargetDrawer: boolean;
+    }): void;
     drawerVisible(): boolean;
     closeDrawer(): void;
+    toggleDrawerOrientation({ force }?: {
+        force?: Omit<DrawerOrientation, DrawerOrientation.UNSET>;
+    }): void;
+    isUserExplicitlyUpdatedDrawerOrientation(): boolean;
     setDrawerMinimized(minimized: boolean): void;
+    drawerSize(): number;
+    setDrawerSize(size: number): void;
+    totalSize(): number;
     isDrawerMinimized(): boolean;
-    closeDrawerTab(id: string, userGesture?: boolean): void;
+    isDrawerOrientationVertical(): boolean;
     private keyDown;
     onResize(): void;
     topResizerElement(): Element;
@@ -57,23 +81,20 @@ export declare class InspectorView extends VBox implements ViewLocationResolver 
     ownerSplit(): SplitWidget | null;
     minimize(): void;
     restore(): void;
+    displayDebuggedTabReloadRequiredWarning(message: string): void;
+    removeDebuggedTabReloadRequiredWarning(): void;
     displayReloadRequiredWarning(message: string): void;
+    displayChromeRestartRequiredWarning(message: string): void;
     displaySelectOverrideFolderInfobar(callback: () => void): void;
     private createInfoBarDiv;
     private attachInfobar;
 }
 export declare class ActionDelegate implements ActionDelegateInterface {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
-    handleAction(context: Context, actionId: string): boolean;
+    handleAction(_context: Context, actionId: string): boolean;
 }
 export declare class InspectorViewTabDelegate implements TabbedPaneTabDelegate {
     closeTabs(tabbedPane: TabbedPane, ids: string[]): void;
     moveToDrawer(tabId: string): void;
-    moveToMainPanel(tabId: string): void;
+    moveToMainTabBar(tabId: string): void;
     onContextMenu(tabId: string, contextMenu: ContextMenu): void;
-}
-export declare enum Events {
-    DrawerChange = "drawerchange"
 }

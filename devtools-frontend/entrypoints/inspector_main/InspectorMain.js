@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -7,10 +7,11 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as MobileThrottling from '../../panels/mobile_throttling/mobile_throttling.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as Lit from '../../ui/lit/lit.js';
 import nodeIconStyles from './nodeIcon.css.js';
+const { html } = Lit;
 const UIStrings = {
     /**
      * @description Text that refers to the main target. The main target is the primary webpage that
@@ -24,6 +25,7 @@ const UIStrings = {
      * DevTools is connected to. This text is used in various places in the UI as a label/name to inform
      * the user which target they are currently connected to, as DevTools may connect to multiple
      * targets at the same time in some scenarios.
+     * @meaning Tab target that's different than the "Tab" of Chrome. (See b/343009012)
      */
     tab: 'Tab',
     /**
@@ -38,34 +40,34 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('entrypoints/inspector_main/InspectorMain.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-let inspectorMainImplInstance;
 export class InspectorMainImpl {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!inspectorMainImplInstance || forceNew) {
-            inspectorMainImplInstance = new InspectorMainImpl();
-        }
-        return inspectorMainImplInstance;
-    }
     async run() {
         let firstCall = true;
         await SDK.Connections.initMainConnection(async () => {
             const type = Root.Runtime.Runtime.queryParam('v8only') ?
-                SDK.Target.Type.Node :
-                (Root.Runtime.Runtime.queryParam('targetType') === 'tab' ? SDK.Target.Type.Tab : SDK.Target.Type.Frame);
+                SDK.Target.Type.NODE :
+                (Root.Runtime.Runtime.queryParam('targetType') === 'tab' || Root.Runtime.Runtime.isTraceApp() ?
+                    SDK.Target.Type.TAB :
+                    SDK.Target.Type.FRAME);
             // TODO(crbug.com/1348385): support waiting for debugger with tab target.
-            const waitForDebuggerInPage = type === SDK.Target.Type.Frame && Root.Runtime.Runtime.queryParam('panel') === 'sources';
-            const name = type === SDK.Target.Type.Frame ? i18nString(UIStrings.main) : i18nString(UIStrings.tab);
+            const waitForDebuggerInPage = type === SDK.Target.Type.FRAME && Root.Runtime.Runtime.queryParam('panel') === 'sources';
+            const name = type === SDK.Target.Type.FRAME ? i18nString(UIStrings.main) : i18nString(UIStrings.tab);
             const target = SDK.TargetManager.TargetManager.instance().createTarget('main', name, type, null, undefined, waitForDebuggerInPage);
-            const targetManager = SDK.TargetManager.TargetManager.instance();
-            targetManager.observeTargets({
-                targetAdded: (target) => {
-                    if (target === targetManager.primaryPageTarget()) {
-                        target.setName(i18nString(UIStrings.main));
-                    }
-                },
-                targetRemoved: (_) => { },
-            });
+            const waitForPrimaryPageTarget = () => {
+                return new Promise(resolve => {
+                    const targetManager = SDK.TargetManager.TargetManager.instance();
+                    targetManager.observeTargets({
+                        targetAdded: (target) => {
+                            if (target === targetManager.primaryPageTarget()) {
+                                target.setName(i18nString(UIStrings.main));
+                                resolve(target);
+                            }
+                        },
+                        targetRemoved: (_) => { },
+                    });
+                });
+            };
+            await waitForPrimaryPageTarget();
             // Only resume target during the first connection,
             // subsequent connections are due to connection hand-over,
             // there is no need to pause in debugger.
@@ -82,10 +84,10 @@ export class InspectorMainImpl {
                     debuggerModel.pause();
                 }
             }
-            if (type !== SDK.Target.Type.Tab) {
+            if (type !== SDK.Target.Type.TAB) {
                 void target.runtimeAgent().invoke_runIfWaitingForDebugger();
             }
-        }, Components.TargetDetachedDialog.TargetDetachedDialog.webSocketConnectionLost);
+        }, Components.TargetDetachedDialog.TargetDetachedDialog.connectionLost);
         new SourcesPanelIndicator();
         new BackendSettingsSync();
         new MobileThrottling.NetworkPanelIndicator.NetworkPanelIndicator();
@@ -94,37 +96,21 @@ export class InspectorMainImpl {
         });
     }
 }
-Common.Runnable.registerEarlyInitializationRunnable(InspectorMainImpl.instance);
-let reloadActionDelegateInstance;
+Common.Runnable.registerEarlyInitializationRunnable(() => new InspectorMainImpl());
 export class ReloadActionDelegate {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!reloadActionDelegateInstance || forceNew) {
-            reloadActionDelegateInstance = new ReloadActionDelegate();
-        }
-        return reloadActionDelegateInstance;
-    }
-    handleAction(context, actionId) {
+    handleAction(_context, actionId) {
         switch (actionId) {
-            case 'inspector_main.reload':
+            case 'inspector-main.reload':
                 SDK.ResourceTreeModel.ResourceTreeModel.reloadAllPages(false);
                 return true;
-            case 'inspector_main.hard-reload':
+            case 'inspector-main.hard-reload':
                 SDK.ResourceTreeModel.ResourceTreeModel.reloadAllPages(true);
                 return true;
         }
         return false;
     }
 }
-let focusDebuggeeActionDelegateInstance;
 export class FocusDebuggeeActionDelegate {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!focusDebuggeeActionDelegateInstance || forceNew) {
-            focusDebuggeeActionDelegateInstance = new FocusDebuggeeActionDelegate();
-        }
-        return focusDebuggeeActionDelegateInstance;
-    }
     handleAction(_context, _actionId) {
         const mainTarget = SDK.TargetManager.TargetManager.instance().primaryPageTarget();
         if (!mainTarget) {
@@ -134,54 +120,87 @@ export class FocusDebuggeeActionDelegate {
         return true;
     }
 }
-let nodeIndicatorInstance;
-export class NodeIndicator {
-    #element;
-    #button;
+const isNodeProcessRunning = (targetInfos) => {
+    return Boolean(targetInfos.find(target => target.type === 'node' && !target.attached));
+};
+export const DEFAULT_VIEW = (input, output, target) => {
+    const { nodeProcessRunning, } = input;
+    // clang-format off
+    Lit.render(html `
+    <style>${nodeIconStyles}</style>
+    <div
+        class="node-icon ${!nodeProcessRunning ? 'inactive' : ''}"
+        title=${i18nString(UIStrings.openDedicatedTools)}
+        @click=${() => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openNodeFrontend()}>
+    </div>
+    `, target);
+    // clang-format on
+};
+export class NodeIndicator extends UI.Widget.Widget {
+    #view;
+    #targetInfos = [];
+    #wasShown = false;
+    constructor(element, view = DEFAULT_VIEW) {
+        super(element, { useShadowDom: true });
+        this.#view = view;
+        SDK.TargetManager.TargetManager.instance().addEventListener("AvailableTargetsChanged" /* SDK.TargetManager.Events.AVAILABLE_TARGETS_CHANGED */, event => {
+            this.#targetInfos = event.data;
+            this.requestUpdate();
+        });
+    }
+    performUpdate() {
+        // Disable when we are testing, as debugging e2e
+        // attaches a debug process and this changes some view sizes
+        if (Host.InspectorFrontendHost.isUnderTest()) {
+            return;
+        }
+        const nodeProcessRunning = isNodeProcessRunning(this.#targetInfos);
+        if (!this.#wasShown && !nodeProcessRunning) {
+            // This widget is designed to be hidden until the first debuggable Node process is detected. Therefore
+            // we don't construct the view if there's no data. After we've shown it once, it remains on-sreen and
+            // indicates via its disabled state whether Node debugging is available.
+            return;
+        }
+        this.#wasShown = true;
+        const input = {
+            nodeProcessRunning,
+        };
+        this.#view(input, {}, this.contentElement);
+    }
+}
+let nodeIndicatorProviderInstance;
+export class NodeIndicatorProvider {
+    #toolbarItem;
+    #widgetElement;
     constructor() {
-        const element = document.createElement('div');
-        const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(element, { cssFile: [nodeIconStyles], delegatesFocus: undefined });
-        this.#element = shadowRoot.createChild('div', 'node-icon');
-        element.addEventListener('click', () => Host.InspectorFrontendHost.InspectorFrontendHostInstance.openNodeFrontend(), false);
-        this.#button = new UI.Toolbar.ToolbarItem(element);
-        this.#button.setTitle(i18nString(UIStrings.openDedicatedTools));
-        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.AvailableTargetsChanged, event => this.#update(event.data));
-        this.#button.setVisible(false);
-        this.#update([]);
+        this.#widgetElement = document.createElement('devtools-widget');
+        new NodeIndicator(this.#widgetElement);
+        this.#toolbarItem = new UI.Toolbar.ToolbarItem(this.#widgetElement);
+        this.#toolbarItem.setVisible(false);
+    }
+    item() {
+        return this.#toolbarItem;
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
-        if (!nodeIndicatorInstance || forceNew) {
-            nodeIndicatorInstance = new NodeIndicator();
+        if (!nodeIndicatorProviderInstance || forceNew) {
+            nodeIndicatorProviderInstance = new NodeIndicatorProvider();
         }
-        return nodeIndicatorInstance;
-    }
-    #update(targetInfos) {
-        const hasNode = Boolean(targetInfos.find(target => target.type === 'node' && !target.attached));
-        this.#element.classList.toggle('inactive', !hasNode);
-        if (hasNode) {
-            this.#button.setVisible(true);
-        }
-    }
-    item() {
-        return this.#button;
+        return nodeIndicatorProviderInstance;
     }
 }
 export class SourcesPanelIndicator {
     constructor() {
         Common.Settings.Settings.instance()
-            .moduleSetting('javaScriptDisabled')
+            .moduleSetting('java-script-disabled')
             .addChangeListener(javaScriptDisabledChanged);
         javaScriptDisabledChanged();
         function javaScriptDisabledChanged() {
-            let icon = null;
-            const javaScriptDisabled = Common.Settings.Settings.instance().moduleSetting('javaScriptDisabled').get();
-            if (javaScriptDisabled) {
-                icon = new IconButton.Icon.Icon();
-                icon.data = { iconName: 'warning-filled', color: 'var(--icon-warning)', width: '14px', height: '14px' };
-                UI.Tooltip.Tooltip.install(icon, i18nString(UIStrings.javascriptIsDisabled));
+            const warnings = [];
+            if (Common.Settings.Settings.instance().moduleSetting('java-script-disabled').get()) {
+                warnings.push(i18nString(UIStrings.javascriptIsDisabled));
             }
-            UI.InspectorView.InspectorView.instance().setPanelIcon('sources', icon);
+            UI.InspectorView.InspectorView.instance().setPanelWarnings('sources', warnings);
         }
     }
 }
@@ -190,17 +209,18 @@ export class BackendSettingsSync {
     #adBlockEnabledSetting;
     #emulatePageFocusSetting;
     constructor() {
-        this.#autoAttachSetting = Common.Settings.Settings.instance().moduleSetting('autoAttachToCreatedPages');
+        this.#autoAttachSetting = Common.Settings.Settings.instance().moduleSetting('auto-attach-to-created-pages');
         this.#autoAttachSetting.addChangeListener(this.#updateAutoAttach, this);
         this.#updateAutoAttach();
-        this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.adBlockingEnabled');
+        this.#adBlockEnabledSetting = Common.Settings.Settings.instance().moduleSetting('network.ad-blocking-enabled');
         this.#adBlockEnabledSetting.addChangeListener(this.#update, this);
-        this.#emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulatePageFocus');
+        this.#emulatePageFocusSetting = Common.Settings.Settings.instance().moduleSetting('emulate-page-focus');
         this.#emulatePageFocusSetting.addChangeListener(this.#update, this);
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.ChildTargetManager.ChildTargetManager, "TargetInfoChanged" /* SDK.ChildTargetManager.Events.TARGET_INFO_CHANGED */, this.#targetInfoChanged, this);
         SDK.TargetManager.TargetManager.instance().observeTargets(this);
     }
     #updateTarget(target) {
-        if (target.type() !== SDK.Target.Type.Frame || target.parentTarget()?.type() === SDK.Target.Type.Frame) {
+        if (target.type() !== SDK.Target.Type.FRAME || target.parentTarget()?.type() === SDK.Target.Type.FRAME) {
             return;
         }
         void target.pageAgent().invoke_setAdBlockingEnabled({ enabled: this.#adBlockEnabledSetting.get() });
@@ -213,6 +233,14 @@ export class BackendSettingsSync {
         for (const target of SDK.TargetManager.TargetManager.instance().targets()) {
             this.#updateTarget(target);
         }
+    }
+    #targetInfoChanged(event) {
+        const targetManager = SDK.TargetManager.TargetManager.instance();
+        const target = targetManager.targetById(event.data.targetId);
+        if (!target || target.outermostTarget() !== target) {
+            return;
+        }
+        this.#updateTarget(target);
     }
     targetAdded(target) {
         this.#updateTarget(target);

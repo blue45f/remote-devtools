@@ -3,6 +3,7 @@ import * as Platform from '../platform/platform.js';
  * http://tools.ietf.org/html/rfc3986#section-5.2.4
  */
 export declare function normalizePath(path: string): string;
+export declare function schemeIs(url: Platform.DevToolsPath.UrlString | URL, scheme: string): boolean;
 /**
  * File paths in DevTools that are represented either as unencoded absolute or relative paths, or encoded paths, or URLs.
  * @example
@@ -61,8 +62,8 @@ export declare class ParsedURL {
     static completeURL(baseURL: Platform.DevToolsPath.UrlString, href: string): Platform.DevToolsPath.UrlString | null;
     static splitLineAndColumn(string: string): {
         url: Platform.DevToolsPath.UrlString;
-        lineNumber: (number | undefined);
-        columnNumber: (number | undefined);
+        lineNumber?: number;
+        columnNumber?: number;
     };
     static removeWasmFunctionInfoFromURL(url: string): Platform.DevToolsPath.UrlString;
     private static beginsWithWindowsDriveLetter;
@@ -72,7 +73,10 @@ export declare class ParsedURL {
     dataURLDisplayName(): string;
     isAboutBlank(): boolean;
     isDataURL(): boolean;
-    isHttpOrHttps(): boolean;
+    extractDataUrlMimeType(): {
+        type?: string;
+        subtype?: string | undefined;
+    };
     isBlobURL(): boolean;
     lastPathComponentWithFragment(): string;
     domain(): string;

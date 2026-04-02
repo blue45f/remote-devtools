@@ -1,13 +1,13 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
 import * as Platform from '../../../core/platform/platform.js';
-import * as LitHtml from '../../lit-html/lit-html.js';
-import * as ComponentHelpers from '../helpers/helpers.js';
-import * as Coordinator from '../render_coordinator/render_coordinator.js';
+import * as Lit from '../../lit/lit.js';
+import * as RenderCoordinator from '../render_coordinator/render_coordinator.js';
 import linkifierImplStyles from './linkifierImpl.css.js';
 import * as LinkifierUtils from './LinkifierUtils.js';
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
+const { html } = Lit;
 export class LinkifierClick extends Event {
     data;
     static eventName = 'linkifieractivated';
@@ -20,23 +20,37 @@ export class LinkifierClick extends Event {
         this.data = data;
     }
 }
+/**
+ * @deprecated do not use
+ */
 export class Linkifier extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-linkifier`;
     #shadow = this.attachShadow({ mode: 'open' });
     #url = Platform.DevToolsPath.EmptyUrlString;
     #lineNumber;
     #columnNumber;
+    #linkText;
+    #title;
     set data(data) {
         this.#url = data.url;
         this.#lineNumber = data.lineNumber;
         this.#columnNumber = data.columnNumber;
+        this.#linkText = data.linkText;
+        this.#title = data.title;
         if (!this.#url) {
             throw new Error('Cannot construct a Linkifier without providing a valid string URL.');
         }
         void this.#render();
     }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [linkifierImplStyles];
+    cloneNode(deep) {
+        const node = super.cloneNode(deep);
+        node.data = {
+            url: this.#url,
+            lineNumber: this.#lineNumber,
+            columnNumber: this.#columnNumber,
+            linkText: this.#linkText,
+            title: this.#title
+        };
+        return node;
     }
     #onLinkActivation(event) {
         event.preventDefault();
@@ -48,14 +62,19 @@ export class Linkifier extends HTMLElement {
         this.dispatchEvent(linkifierClickEvent);
     }
     async #render() {
+        const linkText = this.#linkText ?? LinkifierUtils.linkText(this.#url, this.#lineNumber);
         // Disabled until https://crbug.com/1079231 is fixed.
-        await coordinator.write(() => {
+        await RenderCoordinator.write(() => {
             // clang-format off
-            // eslint-disable-next-line rulesdir/ban_a_tags_in_lit_html
-            LitHtml.render(LitHtml.html `<a class="link" href=${this.#url} @click=${this.#onLinkActivation}><slot>${LinkifierUtils.linkText(this.#url, this.#lineNumber)}</slot></a>`, this.#shadow, { host: this });
+            // eslint-disable-next-line @devtools/no-a-tags-in-lit
+            Lit.render(html `
+        <style>${linkifierImplStyles}</style>
+        <a class="link" href=${this.#url} @click=${this.#onLinkActivation} title=${Lit.Directives.ifDefined(this.#title)}>
+          <slot>${linkText}</slot>
+        </a>`, this.#shadow, { host: this });
             // clang-format on
         });
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-linkifier', Linkifier);
+customElements.define('devtools-linkifier', Linkifier);
 //# sourceMappingURL=LinkifierImpl.js.map

@@ -1,68 +1,123 @@
-import * as Common from '../../core/common/common.js';
+import '../../ui/components/adorners/adorners.js';
+import '../../ui/components/buttons/buttons.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import * as Adorners from '../../ui/components/adorners/adorners.js';
+import * as Protocol from '../../generated/protocol.js';
+import type * as Elements from '../../models/elements/elements.js';
+import type * as IssuesManager from '../../models/issues_manager/issues_manager.js';
+import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as IssuesManager from '../../models/issues_manager/issues_manager.js';
-import { type ElementsTreeOutline, type UpdateRecord } from './ElementsTreeOutline.js';
+import * as Lit from '../../ui/lit/lit.js';
+import type { DirectiveResult } from '../../ui/lit/lit.js';
+import { type ElementsTreeOutline } from './ElementsTreeOutline.js';
 declare const enum TagType {
     OPENING = "OPENING_TAG",
     CLOSING = "CLOSING_TAG"
 }
-type OpeningTagContext = {
+interface OpeningTagContext {
     tagType: TagType.OPENING;
-    readonly adornerContainer: HTMLElement;
-    adorners: Adorners.Adorner.Adorner[];
-    styleAdorners: Adorners.Adorner.Adorner[];
-    readonly adornersThrottler: Common.Throttler.Throttler;
-    slot?: Adorners.Adorner.Adorner;
     canAddAttributes: boolean;
-};
-type ClosingTagContext = {
+}
+interface ClosingTagContext {
     tagType: TagType.CLOSING;
-};
+}
 export type TagTypeContext = OpeningTagContext | ClosingTagContext;
+export declare function isOpeningTag(context: TagTypeContext): context is OpeningTagContext;
+export interface ViewInput {
+    node: SDK.DOMModel.DOMNode | null;
+    isClosingTag: boolean;
+    expanded: boolean;
+    isExpandable: boolean;
+    isXMLMimeType: boolean;
+    updateRecord: Elements.ElementUpdateRecord.ElementUpdateRecord | null;
+    onHighlightSearchResults: () => void;
+    onExpand: () => void;
+    containerAdornerActive: boolean;
+    flexAdornerActive: boolean;
+    gridAdornerActive: boolean;
+    popoverAdornerActive: boolean;
+    adProvenance?: Protocol.Network.AdProvenance;
+    target?: SDK.Target.Target;
+    adTooltipId: string;
+    showContainerAdorner: boolean;
+    containerType?: string;
+    showFlexAdorner: boolean;
+    showGridAdorner: boolean;
+    showGridLanesAdorner: boolean;
+    showMediaAdorner: boolean;
+    showPopoverAdorner: boolean;
+    showTopLayerAdorner: boolean;
+    isSubgrid: boolean;
+    showViewSourceAdorner: boolean;
+    showScrollAdorner: boolean;
+    showScrollSnapAdorner: boolean;
+    topLayerIndex: number;
+    scrollSnapAdornerActive: boolean;
+    onGutterClick: (e: Event) => void;
+    onContainerAdornerClick: (e: Event) => void;
+    onFlexAdornerClick: (e: Event) => void;
+    onGridAdornerClick: (e: Event) => void;
+    onMediaAdornerClick: (e: Event) => void;
+    onPopoverAdornerClick: (e: Event) => void;
+    onScrollSnapAdornerClick: (e: Event) => void;
+    onTopLayerAdornerClick: (e: Event) => void;
+    onViewSourceAdornerClick: () => void;
+    onSlotAdornerClick: (e: Event) => void;
+    showSlotAdorner: boolean;
+    slotName?: string;
+    showStartingStyleAdorner: boolean;
+    startingStyleAdornerActive: boolean;
+    onStartingStyleAdornerClick: (e: Event) => void;
+    isHovered: boolean;
+    isSelected: boolean;
+    showAiButton: boolean;
+    aiButtonTitle?: string;
+    onAiButtonClick: (e: Event) => void;
+    decorations: Decoration[];
+    descendantDecorations: Decoration[];
+    decorationsTooltip: string;
+    indent: number;
+}
+export interface ViewOutput {
+    contentElement?: HTMLElement;
+}
+export declare function adornerRef(): DirectiveResult<typeof Lit.Directives.RefDirective>;
+export interface Decoration {
+    title: string;
+    color: string;
+}
+export declare const DEFAULT_VIEW: (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
 export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     #private;
     nodeInternal: SDK.DOMModel.DOMNode;
     treeOutline: ElementsTreeOutline | null;
-    private gutterContainer;
-    private readonly decorationsElement;
     private searchQuery;
-    private expandedChildrenLimitInternal;
     private readonly decorationsThrottler;
     private inClipboard;
-    private hoveredInternal;
     private editing;
-    private highlightResult;
     private htmlEditElement?;
     expandAllButtonElement: UI.TreeOutline.TreeElement | null;
-    private searchHighlightsVisible?;
-    selectionElement?: HTMLDivElement;
-    private hintElement?;
-    private contentElement;
     readonly tagTypeContext: TagTypeContext;
     constructor(node: SDK.DOMModel.DOMNode, isClosingTag?: boolean);
     static animateOnDOMUpdate(treeElement: ElementsTreeElement): void;
     static visibleShadowRoots(node: SDK.DOMModel.DOMNode): SDK.DOMModel.DOMNode[];
     static canShowInlineText(node: SDK.DOMModel.DOMNode): boolean;
     static populateForcedPseudoStateItems(contextMenu: UI.ContextMenu.ContextMenu, node: SDK.DOMModel.DOMNode): void;
+    performUpdate(clearNode?: boolean): void;
+    highlightAttribute(attributeName: string): void;
     isClosingTag(): boolean;
     node(): SDK.DOMModel.DOMNode;
     isEditing(): boolean;
     highlightSearchResults(searchQuery: string): void;
     hideSearchHighlights(): void;
-    private hideSearchHighlight;
     setInClipboard(inClipboard: boolean): void;
     get hovered(): boolean;
     set hovered(isHovered: boolean);
-    addIssue(newIssue: IssuesManager.GenericIssue.GenericIssue): void;
-    get issuesByNodeElement(): Map<Element, IssuesManager.GenericIssue.GenericIssue>;
+    addIssue(newIssue: IssuesManager.Issue.Issue): void;
+    get issuesByNodeElement(): Map<Element, IssuesManager.Issue.Issue[]>;
     expandedChildrenLimit(): number;
     setExpandedChildrenLimit(expandedChildrenLimit: number): void;
-    createSlotLink(nodeShortcut: SDK.DOMModel.DOMNodeShortcut | null): void;
-    private createSelection;
-    private createHint;
+    onTopLayerIndexChanged(): void;
     onbind(): void;
     onunbind(): void;
     onattach(): void;
@@ -80,11 +135,17 @@ export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     private insertInLastAttributePosition;
     private startEditingTarget;
     private showContextMenu;
-    populateTagContextMenu(contextMenu: UI.ContextMenu.ContextMenu, event: Event): void;
-    populateScrollIntoView(contextMenu: UI.ContextMenu.ContextMenu): void;
-    populateTextContextMenu(contextMenu: UI.ContextMenu.ContextMenu, textNode: Element): void;
-    populateNodeContextMenu(contextMenu: UI.ContextMenu.ContextMenu): void;
+    private revealHTMLInSources;
+    populateTagContextMenu(contextMenu: UI.ContextMenu.ContextMenu, event: Event): Promise<void>;
+    populatePseudoElementContextMenu(contextMenu: UI.ContextMenu.ContextMenu): void;
+    private populateExpandRecursively;
+    private populateScrollIntoView;
+    private isAiButtonEnabled;
+    populateTextContextMenu(contextMenu: UI.ContextMenu.ContextMenu, textNode: Element): Promise<void>;
+    populateNodeContextMenu(contextMenu: UI.ContextMenu.ContextMenu): Promise<void>;
+    populateProcessingElementContextMenu(contextMenu: UI.ContextMenu.ContextMenu): Promise<void>;
     private startEditing;
+    private startEditingProcessingInstructionValue;
     private addNewAttribute;
     private triggerEditAttribute;
     private startEditingAttribute;
@@ -97,44 +158,31 @@ export declare class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     private textNodeEditingCommitted;
     private editingCancelled;
     private distinctClosingTagElement;
-    updateTitle(updateRecord?: UpdateRecord | null, onlySearchQueryChanged?: boolean): void;
+    updateTitle(updateRecord?: Elements.ElementUpdateRecord.ElementUpdateRecord | null): void;
     private computeLeftIndent;
     updateDecorations(): void;
-    private updateDecorationsInternal;
-    private buildAttributeDOM;
-    private buildPseudoElementDOM;
-    private buildTagDOM;
-    private convertWhitespaceToEntities;
-    private nodeTitleInfo;
-    remove(): void;
+    remove(): Promise<void>;
     toggleEditAsHTML(callback?: ((arg0: boolean) => void), startEditing?: boolean): void;
     private copyCSSPath;
     private copyJSPath;
     private copyXPath;
     private copyFullXPath;
     copyStyles(): Promise<void>;
-    private highlightSearchResultsInternal;
     private editAsHTML;
-    adorn({ name }: {
-        name: string;
-    }, content?: HTMLElement): Adorners.Adorner.Adorner;
-    adornSlot({ name }: {
-        name: string;
-    }, context: OpeningTagContext): Adorners.Adorner.Adorner;
-    removeAdorner(adornerToRemove: Adorners.Adorner.Adorner, context: OpeningTagContext): void;
-    removeAllAdorners(): void;
-    private updateAdorners;
-    private updateAdornersInternal;
-    updateStyleAdorners(): Promise<void>;
-    pushGridAdorner(context: OpeningTagContext, isSubgrid: boolean): void;
-    pushScrollSnapAdorner(context: OpeningTagContext): void;
-    pushFlexAdorner(context: OpeningTagContext): void;
-    pushContainerAdorner(context: OpeningTagContext): void;
+    updateAdorners(): void;
 }
 export declare const InitialChildrenLimit = 500;
+/**
+ * A union of HTML4 and HTML5-Draft elements that explicitly
+ * or implicitly (for HTML5) forbid the closing tag.
+ **/
 export declare const ForbiddenClosingTagElements: Set<string>;
+/** These tags we do not allow editing their tag name. **/
 export declare const EditTagBlocklist: Set<string>;
-export declare function adornerComparator(adornerA: Adorners.Adorner.Adorner, adornerB: Adorners.Adorner.Adorner): number;
+export declare function convertUnicodeCharsToHTMLEntities(text: string): {
+    text: string;
+    entityRanges: TextUtils.TextRange.SourceRange[];
+};
 export interface EditorHandles {
     commit: () => void;
     cancel: () => void;

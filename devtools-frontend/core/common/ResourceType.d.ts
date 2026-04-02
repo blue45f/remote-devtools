@@ -8,11 +8,16 @@ export declare class ResourceType {
     static fromName(name: string): ResourceType | null;
     static mimeFromURL(url: Platform.DevToolsPath.UrlString): string | undefined;
     static mimeFromExtension(ext: string): string | undefined;
+    static simplifyContentType(contentType: string): string;
+    /**
+     * Checks whether the given MIME type represents JavaScript content.
+     */
+    static isJavaScriptMimeType(mimeType: string): boolean;
     /**
      * Adds suffixes iff the mimeType is 'text/javascript' to denote whether the JS is minified or from
      * a source map.
      */
-    static mediaTypeForMetrics(mimeType: string, isFromSourceMap: boolean, isMinified: boolean): string;
+    static mediaTypeForMetrics(mimeType: string, isFromSourceMap: boolean, isMinified: boolean, isSnippet: boolean, isDebugger: boolean): string;
     name(): string;
     title(): string;
     category(): ResourceCategory;
@@ -26,26 +31,26 @@ export declare class ResourceType {
     isFont(): boolean;
     isImage(): boolean;
     isFromSourceMap(): boolean;
-    isWebbundle(): boolean;
     toString(): string;
     canonicalMimeType(): string;
 }
 export declare class ResourceCategory {
+    readonly name: string;
     title: () => Platform.UIString.LocalizedString;
     shortTitle: () => Platform.UIString.LocalizedString;
-    constructor(title: () => Platform.UIString.LocalizedString, shortTitle: () => Platform.UIString.LocalizedString);
+    constructor(name: string, title: () => Platform.UIString.LocalizedString, shortTitle: () => Platform.UIString.LocalizedString);
 }
 export declare const resourceCategories: {
     XHR: ResourceCategory;
-    Script: ResourceCategory;
+    Document: ResourceCategory;
     Stylesheet: ResourceCategory;
+    Script: ResourceCategory;
+    Font: ResourceCategory;
     Image: ResourceCategory;
     Media: ResourceCategory;
-    Font: ResourceCategory;
-    Document: ResourceCategory;
-    WebSocket: ResourceCategory;
-    Wasm: ResourceCategory;
     Manifest: ResourceCategory;
+    Socket: ResourceCategory;
+    Wasm: ResourceCategory;
     Other: ResourceCategory;
 };
 /**
@@ -55,29 +60,30 @@ export declare const resourceCategories: {
  * For these types, make sure to update `fromMimeTypeOverride` to implement the custom logic.
  */
 export declare const resourceTypes: {
-    Document: ResourceType;
-    Stylesheet: ResourceType;
-    Image: ResourceType;
-    Media: ResourceType;
-    Font: ResourceType;
-    Script: ResourceType;
-    TextTrack: ResourceType;
-    XHR: ResourceType;
-    Fetch: ResourceType;
-    Prefetch: ResourceType;
-    EventSource: ResourceType;
-    WebSocket: ResourceType;
-    WebTransport: ResourceType;
-    Wasm: ResourceType;
-    Manifest: ResourceType;
-    SignedExchange: ResourceType;
-    Ping: ResourceType;
-    CSPViolationReport: ResourceType;
-    Other: ResourceType;
-    Preflight: ResourceType;
-    SourceMapScript: ResourceType;
-    SourceMapStyleSheet: ResourceType;
-    WebBundle: ResourceType;
+    readonly Document: ResourceType;
+    readonly Stylesheet: ResourceType;
+    readonly Image: ResourceType;
+    readonly Media: ResourceType;
+    readonly Font: ResourceType;
+    readonly Script: ResourceType;
+    readonly TextTrack: ResourceType;
+    readonly XHR: ResourceType;
+    readonly Fetch: ResourceType;
+    readonly Prefetch: ResourceType;
+    readonly EventSource: ResourceType;
+    readonly WebSocket: ResourceType;
+    readonly WebTransport: ResourceType;
+    readonly DirectSocket: ResourceType;
+    readonly Wasm: ResourceType;
+    readonly Manifest: ResourceType;
+    readonly SignedExchange: ResourceType;
+    readonly Ping: ResourceType;
+    readonly CSPViolationReport: ResourceType;
+    readonly Other: ResourceType;
+    readonly Preflight: ResourceType;
+    readonly SourceMapScript: ResourceType;
+    readonly SourceMapStyleSheet: ResourceType;
+    readonly FedCM: ResourceType;
 };
 export declare const resourceTypeByExtension: Map<string, ResourceType>;
 export declare const mimeTypeByExtension: Map<string, string>;

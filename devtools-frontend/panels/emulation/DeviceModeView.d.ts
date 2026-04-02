@@ -1,5 +1,5 @@
-import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
+import * as UI from '../../ui/legacy/legacy.js';
 export declare class DeviceModeView extends UI.Widget.VBox {
     wrapperInstance: UI.Widget.VBox | null;
     blockElementToWidth: WeakMap<HTMLElement, number>;
@@ -61,7 +61,7 @@ export declare class DeviceModeView extends UI.Widget.VBox {
     private saveScreenshot;
 }
 export declare class Ruler extends UI.Widget.VBox {
-    private contentElementInternal;
+    #private;
     private readonly horizontal;
     private scale;
     private count;
@@ -72,6 +72,6 @@ export declare class Ruler extends UI.Widget.VBox {
     constructor(horizontal: boolean, applyCallback: (arg0: number) => void);
     render(scale: number): void;
     onResize(): void;
-    private update;
+    update(): void;
     private onMarkerClick;
 }

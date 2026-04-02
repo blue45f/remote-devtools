@@ -1,11 +1,12 @@
 import { GlassPane } from './GlassPane.js';
 export declare class PopoverHelper {
+    #private;
+    static createPopover: (jslogContext?: string) => GlassPane;
     private disableOnClick;
-    private hasPadding;
     private getRequest;
     private scheduledRequest;
     private hidePopoverCallback;
-    private readonly container;
+    readonly container: HTMLElement;
     private showTimeout;
     private hideTimeout;
     private hidePopoverTimer;
@@ -13,12 +14,16 @@ export declare class PopoverHelper {
     private readonly boundMouseDown;
     private readonly boundMouseMove;
     private readonly boundMouseOut;
-    constructor(container: Element, getRequest: (arg0: MouseEvent) => PopoverRequest | null);
+    private readonly boundScrollEnd;
+    private readonly boundKeyUp;
+    jslogContext?: string;
+    constructor(container: HTMLElement, getRequest: (arg0: MouseEvent | KeyboardEvent) => PopoverRequest | null, jslogContext?: string);
     setTimeout(showTimeout: number, hideTimeout?: number): void;
-    setHasPadding(hasPadding: boolean): void;
     setDisableOnClick(disableOnClick: boolean): void;
     private eventInScheduledContent;
+    private scrollEnd;
     private mouseDown;
+    private keyUp;
     private mouseMove;
     private popoverMouseMove;
     private popoverMouseOut;
@@ -28,7 +33,6 @@ export declare class PopoverHelper {
     private stopShowPopoverTimer;
     isPopoverVisible(): boolean;
     hidePopover(): void;
-    private hidePopoverInternal;
     private showPopover;
     private stopHidePopoverTimer;
     dispose(): void;

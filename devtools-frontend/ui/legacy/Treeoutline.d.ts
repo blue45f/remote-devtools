@@ -1,8 +1,11 @@
 import * as Common from '../../core/common/common.js';
-import type * as IconButton from '../components/icon_button/icon_button.js';
-import { type Icon } from './Icon.js';
+import type * as TextUtils from '../../models/text_utils/text_utils.js';
+import type * as Buttons from '../components/buttons/buttons.js';
+import type { Icon } from '../kit/kit.js';
+import * as Lit from '../lit/lit.js';
 import { type Config } from './InplaceEditor.js';
-type AnyIcon = Icon | IconButton.Icon.Icon;
+import type { SearchableView } from './SearchableView.js';
+import { HTMLElementWithLightDOMTemplate } from './UIUtils.js';
 export declare enum Events {
     ElementAttached = "ElementAttached",
     ElementsDetached = "ElementsDetached",
@@ -10,13 +13,13 @@ export declare enum Events {
     ElementCollapsed = "ElementCollapsed",
     ElementSelected = "ElementSelected"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.ElementAttached]: TreeElement;
     [Events.ElementsDetached]: void;
     [Events.ElementExpanded]: TreeElement;
     [Events.ElementCollapsed]: TreeElement;
     [Events.ElementSelected]: TreeElement;
-};
+}
 export declare class TreeOutline extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     readonly rootElementInternal: TreeElement;
     renderSelection: boolean;
@@ -60,18 +63,22 @@ export declare class TreeOutline extends Common.ObjectWrapper.ObjectWrapper<Even
     deferredScrollIntoView(treeElement: TreeElement, center: boolean): void;
     onStartedEditingTitle(_treeElement: TreeElement): void;
 }
+export declare const enum TreeVariant {
+    NAVIGATION_TREE = "NavigationTree",
+    OTHER = "Other"
+}
 export declare class TreeOutlineInShadow extends TreeOutline {
     element: HTMLElement;
     shadowRoot: ShadowRoot;
     private readonly disclosureElement;
     renderSelection: boolean;
-    constructor();
-    registerRequiredCSS(cssFile: {
-        cssContent: string;
-    }): void;
-    registerCSSFiles(cssFiles: CSSStyleSheet[]): void;
-    hideOverflow(): void;
-    makeDense(): void;
+    constructor(variant?: TreeVariant, element?: HTMLElement);
+    setVariant(variant: TreeVariant): void;
+    registerRequiredCSS(...cssFiles: Array<string & {
+        _tag: 'CSS-in-JS';
+    }>): void;
+    setHideOverflow(hideOverflow: boolean): void;
+    setDense(dense: boolean): void;
     onStartedEditingTitle(treeElement: TreeElement): void;
 }
 export declare const treeElementBylistItemNode: WeakMap<Node, TreeElement>;
@@ -88,6 +95,7 @@ export declare class TreeElement {
     titleInternal: string | Node;
     private childrenInternal;
     childrenListNode: HTMLOListElement;
+    private expandLoggable;
     private hiddenInternal;
     private selectableInternal;
     expanded: boolean;
@@ -95,14 +103,14 @@ export declare class TreeElement {
     private expandable;
     private collapsible;
     toggleOnClick: boolean;
-    button: HTMLButtonElement | null;
+    button: Buttons.Button.Button | null;
     root: boolean;
     private tooltipInternal;
     private leadingIconsElement;
     private trailingIconsElement;
     protected selectionElementInternal: HTMLElement | null;
     private disableSelectFocus;
-    constructor(title?: string | Node, expandable?: boolean);
+    constructor(title?: string | Node, expandable?: boolean, jslogContext?: string | number);
     static getTreeElementBylistItemNode(node: Node): TreeElement | undefined;
     hasAncestor(ancestor: TreeElement | null): boolean;
     hasAncestorOrSelf(ancestor: TreeElement | null): boolean;
@@ -126,8 +134,7 @@ export declare class TreeElement {
     set title(x: string | Node);
     titleAsText(): string;
     startEditingTitle<T>(editingConfig: Config<T>): void;
-    setLeadingIcons(icons: AnyIcon[]): void;
-    setTrailingIcons(icons: AnyIcon[]): void;
+    setLeadingIcons(icons: Icon[] | Lit.TemplateResult[]): void;
     get tooltip(): string;
     set tooltip(x: string);
     isExpandable(): boolean;
@@ -178,5 +185,147 @@ export declare class TreeElement {
     traversePreviousTreeElement(skipUnrevealed: boolean, dontPopulate?: boolean): TreeElement | null;
     isEventWithinDisclosureTriangle(event: MouseEvent): boolean;
     setDisableSelectFocus(toggle: boolean): void;
+}
+interface TreeNode<NodeT> {
+    children(): NodeT[];
+}
+export interface TreeSearchResult<NodeT> {
+    node: NodeT;
+    isPostOrderMatch: boolean;
+    matchIndexInNode: number;
+}
+export declare class TreeSearch<NodeT extends TreeNode<NodeT>, SearchResultT extends TreeSearchResult<NodeT> = TreeSearchResult<NodeT>> {
+    #private;
+    reset(): void;
+    currentMatch(): SearchResultT | undefined;
+    getResults(node: NodeT): SearchResultT[];
+    static highlight(ranges: TextUtils.TextRange.SourceRange[], selectedRange: TextUtils.TextRange.SourceRange | undefined): ReturnType<typeof Lit.Directives.ref>;
+    updateSearchableView(view: SearchableView): void;
+    next(): SearchResultT | undefined;
+    prev(): SearchResultT | undefined;
+    search(node: NodeT, jumpBackwards: boolean, match: (node: NodeT, isPostOrder: boolean) => SearchResultT[]): number;
+}
+/**
+ * A tree element that can be used as progressive enhancement over a <ul> element. A `template` IDL attribute allows
+ * additionally to insert the <ul> into a <template>, avoiding rendering anything into light DOM, which is recommended.
+ * The <ul> itself will be cloned into shadow DOM and rendered there.
+ *
+ * ## Usage ##
+ *
+ * It can be used as
+ * ```
+ * <devtools-tree
+ *   .template=${html`
+ *     <ul role="tree">
+ *        <li role="treeitem" @expand=${onExpand}>
+ *          Tree Node Text
+ *          <ul role="group">
+ *            Node with subtree
+ *            <li role="treeitem" jslog-context="context">
+ *              <ul role="group">
+ *                <li role="treeitem">Tree Node Text in collapsed subtree</li>
+ *                <li role="treeitem">Tree Node Text in collapsed subtree</li>
+ *              </ul>
+ *           </li>
+ *           <li role="treeitem" open>
+ *             Tree Node Text in expanded subtree
+ *              <ul role="group">
+ *                <li role="treeitem">Tree Node Text in expanded subtree</li>
+ *                <li role="treeitem">Tree Node Text in expanded subtree</li>
+ *              </ul>
+ *           </li>
+ *           <li selected role="treeitem">Tree Node Text in a selected-by-default node</li>
+ *         </ul>
+ *       </li>
+ *     </ul>
+ *   </template>`}
+ * ></devtools-tree>
+ *
+ * ```
+ * where a <li role="treeitem"> element defines a tree node and its contents (the <li> is the `config element` for this
+ * tree node). If a tree node contains a <ul role="group">, that defines a subtree under that tree node. The `open`
+ * attribute on the <li> defines whether that subtree should render as expanded. Note that node expanding/collapsing do
+ * not reflect this state back to the attribute on the config element, those state changes are rather sent out as
+ * `expand` events on the config element.
+ *
+ * Under the hood this uses TreeOutline.
+ *
+ * ## Config Element Attributes ##
+ *
+ * - `selected`: Whether the tree node should be rendered as selected.
+ * - `jslog-context`: The jslog context for the tree element.
+ * - `aria-*`: All aria attributes defined on the config element are cloned over.
+ * - `open`: On the <li>, declares whether the subtree should be rendererd as expanded or collapsed.
+ *
+ * ## Event Handling ##
+ *
+ * This section is only relevant if NOT using the `template`.
+ *
+ * Since config elements are cloned into the shadow DOM, it's not possible to directly attach event listeners to the
+ * children of config elements. Instead, the `UI.UIUtils.InterceptBindingDirective` directive needs to be used as a
+ * wrapper:
+ * ```
+ * const on = Lit.Directive.directive(UI.UIUtils.InterceptBindingDirective);
+ *
+ * html`<li role="treeitem">
+ *   <button @click=${on(clickHandler)}>click me</button>
+ * </li>`
+ * ```
+ *
+ * @property template Define the tree contents
+ * @event selected A node was selected
+ * @attribute navigation-variant Turn this tree into the navigation variant
+ * @attribute hide-overflow
+ */
+export declare class TreeViewElement extends HTMLElementWithLightDOMTemplate {
+    #private;
+    static readonly observedAttributes: string[];
+    constructor();
+    getInternalTreeOutlineForTest(): TreeOutlineInShadow;
+    protected updateNode(node: Node, attributeName: string | null): void;
+    protected addNodes(nodes: NodeList | Node[], nextSibling?: Node | null): void;
+    protected removeNodes(nodes: NodeList): void;
+    set hideOverflow(hide: boolean);
+    get hideOverflow(): boolean;
+    set navgiationVariant(navigationVariant: boolean);
+    get navigationVariant(): boolean;
+    set dense(dense: boolean);
+    get dense(): boolean;
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void;
+}
+export declare namespace TreeViewElement {
+    class SelectEvent extends CustomEvent<void> {
+        constructor();
+    }
+    class ExpandEvent extends CustomEvent<{
+        expanded: boolean;
+    }> {
+        constructor(detail: {
+            expanded: boolean;
+        });
+    }
+}
+export declare const ifExpanded: (content: Lit.LitTemplate | Iterable<Lit.LitTemplate>) => Lit.DirectiveResult<{
+    new (partInfo: Lit.Directive.PartInfo): {
+        "__#private@#partInfo": {
+            type: Lit.Directive.PartType;
+            startNode: Node;
+        };
+        render(content: Lit.LitTemplate | Iterable<Lit.LitTemplate>): Lit.LitTemplate | Iterable<Lit.LitTemplate>;
+        "__#private@#isInExpandedRow"(element: Node | null | undefined): boolean;
+        get _$isConnected(): boolean;
+        update(_part: Lit.Directive.Part, props: Array<unknown>): unknown;
+    };
+}>;
+export declare class TreeElementWrapper extends HTMLElement {
+    #private;
+    set treeElement(treeElement: TreeElement);
+    get treeElement(): TreeElement | undefined;
+}
+declare global {
+    interface HTMLElementTagNameMap {
+        'devtools-tree': TreeViewElement;
+        'devtools-tree-wrapper': TreeElementWrapper;
+    }
 }
 export {};

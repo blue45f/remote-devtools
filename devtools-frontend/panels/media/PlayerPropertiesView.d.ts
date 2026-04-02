@@ -1,65 +1,58 @@
 import * as Platform from '../../core/platform/platform.js';
-import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
-type TabData = {
-    [x: string]: string | object;
-};
+import * as UI from '../../ui/legacy/legacy.js';
+type TabData = Record<string, string | object>;
+/** Keep this enum in sync with panels/media/base/media_log_properties.h **/
 export declare const enum PlayerPropertyKeys {
-    Resolution = "kResolution",
-    TotalBytes = "kTotalBytes",
-    Bitrate = "kBitrate",
-    MaxDuration = "kMaxDuration",
-    StartTime = "kStartTime",
-    IsCdmAttached = "kIsCdmAttached",
-    IsStreaming = "kIsStreaming",
-    FrameUrl = "kFrameUrl",
-    FrameTitle = "kFrameTitle",
-    IsSingleOrigin = "kIsSingleOrigin",
-    IsRangeHeaderSupported = "kIsRangeHeaderSupported",
-    RendererName = "kRendererName",
-    VideoDecoderName = "kVideoDecoderName",
-    AudioDecoderName = "kAudioDecoderName",
-    IsPlatformVideoDecoder = "kIsPlatformVideoDecoder",
-    IsPlatformAudioDecoder = "kIsPlatformAudioDecoder",
-    VideoEncoderName = "kVideoEncoderName",
-    IsPlatformVideoEncoder = "kIsPlatformVideoEncoder",
-    IsVideoDecryptingDemuxerStream = "kIsVideoDecryptingDemuxerStream",
-    IsAudioDecryptingDemuxerStream = "kIsAudioDecryptingDemuxerStream",
-    AudioTracks = "kAudioTracks",
-    TextTracks = "kTextTracks",
-    VideoTracks = "kVideoTracks",
-    Framerate = "kFramerate",
-    VideoPlaybackRoughness = "kVideoPlaybackRoughness",
-    VideoPlaybackFreezing = "kVideoPlaybackFreezing"
+    RESOLUTION = "kResolution",
+    TOTAL_BYTES = "kTotalBytes",
+    BITRATE = "kBitrate",
+    MAX_DURATION = "kMaxDuration",
+    START_TIME = "kStartTime",
+    IS_CDM_ATTACHED = "kIsCdmAttached",
+    IS_STREAMING = "kIsStreaming",
+    FRAME_URL = "kFrameUrl",
+    FRAME_TITLE = "kFrameTitle",
+    IS_SINGLE_ORIGIN = "kIsSingleOrigin",
+    IS_RANGE_HEADER_SUPPORTED = "kIsRangeHeaderSupported",
+    RENDERER_NAME = "kRendererName",
+    VIDEO_DECODER_NAME = "kVideoDecoderName",
+    AUDIO_DECODER_NAME = "kAudioDecoderName",
+    IS_PLATFORM_VIDEO_DECODER = "kIsPlatformVideoDecoder",
+    IS_PLATFORM_AUDIO_DECODER = "kIsPlatformAudioDecoder",
+    VIDEO_ENCODER_NAME = "kVideoEncoderName",
+    IS_PLATFORM_VIDEO_ENCODER = "kIsPlatformVideoEncoder",
+    IS_VIDEO_DECRYPTION_DEMUXER_STREAM = "kIsVideoDecryptingDemuxerStream",
+    IS_AUDIO_DECRYPTING_DEMUXER_STREAM = "kIsAudioDecryptingDemuxerStream",
+    AUDIO_TRACKS = "kAudioTracks",
+    TEXT_TRACKS = "kTextTracks",
+    VIDEO_TRACKS = "kVideoTracks",
+    FRAMERATE = "kFramerate",
+    VIDEO_PLAYBACK_ROUGHNESS = "kVideoPlaybackRoughness",
+    VIDEO_PLAYBACK_FREEZING = "kVideoPlaybackFreezing",
+    HLS_BUFFERED_RANGES = "kHlsBufferedRanges"
 }
 export declare class PropertyRenderer extends UI.Widget.VBox {
-    private readonly title;
     private readonly contents;
     private value;
     private pseudoColorProtectionElement;
     constructor(title: Platform.UIString.LocalizedString);
-    updateData(propname: string, propvalue: string): void;
-    protected updateDataInternal(propname: string, propvalue: string | null): void;
+    updateData(propvalue: string): void;
+    updateDataInternal(propvalue: string): void;
     protected unsetNestedContents(): void;
     changeNestedContents(value: object): void;
     changeContents(value: string | null): void;
 }
-export declare class FormattedPropertyRenderer extends PropertyRenderer {
+export declare class FormattedPropertyRenderer<DataType> extends PropertyRenderer {
     private readonly formatfunction;
-    constructor(title: Platform.UIString.LocalizedString, formatfunction: (arg0: string) => string);
-    updateDataInternal(propname: string, propvalue: string | null): void;
+    constructor(title: Platform.UIString.LocalizedString, formatfunction: (arg0: DataType) => string);
+    updateDataInternal(propvalue: string): void;
 }
 export declare class DefaultPropertyRenderer extends PropertyRenderer {
     constructor(title: Platform.UIString.LocalizedString, defaultText: string);
 }
 export declare class NestedPropertyRenderer extends PropertyRenderer {
     constructor(title: Platform.UIString.LocalizedString, content: object);
-}
-export declare class DimensionPropertyRenderer extends PropertyRenderer {
-    private width;
-    private height;
-    constructor(title: Platform.UIString.LocalizedString);
-    updateDataInternal(propname: string, propvalue: string | null): void;
 }
 export declare class AttributesView extends UI.Widget.VBox {
     private readonly contentHash;
@@ -70,7 +63,7 @@ export declare class TrackManager {
     private readonly type;
     private readonly view;
     constructor(propertiesView: PlayerPropertiesView, type: string);
-    updateData(_name: string, value: string): void;
+    updateData(value: string): void;
     addNewTab(tabs: GenericTrackMenu | NoTracksPlaceholderMenu, tabData: TabData, tabNumber: number): void;
 }
 export declare class VideoTrackManager extends TrackManager {
@@ -98,7 +91,6 @@ export declare class PlayerPropertiesView extends UI.Widget.VBox {
     private readonly mediaElements;
     private readonly videoDecoderElements;
     private readonly audioDecoderElements;
-    private readonly textTrackElements;
     private readonly attributeMap;
     private readonly videoProperties;
     private readonly videoDecoderProperties;
@@ -113,7 +105,7 @@ export declare class PlayerPropertiesView extends UI.Widget.VBox {
     formatKbps(bitsPerSecond: string | number): string;
     formatTime(seconds: string | number): string;
     formatFileSize(bytes: string): string;
+    formatBufferedRanges(ranges: string[]): string;
     populateAttributesAndElements(): void;
-    wasShown(): void;
 }
 export {};

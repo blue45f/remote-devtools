@@ -6,7 +6,7 @@ export declare function computeRelativeImageURL(cssURLValue: string): string;
 export declare class EmulatedDevice {
     #private;
     title: string;
-    type: string;
+    type: Type;
     order: number;
     vertical: Orientation;
     horizontal: Orientation;
@@ -16,6 +16,7 @@ export declare class EmulatedDevice {
     userAgentMetadata: Protocol.Emulation.UserAgentMetadata | null;
     modes: Mode[];
     isDualScreen: boolean;
+    isFoldableScreen: boolean;
     verticalSpanned: Orientation;
     horizontalSpanned: Orientation;
     constructor();
@@ -39,28 +40,24 @@ export declare const Horizontal = "horizontal";
 export declare const Vertical = "vertical";
 export declare const HorizontalSpanned = "horizontal-spanned";
 export declare const VerticalSpanned = "vertical-spanned";
-export declare const Type: {
-    Phone: string;
-    Tablet: string;
-    Notebook: string;
-    Desktop: string;
-    Unknown: string;
-};
-export declare const Capability: {
-    Touch: string;
-    Mobile: string;
-};
-export declare const _Show: {
-    Always: string;
-    Default: string;
-    Never: string;
-};
+declare enum Type {
+    Phone = "phone",
+    Tablet = "tablet",
+    Notebook = "notebook",
+    Desktop = "desktop",
+    Unknown = "unknown"
+}
+export declare const enum Capability {
+    TOUCH = "touch",
+    MOBILE = "mobile"
+}
 export declare class EmulatedDevicesList extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     #private;
     constructor();
     static instance(): EmulatedDevicesList;
     private updateStandardDevices;
     private listFromJSONV1;
+    static rawEmulatedDevicesForTest(): typeof emulatedDevices;
     standard(): EmulatedDevice[];
     custom(): EmulatedDevice[];
     revealCustomSetting(): void;
@@ -71,13 +68,13 @@ export declare class EmulatedDevicesList extends Common.ObjectWrapper.ObjectWrap
     private copyShowValues;
 }
 export declare const enum Events {
-    CustomDevicesUpdated = "CustomDevicesUpdated",
-    StandardDevicesUpdated = "StandardDevicesUpdated"
+    CUSTOM_DEVICES_UPDATED = "CustomDevicesUpdated",
+    STANDARD_DEVICES_UPDATED = "StandardDevicesUpdated"
 }
-export type EventTypes = {
-    [Events.CustomDevicesUpdated]: void;
-    [Events.StandardDevicesUpdated]: void;
-};
+export interface EventTypes {
+    [Events.CUSTOM_DEVICES_UPDATED]: void;
+    [Events.STANDARD_DEVICES_UPDATED]: void;
+}
 export interface Mode {
     title: string;
     orientation: string;
@@ -102,3 +99,582 @@ export interface JSONMode {
         bottom: number;
     };
 }
+declare const emulatedDevices: ({
+    order: number;
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    type: string;
+    'user-agent-metadata'?: undefined;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    'dual-screen': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned': {
+            width: number;
+            height: number;
+            hinge: {
+                width: number;
+                height: number;
+                x: number;
+                y: number;
+                contentColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+                outlineColor?: undefined;
+            };
+        };
+        'horizontal-spanned': {
+            width: number;
+            height: number;
+            hinge: {
+                width: number;
+                height: number;
+                x: number;
+                y: number;
+                contentColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+                outlineColor?: undefined;
+            };
+        };
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    modes: {
+        title: string;
+        orientation: string;
+        insets: {
+            left: number;
+            top: number;
+            right: number;
+            bottom: number;
+        };
+    }[];
+    'foldable-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    'foldable-screen': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned': {
+            width: number;
+            height: number;
+            hinge: {
+                width: number;
+                height: number;
+                x: number;
+                y: number;
+                contentColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+                outlineColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+            };
+        };
+        'horizontal-spanned': {
+            width: number;
+            height: number;
+            hinge: {
+                width: number;
+                height: number;
+                x: number;
+                y: number;
+                contentColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+                outlineColor: {
+                    r: number;
+                    g: number;
+                    b: number;
+                    a: number;
+                };
+            };
+        };
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    modes: {
+        title: string;
+        orientation: string;
+        insets: {
+            left: number;
+            top: number;
+            right: number;
+            bottom: number;
+        };
+    }[];
+    'dual-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    type: string;
+    modes: {
+        title: string;
+        orientation: string;
+    }[];
+    'user-agent-metadata'?: undefined;
+    'dual-screen'?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    modes: {
+        title: string;
+        orientation: string;
+    }[];
+    'dual-screen'?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    order: number;
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    type: string;
+    order?: undefined;
+    'user-agent-metadata'?: undefined;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    order?: undefined;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    title: string;
+    type: string;
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    capabilities: string[];
+    'show-by-default': boolean;
+    screen: {
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    modes: {
+        title: string;
+        orientation: string;
+        insets: {
+            left: number;
+            top: number;
+            right: number;
+            bottom: number;
+        };
+        image: string;
+    }[];
+    order?: undefined;
+    'dual-screen'?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    title: string;
+    type: string;
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    capabilities: string[];
+    'show-by-default': boolean;
+    screen: {
+        'device-pixel-ratio': number;
+        vertical: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        horizontal: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    modes: {
+        title: string;
+        orientation: string;
+        insets: {
+            left: number;
+            top: number;
+            right: number;
+            bottom: number;
+        };
+        image: string;
+    }[];
+    order?: undefined;
+    'dual-screen'?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    'show-by-default': boolean;
+    title: string;
+    screen: {
+        horizontal: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            outline: {
+                image: string;
+                insets: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+            };
+            width: number;
+            height: number;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    'user-agent-metadata': {
+        platform: string;
+        platformVersion: string;
+        architecture: string;
+        model: string;
+        mobile: boolean;
+    };
+    type: string;
+    order?: undefined;
+    'dual-screen'?: undefined;
+    modes?: undefined;
+    'foldable-screen'?: undefined;
+} | {
+    'show-by-default': boolean;
+    title: () => Common.UIString.LocalizedString;
+    screen: {
+        horizontal: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'device-pixel-ratio': number;
+        vertical: {
+            width: number;
+            height: number;
+            outline?: undefined;
+        };
+        'vertical-spanned'?: undefined;
+        'horizontal-spanned'?: undefined;
+    };
+    capabilities: string[];
+    'user-agent': string;
+    type: string;
+    modes: {
+        title: string;
+        orientation: string;
+    }[];
+    order?: undefined;
+    'user-agent-metadata'?: undefined;
+    'dual-screen'?: undefined;
+    'foldable-screen'?: undefined;
+})[];
+export {};

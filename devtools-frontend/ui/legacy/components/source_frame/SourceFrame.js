@@ -1,52 +1,32 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../../../core/common/common.js';
+import * as Host from '../../../../core/host/host.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Root from '../../../../core/root/root.js';
+import * as SDK from '../../../../core/sdk/sdk.js';
 import * as Formatter from '../../../../models/formatter/formatter.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
+import * as PanelCommon from '../../../../panels/common/common.js';
 import * as CodeMirror from '../../../../third_party/codemirror.next/codemirror.next.js';
 import * as CodeHighlighter from '../../../components/code_highlighter/code_highlighter.js';
 import * as TextEditor from '../../../components/text_editor/text_editor.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 const UIStrings = {
     /**
-     *@description Text for the source of something
+     * @description Text for the source of something
      */
     source: 'Source',
     /**
-     *@description Text to pretty print a file
+     * @description Text to pretty print a file
      */
     prettyPrint: 'Pretty print',
     /**
-     *@description Text when something is loading
+     * @description Text when something is loading
      */
     loading: 'Loading…',
     /**
@@ -62,25 +42,56 @@ const UIStrings = {
      */
     bytecodePositionXs: 'Bytecode position `0x`{PH1}',
     /**
-     *@description Text in Source Frame of the Sources panel
-     *@example {2} PH1
-     *@example {2} PH2
+     * @description Text in Source Frame of the Sources panel
+     * @example {2} PH1
+     * @example {2} PH2
      */
     lineSColumnS: 'Line {PH1}, Column {PH2}',
     /**
-     *@description Text in Source Frame of the Sources panel
-     *@example {2} PH1
+     * @description Text in Source Frame of the Sources panel
+     * @example {2} PH1
      */
     dCharactersSelected: '{PH1} characters selected',
     /**
-     *@description Text in Source Frame of the Sources panel
-     *@example {2} PH1
-     *@example {2} PH2
+     * @description Text in Source Frame of the Sources panel
+     * @example {2} PH1
+     * @example {2} PH2
      */
     dLinesDCharactersSelected: '{PH1} lines, {PH2} characters selected',
+    /**
+     * @description Headline of warning shown to users when pasting text/code into DevTools.
+     */
+    doYouTrustThisCode: 'Do you trust this code?',
+    /**
+     * @description Warning shown to users when pasting text/code into DevTools.
+     * @example {allow pasting} PH1
+     */
+    doNotPaste: 'Don\'t paste code you do not understand or have not reviewed yourself into DevTools. This could allow attackers to steal your identity or take control of your computer. Please type \'\'{PH1}\'\' below to allow pasting.',
+    /**
+     * @description Text a user needs to type in order to confirm that they are aware of the danger of pasting code into the DevTools console.
+     */
+    allowPasting: 'allow pasting',
+    /**
+     * @description Input box placeholder which instructs the user to type 'allow pasting' into the input box.
+     * @example {allow pasting} PH1
+     */
+    typeAllowPasting: 'Type \'\'{PH1}\'\'',
+    /**
+     * @description Error message shown when the user tries to open a file that contains non-readable data. "Editor" refers to
+     * a text editor.
+     */
+    binaryContentError: 'Editor can\'t show binary data. Use the "Response" tab in the "Network" panel to inspect this resource.',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/source_frame/SourceFrame.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+export const LINE_NUMBER_FORMATTER = CodeMirror.Facet.define({
+    combine(value) {
+        if (value.length === 0) {
+            return (lineNo) => lineNo.toString();
+        }
+        return value[0];
+    },
+});
 export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.SimpleView) {
     options;
     lazyContent;
@@ -101,7 +112,6 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     searchResults;
     searchRegex;
     loadError;
-    muteChangeEventsForSetContent;
     sourcePosition;
     searchableView;
     editable;
@@ -112,16 +122,21 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     contentRequested;
     wasmDisassemblyInternal;
     contentSet;
+    selfXssWarningDisabledSetting;
     constructor(lazyContent, options = {}) {
-        super(i18nString(UIStrings.source));
+        super({
+            title: i18nString(UIStrings.source),
+            viewId: 'source',
+        });
         this.options = options;
         this.lazyContent = lazyContent;
         this.prettyInternal = false;
         this.rawContent = null;
         this.formattedMap = null;
-        this.prettyToggle = new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.prettyPrint), 'brackets');
-        this.prettyToggle.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => {
-            void this.setPretty(!this.prettyToggle.toggled());
+        this.prettyToggle =
+            new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.prettyPrint), 'brackets', undefined, 'pretty-print');
+        this.prettyToggle.addEventListener("Click" /* UI.Toolbar.ToolbarButton.Events.CLICK */, () => {
+            void this.setPretty(this.prettyToggle.isToggled());
         });
         this.shouldAutoPrettyPrint = false;
         this.prettyToggle.setVisible(false);
@@ -141,7 +156,6 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         this.searchResults = [];
         this.searchRegex = null;
         this.loadError = false;
-        this.muteChangeEventsForSetContent = false;
         this.sourcePosition = new UI.Toolbar.ToolbarText();
         this.searchableView = null;
         this.editable = false;
@@ -152,13 +166,14 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         this.contentRequested = false;
         this.wasmDisassemblyInternal = null;
         this.contentSet = false;
+        this.selfXssWarningDisabledSetting = Common.Settings.Settings.instance().createSetting('disable-self-xss-warning', false, "Synced" /* Common.Settings.SettingStorageType.SYNCED */);
         Common.Settings.Settings.instance()
-            .moduleSetting('textEditorIndent')
+            .moduleSetting('text-editor-indent')
             .addChangeListener(this.#textEditorIndentChanged, this);
     }
     disposeView() {
         Common.Settings.Settings.instance()
-            .moduleSetting('textEditorIndent')
+            .moduleSetting('text-editor-indent')
             .removeChangeListener(this.#textEditorIndentChanged, this);
     }
     async #textEditorIndentChanged() {
@@ -182,9 +197,9 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     }
     editorConfiguration(doc) {
         return [
-            CodeMirror.EditorView.updateListener.of(update => this.dispatchEventToListeners("EditorUpdate" /* Events.EditorUpdate */, update)),
+            CodeMirror.EditorView.updateListener.of(update => this.dispatchEventToListeners("EditorUpdate" /* Events.EDITOR_UPDATE */, update)),
             TextEditor.Config.baseConfiguration(doc),
-            TextEditor.Config.closeBrackets,
+            TextEditor.Config.closeBrackets.instance(),
             TextEditor.Config.autocompletion.instance(),
             TextEditor.Config.showWhitespace.instance(),
             TextEditor.Config.allowScrollPastEof.instance(),
@@ -194,7 +209,8 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             CodeMirror.EditorView.domEventHandlers({
                 focus: () => this.onFocus(),
                 blur: () => this.onBlur(),
-                scroll: () => this.dispatchEventToListeners("EditorScroll" /* Events.EditorScroll */),
+                paste: () => this.onPaste(),
+                scroll: () => this.dispatchEventToListeners("EditorScroll" /* Events.EDITOR_SCROLL */),
                 contextmenu: event => this.onContextMenu(event),
             }),
             CodeMirror.lineNumbers({
@@ -214,12 +230,47 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             this.wasmDisassemblyInternal ? markNonBreakableLines(this.wasmDisassemblyInternal) : nonBreakableLines,
             this.options.lineWrapping ? CodeMirror.EditorView.lineWrapping : [],
             this.options.lineNumbers !== false ? CodeMirror.lineNumbers() : [],
+            CodeMirror.indentationMarkers({
+                colors: {
+                    light: 'var(--sys-color-divider)',
+                    activeLight: 'var(--sys-color-divider-prominent)',
+                    dark: 'var(--sys-color-divider)',
+                    activeDark: 'var(--sys-color-divider-prominent)',
+                },
+            }),
+            sourceFrameInfobarState,
         ];
     }
     onBlur() {
     }
     onFocus() {
-        this.resetCurrentSearchResultIndex();
+    }
+    onPaste() {
+        if (Root.Runtime.Runtime.queryParam('isChromeForTesting') ||
+            Root.Runtime.Runtime.queryParam('disableSelfXssWarnings') || this.selfXssWarningDisabledSetting.get()) {
+            return false;
+        }
+        void this.showSelfXssWarning();
+        return true;
+    }
+    async showSelfXssWarning() {
+        // Hack to circumvent Chrome issue which would show a tooltip for the newly opened
+        // dialog if pasting via keyboard.
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const allowPasting = await PanelCommon.TypeToAllowDialog.show({
+            jslogContext: {
+                dialog: 'self-xss-warning',
+                input: 'allow-pasting',
+            },
+            header: i18nString(UIStrings.doYouTrustThisCode),
+            message: i18nString(UIStrings.doNotPaste, { PH1: i18nString(UIStrings.allowPasting) }),
+            typePhrase: i18nString(UIStrings.allowPasting),
+            inputPlaceholder: i18nString(UIStrings.typeAllowPasting, { PH1: i18nString(UIStrings.allowPasting) })
+        });
+        if (allowPasting) {
+            this.selfXssWarningDisabledSetting.set(true);
+            Host.userMetrics.actionTaken(Host.UserMetrics.Action.SelfXssAllowPastingInDialog);
+        }
     }
     get wasmDisassembly() {
         return this.wasmDisassemblyInternal;
@@ -245,7 +296,8 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         return { lineNumber, columnNumber };
     }
     setCanPrettyPrint(canPrettyPrint, autoPrettyPrint) {
-        this.shouldAutoPrettyPrint = canPrettyPrint && Boolean(autoPrettyPrint);
+        this.shouldAutoPrettyPrint = autoPrettyPrint === true &&
+            Common.Settings.Settings.instance().moduleSetting('auto-pretty-print-minified').get();
         this.prettyToggle.setVisible(canPrettyPrint);
     }
     setEditable(editable) {
@@ -273,6 +325,7 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             newSelection = textEditor.createSelection({ lineNumber: start[0], columnNumber: start[1] }, { lineNumber: end[0], columnNumber: end[1] });
         }
         else {
+            this.formattedMap = null;
             await this.setContent(this.rawContent || '');
             this.baseDoc = textEditor.state.doc;
             const start = this.prettyToRawLocation(startPos.lineNumber, startPos.columnNumber);
@@ -292,7 +345,7 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         if (this.options.lineNumbers === false) {
             return [];
         }
-        let formatNumber = null;
+        let formatNumber = undefined;
         if (this.wasmDisassemblyInternal) {
             const disassembly = this.wasmDisassemblyInternal;
             const lastBytecodeOffset = disassembly.lineNumberToBytecodeOffset(disassembly.lineNumbers - 1);
@@ -303,21 +356,26 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             };
         }
         else if (this.prettyInternal) {
-            formatNumber = (lineNumber) => {
-                const line = this.prettyToRawLocation(lineNumber - 1, 0)[0] + 1;
-                if (lineNumber === 1) {
-                    return String(line);
+            formatNumber = (lineNumber, state) => {
+                // @codemirror/view passes a high number here to estimate the
+                // maximum width to allocate for the line number gutter.
+                if (lineNumber < 2 || lineNumber > state.doc.lines) {
+                    return String(lineNumber);
                 }
-                if (line !== this.prettyToRawLocation(lineNumber - 2, 0)[0] + 1) {
-                    return String(line);
+                const [currLine] = this.prettyToRawLocation(lineNumber - 1);
+                const [prevLine] = this.prettyToRawLocation(lineNumber - 2);
+                if (currLine !== prevLine) {
+                    return String(currLine + 1);
                 }
                 return '-';
             };
         }
-        return formatNumber ? CodeMirror.lineNumbers({ formatNumber }) : [];
+        return formatNumber ? [CodeMirror.lineNumbers({ formatNumber }), LINE_NUMBER_FORMATTER.of(formatNumber)] : [];
     }
     updateLineNumberFormatter() {
         this.textEditor.dispatch({ effects: config.lineNumbers.reconfigure(this.getLineNumberFormatter()) });
+        this.textEditor.shadowRoot?.querySelector('.cm-lineNumbers')
+            ?.setAttribute('jslog', `${VisualLogging.gutter('line-numbers').track({ click: true })}`);
     }
     updatePrettyPrintState() {
         this.prettyToggle.setToggled(this.prettyInternal);
@@ -340,6 +398,7 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         return this.loadError;
     }
     wasShown() {
+        super.wasShown();
         void this.ensureContentLoaded();
         this.wasShownOrLoaded();
     }
@@ -368,84 +427,50 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     async ensureContentLoaded() {
         if (!this.contentRequested) {
             this.contentRequested = true;
-            await this.setDeferredContent(this.lazyContent());
+            await this.setContentDataOrError(this.lazyContent());
             this.contentSet = true;
         }
     }
-    async setDeferredContent(deferredContentPromise) {
-        const progressIndicator = new UI.ProgressIndicator.ProgressIndicator();
-        progressIndicator.setTitle(i18nString(UIStrings.loading));
-        progressIndicator.setTotalWork(100);
-        this.progressToolbarItem.element.appendChild(progressIndicator.element);
-        progressIndicator.setWorked(1);
-        const deferredContent = await deferredContentPromise;
-        let error, content;
-        if (deferredContent.content === null) {
-            error = deferredContent.error;
-            this.rawContent = deferredContent.error;
+    async setContentDataOrError(contentDataPromise) {
+        const progressIndicator = document.createElement('devtools-progress');
+        progressIndicator.title = i18nString(UIStrings.loading);
+        progressIndicator.totalWork = 100;
+        this.progressToolbarItem.element.appendChild(progressIndicator);
+        progressIndicator.worked = 1;
+        const contentData = await contentDataPromise;
+        let error;
+        let content;
+        let isMinified = false;
+        if (TextUtils.ContentData.ContentData.isError(contentData)) {
+            error = contentData.error;
+            content = contentData.error;
+        }
+        else if (contentData instanceof TextUtils.WasmDisassembly.WasmDisassembly) {
+            content = CodeMirror.Text.of(contentData.lines);
+            this.wasmDisassemblyInternal = contentData;
+        }
+        else if (contentData.isTextContent) {
+            content = contentData.text;
+            isMinified = TextUtils.TextUtils.isMinified(contentData.text);
+            this.wasmDisassemblyInternal = null;
+        }
+        else if (contentData.mimeType === 'application/wasm') {
+            // The network panel produces ContentData with raw WASM inside. We have to manually disassemble that
+            // as V8 might not know about it.
+            this.wasmDisassemblyInternal = await SDK.Script.disassembleWasm(contentData.base64);
+            content = CodeMirror.Text.of(this.wasmDisassemblyInternal.lines);
         }
         else {
-            content = deferredContent.content;
-            if (deferredContent.isEncoded) {
-                const view = new DataView(Common.Base64.decode(deferredContent.content));
-                const decoder = new TextDecoder();
-                this.rawContent = decoder.decode(view, { stream: true });
-            }
-            else if ('wasmDisassemblyInfo' in deferredContent && deferredContent.wasmDisassemblyInfo) {
-                const { wasmDisassemblyInfo } = deferredContent;
-                this.rawContent = CodeMirror.Text.of(wasmDisassemblyInfo.lines);
-                this.wasmDisassemblyInternal = wasmDisassemblyInfo;
-            }
-            else {
-                this.rawContent = content;
-                this.wasmDisassemblyInternal = null;
-            }
+            error = i18nString(UIStrings.binaryContentError);
+            content = null;
+            this.wasmDisassemblyInternal = null;
         }
-        // If the input is wasm but v8-based wasm disassembly failed, fall back to wasmparser for backwards compatibility.
-        if (content && this.contentType === 'application/wasm' && !this.wasmDisassemblyInternal) {
-            const worker = Common.Worker.WorkerWrapper.fromURL(new URL('../../../../entrypoints/wasmparser_worker/wasmparser_worker-entrypoint.js', import.meta.url));
-            const promise = new Promise((resolve, reject) => {
-                worker.onmessage =
-                    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ({ data }) => {
-                        if ('event' in data) {
-                            switch (data.event) {
-                                case 'progress':
-                                    progressIndicator?.setWorked(data.params.percentage);
-                                    break;
-                            }
-                        }
-                        else if ('method' in data) {
-                            switch (data.method) {
-                                case 'disassemble':
-                                    if ('error' in data) {
-                                        reject(data.error);
-                                    }
-                                    else if ('result' in data) {
-                                        resolve(data.result);
-                                    }
-                                    break;
-                            }
-                        }
-                    };
-                worker.onerror = reject;
-            });
-            worker.postMessage({ method: 'disassemble', params: { content } });
-            try {
-                const { lines, offsets, functionBodyOffsets } = await promise;
-                this.rawContent = content = CodeMirror.Text.of(lines);
-                this.wasmDisassemblyInternal = new Common.WasmDisassembly.WasmDisassembly(lines, offsets, functionBodyOffsets);
-            }
-            catch (e) {
-                this.rawContent = content = error = e.message;
-            }
-            finally {
-                worker.terminate();
-            }
+        progressIndicator.worked = 100;
+        progressIndicator.done = true;
+        if (this.rawContent === content && error === undefined) {
+            return;
         }
-        progressIndicator.setWorked(100);
-        progressIndicator.done();
+        this.rawContent = content;
         this.formattedMap = null;
         this.prettyToggle.setEnabled(true);
         if (error) {
@@ -453,20 +478,18 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             this.textEditor.state = this.placeholderEditorState(error);
             this.prettyToggle.setEnabled(false);
         }
+        else if (this.shouldAutoPrettyPrint && isMinified) {
+            await this.setPretty(true);
+        }
         else {
-            if (this.shouldAutoPrettyPrint && TextUtils.TextUtils.isMinified(content || '')) {
-                await this.setPretty(true);
-            }
-            else {
-                await this.setContent(this.rawContent || '');
-            }
+            await this.setContent(this.rawContent || '');
         }
     }
     revealPosition(position, shouldHighlight) {
         this.lineToScrollTo = null;
         this.selectionToSet = null;
-        let line = 0, column = 0;
         if (typeof position === 'number') {
+            let line = 0, column = 0;
             const { doc } = this.textEditor.state;
             if (position > doc.length) {
                 line = doc.lines - 1;
@@ -476,24 +499,29 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
                 line = lineObj.number - 1;
                 column = position - lineObj.from;
             }
+            this.positionToReveal = { to: { lineNumber: line, columnNumber: column }, shouldHighlight };
+        }
+        else if ('lineNumber' in position) {
+            const { lineNumber, columnNumber } = position;
+            this.positionToReveal = { to: { lineNumber, columnNumber: columnNumber ?? 0 }, shouldHighlight };
         }
         else {
-            line = position.lineNumber;
-            column = position.columnNumber ?? 0;
+            this.positionToReveal = { ...position, shouldHighlight };
         }
-        this.positionToReveal = { line, column, shouldHighlight: shouldHighlight };
-        this.innerRevealPositionIfNeeded();
+        this.#revealPositionIfNeeded();
     }
-    innerRevealPositionIfNeeded() {
+    #revealPositionIfNeeded() {
         if (!this.positionToReveal) {
             return;
         }
         if (!this.loaded || !this.isShowing()) {
             return;
         }
-        const location = this.uiLocationToEditorLocation(this.positionToReveal.line, this.positionToReveal.column);
+        const { from, to, shouldHighlight } = this.positionToReveal;
+        const toLocation = this.uiLocationToEditorLocation(to.lineNumber, to.columnNumber);
+        const fromLocation = from ? this.uiLocationToEditorLocation(from.lineNumber, from.columnNumber) : undefined;
         const { textEditor } = this;
-        textEditor.revealPosition(textEditor.createSelection(location), this.positionToReveal.shouldHighlight);
+        textEditor.revealPosition(textEditor.createSelection(toLocation, fromLocation), shouldHighlight);
         this.positionToReveal = null;
     }
     clearPositionToReveal() {
@@ -502,9 +530,9 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     scrollToLine(line) {
         this.clearPositionToReveal();
         this.lineToScrollTo = line;
-        this.innerScrollToLineIfNeeded();
+        this.#scrollToLineIfNeeded();
     }
-    innerScrollToLineIfNeeded() {
+    #scrollToLineIfNeeded() {
         if (this.lineToScrollTo !== null) {
             if (this.loaded && this.isShowing()) {
                 const { textEditor } = this;
@@ -516,9 +544,9 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     }
     setSelection(textRange) {
         this.selectionToSet = textRange;
-        this.innerSetSelectionIfNeeded();
+        this.#setSelectionIfNeeded();
     }
-    innerSetSelectionIfNeeded() {
+    #setSelectionIfNeeded() {
         const sel = this.selectionToSet;
         if (sel && this.loaded && this.isShowing()) {
             const { textEditor } = this;
@@ -529,9 +557,14 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         }
     }
     wasShownOrLoaded() {
-        this.innerRevealPositionIfNeeded();
-        this.innerSetSelectionIfNeeded();
-        this.innerScrollToLineIfNeeded();
+        this.#revealPositionIfNeeded();
+        this.#setSelectionIfNeeded();
+        this.#scrollToLineIfNeeded();
+        this.textEditor.shadowRoot?.querySelector('.cm-lineNumbers')
+            ?.setAttribute('jslog', `${VisualLogging.gutter('line-numbers').track({ click: true })}`);
+        this.textEditor.shadowRoot?.querySelector('.cm-foldGutter')
+            ?.setAttribute('jslog', `${VisualLogging.gutter('fold')}`);
+        this.textEditor.setAttribute('jslog', `${VisualLogging.textField().track({ change: true })}`);
     }
     onTextChanged() {
         const wasPretty = this.pretty;
@@ -583,7 +616,6 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         this.textEditor.dispatch({ effects: config.language.reconfigure(langExtension) });
     }
     async setContent(content) {
-        this.muteChangeEventsForSetContent = true;
         const { textEditor } = this;
         const wasLoaded = this.loadedInternal;
         const scrollTop = textEditor.editor.scrollDOM.scrollTop;
@@ -608,7 +640,6 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             this.delayedFindSearchMatches();
             this.delayedFindSearchMatches = null;
         }
-        this.muteChangeEventsForSetContent = false;
     }
     setSearchableView(view) {
         this.searchableView = view;
@@ -661,7 +692,7 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
         }
         const editor = this.textEditor;
         const currentActiveSearch = editor.state.field(activeSearchState);
-        if (currentActiveSearch && currentActiveSearch.currentRange) {
+        if (currentActiveSearch?.currentRange) {
             editor.dispatch({ effects: setActiveSearch.of(new ActiveSearch(currentActiveSearch.regexp, null)) });
         }
     }
@@ -704,6 +735,9 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
     supportsCaseSensitiveSearch() {
         return true;
     }
+    supportsWholeWordSearch() {
+        return true;
+    }
     supportsRegexSearch() {
         return true;
     }
@@ -724,7 +758,7 @@ export class SourceFrameImpl extends Common.ObjectWrapper.eventMixin(UI.View.Sim
             userEvent: 'select.search',
         });
     }
-    replaceSelectionWith(searchConfig, replacement) {
+    replaceSelectionWith(_searchConfig, replacement) {
         const range = this.searchResults[this.currentSearchResultIndex];
         if (!range) {
             return;
@@ -850,20 +884,12 @@ class SearchMatch {
                 return this.match[0];
             }
             if (selector[0] === '<') {
-                return (this.match.groups && this.match.groups[selector.slice(1, selector.length - 1)]) || '';
+                return (this.match.groups?.[selector.slice(1, selector.length - 1)]) || '';
             }
             return this.match[Number.parseInt(selector, 10)] || '';
         });
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var DecoratorType;
-(function (DecoratorType) {
-    DecoratorType["PERFORMANCE"] = "performance";
-    DecoratorType["MEMORY"] = "memory";
-    DecoratorType["COVERAGE"] = "coverage";
-})(DecoratorType || (DecoratorType = {}));
 const config = {
     editable: new CodeMirror.Compartment(),
     language: new CodeMirror.Compartment(),
@@ -887,13 +913,13 @@ class ActiveSearch {
                 a.regexp.regex.source === b.regexp.regex.source && a.regexp.regex.flags === b.regexp.regex.flags);
     }
 }
-const setActiveSearch = CodeMirror.StateEffect.define({ map: (value, mapping) => value && value.map(mapping) });
+const setActiveSearch = CodeMirror.StateEffect.define({ map: (value, mapping) => value?.map(mapping) });
 const activeSearchState = CodeMirror.StateField.define({
     create() {
         return null;
     },
     update(state, tr) {
-        return tr.effects.reduce((state, effect) => effect.is(setActiveSearch) ? effect.value : state, state && state.map(tr.changes));
+        return tr.effects.reduce((state, effect) => effect.is(setActiveSearch) ? effect.value : state, state?.map(tr.changes) ?? null);
     },
 });
 const searchMatchDeco = CodeMirror.Decoration.mark({ class: 'cm-searchMatch' });
@@ -929,7 +955,7 @@ const searchHighlighter = CodeMirror.ViewPlugin.fromClass(class {
                         }
                         if (match[0].length) {
                             const start = pos + match.index, end = start + match[0].length;
-                            const current = active.currentRange && active.currentRange.from === start && active.currentRange.to === end;
+                            const current = active.currentRange?.from === start && active.currentRange.to === end;
                             builder.add(start, end, current ? currentSearchMatchDeco : searchMatchDeco);
                         }
                         else {
@@ -942,11 +968,11 @@ const searchHighlighter = CodeMirror.ViewPlugin.fromClass(class {
         }
         return builder.finish();
     }
-}, { decorations: (value) => value.decorations });
+}, { decorations: value => value.decorations });
 const nonBreakableLineMark = new (class extends CodeMirror.GutterMarker {
     elementClass = 'cm-nonBreakableLine';
 })();
-// Effect to add lines (by position) to the set of non-breakable lines.
+/** Effect to add lines (by position) to the set of non-breakable lines. **/
 export const addNonBreakableLines = CodeMirror.StateEffect.define();
 const nonBreakableLines = CodeMirror.StateField.define({
     create() {
@@ -988,22 +1014,44 @@ function markNonBreakableLines(disassembly) {
 const sourceFrameTheme = CodeMirror.EditorView.theme({
     '&.cm-editor': { height: '100%' },
     '.cm-scroller': { overflow: 'auto' },
-    '.cm-lineNumbers .cm-gutterElement.cm-nonBreakableLine': { color: 'var(--color-non-breakable-line) !important' },
+    '.cm-lineNumbers .cm-gutterElement.cm-nonBreakableLine': { color: 'var(--sys-color-state-disabled) !important' },
     '.cm-searchMatch': {
-        border: '1px solid var(--color-search-match-border)',
+        border: '1px solid var(--sys-color-outline)',
         borderRadius: '3px',
         margin: '0 -1px',
         '&.cm-searchMatch-selected': {
             borderRadius: '1px',
-            backgroundColor: 'var(--color-selected-search-match-background)',
-            borderColor: 'var(--color-selected-search-match-background)',
+            backgroundColor: 'var(--sys-color-yellow-container)',
+            borderColor: 'var(--sys-color-yellow-outline)',
             '&, & *': {
-                color: 'var(--color-selected-search-match) !important',
+                color: 'var(--sys-color-on-surface) !important',
             },
         },
     },
     ':host-context(.pretty-printed) & .cm-lineNumbers .cm-gutterElement': {
-        color: 'var(--color-primary-old)',
+        color: 'var(--sys-color-primary)',
     },
+});
+/** Infobar panel state, used to show additional panels below the editor. **/
+export const addSourceFrameInfobar = CodeMirror.StateEffect.define();
+export const removeSourceFrameInfobar = CodeMirror.StateEffect.define();
+const sourceFrameInfobarState = CodeMirror.StateField.define({
+    create() {
+        return [];
+    },
+    update(current, tr) {
+        for (const effect of tr.effects) {
+            if (effect.is(addSourceFrameInfobar)) {
+                current = current.concat(effect.value);
+            }
+            else if (effect.is(removeSourceFrameInfobar)) {
+                current = current.filter(b => b.element !== effect.value.element);
+            }
+        }
+        return current;
+    },
+    provide: (field) => CodeMirror.showPanel.computeN([field], (state) => state.field(field)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((bar) => () => ({ dom: bar.element }))),
 });
 //# sourceMappingURL=SourceFrame.js.map

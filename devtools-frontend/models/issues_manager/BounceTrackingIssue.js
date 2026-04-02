@@ -1,24 +1,22 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import { Issue, IssueCategory, IssueKind } from './Issue.js';
+import { Issue } from './Issue.js';
 const UIStrings = {
     /**
-     *@description Title for Bounce Tracking Mitigation explainer url link.
+     * @description Title for Bounce Tracking Mitigation explainer url link.
      */
-    bounceTrackingMitigations: 'Bounce Tracking Mitigations',
+    bounceTrackingMitigations: 'Bounce tracking mitigations',
 };
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/BounceTrackingIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class BounceTrackingIssue extends Issue {
-    #issueDetails;
     constructor(issueDetails, issuesModel) {
-        super("BounceTrackingIssue" /* Protocol.Audits.InspectorIssueCode.BounceTrackingIssue */, issuesModel);
-        this.#issueDetails = issueDetails;
+        super("BounceTrackingIssue" /* Protocol.Audits.InspectorIssueCode.BounceTrackingIssue */, issueDetails, issuesModel);
     }
     getCategory() {
-        return IssueCategory.Other;
+        return "Other" /* IssueCategory.OTHER */;
     }
     getDescription() {
         return {
@@ -31,20 +29,14 @@ export class BounceTrackingIssue extends Issue {
             ],
         };
     }
-    details() {
-        return this.#issueDetails;
-    }
     getKind() {
-        return IssueKind.BreakingChange;
+        return "BreakingChange" /* IssueKind.BREAKING_CHANGE */;
     }
     primaryKey() {
-        return JSON.stringify(this.#issueDetails);
+        return JSON.stringify(this.details());
     }
     trackingSites() {
-        if (this.#issueDetails.trackingSites) {
-            return this.#issueDetails.trackingSites;
-        }
-        return [];
+        return this.details().trackingSites;
     }
     static fromInspectorIssue(issuesModel, inspectorIssue) {
         const details = inspectorIssue.details.bounceTrackingIssueDetails;

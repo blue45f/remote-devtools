@@ -1,13 +1,15 @@
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { ConsoleFilter, type LevelsMask } from './ConsoleFilter.js';
 import { ConsolePinPane } from './ConsolePinPane.js';
 import { ConsoleViewMessage } from './ConsoleViewMessage.js';
 import { type ConsoleViewportElement, type ConsoleViewportProvider } from './ConsoleViewport.js';
 export declare class ConsoleView extends UI.Widget.VBox implements UI.SearchableView.Searchable, ConsoleViewportProvider, SDK.TargetManager.SDKModelObserver<SDK.ConsoleModel.ConsoleModel> {
-    private readonly searchableViewInternal;
+    #private;
     private readonly sidebar;
     private isSidebarOpen;
     private filter;
@@ -33,6 +35,7 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private readonly showCorsErrorsSetting;
     private readonly timestampsSetting;
     private readonly consoleHistoryAutocompleteSetting;
+    private selfXssWarningDisabledSetting;
     readonly pinPane: ConsolePinPane;
     private viewport;
     private messagesElement;
@@ -52,7 +55,6 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private buildHiddenCacheTimeout?;
     private searchShouldJumpBackwards?;
     private searchProgressIndicator?;
-    private innerSearchTimeoutId?;
     private muteViewportUpdates?;
     private waitForScrollTimeout?;
     private issueCounter;
@@ -61,17 +63,22 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private issueToolbarThrottle;
     private requestResolver;
     private issueResolver;
+    aiCodeCompletionConfig?: TextEditor.AiCodeCompletionProvider.AiCodeCompletionConfig;
+    private aiCodeCompletionSummaryToolbarContainer?;
+    private aiCodeCompletionSummaryToolbar?;
     constructor(viewportThrottlerTimeout: number);
-    static appendSettingsCheckboxToToolbar(toolbar: UI.Toolbar.Toolbar, settingOrSetingName: Common.Settings.Setting<boolean> | string, title: string, alternateTitle?: string): UI.Toolbar.ToolbarSettingCheckbox;
+    static clearConsoleViewInstanceForTest(): void;
     static instance(opts?: {
         forceNew: boolean;
         viewportThrottlerTimeout?: number;
     }): ConsoleView;
-    static clearConsole(): void;
+    createAiCodeCompletionSummaryToolbar(): void;
+    clearConsole(): void;
+    issuesCountUpdatedForTest(): void;
     modelAdded(model: SDK.ConsoleModel.ConsoleModel): void;
     modelRemoved(model: SDK.ConsoleModel.ConsoleModel): void;
     private onFilterChanged;
-    private setImmediatelyFilterMessagesForTest;
+    protected setImmediatelyFilterMessagesForTest(): void;
     searchableView(): UI.SearchableView.SearchableView;
     clearHistory(): void;
     private consoleHistoryAutocompleteChanged;
@@ -84,6 +91,7 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private consoleTimestampsSettingChanged;
     private executionContextChanged;
     willHide(): void;
+    dispose(): void;
     wasShown(): void;
     focus(): void;
     focusPrompt(): void;
@@ -91,6 +99,7 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     onResize(): void;
     private hidePromptSuggestBox;
     private invalidateViewport;
+    onDetach(): void;
     private updateIssuesToolbarItem;
     private scheduleViewportRefresh;
     getScheduledRefreshPromiseForTest(): Promise<void> | undefined;
@@ -106,9 +115,11 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private messageAppendedForTests;
     private createViewMessage;
     private onMessageResized;
+    getConsoleMessageHistory(): string;
     private consoleCleared;
     private handleContextMenuEvent;
     private saveConsole;
+    private copyConsole;
     private tryToCollapseMessages;
     private buildHiddenCache;
     private cancelBuildHiddenCache;
@@ -127,13 +138,13 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     performSearch(searchConfig: UI.SearchableView.SearchConfig, shouldJump: boolean, jumpBackwards?: boolean): void;
     private cleanupAfterSearch;
     private searchFinishedForTests;
-    private innerSearch;
     private searchMessage;
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
-    private jumpToMatch;
+    private highlightMatch;
     private updateStickToBottomOnPointerDown;
     private updateStickToBottomOnPointerUp;
     private updateViewportStickinessForTest;
@@ -141,11 +152,13 @@ export declare class ConsoleView extends UI.Widget.VBox implements UI.Searchable
     private promptTextChanged;
     private promptTextChangedForTest;
     private isScrolledToBottom;
+    private setupAiCodeCompletion;
+    private cleanupAiCodeCompletion;
 }
 export declare class ConsoleViewFilter {
     private readonly filterChanged;
     messageLevelFiltersSetting: Common.Settings.Setting<LevelsMask>;
-    hideNetworkMessagesSetting: Common.Settings.Setting<boolean>;
+    networkMessagesSetting: Common.Settings.Setting<boolean>;
     filterByExecutionContextSetting: Common.Settings.Setting<boolean>;
     private readonly suggestionBuilder;
     readonly textFilterUI: UI.Toolbar.ToolbarInput;
@@ -153,7 +166,8 @@ export declare class ConsoleViewFilter {
     private readonly filterParser;
     currentFilter: ConsoleFilter;
     private levelLabels;
-    readonly levelMenuButton: UI.Toolbar.ToolbarButton;
+    readonly levelMenuButton: UI.Toolbar.ToolbarMenuButton;
+    readonly levelMenuButtonInfo: UI.Toolbar.ToolbarItem;
     constructor(filterChangedCallback: () => void);
     onMessageAdded(message: SDK.ConsoleModel.ConsoleMessage): void;
     setLevelMenuOverridden(overridden: boolean): void;
@@ -161,7 +175,7 @@ export declare class ConsoleViewFilter {
     private updateCurrentFilter;
     private onFilterChanged;
     private updateLevelMenuButtonText;
-    private showLevelContextMenu;
+    private appendLevelMenuItems;
     addMessageURLFilter(url: Platform.DevToolsPath.UrlString): void;
     shouldBeVisible(viewMessage: ConsoleViewMessage): boolean;
     clear(): void;
@@ -169,9 +183,6 @@ export declare class ConsoleViewFilter {
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
     handleAction(_context: UI.Context.Context, actionId: string): boolean;
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
 }
 export interface RegexMatchRange {
     messageIndex: number;

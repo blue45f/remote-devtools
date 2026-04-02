@@ -1,12 +1,15 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as HostModule from '../host/host.js';
 import * as Platform from '../platform/platform.js';
+import * as Root from '../root/root.js';
 import { cssMetadata, GridAreaRowRegex } from './CSSMetadata.js';
-export class CSSProperty {
+import { matchDeclaration, stripComments } from './CSSPropertyParser.js';
+import { CSSWideKeywordMatcher, FontMatcher } from './CSSPropertyParserMatchers.js';
+export class CSSProperty extends Common.ObjectWrapper.ObjectWrapper {
     ownerStyle;
     index;
     name;
@@ -17,12 +20,13 @@ export class CSSProperty {
     implicit;
     text;
     range;
-    #active;
-    #nameRangeInternal;
-    #valueRangeInternal;
+    #active = true;
+    #nameRange = null;
+    #valueRange = null;
     #invalidString;
     #longhandProperties = [];
     constructor(ownerStyle, index, name, value, important, disabled, parsedOk, implicit, text, range, longhandProperties) {
+        super();
         this.ownerStyle = ownerStyle;
         this.index = index;
         this.name = name;
@@ -33,9 +37,6 @@ export class CSSProperty {
         this.implicit = implicit; // A longhand, implicitly set by missing values of shorthand.
         this.text = text;
         this.range = range ? TextUtils.TextRange.TextRange.fromObject(range) : null;
-        this.#active = true;
-        this.#nameRangeInternal = null;
-        this.#valueRangeInternal = null;
         if (longhandProperties && longhandProperties.length > 0) {
             for (const property of longhandProperties) {
                 this.#longhandProperties.push(new CSSProperty(ownerStyle, ++index, property.name, property.value, important, disabled, parsedOk, true));
@@ -61,8 +62,28 @@ export class CSSProperty {
         const result = new CSSProperty(ownerStyle, index, payload.name, payload.value, payload.important || false, payload.disabled || false, ('parsedOk' in payload) ? Boolean(payload.parsedOk) : true, Boolean(payload.implicit), payload.text, payload.range, payload.longhandProperties);
         return result;
     }
+    parseExpression(expression, matchedStyles, computedStyles) {
+        if (!this.parsedOk) {
+            return null;
+        }
+        return matchDeclaration(this.name, expression, this.#matchers(matchedStyles, computedStyles));
+    }
+    parseValue(matchedStyles, computedStyles) {
+        if (!this.parsedOk) {
+            return null;
+        }
+        return matchDeclaration(this.name, this.value, this.#matchers(matchedStyles, computedStyles));
+    }
+    #matchers(matchedStyles, computedStyles) {
+        const matchers = matchedStyles.propertyMatchers(this.ownerStyle, computedStyles);
+        matchers.push(new CSSWideKeywordMatcher(this, matchedStyles));
+        if (Root.Runtime.experiments.isEnabled(Root.ExperimentNames.ExperimentName.FONT_EDITOR)) {
+            matchers.push(new FontMatcher());
+        }
+        return matchers;
+    }
     ensureRanges() {
-        if (this.#nameRangeInternal && this.#valueRangeInternal) {
+        if (this.#nameRange && this.#valueRange) {
             return;
         }
         const range = this.range;
@@ -77,8 +98,8 @@ export class CSSProperty {
         }
         const nameSourceRange = new TextUtils.TextRange.SourceRange(nameIndex, this.name.length);
         const valueSourceRange = new TextUtils.TextRange.SourceRange(valueIndex, this.value.length);
-        this.#nameRangeInternal = rebase(text.toTextRange(nameSourceRange), range.startLine, range.startColumn);
-        this.#valueRangeInternal = rebase(text.toTextRange(valueSourceRange), range.startLine, range.startColumn);
+        this.#nameRange = rebase(text.toTextRange(nameSourceRange), range.startLine, range.startColumn);
+        this.#valueRange = rebase(text.toTextRange(valueSourceRange), range.startLine, range.startColumn);
         function rebase(oneLineRange, lineOffset, columnOffset) {
             if (oneLineRange.startLine === 0) {
                 oneLineRange.startColumn += columnOffset;
@@ -91,11 +112,11 @@ export class CSSProperty {
     }
     nameRange() {
         this.ensureRanges();
-        return this.#nameRangeInternal;
+        return this.#nameRange;
     }
     valueRange() {
         this.ensureRanges();
-        return this.#valueRangeInternal;
+        return this.#valueRange;
     }
     rebase(edit) {
         if (this.ownerStyle.styleSheetId !== edit.styleSheetId) {
@@ -120,10 +141,6 @@ export class CSSProperty {
     activeInStyle() {
         return this.#active;
     }
-    trimmedValueWithoutImportant() {
-        const important = '!important';
-        return this.value.endsWith(important) ? this.value.slice(0, -important.length).trim() : this.value.trim();
-    }
     async setText(propertyText, majorChange, overwrite) {
         if (!this.ownerStyle) {
             throw new Error('No ownerStyle for property');
@@ -136,6 +153,9 @@ export class CSSProperty {
         }
         if (majorChange) {
             HostModule.userMetrics.actionTaken(HostModule.UserMetrics.Action.StyleRuleEdited);
+            if (this.ownerStyle.parentRule?.isKeyframeRule()) {
+                HostModule.userMetrics.actionTaken(HostModule.UserMetrics.Action.StylePropertyInsideKeyframeEdited);
+            }
             if (this.name.startsWith('--')) {
                 HostModule.userMetrics.actionTaken(HostModule.UserMetrics.Action.CustomPropertyEdited);
             }
@@ -147,12 +167,12 @@ export class CSSProperty {
         const range = this.range.relativeTo(this.ownerStyle.range.startLine, this.ownerStyle.range.startColumn);
         const indentation = this.ownerStyle.cssText ?
             this.detectIndentation(this.ownerStyle.cssText) :
-            Common.Settings.Settings.instance().moduleSetting('textEditorIndent').get();
+            this.ownerStyle.cssModel().target().targetManager().settings.moduleSetting('text-editor-indent').get();
         const endIndentation = this.ownerStyle.cssText ? indentation.substring(0, this.ownerStyle.range.endColumn) : '';
         const text = new TextUtils.Text.Text(this.ownerStyle.cssText || '');
         const newStyleText = text.replaceRange(range, Platform.StringUtilities.sprintf(';%s;', propertyText));
         const styleText = await CSSProperty.formatStyle(newStyleText, indentation, endIndentation);
-        return this.ownerStyle.setText(styleText, majorChange);
+        return await this.ownerStyle.setText(styleText, majorChange);
     }
     static async formatStyle(styleText, indentation, endIndentation) {
         const doubleIndent = indentation.substring(endIndentation.length) + indentation;
@@ -174,7 +194,8 @@ export class CSSProperty {
         function processToken(token, tokenType) {
             if (!insideProperty) {
                 const disabledProperty = tokenType?.includes('comment') && isDisabledProperty(token);
-                const isPropertyStart = (tokenType?.includes('string') || tokenType?.includes('meta') || tokenType?.includes('property') ||
+                const isPropertyStart = (tokenType?.includes('def') || tokenType?.includes('string') || tokenType?.includes('meta') ||
+                    tokenType?.includes('property') ||
                     (tokenType?.includes('variableName') && tokenType !== ('variableName.function')));
                 if (disabledProperty) {
                     result = result.trimEnd() + indentation + token;
@@ -210,7 +231,7 @@ export class CSSProperty {
             }
             if (cssMetadata().isGridAreaDefiningProperty(propertyName)) {
                 const rowResult = GridAreaRowRegex.exec(token);
-                if (rowResult && rowResult.index === 0 && !propertyText.trimEnd().endsWith(']')) {
+                if (rowResult?.index === 0 && !propertyText.trimEnd().endsWith(']')) {
                     propertyText = propertyText.trimEnd() + '\n' + doubleIndent;
                 }
             }
@@ -239,6 +260,11 @@ export class CSSProperty {
         const text = this.name + ': ' + newValue + (this.important ? ' !important' : '') + ';';
         void this.setText(text, majorChange, overwrite).then(userCallback);
     }
+    // Updates the value stored locally and emits an event to signal its update.
+    setLocalValue(value) {
+        this.value = value;
+        this.dispatchEventToListeners("localValueUpdated" /* Events.LOCAL_VALUE_UPDATED */);
+    }
     async setDisabled(disabled) {
         if (!this.ownerStyle) {
             return false;
@@ -257,12 +283,16 @@ export class CSSProperty {
         const appendSemicolonIfMissing = (propertyText) => propertyText + (propertyText.endsWith(';') ? '' : ';');
         let text;
         if (disabled) {
-            text = '/* ' + appendSemicolonIfMissing(propertyText) + ' */';
+            // We remove comments before wrapping comment tags around propertyText, because otherwise it will
+            // create an unmatched trailing `*/`, making the text invalid. This will result in disabled
+            // CSSProperty losing its original comments, but since escaping comments will result in the parser
+            // to completely ignore and then lose this declaration, this is the best compromise so far.
+            text = '/* ' + appendSemicolonIfMissing(stripComments(propertyText)) + ' */';
         }
         else {
             text = appendSemicolonIfMissing(this.text.substring(2, propertyText.length - 2).trim());
         }
-        return this.setText(text, true, true);
+        return await this.setText(text, true, true);
     }
     /**
      * This stores the warning string when a CSS Property is improperly parsed.
@@ -278,6 +308,36 @@ export class CSSProperty {
     }
     getLonghandProperties() {
         return this.#longhandProperties;
+    }
+    ignoreErrors() {
+        function hasUnknownVendorPrefix(string) {
+            return !string.startsWith('-webkit-') && /^[-_][\w\d]+-\w/.test(string);
+        }
+        const name = this.name.toLowerCase();
+        // IE hack.
+        if (name.charAt(0) === '_') {
+            return true;
+        }
+        // IE has a different format for this.
+        if (name === 'filter') {
+            return true;
+        }
+        // Common IE-specific property prefix.
+        if (name.startsWith('scrollbar-')) {
+            return true;
+        }
+        if (hasUnknownVendorPrefix(name)) {
+            return true;
+        }
+        const value = this.value.toLowerCase();
+        // IE hack.
+        if (value.endsWith('\\9')) {
+            return true;
+        }
+        if (hasUnknownVendorPrefix(value)) {
+            return true;
+        }
+        return false;
     }
 }
 //# sourceMappingURL=CSSProperty.js.map

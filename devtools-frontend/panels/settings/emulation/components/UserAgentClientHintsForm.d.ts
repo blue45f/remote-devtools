@@ -1,3 +1,5 @@
+import '../../../../ui/kit/kit.js';
+import '../../../../ui/legacy/legacy.js';
 import type * as Protocol from '../../../../generated/protocol.js';
 import type * as UI from '../../../../ui/legacy/legacy.js';
 export declare class ClientHintsChangeEvent extends Event {
@@ -16,14 +18,13 @@ export interface UserAgentClientHintsFormData {
     showMobileCheckbox?: boolean;
     showSubmitButton?: boolean;
 }
+export declare const ALL_PROTOCOL_FORM_FACTORS: string[];
 /**
  * Component for user agent client hints form, it is used in device settings panel
  * and network conditions panel. It is customizable through showMobileCheckbox and showSubmitButton.
  */
 export declare class UserAgentClientHintsForm extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../../../ui/lit-html/static.js").Static;
-    connectedCallback(): void;
     set value(data: UserAgentClientHintsFormData);
     get value(): UserAgentClientHintsFormData;
     set disabled(disableForm: boolean);

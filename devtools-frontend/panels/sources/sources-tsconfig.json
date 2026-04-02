@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../front_end/panels/sources",
     "skipLibCheck": true,
@@ -26,13 +31,19 @@
     "target": "esnext",
     "tsBuildInfoFile": "sources-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
     "../../../../../../front_end/panels/sources/AddSourceMapURLDialog.ts",
+    "../../../../../../front_end/panels/sources/AiCodeCompletionPlugin.ts",
+    "../../../../../../front_end/panels/sources/AiWarningInfobarPlugin.ts",
     "../../../../../../front_end/panels/sources/BreakpointEditDialog.ts",
+    "../../../../../../front_end/panels/sources/BreakpointsView.ts",
+    "../../../../../../front_end/panels/sources/BreakpointsViewUtils.ts",
     "../../../../../../front_end/panels/sources/CSSPlugin.ts",
     "../../../../../../front_end/panels/sources/CallStackSidebarPane.ts",
+    "../../../../../../front_end/panels/sources/CategorizedBreakpointL10n.ts",
     "../../../../../../front_end/panels/sources/CoveragePlugin.ts",
     "../../../../../../front_end/panels/sources/DebuggerPausedMessage.ts",
     "../../../../../../front_end/panels/sources/DebuggerPlugin.ts",
@@ -44,6 +55,7 @@
     "../../../../../../front_end/panels/sources/NavigatorView.ts",
     "../../../../../../front_end/panels/sources/OpenFileQuickOpen.ts",
     "../../../../../../front_end/panels/sources/OutlineQuickOpen.ts",
+    "../../../../../../front_end/panels/sources/PersistenceActions.ts",
     "../../../../../../front_end/panels/sources/Plugin.ts",
     "../../../../../../front_end/panels/sources/ProfilePlugin.ts",
     "../../../../../../front_end/panels/sources/ResourceOriginPlugin.ts",
@@ -60,7 +72,6 @@
     "../../../../../../front_end/panels/sources/WatchExpressionsSidebarPane.ts",
     "../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
@@ -77,7 +88,25 @@
       "path": "../../core/platform/bundle-tsconfig.json"
     },
     {
+      "path": "../../core/root/bundle-tsconfig.json"
+    },
+    {
       "path": "../../core/sdk/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../entrypoints/formatter_worker/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../generated/protocol-tsconfig.json"
+    },
+    {
+      "path": "../../models/ai_assistance/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/ai_code_completion/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/badges/bundle-tsconfig.json"
     },
     {
       "path": "../../models/bindings/bundle-tsconfig.json"
@@ -92,6 +121,9 @@
       "path": "../../models/formatter/bundle-tsconfig.json"
     },
     {
+      "path": "../../models/geometry/bundle-tsconfig.json"
+    },
+    {
       "path": "../../models/issues_manager/bundle-tsconfig.json"
     },
     {
@@ -99,6 +131,9 @@
     },
     {
       "path": "../../models/source_map_scopes/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/stack_trace/bundle-tsconfig.json"
     },
     {
       "path": "../../models/text_utils/bundle-tsconfig.json"
@@ -125,16 +160,40 @@
       "path": "../utils/bundle-tsconfig.json"
     },
     {
+      "path": "../../third_party/codemirror.next/bundle-tsconfig.json"
+    },
+    {
       "path": "../../third_party/diff/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/components/icon_button/bundle-tsconfig.json"
+      "path": "../../ui/components/buttons/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/components/linear_memory_inspector/bundle-tsconfig.json"
+      "path": "../../ui/components/highlighting/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/input/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/issue_counter/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/render_coordinator/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/spinners/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/components/text_editor/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/tooltips/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/i18n/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/kit/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/legacy/bundle-tsconfig.json"
@@ -149,13 +208,31 @@
       "path": "../../ui/legacy/components/object_ui/bundle-tsconfig.json"
     },
     {
+      "path": "../../ui/legacy/components/perf_ui/bundle-tsconfig.json"
+    },
+    {
       "path": "../../ui/legacy/components/quick_open/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/legacy/components/settings_ui/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/legacy/components/source_frame/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/legacy/components/utils/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/visual_logging/bundle-tsconfig.json"
+    },
+    {
+      "path": "../common/bundle-tsconfig.json"
+    },
+    {
+      "path": "../utils/bundle-tsconfig.json"
     },
     {
       "path": "components/bundle-tsconfig.json"

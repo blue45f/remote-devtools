@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -27,7 +27,7 @@ export class RequestResolver extends Common.ResolverBase.ResolverBase {
         return null;
     }
     onRequestAdded(event) {
-        const request = event.data;
+        const { request } = event.data;
         const backendRequestId = request.backendRequestId();
         if (backendRequestId) {
             this.onResolve(backendRequestId, request);

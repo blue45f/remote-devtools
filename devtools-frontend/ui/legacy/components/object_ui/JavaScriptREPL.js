@@ -1,11 +1,10 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Platform from '../../../../core/platform/platform.js';
-import * as Root from '../../../../core/root/root.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
 import * as Formatter from '../../../../models/formatter/formatter.js';
 import * as SourceMapScopes from '../../../../models/source_map_scopes/source_map_scopes.js';
+import * as Acorn from '../../../../third_party/acorn/acorn.js';
 import * as UI from '../../legacy.js';
 import { RemoteObjectPreviewFormatter } from './RemoteObjectPreviewFormatter.js';
 export class JavaScriptREPL {
@@ -25,7 +24,7 @@ export class JavaScriptREPL {
                 return code;
             }
         }
-        const parse = (async () => 0).constructor;
+        const parse = (expression) => void Acorn.parse(expression, { ecmaVersion: 2022, allowAwaitOutsideFunction: true, ranges: false, allowReturnOutsideFunction: true });
         try {
             // Check if the body can be interpreted as an expression.
             parse('return {' + body + '};');
@@ -34,27 +33,24 @@ export class JavaScriptREPL {
             parse(wrappedCode);
             return wrappedCode;
         }
-        catch (e) {
+        catch {
             return code;
         }
     }
-    static async evaluateAndBuildPreview(text, throwOnSideEffect, replMode, timeout, allowErrors, objectGroup, awaitPromise = false, silent = false) {
-        const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
+    static async evaluate(text, executionContext, throwOnSideEffect, replMode, timeout, objectGroup, awaitPromise = false, silent = false) {
         const isTextLong = text.length > maxLengthForEvaluation;
-        if (!text || !executionContext || (throwOnSideEffect && isTextLong)) {
-            return { preview: document.createDocumentFragment(), result: null };
+        if (!text || (throwOnSideEffect && isTextLong)) {
+            return null;
         }
         let expression = text;
-        if (Root.Runtime.experiments.isEnabled('evaluateExpressionsWithSourceMaps')) {
-            const callFrame = executionContext.debuggerModel.selectedCallFrame();
-            if (callFrame) {
-                const nameMap = await SourceMapScopes.NamesResolver.allVariablesInCallFrame(callFrame);
-                try {
-                    expression =
-                        await Formatter.FormatterWorkerPool.formatterWorkerPool().javaScriptSubstitute(expression, nameMap);
-                }
-                catch {
-                }
+        const callFrame = executionContext.debuggerModel.selectedCallFrame();
+        if (callFrame?.script.isJavaScript()) {
+            const nameMap = await SourceMapScopes.NamesResolver.allVariablesInCallFrame(callFrame);
+            try {
+                expression =
+                    await Formatter.FormatterWorkerPool.formatterWorkerPool().javaScriptSubstitute(expression, nameMap);
+            }
+            catch {
             }
         }
         expression = JavaScriptREPL.wrapObjectLiteral(expression);
@@ -69,39 +65,21 @@ export class JavaScriptREPL {
             replMode,
             silent,
         };
-        const result = await executionContext.evaluate(options, false /* userGesture */, awaitPromise);
-        const preview = JavaScriptREPL.buildEvaluationPreview(result, allowErrors);
-        return { preview, result };
+        return await executionContext.evaluate(options, false /* userGesture */, awaitPromise);
     }
-    static buildEvaluationPreview(result, allowErrors) {
-        const fragment = document.createDocumentFragment();
-        if ('error' in result) {
-            return fragment;
+    static async evaluateAndBuildPreview(text, throwOnSideEffect, replMode, timeout, allowErrors, objectGroup, awaitPromise = false, silent = false) {
+        const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
+        if (!executionContext) {
+            return { preview: document.createDocumentFragment(), result: null };
         }
-        if (result.exceptionDetails && result.exceptionDetails.exception && result.exceptionDetails.exception.description) {
-            const exception = result.exceptionDetails.exception.description;
-            if (exception.startsWith('TypeError: ') || allowErrors) {
-                fragment.createChild('span').textContent = result.exceptionDetails.text + ' ' + exception;
-            }
-            return fragment;
+        const result = await JavaScriptREPL.evaluate(text, executionContext, throwOnSideEffect, replMode, timeout, objectGroup, awaitPromise, silent);
+        if (!result) {
+            return { preview: document.createDocumentFragment(), result: null };
         }
         const formatter = new RemoteObjectPreviewFormatter();
-        const { preview, type, subtype, className, description } = result.object;
-        if (preview && type === 'object' && subtype !== 'node' && subtype !== 'trustedtype') {
-            formatter.appendObjectPreview(fragment, preview, false /* isEntry */);
-        }
-        else {
-            const nonObjectPreview = formatter.renderPropertyPreview(type, subtype, className, Platform.StringUtilities.trimEndWithMaxLength(description || '', 400));
-            fragment.appendChild(nonObjectPreview);
-        }
-        return fragment;
+        const preview = formatter.renderEvaluationResultPreviewFragment(result, allowErrors);
+        return { preview, result };
     }
 }
-let maxLengthForEvaluation = 2000;
-export function setMaxLengthForEvaluation(value) {
-    maxLengthForEvaluation = value;
-}
-export function getMaxLengthForEvaluation() {
-    return maxLengthForEvaluation;
-}
+const maxLengthForEvaluation = 2000;
 //# sourceMappingURL=JavaScriptREPL.js.map

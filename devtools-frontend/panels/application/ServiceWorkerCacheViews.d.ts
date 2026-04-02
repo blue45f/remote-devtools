@@ -1,10 +1,11 @@
+import '../../ui/legacy/legacy.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as Protocol from '../../generated/protocol.js';
 export declare class ServiceWorkerCacheView extends UI.View.SimpleView {
     private model;
-    private entriesForTest;
+    protected entriesForTest: Protocol.CacheStorage.DataEntry[] | null;
     private readonly splitWidget;
     private readonly previewPanel;
     private preview;
@@ -26,7 +27,7 @@ export declare class ServiceWorkerCacheView extends UI.View.SimpleView {
     private createDataGrid;
     private sortingChanged;
     private deleteButtonClicked;
-    update(cache: SDK.ServiceWorkerCacheModel.Cache): void;
+    update(cache?: SDK.ServiceWorkerCacheModel.Cache | null): void;
     private updateSummaryBar;
     private updateDataCallback;
     private updateData;
@@ -36,7 +37,6 @@ export declare class ServiceWorkerCacheView extends UI.View.SimpleView {
     private createRequest;
     private requestContent;
     private updatedForTest;
-    private static readonly previewSymbol;
 }
 export declare class DataGridNode extends DataGrid.DataGrid.DataGridNode<DataGridNode> {
     private number;

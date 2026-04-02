@@ -1,21 +1,24 @@
-import * as Common from '../../core/common/common.js';
-import * as Platform from '../../core/platform/platform.js';
-import * as DataGrid from '../../ui/components/data_grid/data_grid.js';
+import '../../ui/legacy/legacy.js';
+import '../../ui/legacy/components/data_grid/data_grid.js';
+import * as SDK from '../../core/sdk/sdk.js';
+import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as Components from './components/components.js';
-export declare const buildProtocolCommandsParametersMap: (domains: Iterable<ProtocolDomain>) => Map<string, Components.JSONEditor.Parameter[]>;
-export declare const formatParameters: (parameters: {
-    [x: string]: unknown;
-}, command: string) => {
-    [x: string]: Components.JSONEditor.Parameter;
-};
+import { JSONEditor, type Parameter } from './JSONEditor.js';
+export declare const buildProtocolMetadata: (domains: Iterable<ProtocolDomain>) => Map<string, {
+    parameters: Parameter[];
+    description: string;
+    replyArgs: string[];
+}>;
 export interface Message {
     id?: number;
     method: string;
-    error: Object;
-    result: Object;
-    params: Object;
+    error?: Record<string, unknown>;
+    result?: Record<string, unknown>;
+    params?: Record<string, unknown>;
+    requestTime: number;
+    elapsedTime?: number;
     sessionId?: string;
+    target?: SDK.Target.Target;
 }
 export interface LogMessage {
     id?: number;
@@ -26,82 +29,81 @@ export interface LogMessage {
 }
 export interface ProtocolDomain {
     readonly domain: string;
-    readonly commandParameters: {
-        [x: string]: Components.JSONEditor.Parameter[];
-    };
+    readonly metadata: Record<string, {
+        parameters: Parameter[];
+        description: string;
+        replyArgs: string[];
+    }>;
 }
-export declare class ProtocolMonitorDataGrid extends UI.Widget.VBox {
+export interface ViewInput {
+    messages: Message[];
+    selectedMessage?: Message;
+    sidebarVisible: boolean;
+    command: string;
+    commandSuggestions: string[];
+    filterKeys: string[];
+    filter: string;
+    parseFilter: (filter: string) => TextUtils.TextUtils.ParsedFilter[];
+    onRecord: (record: boolean) => void;
+    onClear: () => void;
+    onSave: () => void;
+    onSplitChange: (onlyMain: boolean) => void;
+    onSelect: (e: Message | undefined) => void;
+    onContextMenu: (message: Message, menu: UI.ContextMenu.ContextMenu) => void;
+    onFilterChanged: (filter: string) => void;
+    onCommandChange: (command: string) => void;
+    onCommandSubmitted: (input: string) => void;
+    onTargetChange: (targetId: string) => void;
+    onToggleSidebar: () => void;
+    targets: SDK.Target.Target[];
+    selectedTargetId: string;
+}
+export interface ViewOutput {
+    editorWidget: JSONEditor;
+}
+export type View = (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class ProtocolMonitorImpl extends UI.Panel.Panel implements SDK.TargetManager.Observer {
     #private;
     private started;
     private startTime;
-    private readonly requestTimeForId;
-    private readonly dataGridRowForId;
-    private readonly infoWidget;
-    private readonly dataGridIntegrator;
+    private readonly messageForId;
     private readonly filterParser;
-    private readonly suggestionBuilder;
-    private readonly textFilterUI;
-    private messages;
-    private isRecording;
-    constructor(splitWidget: UI.SplitWidget.SplitWidget);
+    constructor(view?: View);
+    targetAdded(target: SDK.Target.Target): void;
+    targetRemoved(target: SDK.Target.Target): void;
+    performUpdate(): void;
     onCommandSend(command: string, parameters: object, target?: string): void;
-    static instance(opts?: {
-        forceNew: null | boolean;
-    }): ProtocolMonitorImpl;
     wasShown(): void;
     private setRecording;
-    private targetToString;
     private messageReceived;
     private messageSent;
     private saveAsFile;
 }
-export declare class ProtocolMonitorImpl extends UI.Widget.VBox {
-    #private;
-    constructor();
-    static instance(opts?: {
-        forceNew: null | boolean;
-    }): ProtocolMonitorImpl;
-}
 export declare class CommandAutocompleteSuggestionProvider {
     #private;
     constructor(maxHistorySize?: number);
+    allSuggestions(): string[];
     buildTextPromptCompletions: (expression: string, prefix: string, force?: boolean) => Promise<UI.SuggestBox.Suggestions>;
     addEntry(value: string): void;
 }
+interface InfoWidgetViewInput {
+    request: Record<string, unknown> | undefined;
+    response: Record<string, unknown> | undefined;
+    type: 'sent' | 'received' | undefined;
+    selectedTab: 'request' | 'response' | undefined;
+}
+type InfoWidgetView = (input: InfoWidgetViewInput, output: undefined, target: HTMLElement) => void;
 export declare class InfoWidget extends UI.Widget.VBox {
-    private readonly tabbedPane;
-    constructor();
-    render(data: {
-        request: DataGrid.DataGridUtils.Cell | undefined;
-        response: DataGrid.DataGridUtils.Cell | undefined;
-        type: 'sent' | 'received' | undefined;
-    } | null): void;
-}
-export declare enum Events {
-    CommandSent = "CommandSent"
-}
-export type EventTypes = {
-    [Events.CommandSent]: Components.JSONEditor.Command;
-};
-declare const EditorWidget_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.CommandSent>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.CommandSent>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.CommandSent>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.CommandSent): boolean;
-    dispatchEventToListeners<T_3 extends Events.CommandSent>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
-}) & typeof UI.Widget.VBox;
-export declare class EditorWidget extends EditorWidget_base {
-    readonly jsonEditor: Components.JSONEditor.JSONEditor;
-    constructor();
-    setCommand(command: string, parameters: {
-        [x: string]: Components.JSONEditor.Parameter;
-    }): void;
+    #private;
+    request: Record<string, unknown> | undefined;
+    response: Record<string, unknown> | undefined;
+    type: 'sent' | 'received' | undefined;
+    constructor(element: HTMLElement, view?: InfoWidgetView);
+    performUpdate(): void;
 }
 export declare function parseCommandInput(input: string): {
     command: string;
-    parameters: {
-        [x: string]: unknown;
-    };
+    parameters: Record<string, unknown>;
 };
 export {};

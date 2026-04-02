@@ -1,27 +1,26 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
 import * as Platform from '../../../core/platform/platform.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as Lit from '../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 import * as Dialogs from '../dialogs/dialogs.js';
 import menuStyles from './menu.css.js';
 import menuGroupStyles from './menuGroup.css.js';
 import menuItemStyles from './menuItem.css.js';
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
+const { html, Directives: { ref } } = Lit;
 const selectedItemCheckmark = new URL('../../../Images/checkmark.svg', import.meta.url).toString();
 export class Menu extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-menu`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #renderBound = this.#render.bind(this);
     #dialog = null;
     #itemIsFocused = false;
     #props = {
         origin: null,
         open: false,
         position: "auto" /* Dialogs.Dialog.DialogVerticalPosition.AUTO */,
-        showConnector: false,
         showDivider: false,
         showSelectedItem: true,
         horizontalAlignment: "auto" /* Dialogs.Dialog.DialogHorizontalAlignment.AUTO */,
@@ -32,7 +31,7 @@ export class Menu extends HTMLElement {
     }
     set origin(origin) {
         this.#props.origin = origin;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get open() {
         return this.#props.open;
@@ -44,58 +43,50 @@ export class Menu extends HTMLElement {
         this.#props.open = open;
         this.toggleAttribute('has-open-dialog', this.open);
         void this.#getDialog().setDialogVisible(this.open);
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get position() {
         return this.#props.position;
     }
     set position(position) {
         this.#props.position = position;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
-    }
-    get showConnector() {
-        return this.#props.showConnector;
-    }
-    set showConnector(showConnector) {
-        this.#props.showConnector = showConnector;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get showDivider() {
         return this.#props.showDivider;
     }
     set showDivider(showDivider) {
         this.#props.showDivider = showDivider;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get showSelectedItem() {
         return this.#props.showSelectedItem;
     }
     set showSelectedItem(showSelectedItem) {
         this.#props.showSelectedItem = showSelectedItem;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get horizontalAlignment() {
         return this.#props.horizontalAlignment;
     }
     set horizontalAlignment(horizontalAlignment) {
         this.#props.horizontalAlignment = horizontalAlignment;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get getConnectorCustomXPosition() {
         return this.#props.getConnectorCustomXPosition;
     }
     set getConnectorCustomXPosition(connectorXPosition) {
         this.#props.getConnectorCustomXPosition = connectorXPosition;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [menuStyles];
-        void coordinator.write(() => {
-            ComponentHelpers.SetCSSProperty.set(this, '--selected-item-check', `url(${selectedItemCheckmark})`);
-            ComponentHelpers.SetCSSProperty.set(this, '--menu-checkmark-width', this.#props.showSelectedItem ? '26px' : '0px');
-            ComponentHelpers.SetCSSProperty.set(this, '--menu-checkmark-height', this.#props.showSelectedItem ? '12px' : '0px');
+        void RenderCoordinator.write(() => {
+            this.style.setProperty('--selected-item-check', `url(${selectedItemCheckmark})`);
+            this.style.setProperty('--menu-checkmark-width', this.#props.showSelectedItem ? '26px' : '0px');
+            this.style.setProperty('--menu-checkmark-height', this.#props.showSelectedItem ? '12px' : '0px');
             const dividerLine = this.showDivider ? '1px var(--divider-line) solid' : 'none';
-            ComponentHelpers.SetCSSProperty.set(this, '--override-divider-line', dividerLine);
+            this.style.setProperty('--override-divider-line', dividerLine);
         });
     }
     #getDialog() {
@@ -105,7 +96,7 @@ export class Menu extends HTMLElement {
         return this.#dialog;
     }
     async #dialogDeployed() {
-        await coordinator.write(() => {
+        await RenderCoordinator.write(() => {
             this.setAttribute('has-open-dialog', 'has-open-dialog');
             // Focus the container so tha twe can capture key events.
             const container = this.#shadow.querySelector('#container');
@@ -144,6 +135,9 @@ export class Menu extends HTMLElement {
         const item = evt.composedPath().find(element => element instanceof MenuItem);
         // Compare against MenuItem again to narrow the item's type.
         if (!(item instanceof MenuItem)) {
+            return;
+        }
+        if (item.disabled) {
             return;
         }
         this.#updateSelectedValue(item);
@@ -305,73 +299,84 @@ export class Menu extends HTMLElement {
             throw new Error('Menu render was not scheduled');
         }
         // clang-format off
-        LitHtml.render(LitHtml.html `
-      <${Dialogs.Dialog.Dialog.litTagName}
+        Lit.render(html `
+      <style>${menuStyles}</style>
+      <devtools-dialog
         @clickoutsidedialog=${this.#closeDialog}
         @forceddialogclose=${this.#closeDialog}
         .position=${this.position}
-        .showConnector=${this.showConnector}
         .origin=${this.origin}
         .dialogShownCallback=${this.#dialogDeployed.bind(this)}
         .horizontalAlignment=${this.horizontalAlignment}
         .getConnectorCustomXPosition=${this.getConnectorCustomXPosition}
-        on-render=${ComponentHelpers.Directives.nodeRenderedCallback((domNode) => {
-            this.#dialog = domNode;
+        ${ref(el => {
+            if (el instanceof HTMLElement) {
+                this.#dialog = el;
+            }
         })}
         >
-        <span id="container" role="menu" tabIndex="0" @keydown=${this.#handleDialogKeyDown}>
+        <span id="container" role="menu" tabIndex="0" @keydown=${this.#handleDialogKeyDown} jslog=${VisualLogging.menu().track({ resize: true, keydown: 'Escape' })}>
           <slot @click=${this.#handleItemClick}>
           </slot>
         </span>
-      </${Dialogs.Dialog.Dialog.litTagName}>
+      </devtools-dialog>
     `, this.#shadow, { host: this });
         // clang-format on
     }
 }
 export class MenuItem extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-menu-item`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #renderBound = this.#render.bind(this);
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [menuItemStyles];
         this.tabIndex = 0;
-        this.setAttribute('role', 'menuitem');
+        this.setAttribute('role', 'option');
+        this.setAttribute('aria-selected', String(this.#props.selected));
     }
     #props = {
         value: '',
         preventMenuCloseOnSelection: false,
         selected: false,
+        disabled: false,
     };
     get preventMenuCloseOnSelection() {
         return this.#props.preventMenuCloseOnSelection;
     }
     set preventMenuCloseOnSelection(preventMenuCloseOnSelection) {
         this.#props.preventMenuCloseOnSelection = preventMenuCloseOnSelection;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get value() {
         return this.#props.value;
     }
     set value(value) {
         this.#props.value = value;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get selected() {
         return this.#props.selected;
     }
     set selected(selected) {
         this.#props.selected = selected;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        this.setAttribute('aria-selected', String(selected));
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
+    }
+    get disabled() {
+        return this.#props.disabled;
+    }
+    set disabled(disabled) {
+        this.#props.disabled = disabled;
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     async #render() {
         if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
             throw new Error('MenuItem render was not scheduled');
         }
         // clang-format off
-        LitHtml.render(LitHtml.html `
-      <span class=${LitHtml.Directives.classMap({
+        Lit.render(html `
+      <style>${menuItemStyles}</style>
+      <span class=${Lit.Directives.classMap({
             'menu-item': true,
             'is-selected-item': this.selected,
+            'is-disabled-item': this.disabled,
             'prevents-close': this.preventMenuCloseOnSelection,
         })}
       >
@@ -382,12 +387,7 @@ export class MenuItem extends HTMLElement {
     }
 }
 export class MenuGroup extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-menu-group`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #renderBound = this.#render.bind(this);
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [menuGroupStyles];
-    }
     #props = {
         name: null,
     };
@@ -396,14 +396,15 @@ export class MenuGroup extends HTMLElement {
     }
     set name(name) {
         this.#props.name = name;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     async #render() {
         if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
             throw new Error('MenuGroup render was not scheduled');
         }
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        Lit.render(html `
+      <style>${menuGroupStyles}</style>
       <span class="menu-group">
         <span class="menu-group-label">${this.name}</span>
         <slot></slot>
@@ -412,9 +413,9 @@ export class MenuGroup extends HTMLElement {
         // clang-format on
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-menu', Menu);
-ComponentHelpers.CustomElements.defineComponent('devtools-menu-item', MenuItem);
-ComponentHelpers.CustomElements.defineComponent('devtools-menu-group', MenuGroup);
+customElements.define('devtools-menu', Menu);
+customElements.define('devtools-menu-item', MenuItem);
+customElements.define('devtools-menu-group', MenuGroup);
 export class MenuItemSelectedEvent extends Event {
     itemValue;
     static eventName = 'menuitemselected';

@@ -1,16 +1,18 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import accessibilityPropertiesStyles from './accessibilityProperties.css.js';
+/* eslint-disable @devtools/no-imperative-dom-api */
+// eslint-disable-next-line @devtools/es-modules-import
+import objectValueStyles from '../../ui/legacy/components/object_ui/objectValue.css.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import accessibilityNodeStyles from './accessibilityNode.css.js';
-// eslint-disable-next-line rulesdir/es_modules_import
-import objectValueStyles from '../../ui/legacy/components/object_ui/objectValue.css.js';
+import accessibilityPropertiesStyles from './accessibilityProperties.css.js';
 export class AccessibilitySubPane extends UI.View.SimpleView {
     axNode;
     nodeInternal;
-    constructor(name) {
-        super(name);
+    constructor(options) {
+        super(options);
+        this.registerRequiredCSS(accessibilityPropertiesStyles);
         this.axNode = null;
     }
     setAXNode(_axNode) {
@@ -21,23 +23,21 @@ export class AccessibilitySubPane extends UI.View.SimpleView {
     setNode(node) {
         this.nodeInternal = node;
     }
-    createInfo(textContent, className) {
-        const classNameOrDefault = className || 'gray-info-message';
-        const info = this.element.createChild('div', classNameOrDefault);
-        info.textContent = textContent;
+    createInfo(textContent, ...classNames) {
+        const info = new UI.EmptyWidget.EmptyWidget(textContent);
+        if (classNames.length === 0) {
+            classNames.push('gray-info-message');
+        }
+        info.element.classList.add(...classNames, 'info-message-overflow');
         return info;
     }
     createTreeOutline() {
         const treeOutline = new UI.TreeOutline.TreeOutlineInShadow();
-        treeOutline.registerCSSFiles([accessibilityNodeStyles, accessibilityPropertiesStyles, objectValueStyles]);
+        treeOutline.registerRequiredCSS(accessibilityNodeStyles, accessibilityPropertiesStyles, objectValueStyles);
         treeOutline.element.classList.add('hidden');
-        treeOutline.hideOverflow();
+        treeOutline.setHideOverflow(true);
         this.element.appendChild(treeOutline.element);
         return treeOutline;
-    }
-    wasShown() {
-        super.wasShown();
-        this.registerCSSFiles([accessibilityPropertiesStyles]);
     }
 }
 //# sourceMappingURL=AccessibilitySubPane.js.map

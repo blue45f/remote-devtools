@@ -1,26 +1,28 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import eventDisplayTableStyles from './eventDisplayTable.css.js';
 const UIStrings = {
     /**
-     *@description Text for timestamps of items
+     * @description Text for timestamps of items
      */
     timestamp: 'Timestamp',
     /**
-     *@description The column header for event names.
+     * @description The column header for event names.
      */
     eventName: 'Event name',
     /**
-     *@description Text for the value of something
+     * @description Text for the value of something
      */
     value: 'Value',
     /**
-     *@description The accessible name of a table that displays information about events that occurred
+     * @description The accessible name of a table that displays information about events that occurred
      * while a video/media player was present on the page.
      */
     eventDisplay: 'Event display',
@@ -36,7 +38,7 @@ export class EventNode extends DataGrid.DataGrid.DataGridNode {
     createCell(columnId) {
         const cell = this.createTD(columnId);
         const cellData = this.data[columnId];
-        if (columnId === "value" /* MediaEventColumnKeys.Value */) {
+        if (columnId === "value" /* MediaEventColumnKeys.VALUE */) {
             const enclosed = cell.createChild('div', 'event-display-table-contents-json-wrapper');
             this.expandableElement =
                 new SourceFrame.JSONView.JSONView(new SourceFrame.JSONView.ParsedJSON(cellData, '', ''), true);
@@ -54,19 +56,20 @@ export class PlayerEventsView extends UI.Widget.VBox {
     dataGrid;
     firstEventTime;
     constructor() {
-        super();
+        super({ jslog: `${VisualLogging.pane('events')}` });
+        this.registerRequiredCSS(eventDisplayTableStyles);
         // Set up element styles.
         this.contentElement.classList.add('event-display-table-contents-table-container');
         this.dataGrid = this.createDataGrid([
             {
-                id: "displayTimestamp" /* MediaEventColumnKeys.Timestamp */,
+                id: "display-timestamp" /* MediaEventColumnKeys.TIMESTAMP */,
                 title: i18nString(UIStrings.timestamp),
                 weight: 1,
                 sortable: false,
             },
-            { id: "event" /* MediaEventColumnKeys.Event */, title: i18nString(UIStrings.eventName), weight: 2, sortable: false },
+            { id: "event" /* MediaEventColumnKeys.EVENT */, title: i18nString(UIStrings.eventName), weight: 2, sortable: false },
             {
-                id: "value" /* MediaEventColumnKeys.Value */,
+                id: "value" /* MediaEventColumnKeys.VALUE */,
                 title: i18nString(UIStrings.value),
                 weight: 7,
                 sortable: false,
@@ -87,9 +90,6 @@ export class PlayerEventsView extends UI.Widget.VBox {
         const datagrid = new DataGrid.DataGrid.DataGridImpl({
             displayName: i18nString(UIStrings.eventDisplay),
             columns: gridColumnDescs,
-            deleteCallback: undefined,
-            editCallback: undefined,
-            refreshCallback: undefined,
         });
         datagrid.asWidget().contentElement.classList.add('no-border-top-datagrid');
         return datagrid;
@@ -113,7 +113,7 @@ export class PlayerEventsView extends UI.Widget.VBox {
                 scroll.scrollTop = scroll.scrollHeight;
             }
         }
-        catch (e) {
+        catch {
             // If this is a legacy message event, ignore it for now until they
             // are handled.
         }
@@ -132,10 +132,6 @@ export class PlayerEventsView extends UI.Widget.VBox {
             weight: columnConfig.weight || 0,
             sort: DataGrid.DataGrid.Order.Ascending,
         };
-    }
-    wasShown() {
-        super.wasShown();
-        this.registerCSSFiles([eventDisplayTableStyles]);
     }
 }
 //# sourceMappingURL=EventDisplayTable.js.map

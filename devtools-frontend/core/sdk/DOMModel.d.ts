@@ -1,13 +1,43 @@
-import * as Platform from '../platform/platform.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import * as Protocol from '../../generated/protocol.js';
+import * as Common from '../common/common.js';
+import * as Platform from '../platform/platform.js';
 import { CSSModel } from './CSSModel.js';
 import { OverlayModel } from './OverlayModel.js';
-import { type RemoteObject } from './RemoteObject.js';
+import { RemoteObject } from './RemoteObject.js';
 import { RuntimeModel } from './RuntimeModel.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
-export declare class DOMNode {
+import { type Target } from './Target.js';
+import { TargetManager } from './TargetManager.js';
+/** Keep this list in sync with https://w3c.github.io/aria/#state_prop_def **/
+export declare const ARIA_ATTRIBUTES: Set<string>;
+export declare enum DOMNodeEvents {
+    TOP_LAYER_INDEX_CHANGED = "TopLayerIndexChanged",
+    SCROLLABLE_FLAG_UPDATED = "ScrollableFlagUpdated",
+    AD_RELATED_STATE_UPDATED = "AdRelatedStateUpdated",
+    GRID_OVERLAY_STATE_CHANGED = "GridOverlayStateChanged",
+    FLEX_CONTAINER_OVERLAY_STATE_CHANGED = "FlexContainerOverlayStateChanged",
+    SCROLL_SNAP_OVERLAY_STATE_CHANGED = "ScrollSnapOverlayStateChanged",
+    CONTAINER_QUERY_OVERLAY_STATE_CHANGED = "ContainerQueryOverlayStateChanged"
+}
+export interface DOMNodeEventTypes {
+    [DOMNodeEvents.TOP_LAYER_INDEX_CHANGED]: void;
+    [DOMNodeEvents.SCROLLABLE_FLAG_UPDATED]: void;
+    [DOMNodeEvents.AD_RELATED_STATE_UPDATED]: void;
+    [DOMNodeEvents.GRID_OVERLAY_STATE_CHANGED]: {
+        enabled: boolean;
+    };
+    [DOMNodeEvents.FLEX_CONTAINER_OVERLAY_STATE_CHANGED]: {
+        enabled: boolean;
+    };
+    [DOMNodeEvents.SCROLL_SNAP_OVERLAY_STATE_CHANGED]: {
+        enabled: boolean;
+    };
+    [DOMNodeEvents.CONTAINER_QUERY_OVERLAY_STATE_CHANGED]: {
+        enabled: boolean;
+    };
+}
+export declare class DOMNode extends Common.ObjectWrapper.ObjectWrapper<DOMNodeEventTypes> {
     #private;
     ownerDocument: DOMDocument | null;
     id: Protocol.DOM.NodeId;
@@ -30,28 +60,44 @@ export declare class DOMNode {
     internalSubset?: string;
     name?: string;
     value?: string;
+    /**
+     * Set when a DOMNode is retained in a detached sub-tree.
+     */
+    retained: boolean;
+    /**
+     * Set if a DOMNode is a root of a detached sub-tree.
+     */
+    detached: boolean;
     constructor(domModel: DOMModel);
-    static create(domModel: DOMModel, doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node): DOMNode;
-    init(doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node): void;
+    static create(domModel: DOMModel, doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node, retainedNodes?: Set<Protocol.DOM.BackendNodeId>): DOMNode;
+    init(doc: DOMDocument | null, isInShadowTree: boolean, payload: Protocol.DOM.Node, retainedNodes?: Set<Protocol.DOM.BackendNodeId>): void;
     private requestChildDocument;
-    isAdFrameNode(): boolean;
+    setTopLayerIndex(idx: number): void;
+    topLayerIndex(): number;
+    adProvenance(): Protocol.Network.AdProvenance | undefined;
+    isRootNode(): boolean;
     isSVGNode(): boolean;
+    isScrollable(): boolean;
+    affectedByStartingStyles(): boolean;
+    isMediaNode(): boolean;
+    isViewTransitionPseudoNode(): boolean;
     creationStackTrace(): Promise<Protocol.Runtime.StackTrace | null>;
     get subtreeMarkerCount(): number;
     domModel(): DOMModel;
     backendNodeId(): Protocol.DOM.BackendNodeId;
     children(): DOMNode[] | null;
     setChildren(children: DOMNode[]): void;
+    setIsScrollable(isScrollable: boolean): void;
+    setIsAdRelated(adProvenance?: Protocol.Network.AdProvenance): void;
+    setAffectedByStartingStyles(affectedByStartingStyles: boolean): void;
     hasAttributes(): boolean;
     childNodeCount(): number;
     setChildNodeCount(childNodeCount: number): void;
-    hasShadowRoots(): boolean;
     shadowRoots(): DOMNode[];
     templateContent(): DOMNode | null;
     contentDocument(): DOMDocument | null;
     setContentDocument(node: DOMDocument): void;
     isIframe(): boolean;
-    isPortal(): boolean;
     importedDocument(): DOMNode | null;
     nodeType(): number;
     nodeName(): string;
@@ -59,15 +105,19 @@ export declare class DOMNode {
     pseudoIdentifier(): string | undefined;
     hasPseudoElements(): boolean;
     pseudoElements(): Map<string, DOMNode[]>;
+    checkmarkPseudoElement(): DOMNode | undefined;
     beforePseudoElement(): DOMNode | undefined;
     afterPseudoElement(): DOMNode | undefined;
+    pickerIconPseudoElement(): DOMNode | undefined;
     markerPseudoElement(): DOMNode | undefined;
     backdropPseudoElement(): DOMNode | undefined;
     viewTransitionPseudoElements(): DOMNode[];
+    carouselPseudoElements(): DOMNode[];
     hasAssignedSlot(): boolean;
     isInsertionPoint(): boolean;
     distributedNodes(): DOMNodeShortcut[];
     isInShadowTree(): boolean;
+    getTreeRoot(): DOMNode;
     ancestorShadowHost(): DOMNode | null;
     ancestorShadowRoot(): DOMNode | null;
     ancestorUserAgentShadowRoot(): DOMNode | null;
@@ -85,12 +135,12 @@ export declare class DOMNode {
     setAttributeValuePromise(name: string, value: string): Promise<string | null>;
     attributes(): Attribute[];
     removeAttribute(name: string): Promise<void>;
-    getChildNodes(callback: (arg0: Array<DOMNode> | null) => void): void;
+    getChildNodesPromise(): Promise<DOMNode[] | null>;
+    getChildNodes(callback: (arg0: DOMNode[] | null) => void): void;
     getSubtree(depth: number, pierce: boolean): Promise<DOMNode[] | null>;
-    getOuterHTML(): Promise<string | null>;
+    getOuterHTML(includeShadowDOM?: boolean): Promise<string | null>;
     setOuterHTML(html: string, callback?: ((arg0: string | null) => void)): void;
     removeNode(callback?: ((arg0: string | null, arg1?: Protocol.DOM.NodeId | undefined) => void)): Promise<void>;
-    copyNode(): Promise<string | null>;
     path(): string;
     isAncestor(node: DOMNode): boolean;
     isDescendant(descendant: DOMNode): boolean;
@@ -101,6 +151,9 @@ export declare class DOMNode {
     removeChild(node: DOMNode): void;
     setChildrenPayload(payloads: Protocol.DOM.Node[]): void;
     private setPseudoElements;
+    private toAdoptedStyleSheets;
+    setAdoptedStyleSheets(ids: Protocol.DOM.StyleSheetId[]): void;
+    get adoptedStyleSheetsForNode(): AdoptedStyleSheet[];
     setDistributedNodePayloads(payloads: Protocol.DOM.BackendNode[]): void;
     setAssignedSlot(payload: Protocol.DOM.BackendNode): void;
     private renumber;
@@ -110,20 +163,26 @@ export declare class DOMNode {
     copyTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => void)): void;
     moveTo(targetNode: DOMNode, anchorNode: DOMNode | null, callback?: ((arg0: string | null, arg1: DOMNode | null) => void)): void;
     isXMLNode(): boolean;
-    setMarker(name: string, value: any): void;
+    setMarker(name: string, value: unknown): void;
     marker<T>(name: string): T | null;
     getMarkerKeysForTest(): string[];
     traverseMarkers(visitor: (arg0: DOMNode, arg1: string) => void): void;
     resolveURL(url: string): Platform.DevToolsPath.UrlString | null;
     highlight(mode?: string): void;
     highlightForTwoSeconds(): void;
-    resolveToObject(objectGroup?: string): Promise<RemoteObject | null>;
+    resolveToObject(objectGroup?: string, executionContextId?: Protocol.Runtime.ExecutionContextId): Promise<RemoteObject | null>;
     boxModel(): Promise<Protocol.DOM.BoxModel | null>;
     setAsInspectedNode(): Promise<void>;
     enclosingElementOrSelf(): DOMNode | null;
+    callFunction<T, U extends string | number>(fn: (this: HTMLElement, ...args: U[]) => T, args?: U[]): Promise<{
+        value: T;
+    } | null>;
     scrollIntoView(): Promise<void>;
     focus(): Promise<void>;
     simpleSelector(): string;
+    getAnchorBySpecifier(specifier?: string): Promise<DOMNode | null>;
+    takeSnapshot(ownerDocumentSnapshot?: DOMDocument): Promise<DOMNode>;
+    classNames(): string[];
 }
 export declare namespace DOMNode {
     enum ShadowRootTypes {
@@ -145,7 +204,8 @@ export declare class DOMNodeShortcut {
     nodeType: number;
     nodeName: string;
     deferredNode: DeferredDOMNode;
-    constructor(target: Target, backendNodeId: Protocol.DOM.BackendNodeId, nodeType: number, nodeName: string);
+    childShortcuts: DOMNodeShortcut[];
+    constructor(target: Target, backendNodeId: Protocol.DOM.BackendNodeId, nodeType: number, nodeName: string, childShortcuts?: DOMNodeShortcut[]);
 }
 export declare class DOMDocument extends DOMNode {
     body: DOMNode | null;
@@ -154,17 +214,25 @@ export declare class DOMDocument extends DOMNode {
     baseURL: Platform.DevToolsPath.UrlString;
     constructor(domModel: DOMModel, payload: Protocol.DOM.Node);
 }
+export declare class AdoptedStyleSheet {
+    readonly id: Protocol.DOM.StyleSheetId;
+    readonly parent: DOMNode;
+    constructor(id: Protocol.DOM.StyleSheetId, parent: DOMNode);
+    get cssModel(): CSSModel;
+}
 export declare class DOMModel extends SDKModel<EventTypes> {
     #private;
     agent: ProtocolProxyApi.DOMApi;
     idToDOMNode: Map<Protocol.DOM.NodeId, DOMNode>;
+    frameIdToOwnerNode: Map<Protocol.Page.FrameId, DOMNode>;
     readonly runtimeModelInternal: RuntimeModel;
     constructor(target: Target);
     runtimeModel(): RuntimeModel;
     cssModel(): CSSModel;
     overlayModel(): OverlayModel;
-    static cancelSearch(): void;
+    static cancelSearch(targetManager?: TargetManager): void;
     private scheduleMutationEvent;
+    private onDocumentOpened;
     requestDocument(): Promise<DOMDocument | null>;
     getOwnerNodeForFrame(frameId: Protocol.Page.FrameId): Promise<DeferredDOMNode | null>;
     private requestDocumentInternal;
@@ -174,12 +242,13 @@ export declare class DOMModel extends SDKModel<EventTypes> {
     pushNodesByBackendIdsToFrontend(backendNodeIds: Set<Protocol.DOM.BackendNodeId>): Promise<Map<Protocol.DOM.BackendNodeId, DOMNode | null> | null>;
     attributeModified(nodeId: Protocol.DOM.NodeId, name: string, value: string): void;
     attributeRemoved(nodeId: Protocol.DOM.NodeId, name: string): void;
-    inlineStyleInvalidated(nodeIds: number[]): void;
+    inlineStyleInvalidated(nodeIds: Protocol.DOM.NodeId[]): void;
     private loadNodeAttributes;
     characterDataModified(nodeId: Protocol.DOM.NodeId, newValue: string): void;
     nodeForId(nodeId: Protocol.DOM.NodeId | null): DOMNode | null;
     documentUpdated(): void;
     private setDocument;
+    setDocumentForTest(document: Protocol.DOM.Node | null): void;
     private setDetachedRoot;
     setChildNodes(parentId: Protocol.DOM.NodeId, payloads: Protocol.DOM.Node[]): void;
     childNodeCountUpdated(nodeId: Protocol.DOM.NodeId, newValue: number): void;
@@ -188,14 +257,17 @@ export declare class DOMModel extends SDKModel<EventTypes> {
     shadowRootPushed(hostId: Protocol.DOM.NodeId, root: Protocol.DOM.Node): void;
     shadowRootPopped(hostId: Protocol.DOM.NodeId, rootId: Protocol.DOM.NodeId): void;
     pseudoElementAdded(parentId: Protocol.DOM.NodeId, pseudoElement: Protocol.DOM.Node): void;
-    topLayerElementsUpdated(): void;
+    adoptedStyleSheetsModified(parentId: Protocol.DOM.NodeId, styleSheets: Protocol.DOM.StyleSheetId[]): void;
+    scrollableFlagUpdated(nodeId: Protocol.DOM.NodeId, isScrollable: boolean): void;
+    adRelatedStateUpdated(nodeId: Protocol.DOM.NodeId, adProvenance?: Protocol.Network.AdProvenance): void;
+    affectedByStartingStylesFlagUpdated(nodeId: Protocol.DOM.NodeId, affectedByStartingStyles: boolean): void;
     pseudoElementRemoved(parentId: Protocol.DOM.NodeId, pseudoElementId: Protocol.DOM.NodeId): void;
     distributedNodesUpdated(insertionPointId: Protocol.DOM.NodeId, distributedNodes: Protocol.DOM.BackendNode[]): void;
     private unbind;
-    getNodesByStyle(computedStyles: {
+    getNodesByStyle(computedStyles: Array<{
         name: string;
         value: string;
-    }[], pierce?: boolean): Promise<Protocol.DOM.NodeId[]>;
+    }>, pierce?: boolean): Promise<Protocol.DOM.NodeId[]>;
     performSearch(query: string, includeUserAgentShadowDOM: boolean): Promise<number>;
     searchResult(index: number): Promise<DOMNode | null>;
     private cancelSearch;
@@ -203,9 +275,12 @@ export declare class DOMModel extends SDKModel<EventTypes> {
     querySelector(nodeId: Protocol.DOM.NodeId, selector: string): Promise<Protocol.DOM.NodeId | null>;
     querySelectorAll(nodeId: Protocol.DOM.NodeId, selector: string): Promise<Protocol.DOM.NodeId[] | null>;
     getTopLayerElements(): Promise<Protocol.DOM.NodeId[] | null>;
+    topLayerElementsUpdated(): void;
+    getDetachedDOMNodes(): Promise<Protocol.DOM.DetachedElementInfo[] | null>;
+    getElementByRelation(nodeId: Protocol.DOM.NodeId, relation: Protocol.DOM.GetElementByRelationRequestRelation): Promise<Protocol.DOM.NodeId | null>;
     markUndoableState(minorChange?: boolean): void;
     nodeForLocation(x: number, y: number, includeUserAgentShadowDOM: boolean): Promise<DOMNode | null>;
-    getContainerForNode(nodeId: Protocol.DOM.NodeId, containerName?: string, physicalAxes?: Protocol.DOM.PhysicalAxes, logicalAxes?: Protocol.DOM.LogicalAxes): Promise<DOMNode | null>;
+    getContainerForNode(nodeId: Protocol.DOM.NodeId, containerName?: string, physicalAxes?: Protocol.DOM.PhysicalAxes, logicalAxes?: Protocol.DOM.LogicalAxes, queriesScrollState?: boolean, queriesAnchored?: boolean): Promise<DOMNode | null>;
     pushObjectAsNodeToFrontend(object: RemoteObject): Promise<DOMNode | null>;
     suspendModel(): Promise<void>;
     resumeModel(): Promise<void>;
@@ -219,15 +294,18 @@ export declare enum Events {
     AttrRemoved = "AttrRemoved",
     CharacterDataModified = "CharacterDataModified",
     DOMMutated = "DOMMutated",
+    DocumentURLChanged = "DocumentURLChanged",
     NodeInserted = "NodeInserted",
     NodeRemoved = "NodeRemoved",
     DocumentUpdated = "DocumentUpdated",
     ChildNodeCountUpdated = "ChildNodeCountUpdated",
     DistributedNodesChanged = "DistributedNodesChanged",
     MarkersChanged = "MarkersChanged",
-    TopLayerElementsChanged = "TopLayerElementsChanged"
+    TopLayerElementsChanged = "TopLayerElementsChanged",
+    AffectedByStartingStylesFlagUpdated = "AffectedByStartingStylesFlagUpdated",
+    AdoptedStyleSheetsModified = "AdoptedStyleSheetsModified"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.AttrModified]: {
         node: DOMNode;
         name: string;
@@ -238,6 +316,7 @@ export type EventTypes = {
     };
     [Events.CharacterDataModified]: DOMNode;
     [Events.DOMMutated]: DOMNode;
+    [Events.DocumentURLChanged]: DOMDocument;
     [Events.NodeInserted]: DOMNode;
     [Events.NodeRemoved]: {
         node: DOMNode;
@@ -247,8 +326,15 @@ export type EventTypes = {
     [Events.ChildNodeCountUpdated]: DOMNode;
     [Events.DistributedNodesChanged]: DOMNode;
     [Events.MarkersChanged]: DOMNode;
-    [Events.TopLayerElementsChanged]: void;
-};
+    [Events.TopLayerElementsChanged]: {
+        document: DOMDocument;
+        documentShortcuts: DOMNodeShortcut[];
+    };
+    [Events.AffectedByStartingStylesFlagUpdated]: {
+        node: DOMNode;
+    };
+    [Events.AdoptedStyleSheetsModified]: DOMNode;
+}
 export declare class DOMModelUndoStack {
     #private;
     constructor();
@@ -259,6 +345,32 @@ export declare class DOMModelUndoStack {
     undo(): Promise<void>;
     redo(): Promise<void>;
     dispose(model: DOMModel): void;
+}
+export declare class DOMNodeSnapshot extends DOMNode {
+    init(_doc: DOMDocument | null, _isInShadowTree: boolean, _payload: Protocol.DOM.Node, _retainedNodes?: Set<Protocol.DOM.BackendNodeId> | undefined): void;
+    setNodeName(_name: string, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    setNodeValue(_value: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    setAttribute(_name: string, _text: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    setAttributeValue(_name: string, _value: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    removeAttribute(_name: string): Promise<void>;
+    setOuterHTML(_html: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    removeNode(_callback?: ((arg0: string | null, arg1?: Protocol.DOM.NodeId | undefined) => void) | undefined): Promise<void>;
+    copyTo(_targetNode: DOMNode, _anchorNode: DOMNode | null, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    moveTo(_targetNode: DOMNode, _anchorNode: DOMNode | null, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    setAsInspectedNode(): Promise<void>;
+}
+export declare class DOMDocumentSnapshot extends DOMDocument {
+    init(_doc: DOMDocument | null, _isInShadowTree: boolean, _payload: Protocol.DOM.Node, _retainedNodes?: Set<Protocol.DOM.BackendNodeId> | undefined): void;
+    setNodeName(_name: string, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    setNodeValue(_value: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    setAttribute(_name: string, _text: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    setAttributeValue(_name: string, _value: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    removeAttribute(_name: string): Promise<void>;
+    setOuterHTML(_html: string, _callback?: ((arg0: string | null) => void) | undefined): void;
+    removeNode(_callback?: ((arg0: string | null, arg1?: Protocol.DOM.NodeId | undefined) => void) | undefined): Promise<void>;
+    copyTo(_targetNode: DOMNode, _anchorNode: DOMNode | null, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    moveTo(_targetNode: DOMNode, _anchorNode: DOMNode | null, _callback?: ((arg0: string | null, arg1: DOMNode | null) => void) | undefined): void;
+    setAsInspectedNode(): Promise<void>;
 }
 export interface Attribute {
     name: string;

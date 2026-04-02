@@ -1,4 +1,4 @@
-import { type PlayerEvent } from './MediaModel.js';
+import type { PlayerEvent } from './MediaModel.js';
 import { TickingFlameChart } from './TickingFlameChart.js';
 export declare class PlayerEventsTimeline extends TickingFlameChart {
     private normalizedTimestamp;
@@ -9,7 +9,7 @@ export declare class PlayerEventsTimeline extends TickingFlameChart {
     private ensureNoPreviousPlaybackEvent;
     /**
      * Playback events are {kPlay, kPause, kSuspended, kEnded, and kWebMediaPlayerDestroyed}
-     * once destroyed, a player cannot recieve more events of any kind.
+     * once destroyed, a player cannot receive more events of any kind.
      */
     private onPlaybackEvent;
     private bufferedEnough;

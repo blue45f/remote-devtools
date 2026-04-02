@@ -1,93 +1,102 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as Root from '../../core/root/root.js';
 import { Context } from './Context.js';
 const UIStrings = {
     /**
-     *@description Title of the keybind category 'Elements' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Elements' in Settings' Shortcuts pannel.
      */
     elements: 'Elements',
     /**
-     *@description Title of the keybind category 'Screenshot' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Screenshot' in Settings' Shortcuts pannel.
      */
     screenshot: 'Screenshot',
     /**
-     *@description Title of the keybind category 'Network' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Network' in Settings' Shortcuts pannel.
      */
     network: 'Network',
     /**
-     *@description Title of the keybind category 'Memory' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Memory' in Settings' Shortcuts pannel.
      */
     memory: 'Memory',
     /**
-     *@description Title of the keybind category 'JavaScript Profiler' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'JavaScript Profiler' in Settings' Shortcuts pannel.
      */
     javascript_profiler: 'JavaScript Profiler',
     /**
-     *@description Title of the keybind category 'Console' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Console' in Settings' Shortcuts pannel.
      */
     console: 'Console',
     /**
-     *@description Title of the keybind category 'Performance' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Performance' in Settings' Shortcuts pannel.
      */
     performance: 'Performance',
     /**
-     *@description Title of the keybind category 'Mobile' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Mobile' in Settings' Shortcuts pannel.
      */
     mobile: 'Mobile',
     /**
-     *@description Title of the keybind category 'Help' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Help' in Settings' Shortcuts pannel.
      */
     help: 'Help',
     /**
-     *@description Title of the keybind category 'Layers' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Layers' in Settings' Shortcuts pannel.
      */
     layers: 'Layers',
     /**
-     *@description Title of the keybind category 'Navigation' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Navigation' in Settings' Shortcuts pannel.
      */
     navigation: 'Navigation',
     /**
-     *@description Title of the keybind category 'Drawer' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Drawer' in Settings' Shortcuts pannel.
      */
     drawer: 'Drawer',
     /**
-     *@description Title of the keybind category 'Global' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Global' in Settings' Shortcuts pannel.
      */
     global: 'Global',
     /**
-     *@description Title of the keybind category 'Resources' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Resources' in Settings' Shortcuts pannel.
      */
     resources: 'Resources',
     /**
-     *@description Title of the keybind category 'Background Services' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Background Services' in Settings' Shortcuts pannel.
      */
     background_services: 'Background Services',
     /**
-     *@description Title of the keybind category 'Settings' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Settings' in Settings' Shortcuts pannel.
      */
     settings: 'Settings',
     /**
-     *@description Title of the keybind category 'Debugger' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Debugger' in Settings' Shortcuts pannel.
      */
     debugger: 'Debugger',
     /**
-     *@description Title of the keybind category 'Sources' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Sources' in Settings' Shortcuts pannel.
      */
     sources: 'Sources',
     /**
-     *@description Title of the keybind category 'Rendering' in Settings' Shortcuts pannel.
+     * @description Title of the keybind category 'Rendering' in Settings' Shortcuts pannel.
      */
     rendering: 'Rendering',
+    /**
+     * @description Title of the keybind category 'Recorder' in Settings' Shortcuts pannel.
+     */
+    recorder: 'Recorder',
+    /**
+     * @description Title of the keybind category 'Changes' in Settings' Shortcuts pannel.
+     */
+    changes: 'Changes',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/ActionRegistration.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class Action extends Common.ObjectWrapper.ObjectWrapper {
-    enabledInternal = true;
-    toggledInternal = false;
+    #enabled = true;
+    #toggled = false;
     actionRegistration;
     constructor(actionRegistration) {
         super();
@@ -96,13 +105,13 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
     id() {
         return this.actionRegistration.actionId;
     }
-    async execute() {
+    async execute(opts) {
         if (!this.actionRegistration.loadActionDelegate) {
             return false;
         }
         const delegate = await this.actionRegistration.loadActionDelegate();
         const actionId = this.id();
-        return delegate.handleAction(Context.instance(), actionId);
+        return delegate.handleAction(Context.instance(), actionId, opts);
     }
     icon() {
         return this.actionRegistration.iconClass;
@@ -114,14 +123,14 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
         return Boolean(this.actionRegistration.toggleWithRedColor);
     }
     setEnabled(enabled) {
-        if (this.enabledInternal === enabled) {
+        if (this.#enabled === enabled) {
             return;
         }
-        this.enabledInternal = enabled;
-        this.dispatchEventToListeners("Enabled" /* Events.Enabled */, enabled);
+        this.#enabled = enabled;
+        this.dispatchEventToListeners("Enabled" /* Events.ENABLED */, enabled);
     }
     enabled() {
-        return this.enabledInternal;
+        return this.#enabled;
     }
     category() {
         return this.actionRegistration.category;
@@ -144,7 +153,7 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
             // two options can be active at a given moment and the 'toggled' property of the action along
             // with the 'value' of the options are used to determine which one it is.
             for (const pair of options) {
-                if (pair.value !== this.toggledInternal) {
+                if (pair.value !== this.#toggled) {
                     title = pair.title();
                 }
             }
@@ -152,15 +161,15 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
         return title;
     }
     toggled() {
-        return this.toggledInternal;
+        return this.#toggled;
     }
     setToggled(toggled) {
         console.assert(this.toggleable(), 'Shouldn\'t be toggling an untoggleable action', this.id());
-        if (this.toggledInternal === toggled) {
+        if (this.#toggled === toggled) {
             return;
         }
-        this.toggledInternal = toggled;
-        this.dispatchEventToListeners("Toggled" /* Events.Toggled */, toggled);
+        this.#toggled = toggled;
+        this.dispatchEventToListeners("Toggled" /* Events.TOGGLED */, toggled);
     }
     options() {
         return this.actionRegistration.options;
@@ -177,8 +186,17 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
     bindings() {
         return this.actionRegistration.bindings;
     }
+    configurableBindings() {
+        return this.actionRegistration.configurableBindings ?? true;
+    }
     experiment() {
         return this.actionRegistration.experiment;
+    }
+    featurePromotionId() {
+        return this.actionRegistration.featurePromotionId;
+    }
+    setting() {
+        return this.actionRegistration.setting;
     }
     condition() {
         return this.actionRegistration.condition;
@@ -187,23 +205,39 @@ export class Action extends Common.ObjectWrapper.ObjectWrapper {
         return this.actionRegistration.order;
     }
 }
-const registeredActionExtensions = [];
-const actionIdSet = new Set();
+const registeredActions = new Map();
 export function registerActionExtension(registration) {
     const actionId = registration.actionId;
-    if (actionIdSet.has(actionId)) {
-        throw new Error(`Duplicate Action id '${actionId}': ${new Error().stack}`);
+    if (registeredActions.has(actionId)) {
+        throw new Error(`Duplicate action ID '${actionId}'`);
     }
-    actionIdSet.add(actionId);
-    registeredActionExtensions.push(new Action(registration));
+    if (!Platform.StringUtilities.isExtendedKebabCase(actionId)) {
+        throw new Error(`Invalid action ID '${actionId}'`);
+    }
+    registeredActions.set(actionId, new Action(registration));
 }
 export function reset() {
-    actionIdSet.clear();
-    registeredActionExtensions.length = 0;
+    registeredActions.clear();
 }
 export function getRegisteredActionExtensions() {
-    return registeredActionExtensions
-        .filter(action => Root.Runtime.Runtime.isDescriptorEnabled({ experiment: action.experiment(), condition: action.condition() }))
+    return Array.from(registeredActions.values())
+        .filter(action => {
+        const settingName = action.setting();
+        try {
+            if (settingName && !Common.Settings.moduleSetting(settingName).get()) {
+                return false;
+            }
+        }
+        catch (err) {
+            if (err.message.startsWith('No setting registered')) {
+                return false;
+            }
+        }
+        return Root.Runtime.Runtime.isDescriptorEnabled({
+            experiment: action.experiment(),
+            condition: action.condition(),
+        });
+    })
         .sort((firstAction, secondAction) => {
         const order1 = firstAction.order() || 0;
         const order2 = secondAction.order() || 0;
@@ -211,78 +245,53 @@ export function getRegisteredActionExtensions() {
     });
 }
 export function maybeRemoveActionExtension(actionId) {
-    const actionIndex = registeredActionExtensions.findIndex(action => action.id() === actionId);
-    if (actionIndex < 0 || !actionIdSet.delete(actionId)) {
-        return false;
-    }
-    registeredActionExtensions.splice(actionIndex, 1);
-    return true;
+    return registeredActions.delete(actionId);
 }
-// eslint-disable-next-line rulesdir/const_enum
-export var ActionCategory;
-(function (ActionCategory) {
-    ActionCategory["NONE"] = "";
-    ActionCategory["ELEMENTS"] = "ELEMENTS";
-    ActionCategory["SCREENSHOT"] = "SCREENSHOT";
-    ActionCategory["NETWORK"] = "NETWORK";
-    ActionCategory["MEMORY"] = "MEMORY";
-    ActionCategory["JAVASCRIPT_PROFILER"] = "JAVASCRIPT_PROFILER";
-    ActionCategory["CONSOLE"] = "CONSOLE";
-    ActionCategory["PERFORMANCE"] = "PERFORMANCE";
-    ActionCategory["MOBILE"] = "MOBILE";
-    ActionCategory["HELP"] = "HELP";
-    ActionCategory["LAYERS"] = "LAYERS";
-    ActionCategory["NAVIGATION"] = "NAVIGATION";
-    ActionCategory["DRAWER"] = "DRAWER";
-    ActionCategory["GLOBAL"] = "GLOBAL";
-    ActionCategory["RESOURCES"] = "RESOURCES";
-    ActionCategory["BACKGROUND_SERVICES"] = "BACKGROUND_SERVICES";
-    ActionCategory["SETTINGS"] = "SETTINGS";
-    ActionCategory["DEBUGGER"] = "DEBUGGER";
-    ActionCategory["SOURCES"] = "SOURCES";
-    ActionCategory["RENDERING"] = "RENDERING";
-})(ActionCategory || (ActionCategory = {}));
 export function getLocalizedActionCategory(category) {
     switch (category) {
-        case ActionCategory.ELEMENTS:
+        case "ELEMENTS" /* ActionCategory.ELEMENTS */:
             return i18nString(UIStrings.elements);
-        case ActionCategory.SCREENSHOT:
+        case "SCREENSHOT" /* ActionCategory.SCREENSHOT */:
             return i18nString(UIStrings.screenshot);
-        case ActionCategory.NETWORK:
+        case "NETWORK" /* ActionCategory.NETWORK */:
             return i18nString(UIStrings.network);
-        case ActionCategory.MEMORY:
+        case "MEMORY" /* ActionCategory.MEMORY */:
             return i18nString(UIStrings.memory);
-        case ActionCategory.JAVASCRIPT_PROFILER:
+        case "JAVASCRIPT_PROFILER" /* ActionCategory.JAVASCRIPT_PROFILER */:
             return i18nString(UIStrings.javascript_profiler);
-        case ActionCategory.CONSOLE:
+        case "CONSOLE" /* ActionCategory.CONSOLE */:
             return i18nString(UIStrings.console);
-        case ActionCategory.PERFORMANCE:
+        case "PERFORMANCE" /* ActionCategory.PERFORMANCE */:
             return i18nString(UIStrings.performance);
-        case ActionCategory.MOBILE:
+        case "MOBILE" /* ActionCategory.MOBILE */:
             return i18nString(UIStrings.mobile);
-        case ActionCategory.HELP:
+        case "HELP" /* ActionCategory.HELP */:
             return i18nString(UIStrings.help);
-        case ActionCategory.LAYERS:
+        case "LAYERS" /* ActionCategory.LAYERS */:
             return i18nString(UIStrings.layers);
-        case ActionCategory.NAVIGATION:
+        case "NAVIGATION" /* ActionCategory.NAVIGATION */:
             return i18nString(UIStrings.navigation);
-        case ActionCategory.DRAWER:
+        case "DRAWER" /* ActionCategory.DRAWER */:
             return i18nString(UIStrings.drawer);
-        case ActionCategory.GLOBAL:
+        case "GLOBAL" /* ActionCategory.GLOBAL */:
             return i18nString(UIStrings.global);
-        case ActionCategory.RESOURCES:
+        case "RESOURCES" /* ActionCategory.RESOURCES */:
             return i18nString(UIStrings.resources);
-        case ActionCategory.BACKGROUND_SERVICES:
+        case "BACKGROUND_SERVICES" /* ActionCategory.BACKGROUND_SERVICES */:
             return i18nString(UIStrings.background_services);
-        case ActionCategory.SETTINGS:
+        case "SETTINGS" /* ActionCategory.SETTINGS */:
             return i18nString(UIStrings.settings);
-        case ActionCategory.DEBUGGER:
+        case "DEBUGGER" /* ActionCategory.DEBUGGER */:
             return i18nString(UIStrings.debugger);
-        case ActionCategory.SOURCES:
+        case "SOURCES" /* ActionCategory.SOURCES */:
             return i18nString(UIStrings.sources);
-        case ActionCategory.RENDERING:
+        case "RENDERING" /* ActionCategory.RENDERING */:
             return i18nString(UIStrings.rendering);
-        case ActionCategory.NONE:
+        case "RECORDER" /* ActionCategory.RECORDER */:
+            return i18nString(UIStrings.recorder);
+        case "CHANGES" /* ActionCategory.CHANGES */:
+            return i18nString(UIStrings.changes);
+        case "" /* ActionCategory.NONE */:
             return i18n.i18n.lockedString('');
     }
     // Not all categories are cleanly typed yet. Return the category as-is in this case.

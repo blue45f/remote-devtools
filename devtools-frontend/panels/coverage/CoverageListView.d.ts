@@ -1,33 +1,42 @@
-import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
+import '../../ui/components/highlighting/highlighting.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { CoverageType, type URLCoverageInfo } from './CoverageModel.js';
+import { CoverageType } from './CoverageModel.js';
+export interface CoverageListItem {
+    url: Platform.DevToolsPath.UrlString;
+    type: CoverageType;
+    size: number;
+    usedSize: number;
+    unusedSize: number;
+    usedPercentage: number;
+    unusedPercentage: number;
+    sources: CoverageListItem[];
+    isContentScript: boolean;
+    generatedUrl?: Platform.DevToolsPath.UrlString;
+}
 export declare function coverageTypeToString(type: CoverageType): string;
+interface ViewInput {
+    items: CoverageListItem[];
+    selectedUrl: Platform.DevToolsPath.UrlString | null;
+    maxSize: number;
+    onOpen: (url: Platform.DevToolsPath.UrlString) => void;
+    onExpand: () => void;
+    onCollapse: () => void;
+    highlightRegExp: RegExp | null;
+    expandedUrls: Set<Platform.DevToolsPath.UrlString>;
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
 export declare class CoverageListView extends UI.Widget.VBox {
-    private readonly nodeForCoverageInfo;
-    private readonly isVisibleFilter;
-    private highlightRegExp;
-    private dataGrid;
-    constructor(isVisibleFilter: (arg0: URLCoverageInfo) => boolean);
-    update(coverageInfo: URLCoverageInfo[]): void;
+    #private;
+    constructor(element?: HTMLElement, view?: View);
+    set highlightRegExp(highlightRegExp: RegExp | null);
+    get highlightRegExp(): RegExp | null;
+    set coverageInfo(coverageInfo: CoverageListItem[]);
+    get coverageInfo(): CoverageListItem[];
+    performUpdate(): void;
     reset(): void;
-    updateFilterAndHighlight(highlightRegExp: RegExp | null): void;
-    selectByUrl(url: string): void;
-    private onOpenedNode;
-    private onKeyDown;
-    private revealSourceForSelectedNode;
-    private sortingChanged;
-    wasShown(): void;
+    set selectedUrl(url: Platform.DevToolsPath.UrlString | null);
+    get selectedUrl(): Platform.DevToolsPath.UrlString | null;
 }
-export declare class GridNode extends DataGrid.SortableDataGrid.SortableDataGridNode<GridNode> {
-    coverageInfo: URLCoverageInfo;
-    private lastUsedSize;
-    private url;
-    private maxSize;
-    private highlightRegExp;
-    constructor(coverageInfo: URLCoverageInfo, maxSize: number);
-    setHighlight(highlightRegExp: RegExp | null): void;
-    refreshIfNeeded(maxSize: number): boolean;
-    createCell(columnId: string): HTMLElement;
-    private highlight;
-    static sortFunctionForColumn(columnId: string): ((arg0: GridNode, arg1: GridNode) => number) | null;
-}
+export {};

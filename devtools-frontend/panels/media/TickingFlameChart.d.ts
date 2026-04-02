@@ -14,22 +14,18 @@ export interface EventProperties {
     duration?: number;
     name: string;
     color?: string;
-    hoverData?: Object | null;
 }
 /**
  * Wrapper class for each event displayed on the timeline.
  */
 export declare class Event {
+    #private;
     private timelineData;
     private setLive;
     private readonly setComplete;
     private readonly updateMaxTime;
     private selfIndex;
-    private liveInternal;
     title: string;
-    private colorInternal;
-    private fontColorInternal;
-    private readonly hoverData;
     constructor(timelineData: PerfUI.FlameChart.FlameChartTimelineData, eventHandlers: EventHandlers, eventProperties?: EventProperties | undefined);
     /**
      * Render hovertext into the |htmlElement|
@@ -38,7 +34,7 @@ export declare class Event {
     /**
      * set an event to be "live" where it's ended time is always the chart maximum
      * or to be a fixed time.
-     * @param {number} time
+     * @param time
      */
     set endTime(time: number);
     get id(): number;
@@ -51,9 +47,9 @@ export declare class Event {
     get live(): boolean;
 }
 export declare class TickingFlameChart extends UI.Widget.VBox {
+    #private;
     private intervalTimer;
     private lastTimestamp;
-    private canTickInternal;
     private ticking;
     private isShown;
     private readonly bounds;

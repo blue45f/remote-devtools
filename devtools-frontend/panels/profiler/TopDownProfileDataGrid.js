@@ -1,11 +1,11 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { ProfileDataGridNode, ProfileDataGridTree } from './ProfileDataGrid.js';
 export class TopDownProfileDataGridNode extends ProfileDataGridNode {
     remainingChildren;
     constructor(profileNode, owningTree) {
-        const hasChildren = Boolean(profileNode.children && profileNode.children.length);
+        const hasChildren = Boolean(profileNode.children?.length);
         super(profileNode, owningTree, hasChildren);
         this.remainingChildren = profileNode.children;
     }

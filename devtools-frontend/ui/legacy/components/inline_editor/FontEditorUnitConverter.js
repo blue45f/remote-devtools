@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as SDK from '../../../../core/sdk/sdk.js';
@@ -11,7 +11,7 @@ function getPxMultiplier() {
 async function getEmMultiplier(isFontSizeProperty) {
     const selectedNode = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
     let currentFontSize;
-    if (selectedNode && selectedNode.parentNode && selectedNode.nodeName() !== 'HTML') {
+    if (selectedNode?.parentNode && selectedNode.nodeName() !== 'HTML') {
         const [model] = SDK.TargetManager.TargetManager.instance().models(CssOverviewModule.CSSOverviewModel.CSSOverviewModel);
         const fontSizeNodeId = isFontSizeProperty ? selectedNode.parentNode.id : selectedNode.id;
         const computedFontSize = await model.getComputedStyleForNode(fontSizeNodeId).then(findFontSizeValue);
@@ -26,7 +26,7 @@ async function getEmMultiplier(isFontSizeProperty) {
 async function getRemMultiplier() {
     const selectedNode = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
     const htmlNode = findHtmlNode(selectedNode);
-    if (!htmlNode || !htmlNode.id) {
+    if (!htmlNode?.id) {
         return 16;
     }
     const [model] = SDK.TargetManager.TargetManager.instance().models(CssOverviewModule.CSSOverviewModel.CSSOverviewModel);

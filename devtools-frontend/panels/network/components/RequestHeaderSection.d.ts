@@ -1,20 +1,24 @@
+import '../../../ui/kit/kit.js';
 import type * as SDK from '../../../core/sdk/sdk.js';
+import * as UI from '../../../ui/legacy/legacy.js';
 import * as NetworkForward from '../forward/forward.js';
-export interface RequestHeaderSectionData {
-    request: SDK.NetworkRequest.NetworkRequest;
-    toReveal?: {
+import { type HeaderDescriptor } from './HeaderSectionRow.js';
+import requestHeadersViewStyles from './RequestHeadersView.css.js';
+export { requestHeadersViewStyles };
+export interface ViewInput {
+    headers: HeaderDescriptor[];
+    isProvisionalHeaders: boolean;
+    isRequestCached: boolean;
+}
+export type View = (input: ViewInput, output: undefined, target: HTMLElement | ShadowRoot) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class RequestHeaderSection extends UI.Widget.Widget {
+    #private;
+    constructor(element?: HTMLElement, view?: View);
+    set toReveal(toReveal: {
         section: NetworkForward.UIRequestLocation.UIHeaderSection;
         header?: string;
-    };
-}
-export declare class RequestHeaderSection extends HTMLElement {
-    #private;
-    static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
-    connectedCallback(): void;
-    set data(data: RequestHeaderSectionData);
-}
-declare global {
-    interface HTMLElementTagNameMap {
-        'devtools-request-header-section': RequestHeaderSection;
-    }
+    } | undefined);
+    set request(request: Readonly<SDK.NetworkRequest.NetworkRequest>);
+    performUpdate(): void;
 }

@@ -1,12 +1,9 @@
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class TransformController extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
+    #private;
     private mode;
-    private scaleInternal;
-    private offsetXInternal;
-    private offsetYInternal;
-    private rotateXInternal;
-    private rotateYInternal;
     private oldRotateX;
     private oldRotateY;
     private originX;
@@ -16,7 +13,12 @@ export declare class TransformController extends Common.ObjectWrapper.ObjectWrap
     private maxScale;
     private readonly controlPanelToolbar;
     private readonly modeButtons;
-    constructor(element: HTMLElement, disableRotate?: boolean);
+    /**
+     * @param element The HTML element to apply transformations to.
+     * @param disableRotate Optional. If true, pan and rotate will be disabled. Defaults to false.
+     * @param preventDefaultOnMousedown Optional. If true, mousedown events will be prevented from their default behavior (including focus). Defaults to true.
+     */
+    constructor(element: HTMLElement, disableRotate?: boolean, preventDefaultOnMouseDown?: boolean);
     toolbar(): UI.Toolbar.Toolbar;
     private registerShortcuts;
     private postChangeEvent;
@@ -41,13 +43,13 @@ export declare class TransformController extends Common.ObjectWrapper.ObjectWrap
     private onDragStart;
     private onDragEnd;
 }
-export declare enum Events {
-    TransformChanged = "TransformChanged"
+export declare const enum Events {
+    TRANSFORM_CHANGED = "TransformChanged"
 }
-export type EventTypes = {
-    [Events.TransformChanged]: void;
-};
+export interface EventTypes {
+    [Events.TRANSFORM_CHANGED]: void;
+}
 export declare const enum Modes {
-    Pan = "Pan",
-    Rotate = "Rotate"
+    PAN = "Pan",
+    ROTATE = "Rotate"
 }

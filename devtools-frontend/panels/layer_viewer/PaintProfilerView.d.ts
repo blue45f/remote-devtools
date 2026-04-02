@@ -1,24 +1,24 @@
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
-import type * as Protocol from '../../generated/protocol.js';
 import type * as SDK from '../../core/sdk/sdk.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as UI from '../../ui/legacy/legacy.js';
 declare const PaintProfilerView_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.WindowChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.WindowChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.WindowChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.WindowChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.WindowChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.WINDOW_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.WINDOW_CHANGED>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.WINDOW_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.WINDOW_CHANGED): boolean;
+    dispatchEventToListeners<T extends Events.WINDOW_CHANGED>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.HBox;
 export declare class PaintProfilerView extends PaintProfilerView_base {
+    #private;
     private canvasContainer;
     private readonly progressBanner;
     private pieChart;
     private readonly showImageCallback;
     private canvas;
     private context;
-    private readonly selectionWindowInternal;
     private readonly innerBarWidth;
     private minBarHeight;
     private readonly barPaddingWidth;
@@ -32,15 +32,13 @@ export declare class PaintProfilerView extends PaintProfilerView_base {
     private profiles?;
     private updateImageTimer?;
     constructor(showImageCallback: (arg0?: string | undefined) => void);
-    static categories(): {
-        [x: string]: PaintProfilerCategory;
-    };
+    static categories(): Record<string, PaintProfilerCategory>;
     private static initLogItemCategories;
     private static categoryForLogItem;
     onResize(): void;
     setSnapshotAndLog(snapshot: SDK.PaintProfiler.PaintProfilerSnapshot | null, log: SDK.PaintProfiler.PaintProfilerLogItem[], clipRect: Protocol.DOM.Rect | null): Promise<void>;
     setScale(scale: number): void;
-    private update;
+    update(): void;
     private renderBar;
     private onWindowChanged;
     private updatePieChart;
@@ -53,15 +51,14 @@ export declare class PaintProfilerView extends PaintProfilerView_base {
     } | null;
     private updateImage;
     private reset;
-    wasShown(): void;
 }
-export declare enum Events {
-    WindowChanged = "WindowChanged"
+export declare const enum Events {
+    WINDOW_CHANGED = "WindowChanged"
 }
-export type EventTypes = {
-    [Events.WindowChanged]: void;
-};
-export declare class PaintProfilerCommandLogView extends UI.ThrottledWidget.ThrottledWidget {
+export interface EventTypes {
+    [Events.WINDOW_CHANGED]: void;
+}
+export declare class PaintProfilerCommandLogView extends UI.Widget.VBox {
     private readonly treeOutline;
     private log;
     private readonly treeItemCache;
@@ -73,13 +70,11 @@ export declare class PaintProfilerCommandLogView extends UI.ThrottledWidget.Thro
         left: number;
         right: number;
     } | null): void;
-    doUpdate(): Promise<void>;
+    performUpdate(): Promise<void>;
 }
 export declare class LogTreeElement extends UI.TreeOutline.TreeElement {
     readonly logItem: SDK.PaintProfiler.PaintProfilerLogItem;
-    private readonly ownerView;
-    private readonly filled;
-    constructor(ownerView: PaintProfilerCommandLogView, logItem: SDK.PaintProfiler.PaintProfilerLogItem);
+    constructor(logItem: SDK.PaintProfiler.PaintProfilerLogItem);
     onattach(): void;
     onpopulate(): Promise<void>;
     private paramToString;

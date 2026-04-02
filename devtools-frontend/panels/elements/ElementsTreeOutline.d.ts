@@ -1,16 +1,143 @@
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { ElementsTreeElement } from './ElementsTreeElement.js';
+import elementsTreeOutlineStyles from './elementsTreeOutline.css.js';
+import type { MarkerDecoratorRegistration } from './MarkerDecorator.js';
 import { TopLayerContainer } from './TopLayerContainer.js';
-import { type MarkerDecoratorRegistration } from './MarkerDecorator.js';
+export type View = typeof DEFAULT_VIEW;
+export { elementsTreeOutlineStyles };
+interface ViewInput {
+    omitRootDOMNode: boolean;
+    selectEnabled: boolean;
+    hideGutter: boolean;
+    maxTreeDepth?: number;
+    enableContextMenu?: boolean;
+    showComments?: boolean;
+    showAIButton?: boolean;
+    disableEdits?: boolean;
+    expandRoot?: boolean;
+    visibleWidth?: number;
+    visible?: boolean;
+    maxRowsShown?: number;
+    wrap: boolean;
+    showSelectionOnKeyboardFocus: boolean;
+    preventTabOrder: boolean;
+    deindentSingleNode: boolean;
+    currentHighlightedNode: SDK.DOMModel.DOMNode | null;
+    selectedNode: SDK.DOMModel.DOMNode | null;
+    onSelectedNodeChanged: (event: Common.EventTarget.EventTargetEvent<{
+        node: SDK.DOMModel.DOMNode | null;
+        focus: boolean;
+    }>) => void;
+    onElementsTreeUpdated: (event: Common.EventTarget.EventTargetEvent<SDK.DOMModel.DOMNode[]>) => void;
+    onElementCollapsed: () => void;
+    onElementExpanded: () => void;
+}
+interface ViewOutput {
+    elementsTreeOutline?: ElementsTreeOutline;
+    highlightedTreeElement: ElementsTreeElement | null;
+    isUpdatingHighlights: boolean;
+    alreadyExpandedParentTreeElement: ElementsTreeElement | null;
+}
+export declare const DEFAULT_VIEW: (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
+/**
+ * The main goal of this presenter is to wrap ElementsTreeOutline until
+ * ElementsTreeOutline can be fully integrated into DOMTreeWidget.
+ *
+ * FIXME: once TreeOutline is declarative, this file needs to be renamed
+ * to DOMTreeWidget.ts.
+ */
+export declare class DOMTreeWidget extends UI.Widget.Widget {
+    #private;
+    omitRootDOMNode: boolean;
+    selectEnabled: boolean;
+    hideGutter: boolean;
+    showSelectionOnKeyboardFocus: boolean;
+    preventTabOrder: boolean;
+    deindentSingleNode: boolean;
+    onSelectedNodeChanged: (event: Common.EventTarget.EventTargetEvent<{
+        node: SDK.DOMModel.DOMNode | null;
+        focus: boolean;
+    }>) => void;
+    onElementsTreeUpdated: (event: Common.EventTarget.EventTargetEvent<SDK.DOMModel.DOMNode[]>) => void;
+    onDocumentUpdated: (domModel: SDK.DOMModel.DOMModel) => void;
+    onElementExpanded: () => void;
+    onElementCollapsed: () => void;
+    set maxRows(maxRows: number | undefined);
+    get maxRows(): number | undefined;
+    set visibleWidth(width: number);
+    set rootDOMNode(node: SDK.DOMModel.DOMNode | null);
+    get rootDOMNode(): SDK.DOMModel.DOMNode | null;
+    get maxTreeDepth(): number | undefined;
+    set maxTreeDepth(maxTreeDepth: number | undefined);
+    get enableContextMenu(): boolean;
+    set enableContextMenu(enableContextMenu: boolean);
+    get showComments(): boolean;
+    set showComments(showComments: boolean);
+    get showAIButton(): boolean;
+    set showAIButton(showAIButton: boolean);
+    get disableEdits(): boolean;
+    set disableEdits(disableEdits: boolean);
+    get expandRoot(): boolean;
+    set expandRoot(expandRoot: boolean);
+    constructor(element?: HTMLElement, view?: View);
+    selectDOMNode(node: SDK.DOMModel.DOMNode | SDK.DOMModel.AdoptedStyleSheet | null, focus?: boolean): void;
+    highlightNodeAttribute(node: SDK.DOMModel.DOMNode, attribute: string): void;
+    get wrap(): boolean;
+    set wrap(wrap: boolean);
+    setWordWrap(wrap: boolean): void;
+    selectedDOMNode(): SDK.DOMModel.DOMNode | null;
+    /**
+     * FIXME: this is called to re-render everything from scratch, for
+     * example, if global settings changed. Instead, the setting values
+     * should be the input for the view function.
+     */
+    reload(): void;
+    /**
+     * Used by layout tests.
+     */
+    getTreeOutlineForTesting(): ElementsTreeOutline | undefined;
+    treeElementForNode(node: SDK.DOMModel.DOMNode): ElementsTreeElement | null;
+    performUpdate(): void;
+    modelAdded(domModel: SDK.DOMModel.DOMModel): void;
+    modelRemoved(domModel: SDK.DOMModel.DOMModel): void;
+    /**
+     * FIXME: which node is expanded should be part of the view input.
+     */
+    expand(): void;
+    /**
+     * FIXME: which node is selected should be part of the view input.
+     */
+    selectDOMNodeWithoutReveal(node: SDK.DOMModel.DOMNode): void;
+    /**
+     * FIXME: adorners should be part of the view input.
+     */
+    updateNodeAdorners(node: SDK.DOMModel.DOMNode): void;
+    highlightMatch(node: SDK.DOMModel.DOMNode, query?: string): void;
+    hideMatchHighlights(node: SDK.DOMModel.DOMNode): void;
+    toggleHideElement(node: SDK.DOMModel.DOMNode): void;
+    toggleEditAsHTML(node: SDK.DOMModel.DOMNode): void;
+    duplicateNode(node: SDK.DOMModel.DOMNode): void;
+    copyStyles(node: SDK.DOMModel.DOMNode): void;
+    /**
+     * FIXME: used to determine focus state, probably we can have a better
+     * way to do it.
+     */
+    empty(): boolean;
+    focus(): void;
+    wasShown(): void;
+    detach(overrideHideOnDetach?: boolean): void;
+    show(parentElement: Element, insertBefore?: Node | null, suppressOrphanWidgetError?: boolean): void;
+}
 declare const ElementsTreeOutline_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<ElementsTreeOutline.EventTypes>;
-    addEventListener<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<ElementsTreeOutline.EventTypes, T>;
-    once<T_1 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_1): Promise<ElementsTreeOutline.EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof ElementsTreeOutline.EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<ElementsTreeOutline.EventTypes>;
+    addEventListener<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<ElementsTreeOutline.EventTypes, T>;
+    once<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T): Promise<ElementsTreeOutline.EventTypes[T]>;
+    removeEventListener<T extends keyof ElementsTreeOutline.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<ElementsTreeOutline.EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof ElementsTreeOutline.EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof ElementsTreeOutline.EventTypes>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<ElementsTreeOutline.EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof ElementsTreeOutline.EventTypes>(eventType: import("../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<ElementsTreeOutline.EventTypes, T>): void;
 }) & typeof UI.TreeOutline.TreeOutline;
 export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     #private;
@@ -36,8 +163,16 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     private treeElementBeingDragged?;
     private dragOverTreeElement?;
     private updateModifiedNodesTimeout?;
-    constructor(omitRootDOMNode?: boolean, selectEnabled?: boolean, hideGutter?: boolean);
+    maxTreeDepth?: number;
+    enableContextMenu: boolean;
+    showComments: boolean;
+    showAIButton: boolean;
+    disableEdits: boolean;
+    expandRoot: boolean;
+    constructor(omitRootDOMNode?: boolean, selectEnabled?: boolean, hideGutter?: boolean, maxTreeDepth?: number, enableContextMenu?: boolean, showComments?: boolean, showAIButton?: boolean, disableEdits?: boolean, expandRoot?: boolean);
     static forDOMModel(domModel: SDK.DOMModel.DOMModel): ElementsTreeOutline | null;
+    deindentSingleNode(): void;
+    updateNodeElementToIssue(element: Element, issues: IssuesManager.Issue.Issue[]): void;
     private onShowHTMLCommentsChange;
     setWordWrap(wrap: boolean): void;
     setMultilineEditing(multilineEditing: MultilineEditorController | null): void;
@@ -47,7 +182,7 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     resetClipboardIfNeeded(removedNode: SDK.DOMModel.DOMNode): void;
     private onBeforeCopy;
     private onCopyOrCut;
-    performCopyOrCut(isCut: boolean, node: SDK.DOMModel.DOMNode | null): void;
+    performCopyOrCut(isCut: boolean, node: SDK.DOMModel.DOMNode | null, includeShadowRoots?: boolean): void;
     canPaste(targetNode: SDK.DOMModel.DOMNode): boolean;
     pasteNode(targetNode: SDK.DOMModel.DOMNode): void;
     duplicateNode(targetNode: SDK.DOMModel.DOMNode): void;
@@ -60,14 +195,17 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     get isXMLMimeType(): boolean;
     selectedDOMNode(): SDK.DOMModel.DOMNode | null;
     selectDOMNode(node: SDK.DOMModel.DOMNode | null, focus?: boolean): void;
+    set maxRowsShown(maxRows: number | undefined);
+    highlightAdoptedStyleSheet(adoptedStyleSheet: SDK.DOMModel.AdoptedStyleSheet): void;
     editing(): boolean;
     update(): void;
     selectedNodeChanged(focus: boolean): void;
     private fireElementsTreeUpdated;
-    findTreeElement(node: SDK.DOMModel.DOMNode): ElementsTreeElement | null;
+    findTreeElement(node: SDK.DOMModel.DOMNode | SDK.DOMModel.AdoptedStyleSheet[]): ElementsTreeElement | null;
     private lookUpTreeElement;
     createTreeElementFor(node: SDK.DOMModel.DOMNode): ElementsTreeElement | null;
     private revealAndSelectNode;
+    highlightNodeAttribute(node: SDK.DOMModel.DOMNode, attribute: string): void;
     treeElementFromEventInternal(event: MouseEvent): UI.TreeOutline.TreeElement | null;
     private onfocusout;
     private onmousedown;
@@ -84,7 +222,7 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     private ondragend;
     private clearDragOverTreeElementMarker;
     private contextMenuEventFired;
-    showContextMenu(treeElement: ElementsTreeElement, event: Event): void;
+    showContextMenu(treeElement: ElementsTreeElement, event: Event): Promise<void>;
     private saveNodeToTempVariable;
     runPendingUpdates(): void;
     private onKeyDown;
@@ -107,16 +245,24 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     private attributeModified;
     private attributeRemoved;
     private characterDataModified;
+    private documentURLChanged;
     private nodeInserted;
     private nodeRemoved;
     private childNodeCountUpdated;
     private distributedNodesChanged;
+    private adoptedStyleSheetsModified;
     private updateModifiedNodesSoon;
-    private updateModifiedNodes;
+    /**
+     * TODO: this is made public for unit tests until the ElementsTreeOutline is
+     * migrated into DOMTreeWidget and highlights are declarative.
+     */
+    updateModifiedNodes(): void;
     private updateModifiedNode;
     private updateModifiedParentNode;
     populateTreeElement(treeElement: ElementsTreeElement): Promise<void>;
-    createTopLayerContainer(parent: UI.TreeOutline.TreeElement, domModel: SDK.DOMModel.DOMModel): Promise<void>;
+    createTopLayerContainer(parent: UI.TreeOutline.TreeElement, document: SDK.DOMModel.DOMDocument): void;
+    revealInTopLayer(node: SDK.DOMModel.DOMNode): void;
+    private isMaxDepthReached;
     private createElementTreeElement;
     private showChild;
     private visibleChildren;
@@ -124,67 +270,27 @@ export declare class ElementsTreeOutline extends ElementsTreeOutline_base {
     private createExpandAllButtonTreeElement;
     setExpandedChildrenLimit(treeElement: ElementsTreeElement, expandedChildrenLimit: number): void;
     private updateChildren;
-    insertChildElement(treeElement: ElementsTreeElement | TopLayerContainer, child: SDK.DOMModel.DOMNode, index: number, isClosingTag?: boolean): ElementsTreeElement;
+    insertChildElement(treeElement: ElementsTreeElement | TopLayerContainer, child: SDK.DOMModel.DOMNode | SDK.DOMModel.AdoptedStyleSheet[], index: number, isClosingTag?: boolean): UI.TreeOutline.TreeElement;
     private moveChild;
-    private innerUpdateChildren;
     private markersChanged;
-    private topLayerElementsChanged;
-    private static treeOutlineSymbol;
+    private affectedByStartingStylesFlagUpdated;
 }
 export declare namespace ElementsTreeOutline {
     enum Events {
         SelectedNodeChanged = "SelectedNodeChanged",
-        ElementsTreeUpdated = "ElementsTreeUpdated"
+        ElementsTreeUpdated = "ElementsTreeUpdated",
+        ShowAllRows = "ShowAllRows"
     }
-    type EventTypes = {
+    interface EventTypes {
         [Events.SelectedNodeChanged]: {
             node: SDK.DOMModel.DOMNode | null;
             focus: boolean;
         };
         [Events.ElementsTreeUpdated]: SDK.DOMModel.DOMNode[];
-    };
+        [Events.ShowAllRows]: void;
+    }
 }
 export declare const MappedCharToEntity: Map<string, string>;
-export declare class UpdateRecord {
-    private modifiedAttributes?;
-    private removedAttributes?;
-    private hasChangedChildrenInternal?;
-    private hasRemovedChildrenInternal?;
-    private charDataModifiedInternal?;
-    attributeModified(attrName: string): void;
-    attributeRemoved(attrName: string): void;
-    nodeInserted(_node: SDK.DOMModel.DOMNode): void;
-    nodeRemoved(_node: SDK.DOMModel.DOMNode): void;
-    charDataModified(): void;
-    childrenModified(): void;
-    isAttributeModified(attributeName: string): boolean;
-    hasRemovedAttributes(): boolean;
-    isCharDataModified(): boolean;
-    hasChangedChildren(): boolean;
-    hasRemovedChildren(): boolean;
-}
-export declare class Renderer implements UI.UIUtils.Renderer {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): Renderer;
-    render(object: Object): Promise<{
-        node: Node;
-        tree: UI.TreeOutline.TreeOutline | null;
-    } | null>;
-}
-export declare class ShortcutTreeElement extends UI.TreeOutline.TreeElement {
-    private readonly nodeShortcut;
-    private hoveredInternal?;
-    constructor(nodeShortcut: SDK.DOMModel.DOMNodeShortcut);
-    addRevealAdorner(): void;
-    get hovered(): boolean;
-    set hovered(x: boolean);
-    deferredNode(): SDK.DOMModel.DeferredDOMNode;
-    domModel(): SDK.DOMModel.DOMModel;
-    private setLeftIndentOverlay;
-    onattach(): void;
-    onselect(selectedByUser?: boolean): boolean;
-}
 export interface MultilineEditorController {
     cancel: () => void;
     commit: () => void;
@@ -194,4 +300,3 @@ export interface ClipboardData {
     node: SDK.DOMModel.DOMNode;
     isCut: boolean;
 }
-export {};

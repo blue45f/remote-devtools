@@ -1,17 +1,16 @@
-import * as SDK from '../../core/sdk/sdk.js';
-import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
+import '../../ui/legacy/legacy.js';
+import * as Common from '../../core/common/common.js';
+import * as Trace from '../../models/trace/trace.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type PerformanceModel } from './PerformanceModel.js';
-import { type TimelineModeViewDelegate } from './TimelinePanel.js';
+import type { TimelineModeViewDelegate } from './TimelinePanel.js';
 export declare class CountersGraph extends UI.Widget.VBox {
     #private;
     private readonly delegate;
     private readonly calculator;
-    private model;
     private readonly header;
     readonly toolbar: UI.Toolbar.Toolbar;
     private graphsContainer;
-    canvasContainer: UI.Widget.WidgetElement;
+    canvasContainer: typeof UI.Widget.Widget.prototype.element;
     private canvas;
     private readonly timelineGrid;
     private readonly counters;
@@ -21,13 +20,12 @@ export declare class CountersGraph extends UI.Widget.VBox {
     currentValuesBar?: HTMLElement;
     private markerXPosition?;
     constructor(delegate: TimelineModeViewDelegate);
-    setModel(model: PerformanceModel | null, events: SDK.TracingModel.CompatibleTraceEvent[] | null): void;
+    setModel(parsedTrace: Trace.TraceModel.ParsedTrace | null, events: Trace.Types.Events.Event[] | null): void;
     private createCurrentValuesBar;
     private createCounter;
-    resizerElement(): Element | null;
+    resizerElement(): Element;
     private resize;
-    private onWindowChanged;
-    scheduleRefresh(): void;
+    performUpdate(): Promise<void> | void;
     draw(): void;
     private onClick;
     private onMouseLeave;
@@ -58,20 +56,20 @@ export declare class Counter {
     calculateXValues(width: number): void;
 }
 export declare class CounterUI {
+    #private;
     private readonly countersPane;
     counter: Counter;
-    private readonly formatter;
+    readonly formatter: (arg0: number) => string;
     private readonly setting;
-    private filter;
-    private range;
-    private value;
+    private readonly filter;
+    private readonly value;
     graphColor: string;
     limitColor: string | null | undefined;
     graphYValues: number[];
     private readonly verticalPadding;
-    private currentValueLabel;
-    private marker;
-    constructor(countersPane: CountersGraph, title: string, graphColor: string, counter: Counter, formatter?: (arg0: number) => string);
+    private readonly counterName;
+    private readonly marker;
+    constructor(countersPane: CountersGraph, title: Common.UIString.LocalizedString, settingsKey: string, graphColor: string, counter: Counter, formatter: (arg0: number) => string);
     reset(): void;
     setRange(minValue: number, maxValue: number): void;
     private toggleCounterGraph;
@@ -81,11 +79,9 @@ export declare class CounterUI {
     drawGraph(canvas: HTMLCanvasElement): void;
     visible(): boolean;
 }
-export declare class Calculator implements PerfUI.TimelineGrid.Calculator {
-    private minimumBoundaryInternal;
-    private maximumBoundaryInternal;
+export declare class Calculator implements Calculator {
+    #private;
     private workingArea;
-    private zeroTimeInternal;
     constructor();
     setZeroTime(time: number): void;
     computePosition(time: number): number;

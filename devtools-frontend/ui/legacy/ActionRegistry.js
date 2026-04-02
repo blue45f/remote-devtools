@@ -1,4 +1,4 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { getRegisteredActionExtensions, reset as resetActionRegistrations } from './ActionRegistration.js';
@@ -42,7 +42,7 @@ export class ActionRegistry {
         const applicableActions = [];
         for (const actionId of actionIds) {
             const action = this.actionsById.get(actionId);
-            if (action && action.enabled()) {
+            if (action?.enabled()) {
                 if (isActionApplicableToContextTypes(action, context.flavors())) {
                     applicableActions.push(action);
                 }
@@ -64,8 +64,15 @@ export class ActionRegistry {
             return false;
         }
     }
-    action(actionId) {
-        return this.actionsById.get(actionId) || null;
+    hasAction(actionId) {
+        return this.actionsById.has(actionId);
+    }
+    getAction(actionId) {
+        const action = this.actionsById.get(actionId);
+        if (action) {
+            return action;
+        }
+        throw new Error(`Cannot find registered action with ID '${actionId}'`);
     }
 }
 //# sourceMappingURL=ActionRegistry.js.map

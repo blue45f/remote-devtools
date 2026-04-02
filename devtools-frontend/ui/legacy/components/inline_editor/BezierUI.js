@@ -1,6 +1,8 @@
-// Copyright (c) 2015 The Chromium Authors. All rights reserved.
+// Copyright 2015 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Geometry from '../../../../models/geometry/geometry.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 export class BezierUI {
     width;
@@ -18,7 +20,7 @@ export class BezierUI {
     static drawVelocityChart(bezier, path, width) {
         const height = Height;
         let pathBuilder = ['M', 0, height];
-        /** @const */ const sampleSize = 1 / 40;
+        /** @constant */ const sampleSize = 1 / 40;
         let prev = bezier.evaluateAt(0);
         for (let t = sampleSize; t < 1 + sampleSize; t += sampleSize) {
             const current = bezier.evaluateAt(t);
@@ -47,6 +49,7 @@ export class BezierUI {
     drawControlPoints(parentElement, startX, startY, controlX, controlY) {
         this.drawLine(parentElement, 'bezier-control-line', startX, startY, controlX, controlY);
         const circle = UI.UIUtils.createSVGChild(parentElement, 'circle', 'bezier-control-circle');
+        circle.setAttribute('jslog', `${VisualLogging.controlPoint('bezier.control-circle').track({ drag: true })}`);
         circle.setAttribute('cx', String(controlX + this.radius));
         circle.setAttribute('cy', String(controlY + this.radius + this.marginTop));
         circle.setAttribute('r', String(this.radius));
@@ -66,9 +69,9 @@ export class BezierUI {
         }
         const curve = UI.UIUtils.createSVGChild(group, 'path', 'bezier-path');
         const curvePoints = [
-            new UI.Geometry.Point(bezier.controlPoints[0].x * width + this.radius, (1 - bezier.controlPoints[0].y) * height + this.radius + this.marginTop),
-            new UI.Geometry.Point(bezier.controlPoints[1].x * width + this.radius, (1 - bezier.controlPoints[1].y) * height + this.radius + this.marginTop),
-            new UI.Geometry.Point(width + this.radius, this.marginTop + this.radius),
+            new Geometry.Point(bezier.controlPoints[0].x * width + this.radius, (1 - bezier.controlPoints[0].y) * height + this.radius + this.marginTop),
+            new Geometry.Point(bezier.controlPoints[1].x * width + this.radius, (1 - bezier.controlPoints[1].y) * height + this.radius + this.marginTop),
+            new Geometry.Point(width + this.radius, this.marginTop + this.radius),
         ];
         curve.setAttribute('d', 'M' + this.radius + ',' + (height + this.radius + this.marginTop) + ' C' + curvePoints.join(' '));
         this.drawControlPoints(group, 0, height, bezier.controlPoints[0].x * width, (1 - bezier.controlPoints[0].y) * height);

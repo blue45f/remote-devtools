@@ -1,9 +1,12 @@
 import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import type * as Protocol from '../../generated/protocol.js';
+export interface BuildOptions {
+    sanitize: boolean;
+}
 export declare class Log {
     static pseudoWallTime(request: SDK.NetworkRequest.NetworkRequest, monotonicTime: number): Date;
-    static build(requests: SDK.NetworkRequest.NetworkRequest[]): Promise<LogDTO>;
+    static build(requests: SDK.NetworkRequest.NetworkRequest[], options: BuildOptions): Promise<LogDTO>;
     private creator;
     private buildPages;
     private convertPage;
@@ -13,7 +16,7 @@ export declare class Entry {
     private request;
     constructor(request: SDK.NetworkRequest.NetworkRequest);
     static toMilliseconds(time: number): number;
-    static build(request: SDK.NetworkRequest.NetworkRequest): Promise<EntryDTO>;
+    static build(request: SDK.NetworkRequest.NetworkRequest, options: BuildOptions): Promise<EntryDTO>;
     private buildRequest;
     private buildResponse;
     private buildContent;
@@ -37,6 +40,12 @@ export interface Timing {
     receive: number;
     _blocked_queueing: number;
     _blocked_proxy?: number;
+    _workerStart?: number;
+    _workerReady?: number;
+    _workerFetchStart?: number;
+    _workerRespondWithSettled?: number;
+    _workerRouterEvaluationStart?: number;
+    _workerCacheLookupStart?: number;
 }
 export interface Parameter {
     name: string;
@@ -53,7 +62,11 @@ export interface Request {
     method: string;
     url: Platform.DevToolsPath.UrlString;
     httpVersion: string;
-    headers: Object;
+    headers: Array<{
+        name: string;
+        value: string;
+        comment?: string;
+    }>;
     queryString: Parameter[];
     cookies: CookieDTO[];
     headersSize: number;
@@ -64,7 +77,11 @@ export interface Response {
     status: number;
     statusText: string;
     httpVersion: string;
-    headers: Object;
+    headers: Array<{
+        name: string;
+        value: string;
+        comment?: string;
+    }>;
     cookies: CookieDTO[];
     content: Content;
     redirectURL: string;
@@ -72,8 +89,15 @@ export interface Response {
     bodySize: number;
     _transferSize: number;
     _error: string | null;
+    _fetchedViaServiceWorker: boolean;
+    _responseCacheStorageCacheName: string | undefined;
+    _serviceWorkerResponseSource: Protocol.Network.ServiceWorkerResponseSource | undefined;
+    _serviceWorkerRouterRuleIdMatched: number | undefined;
+    _serviceWorkerRouterMatchedSourceType: string | undefined;
+    _serviceWorkerRouterActualSourceType: string | undefined;
 }
 export interface EntryDTO {
+    _connectionId?: string;
     _fromCache?: string;
     _initiator: Protocol.Network.Initiator | null;
     _priority: Protocol.Network.ResourcePriority | null;
@@ -103,6 +127,7 @@ export interface CookieDTO {
     httpOnly: boolean;
     secure: boolean;
     sameSite?: Protocol.Network.CookieSameSite;
+    partitionKey?: Protocol.Network.CookiePartitionKey;
 }
 export interface Page {
     startedDateTime: string | Object;

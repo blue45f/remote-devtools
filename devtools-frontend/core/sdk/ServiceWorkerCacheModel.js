@@ -1,16 +1,15 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
 import * as i18n from '../i18n/i18n.js';
-import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 import { StorageBucketsModel } from './StorageBucketsModel.js';
 const UIStrings = {
     /**
-     *@description Text in Service Worker Cache Model
-     *@example {https://cache} PH1
-     *@example {error message} PH2
+     * @description Text in Service Worker Cache Model
+     * @example {https://cache} PH1
+     * @example {error message} PH2
      */
     serviceworkercacheagentError: '`ServiceWorkerCacheAgent` error deleting cache entry {PH1} in cache: {PH2}',
 };
@@ -20,7 +19,7 @@ export class ServiceWorkerCacheModel extends SDKModel {
     cacheAgent;
     #storageAgent;
     #storageBucketModel;
-    #cachesInternal = new Map();
+    #caches = new Map();
     #storageKeysTracked = new Set();
     #storageBucketsUpdated = new Set();
     #throttler = new Common.Throttler.Throttler(2000);
@@ -41,18 +40,18 @@ export class ServiceWorkerCacheModel extends SDKModel {
         if (this.#enabled) {
             return;
         }
-        this.#storageBucketModel.addEventListener("BucketAdded" /* StorageBucketsModelEvents.BucketAdded */, this.storageBucketAdded, this);
-        this.#storageBucketModel.addEventListener("BucketRemoved" /* StorageBucketsModelEvents.BucketRemoved */, this.storageBucketRemoved, this);
+        this.#storageBucketModel.addEventListener("BucketAdded" /* StorageBucketsModelEvents.BUCKET_ADDED */, this.storageBucketAdded, this);
+        this.#storageBucketModel.addEventListener("BucketRemoved" /* StorageBucketsModelEvents.BUCKET_REMOVED */, this.storageBucketRemoved, this);
         for (const storageBucket of this.#storageBucketModel.getBuckets()) {
             this.addStorageBucket(storageBucket.bucket);
         }
         this.#enabled = true;
     }
     clearForStorageKey(storageKey) {
-        for (const [opaqueId, cache] of this.#cachesInternal.entries()) {
+        for (const [opaqueId, cache] of this.#caches.entries()) {
             if (cache.storageKey === storageKey) {
-                this.#cachesInternal.delete(opaqueId);
-                this.cacheRemoved(cache);
+                this.#caches.delete((opaqueId));
+                this.cacheRemoved((cache));
             }
         }
         for (const storageBucket of this.#storageBucketModel.getBucketsForStorageKey(storageKey)) {
@@ -60,10 +59,10 @@ export class ServiceWorkerCacheModel extends SDKModel {
         }
     }
     refreshCacheNames() {
-        for (const cache of this.#cachesInternal.values()) {
+        for (const cache of this.#caches.values()) {
             this.cacheRemoved(cache);
         }
-        this.#cachesInternal.clear();
+        this.#caches.clear();
         const storageBuckets = this.#storageBucketModel.getBuckets();
         for (const storageBucket of storageBuckets) {
             void this.loadCacheNames(storageBucket.bucket);
@@ -75,7 +74,7 @@ export class ServiceWorkerCacheModel extends SDKModel {
             console.error(`ServiceWorkerCacheAgent error deleting cache ${cache.toString()}: ${response.getError()}`);
             return;
         }
-        this.#cachesInternal.delete(cache.cacheId);
+        this.#caches.delete(cache.cacheId);
         this.cacheRemoved(cache);
     }
     async deleteCacheEntry(cache, request) {
@@ -92,20 +91,16 @@ export class ServiceWorkerCacheModel extends SDKModel {
         void this.requestAllEntries(cache, pathFilter, callback);
     }
     caches() {
-        const caches = new Array();
-        for (const cache of this.#cachesInternal.values()) {
-            caches.push(cache);
-        }
-        return caches;
+        return [...this.#caches.values()];
     }
     dispose() {
-        for (const cache of this.#cachesInternal.values()) {
+        for (const cache of this.#caches.values()) {
             this.cacheRemoved(cache);
         }
-        this.#cachesInternal.clear();
+        this.#caches.clear();
         if (this.#enabled) {
-            this.#storageBucketModel.removeEventListener("BucketAdded" /* StorageBucketsModelEvents.BucketAdded */, this.storageBucketAdded, this);
-            this.#storageBucketModel.removeEventListener("BucketRemoved" /* StorageBucketsModelEvents.BucketRemoved */, this.storageBucketRemoved, this);
+            this.#storageBucketModel.removeEventListener("BucketAdded" /* StorageBucketsModelEvents.BUCKET_ADDED */, this.storageBucketAdded, this);
+            this.#storageBucketModel.removeEventListener("BucketRemoved" /* StorageBucketsModelEvents.BUCKET_REMOVED */, this.storageBucketRemoved, this);
         }
     }
     addStorageBucket(storageBucket) {
@@ -117,14 +112,14 @@ export class ServiceWorkerCacheModel extends SDKModel {
     }
     removeStorageBucket(storageBucket) {
         let storageKeyCount = 0;
-        for (const [opaqueId, cache] of this.#cachesInternal.entries()) {
+        for (const [opaqueId, cache] of this.#caches.entries()) {
             if (storageBucket.storageKey === cache.storageKey) {
                 storageKeyCount++;
             }
             if (cache.inBucket(storageBucket)) {
                 storageKeyCount--;
-                this.#cachesInternal.delete(opaqueId);
-                this.cacheRemoved(cache);
+                this.#caches.delete((opaqueId));
+                this.cacheRemoved((cache));
             }
         }
         if (storageKeyCount === 0) {
@@ -143,7 +138,7 @@ export class ServiceWorkerCacheModel extends SDKModel {
         function deleteAndSaveOldCaches(cache) {
             if (cache.inBucket(storageBucket) && !updatingCachesIds.has(cache.cacheId)) {
                 oldCaches.set(cache.cacheId, cache);
-                this.#cachesInternal.delete(cache.cacheId);
+                this.#caches.delete(cache.cacheId);
             }
         }
         const updatingCachesIds = new Set();
@@ -157,13 +152,13 @@ export class ServiceWorkerCacheModel extends SDKModel {
             }
             const cache = new Cache(this, storageBucket, cacheJson.cacheName, cacheJson.cacheId);
             updatingCachesIds.add(cache.cacheId);
-            if (this.#cachesInternal.has(cache.cacheId)) {
+            if (this.#caches.has(cache.cacheId)) {
                 continue;
             }
             newCaches.set(cache.cacheId, cache);
-            this.#cachesInternal.set(cache.cacheId, cache);
+            this.#caches.set(cache.cacheId, cache);
         }
-        this.#cachesInternal.forEach(deleteAndSaveOldCaches, this);
+        this.#caches.forEach(deleteAndSaveOldCaches, this);
         newCaches.forEach(this.cacheAdded, this);
         oldCaches.forEach(this.cacheRemoved, this);
     }
@@ -174,10 +169,10 @@ export class ServiceWorkerCacheModel extends SDKModel {
         this.removeStorageBucket(bucket);
     }
     cacheAdded(cache) {
-        this.dispatchEventToListeners(Events.CacheAdded, { model: this, cache: cache });
+        this.dispatchEventToListeners("CacheAdded" /* Events.CACHE_ADDED */, { model: this, cache });
     }
     cacheRemoved(cache) {
-        this.dispatchEventToListeners(Events.CacheRemoved, { model: this, cache: cache });
+        this.dispatchEventToListeners("CacheRemoved" /* Events.CACHE_REMOVED */, { model: this, cache });
     }
     async requestEntries(cache, skipCount, pageSize, pathFilter, callback) {
         const response = await this.cacheAgent.invoke_requestEntries({ cacheId: cache.cacheId, skipCount, pageSize, pathFilter });
@@ -203,22 +198,29 @@ export class ServiceWorkerCacheModel extends SDKModel {
                 const promises = Array.from(this.#storageBucketsUpdated, storageBucket => this.loadCacheNames(storageBucket));
                 this.#storageBucketsUpdated.clear();
                 return Promise.all(promises);
-            }, this.#scheduleAsSoonAsPossible);
+            }, this.#scheduleAsSoonAsPossible ? "AsSoonAsPossible" /* Common.Throttler.Scheduling.AS_SOON_AS_POSSIBLE */ :
+                "Default" /* Common.Throttler.Scheduling.DEFAULT */);
         }
     }
     cacheStorageContentUpdated({ bucketId, cacheName }) {
         const storageBucket = this.#storageBucketModel.getBucketById(bucketId)?.bucket;
         if (storageBucket) {
-            this.dispatchEventToListeners(Events.CacheStorageContentUpdated, { storageBucket, cacheName });
+            this.dispatchEventToListeners("CacheStorageContentUpdated" /* Events.CACHE_STORAGE_CONTENT_UPDATED */, { storageBucket, cacheName });
         }
     }
     indexedDBListUpdated(_event) {
     }
     indexedDBContentUpdated(_event) {
     }
+    interestGroupAuctionEventOccurred(_event) {
+    }
     interestGroupAccessed(_event) {
     }
+    interestGroupAuctionNetworkRequestCreated(_event) {
+    }
     sharedStorageAccessed(_event) {
+    }
+    sharedStorageWorkletOperationExecutionFinished(_event) {
     }
     storageBucketCreatedOrUpdated(_event) {
     }
@@ -228,14 +230,6 @@ export class ServiceWorkerCacheModel extends SDKModel {
         this.#scheduleAsSoonAsPossible = true;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["CacheAdded"] = "CacheAdded";
-    Events["CacheRemoved"] = "CacheRemoved";
-    Events["CacheStorageContentUpdated"] = "CacheStorageContentUpdated";
-})(Events || (Events = {}));
 export class Cache {
     #model;
     storageKey;
@@ -266,5 +260,5 @@ export class Cache {
         return response.response;
     }
 }
-SDKModel.register(ServiceWorkerCacheModel, { capabilities: Capability.Storage, autostart: false });
+SDKModel.register(ServiceWorkerCacheModel, { capabilities: 8192 /* Capability.STORAGE */, autostart: false });
 //# sourceMappingURL=ServiceWorkerCacheModel.js.map

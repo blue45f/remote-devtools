@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -32,11 +32,13 @@
 import * as Platform from '../platform/platform.js';
 import { ColorConverter } from './ColorConverter.js';
 import { blendColors, contrastRatioAPCA, desiredLuminanceAPCA, luminance, luminanceAPCA, rgbToHsl, rgbToHwb, } from './ColorUtils.js';
-// <hue> is defined as a <number> or <angle>
-// and we hold this in degrees. However, after
-// the conversions, these degrees can result in
-// negative values. That's why we normalize the hue to be
-// between [0 - 360].
+/**
+ * <hue> is defined as a <number> or <angle>
+ * and we hold this in degrees. However, after
+ * the conversions, these degrees can result in
+ * negative values. That's why we normalize the hue to be
+ * between [0 - 360].
+ **/
 function normalizeHue(hue) {
     // Even though it is highly unlikely, hue can be
     // very negative like -400. The initial modulo
@@ -44,12 +46,14 @@ function normalizeHue(hue) {
     // negative, it is between [-360, 0].
     return ((hue % 360) + 360) % 360;
 }
-// Parses angle in the form of
-// `<angle>deg`, `<angle>turn`, `<angle>grad and `<angle>rad`
-// and returns the canonicalized `degree`.
+/**
+ * Parses angle in the form of
+ * `<angle>deg`, `<angle>turn`, `<angle>grad and `<angle>rad`
+ * and returns the canonicalized `degree`.
+ **/
 function parseAngle(angleText) {
     const angle = angleText.replace(/(deg|g?rad|turn)$/, '');
-    // @ts-ignore: isNaN can accept strings
+    // @ts-expect-error: isNaN can accept strings
     if (isNaN(angle) || angleText.match(/\s+(deg|g?rad|turn)/)) {
         return null;
     }
@@ -69,19 +73,13 @@ function parseAngle(angleText) {
     // 1deg === 1deg ^_^
     return number;
 }
-// Returns the `Format` equivalent from the format text
+/** Returns the `Format` equivalent from the format text **/
 export function getFormat(formatText) {
     switch (formatText) {
-        case "nickname" /* Format.Nickname */:
-            return "nickname" /* Format.Nickname */;
         case "hex" /* Format.HEX */:
             return "hex" /* Format.HEX */;
-        case "shorthex" /* Format.ShortHEX */:
-            return "shorthex" /* Format.ShortHEX */;
         case "hexa" /* Format.HEXA */:
             return "hexa" /* Format.HEXA */;
-        case "shorthexa" /* Format.ShortHEXA */:
-            return "shorthexa" /* Format.ShortHEXA */;
         case "rgb" /* Format.RGB */:
             return "rgb" /* Format.RGB */;
         case "rgba" /* Format.RGBA */:
@@ -146,21 +144,21 @@ function mapPercentToRange(percent, range) {
     return sign * (absPercent * (outMax - outMin) / 100 + outMin);
 }
 export function parse(text) {
-    // Simple - #hex, nickname
-    const value = text.toLowerCase().replace(/\s+/g, '');
-    const simple = /^(?:#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(\w+))$/i;
-    let match = value.match(simple);
-    if (match) {
-        if (match[1]) {
-            return Legacy.fromHex(match[1], text);
+    // #hex, nickname
+    if (!text.match(/\s/)) {
+        const match = text.toLowerCase().match(/^(?:#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(\w+))$/i);
+        if (match) {
+            if (match[1]) {
+                return Legacy.fromHex(match[1], text);
+            }
+            if (match[2]) {
+                return Nickname.fromName(match[2], text);
+            }
+            return null;
         }
-        if (match[2]) {
-            return Legacy.fromName(match[2], text);
-        }
-        return null;
     }
     // rgb/rgba(), hsl/hsla(), hwb/hwba(), lch(), oklch(), lab(), oklab() and color()
-    match = text.toLowerCase().match(/^\s*(?:(rgba?)|(hsla?)|(hwba?)|(lch)|(oklch)|(lab)|(oklab)|(color))\((.*)\)\s*$/);
+    const match = text.toLowerCase().match(/^\s*(?:(rgba?)|(hsla?)|(hwba?)|(lch)|(oklch)|(lab)|(oklab)|(color))\((.*)\)\s*$/);
     if (match) {
         const isRgbaMatch = Boolean(match[1]); // rgb/rgba()
         const isHslaMatch = Boolean(match[2]); // hsl/hsla()
@@ -282,7 +280,7 @@ function parseAlpha(value) {
  * - 20% in range [0, 1] is 0.5
  */
 function parsePercentOrNumber(value, range = [0, 1]) {
-    // @ts-ignore: isNaN can accept strings
+    // @ts-expect-error: isNaN can accept strings
     if (isNaN(value.replace('%', ''))) {
         return null;
     }
@@ -305,9 +303,9 @@ function parseRgbNumeric(value) {
     }
     return parsed / 255;
 }
-function parseHueNumeric(value) {
+export function parseHueNumeric(value) {
     const angle = value.replace(/(deg|g?rad|turn)$/, '');
-    // @ts-ignore: isNaN can accept strings
+    // @ts-expect-error: isNaN can accept strings
     if (isNaN(angle) || value.match(/\s+(deg|g?rad|turn)/)) {
         return null;
     }
@@ -324,7 +322,7 @@ function parseHueNumeric(value) {
     return (number / 360) % 1;
 }
 function parseSatLightNumeric(value) {
-    // @ts-ignore: isNaN can accept strings
+    // @ts-expect-error: isNaN can accept strings
     if (value.indexOf('%') !== value.length - 1 || isNaN(value.replace('%', ''))) {
         return null;
     }
@@ -334,9 +332,7 @@ function parseSatLightNumeric(value) {
 function parseAlphaNumeric(value) {
     return parsePercentOrNumber(value);
 }
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-function hsva2hsla(hsva, out_hsla) {
+function hsva2hsla(hsva) {
     const h = hsva[0];
     let s = hsva[1];
     const v = hsva[2];
@@ -347,13 +343,9 @@ function hsva2hsla(hsva, out_hsla) {
     else {
         s *= v / (t < 1 ? t : 2 - t);
     }
-    out_hsla[0] = h;
-    out_hsla[1] = s;
-    out_hsla[2] = t / 2;
-    out_hsla[3] = hsva[3];
+    return [h, s, t / 2, hsva[3]];
 }
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export function hsl2rgb(hsl, out_rgb) {
+export function hsl2rgb(hsl) {
     const h = hsl[0];
     let s = hsl[1];
     const l = hsl[2];
@@ -389,32 +381,24 @@ export function hsl2rgb(hsl, out_rgb) {
     const tr = h + (1 / 3);
     const tg = h;
     const tb = h - (1 / 3);
-    out_rgb[0] = hue2rgb(p, q, tr);
-    out_rgb[1] = hue2rgb(p, q, tg);
-    out_rgb[2] = hue2rgb(p, q, tb);
-    out_rgb[3] = hsl[3];
+    return [hue2rgb(p, q, tr), hue2rgb(p, q, tg), hue2rgb(p, q, tb), hsl[3]];
 }
-// eslint-disable-next-line @typescript-eslint/naming-convention
-function hwb2rgb(hwb, out_rgb) {
+function hwb2rgb(hwb) {
     const h = hwb[0];
     const w = hwb[1];
     const b = hwb[2];
-    if (w + b >= 1) {
-        out_rgb[0] = out_rgb[1] = out_rgb[2] = w / (w + b);
-        out_rgb[3] = hwb[3];
-    }
-    else {
-        hsl2rgb([h, 1, 0.5, hwb[3]], out_rgb);
+    const whiteRatio = w / (w + b);
+    let result = [whiteRatio, whiteRatio, whiteRatio, hwb[3]];
+    if (w + b < 1) {
+        result = hsl2rgb([h, 1, 0.5, hwb[3]]);
         for (let i = 0; i < 3; ++i) {
-            out_rgb[i] += w - (w + b) * out_rgb[i];
+            result[i] += w - (w + b) * result[i];
         }
     }
+    return result;
 }
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export function hsva2rgba(hsva, out_rgba) {
-    const tmpHSLA = [0, 0, 0, 0];
-    hsva2hsla(hsva, tmpHSLA);
-    hsl2rgb(tmpHSLA, out_rgba);
+export function hsva2rgba(hsva) {
+    return hsl2rgb(hsva2hsla(hsva));
 }
 export function rgb2hsv(rgba) {
     const hsla = rgbToHsl(rgba);
@@ -446,7 +430,7 @@ export function desiredLuminance(luminance, contrast, lighter) {
  * Approach a value of the given component of `candidateHSVA` such that the
  * calculated luminance of `candidateHSVA` approximates `desiredLuminance`.
  */
-export function approachColorValue(candidateHSVA, bgRGBA, index, desiredLuminance, candidateLuminance) {
+export function approachColorValue(candidateHSVA, index, desiredLuminance, candidateLuminance) {
     const epsilon = 0.0002;
     let x = candidateHSVA[index];
     let multiplier = 1;
@@ -488,18 +472,17 @@ export function findFgColorForContrast(fgColor, bgColor, requiredContrast) {
     const desired = desiredLuminance(bgLuminance, requiredContrast, fgIsLighter);
     const saturationComponentIndex = 1;
     const valueComponentIndex = 2;
-    if (approachColorValue(candidateHSVA, bgRGBA, valueComponentIndex, desired, candidateLuminance)) {
+    if (approachColorValue(candidateHSVA, valueComponentIndex, desired, candidateLuminance)) {
         return Legacy.fromHSVA(candidateHSVA);
     }
     candidateHSVA[valueComponentIndex] = 1;
-    if (approachColorValue(candidateHSVA, bgRGBA, saturationComponentIndex, desired, candidateLuminance)) {
+    if (approachColorValue(candidateHSVA, saturationComponentIndex, desired, candidateLuminance)) {
         return Legacy.fromHSVA(candidateHSVA);
     }
     return null;
 }
 export function findFgColorForContrastAPCA(fgColor, bgColor, requiredContrast) {
     const candidateHSVA = fgColor.as("hsl" /* Format.HSL */).hsva();
-    const bgRGBA = bgColor.rgba();
     const candidateLuminance = (candidateHSVA) => {
         return luminanceAPCA(Legacy.fromHSVA(candidateHSVA).rgba());
     };
@@ -509,14 +492,14 @@ export function findFgColorForContrastAPCA(fgColor, bgColor, requiredContrast) {
     const desiredLuminance = desiredLuminanceAPCA(bgLuminance, requiredContrast, fgIsLighter);
     const saturationComponentIndex = 1;
     const valueComponentIndex = 2;
-    if (approachColorValue(candidateHSVA, bgRGBA, valueComponentIndex, desiredLuminance, candidateLuminance)) {
+    if (approachColorValue(candidateHSVA, valueComponentIndex, desiredLuminance, candidateLuminance)) {
         const candidate = Legacy.fromHSVA(candidateHSVA);
         if (Math.abs(contrastRatioAPCA(bgColor.rgba(), candidate.rgba())) >= requiredContrast) {
             return candidate;
         }
     }
     candidateHSVA[valueComponentIndex] = 1;
-    if (approachColorValue(candidateHSVA, bgRGBA, saturationComponentIndex, desiredLuminance, candidateLuminance)) {
+    if (approachColorValue(candidateHSVA, saturationComponentIndex, desiredLuminance, candidateLuminance)) {
         const candidate = Legacy.fromHSVA(candidateHSVA);
         if (Math.abs(contrastRatioAPCA(bgColor.rgba(), candidate.rgba())) >= requiredContrast) {
             return candidate;
@@ -556,12 +539,10 @@ export class Lab {
     alpha;
     #authoredText;
     #rawParams;
+    channels = ["l" /* ColorChannel.L */, "a" /* ColorChannel.A */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -602,6 +583,9 @@ export class Lab {
         this.b = b;
         this.alpha = clamp(alpha, { min: 0, max: 1 });
         this.#authoredText = authoredText;
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         return Lab.#conversions[format](this);
@@ -671,12 +655,10 @@ export class LCH {
     h;
     alpha;
     #authoredText;
+    channels = ["l" /* ColorChannel.L */, "c" /* ColorChannel.C */, "h" /* ColorChannel.H */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -719,6 +701,9 @@ export class LCH {
     }
     asLegacyColor() {
         return this.as("rgba" /* Format.RGBA */);
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         return LCH.#conversions[format](this);
@@ -790,12 +775,10 @@ export class Oklab {
     b;
     alpha;
     #authoredText;
+    channels = ["l" /* ColorChannel.L */, "a" /* ColorChannel.A */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -839,6 +822,9 @@ export class Oklab {
     }
     asLegacyColor() {
         return this.as("rgba" /* Format.RGBA */);
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         return Oklab.#conversions[format](this);
@@ -905,12 +891,10 @@ export class Oklch {
     h;
     alpha;
     #authoredText;
+    channels = ["l" /* ColorChannel.L */, "c" /* ColorChannel.C */, "h" /* ColorChannel.H */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -953,6 +937,9 @@ export class Oklch {
     }
     asLegacyColor() {
         return this.as("rgba" /* Format.RGBA */);
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         return Oklch.#conversions[format](this);
@@ -1020,12 +1007,13 @@ export class ColorFunction {
     alpha;
     colorSpace;
     #authoredText;
+    get channels() {
+        return this.isXYZ() ? ["x" /* ColorChannel.X */, "y" /* ColorChannel.Y */, "z" /* ColorChannel.Z */, "alpha" /* ColorChannel.ALPHA */] :
+            ["r" /* ColorChannel.R */, "g" /* ColorChannel.G */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
+    }
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -1096,6 +1084,9 @@ export class ColorFunction {
     asLegacyColor() {
         return this.as("rgba" /* Format.RGBA */);
     }
+    is(format) {
+        return format === this.format();
+    }
     as(format) {
         if (this.colorSpace === format) {
             return this;
@@ -1140,6 +1131,15 @@ export class ColorFunction {
     isGamutClipped() {
         if (this.colorSpace !== "xyz-d50" /* Format.XYZ_D50 */ && this.colorSpace !== "xyz-d65" /* Format.XYZ_D65 */ && this.colorSpace !== "xyz" /* Format.XYZ */) {
             return !equals(this.#rawParams, [this.p0, this.p1, this.p2]);
+        }
+        return false;
+    }
+    isXYZ() {
+        switch (this.colorSpace) {
+            case "xyz" /* Format.XYZ */:
+            case "xyz-d50" /* Format.XYZ_D50 */:
+            case "xyz-d65" /* Format.XYZ_D65 */:
+                return true;
         }
         return false;
     }
@@ -1207,12 +1207,10 @@ export class HSL {
     alpha;
     #rawParams;
     #authoredText;
+    channels = ["h" /* ColorChannel.H */, "s" /* ColorChannel.S */, "l" /* ColorChannel.L */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => self,
@@ -1234,8 +1232,7 @@ export class HSL {
         ["xyz-d65" /* Format.XYZ_D65 */]: (self) => new ColorFunction("xyz-d65" /* Format.XYZ_D65 */, ...ColorConverter.xyzd50ToD65(...self.#toXyzd50()), self.alpha),
     };
     #getRGBArray(withAlpha = true) {
-        const rgb = [0, 0, 0, 0];
-        hsl2rgb([this.h, this.s, this.l, 0], rgb);
+        const rgb = hsl2rgb([this.h, this.s, this.l, 0]);
         if (withAlpha) {
             return [rgb[0], rgb[1], rgb[2], this.alpha ?? undefined];
         }
@@ -1278,6 +1275,9 @@ export class HSL {
     }
     format() {
         return this.alpha === null || this.alpha === 1 ? "hsl" /* Format.HSL */ : "hsla" /* Format.HSLA */;
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         if (format === this.format()) {
@@ -1334,12 +1334,10 @@ export class HWB {
     alpha;
     #rawParams;
     #authoredText;
+    channels = ["h" /* ColorChannel.H */, "w" /* ColorChannel.W */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "nickname" /* Format.Nickname */),
         ["hex" /* Format.HEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "shorthex" /* Format.ShortHEX */),
         ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "shorthexa" /* Format.ShortHEXA */),
         ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ false), "rgb" /* Format.RGB */),
         ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#getRGBArray(/* withAlpha= */ true), "rgba" /* Format.RGBA */),
         ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl(self.#getRGBArray(/* withAlpha= */ false)), self.alpha),
@@ -1361,8 +1359,7 @@ export class HWB {
         ["xyz-d65" /* Format.XYZ_D65 */]: (self) => new ColorFunction("xyz-d65" /* Format.XYZ_D65 */, ...ColorConverter.xyzd50ToD65(...self.#toXyzd50()), self.alpha),
     };
     #getRGBArray(withAlpha = true) {
-        const rgb = [0, 0, 0, 0];
-        hwb2rgb([this.h, this.w, this.b, 0], rgb);
+        const rgb = hwb2rgb([this.h, this.w, this.b, 0]);
         if (withAlpha) {
             return [rgb[0], rgb[1], rgb[2], this.alpha ?? undefined];
         }
@@ -1410,6 +1407,9 @@ export class HWB {
     }
     format() {
         return this.alpha !== null && !equals(this.alpha, 1) ? "hwba" /* Format.HWBA */ : "hwb" /* Format.HWB */;
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         if (format === this.format()) {
@@ -1464,23 +1464,116 @@ export class HWB {
 function toRgbValue(value) {
     return Math.round(value * 255);
 }
+class ShortFormatColorBase {
+    color;
+    channels = ["r" /* ColorChannel.R */, "g" /* ColorChannel.G */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
+    constructor(color) {
+        this.color = color;
+    }
+    get alpha() {
+        return this.color.alpha;
+    }
+    rgba() {
+        return this.color.rgba();
+    }
+    equal(color) {
+        return this.color.equal(color);
+    }
+    setAlpha(alpha) {
+        return this.color.setAlpha(alpha);
+    }
+    format() {
+        return (this.alpha ?? 1) !== 1 ? "hexa" /* Format.HEXA */ : "hex" /* Format.HEX */;
+    }
+    as(format) {
+        return this.color.as(format);
+    }
+    is(format) {
+        return this.color.is(format);
+    }
+    asLegacyColor() {
+        return this.color.asLegacyColor();
+    }
+    getAuthoredText() {
+        return this.color.getAuthoredText();
+    }
+    getRawParameters() {
+        return this.color.getRawParameters();
+    }
+    isGamutClipped() {
+        return this.color.isGamutClipped();
+    }
+    asString(format) {
+        if (format) {
+            return this.as(format).asString();
+        }
+        const [r, g, b] = this.color.rgba();
+        return this.stringify(r, g, b);
+    }
+    getAsRawString(format) {
+        if (format) {
+            return this.as(format).getAsRawString();
+        }
+        const [r, g, b] = this.getRawParameters();
+        return this.stringify(r, g, b);
+    }
+}
+export class ShortHex extends ShortFormatColorBase {
+    setAlpha(alpha) {
+        return new ShortHex(this.color.setAlpha(alpha));
+    }
+    asString(format) {
+        return format && format !== this.format() ? super.as(format).asString() : super.asString();
+    }
+    stringify(r, g, b) {
+        function toShortHexValue(value) {
+            return (Math.round(value * 255) / 17).toString(16);
+        }
+        if (this.color.hasAlpha()) {
+            return Platform.StringUtilities
+                .sprintf('#%s%s%s%s', toShortHexValue(r), toShortHexValue(g), toShortHexValue(b), toShortHexValue(this.alpha ?? 1))
+                .toLowerCase();
+        }
+        return Platform.StringUtilities.sprintf('#%s%s%s', toShortHexValue(r), toShortHexValue(g), toShortHexValue(b))
+            .toLowerCase();
+    }
+}
+export class Nickname extends ShortFormatColorBase {
+    nickname;
+    constructor(nickname, color) {
+        super(color);
+        this.nickname = nickname;
+    }
+    static fromName(name, text) {
+        const nickname = name.toLowerCase();
+        const rgba = Nicknames.get(nickname);
+        if (rgba !== undefined) {
+            return new Nickname(nickname, Legacy.fromRGBA(rgba, text));
+        }
+        return null;
+    }
+    stringify() {
+        return this.nickname;
+    }
+    getAsRawString(format) {
+        return this.color.getAsRawString(format);
+    }
+}
 export class Legacy {
     #rawParams;
-    #rgbaInternal;
+    #rgba;
     #authoredText;
-    #formatInternal;
+    #format;
+    channels = ["r" /* ColorChannel.R */, "g" /* ColorChannel.G */, "b" /* ColorChannel.B */, "alpha" /* ColorChannel.ALPHA */];
     static #conversions = {
-        ["nickname" /* Format.Nickname */]: (self) => new Legacy(self.#rgbaInternal, "nickname" /* Format.Nickname */),
-        ["hex" /* Format.HEX */]: (self) => new Legacy(self.#rgbaInternal, "hex" /* Format.HEX */),
-        ["shorthex" /* Format.ShortHEX */]: (self) => new Legacy(self.#rgbaInternal, "shorthex" /* Format.ShortHEX */),
-        ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#rgbaInternal, "hexa" /* Format.HEXA */),
-        ["shorthexa" /* Format.ShortHEXA */]: (self) => new Legacy(self.#rgbaInternal, "shorthexa" /* Format.ShortHEXA */),
-        ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#rgbaInternal, "rgb" /* Format.RGB */),
-        ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#rgbaInternal, "rgba" /* Format.RGBA */),
-        ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl([self.#rgbaInternal[0], self.#rgbaInternal[1], self.#rgbaInternal[2]]), self.alpha),
-        ["hsla" /* Format.HSLA */]: (self) => new HSL(...rgbToHsl([self.#rgbaInternal[0], self.#rgbaInternal[1], self.#rgbaInternal[2]]), self.alpha),
-        ["hwb" /* Format.HWB */]: (self) => new HWB(...rgbToHwb([self.#rgbaInternal[0], self.#rgbaInternal[1], self.#rgbaInternal[2]]), self.alpha),
-        ["hwba" /* Format.HWBA */]: (self) => new HWB(...rgbToHwb([self.#rgbaInternal[0], self.#rgbaInternal[1], self.#rgbaInternal[2]]), self.alpha),
+        ["hex" /* Format.HEX */]: (self) => new Legacy(self.#rgba, "hex" /* Format.HEX */),
+        ["hexa" /* Format.HEXA */]: (self) => new Legacy(self.#rgba, "hexa" /* Format.HEXA */),
+        ["rgb" /* Format.RGB */]: (self) => new Legacy(self.#rgba, "rgb" /* Format.RGB */),
+        ["rgba" /* Format.RGBA */]: (self) => new Legacy(self.#rgba, "rgba" /* Format.RGBA */),
+        ["hsl" /* Format.HSL */]: (self) => new HSL(...rgbToHsl([self.#rgba[0], self.#rgba[1], self.#rgba[2]]), self.alpha),
+        ["hsla" /* Format.HSLA */]: (self) => new HSL(...rgbToHsl([self.#rgba[0], self.#rgba[1], self.#rgba[2]]), self.alpha),
+        ["hwb" /* Format.HWB */]: (self) => new HWB(...rgbToHwb([self.#rgba[0], self.#rgba[1], self.#rgba[2]]), self.alpha),
+        ["hwba" /* Format.HWBA */]: (self) => new HWB(...rgbToHwb([self.#rgba[0], self.#rgba[1], self.#rgba[2]]), self.alpha),
         ["lch" /* Format.LCH */]: (self) => new LCH(...ColorConverter.labToLch(...ColorConverter.xyzd50ToLab(...self.#toXyzd50())), self.alpha),
         ["oklch" /* Format.OKLCH */]: (self) => new Oklch(...ColorConverter.xyzd50ToOklch(...self.#toXyzd50()), self.alpha),
         ["lab" /* Format.LAB */]: (self) => new Lab(...ColorConverter.xyzd50ToLab(...self.#toXyzd50()), self.alpha),
@@ -1496,15 +1589,14 @@ export class Legacy {
         ["xyz-d65" /* Format.XYZ_D65 */]: (self) => new ColorFunction("xyz-d65" /* Format.XYZ_D65 */, ...ColorConverter.xyzd50ToD65(...self.#toXyzd50()), self.alpha),
     };
     #toXyzd50() {
-        const [r, g, b] = this.#rgbaInternal;
+        const [r, g, b] = this.#rgba;
         return ColorConverter.srgbToXyzd50(r, g, b);
     }
     get alpha() {
         switch (this.format()) {
             case "hexa" /* Format.HEXA */:
-            case "shorthexa" /* Format.ShortHEXA */:
             case "rgba" /* Format.RGBA */:
-                return this.#rgbaInternal[3];
+                return this.#rgba[3];
             default:
                 return null;
         }
@@ -1512,11 +1604,25 @@ export class Legacy {
     asLegacyColor() {
         return this;
     }
+    nickname() {
+        const nickname = RGBAToNickname.get(String(this.canonicalRGBA()));
+        return nickname ? new Nickname(nickname, this) : null;
+    }
+    shortHex() {
+        for (let i = 0; i < 4; ++i) {
+            const c = Math.round(this.#rgba[i] * 255);
+            // Check if the two digits of each are identical: #aabbcc => #abc
+            if (c % 0x11) {
+                return null;
+            }
+        }
+        return new ShortHex(this);
+    }
     constructor(rgba, format, authoredText) {
         this.#authoredText = authoredText || null;
-        this.#formatInternal = format;
+        this.#format = format;
         this.#rawParams = [rgba[0], rgba[1], rgba[2]];
-        this.#rgbaInternal = [
+        this.#rgba = [
             clamp(rgba[0], { min: 0, max: 1 }),
             clamp(rgba[1], { min: 0, max: 1 }),
             clamp(rgba[2], { min: 0, max: 1 }),
@@ -1525,21 +1631,13 @@ export class Legacy {
     }
     static fromHex(hex, text) {
         hex = hex.toLowerCase();
-        let format;
-        if (hex.length === 3) {
-            format = "shorthex" /* Format.ShortHEX */;
-            hex = hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2);
-        }
-        else if (hex.length === 4) {
-            format = "shorthexa" /* Format.ShortHEXA */;
+        // Possible hex representations with alpha are fffA and ffffffAA
+        const hasAlpha = hex.length === 4 || hex.length === 8;
+        const format = hasAlpha ? "hexa" /* Format.HEXA */ : "hex" /* Format.HEX */;
+        const isShort = hex.length <= 4;
+        if (isShort) {
             hex = hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2) +
                 hex.charAt(3) + hex.charAt(3);
-        }
-        else if (hex.length === 6) {
-            format = "hex" /* Format.HEX */;
-        }
-        else {
-            format = "hexa" /* Format.HEXA */;
         }
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
@@ -1548,17 +1646,8 @@ export class Legacy {
         if (hex.length === 8) {
             a = parseInt(hex.substring(6, 8), 16) / 255;
         }
-        return new Legacy([r / 255, g / 255, b / 255, a], format, text);
-    }
-    static fromName(name, text) {
-        const nickname = name.toLowerCase();
-        const rgba = Nicknames.get(nickname);
-        if (rgba !== undefined) {
-            const color = Legacy.fromRGBA(rgba, text);
-            color.#formatInternal = "nickname" /* Format.Nickname */;
-            return color;
-        }
-        return null;
+        const color = new Legacy([r / 255, g / 255, b / 255, a], format, text);
+        return isShort ? new ShortHex(color) : color;
     }
     static fromRGBAFunction(r, g, b, alpha, text) {
         const rgba = [
@@ -1576,9 +1665,11 @@ export class Legacy {
         return new Legacy([rgba[0] / 255, rgba[1] / 255, rgba[2] / 255, rgba[3]], "rgba" /* Format.RGBA */, authoredText);
     }
     static fromHSVA(hsva) {
-        const rgba = [0, 0, 0, 0];
-        hsva2rgba(hsva, rgba);
+        const rgba = hsva2rgba(hsva);
         return new Legacy(rgba, "rgba" /* Format.RGBA */);
+    }
+    is(format) {
+        return format === this.format();
     }
     as(format) {
         if (format === this.format()) {
@@ -1587,87 +1678,48 @@ export class Legacy {
         return Legacy.#conversions[format](this);
     }
     format() {
-        return this.#formatInternal;
+        return this.#format;
     }
     hasAlpha() {
-        return this.#rgbaInternal[3] !== 1;
+        return this.#rgba[3] !== 1;
     }
     detectHEXFormat() {
-        let canBeShort = true;
-        for (let i = 0; i < 4; ++i) {
-            const c = Math.round(this.#rgbaInternal[i] * 255);
-            if (c % 17) {
-                canBeShort = false;
-                break;
-            }
-        }
         const hasAlpha = this.hasAlpha();
-        if (canBeShort) {
-            return hasAlpha ? "shorthexa" /* Format.ShortHEXA */ : "shorthex" /* Format.ShortHEX */;
-        }
         return hasAlpha ? "hexa" /* Format.HEXA */ : "hex" /* Format.HEX */;
     }
     asString(format) {
         if (format) {
             return this.as(format).asString();
         }
-        return this.#stringify(format, this.#rgbaInternal[0], this.#rgbaInternal[1], this.#rgbaInternal[2]);
+        return this.#stringify(format, this.#rgba[0], this.#rgba[1], this.#rgba[2]);
     }
     #stringify(format, r, g, b) {
         if (!format) {
-            format = this.#formatInternal;
+            format = this.#format;
         }
         function toHexValue(value) {
             const hex = Math.round(value * 255).toString(16);
             return hex.length === 1 ? '0' + hex : hex;
-        }
-        function toShortHexValue(value) {
-            return (Math.round(value * 255) / 17).toString(16);
         }
         switch (format) {
             case "rgb" /* Format.RGB */:
             case "rgba" /* Format.RGBA */: {
                 const start = Platform.StringUtilities.sprintf('rgb(%d %d %d', toRgbValue(r), toRgbValue(g), toRgbValue(b));
                 if (this.hasAlpha()) {
-                    return start + Platform.StringUtilities.sprintf(' / %d%)', Math.round(this.#rgbaInternal[3] * 100));
+                    return start + Platform.StringUtilities.sprintf(' / %d%)', Math.round(this.#rgba[3] * 100));
                 }
                 return start + ')';
             }
+            case "hex" /* Format.HEX */:
             case "hexa" /* Format.HEXA */: {
-                return Platform.StringUtilities
-                    .sprintf('#%s%s%s%s', toHexValue(r), toHexValue(g), toHexValue(b), toHexValue(this.#rgbaInternal[3]))
-                    .toLowerCase();
-            }
-            case "hex" /* Format.HEX */: {
                 if (this.hasAlpha()) {
-                    return null;
+                    return Platform.StringUtilities
+                        .sprintf('#%s%s%s%s', toHexValue(r), toHexValue(g), toHexValue(b), toHexValue(this.#rgba[3]))
+                        .toLowerCase();
                 }
                 return Platform.StringUtilities.sprintf('#%s%s%s', toHexValue(r), toHexValue(g), toHexValue(b)).toLowerCase();
             }
-            case "shorthexa" /* Format.ShortHEXA */: {
-                const hexFormat = this.detectHEXFormat();
-                if (hexFormat !== "shorthexa" /* Format.ShortHEXA */ && hexFormat !== "shorthex" /* Format.ShortHEX */) {
-                    return null;
-                }
-                return Platform.StringUtilities
-                    .sprintf('#%s%s%s%s', toShortHexValue(r), toShortHexValue(g), toShortHexValue(b), toShortHexValue(this.#rgbaInternal[3]))
-                    .toLowerCase();
-            }
-            case "shorthex" /* Format.ShortHEX */: {
-                if (this.hasAlpha()) {
-                    return null;
-                }
-                if (this.detectHEXFormat() !== "shorthex" /* Format.ShortHEX */) {
-                    return null;
-                }
-                return Platform.StringUtilities.sprintf('#%s%s%s', toShortHexValue(r), toShortHexValue(g), toShortHexValue(b))
-                    .toLowerCase();
-            }
-            case "nickname" /* Format.Nickname */: {
-                return this.nickname();
-            }
         }
-        return null; // Shouldn't get here.
     }
     getAuthoredText() {
         return this.#authoredText ?? null;
@@ -1682,27 +1734,22 @@ export class Legacy {
         return this.#stringify(format, ...this.#rawParams);
     }
     isGamutClipped() {
-        return !equals(this.#rawParams.map(toRgbValue), [this.#rgbaInternal[0], this.#rgbaInternal[1], this.#rgbaInternal[2]].map(toRgbValue), WIDE_RANGE_EPSILON);
+        return !equals(this.#rawParams.map(toRgbValue), [this.#rgba[0], this.#rgba[1], this.#rgba[2]].map(toRgbValue), WIDE_RANGE_EPSILON);
     }
     rgba() {
-        return [...this.#rgbaInternal];
+        return [...this.#rgba];
     }
     canonicalRGBA() {
         const rgba = new Array(4);
         for (let i = 0; i < 3; ++i) {
-            rgba[i] = Math.round(this.#rgbaInternal[i] * 255);
+            rgba[i] = Math.round(this.#rgba[i] * 255);
         }
-        rgba[3] = this.#rgbaInternal[3];
+        rgba[3] = this.#rgba[3];
         return rgba;
-    }
-    /** nickname
-     */
-    nickname() {
-        return RGBAToNickname.get(String(this.canonicalRGBA())) || null;
     }
     toProtocolRGBA() {
         const rgba = this.canonicalRGBA();
-        const result = { r: rgba[0], g: rgba[1], b: rgba[2], a: undefined };
+        const result = { r: rgba[0], g: rgba[1], b: rgba[2] };
         if (rgba[3] !== 1) {
             result.a = rgba[3];
         }
@@ -1710,35 +1757,44 @@ export class Legacy {
     }
     invert() {
         const rgba = [0, 0, 0, 0];
-        rgba[0] = 1 - this.#rgbaInternal[0];
-        rgba[1] = 1 - this.#rgbaInternal[1];
-        rgba[2] = 1 - this.#rgbaInternal[2];
-        rgba[3] = this.#rgbaInternal[3];
+        rgba[0] = 1 - this.#rgba[0];
+        rgba[1] = 1 - this.#rgba[1];
+        rgba[2] = 1 - this.#rgba[2];
+        rgba[3] = this.#rgba[3];
         return new Legacy(rgba, "rgba" /* Format.RGBA */);
     }
+    /**
+     * Returns a new color using the NTSC formula for making a RGB color grayscale.
+     * Note: We override with an alpha of 50% to enhance the dimming effect.
+     */
+    grayscale() {
+        const [r, g, b] = this.#rgba;
+        const gray = r * 0.299 + g * 0.587 + b * 0.114;
+        return new Legacy([gray, gray, gray, 0.5], "rgba" /* Format.RGBA */);
+    }
     setAlpha(alpha) {
-        const rgba = [...this.#rgbaInternal];
+        const rgba = [...this.#rgba];
         rgba[3] = alpha;
         return new Legacy(rgba, "rgba" /* Format.RGBA */);
     }
     blendWith(fgColor) {
-        const rgba = blendColors(fgColor.#rgbaInternal, this.#rgbaInternal);
+        const rgba = blendColors(fgColor.#rgba, this.#rgba);
         return new Legacy(rgba, "rgba" /* Format.RGBA */);
     }
     blendWithAlpha(alpha) {
-        const rgba = [...this.#rgbaInternal];
+        const rgba = [...this.#rgba];
         rgba[3] *= alpha;
         return new Legacy(rgba, "rgba" /* Format.RGBA */);
     }
     setFormat(format) {
-        this.#formatInternal = format;
+        this.#format = format;
     }
     equal(other) {
-        const legacy = other.as(this.#formatInternal);
-        return equals(toRgbValue(this.#rgbaInternal[0]), toRgbValue(legacy.#rgbaInternal[0]), WIDE_RANGE_EPSILON) &&
-            equals(toRgbValue(this.#rgbaInternal[1]), toRgbValue(legacy.#rgbaInternal[1]), WIDE_RANGE_EPSILON) &&
-            equals(toRgbValue(this.#rgbaInternal[2]), toRgbValue(legacy.#rgbaInternal[2]), WIDE_RANGE_EPSILON) &&
-            equals(this.#rgbaInternal[3], legacy.#rgbaInternal[3]);
+        const legacy = other.as(this.#format);
+        return equals(toRgbValue(this.#rgba[0]), toRgbValue(legacy.#rgba[0]), WIDE_RANGE_EPSILON) &&
+            equals(toRgbValue(this.#rgba[1]), toRgbValue(legacy.#rgba[1]), WIDE_RANGE_EPSILON) &&
+            equals(toRgbValue(this.#rgba[2]), toRgbValue(legacy.#rgba[2]), WIDE_RANGE_EPSILON) &&
+            equals(this.#rgba[3], legacy.#rgba[3]);
     }
 }
 export const Regex = /((?:rgba?|hsla?|hwba?|lab|lch|oklab|oklch|color)\([^)]+\)|#[0-9a-fA-F]{8}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3,4}|\b[a-zA-Z]+\b(?!-))/g;
@@ -1894,9 +1950,7 @@ const COLOR_TO_RGBA_ENTRIES = [
     ['yellowgreen', [154, 205, 50]],
     ['transparent', [0, 0, 0, 0]],
 ];
-Platform.DCHECK(() => {
-    return COLOR_TO_RGBA_ENTRIES.every(([nickname]) => nickname.toLowerCase() === nickname);
-}, 'All color nicknames must be lowercase.');
+console.assert(COLOR_TO_RGBA_ENTRIES.every(([nickname]) => nickname.toLowerCase() === nickname), 'All color nicknames must be lowercase.');
 export const Nicknames = new Map(COLOR_TO_RGBA_ENTRIES);
 const RGBAToNickname = new Map(
 // Default opacity to 1 if the color only specified 3 channels
@@ -1929,7 +1983,7 @@ export const SourceOrderHighlight = {
     ChildOutline: Legacy.fromRGBA([0, 120, 212, 1]),
 };
 export const IsolationModeHighlight = {
-    Resizer: Legacy.fromRGBA([222, 225, 230, 1]),
+    Resizer: Legacy.fromRGBA([222, 225, 230, 1]), // --color-background-elevation-2
     ResizerHandle: Legacy.fromRGBA([166, 166, 166, 1]),
     Mask: Legacy.fromRGBA([248, 249, 249, 1]),
 };
@@ -1938,13 +1992,12 @@ export class Generator {
     #satSpace;
     #lightnessSpace;
     #alphaSpace;
-    #colors;
+    #colors = new Map();
     constructor(hueSpace, satSpace, lightnessSpace, alphaSpace) {
-        this.#hueSpace = hueSpace || { min: 0, max: 360, count: undefined };
+        this.#hueSpace = hueSpace || { min: 0, max: 360 };
         this.#satSpace = satSpace || 67;
         this.#lightnessSpace = lightnessSpace || 80;
         this.#alphaSpace = alphaSpace || 1;
-        this.#colors = new Map();
     }
     setColorForID(id, color) {
         this.#colors.set(id, color);

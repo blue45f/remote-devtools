@@ -1,11 +1,9 @@
-import { type Size } from './Geometry.js';
-import { Widget, type WidgetElement } from './Widget.js';
+import type { Size } from '../../models/geometry/geometry.js';
+import { Widget } from './Widget.js';
 export declare class GlassPane {
     #private;
-    private readonly widgetInternal;
-    element: WidgetElement;
-    contentElement: HTMLDivElement;
-    private readonly arrowElement;
+    element: typeof Widget.prototype.element;
+    contentElement: typeof Widget.prototype.contentElement;
     private readonly onMouseDownBound;
     private onClickOutsideCallback;
     private maxSize;
@@ -15,16 +13,17 @@ export declare class GlassPane {
     private anchorBehavior;
     private sizeBehavior;
     private marginBehavior;
-    constructor();
+    constructor(jslog?: string);
+    setJsLog(jslog: string): void;
     isShowing(): boolean;
-    registerRequiredCSS(cssFile: {
-        cssContent: string;
-    }): void;
-    registerCSSFiles(cssFiles: CSSStyleSheet[]): void;
+    registerRequiredCSS(...cssFiles: Array<string & {
+        _tag: 'CSS-in-JS';
+    }>): void;
     setDefaultFocusedElement(element: Element | null): void;
     setDimmed(dimmed: boolean): void;
     setPointerEventsBehavior(pointerEventsBehavior: PointerEventsBehavior): void;
     setOutsideClickCallback(callback: ((arg0: Event) => void) | null): void;
+    setOnHideCallback(cb: () => void): void;
     setMaxContentSize(size: Size | null): void;
     setSizeBehavior(sizeBehavior: SizeBehavior): void;
     setContentPosition(x: number | null, y: number | null): void;
@@ -42,24 +41,24 @@ export declare class GlassPane {
     static containerMoved(element: Element): void;
 }
 export declare const enum PointerEventsBehavior {
-    BlockedByGlassPane = "BlockedByGlassPane",
-    PierceGlassPane = "PierceGlassPane",
-    PierceContents = "PierceContents"
+    BLOCKED_BY_GLASS_PANE = "BlockedByGlassPane",
+    PIERCE_GLASS_PANE = "PierceGlassPane",
+    PIERCE_CONTENTS = "PierceContents"
 }
 export declare const enum AnchorBehavior {
-    PreferTop = "PreferTop",
-    PreferBottom = "PreferBottom",
-    PreferLeft = "PreferLeft",
-    PreferRight = "PreferRight"
+    PREFER_TOP = "PreferTop",
+    PREFER_BOTTOM = "PreferBottom",
+    PREFER_LEFT = "PreferLeft",
+    PREFER_RIGHT = "PreferRight"
 }
 export declare const enum SizeBehavior {
-    SetExactSize = "SetExactSize",
-    SetExactWidthMaxHeight = "SetExactWidthMaxHeight",
-    MeasureContent = "MeasureContent"
+    SET_EXACT_SIZE = "SetExactSize",
+    SET_EXACT_WIDTH_MAX_HEIGHT = "SetExactWidthMaxHeight",
+    MEASURE_CONTENT = "MeasureContent"
 }
 export declare const enum MarginBehavior {
-    Arrow = "Arrow",
-    DefaultMargin = "DefaultMargin",
-    NoMargin = "NoMargin"
+    DEFAULT_MARGIN = "DefaultMargin",
+    NO_MARGIN = "NoMargin"
 }
+/** Exported for layout tests. **/
 export declare const GlassPanePanes: Set<GlassPane>;

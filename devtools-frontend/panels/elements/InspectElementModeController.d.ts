@@ -19,8 +19,5 @@ export declare class InspectElementModeController implements SDK.TargetManager.S
     private showDetailedInspectTooltipChanged;
 }
 export declare class ToggleSearchActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    handleAction(context: UI.Context.Context, actionId: string): boolean;
-    static instance(opts?: {
-        forceNew: boolean | null;
-    } | undefined): ToggleSearchActionDelegate;
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
 }

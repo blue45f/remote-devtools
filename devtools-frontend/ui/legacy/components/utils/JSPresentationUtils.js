@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -31,34 +31,34 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
+import * as Root from '../../../../core/root/root.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
-import * as Bindings from '../../../../models/bindings/bindings.js';
+import * as StackTrace from '../../../../models/stack_trace/stack_trace.js';
+import * as Workspace from '../../../../models/workspace/workspace.js';
+import { Directives, html, nothing, render } from '../../../lit/lit.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
-import { Linkifier } from './Linkifier.js';
 import jsUtilsStyles from './jsUtils.css.js';
+import { Linkifier } from './Linkifier.js';
+const { classMap } = Directives;
 const UIStrings = {
     /**
-     *@description Text to stop preventing the debugger from stepping into library code
+     * @description Text to stop preventing the debugger from stepping into library code
      */
     removeFromIgnore: 'Remove from ignore list',
     /**
-     *@description Text for scripts that should not be stepped into when debugging
+     * @description Text for scripts that should not be stepped into when debugging
      */
     addToIgnore: 'Add script to ignore list',
     /**
-     * @description A link to show more frames when they are available. Never 0.
+     * @description A link to show more frames when they are available.
      */
-    showSMoreFrames: '{n, plural, =1 {Show # more frame} other {Show # more frames}}',
+    showMoreFrames: 'Show ignore-listed frames',
     /**
      * @description A link to rehide frames that are by default hidden.
      */
     showLess: 'Show less',
-    /**
-     *@description Text indicating that source url of a link is currently unknown
-     */
-    unknownSource: 'unknown',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/utils/JSPresentationUtils.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -67,181 +67,189 @@ function populateContextMenu(link, event) {
     event.consume(true);
     const uiLocation = Linkifier.uiLocation(link);
     if (uiLocation &&
-        Bindings.IgnoreListManager.IgnoreListManager.instance().canIgnoreListUISourceCode(uiLocation.uiSourceCode)) {
-        if (Bindings.IgnoreListManager.IgnoreListManager.instance().isUserIgnoreListedURL(uiLocation.uiSourceCode.url())) {
-            contextMenu.debugSection().appendItem(i18nString(UIStrings.removeFromIgnore), () => Bindings.IgnoreListManager.IgnoreListManager.instance().unIgnoreListUISourceCode(uiLocation.uiSourceCode));
+        Workspace.IgnoreListManager.IgnoreListManager.instance().canIgnoreListUISourceCode(uiLocation.uiSourceCode)) {
+        if (Workspace.IgnoreListManager.IgnoreListManager.instance().isUserIgnoreListedURL(uiLocation.uiSourceCode.url())) {
+            contextMenu.debugSection().appendItem(i18nString(UIStrings.removeFromIgnore), () => Workspace.IgnoreListManager.IgnoreListManager.instance().unIgnoreListUISourceCode(uiLocation.uiSourceCode), { jslogContext: 'remove-from-ignore-list' });
         }
         else {
-            contextMenu.debugSection().appendItem(i18nString(UIStrings.addToIgnore), () => Bindings.IgnoreListManager.IgnoreListManager.instance().ignoreListUISourceCode(uiLocation.uiSourceCode));
+            contextMenu.debugSection().appendItem(i18nString(UIStrings.addToIgnore), () => Workspace.IgnoreListManager.IgnoreListManager.instance().ignoreListUISourceCode(uiLocation.uiSourceCode), { jslogContext: 'add-to-ignore-list' });
         }
     }
     contextMenu.appendApplicableItems(event);
     void contextMenu.show();
 }
-export function buildStackTraceRows(stackTrace, target, linkifier, tabStops, updateCallback) {
-    const stackTraceRows = [];
-    if (updateCallback) {
-        const throttler = new Common.Throttler.Throttler(100);
-        linkifier.setLiveLocationUpdateCallback(() => throttler.schedule(async () => updateHiddenRows(updateCallback, stackTraceRows)));
+export const DEFAULT_VIEW = (input, output, target) => {
+    let renderExpandButton = Boolean(input.expandable);
+    const maybeRenderExpandButton = () => {
+        // clang-format off
+        const result = html `
+      ${renderExpandButton ? html `
+        <button class="arrow-icon-button" jslog=${VisualLogging.expand().track({ click: true })} @click=${input.onExpand}>
+          <span class="arrow-icon"></span>
+        </button>
+      ` : '\n'}`;
+        // clang-format on
+        renderExpandButton = false;
+        return result;
+    };
+    const classes = {
+        'stack-preview-container': true,
+        'width-constrained': Boolean(input.widthConstrained),
+        expandable: Boolean(input.expandable),
+        expanded: Boolean(input.expanded),
+        'show-hidden-rows': Boolean(input.showIgnoreListed),
+    };
+    const { stackTrace } = input;
+    // clang-format off
+    render(html `
+    <style>${jsUtilsStyles}</style>
+    <table class=${classMap(classes)}>
+      ${stackTrace ? html `
+        ${[stackTrace.syncFragment, ...stackTrace.asyncFragments].map(fragment => html `
+          <tbody>
+            ${'description' in fragment ? html `
+              <tr class="stack-preview-async-row">
+                <td>${maybeRenderExpandButton()}</td>
+                <td class="stack-preview-async-description">
+                  ${UI.UIUtils.asyncFragmentLabel(stackTrace, fragment)}
+                </td>
+                <td></td>
+                <td></td>
+              </tr>
+            ` : nothing}
+            ${fragment.frames.map((frame, i) => {
+        const previousStackFrameWasBreakpointCondition = i > 0 && [
+            SDK.DebuggerModel.COND_BREAKPOINT_SOURCE_URL,
+            SDK.DebuggerModel.LOGPOINT_SOURCE_URL,
+        ].includes(fragment.frames[i - 1].url ?? '');
+        const link = Linkifier.linkifyStackTraceFrame(frame, {
+            showColumnNumber: Boolean(input.showColumnNumber),
+            tabStop: Boolean(input.tabStops),
+            inlineFrameIndex: 0,
+            revealBreakpoint: previousStackFrameWasBreakpointCondition,
+            maxLength: UI.UIUtils.MaxLengthForDisplayedURLsInConsole,
+        });
+        link.setAttribute('jslog', `${VisualLogging.link('stack-trace').track({ click: true })}`);
+        link.addEventListener('contextmenu', populateContextMenu.bind(null, link));
+        return html `
+                <tr>
+                  <td>${maybeRenderExpandButton()}</td>
+                  <td class="function-name">
+                    ${UI.UIUtils.beautifyFunctionName(frame.name ?? '')}
+                  </td>
+                  <td> @ </td>
+                  <td class="link">${link}</td>
+                </tr>
+            `;
+    })}
+          </tbody>
+        `)}
+        <tfoot>
+          <tr class="show-all-link">
+            <td></td>
+            <td colspan="3">
+              <span class="link" @click=${input.onShowMore}>
+                <span class="css-inserted-text" data-inserted-text=${i18nString(UIStrings.showMoreFrames)}></span>
+              </span>
+            </td>
+          </tr>
+          <tr class="show-less-link">
+            <td></td>
+            <td colspan="3">
+              <span class="link" @click=${input.onShowLess}>
+                <span class="css-inserted-text" data-inserted-text=${i18nString(UIStrings.showLess)}></span>
+              </span>
+            </td>
+          </tr>
+        </tfoot>
+      ` : nothing}
+    </table>
+  `, target);
+    // clang-format on
+};
+export class StackTracePreviewContent extends UI.Widget.Widget {
+    #view;
+    #stackTrace;
+    #options = {};
+    #expanded = false;
+    #showIgnoreListed = false;
+    constructor(element, view = DEFAULT_VIEW) {
+        super(element, { useShadowDom: true, classes: ['monospace', 'stack-preview-container'] });
+        this.#view = view;
     }
-    function buildStackTraceRowsHelper(stackTrace, previousCallFrames = undefined) {
-        let asyncRow = null;
-        if (previousCallFrames) {
-            asyncRow = {
-                asyncDescription: UI.UIUtils.asyncStackTraceLabel(stackTrace.description, previousCallFrames),
-                ignoreListHide: false,
-            };
-            stackTraceRows.push(asyncRow);
+    hasContent() {
+        if (!this.#stackTrace) {
+            return false;
         }
-        let hiddenCallFrames = 0;
-        let previousStackFrameWasBreakpointCondition = false;
-        for (const stackFrame of stackTrace.callFrames) {
-            let ignoreListHide = false;
-            const functionName = UI.UIUtils.beautifyFunctionName(stackFrame.functionName);
-            const link = linkifier.maybeLinkifyConsoleCallFrame(target, stackFrame, {
-                tabStop: Boolean(tabStops),
-                inlineFrameIndex: 0,
-                revealBreakpoint: previousStackFrameWasBreakpointCondition,
-            });
-            if (link) {
-                link.addEventListener('contextmenu', populateContextMenu.bind(null, link));
-                // TODO(crbug.com/1183325): fix race condition with uiLocation still being null here
-                // Note: This has always checked whether the call frame location *in the generated
-                // code* is ignore-listed or not. This can change after the live location updates,
-                // and is handled again in the linkifier live location update callback.
-                const uiLocation = Linkifier.uiLocation(link);
-                if (uiLocation &&
-                    Bindings.IgnoreListManager.IgnoreListManager.instance().isUserOrSourceMapIgnoreListedUISourceCode(uiLocation.uiSourceCode)) {
-                    ignoreListHide = true;
-                }
-                if (!link.textContent) {
-                    link.textContent = i18nString(UIStrings.unknownSource);
-                }
+        const { syncFragment, asyncFragments } = this.#stackTrace;
+        return syncFragment.frames.length > 0 || asyncFragments.some(f => f.frames.length > 0);
+    }
+    performUpdate() {
+        this.element.classList.toggle('expandable', this.#options.expandable);
+        this.element.classList.toggle('expanded', this.#expanded);
+        this.element.classList.toggle('show-hidden-rows', this.#showIgnoreListed);
+        const input = {
+            stackTrace: this.#stackTrace,
+            ...this.#options,
+            expanded: this.#expanded,
+            showIgnoreListed: this.#showIgnoreListed,
+            onExpand: this.#onExpand.bind(this),
+            onShowMore: this.#onShowMoreLess.bind(this, true),
+            onShowLess: this.#onShowMoreLess.bind(this, false),
+        };
+        this.#view(input, {}, this.contentElement);
+        this.#updateHasNonIgnoredLinks();
+    }
+    // Propagate ignore-list state to the host element so that CSS outside the
+    // shadow DOM can coordinate ignore-list toggling across multiple stack
+    // traces (e.g. Error inline stack + console.error call stack).
+    // See crbug.com/379788109.
+    #updateHasNonIgnoredLinks = () => {
+        const hasNonIgnoredLinks = this.linkElements.some(link => {
+            const uiLocation = Linkifier.uiLocation(link);
+            if (uiLocation) {
+                return !uiLocation.isIgnoreListed();
             }
-            if (ignoreListHide) {
-                ++hiddenCallFrames;
-            }
-            stackTraceRows.push({ functionName, link, ignoreListHide });
-            previousStackFrameWasBreakpointCondition = [
-                SDK.DebuggerModel.COND_BREAKPOINT_SOURCE_URL,
-                SDK.DebuggerModel.LOGPOINT_SOURCE_URL,
-            ].includes(stackFrame.url);
-        }
-        if (asyncRow && hiddenCallFrames > 0 && hiddenCallFrames === stackTrace.callFrames.length) {
-            asyncRow.ignoreListHide = true;
+            return !link.classList.contains('ignore-list-link');
+        });
+        this.element.classList.toggle('has-non-ignored-links', hasNonIgnoredLinks);
+    };
+    wasShown() {
+        super.wasShown();
+        if (Root.DevToolsContext.globalInstance().has(Workspace.IgnoreListManager.IgnoreListManager)) {
+            Workspace.IgnoreListManager.IgnoreListManager.instance().addChangeListener(this.#updateHasNonIgnoredLinks);
         }
     }
-    buildStackTraceRowsHelper(stackTrace);
-    let previousCallFrames = stackTrace.callFrames;
-    for (let asyncStackTrace = stackTrace.parent; asyncStackTrace; asyncStackTrace = asyncStackTrace.parent) {
-        if (asyncStackTrace.callFrames.length) {
-            buildStackTraceRowsHelper(asyncStackTrace, previousCallFrames);
+    willHide() {
+        if (Root.DevToolsContext.globalInstance().has(Workspace.IgnoreListManager.IgnoreListManager)) {
+            Workspace.IgnoreListManager.IgnoreListManager.instance().removeChangeListener(this.#updateHasNonIgnoredLinks);
         }
-        previousCallFrames = asyncStackTrace.callFrames;
+        super.willHide();
     }
-    return stackTraceRows;
-}
-/**
- * @param {function(!Array<!StackTraceRegularRow|!StackTraceAsyncRow>): *} renderCallback
- * @param {!Array<!StackTraceRegularRow|!StackTraceAsyncRow>} stackTraceRows
- */
-function updateHiddenRows(renderCallback, stackTraceRows) {
-    let shouldHideSubCount = 0; // keeps track of number hidden (regular) rows between asyncRows
-    let indexOfAsyncRow = stackTraceRows.length;
-    for (let i = stackTraceRows.length - 1; i >= 0; i--) {
-        const row = stackTraceRows[i];
-        if ('link' in row && row.link) {
-            // Note: This checks whether the call frame location *in the live location* is
-            // ignore-listed or not. When a source map is present, this corresponds to the
-            // location in the original source, not the generated source. Therefore, the
-            // ignore-list status might be different now from when the row was created.
-            const uiLocation = Linkifier.uiLocation(row.link);
-            if (uiLocation &&
-                Bindings.IgnoreListManager.IgnoreListManager.instance().isUserOrSourceMapIgnoreListedUISourceCode(uiLocation.uiSourceCode)) {
-                row.ignoreListHide = true;
-            }
-            if (row.ignoreListHide) {
-                shouldHideSubCount++;
-            }
-        }
-        if ('asyncDescription' in row) {
-            // hide current row if all (regular) rows since the previous asyncRow are hidden
-            if (shouldHideSubCount > 0 && shouldHideSubCount === indexOfAsyncRow - i - 1) {
-                row.ignoreListHide = true;
-            }
-            indexOfAsyncRow = i;
-            shouldHideSubCount = 0;
-        }
+    get linkElements() {
+        return [...this.contentElement.querySelectorAll('td.link > .devtools-link')];
     }
-    renderCallback(stackTraceRows);
-}
-export function buildStackTracePreviewContents(target, linkifier, options = {
-    stackTrace: undefined,
-    tabStops: undefined,
-}) {
-    const { stackTrace, tabStops } = options;
-    const element = document.createElement('span');
-    element.classList.add('monospace');
-    element.style.display = 'inline-block';
-    const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(element, { cssFile: [jsUtilsStyles], delegatesFocus: undefined });
-    const contentElement = shadowRoot.createChild('table', 'stack-preview-container');
-    if (!stackTrace) {
-        return { element, links: [] };
+    set options(options) {
+        this.#options = options;
+        this.requestUpdate();
     }
-    const updateCallback = renderStackTraceTable.bind(null, contentElement);
-    const stackTraceRows = buildStackTraceRows(stackTrace, target, linkifier, tabStops, updateCallback);
-    const links = renderStackTraceTable(contentElement, stackTraceRows);
-    return { element, links };
-}
-function renderStackTraceTable(container, stackTraceRows) {
-    container.removeChildren();
-    let hiddenCallFramesCount = 0;
-    const links = [];
-    for (const item of stackTraceRows) {
-        const row = container.createChild('tr');
-        if ('asyncDescription' in item) {
-            row.createChild('td').textContent = '\n';
-            row.createChild('td', 'stack-preview-async-description').textContent = item.asyncDescription;
-            row.createChild('td');
-            row.createChild('td');
+    set stackTrace(stackTrace) {
+        if (this.#stackTrace) {
+            this.#stackTrace.removeEventListener("UPDATED" /* StackTrace.StackTrace.Events.UPDATED */, this.requestUpdate, this);
         }
-        else {
-            row.createChild('td').textContent = '\n';
-            row.createChild('td', 'function-name').textContent = item.functionName;
-            row.createChild('td').textContent = ' @ ';
-            if (item.link) {
-                row.createChild('td').appendChild(item.link);
-                links.push(item.link);
-            }
-            if (item.ignoreListHide) {
-                ++hiddenCallFramesCount;
-            }
-        }
-        if (item.ignoreListHide) {
-            row.classList.add('hidden-row');
-        }
-        container.appendChild(row);
+        this.#stackTrace = stackTrace;
+        this.#stackTrace.addEventListener("UPDATED" /* StackTrace.StackTrace.Events.UPDATED */, this.requestUpdate, this);
+        this.requestUpdate();
     }
-    if (hiddenCallFramesCount) {
-        const showAllRow = container.createChild('tr', 'show-all-link');
-        showAllRow.createChild('td').textContent = '\n';
-        const cell = showAllRow.createChild('td');
-        cell.colSpan = 4;
-        const showAllLink = cell.createChild('span', 'link');
-        showAllLink.textContent = i18nString(UIStrings.showSMoreFrames, { n: hiddenCallFramesCount });
-        showAllLink.addEventListener('click', () => {
-            container.classList.add('show-hidden-rows');
-        }, false);
-        const showLessRow = container.createChild('tr', 'show-less-link');
-        showLessRow.createChild('td').textContent = '\n';
-        const showLesscell = showLessRow.createChild('td');
-        showLesscell.colSpan = 4;
-        const showLessLink = showLesscell.createChild('span', 'link');
-        showLessLink.textContent = i18nString(UIStrings.showLess);
-        showLessLink.addEventListener('click', () => {
-            container.classList.remove('show-hidden-rows');
-        }, false);
+    #onShowMoreLess(more) {
+        this.#showIgnoreListed = more;
+        this.requestUpdate();
+        // If we are in a popup, this will trigger a re-layout
+        void this.updateComplete.then(() => UI.GlassPane.GlassPane.containerMoved(this.contentElement));
     }
-    return links;
+    #onExpand() {
+        this.#expanded = !this.#expanded;
+        this.requestUpdate();
+    }
 }
 //# sourceMappingURL=JSPresentationUtils.js.map

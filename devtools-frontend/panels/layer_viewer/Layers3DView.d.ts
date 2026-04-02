@@ -1,22 +1,34 @@
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
-import type * as Protocol from '../../generated/protocol.js';
 import type * as SDK from '../../core/sdk/sdk.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { Selection, type LayerView, type LayerViewHost } from './LayerViewHost.js';
+import { type LayerView, type LayerViewHost, Selection } from './LayerViewHost.js';
+export interface ViewInput {
+    panelToolbar: UI.Toolbar.Toolbar;
+    onDoubleClick: (event: Event) => void;
+    onMouseDown: (event: Event) => void;
+    onMouseUp: (event: Event) => void;
+    onMouseMove: (event: Event) => void;
+    onContextMenu: (event: Event) => void;
+    error?: 'missing-root' | 'webgl-disabled';
+}
+export interface ViewOutput {
+    canvasElement?: HTMLCanvasElement;
+}
+export declare const DEFAULT_VIEW: (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
 declare const Layers3DView_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class Layers3DView extends Layers3DView_base implements LayerView {
-    private readonly failBanner;
+    #private;
     private readonly layerViewHost;
     private transformController;
-    private canvasElement;
     private lastSelection;
     private layerTree;
     private readonly textureManager;
@@ -35,12 +47,14 @@ export declare class Layers3DView extends Layers3DView_base implements LayerView
     private gl?;
     private dimensionsForAutoscale?;
     private needsUpdate?;
-    private panelToolbar?;
+    private updateScheduled?;
+    private panelToolbar;
     private showSlowScrollRectsSetting?;
     private showPaintsSetting?;
     private mouseDownX?;
     private mouseDownY?;
-    constructor(layerViewHost: LayerViewHost);
+    constructor(layerViewHost: LayerViewHost, view?: (input: ViewInput, output: ViewOutput, target: HTMLElement) => void);
+    performUpdate(): void;
     setLayerTree(layerTree: SDK.LayerTreeBase.LayerTreeBase | null): void;
     showImageForLayer(layer: SDK.LayerTreeBase.Layer, imageURL?: string): void;
     onResize(): void;
@@ -75,11 +89,9 @@ export declare class Layers3DView extends Layers3DView_base implements LayerView
     private drawTexture;
     private drawViewportAndChrome;
     private drawViewRect;
-    private update;
-    private webglDisabledBanner;
+    updateData(): void;
     private selectionFromEventPoint;
     private createVisibilitySetting;
-    private initToolbar;
     private onContextMenu;
     private onMouseMove;
     private onMouseDown;
@@ -92,18 +104,18 @@ export declare enum OutlineType {
     Hovered = "hovered",
     Selected = "selected"
 }
-export declare enum Events {
-    PaintProfilerRequested = "PaintProfilerRequested",
-    ScaleChanged = "ScaleChanged"
+export declare const enum Events {
+    PAINT_PROFILER_REQUESTED = "PaintProfilerRequested",
+    SCALE_CHANGED = "ScaleChanged"
 }
-export type EventTypes = {
-    [Events.PaintProfilerRequested]: Selection;
-    [Events.ScaleChanged]: number;
-};
+export interface EventTypes {
+    [Events.PAINT_PROFILER_REQUESTED]: Selection;
+    [Events.SCALE_CHANGED]: number;
+}
 export declare const enum ChromeTexture {
-    Left = 0,
-    Middle = 1,
-    Right = 2
+    LEFT = 0,
+    MIDDLE = 1,
+    RIGHT = 2
 }
 export declare const FragmentShader: string;
 export declare const VertexShader: string;

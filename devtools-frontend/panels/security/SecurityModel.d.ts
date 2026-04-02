@@ -6,17 +6,15 @@ export declare class SecurityModel extends SDK.SDKModel.SDKModel<EventTypes> {
     constructor(target: SDK.Target.Target);
     resourceTreeModel(): SDK.ResourceTreeModel.ResourceTreeModel;
     networkManager(): SDK.NetworkManager.NetworkManager;
-    static SecurityStateComparator(a: Protocol.Security.SecurityState | null, b: Protocol.Security.SecurityState | null): number;
 }
+export declare function securityStateCompare(a: Protocol.Security.SecurityState, b: Protocol.Security.SecurityState): number;
 export declare enum Events {
     VisibleSecurityStateChanged = "VisibleSecurityStateChanged"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.VisibleSecurityStateChanged]: PageVisibleSecurityState;
-};
-export declare const SummaryMessages: {
-    [x: string]: () => string;
-};
+}
+export declare const SummaryMessages: Record<string, () => string>;
 export declare class PageVisibleSecurityState {
     securityState: Protocol.Security.SecurityState;
     certificateSecurityState: CertificateSecurityState | null;

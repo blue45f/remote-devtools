@@ -1,34 +1,43 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
-import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Platform from '../../core/platform/platform.js';
+import { assertNotNullOrUndefined } from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as Bindings from '../../models/bindings/bindings.js';
+import * as Geometry from '../../models/geometry/geometry.js';
+import * as Workspace from '../../models/workspace/workspace.js';
+import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
+import { createIcon } from '../../ui/kit/kit.js';
 import * as ColorPicker from '../../ui/legacy/components/color_picker/color_picker.js';
 import * as InlineEditor from '../../ui/legacy/components/inline_editor/inline_editor.js';
-import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { assertNotNullOrUndefined } from '../../core/platform/platform.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+import { AddDebugInfoURLDialog } from './AddSourceMapURLDialog.js';
 import { Plugin } from './Plugin.js';
 // Plugin to add CSS completion, shortcuts, and color/curve swatches
 // to editors with CSS content.
 const UIStrings = {
     /**
-     *@description Swatch icon element title in CSSPlugin of the Sources panel
+     * @description Swatch icon element title in CSSPlugin of the Sources panel
      */
     openColorPicker: 'Open color picker.',
     /**
-     *@description Text to open the cubic bezier editor
+     * @description Text to open the cubic bezier editor
      */
     openCubicBezierEditor: 'Open cubic bezier editor.',
+    /**
+     * @description Text for a context menu item for attaching a sourcemap to the currently open css file
+     */
+    addSourceMap: 'Add source map…',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/sources/CSSPlugin.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-const dontCompleteIn = new Set(['ColorLiteral', 'NumberLiteral', 'StringLiteral', 'Comment', 'Important']);
+const doNotCompleteIn = new Set(['ColorLiteral', 'NumberLiteral', 'StringLiteral', 'Comment', 'Important']);
 function findPropertyAt(node, pos) {
-    if (dontCompleteIn.has(node.name)) {
+    if (doNotCompleteIn.has(node.name)) {
         return null;
     }
     for (let cur = node; cur; cur = cur.parent) {
@@ -45,7 +54,7 @@ function findPropertyAt(node, pos) {
 function getCurrentStyleSheet(url, cssModel) {
     const currentStyleSheet = cssModel.getStyleSheetIdsForURL(url);
     if (currentStyleSheet.length === 0) {
-        Platform.DCHECK(() => currentStyleSheet.length !== 0, 'Can\'t find style sheet ID for current URL');
+        throw new Error('Can\'t find style sheet ID for current URL');
     }
     return currentStyleSheet[0];
 }
@@ -102,7 +111,7 @@ function findColorsAndCurves(state, from, to, onColor, onCurve) {
                     onColor(node.from, parsedColor, content);
                 }
                 else {
-                    const parsedCurve = UI.Geometry.CubicBezier.parse(content);
+                    const parsedCurve = Geometry.CubicBezier.parse(content);
                     if (parsedCurve) {
                         onCurve(node.from, parsedCurve, content);
                     }
@@ -125,23 +134,28 @@ class ColorSwatchWidget extends CodeMirror.WidgetType {
         return this.#color.equal(other.#color) && this.#text === other.#text && this.#from === other.#from;
     }
     toDOM(view) {
-        const swatch = new InlineEditor.ColorSwatch.ColorSwatch();
-        swatch.renderColor(this.#color, false, i18nString(UIStrings.openColorPicker));
+        const swatch = new InlineEditor.ColorSwatch.ColorSwatch(i18nString(UIStrings.openColorPicker));
+        swatch.renderColor(this.#color);
         const value = swatch.createChild('span');
         value.textContent = this.#text;
         value.setAttribute('hidden', 'true');
         swatch.addEventListener(InlineEditor.ColorSwatch.ColorChangedEvent.eventName, event => {
-            view.dispatch({
-                changes: { from: this.#from, to: this.#from + this.#text.length, insert: event.data.text },
-            });
-            this.#text = event.data.text;
-            this.#color = swatch.getColor();
+            const insert = event.data.color.getAuthoredText() ?? event.data.color.asString();
+            view.dispatch({ changes: { from: this.#from, to: this.#from + this.#text.length, insert } });
+            this.#text = insert;
+            this.#color = swatch.color;
+        });
+        swatch.addEventListener(InlineEditor.ColorSwatch.ColorFormatChangedEvent.eventName, event => {
+            const insert = event.data.color.getAuthoredText() ?? event.data.color.asString();
+            view.dispatch({ changes: { from: this.#from, to: this.#from + this.#text.length, insert } });
+            this.#text = insert;
+            this.#color = swatch.color;
         });
         swatch.addEventListener(InlineEditor.ColorSwatch.ClickEvent.eventName, event => {
             event.consume(true);
             view.dispatch({
                 effects: setTooltip.of({
-                    type: 0 /* TooltipType.Color */,
+                    type: 0 /* TooltipType.COLOR */,
                     pos: view.posAtDOM(swatch),
                     text: this.#text,
                     swatch,
@@ -167,23 +181,25 @@ class CurveSwatchWidget extends CodeMirror.WidgetType {
         return this.curve.asCSSText() === other.curve.asCSSText() && this.text === other.text;
     }
     toDOM(view) {
-        const swatch = InlineEditor.Swatches.BezierSwatch.create();
-        swatch.setBezierText(this.text);
-        UI.Tooltip.Tooltip.install(swatch.iconElement(), i18nString(UIStrings.openCubicBezierEditor));
-        swatch.iconElement().addEventListener('click', (event) => {
+        const container = document.createElement('span');
+        const bezierText = container.createChild('span');
+        const icon = createIcon('bezier-curve-filled', 'bezier-swatch-icon');
+        icon.setAttribute('jslog', `${VisualLogging.showStyleEditor('bezier')}`);
+        bezierText.append(this.text);
+        UI.Tooltip.Tooltip.install(icon, i18nString(UIStrings.openCubicBezierEditor));
+        icon.addEventListener('click', (event) => {
             event.consume(true);
             view.dispatch({
                 effects: setTooltip.of({
-                    type: 1 /* TooltipType.Curve */,
-                    pos: view.posAtDOM(swatch),
+                    type: 1 /* TooltipType.CURVE */,
+                    pos: view.posAtDOM(icon),
                     text: this.text,
-                    swatch,
+                    swatch: icon,
                     curve: this.curve,
                 }),
             });
         }, false);
-        swatch.hideText(true);
-        return swatch;
+        return icon;
     }
     ignoreEvent() {
         return true;
@@ -192,25 +208,24 @@ class CurveSwatchWidget extends CodeMirror.WidgetType {
 function createCSSTooltip(active) {
     return {
         pos: active.pos,
-        arrow: true,
+        arrow: false,
         create(view) {
             let text = active.text;
             let widget, addListener;
-            if (active.type === 0 /* TooltipType.Color */) {
+            if (active.type === 0 /* TooltipType.COLOR */) {
                 const spectrum = new ColorPicker.Spectrum.Spectrum();
-                addListener = (handler) => {
-                    spectrum.addEventListener(ColorPicker.Spectrum.Events.ColorChanged, handler);
+                addListener = handler => {
+                    spectrum.addEventListener("ColorChanged" /* ColorPicker.Spectrum.Events.COLOR_CHANGED */, handler);
                 };
-                spectrum.addEventListener(ColorPicker.Spectrum.Events.SizeChanged, () => view.requestMeasure());
-                spectrum.setColor(active.color, active.color.format());
+                spectrum.addEventListener("SizeChanged" /* ColorPicker.Spectrum.Events.SIZE_CHANGED */, () => view.requestMeasure());
+                spectrum.setColor(active.color);
                 widget = spectrum;
-                Host.userMetrics.colorPickerOpenedFrom(0 /* Host.UserMetrics.ColorPickerOpenedFrom.SourcesPanel */);
             }
             else {
                 const spectrum = new InlineEditor.BezierEditor.BezierEditor(active.curve);
                 widget = spectrum;
-                addListener = (handler) => {
-                    spectrum.addEventListener(InlineEditor.BezierEditor.Events.BezierChanged, handler);
+                addListener = handler => {
+                    spectrum.addEventListener("BezierChanged" /* InlineEditor.BezierEditor.Events.BEZIER_CHANGED */, handler);
                 };
             }
             const dom = document.createElement('div');
@@ -298,7 +313,7 @@ const cssSwatchPlugin = CodeMirror.ViewPlugin.fromClass(class {
     decorations: v => v.decorations,
 });
 function cssSwatches() {
-    return [cssSwatchPlugin, cssTooltipState];
+    return [cssSwatchPlugin, cssTooltipState, theme];
 }
 function getNumberAt(node) {
     if (node.name === 'Unit') {
@@ -306,7 +321,7 @@ function getNumberAt(node) {
     }
     if (node.name === 'NumberLiteral') {
         const lastChild = node.lastChild;
-        return { from: node.from, to: lastChild && lastChild.name === 'Unit' ? lastChild.from : node.to };
+        return { from: node.from, to: lastChild?.name === 'Unit' ? lastChild.from : node.to };
     }
     return null;
 }
@@ -380,9 +395,31 @@ export class CSSPlugin extends Plugin {
         const cssModel = this.#cssModel;
         return CodeMirror.autocompletion({
             override: [async (cx) => {
-                    return (await specificCssCompletion(cx, uiSourceCode, cssModel)) || cssCompletionSource(cx);
+                    return await ((await specificCssCompletion(cx, uiSourceCode, cssModel)) || cssCompletionSource(cx));
                 }],
         });
     }
+    populateTextAreaContextMenu(contextMenu) {
+        function addSourceMapURL(cssModel, sourceUrl) {
+            const dialog = AddDebugInfoURLDialog.createAddSourceMapURLDialog(sourceMapUrl => {
+                Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().modelToInfo.get(cssModel)?.addSourceMap(sourceUrl, sourceMapUrl);
+            });
+            dialog.show();
+        }
+        const cssModel = this.#cssModel;
+        const url = this.uiSourceCode.url();
+        if (this.uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Network && cssModel &&
+            !Workspace.IgnoreListManager.IgnoreListManager.instance().isUserIgnoreListedURL(url)) {
+            const addSourceMapURLLabel = i18nString(UIStrings.addSourceMap);
+            contextMenu.debugSection().appendItem(addSourceMapURLLabel, () => addSourceMapURL(cssModel, url), { jslogContext: 'add-source-map' });
+        }
+    }
 }
+const theme = CodeMirror.EditorView.baseTheme({
+    '.cm-tooltip.cm-tooltip-swatchEdit': {
+        'box-shadow': 'var(--sys-elevation-level2)',
+        'background-color': 'var(--sys-color-base-container-elevated)',
+        'border-radius': 'var(--sys-shape-corner-extra-small)',
+    },
+});
 //# sourceMappingURL=CSSPlugin.js.map

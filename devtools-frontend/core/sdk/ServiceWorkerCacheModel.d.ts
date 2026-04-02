@@ -1,9 +1,9 @@
-import type * as Platform from '../platform/platform.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import type * as Protocol from '../../generated/protocol.js';
-import { type NameValue } from './NetworkRequest.js';
-import { type Target } from './Target.js';
+import type * as Platform from '../platform/platform.js';
+import type { NameValue } from './NetworkRequest.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class ServiceWorkerCacheModel extends SDKModel<EventTypes> implements ProtocolProxyApi.StorageDispatcher {
     #private;
     readonly cacheAgent: ProtocolProxyApi.CacheStorageApi;
@@ -16,8 +16,8 @@ export declare class ServiceWorkerCacheModel extends SDKModel<EventTypes> implem
     refreshCacheNames(): void;
     deleteCache(cache: Cache): Promise<void>;
     deleteCacheEntry(cache: Cache, request: string): Promise<void>;
-    loadCacheData(cache: Cache, skipCount: number, pageSize: number, pathFilter: string, callback: (arg0: Array<Protocol.CacheStorage.DataEntry>, arg1: number) => void): void;
-    loadAllCacheData(cache: Cache, pathFilter: string, callback: (arg0: Array<Protocol.CacheStorage.DataEntry>, arg1: number) => void): void;
+    loadCacheData(cache: Cache, skipCount: number, pageSize: number, pathFilter: string, callback: (arg0: Protocol.CacheStorage.DataEntry[], arg1: number) => void): void;
+    loadAllCacheData(cache: Cache, pathFilter: string, callback: (arg0: Protocol.CacheStorage.DataEntry[], arg1: number) => void): void;
     caches(): Cache[];
     dispose(): void;
     private addStorageBucket;
@@ -34,16 +34,19 @@ export declare class ServiceWorkerCacheModel extends SDKModel<EventTypes> implem
     cacheStorageContentUpdated({ bucketId, cacheName }: Protocol.Storage.CacheStorageContentUpdatedEvent): void;
     indexedDBListUpdated(_event: Protocol.Storage.IndexedDBListUpdatedEvent): void;
     indexedDBContentUpdated(_event: Protocol.Storage.IndexedDBContentUpdatedEvent): void;
+    interestGroupAuctionEventOccurred(_event: Protocol.Storage.InterestGroupAuctionEventOccurredEvent): void;
     interestGroupAccessed(_event: Protocol.Storage.InterestGroupAccessedEvent): void;
+    interestGroupAuctionNetworkRequestCreated(_event: Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent): void;
     sharedStorageAccessed(_event: Protocol.Storage.SharedStorageAccessedEvent): void;
+    sharedStorageWorkletOperationExecutionFinished(_event: Protocol.Storage.SharedStorageWorkletOperationExecutionFinishedEvent): void;
     storageBucketCreatedOrUpdated(_event: Protocol.Storage.StorageBucketCreatedOrUpdatedEvent): void;
     storageBucketDeleted(_event: Protocol.Storage.StorageBucketDeletedEvent): void;
     setThrottlerSchedulesAsSoonAsPossibleForTest(): void;
 }
-export declare enum Events {
-    CacheAdded = "CacheAdded",
-    CacheRemoved = "CacheRemoved",
-    CacheStorageContentUpdated = "CacheStorageContentUpdated"
+export declare const enum Events {
+    CACHE_ADDED = "CacheAdded",
+    CACHE_REMOVED = "CacheRemoved",
+    CACHE_STORAGE_CONTENT_UPDATED = "CacheStorageContentUpdated"
 }
 export interface CacheEvent {
     model: ServiceWorkerCacheModel;
@@ -53,11 +56,11 @@ export interface CacheStorageContentUpdatedEvent {
     storageBucket: Protocol.Storage.StorageBucket;
     cacheName: string;
 }
-export type EventTypes = {
-    [Events.CacheAdded]: CacheEvent;
-    [Events.CacheRemoved]: CacheEvent;
-    [Events.CacheStorageContentUpdated]: CacheStorageContentUpdatedEvent;
-};
+export interface EventTypes {
+    [Events.CACHE_ADDED]: CacheEvent;
+    [Events.CACHE_REMOVED]: CacheEvent;
+    [Events.CACHE_STORAGE_CONTENT_UPDATED]: CacheStorageContentUpdatedEvent;
+}
 export declare class Cache {
     #private;
     storageKey: string;

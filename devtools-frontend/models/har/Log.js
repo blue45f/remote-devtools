@@ -1,32 +1,6 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 // See http://www.softwareishard.com/blog/har-12-spec/
 // for HAR specification.
 // FIXME: Some fields are not yet supported due to back-end limitations.
@@ -37,11 +11,11 @@ export class Log {
     static pseudoWallTime(request, monotonicTime) {
         return new Date(request.pseudoWallTime(monotonicTime) * 1000);
     }
-    static async build(requests) {
+    static async build(requests, options) {
         const log = new Log();
         const entryPromises = [];
         for (const request of requests) {
-            entryPromises.push(Entry.build(request));
+            entryPromises.push(Entry.build(request, options));
         }
         const entries = await Promise.all(entryPromises);
         return { version: '1.2', creator: log.creator(), pages: log.buildPages(requests), entries };
@@ -91,10 +65,11 @@ export class Entry {
     static toMilliseconds(time) {
         return time === -1 ? -1 : time * 1000;
     }
-    static async build(request) {
+    static async build(request, options) {
         const harEntry = new Entry(request);
         let ipAddress = harEntry.request.remoteAddress();
         const portPositionInString = ipAddress.lastIndexOf(':');
+        const connection = portPositionInString !== -1 ? ipAddress.substring(portPositionInString + 1) : undefined;
         if (portPositionInString !== -1) {
             ipAddress = ipAddress.substr(0, portPositionInString);
         }
@@ -124,22 +99,28 @@ export class Entry {
             }
         }
         const entry = {
-            _fromCache: undefined,
             _initiator: exportedInitiator,
             _priority: harEntry.request.priority(),
             _resourceType: harEntry.request.resourceType().name(),
-            _webSocketMessages: undefined,
             cache: {},
-            connection: undefined,
-            pageref: undefined,
+            connection,
             request: await harEntry.buildRequest(),
             response: harEntry.buildResponse(),
             // IPv6 address should not have square brackets per (https://tools.ietf.org/html/rfc2373#section-2.2).
             serverIPAddress: ipAddress.replace(/\[\]/g, ''),
             startedDateTime: Log.pseudoWallTime(harEntry.request, harEntry.request.issueTime()).toJSON(),
-            time: time,
-            timings: timings,
+            time,
+            timings,
         };
+        // Sanitize HAR to remove sensitive data.
+        if (options.sanitize) {
+            entry.response.cookies = [];
+            entry.response.headers =
+                entry.response.headers.filter(({ name }) => !['set-cookie'].includes(name.toLocaleLowerCase()));
+            entry.request.cookies = [];
+            entry.request.headers =
+                entry.request.headers.filter(({ name }) => !['authorization', 'cookie'].includes(name.toLocaleLowerCase()));
+        }
         // Chrome specific.
         if (harEntry.request.cached()) {
             entry._fromCache = harEntry.request.cachedInMemory() ? 'memory' : 'disk';
@@ -148,10 +129,10 @@ export class Entry {
             delete entry._fromCache;
         }
         if (harEntry.request.connectionId !== '0') {
-            entry.connection = harEntry.request.connectionId;
+            entry._connectionId = harEntry.request.connectionId;
         }
         else {
-            delete entry.connection;
+            delete entry._connectionId;
         }
         const page = SDK.PageLoad.PageLoad.forRequest(harEntry.request);
         if (page) {
@@ -180,10 +161,9 @@ export class Entry {
             httpVersion: this.request.requestHttpVersion(),
             headers: this.request.requestHeaders(),
             queryString: this.buildParameters(this.request.queryParameters || []),
-            cookies: this.buildCookies(this.request.includedRequestCookies()),
+            cookies: this.buildCookies(this.request.includedRequestCookies().map(includedRequestCookie => includedRequestCookie.cookie)),
             headersSize: headersText ? headersText.length : -1,
             bodySize: await this.requestBodySize(),
-            postData: undefined,
         };
         const postData = await this.buildPostData();
         if (postData) {
@@ -208,13 +188,18 @@ export class Entry {
             bodySize: this.responseBodySize,
             _transferSize: this.request.transferSize,
             _error: this.request.localizedFailDescription,
+            _fetchedViaServiceWorker: this.request.fetchedViaServiceWorker,
+            _responseCacheStorageCacheName: this.request.getResponseCacheStorageCacheName(),
+            _serviceWorkerResponseSource: this.request.serviceWorkerResponseSource(),
+            _serviceWorkerRouterRuleIdMatched: this.request.serviceWorkerRouterInfo?.ruleIdMatched ?? undefined,
+            _serviceWorkerRouterMatchedSourceType: this.request.serviceWorkerRouterInfo?.matchedSourceType ?? undefined,
+            _serviceWorkerRouterActualSourceType: this.request.serviceWorkerRouterInfo?.actualSourceType ?? undefined,
         };
     }
     buildContent() {
         const content = {
             size: this.request.resourceSize,
             mimeType: this.request.mimeType || 'x-unknown',
-            compression: undefined,
         };
         const compression = this.responseCompression;
         if (typeof compression === 'number') {
@@ -239,7 +224,6 @@ export class Entry {
             wait: 0,
             receive: 0,
             _blocked_queueing: -1,
-            _blocked_proxy: undefined,
         };
         const queuedTime = (issueTime < startTime) ? startTime - issueTime : -1;
         result.blocked = Entry.toMilliseconds(queuedTime);
@@ -278,6 +262,13 @@ export class Entry {
                 result.send = 0;
             }
             highestTime = Math.max(sendEnd, connectEnd, sslEnd, dnsEnd, blockedStart, 0);
+            // Custom fields for service worker timings.
+            result._workerStart = timing.workerStart;
+            result._workerReady = timing.workerReady;
+            result._workerFetchStart = timing.workerFetchStart;
+            result._workerRespondWithSettled = timing.workerRespondWithSettled;
+            result._workerRouterEvaluationStart = timing.workerRouterEvaluationStart;
+            result._workerCacheLookupStart = timing.workerCacheLookupStart;
         }
         else if (this.request.responseReceivedTime === -1) {
             // Means that we don't have any more details after blocked, so attribute all to blocked.
@@ -329,13 +320,18 @@ export class Entry {
             expires: cookie.expiresDate(Log.pseudoWallTime(this.request, this.request.startTime)),
             httpOnly: cookie.httpOnly(),
             secure: cookie.secure(),
-            sameSite: undefined,
         };
         if (cookie.sameSite()) {
             c.sameSite = cookie.sameSite();
         }
         else {
             delete c.sameSite;
+        }
+        if (cookie.partitionKey()) {
+            c.partitionKey = cookie.partitionKey();
+        }
+        else {
+            delete c.partitionKey;
         }
         return c;
     }

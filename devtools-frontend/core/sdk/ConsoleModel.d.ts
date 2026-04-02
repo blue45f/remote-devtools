@@ -1,11 +1,13 @@
 import * as Protocol from '../../generated/protocol.js';
+import * as Common from '../common/common.js';
 import * as Platform from '../platform/platform.js';
-import { FrontendMessageSource, FrontendMessageType } from './ConsoleModelTypes.js';
-export { FrontendMessageSource, FrontendMessageType } from './ConsoleModelTypes.js';
+import { FrontendMessageType } from './ConsoleModelTypes.js';
 import { RemoteObject } from './RemoteObject.js';
-import { RuntimeModel, type ExecutionContext } from './RuntimeModel.js';
-import { type Target } from './Target.js';
+import { type ExecutionContext, RuntimeModel } from './RuntimeModel.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
+import { TargetManager } from './TargetManager.js';
+export { FrontendMessageType } from './ConsoleModelTypes.js';
 export declare class ConsoleModel extends SDKModel<EventTypes> {
     #private;
     constructor(target: Target);
@@ -25,15 +27,14 @@ export declare class ConsoleModel extends SDKModel<EventTypes> {
     private addConsoleProfileMessage;
     private incrementErrorWarningCount;
     messages(): ConsoleMessage[];
-    static allMessagesUnordered(): ConsoleMessage[];
-    static requestClearMessages(): void;
+    static allMessagesUnordered(targetManager?: TargetManager): ConsoleMessage[];
+    static requestClearMessages(targetManager?: TargetManager): void;
     private clear;
     errors(): number;
-    static allErrors(): number;
+    static allErrors(targetManager?: TargetManager): number;
     warnings(): number;
-    static allWarnings(): number;
+    static allWarnings(targetManager?: TargetManager): number;
     violations(): number;
-    static allViolations(): number;
     saveToTempVariable(currentExecutionContext: ExecutionContext | null, remoteObject: RemoteObject | null): Promise<void>;
 }
 export declare enum Events {
@@ -47,12 +48,12 @@ export interface CommandEvaluatedEvent {
     commandMessage: ConsoleMessage;
     exceptionDetails?: Protocol.Runtime.ExceptionDetails | undefined;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.ConsoleCleared]: void;
     [Events.MessageAdded]: ConsoleMessage;
     [Events.MessageUpdated]: ConsoleMessage;
     [Events.CommandEvaluated]: CommandEvaluatedEvent;
-};
+}
 export interface AffectedResources {
     requestId?: Protocol.Network.RequestId;
     issueId?: Protocol.Audits.IssueId;
@@ -62,7 +63,7 @@ export interface ConsoleMessageDetails {
     url?: Platform.DevToolsPath.UrlString;
     line?: number;
     column?: number;
-    parameters?: (string | RemoteObject | Protocol.Runtime.RemoteObject)[];
+    parameters?: Array<string | RemoteObject | Protocol.Runtime.RemoteObject>;
     stackTrace?: Protocol.Runtime.StackTrace;
     timestamp?: number;
     executionContextId?: number;
@@ -81,7 +82,7 @@ export declare class ConsoleMessage {
     url: Platform.DevToolsPath.UrlString | undefined;
     line: number;
     column: number;
-    parameters: (string | RemoteObject | Protocol.Runtime.RemoteObject)[] | undefined;
+    parameters: Array<string | RemoteObject | Protocol.Runtime.RemoteObject> | undefined;
     stackTrace: Protocol.Runtime.StackTrace | undefined;
     timestamp: number;
     scriptId?: Protocol.Runtime.ScriptId;
@@ -118,7 +119,7 @@ export declare class ConsoleMessage {
     /** @returns true, iff this was a console.* call in a conditional breakpoint */
     get originatesFromConditionalBreakpoint(): boolean;
 }
-export type MessageSource = Protocol.Log.LogEntrySource | FrontendMessageSource;
+export type MessageSource = Protocol.Log.LogEntrySource | Common.Console.FrontendMessageSource;
 export type MessageLevel = Protocol.Log.LogEntryLevel;
 export type MessageType = Protocol.Runtime.ConsoleAPICalledEventType | FrontendMessageType;
 export declare const MessageSourceDisplayName: Map<MessageSource, string>;

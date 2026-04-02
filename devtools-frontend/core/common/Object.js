@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class ObjectWrapper {
@@ -40,7 +40,7 @@ export class ObjectWrapper {
         }
     }
     hasEventListeners(eventType) {
-        return Boolean(this.listeners && this.listeners.has(eventType));
+        return Boolean(this.listeners?.has(eventType));
     }
     dispatchEventToListeners(eventType, ...[eventData]) {
         const listeners = this.listeners?.get(eventType);
@@ -57,13 +57,19 @@ export class ObjectWrapper {
         // new listeners.
         for (const listener of [...listeners]) {
             if (!listener.disposed) {
-                listener.listener.call(listener.thisObject, event);
+                try {
+                    listener.listener.call(listener.thisObject, event);
+                }
+                catch (err) {
+                    console.error(`Event listener for ${String(eventType)} throw an error:`, err);
+                }
             }
         }
     }
 }
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function eventMixin(base) {
+    console.assert(base !== HTMLElement);
     return class EventHandling extends base {
         #events = new ObjectWrapper();
         addEventListener(eventType, listener, thisObject) {

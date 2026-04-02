@@ -1,44 +1,36 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Platform from '../../core/platform/platform.js';
 export class TextCursor {
-    lineEndings;
-    offsetInternal;
-    lineNumberInternal;
-    columnNumberInternal;
+    #lineEndings;
+    #offset = 0;
+    #lineNumber = 0;
+    #columnNumber = 0;
     constructor(lineEndings) {
-        this.lineEndings = lineEndings;
-        this.offsetInternal = 0;
-        this.lineNumberInternal = 0;
-        this.columnNumberInternal = 0;
+        this.#lineEndings = lineEndings;
     }
     advance(offset) {
-        this.offsetInternal = offset;
-        while (this.lineNumberInternal < this.lineEndings.length &&
-            this.lineEndings[this.lineNumberInternal] < this.offsetInternal) {
-            ++this.lineNumberInternal;
+        this.#offset = offset;
+        while (this.#lineNumber < this.#lineEndings.length && this.#lineEndings[this.#lineNumber] < this.#offset) {
+            ++this.#lineNumber;
         }
-        this.columnNumberInternal = this.lineNumberInternal ?
-            this.offsetInternal - this.lineEndings[this.lineNumberInternal - 1] - 1 :
-            this.offsetInternal;
+        this.#columnNumber = this.#lineNumber ? this.#offset - this.#lineEndings[this.#lineNumber - 1] - 1 : this.#offset;
     }
     offset() {
-        return this.offsetInternal;
+        return this.#offset;
     }
     resetTo(offset) {
-        this.offsetInternal = offset;
-        this.lineNumberInternal =
-            Platform.ArrayUtilities.lowerBound(this.lineEndings, offset, Platform.ArrayUtilities.DEFAULT_COMPARATOR);
-        this.columnNumberInternal = this.lineNumberInternal ?
-            this.offsetInternal - this.lineEndings[this.lineNumberInternal - 1] - 1 :
-            this.offsetInternal;
+        this.#offset = offset;
+        this.#lineNumber =
+            Platform.ArrayUtilities.lowerBound(this.#lineEndings, offset, Platform.ArrayUtilities.DEFAULT_COMPARATOR);
+        this.#columnNumber = this.#lineNumber ? this.#offset - this.#lineEndings[this.#lineNumber - 1] - 1 : this.#offset;
     }
     lineNumber() {
-        return this.lineNumberInternal;
+        return this.#lineNumber;
     }
     columnNumber() {
-        return this.columnNumberInternal;
+        return this.#columnNumber;
     }
 }
 //# sourceMappingURL=TextCursor.js.map

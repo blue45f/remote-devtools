@@ -1,21 +1,32 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as i18n from '../../core/i18n/i18n.js';
 import * as Common from '../common/common.js';
 import * as Host from '../host/host.js';
-import { ParallelConnection } from './Connections.js';
-import { Capability, Type } from './Target.js';
-import { SDKModel } from './SDKModel.js';
-import { Events as TargetManagerEvents, TargetManager } from './TargetManager.js';
 import { ResourceTreeModel } from './ResourceTreeModel.js';
+import { SDKModel } from './SDKModel.js';
+import { SecurityOriginManager } from './SecurityOriginManager.js';
+import { StorageKeyManager } from './StorageKeyManager.js';
+import { Type } from './Target.js';
+const UIStrings = {
+    /**
+     * @description Text that refers to the main target. The main target is the primary webpage that
+     * DevTools is connected to. This text is used in various places in the UI as a label/name to inform
+     * the user which target/webpage they are currently connected to, as DevTools may connect to multiple
+     * targets at the same time in some scenarios.
+     */
+    main: 'Main',
+};
+const str_ = i18n.i18n.registerUIStrings('core/sdk/ChildTargetManager.ts', UIStrings);
+const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class ChildTargetManager extends SDKModel {
     #targetManager;
     #parentTarget;
     #targetAgent;
-    #targetInfosInternal = new Map();
+    #targetInfos = new Map();
     #childTargetsBySessionId = new Map();
     #childTargetsById = new Map();
-    #parallelConnections = new Map();
     #parentTargetId = null;
     constructor(parentTarget) {
         super(parentTarget);
@@ -29,17 +40,20 @@ export class ChildTargetManager extends SDKModel {
                 void browserTarget.targetAgent().invoke_autoAttachRelated({ targetId: parentTarget.id(), waitForDebuggerOnStart: true });
             }
         }
+        else if (parentTarget.type() === Type.NODE) {
+            void this.#targetAgent.invoke_setAutoAttach({ autoAttach: true, waitForDebuggerOnStart: true, flatten: false });
+        }
         else {
             void this.#targetAgent.invoke_setAutoAttach({ autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
         }
-        if (parentTarget.parentTarget()?.type() !== Type.Frame && !Host.InspectorFrontendHost.isUnderTest()) {
+        if (parentTarget.parentTarget()?.type() !== Type.FRAME && !Host.InspectorFrontendHost.isUnderTest()) {
             void this.#targetAgent.invoke_setDiscoverTargets({ discover: true });
             void this.#targetAgent.invoke_setRemoteLocations({ locations: [{ host: 'localhost', port: 9229 }] });
         }
     }
     static install(attachCallback) {
         ChildTargetManager.attachCallback = attachCallback;
-        SDKModel.register(ChildTargetManager, { capabilities: Capability.Target, autostart: true });
+        SDKModel.register(ChildTargetManager, { capabilities: 32 /* Capability.TARGET */, autostart: true });
     }
     childTargets() {
         return Array.from(this.#childTargetsBySessionId.values());
@@ -52,42 +66,47 @@ export class ChildTargetManager extends SDKModel {
     }
     dispose() {
         for (const sessionId of this.#childTargetsBySessionId.keys()) {
-            this.detachedFromTarget({ sessionId, targetId: undefined });
+            this.detachedFromTarget({ sessionId });
         }
     }
     targetCreated({ targetInfo }) {
-        this.#targetInfosInternal.set(targetInfo.targetId, targetInfo);
+        this.#targetInfos.set(targetInfo.targetId, targetInfo);
         this.fireAvailableTargetsChanged();
-        this.dispatchEventToListeners(Events.TargetCreated, targetInfo);
+        this.dispatchEventToListeners("TargetCreated" /* Events.TARGET_CREATED */, targetInfo);
     }
     targetInfoChanged({ targetInfo }) {
-        this.#targetInfosInternal.set(targetInfo.targetId, targetInfo);
+        this.#targetInfos.set(targetInfo.targetId, targetInfo);
         const target = this.#childTargetsById.get(targetInfo.targetId);
         if (target) {
+            void target.setHasCrashed(false);
             if (target.targetInfo()?.subtype === 'prerender' && !targetInfo.subtype) {
                 const resourceTreeModel = target.model(ResourceTreeModel);
                 target.updateTargetInfo(targetInfo);
-                if (resourceTreeModel && resourceTreeModel.mainFrame) {
-                    resourceTreeModel.primaryPageChanged(resourceTreeModel.mainFrame, "Activation" /* PrimaryPageChangeType.Activation */);
+                if (resourceTreeModel?.mainFrame) {
+                    resourceTreeModel.primaryPageChanged(resourceTreeModel.mainFrame, "Activation" /* PrimaryPageChangeType.ACTIVATION */);
                 }
+                target.setName(i18nString(UIStrings.main));
             }
             else {
                 target.updateTargetInfo(targetInfo);
             }
         }
         this.fireAvailableTargetsChanged();
-        this.dispatchEventToListeners(Events.TargetInfoChanged, targetInfo);
+        this.dispatchEventToListeners("TargetInfoChanged" /* Events.TARGET_INFO_CHANGED */, targetInfo);
     }
     targetDestroyed({ targetId }) {
-        this.#targetInfosInternal.delete(targetId);
+        this.#targetInfos.delete(targetId);
         this.fireAvailableTargetsChanged();
-        this.dispatchEventToListeners(Events.TargetDestroyed, targetId);
+        this.dispatchEventToListeners("TargetDestroyed" /* Events.TARGET_DESTROYED */, targetId);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    targetCrashed({ targetId, status, errorCode }) {
+    targetCrashed({ targetId }) {
+        const target = this.#childTargetsById.get(targetId);
+        if (target) {
+            target.setHasCrashed(true);
+        }
     }
     fireAvailableTargetsChanged() {
-        TargetManager.instance().dispatchEventToListeners(TargetManagerEvents.AvailableTargetsChanged, [...this.#targetInfosInternal.values()]);
+        this.#targetManager.dispatchEventToListeners("AvailableTargetsChanged" /* TargetManagerEvents.AVAILABLE_TARGETS_CHANGED */, [...this.#targetInfos.values()]);
     }
     async getParentTargetId() {
         if (!this.#parentTargetId) {
@@ -95,50 +114,68 @@ export class ChildTargetManager extends SDKModel {
         }
         return this.#parentTargetId;
     }
+    async getTargetInfo() {
+        return (await this.#parentTarget.targetAgent().invoke_getTargetInfo({})).targetInfo;
+    }
     async attachedToTarget({ sessionId, targetInfo, waitingForDebugger }) {
         if (this.#parentTargetId === targetInfo.targetId) {
             return;
         }
-        let type = Type.Browser;
+        let type = Type.BROWSER;
         let targetName = '';
         if (targetInfo.type === 'worker' && targetInfo.title && targetInfo.title !== targetInfo.url) {
             targetName = targetInfo.title;
         }
         else if (!['page', 'iframe', 'webview'].includes(targetInfo.type)) {
-            if (targetInfo.url === 'chrome://print/' ||
-                (targetInfo.url.startsWith('chrome://') && targetInfo.url.endsWith('.top-chrome/'))) {
-                type = Type.Frame;
+            const KNOWN_FRAME_PATTERNS = [
+                '^chrome://print/$',
+                '^chrome://file-manager/',
+                '^chrome://feedback/',
+                '^chrome://.*\\.top-chrome/$',
+                '^chrome://view-cert/$',
+                '^devtools://',
+            ];
+            if (KNOWN_FRAME_PATTERNS.some(p => targetInfo.url.match(p))) {
+                type = Type.FRAME;
             }
             else {
                 const parsedURL = Common.ParsedURL.ParsedURL.fromString(targetInfo.url);
                 targetName =
                     parsedURL ? parsedURL.lastPathComponentWithFragment() : '#' + (++ChildTargetManager.lastAnonymousTargetId);
-                if (parsedURL?.scheme === 'devtools' && targetInfo.type === 'other') {
-                    type = Type.Frame;
-                }
             }
         }
         if (targetInfo.type === 'iframe' || targetInfo.type === 'webview') {
-            type = Type.Frame;
+            type = Type.FRAME;
         }
         else if (targetInfo.type === 'background_page' || targetInfo.type === 'app' || targetInfo.type === 'popup_page') {
-            type = Type.Frame;
+            type = Type.FRAME;
         }
-        // TODO(lfg): ensure proper capabilities for child pages (e.g. portals).
         else if (targetInfo.type === 'page') {
-            type = Type.Frame;
+            type = Type.FRAME;
+        }
+        else if (targetInfo.type === 'browser_ui') {
+            type = Type.FRAME;
         }
         else if (targetInfo.type === 'worker') {
             type = Type.Worker;
         }
+        else if (targetInfo.type === 'worklet') {
+            type = Type.WORKLET;
+        }
         else if (targetInfo.type === 'shared_worker') {
-            type = Type.SharedWorker;
+            type = Type.SHARED_WORKER;
+        }
+        else if (targetInfo.type === 'shared_storage_worklet') {
+            type = Type.SHARED_STORAGE_WORKLET;
         }
         else if (targetInfo.type === 'service_worker') {
             type = Type.ServiceWorker;
         }
         else if (targetInfo.type === 'auction_worklet') {
-            type = Type.AuctionWorklet;
+            type = Type.AUCTION_WORKLET;
+        }
+        else if (targetInfo.type === 'node_worker') {
+            type = Type.NODE_WORKER;
         }
         const target = this.#targetManager.createTarget(targetInfo.targetId, targetName, type, this.#parentTarget, sessionId, undefined, undefined, targetInfo);
         this.#childTargetsBySessionId.set(sessionId, target);
@@ -151,56 +188,50 @@ export class ChildTargetManager extends SDKModel {
         if (waitingForDebugger) {
             void target.runtimeAgent().invoke_runIfWaitingForDebugger();
         }
+        // For top-level workers (those not attached to a frame), we need to
+        // initialize their storage context manually. The `Capability.STORAGE` is
+        // only granted in `Target.ts` to workers that are not parented by a frame,
+        // which makes this check safe. Frame-associated workers have their storage
+        // managed by ResourceTreeModel.
+        if (type !== Type.FRAME && target.hasAllCapabilities(8192 /* Capability.STORAGE */)) {
+            await this.initializeStorage(target);
+        }
+    }
+    async initializeStorage(target) {
+        const storageAgent = target.storageAgent();
+        const response = await storageAgent.invoke_getStorageKey({});
+        const storageKey = response.storageKey;
+        if (response.getError() || !storageKey) {
+            console.error(`Failed to get storage key for target ${target.id()}: ${response.getError()}`);
+            return;
+        }
+        const storageKeyManager = target.model(StorageKeyManager);
+        if (storageKeyManager) {
+            storageKeyManager.setMainStorageKey(storageKey);
+            storageKeyManager.updateStorageKeys(new Set([storageKey]));
+        }
+        const securityOriginManager = target.model(SecurityOriginManager);
+        if (securityOriginManager) {
+            const origin = new URL(storageKey).origin;
+            securityOriginManager.setMainSecurityOrigin(origin, '');
+            securityOriginManager.updateSecurityOrigins(new Set([origin]));
+        }
     }
     detachedFromTarget({ sessionId }) {
-        if (this.#parallelConnections.has(sessionId)) {
-            this.#parallelConnections.delete(sessionId);
-        }
-        else {
-            const target = this.#childTargetsBySessionId.get(sessionId);
-            if (target) {
-                target.dispose('target terminated');
-                this.#childTargetsBySessionId.delete(sessionId);
-                this.#childTargetsById.delete(target.id());
-            }
+        const target = this.#childTargetsBySessionId.get(sessionId);
+        if (target) {
+            target.dispose('target terminated');
+            this.#childTargetsBySessionId.delete(sessionId);
+            this.#childTargetsById.delete(target.id());
         }
     }
     receivedMessageFromTarget({}) {
         // We use flatten protocol.
     }
-    async createParallelConnection(onMessage) {
-        // The main Target id is actually just `main`, instead of the real targetId.
-        // Get the real id (requires an async operation) so that it can be used synchronously later.
-        const targetId = await this.getParentTargetId();
-        const { connection, sessionId } = await this.createParallelConnectionAndSessionForTarget(this.#parentTarget, targetId);
-        connection.setOnMessage(onMessage);
-        this.#parallelConnections.set(sessionId, connection);
-        return { connection, sessionId };
-    }
-    async createParallelConnectionAndSessionForTarget(target, targetId) {
-        const targetAgent = target.targetAgent();
-        const targetRouter = target.router();
-        const sessionId = (await targetAgent.invoke_attachToTarget({ targetId, flatten: true })).sessionId;
-        const connection = new ParallelConnection(targetRouter.connection(), sessionId);
-        targetRouter.registerSession(target, sessionId, connection);
-        connection.setOnDisconnect(() => {
-            targetRouter.unregisterSession(sessionId);
-            void targetAgent.invoke_detachFromTarget({ sessionId });
-        });
-        return { connection, sessionId };
-    }
     targetInfos() {
-        return Array.from(this.#targetInfosInternal.values());
+        return Array.from(this.#targetInfos.values());
     }
     static lastAnonymousTargetId = 0;
     static attachCallback;
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["TargetCreated"] = "TargetCreated";
-    Events["TargetDestroyed"] = "TargetDestroyed";
-    Events["TargetInfoChanged"] = "TargetInfoChanged";
-})(Events || (Events = {}));
 //# sourceMappingURL=ChildTargetManager.js.map

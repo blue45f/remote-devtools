@@ -7,8 +7,8 @@ export declare abstract class LayerView {
     abstract setLayerTree(layerTree: SDK.LayerTreeBase.LayerTreeBase | null): void;
 }
 export declare class Selection {
+    #private;
     readonly typeInternal: Type;
-    private readonly layerInternal;
     constructor(type: Type, layer: SDK.LayerTreeBase.Layer);
     static isEqual(a: Selection | null, b: Selection | null): boolean;
     type(): Type;
@@ -16,9 +16,9 @@ export declare class Selection {
     isEqual(_other: Selection): boolean;
 }
 export declare const enum Type {
-    Layer = "Layer",
-    ScrollRect = "ScrollRect",
-    Snapshot = "Snapshot"
+    LAYER = "Layer",
+    SCROLL_RECT = "ScrollRect",
+    SNAPSHOT = "Snapshot"
 }
 export declare class LayerSelection extends Selection {
     constructor(layer: SDK.LayerTreeBase.Layer);
@@ -30,18 +30,17 @@ export declare class ScrollRectSelection extends Selection {
     isEqual(other: Selection): boolean;
 }
 export declare class SnapshotSelection extends Selection {
-    private readonly snapshotInternal;
+    #private;
     constructor(layer: SDK.LayerTreeBase.Layer, snapshot: SDK.PaintProfiler.SnapshotWithRect);
     isEqual(other: Selection): boolean;
     snapshot(): SDK.PaintProfiler.SnapshotWithRect;
 }
 export declare class LayerViewHost {
+    #private;
     private readonly views;
     private selectedObject;
     private hoveredObject;
-    private showInternalLayersSettingInternal;
     private snapshotLayers;
-    private target?;
     constructor();
     registerView(layerView: LayerView): void;
     setLayerSnapshotMap(snapshotLayers: Map<SDK.LayerTreeBase.Layer, SnapshotSelection>): void;

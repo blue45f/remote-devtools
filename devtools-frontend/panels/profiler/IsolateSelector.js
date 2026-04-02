@@ -1,55 +1,55 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 const UIStrings = {
     /**
-     *@description aria label for javascript VM instances target list in heap profiler
+     * @description aria label for javascript VM instances target list in heap profiler
      */
     javascriptVmInstances: 'JavaScript VM instances',
     /**
-     *@description Text in Isolate Selector of a profiler tool
+     * @description Text in Isolate Selector of a profiler tool
      */
     totalJsHeapSize: 'Total JS heap size',
     /**
-     *@description Total trend div title in Isolate Selector of a profiler tool
-     *@example {3} PH1
+     * @description Total trend div title in Isolate Selector of a profiler tool
+     * @example {3} PH1
      */
     totalPageJsHeapSizeChangeTrend: 'Total page JS heap size change trend over the last {PH1} minutes.',
     /**
-     *@description Total value div title in Isolate Selector of a profiler tool
+     * @description Total value div title in Isolate Selector of a profiler tool
      */
     totalPageJsHeapSizeAcrossAllVm: 'Total page JS heap size across all VM instances.',
     /**
-     *@description Heap size change trend measured in kB/s
-     *@example {2 kB} PH1
+     * @description Heap size change trend measured in kB/s
+     * @example {2 kB} PH1
      */
     changeRate: '{PH1}/s',
     /**
-     *@description Text for isolate selector list items with positive change rate
-     *@example {1.0 kB} PH1
+     * @description Text for isolate selector list items with positive change rate
+     * @example {1.0 kB} PH1
      */
     increasingBySPerSecond: 'increasing by {PH1} per second',
     /**
-     *@description Text for isolate selector list items with negative change rate
-     *@example {1.0 kB} PH1
+     * @description Text for isolate selector list items with negative change rate
+     * @example {1.0 kB} PH1
      */
     decreasingBySPerSecond: 'decreasing by {PH1} per second',
     /**
-     *@description Heap div title in Isolate Selector of a profiler tool
+     * @description Heap div title in Isolate Selector of a profiler tool
      */
     heapSizeInUseByLiveJsObjects: 'Heap size in use by live JS objects.',
     /**
-     *@description Trend div title in Isolate Selector of a profiler tool
-     *@example {3} PH1
+     * @description Trend div title in Isolate Selector of a profiler tool
+     * @example {3} PH1
      */
     heapSizeChangeTrendOverTheLastS: 'Heap size change trend over the last {PH1} minutes.',
     /**
-     *@description Text to show an item is empty
+     * @description Text to show an item is empty
      */
     empty: '(empty)',
 };
@@ -63,7 +63,7 @@ export class IsolateSelector extends UI.Widget.VBox {
     totalValueDiv;
     totalTrendDiv;
     constructor() {
-        super(false);
+        super();
         this.items = new UI.ListModel.ListModel();
         this.list = new UI.ListControl.ListControl(this.items, this, UI.ListControl.ListMode.NonViewport);
         this.list.element.classList.add('javascript-vm-instances-list');
@@ -80,26 +80,29 @@ export class IsolateSelector extends UI.Widget.VBox {
         UI.Tooltip.Tooltip.install(this.totalTrendDiv, i18nString(UIStrings.totalPageJsHeapSizeChangeTrend, { PH1: trendIntervalMinutes }));
         UI.Tooltip.Tooltip.install(this.totalValueDiv, i18nString(UIStrings.totalPageJsHeapSizeAcrossAllVm));
         SDK.IsolateManager.IsolateManager.instance().observeIsolates(this);
-        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.NameChanged, this.targetChanged, this);
-        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.InspectedURLChanged, this.targetChanged, this);
+        SDK.TargetManager.TargetManager.instance().addEventListener("NameChanged" /* SDK.TargetManager.Events.NAME_CHANGED */, this.targetChanged, this);
+        SDK.TargetManager.TargetManager.instance().addEventListener("InspectedURLChanged" /* SDK.TargetManager.Events.INSPECTED_URL_CHANGED */, this.targetChanged, this);
     }
     wasShown() {
         super.wasShown();
-        SDK.IsolateManager.IsolateManager.instance().addEventListener(SDK.IsolateManager.Events.MemoryChanged, this.heapStatsChanged, this);
+        SDK.IsolateManager.IsolateManager.instance().addEventListener("MemoryChanged" /* SDK.IsolateManager.Events.MEMORY_CHANGED */, this.heapStatsChanged, this);
     }
     willHide() {
-        SDK.IsolateManager.IsolateManager.instance().removeEventListener(SDK.IsolateManager.Events.MemoryChanged, this.heapStatsChanged, this);
+        super.willHide();
+        SDK.IsolateManager.IsolateManager.instance().removeEventListener("MemoryChanged" /* SDK.IsolateManager.Events.MEMORY_CHANGED */, this.heapStatsChanged, this);
     }
     isolateAdded(isolate) {
         this.list.element.tabIndex = 0;
         const item = new ListItem(isolate);
+        // Insert the primary page target at the top of the list.
         const index = item.model().target() ===
-            SDK.TargetManager.TargetManager.instance().rootTarget() ?
+            SDK.TargetManager.TargetManager.instance().primaryPageTarget() ?
             0 :
             this.items.length;
         this.items.insert(index, item);
         this.itemByIsolate.set(isolate, item);
-        if (this.items.length === 1 || isolate.isMainThread()) {
+        // Select the first item by default.
+        if (index === 0) {
             this.list.selectItem(item);
         }
         this.update();
@@ -149,7 +152,7 @@ export class IsolateSelector extends UI.Widget.VBox {
             total += isolate.usedHeapSize();
             trend += isolate.usedHeapSizeGrowRate();
         }
-        this.totalValueDiv.textContent = Platform.NumberUtilities.bytesToString(total);
+        this.totalValueDiv.textContent = i18n.ByteUtilities.bytesToString(total);
         IsolateSelector.formatTrendElement(trend, this.totalTrendDiv);
     }
     static formatTrendElement(trendValueMs, element) {
@@ -158,7 +161,7 @@ export class IsolateSelector extends UI.Widget.VBox {
         if (Math.abs(changeRateBytesPerSecond) < changeRateThresholdBytesPerSecond) {
             return;
         }
-        const changeRateText = Platform.NumberUtilities.bytesToString(Math.abs(changeRateBytesPerSecond));
+        const changeRateText = i18n.ByteUtilities.bytesToString(Math.abs(changeRateBytesPerSecond));
         let changeText, changeLabel;
         if (changeRateBytesPerSecond > 0) {
             changeText = '\u2B06' + i18nString(UIStrings.changeRate, { PH1: changeRateText });
@@ -196,9 +199,9 @@ export class IsolateSelector extends UI.Widget.VBox {
         if (toElement) {
             toElement.classList.add('selected');
         }
-        const model = to && to.model();
-        UI.Context.Context.instance().setFlavor(SDK.HeapProfilerModel.HeapProfilerModel, model && model.heapProfilerModel());
-        UI.Context.Context.instance().setFlavor(SDK.CPUProfilerModel.CPUProfilerModel, model && model.target().model(SDK.CPUProfilerModel.CPUProfilerModel));
+        const model = to?.model();
+        UI.Context.Context.instance().setFlavor(SDK.HeapProfilerModel.HeapProfilerModel, model?.heapProfilerModel() ?? null);
+        UI.Context.Context.instance().setFlavor(SDK.CPUProfilerModel.CPUProfilerModel, model?.target().model(SDK.CPUProfilerModel.CPUProfilerModel) ?? null);
     }
     update() {
         this.updateTotal();
@@ -229,17 +232,21 @@ export class ListItem {
         return this.isolate.runtimeModel();
     }
     updateStats() {
-        this.heapDiv.textContent = Platform.NumberUtilities.bytesToString(this.isolate.usedHeapSize());
+        this.heapDiv.textContent = i18n.ByteUtilities.bytesToString(this.isolate.usedHeapSize());
         IsolateSelector.formatTrendElement(this.isolate.usedHeapSizeGrowRate(), this.trendDiv);
     }
     updateTitle() {
         const modelCountByName = new Map();
+        const targetManager = SDK.TargetManager.TargetManager.instance();
         for (const model of this.isolate.models()) {
             const target = model.target();
-            const name = SDK.TargetManager.TargetManager.instance().rootTarget() !== target ? target.name() : '';
+            const isPrimaryPageTarget = targetManager.primaryPageTarget() === target;
+            const name = target.name();
             const parsedURL = new Common.ParsedURL.ParsedURL(target.inspectedURL());
             const domain = parsedURL.isValid ? parsedURL.domain() : '';
-            const title = target.decorateLabel(domain && name ? `${domain}: ${name}` : name || domain || i18nString(UIStrings.empty));
+            // If it is primary page target, omit `domain` in the title.
+            // Otherwise show its `domain` and `name` as title if available.
+            const title = target.decorateLabel(domain && !isPrimaryPageTarget ? `${domain}: ${name}` : name || domain || i18nString(UIStrings.empty));
             modelCountByName.set(title, (modelCountByName.get(title) || 0) + 1);
         }
         this.nameDiv.removeChildren();

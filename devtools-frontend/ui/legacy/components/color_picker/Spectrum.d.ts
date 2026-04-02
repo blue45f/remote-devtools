@@ -1,17 +1,18 @@
+import '../../legacy.js';
 import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
-import { type ContrastInfo } from './ContrastInfo.js';
+import type { ContrastInfo } from './ContrastInfo.js';
 declare const Spectrum_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class Spectrum extends Spectrum_base {
-    private colorInternal?;
+    #private;
     private gamut;
     private colorElement;
     private colorDragElement;
@@ -33,7 +34,7 @@ export declare class Spectrum extends Spectrum_base {
     private srgbOverlay;
     private contrastOverlay;
     private contrastDetails;
-    private readonly contrastDetailsBackgroundColorPickedToggledBound;
+    private readonly contrastDetailsBackgroundColorPickerToggledBound;
     private readonly palettes;
     private readonly palettePanel;
     private palettePanelShowing;
@@ -56,28 +57,21 @@ export declare class Spectrum extends Spectrum_base {
     private colorOffset?;
     private closeButton?;
     private paletteContainerMutable?;
-    private eyeDropperExperimentEnabled?;
     private shadesCloseHandler?;
     private dragElement?;
     private dragHotSpotX?;
     private dragHotSpotY?;
-    private colorNameInternal?;
     private colorFormat;
     private eyeDropperAbortController;
     private isFormatPickerShown;
-    private colorStringInternal?;
     constructor(contrastInfo?: ContrastInfo | null);
     private dragStart;
-    private contrastDetailsBackgroundColorPickedToggled;
+    private contrastDetailsBackgroundColorPickerToggled;
     private contrastPanelExpandedChanged;
     private updatePalettePanel;
     private togglePalettePanel;
     private onCloseBtnKeydown;
     private onSliderKeydown;
-    /**
-     * (Suppress warning about preventScroll)
-     */
-    private focusInternal;
     private createPaletteColor;
     private showPalette;
     private showLightnessShades;
@@ -91,7 +85,6 @@ export declare class Spectrum extends Spectrum_base {
     private createPreviewPaletteElement;
     private paletteSelected;
     private resizeForSelectedPalette;
-    private paletteColorSelected;
     private onPaletteColorKeydown;
     private onShadeColorKeydown;
     private onAddColorMousedown;
@@ -99,10 +92,9 @@ export declare class Spectrum extends Spectrum_base {
     private addColorToCustomPalette;
     private showPaletteColorContextMenu;
     private deletePaletteColors;
-    setColor(color: Common.Color.Color, colorFormat: Common.Color.Format): void;
+    setColor(color: Common.Color.Color): void;
     private colorSelected;
-    private get color();
-    private innerSetColor;
+    get color(): Common.Color.Color;
     colorName(): string | undefined;
     private colorString;
     private updateHelperLocations;
@@ -127,14 +119,14 @@ export declare const ChangeSource: {
     Model: string;
     Other: string;
 };
-export declare enum Events {
-    ColorChanged = "ColorChanged",
-    SizeChanged = "SizeChanged"
+export declare const enum Events {
+    COLOR_CHANGED = "ColorChanged",
+    SIZE_CHANGED = "SizeChanged"
 }
-export type EventTypes = {
-    [Events.ColorChanged]: string;
-    [Events.SizeChanged]: void;
-};
+export interface EventTypes {
+    [Events.COLOR_CHANGED]: string;
+    [Events.SIZE_CHANGED]: void;
+}
 export declare class PaletteGenerator {
     private readonly callback;
     private readonly frequencyMap;

@@ -1,7 +1,9 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import { ConsoleView } from './ConsoleView.js';
 let consolePanelInstance;
 export class ConsolePanel extends UI.Panel.Panel {
@@ -24,7 +26,7 @@ export class ConsolePanel extends UI.Panel.Panel {
     wasShown() {
         super.wasShown();
         const wrapper = wrapperViewInstance;
-        if (wrapper && wrapper.isShowing()) {
+        if (wrapper?.isShowing()) {
             UI.InspectorView.InspectorView.instance().setDrawerMinimized(true);
         }
         this.view.show(this.element);
@@ -48,7 +50,7 @@ let wrapperViewInstance = null;
 export class WrapperView extends UI.Widget.VBox {
     view;
     constructor() {
-        super();
+        super({ jslog: `${VisualLogging.panel('console').track({ resize: true })}` });
         this.view = ConsoleView.instance();
     }
     static instance() {
@@ -58,6 +60,7 @@ export class WrapperView extends UI.Widget.VBox {
         return wrapperViewInstance;
     }
     wasShown() {
+        super.wasShown();
         if (!ConsolePanel.instance().isShowing()) {
             this.showViewInWrapper();
         }
@@ -67,6 +70,7 @@ export class WrapperView extends UI.Widget.VBox {
         ConsolePanel.updateContextFlavor();
     }
     willHide() {
+        super.willHide();
         UI.InspectorView.InspectorView.instance().setDrawerMinimized(false);
         ConsolePanel.updateContextFlavor();
     }
@@ -74,15 +78,7 @@ export class WrapperView extends UI.Widget.VBox {
         this.view.show(this.element);
     }
 }
-let consoleRevealerInstance;
 export class ConsoleRevealer {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!consoleRevealerInstance || forceNew) {
-            consoleRevealerInstance = new ConsoleRevealer();
-        }
-        return consoleRevealerInstance;
-    }
     async reveal(_object) {
         const consoleView = ConsoleView.instance();
         if (consoleView.isShowing()) {

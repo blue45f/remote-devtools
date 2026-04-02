@@ -2,46 +2,46 @@ import * as Common from '../../core/common/common.js';
 import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as UI from '../../ui/legacy/legacy.js';
 declare const ConsolePrompt_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.TextChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.TextChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.TextChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.TextChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.TextChanged>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.TEXT_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.TEXT_CHANGED>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.TEXT_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.TEXT_CHANGED): boolean;
+    dispatchEventToListeners<T extends Events.TEXT_CHANGED>(eventType: import("../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.Widget;
 export declare class ConsolePrompt extends ConsolePrompt_base {
     #private;
     private addCompletionsFromHistory;
-    private historyInternal;
     private initialText;
     private editor;
     private readonly eagerPreviewElement;
     private textChangeThrottler;
-    private readonly formatter;
     private requestPreviewBound;
     private requestPreviewCurrent;
     private readonly innerPreviewElement;
     private readonly promptIcon;
     private readonly iconThrottler;
     private readonly eagerEvalSetting;
-    private previewRequestForTest;
+    protected previewRequestForTest: Promise<void> | null;
     private highlightingNode;
-    constructor();
+    private aiCodeCompletionConfig?;
+    private aiCodeCompletionProvider?;
+    constructor(aiCodeCompletionConfig?: TextEditor.AiCodeCompletionProvider.AiCodeCompletionConfig);
     private eagerSettingChanged;
     belowEditorElement(): Element;
     private onTextChanged;
     private requestPreview;
-    wasShown(): void;
     willHide(): void;
     history(): TextEditor.AutocompleteHistory.AutocompleteHistory;
     clearAutocomplete(): void;
-    private isCaretAtEndOfPrompt;
+    clearAiCodeCompletionCache(): void;
     moveCaretToEndOfPrompt(): void;
     clear(): void;
     text(): string;
     setAddCompletionsFromHistory(value: boolean): void;
     private editorKeymap;
     private enterWillEvaluate;
+    showSelfXssWarning(): void;
     private handleEnter;
     private updatePromptIcon;
     private appendCommand;
@@ -52,9 +52,9 @@ export declare class ConsolePrompt extends ConsolePrompt_base {
     private editorSetForTest;
 }
 export declare const enum Events {
-    TextChanged = "TextChanged"
+    TEXT_CHANGED = "TextChanged"
 }
-export type EventTypes = {
-    [Events.TextChanged]: void;
-};
+export interface EventTypes {
+    [Events.TEXT_CHANGED]: void;
+}
 export {};

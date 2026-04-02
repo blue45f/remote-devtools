@@ -1,74 +1,52 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as SDK from '../../core/sdk/sdk.js';
-import * as TimelineModel from '../../models/timeline_model/timeline_model.js';
+import * as Trace from '../../models/trace/trace.js';
+import * as TraceBounds from '../../services/trace_bounds/trace_bounds.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { Events } from './PerformanceModel.js';
 const UIStrings = {
     /**
-     *@description Text for a heap profile type
+     * @description Text for a heap profile type
      */
-    jsHeap: 'JS Heap',
+    jsHeap: 'JS heap',
     /**
-     *@description Text for documents, a type of resources
+     * @description Text for documents, a type of resources
      */
     documents: 'Documents',
     /**
-     *@description Text in Counters Graph of the Performance panel
+     * @description Text in Counters Graph of the Performance panel
      */
     nodes: 'Nodes',
     /**
-     *@description Text in Counters Graph of the Performance panel
+     * @description Text in Counters Graph of the Performance panel
      */
     listeners: 'Listeners',
     /**
-     *@description Text in Counters Graph of the Performance panel
+     * @description Text in Counters Graph of the Performance panel
      */
-    gpuMemory: 'GPU Memory',
+    gpuMemory: 'GPU memory',
     /**
-     *@description Range text content in Counters Graph of the Performance panel
-     *@example {2} PH1
-     *@example {10} PH2
+     * @description Range text content in Counters Graph of the Performance panel
+     * @example {2} PH1
+     * @example {10} PH2
      */
     ss: '[{PH1} – {PH2}]',
+    /**
+     * @description text shown when no counter events are found and the graph is empty
+     */
+    noEventsFound: 'No memory usage data found within selected events.',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/timeline/CountersGraph.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class CountersGraph extends UI.Widget.VBox {
     delegate;
     calculator;
-    model;
     header;
     toolbar;
     graphsContainer;
@@ -82,8 +60,13 @@ export class CountersGraph extends UI.Widget.VBox {
     #events = null;
     currentValuesBar;
     markerXPosition;
+    #onTraceBoundsChangeBound = this.#onTraceBoundsChange.bind(this);
+    #noEventsFoundMessage = document.createElement('div');
+    #showNoEventsMessage = false;
+    #defaultNumberFormatter;
     constructor(delegate) {
         super();
+        this.#defaultNumberFormatter = new Intl.NumberFormat(i18n.DevToolsLocale.DevToolsLocale.instance().locale);
         this.element.id = 'memory-graphs-container';
         this.delegate = delegate;
         this.calculator = new Calculator();
@@ -91,8 +74,7 @@ export class CountersGraph extends UI.Widget.VBox {
         this.header = new UI.Widget.HBox();
         this.header.element.classList.add('timeline-memory-header');
         this.header.show(this.element);
-        this.toolbar = new UI.Toolbar.Toolbar('timeline-memory-toolbar');
-        this.header.element.appendChild(this.toolbar.element);
+        this.toolbar = this.header.element.createChild('devtools-toolbar', 'timeline-memory-toolbar');
         this.graphsContainer = new UI.Widget.VBox();
         this.graphsContainer.show(this.element);
         const canvasWidget = new UI.Widget.VBoxWithResizeCallback(this.resize.bind(this));
@@ -103,6 +85,12 @@ export class CountersGraph extends UI.Widget.VBox {
         this.canvas = document.createElement('canvas');
         this.canvasContainer.appendChild(this.canvas);
         this.canvas.id = 'memory-counters-graph';
+        const noEventsFound = document.createElement('p');
+        noEventsFound.innerText = i18nString(UIStrings.noEventsFound);
+        this.#noEventsFoundMessage.classList.add('no-events-found');
+        this.#noEventsFoundMessage.setAttribute('hidden', 'hidden');
+        this.#noEventsFoundMessage.appendChild(noEventsFound);
+        this.canvasContainer.appendChild(this.#noEventsFoundMessage);
         this.canvasContainer.addEventListener('mouseover', this.onMouseMove.bind(this), true);
         this.canvasContainer.addEventListener('mousemove', this.onMouseMove.bind(this), true);
         this.canvasContainer.addEventListener('mouseleave', this.onMouseLeave.bind(this), true);
@@ -113,38 +101,40 @@ export class CountersGraph extends UI.Widget.VBox {
         this.counters = [];
         this.counterUI = [];
         this.countersByName = new Map();
-        this.countersByName.set('jsHeapSizeUsed', this.createCounter(i18nString(UIStrings.jsHeap), 'hsl(220, 90%, 43%)', Platform.NumberUtilities.bytesToString));
-        this.countersByName.set('documents', this.createCounter(i18nString(UIStrings.documents), 'hsl(0, 90%, 43%)'));
-        this.countersByName.set('nodes', this.createCounter(i18nString(UIStrings.nodes), 'hsl(120, 90%, 43%)'));
-        this.countersByName.set('jsEventListeners', this.createCounter(i18nString(UIStrings.listeners), 'hsl(38, 90%, 43%)'));
-        this.gpuMemoryCounter = this.createCounter(i18nString(UIStrings.gpuMemory), 'hsl(300, 90%, 43%)', Platform.NumberUtilities.bytesToString);
+        this.countersByName.set('jsHeapSizeUsed', this.createCounter(i18nString(UIStrings.jsHeap), 'js-heap-size-used', 'hsl(220, 90%, 43%)', i18n.ByteUtilities.bytesToString));
+        this.countersByName.set('documents', this.createCounter(i18nString(UIStrings.documents), 'documents', 'hsl(0, 90%, 43%)'));
+        this.countersByName.set('nodes', this.createCounter(i18nString(UIStrings.nodes), 'nodes', 'hsl(120, 90%, 43%)'));
+        this.countersByName.set('jsEventListeners', this.createCounter(i18nString(UIStrings.listeners), 'js-event-listeners', 'hsl(38, 90%, 43%)'));
+        this.gpuMemoryCounter = this.createCounter(i18nString(UIStrings.gpuMemory), 'gpu-memory-used-kb', 'hsl(300, 90%, 43%)', i18n.ByteUtilities.bytesToString);
         this.countersByName.set('gpuMemoryUsedKB', this.gpuMemoryCounter);
+        TraceBounds.TraceBounds.onChange(this.#onTraceBoundsChangeBound);
     }
-    setModel(model, events) {
+    #onTraceBoundsChange(event) {
+        if (event.updateType === 'RESET' || event.updateType === 'VISIBLE_WINDOW') {
+            const newWindow = event.state.milli.timelineTraceWindow;
+            this.calculator.setWindow(newWindow.min, newWindow.max);
+            this.requestUpdate();
+        }
+    }
+    setModel(parsedTrace, events) {
         this.#events = events;
-        if (!events) {
+        if (!events || !parsedTrace) {
             return;
         }
-        if (this.model !== model) {
-            if (this.model) {
-                this.model.removeEventListener(Events.WindowChanged, this.onWindowChanged, this);
-            }
-            this.model = model;
-            if (this.model) {
-                this.model.addEventListener(Events.WindowChanged, this.onWindowChanged, this);
-            }
-        }
-        this.calculator.setZeroTime(model ? model.timelineModel().minimumRecordTime() : 0);
+        const minTime = Trace.Helpers.Timing.traceWindowMilliSeconds(parsedTrace.data.Meta.traceBounds).min;
+        this.calculator.setZeroTime(minTime);
         for (let i = 0; i < this.counters.length; ++i) {
             this.counters[i].reset();
             this.counterUI[i].reset();
         }
-        this.scheduleRefresh();
+        this.requestUpdate();
+        let counterEventsFound = 0;
         for (let i = 0; i < events.length; ++i) {
             const event = events[i];
-            if (event.name !== TimelineModel.TimelineModel.RecordType.UpdateCounters) {
+            if (!Trace.Types.Events.isUpdateCounters(event)) {
                 continue;
             }
+            counterEventsFound++;
             const counters = event.args.data;
             if (!counters) {
                 return;
@@ -152,24 +142,25 @@ export class CountersGraph extends UI.Widget.VBox {
             for (const name in counters) {
                 const counter = this.countersByName.get(name);
                 if (counter) {
-                    const { startTime } = SDK.TracingModel.timesForEventInMilliseconds(event);
+                    const { startTime } = Trace.Helpers.Timing.eventTimingsMilliSeconds(event);
                     counter.appendSample(startTime, counters[name]);
                 }
             }
-            const gpuMemoryLimitCounterName = 'gpuMemoryLimitKB';
-            if (gpuMemoryLimitCounterName in counters) {
-                this.gpuMemoryCounter.setLimit(counters[gpuMemoryLimitCounterName]);
+            if (typeof counters.gpuMemoryLimitKB !== 'undefined') {
+                this.gpuMemoryCounter.setLimit(counters.gpuMemoryLimitKB);
             }
         }
+        this.#showNoEventsMessage = counterEventsFound === 0;
+        this.requestUpdate();
     }
     createCurrentValuesBar() {
         this.currentValuesBar = this.graphsContainer.element.createChild('div');
         this.currentValuesBar.id = 'counter-values-bar';
     }
-    createCounter(uiName, color, formatter) {
+    createCounter(uiName, settingsKey, color, formatter) {
         const counter = new Counter();
         this.counters.push(counter);
-        this.counterUI.push(new CounterUI(this, uiName, color, counter, formatter));
+        this.counterUI.push(new CounterUI(this, uiName, settingsKey, color, counter, formatter ?? this.#defaultNumberFormatter.format));
         return counter;
     }
     resizerElement() {
@@ -182,16 +173,17 @@ export class CountersGraph extends UI.Widget.VBox {
         this.calculator.setDisplayWidth(this.canvas.width);
         this.refresh();
     }
-    onWindowChanged(event) {
-        const window = event.data.window;
-        this.calculator.setWindow(window.left, window.right);
-        this.scheduleRefresh();
-    }
-    scheduleRefresh() {
-        UI.UIUtils.invokeOnceAfterBatchUpdate(this, this.refresh);
+    performUpdate() {
+        this.refresh();
     }
     draw() {
         this.clear();
+        if (this.#showNoEventsMessage) {
+            this.#noEventsFoundMessage.removeAttribute('hidden');
+        }
+        else {
+            this.#noEventsFoundMessage.setAttribute('hidden', 'hidden');
+        }
         for (const counter of this.counters) {
             counter.calculateVisibleIndexes(this.calculator);
             counter.calculateXValues(this.canvas.width);
@@ -334,38 +326,33 @@ export class CounterUI {
     countersPane;
     counter;
     formatter;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setting;
     filter;
-    range;
     value;
     graphColor;
     limitColor;
     graphYValues;
     verticalPadding;
-    currentValueLabel;
+    counterName;
     marker;
-    constructor(countersPane, title, graphColor, counter, formatter) {
+    constructor(countersPane, title, settingsKey, graphColor, counter, formatter) {
         this.countersPane = countersPane;
         this.counter = counter;
-        this.formatter = formatter || Platform.NumberUtilities.withThousandsSeparator;
-        this.setting = Common.Settings.Settings.instance().createSetting('timelineCountersGraph-' + title, true);
+        this.formatter = formatter;
+        this.setting = Common.Settings.Settings.instance().createSetting('timeline-counters-graph-' + settingsKey, true);
         this.setting.setTitle(title);
         this.filter = new UI.Toolbar.ToolbarSettingCheckbox(this.setting, title);
-        this.filter.inputElement.classList.add('-theme-preserve-input');
         const parsedColor = Common.Color.parse(graphColor);
         if (parsedColor) {
             const colorWithAlpha = parsedColor.setAlpha(0.5).asString("rgba" /* Common.Color.Format.RGBA */);
-            const htmlElement = this.filter.element;
+            const htmlElement = (this.filter.element);
             if (colorWithAlpha) {
                 htmlElement.style.backgroundColor = colorWithAlpha;
             }
             htmlElement.style.borderColor = 'transparent';
         }
-        this.filter.inputElement.addEventListener('click', this.toggleCounterGraph.bind(this));
+        this.filter.element.addEventListener('click', this.toggleCounterGraph.bind(this));
         countersPane.toolbar.appendToolbarItem(this.filter);
-        this.range = this.filter.element.createChild('span', 'range');
         this.value = countersPane.currentValuesBar.createChild('span', 'memory-counter-value');
         this.value.style.color = graphColor;
         this.graphColor = graphColor;
@@ -374,18 +361,28 @@ export class CounterUI {
         }
         this.graphYValues = [];
         this.verticalPadding = 10;
-        this.currentValueLabel = title;
+        this.counterName = title;
         this.marker = countersPane.canvasContainer.createChild('div', 'memory-counter-marker');
         this.marker.style.backgroundColor = graphColor;
         this.clearCurrentValueAndMarker();
     }
+    /**
+     * Updates both the user visible text and the title & aria-label for the
+     * checkbox label shown in the toolbar
+     */
+    #updateFilterLabel(text) {
+        this.filter.setLabelText(text);
+        this.filter.setTitle(text);
+    }
     reset() {
-        this.range.textContent = '';
+        this.#updateFilterLabel(this.counterName);
     }
     setRange(minValue, maxValue) {
         const min = this.formatter(minValue);
         const max = this.formatter(maxValue);
-        this.range.textContent = i18nString(UIStrings.ss, { PH1: min, PH2: max });
+        const rangeText = i18nString(UIStrings.ss, { PH1: min, PH2: max });
+        const newLabelText = `${this.counterName} ${rangeText}`;
+        this.#updateFilterLabel(newLabelText);
     }
     toggleCounterGraph() {
         this.value.classList.toggle('hidden', !this.filter.checked());
@@ -400,8 +397,8 @@ export class CounterUI {
             return;
         }
         const index = this.recordIndexAt(x);
-        const value = Platform.NumberUtilities.withThousandsSeparator(this.counter.values[index]);
-        this.value.textContent = `${this.currentValueLabel}: ${value}`;
+        const value = this.formatter(this.counter.values[index]);
+        this.value.textContent = `${this.counterName}: ${value}`;
         const y = this.graphYValues[index] / window.devicePixelRatio;
         this.marker.style.left = x + 'px';
         this.marker.style.top = y + 'px';
@@ -480,25 +477,25 @@ export class CounterUI {
     }
 }
 export class Calculator {
-    minimumBoundaryInternal;
-    maximumBoundaryInternal;
+    #minimumBoundary;
+    #maximumBoundary;
     workingArea;
-    zeroTimeInternal;
+    #zeroTime;
     constructor() {
-        this.minimumBoundaryInternal = 0;
-        this.maximumBoundaryInternal = 0;
+        this.#minimumBoundary = 0;
+        this.#maximumBoundary = 0;
         this.workingArea = 0;
-        this.zeroTimeInternal = 0;
+        this.#zeroTime = 0;
     }
     setZeroTime(time) {
-        this.zeroTimeInternal = time;
+        this.#zeroTime = time;
     }
     computePosition(time) {
-        return (time - this.minimumBoundaryInternal) / this.boundarySpan() * this.workingArea;
+        return (time - this.#minimumBoundary) / this.boundarySpan() * this.workingArea;
     }
     setWindow(minimumBoundary, maximumBoundary) {
-        this.minimumBoundaryInternal = minimumBoundary;
-        this.maximumBoundaryInternal = maximumBoundary;
+        this.#minimumBoundary = minimumBoundary;
+        this.#maximumBoundary = maximumBoundary;
     }
     setDisplayWidth(clientWidth) {
         this.workingArea = clientWidth;
@@ -507,16 +504,16 @@ export class Calculator {
         return i18n.TimeUtilities.preciseMillisToString(value - this.zeroTime(), precision);
     }
     maximumBoundary() {
-        return this.maximumBoundaryInternal;
+        return this.#maximumBoundary;
     }
     minimumBoundary() {
-        return this.minimumBoundaryInternal;
+        return this.#minimumBoundary;
     }
     zeroTime() {
-        return this.zeroTimeInternal;
+        return this.#zeroTime;
     }
     boundarySpan() {
-        return this.maximumBoundaryInternal - this.minimumBoundaryInternal;
+        return this.#maximumBoundary - this.#minimumBoundary;
     }
 }
 //# sourceMappingURL=CountersGraph.js.map

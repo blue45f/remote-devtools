@@ -1,14 +1,34 @@
 import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as UI from '../../legacy.js';
-import { type CSSShadowModel } from './CSSShadowModel.js';
+export interface CSSShadowModel {
+    setInset(inset: boolean): void;
+    setOffsetX(offsetX: CSSLength): void;
+    setOffsetY(offsetY: CSSLength): void;
+    setBlurRadius(blurRadius: CSSLength): void;
+    setSpreadRadius(spreadRadius: CSSLength): void;
+    isBoxShadow(): boolean;
+    inset(): boolean;
+    offsetX(): CSSLength;
+    offsetY(): CSSLength;
+    blurRadius(): CSSLength;
+    spreadRadius(): CSSLength;
+}
+export declare class CSSLength {
+    amount: number;
+    unit: string;
+    constructor(amount: number, unit: string);
+    static parse(text: string): CSSLength | null;
+    static zero(): CSSLength;
+    asCSSText(): string;
+}
 declare const CSSShadowEditor_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.ShadowChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.ShadowChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.ShadowChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.ShadowChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.ShadowChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.SHADOW_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.SHADOW_CHANGED>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.SHADOW_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.SHADOW_CHANGED): boolean;
+    dispatchEventToListeners<T extends Events.SHADOW_CHANGED>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class CSSShadowEditor extends CSSShadowEditor_base {
     private readonly typeField;
@@ -48,10 +68,10 @@ export declare class CSSShadowEditor extends CSSShadowEditor_base {
     private snapToClosestDirection;
     private sliderThumbPosition;
 }
-export declare enum Events {
-    ShadowChanged = "ShadowChanged"
+export declare const enum Events {
+    SHADOW_CHANGED = "ShadowChanged"
 }
-export type EventTypes = {
-    [Events.ShadowChanged]: CSSShadowModel;
-};
+export interface EventTypes {
+    [Events.SHADOW_CHANGED]: CSSShadowModel;
+}
 export {};

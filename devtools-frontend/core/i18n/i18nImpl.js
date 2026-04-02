@@ -1,8 +1,7 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as I18n from '../../third_party/i18n/i18n.js';
-import * as Platform from '../platform/platform.js';
 import * as Root from '../root/root.js';
 import { DevToolsLocale } from './DevToolsLocale.js';
 import { BUNDLED_LOCALES as BUNDLED_LOCALES_GENERATED, DEFAULT_LOCALE, LOCAL_FETCH_PATTERN, LOCALES, REMOTE_FETCH_PATTERN, } from './locales.js';
@@ -34,7 +33,7 @@ export function getAllSupportedDevToolsLocales() {
  */
 function getLocaleFetchUrl(locale, location) {
     const remoteBase = Root.Runtime.getRemoteBase(location);
-    if (remoteBase && remoteBase.version && !BUNDLED_LOCALES.has(locale)) {
+    if (remoteBase?.version && !BUNDLED_LOCALES.has(locale)) {
         return REMOTE_FETCH_PATTERN.replace('@HOST@', 'devtools://devtools')
             .replace('@VERSION@', remoteBase.version)
             .replace('@LOCALE@', locale);
@@ -44,15 +43,24 @@ function getLocaleFetchUrl(locale, location) {
 }
 /**
  * Fetches the locale data of the specified locale.
- * Callers have to ensure that `locale` is an officilly supported locale.
+ * Callers have to ensure that `locale` is an officially supported locale.
  * Depending whether a locale is present in `bundledLocales`, the data will be
  * fetched locally or remotely.
  */
 export async function fetchAndRegisterLocaleData(locale, location = self.location.toString()) {
     const localeDataTextPromise = fetch(getLocaleFetchUrl(locale, location)).then(result => result.json());
-    const timeoutPromise = new Promise((resolve, reject) => window.setTimeout(() => reject(new Error('timed out fetching locale')), 5000));
+    const timeoutPromise = new Promise((_, reject) => window.setTimeout(() => reject(new Error('timed out fetching locale')), 5000));
     const localeData = await Promise.race([timeoutPromise, localeDataTextPromise]);
     i18nInstance.registerLocaleData(locale, localeData);
+}
+export function hasLocaleDataForTest(locale) {
+    return i18nInstance.hasLocaleDataForTest(locale);
+}
+export function resetLocaleDataForTest() {
+    i18nInstance.resetLocaleDataForTest();
+}
+export function registerLocaleDataForTest(locale, messages) {
+    i18nInstance.registerLocaleData(locale, messages);
 }
 /**
  * Returns an anonymous function that wraps a call to retrieve a localized string.
@@ -75,25 +83,6 @@ export function getLocalizedString(registeredStrings, id, values = {}) {
  */
 export function registerUIStrings(path, stringStructure) {
     return i18nInstance.registerFileStrings(path, stringStructure);
-}
-/**
- * Returns a span element that may contains other DOM element as placeholders
- */
-export function getFormatLocalizedString(registeredStrings, stringId, placeholders) {
-    const formatter = registeredStrings.getLocalizedStringSetFor(DevToolsLocale.instance().locale).getMessageFormatterFor(stringId);
-    const element = document.createElement('span');
-    for (const icuElement of formatter.getAst()) {
-        if (icuElement.type === /* argumentElement */ 1) {
-            const placeholderValue = placeholders[icuElement.value];
-            if (placeholderValue) {
-                element.append(placeholderValue);
-            }
-        }
-        else if ('value' in icuElement) {
-            element.append(String(icuElement.value));
-        }
-    }
-    return element;
 }
 export function serializeUIString(string, values = {}) {
     const serializedMessage = { string, values };
@@ -129,14 +118,11 @@ export function lockedLazyString(str) {
  */
 export function getLocalizedLanguageRegion(localeString, devtoolsLocale) {
     const locale = new Intl.Locale(localeString);
-    Platform.DCHECK(() => locale.language !== undefined);
-    Platform.DCHECK(() => locale.baseName !== undefined);
-    const localLanguage = locale.language || 'en';
-    const localBaseName = locale.baseName || 'en-US';
+    const { language, baseName } = locale;
     const devtoolsLoc = new Intl.Locale(devtoolsLocale.locale);
-    const targetLanguage = localLanguage === devtoolsLoc.language ? 'en' : localBaseName;
-    const languageInCurrentLocale = new Intl.DisplayNames([devtoolsLocale.locale], { type: 'language' }).of(localLanguage);
-    const languageInTargetLocale = new Intl.DisplayNames([targetLanguage], { type: 'language' }).of(localLanguage);
+    const targetLanguage = language === devtoolsLoc.language ? 'en' : baseName;
+    const languageInCurrentLocale = new Intl.DisplayNames([devtoolsLocale.locale], { type: 'language' }).of(language);
+    const languageInTargetLocale = new Intl.DisplayNames([targetLanguage], { type: 'language' }).of(language);
     let wrappedRegionInCurrentLocale = '';
     let wrappedRegionInTargetLocale = '';
     if (locale.region) {

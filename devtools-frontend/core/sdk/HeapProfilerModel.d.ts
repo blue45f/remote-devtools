@@ -1,10 +1,10 @@
 import type * as Protocol from '../../generated/protocol.js';
 import type * as Platform from '../platform/platform.js';
-import { type DebuggerModel } from './DebuggerModel.js';
-import { type RemoteObject } from './RemoteObject.js';
+import type { DebuggerModel } from './DebuggerModel.js';
+import type { RemoteObject } from './RemoteObject.js';
 import { RuntimeModel } from './RuntimeModel.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class HeapProfilerModel extends SDKModel<EventTypes> {
     #private;
     constructor(target: Target);
@@ -27,12 +27,12 @@ export declare class HeapProfilerModel extends SDKModel<EventTypes> {
     reportHeapSnapshotProgress(done: number, total: number, finished?: boolean): void;
     resetProfiles(): void;
 }
-export declare enum Events {
-    HeapStatsUpdate = "HeapStatsUpdate",
-    LastSeenObjectId = "LastSeenObjectId",
-    AddHeapSnapshotChunk = "AddHeapSnapshotChunk",
-    ReportHeapSnapshotProgress = "ReportHeapSnapshotProgress",
-    ResetProfiles = "ResetProfiles"
+export declare const enum Events {
+    HEAP_STATS_UPDATED = "HeapStatsUpdate",
+    LAST_SEEN_OBJECT_ID = "LastSeenObjectId",
+    ADD_HEAP_SNAPSHOT_CHUNK = "AddHeapSnapshotChunk",
+    REPORT_HEAP_SNAPSHOT_PROGRESS = "ReportHeapSnapshotProgress",
+    RESET_PROFILES = "ResetProfiles"
 }
 /**
  * An array of triplets. Each triplet describes a fragment. The first number is the fragment
@@ -49,13 +49,13 @@ export interface HeapSnapshotProgress {
     total: number;
     finished?: boolean;
 }
-export type EventTypes = {
-    [Events.HeapStatsUpdate]: HeapStatsUpdateSamples;
-    [Events.LastSeenObjectId]: LastSeenObjectId;
-    [Events.AddHeapSnapshotChunk]: string;
-    [Events.ReportHeapSnapshotProgress]: HeapSnapshotProgress;
-    [Events.ResetProfiles]: HeapProfilerModel;
-};
+export interface EventTypes {
+    [Events.HEAP_STATS_UPDATED]: HeapStatsUpdateSamples;
+    [Events.LAST_SEEN_OBJECT_ID]: LastSeenObjectId;
+    [Events.ADD_HEAP_SNAPSHOT_CHUNK]: string;
+    [Events.REPORT_HEAP_SNAPSHOT_PROGRESS]: HeapSnapshotProgress;
+    [Events.RESET_PROFILES]: HeapProfilerModel;
+}
 export interface NativeProfilerCallFrame {
     functionName: string;
     url: Platform.DevToolsPath.UrlString;

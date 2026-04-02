@@ -1,12 +1,14 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import { AffectedResourcesView } from './AffectedResourcesView.js';
 const UIStrings = {
     /**
-     *@description Singular or Plural label for number of affected sources (consisting of (source) file name + line number) in issue view
+     * @description Singular or Plural label for number of affected sources (consisting of (source) file name + line number) in issue view
      */
     nSources: '{n, plural, =1 {# source} other {# sources}}',
 };
@@ -33,8 +35,8 @@ export class AffectedSourcesView extends AffectedResourcesView {
         // 'click' neither 'keydown' if that key is the 'Enter' key.
         // Also, this element has a context menu, so we should be able to
         // track when the user use the context menu too.
-        // TODO(crbug.com/1108503): Add some mechanism to be able to add telemetry to this element.
         const anchorElement = Components.Linkifier.Linkifier.linkifyURL(url, linkifierURLOptions);
+        anchorElement.setAttribute('jslog', `${VisualLogging.link('source-location').track({ click: true })}`);
         cellElement.appendChild(anchorElement);
         const rowElement = document.createElement('tr');
         rowElement.classList.add('affected-resource-source');

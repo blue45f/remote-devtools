@@ -1,4 +1,4 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Acorn from '../../third_party/acorn/acorn.js';
@@ -8,21 +8,31 @@ export function substituteExpression(expression, nameMap) {
     const replacements = computeSubstitution(expression, nameMap);
     return applySubstitution(expression, replacements);
 }
-// Given an |expression| and a mapping from names to new names, the |computeSubstitution|
-// function returns a list of replacements sorted by the offset. The function throws if
-// it cannot parse the expression or the substitution is impossible to perform (for example
-// if the substitution target is 'this' within a function, it would become bound there).
+/**
+ * Given an |expression| and a mapping from names to new names, the |computeSubstitution|
+ * function returns a list of replacements sorted by the offset. The function throws if
+ * it cannot parse the expression or the substitution is impossible to perform (for example
+ * if the substitution target is 'this' within a function, it would become bound there).
+ **/
 function computeSubstitution(expression, nameMap) {
     // Parse the expression and find variables and scopes.
-    const root = Acorn.parse(expression, { ecmaVersion: ECMA_VERSION, allowAwaitOutsideFunction: true, ranges: false });
-    const scopeVariables = new ScopeVariableAnalysis(root);
+    const root = Acorn.parse(expression, {
+        ecmaVersion: ECMA_VERSION,
+        allowAwaitOutsideFunction: true,
+        allowImportExportEverywhere: true,
+        checkPrivateFields: false,
+        ranges: false,
+    });
+    const scopeVariables = new ScopeVariableAnalysis(root, expression);
     scopeVariables.run();
     const freeVariables = scopeVariables.getFreeVariables();
     const result = [];
     // Prepare the machinery for generating fresh names (to avoid variable captures).
     const allNames = scopeVariables.getAllNames();
     for (const rename of nameMap.values()) {
-        allNames.add(rename);
+        if (rename) {
+            allNames.add(rename);
+        }
     }
     function getNewName(base) {
         let i = 1;
@@ -39,6 +49,9 @@ function computeSubstitution(expression, nameMap) {
         if (!defUse) {
             continue;
         }
+        if (rename === null) {
+            throw new Error(`Cannot substitute '${name}' as the underlying variable '${rename}' is unavailable`);
+        }
         const binders = [];
         for (const use of defUse) {
             result.push({
@@ -51,7 +64,7 @@ function computeSubstitution(expression, nameMap) {
         }
         // If there is a capturing binder, rename the bound variable.
         for (const binder of binders) {
-            if (binder.definitionKind === 3 /* DefinitionKind.Fixed */) {
+            if (binder.definitionKind === 3 /* DefinitionKind.FIXED */) {
                 // If the identifier is bound to a fixed name, such as 'this',
                 // then refuse to do the substitution.
                 throw new Error(`Cannot avoid capture of '${rename}'`);

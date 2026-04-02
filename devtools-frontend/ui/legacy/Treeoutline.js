@@ -1,6 +1,7 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -32,24 +33,28 @@
  */
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
+import * as SDK from '../../core/sdk/sdk.js';
+import * as Highlighting from '../components/highlighting/highlighting.js';
+import * as Lit from '../lit/lit.js';
+import * as VisualLogging from '../visual_logging/visual_logging.js';
 import * as ARIAUtils from './ARIAUtils.js';
-import * as ThemeSupport from './theme_support/theme_support.js';
-import * as Utils from './utils/utils.js';
+import { appendStyle } from './DOMUtilities.js';
 import { InplaceEditor } from './InplaceEditor.js';
 import { Keys } from './KeyboardShortcut.js';
 import { Tooltip } from './Tooltip.js';
-import { deepElementFromPoint, enclosingNodeOrSelfWithNodeNameInArray, isEditing } from './UIUtils.js';
-import treeoutlineStyles from './treeoutline.css.legacy.js';
+import treeoutlineStyles from './treeoutline.css.js';
+import { createShadowRootWithCoreStyles, deepElementFromPoint, enclosingNodeOrSelfWithNodeNameInArray, HTMLElementWithLightDOMTemplate, InterceptBindingDirective, isEditing, } from './UIUtils.js';
 const nodeToParentTreeElementMap = new WeakMap();
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
+const { render } = Lit;
 export var Events;
 (function (Events) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     Events["ElementAttached"] = "ElementAttached";
     Events["ElementsDetached"] = "ElementsDetached";
     Events["ElementExpanded"] = "ElementExpanded";
     Events["ElementCollapsed"] = "ElementCollapsed";
     Events["ElementSelected"] = "ElementSelected";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Events || (Events = {}));
 export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
     rootElementInternal;
@@ -79,6 +84,7 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
         this.focusable = true;
         this.setFocusable(true);
         this.element = this.contentElement;
+        this.element.setAttribute('jslog', `${VisualLogging.tree()}`);
         ARIAUtils.markAsTree(this.element);
         this.useLightSelectionColor = false;
         this.treeElementToScrollIntoView = null;
@@ -191,7 +197,7 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
         element.treeOutline = null;
     }
     selectPrevious() {
-        let nextSelectedElement = this.selectedTreeElement && this.selectedTreeElement.traversePreviousTreeElement(true);
+        let nextSelectedElement = this.selectedTreeElement?.traversePreviousTreeElement(true) ?? null;
         while (nextSelectedElement && !nextSelectedElement.selectable) {
             nextSelectedElement = nextSelectedElement.traversePreviousTreeElement(!this.expandTreeElementsWhenArrowing);
         }
@@ -202,7 +208,7 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
         return true;
     }
     selectNext() {
-        let nextSelectedElement = this.selectedTreeElement && this.selectedTreeElement.traverseNextTreeElement(true);
+        let nextSelectedElement = this.selectedTreeElement?.traverseNextTreeElement(true) ?? null;
         while (nextSelectedElement && !nextSelectedElement.selectable) {
             nextSelectedElement = nextSelectedElement.traverseNextTreeElement(!this.expandTreeElementsWhenArrowing);
         }
@@ -303,8 +309,11 @@ export class TreeOutline extends Common.ObjectWrapper.ObjectWrapper {
             // Usually, this.element is the tree container that scrolls. But sometimes
             // (i.e. in the Elements panel), its parent is.
             let scrollParentElement = this.element;
-            while (getComputedStyle(scrollParentElement).overflow === 'visible' && scrollParentElement.parentElement) {
-                scrollParentElement = scrollParentElement.parentElement;
+            while (getComputedStyle(scrollParentElement).overflow === 'visible' &&
+                scrollParentElement.parentElementOrShadowHost()) {
+                const parent = scrollParentElement.parentElementOrShadowHost();
+                Platform.assertNotNullOrUndefined(parent);
+                scrollParentElement = parent;
             }
             const viewRect = scrollParentElement.getBoundingClientRect();
             const currentScrollX = viewRect.left - treeRect.left;
@@ -343,27 +352,31 @@ export class TreeOutlineInShadow extends TreeOutline {
     shadowRoot;
     disclosureElement;
     renderSelection;
-    constructor() {
+    constructor(variant = "Other" /* TreeVariant.OTHER */, element) {
         super();
         this.contentElement.classList.add('tree-outline');
-        this.element = document.createElement('div');
-        this.shadowRoot =
-            Utils.createShadowRootWithCoreStyles(this.element, { cssFile: treeoutlineStyles, delegatesFocus: undefined });
+        this.element = element ?? document.createElement('div');
+        this.shadowRoot = createShadowRootWithCoreStyles(this.element, { cssFile: treeoutlineStyles });
         this.disclosureElement = this.shadowRoot.createChild('div', 'tree-outline-disclosure');
         this.disclosureElement.appendChild(this.contentElement);
         this.renderSelection = true;
+        if (variant === "NavigationTree" /* TreeVariant.NAVIGATION_TREE */) {
+            this.contentElement.classList.add('tree-variant-navigation');
+        }
     }
-    registerRequiredCSS(cssFile) {
-        ThemeSupport.ThemeSupport.instance().appendStyle(this.shadowRoot, cssFile);
+    setVariant(variant) {
+        this.contentElement.classList.toggle('tree-variant-navigation', variant === "NavigationTree" /* TreeVariant.NAVIGATION_TREE */);
     }
-    registerCSSFiles(cssFiles) {
-        this.shadowRoot.adoptedStyleSheets = this.shadowRoot.adoptedStyleSheets.concat(cssFiles);
+    registerRequiredCSS(...cssFiles) {
+        for (const cssFile of cssFiles) {
+            appendStyle(this.shadowRoot, cssFile);
+        }
     }
-    hideOverflow() {
-        this.disclosureElement.classList.add('tree-outline-disclosure-hide-overflow');
+    setHideOverflow(hideOverflow) {
+        this.disclosureElement.classList.toggle('tree-outline-disclosure-hide-overflow', hideOverflow);
     }
-    makeDense() {
-        this.contentElement.classList.add('tree-outline-dense');
+    setDense(dense) {
+        this.contentElement.classList.toggle('tree-outline-dense', dense);
     }
     onStartedEditingTitle(treeElement) {
         const selection = this.shadowRoot.getSelection();
@@ -385,6 +398,7 @@ export class TreeElement {
     titleInternal;
     childrenInternal;
     childrenListNode;
+    expandLoggable = {};
     hiddenInternal;
     selectableInternal;
     expanded;
@@ -400,7 +414,7 @@ export class TreeElement {
     trailingIconsElement;
     selectionElementInternal;
     disableSelectFocus;
-    constructor(title, expandable) {
+    constructor(title, expandable, jslogContext) {
         this.treeOutline = null;
         this.parent = null;
         this.previousSibling = null;
@@ -417,6 +431,11 @@ export class TreeElement {
         this.listItemNode.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
         this.listItemNode.addEventListener('click', this.treeElementToggled.bind(this), false);
         this.listItemNode.addEventListener('dblclick', this.handleDoubleClick.bind(this), false);
+        this.listItemNode.setAttribute('jslog', `${VisualLogging.treeItem().parent('parentTreeItem').context(jslogContext).track({
+            click: true,
+            resize: true,
+            keydown: 'ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Backspace|Delete|Enter|Space|Home|End',
+        })}`);
         ARIAUtils.markAsTreeitem(this.listItemNode);
         this.childrenInternal = null;
         this.childrenListNode = document.createElement('ol');
@@ -496,7 +515,7 @@ export class TreeElement {
         if (comparator) {
             insertionIndex = Platform.ArrayUtilities.lowerBound(this.childrenInternal, child, comparator);
         }
-        else if (this.treeOutline && this.treeOutline.comparator) {
+        else if (this.treeOutline?.comparator) {
             insertionIndex = Platform.ArrayUtilities.lowerBound(this.childrenInternal, child, this.treeOutline.comparator);
         }
         else {
@@ -509,7 +528,7 @@ export class TreeElement {
             this.childrenInternal = [];
         }
         if (!child) {
-            throw 'child can\'t be undefined or null';
+            throw new Error('child can\'t be undefined or null');
         }
         console.assert(!child.parent, 'Attempting to insert a child that is already in the tree, reparenting is not supported.');
         const previousChild = (index > 0 ? this.childrenInternal[index - 1] : null);
@@ -554,13 +573,12 @@ export class TreeElement {
     }
     removeChildAtIndex(childIndex) {
         if (!this.childrenInternal || childIndex < 0 || childIndex >= this.childrenInternal.length) {
-            throw 'childIndex out of range';
+            throw new Error('childIndex out of range');
         }
         const child = this.childrenInternal[childIndex];
         this.childrenInternal.splice(childIndex, 1);
         const parent = child.parent;
-        if (this.treeOutline && this.treeOutline.selectedTreeElement &&
-            this.treeOutline.selectedTreeElement.hasAncestorOrSelf(child)) {
+        if (this.treeOutline?.selectedTreeElement?.hasAncestorOrSelf(child)) {
             if (child.nextSibling) {
                 child.nextSibling.select(true);
             }
@@ -591,20 +609,19 @@ export class TreeElement {
     }
     removeChild(child) {
         if (!child) {
-            throw 'child can\'t be undefined or null';
+            throw new Error('child can\'t be undefined or null');
         }
         if (child.parent !== this) {
             return;
         }
         const childIndex = this.childrenInternal ? this.childrenInternal.indexOf(child) : -1;
         if (childIndex === -1) {
-            throw 'child not found in this node\'s children';
+            throw new Error('child not found in this node\'s children');
         }
         this.removeChildAtIndex(childIndex);
     }
     removeChildren() {
-        if (!this.root && this.treeOutline && this.treeOutline.selectedTreeElement &&
-            this.treeOutline.selectedTreeElement.hasAncestorOrSelf(this)) {
+        if (!this.root && this.treeOutline?.selectedTreeElement?.hasAncestorOrSelf(this)) {
             this.select(true);
         }
         if (this.childrenInternal) {
@@ -693,26 +710,8 @@ export class TreeElement {
             this.listItemNode.insertBefore(this.leadingIconsElement, this.titleElement);
             this.ensureSelection();
         }
-        this.leadingIconsElement.removeChildren();
-        for (const icon of icons) {
-            this.leadingIconsElement.appendChild(icon);
-        }
-    }
-    setTrailingIcons(icons) {
-        if (!this.trailingIconsElement && !icons.length) {
-            return;
-        }
-        if (!this.trailingIconsElement) {
-            this.trailingIconsElement = document.createElement('div');
-            this.trailingIconsElement.classList.add('trailing-icons');
-            this.trailingIconsElement.classList.add('icons-container');
-            this.listItemNode.appendChild(this.trailingIconsElement);
-            this.ensureSelection();
-        }
-        this.trailingIconsElement.removeChildren();
-        for (const icon of icons) {
-            this.trailingIconsElement.appendChild(icon);
-        }
+        // eslint-disable-next-line @devtools/no-lit-render-outside-of-view
+        render(icons, this.leadingIconsElement);
     }
     get tooltip() {
         return this.tooltipInternal;
@@ -738,6 +737,7 @@ export class TreeElement {
             ARIAUtils.unsetExpandable(this.listItemNode);
         }
         else {
+            VisualLogging.registerLoggable(this.expandLoggable, `${VisualLogging.expand()}`, this.listItemNode, new DOMRect(0, 0, 16, 16));
             ARIAUtils.setExpanded(this.listItemNode, false);
         }
     }
@@ -770,8 +770,7 @@ export class TreeElement {
         this.hiddenInternal = x;
         this.listItemNode.classList.toggle('hidden', x);
         this.childrenListNode.classList.toggle('hidden', x);
-        if (x && this.treeOutline && this.treeOutline.selectedTreeElement &&
-            this.treeOutline.selectedTreeElement.hasAncestorOrSelf(this)) {
+        if (x && this.treeOutline?.selectedTreeElement?.hasAncestorOrSelf(this)) {
             const hadFocus = this.treeOutline.selectedTreeElement.listItemElement.hasFocus();
             this.treeOutline.forceSelect(!hadFocus, /* selectedByUser */ false);
         }
@@ -783,7 +782,7 @@ export class TreeElement {
         }
     }
     ensureSelection() {
-        if (!this.treeOutline || !this.treeOutline.renderSelection) {
+        if (!this.treeOutline?.renderSelection) {
             return;
         }
         if (!this.selectionElementInternal) {
@@ -813,14 +812,13 @@ export class TreeElement {
                 this.collapse();
             }
         }
-        else {
-            if (event.altKey) {
-                void this.expandRecursively();
-            }
-            else {
-                this.expand();
-            }
+        else if (event.altKey) {
+            void this.expandRecursively();
         }
+        else {
+            this.expand();
+        }
+        void VisualLogging.logClick(this.expandLoggable, event);
         event.consume();
     }
     handleMouseDown(event) {
@@ -868,8 +866,8 @@ export class TreeElement {
         if (this.treeOutline) {
             this.treeOutline.dispatchEventToListeners(Events.ElementCollapsed, this);
         }
-        const selectedTreeElement = this.treeOutline && this.treeOutline.selectedTreeElement;
-        if (selectedTreeElement && selectedTreeElement.hasAncestor(this)) {
+        const selectedTreeElement = this.treeOutline?.selectedTreeElement;
+        if (selectedTreeElement?.hasAncestor(this)) {
             this.select(/* omitFocus */ true, /* selectedByUser */ true);
         }
     }
@@ -1048,7 +1046,7 @@ export class TreeElement {
     }
     setFocusable(focusable) {
         if (focusable) {
-            this.listItemNode.setAttribute('tabIndex', (this.treeOutline && this.treeOutline.preventTabOrder) ? '-1' : '0');
+            this.listItemNode.setAttribute('tabIndex', (this.treeOutline?.preventTabOrder) ? '-1' : '0');
             this.listItemNode.addEventListener('focus', this.boundOnFocus, false);
             this.listItemNode.addEventListener('blur', this.boundOnBlur, false);
         }
@@ -1084,7 +1082,7 @@ export class TreeElement {
         this.listItemNode.classList.remove('selected');
         ARIAUtils.clearSelected(this.listItemNode);
         this.setFocusable(false);
-        if (this.treeOutline && this.treeOutline.selectedTreeElement === this) {
+        if (this.treeOutline?.selectedTreeElement === this) {
             this.treeOutline.selectedTreeElement = null;
             this.treeOutline.updateFocusable();
             if (hadFocus) {
@@ -1102,6 +1100,14 @@ export class TreeElement {
         // Overridden by subclasses.
     }
     onenter() {
+        if (this.expandable && !this.expanded) {
+            this.expand();
+            return true;
+        }
+        if (this.collapsible && this.expanded) {
+            this.collapse();
+            return true;
+        }
         return false;
     }
     ondelete() {
@@ -1197,4 +1203,528 @@ export class TreeElement {
         this.disableSelectFocus = toggle;
     }
 }
+function hasBooleanAttribute(element, name) {
+    return element.hasAttribute(name) && element.getAttribute(name) !== 'false';
+}
+export class TreeSearch {
+    #matches = [];
+    #currentMatchIndex = 0;
+    #nodeMatchMap;
+    reset() {
+        this.#matches = [];
+        this.#nodeMatchMap = undefined;
+        this.#currentMatchIndex = 0;
+    }
+    currentMatch() {
+        return this.#matches.at(this.#currentMatchIndex);
+    }
+    #getNodeMatchMap() {
+        if (!this.#nodeMatchMap) {
+            this.#nodeMatchMap = new WeakMap();
+            for (const match of this.#matches) {
+                let entry = this.#nodeMatchMap.get(match.node);
+                if (!entry) {
+                    entry = [];
+                    this.#nodeMatchMap.set(match.node, entry);
+                }
+                entry.push(match);
+            }
+        }
+        return this.#nodeMatchMap;
+    }
+    getResults(node) {
+        return this.#getNodeMatchMap().get(node) ?? [];
+    }
+    static highlight(ranges, selectedRange) {
+        return Lit.Directives.ref(element => {
+            if (!(element instanceof HTMLElement)) {
+                return;
+            }
+            const configListItem = element.closest('li[role="treeitem"]');
+            const titleElement = configListItem ? TreeViewTreeElement.get(configListItem)?.titleElement : undefined;
+            if (configListItem && titleElement) {
+                const targetElement = HTMLElementWithLightDOMTemplate.findCorrespondingElement(element, configListItem, titleElement);
+                if (targetElement) {
+                    Highlighting.HighlightManager.HighlightManager.instance().set(targetElement, ranges, selectedRange);
+                }
+            }
+        });
+    }
+    updateSearchableView(view) {
+        view.updateSearchMatchesCount(this.#matches.length);
+        view.updateCurrentMatchIndex(this.#currentMatchIndex);
+    }
+    next() {
+        this.#currentMatchIndex = Platform.NumberUtilities.mod(this.#currentMatchIndex + 1, this.#matches.length);
+        return this.currentMatch();
+    }
+    prev() {
+        this.#currentMatchIndex = Platform.NumberUtilities.mod(this.#currentMatchIndex - 1, this.#matches.length);
+        return this.currentMatch();
+    }
+    // This is a generator to sidestep stack overflow risks
+    *#innerSearch(node, currentMatch, jumpBackwards, match) {
+        const updateCurrentMatchIndex = (isPostOrder) => {
+            if (currentMatch?.node === node && currentMatch.isPostOrderMatch === isPostOrder) {
+                // We're current matching the node that contains the currently focused search result, the n-th result
+                // within that node. When updating the search hits, make sure we're still focusing the n-th result within
+                // that node. That may make the result jump within the node, but at least we're still focusing the same
+                // node. If there are fewer than n hits in the current node, we're going to move the focus to the next
+                // search hit in the next node by default, or the last one in this node if searching backwards.
+                if (currentMatch.matchIndexInNode >= preOrderMatches.length) {
+                    this.#currentMatchIndex = jumpBackwards ? this.#matches.length - 1 : this.#matches.length;
+                }
+                else {
+                    this.#currentMatchIndex = this.#matches.length - preOrderMatches.length + currentMatch.matchIndexInNode;
+                }
+            }
+        };
+        const preOrderMatches = match(node, /* isPostOrder=*/ false);
+        this.#matches.push(...preOrderMatches);
+        updateCurrentMatchIndex(/* isPostOrder=*/ false);
+        yield* preOrderMatches.values();
+        for (const child of node.children()) {
+            yield* this.#innerSearch(child, currentMatch, jumpBackwards, match);
+        }
+        const postOrderMatches = match(node, /* isPostOrder=*/ true);
+        this.#matches.push(...postOrderMatches);
+        updateCurrentMatchIndex(/* isPostOrder=*/ true);
+        yield* postOrderMatches.values();
+    }
+    search(node, jumpBackwards, match) {
+        const currentMatch = this.currentMatch();
+        this.reset();
+        // eslint-disable-next-line @typescript-eslint/naming-convention,@typescript-eslint/no-unused-vars
+        for (const _ of this.#innerSearch(node, currentMatch, jumpBackwards, match)) {
+            // run the generator
+        }
+        this.#currentMatchIndex = Platform.NumberUtilities.mod(this.#currentMatchIndex, this.#matches.length);
+        return this.#matches.length;
+    }
+}
+class TreeViewTreeElement extends TreeElement {
+    static CLONED_ATTRIBUTES = SDK.DOMModel.ARIA_ATTRIBUTES.union(new Set(['jslog']));
+    #clonedAttributes = new Set();
+    #clonedClasses = new Set();
+    #userExpanded = false;
+    #isProcessingAttribute = false;
+    #previousOpenAttributeValue;
+    static #elementToTreeElement = new WeakMap();
+    configElement;
+    constructor(treeOutline, configElement) {
+        super(undefined, undefined, configElement.getAttribute('jslog-context') ?? undefined);
+        this.configElement = configElement;
+        TreeViewTreeElement.#elementToTreeElement.set(configElement, this);
+        this.refresh();
+    }
+    onexpand() {
+        if (!this.#isProcessingAttribute) {
+            this.#userExpanded = true;
+        }
+    }
+    oncollapse() {
+        if (!this.#isProcessingAttribute) {
+            this.#userExpanded = false;
+        }
+    }
+    updateExpansionFromAttribute() {
+        this.#isProcessingAttribute = true;
+        try {
+            const openAttr = this.configElement.getAttribute('open');
+            if (openAttr === this.#previousOpenAttributeValue) {
+                return;
+            }
+            this.#previousOpenAttributeValue = openAttr;
+            if (openAttr === null) {
+                if (this.#userExpanded) {
+                    this.expand();
+                }
+                else {
+                    this.collapse();
+                }
+            }
+            else if (openAttr === 'false') {
+                this.collapse();
+            }
+            else {
+                this.expand();
+            }
+        }
+        finally {
+            this.#isProcessingAttribute = false;
+        }
+    }
+    refresh() {
+        const expandable = Boolean(this.configElement.querySelector('ul[role="group"]'));
+        this.setExpandable(expandable);
+        this.titleElement.textContent = '';
+        this.#clonedAttributes.forEach(attr => this.listItemElement.attributes.removeNamedItem(attr));
+        this.#clonedClasses.forEach(className => this.listItemElement.classList.remove(className));
+        this.#clonedAttributes.clear();
+        this.#clonedClasses.clear();
+        for (let i = 0; i < this.configElement.attributes.length; ++i) {
+            const attribute = this.configElement.attributes.item(i);
+            if (attribute && attribute.name !== 'role' && TreeViewTreeElement.CLONED_ATTRIBUTES.has(attribute.name)) {
+                this.listItemElement.setAttribute(attribute.name, attribute.value);
+                this.#clonedAttributes.add(attribute.name);
+            }
+        }
+        for (const className of this.configElement.classList) {
+            this.listItemElement.classList.add(className);
+            this.#clonedClasses.add(className);
+        }
+        InterceptBindingDirective.setEventListeners(this.configElement, this.listItemElement);
+        for (const child of this.configElement.childNodes) {
+            if (child instanceof HTMLUListElement && child.role === 'group') {
+                continue;
+            }
+            this.titleElement.appendChild(HTMLElementWithLightDOMTemplate.cloneNode(child));
+        }
+        this.hidden = hasBooleanAttribute(this.configElement, 'hidden');
+        this.updateExpansionFromAttribute();
+        Highlighting.HighlightManager.HighlightManager.instance().apply(this.titleElement);
+    }
+    static get(configElement) {
+        return configElement && TreeViewTreeElement.#elementToTreeElement.get(configElement);
+    }
+    remove() {
+        removeNode(this, Boolean(this.parent && this.parent.configElement?.querySelector('ul[role="group"]')));
+        TreeViewTreeElement.#elementToTreeElement.delete(this.configElement);
+    }
+}
+function getTreeNodes(nodeList) {
+    return nodeList.values()
+        .flatMap(node => {
+        if (node instanceof TreeElementWrapper) {
+            return [node];
+        }
+        if (node instanceof HTMLLIElement && node.role === 'treeitem') {
+            return [
+                node,
+                ...node.querySelectorAll('ul[role="group"] li[role="treeitem"],ul[role="group"] devtools-tree-wrapper')
+            ];
+        }
+        if (node instanceof HTMLElement) {
+            return node.querySelectorAll('li[role="treeitem"],devtools-tree-wrapper');
+        }
+        return [];
+    })
+        .toArray();
+}
+function getStyleElements(nodes) {
+    return [...nodes].flatMap(node => {
+        if (node instanceof HTMLStyleElement) {
+            return [node];
+        }
+        if (node instanceof HTMLElement) {
+            return [...node.querySelectorAll('style')];
+        }
+        return [];
+    });
+}
+function removeNode(node, preserveParentExpandable = false) {
+    const parent = node.parent;
+    if (parent) {
+        parent.removeChild(node);
+        if (!preserveParentExpandable) {
+            parent.setExpandable(parent.children().length > 0);
+        }
+    }
+}
+/**
+ * A tree element that can be used as progressive enhancement over a <ul> element. A `template` IDL attribute allows
+ * additionally to insert the <ul> into a <template>, avoiding rendering anything into light DOM, which is recommended.
+ * The <ul> itself will be cloned into shadow DOM and rendered there.
+ *
+ * ## Usage ##
+ *
+ * It can be used as
+ * ```
+ * <devtools-tree
+ *   .template=${html`
+ *     <ul role="tree">
+ *        <li role="treeitem" @expand=${onExpand}>
+ *          Tree Node Text
+ *          <ul role="group">
+ *            Node with subtree
+ *            <li role="treeitem" jslog-context="context">
+ *              <ul role="group">
+ *                <li role="treeitem">Tree Node Text in collapsed subtree</li>
+ *                <li role="treeitem">Tree Node Text in collapsed subtree</li>
+ *              </ul>
+ *           </li>
+ *           <li role="treeitem" open>
+ *             Tree Node Text in expanded subtree
+ *              <ul role="group">
+ *                <li role="treeitem">Tree Node Text in expanded subtree</li>
+ *                <li role="treeitem">Tree Node Text in expanded subtree</li>
+ *              </ul>
+ *           </li>
+ *           <li selected role="treeitem">Tree Node Text in a selected-by-default node</li>
+ *         </ul>
+ *       </li>
+ *     </ul>
+ *   </template>`}
+ * ></devtools-tree>
+ *
+ * ```
+ * where a <li role="treeitem"> element defines a tree node and its contents (the <li> is the `config element` for this
+ * tree node). If a tree node contains a <ul role="group">, that defines a subtree under that tree node. The `open`
+ * attribute on the <li> defines whether that subtree should render as expanded. Note that node expanding/collapsing do
+ * not reflect this state back to the attribute on the config element, those state changes are rather sent out as
+ * `expand` events on the config element.
+ *
+ * Under the hood this uses TreeOutline.
+ *
+ * ## Config Element Attributes ##
+ *
+ * - `selected`: Whether the tree node should be rendered as selected.
+ * - `jslog-context`: The jslog context for the tree element.
+ * - `aria-*`: All aria attributes defined on the config element are cloned over.
+ * - `open`: On the <li>, declares whether the subtree should be rendererd as expanded or collapsed.
+ *
+ * ## Event Handling ##
+ *
+ * This section is only relevant if NOT using the `template`.
+ *
+ * Since config elements are cloned into the shadow DOM, it's not possible to directly attach event listeners to the
+ * children of config elements. Instead, the `UI.UIUtils.InterceptBindingDirective` directive needs to be used as a
+ * wrapper:
+ * ```
+ * const on = Lit.Directive.directive(UI.UIUtils.InterceptBindingDirective);
+ *
+ * html`<li role="treeitem">
+ *   <button @click=${on(clickHandler)}>click me</button>
+ * </li>`
+ * ```
+ *
+ * @property template Define the tree contents
+ * @event selected A node was selected
+ * @attribute navigation-variant Turn this tree into the navigation variant
+ * @attribute hide-overflow
+ */
+export class TreeViewElement extends HTMLElementWithLightDOMTemplate {
+    static observedAttributes = ['navigation-variant', 'hide-overflow', 'dense'];
+    #treeOutline = new TreeOutlineInShadow(undefined, this);
+    constructor() {
+        super();
+        this.#treeOutline.addEventListener(Events.ElementSelected, event => {
+            if (event.data instanceof TreeViewTreeElement) {
+                event.data.listItemElement.dispatchEvent(new TreeViewElement.SelectEvent());
+            }
+        });
+        this.#treeOutline.addEventListener(Events.ElementExpanded, event => {
+            if (event.data instanceof TreeViewTreeElement) {
+                event.data.listItemElement.dispatchEvent(new TreeViewElement.ExpandEvent({ expanded: true }));
+            }
+        });
+        this.#treeOutline.addEventListener(Events.ElementCollapsed, event => {
+            if (event.data instanceof TreeViewTreeElement) {
+                event.data.listItemElement.dispatchEvent(new TreeViewElement.ExpandEvent({ expanded: false }));
+            }
+        });
+        this.addNodes(getTreeNodes([this]));
+    }
+    getInternalTreeOutlineForTest() {
+        return this.#treeOutline;
+    }
+    #getParentTreeElement(element) {
+        const subtreeRoot = element.parentElement;
+        if (!(subtreeRoot instanceof HTMLUListElement)) {
+            return null;
+        }
+        if (subtreeRoot.role === 'tree') {
+            return { treeElement: this.#treeOutline.rootElement(), expanded: false, classes: subtreeRoot.classList };
+        }
+        if (subtreeRoot.role !== 'group' || !subtreeRoot.parentElement) {
+            return null;
+        }
+        const treeElement = TreeViewTreeElement.get(subtreeRoot.parentElement);
+        const expanded = treeElement ? treeElement.expanded : hasBooleanAttribute(subtreeRoot.parentElement, 'open');
+        return treeElement ? { expanded, treeElement, classes: subtreeRoot.classList } : null;
+    }
+    updateNode(node, attributeName) {
+        while (node?.parentNode && !(node instanceof HTMLElement)) {
+            node = node.parentNode;
+        }
+        const treeNode = node instanceof HTMLElement ? node.closest('li[role="treeitem"]') : null;
+        if (!treeNode) {
+            return;
+        }
+        const treeElement = TreeViewTreeElement.get(treeNode);
+        if (!treeElement) {
+            return;
+        }
+        treeElement.refresh();
+        if (node === treeNode && attributeName === 'selected' && hasBooleanAttribute(treeNode, 'selected')) {
+            treeElement.revealAndSelect(true);
+        }
+        if (node === treeNode && attributeName === 'open') {
+            treeElement.updateExpansionFromAttribute();
+        }
+    }
+    addNodes(nodes, nextSibling) {
+        for (const node of getTreeNodes(nodes)) {
+            if (TreeViewTreeElement.get(node)) {
+                continue; // Not sure this can happen
+            }
+            const parent = this.#getParentTreeElement(node);
+            if (!parent) {
+                continue;
+            }
+            if (parent.treeElement.childCount() === 0) {
+                parent.treeElement.childrenListElement.classList.add(...parent.classes.values());
+            }
+            while (nextSibling && nextSibling.nodeType !== Node.ELEMENT_NODE) {
+                nextSibling = nextSibling.nextSibling;
+            }
+            const nextElement = nextSibling ? TreeViewTreeElement.get(nextSibling) : null;
+            const index = nextElement ? parent.treeElement.indexOfChild(nextElement) : parent.treeElement.children().length;
+            let treeElement;
+            if (node instanceof HTMLLIElement) {
+                treeElement = new TreeViewTreeElement(this.#treeOutline, node);
+                const expandable = Boolean(node.querySelector('ul[role="group"]'));
+                treeElement.setExpandable(expandable);
+                treeElement.updateExpansionFromAttribute();
+            }
+            else {
+                treeElement = node.treeElement;
+            }
+            if (treeElement) {
+                if (treeElement.parent) {
+                    removeNode(treeElement);
+                }
+                parent.treeElement.insertChild(treeElement, index);
+                if (hasBooleanAttribute(node, 'selected')) {
+                    treeElement.revealAndSelect(true);
+                }
+                if (parent.expanded) {
+                    parent.treeElement.expand();
+                }
+            }
+        }
+        for (const element of getStyleElements(nodes)) {
+            this.#treeOutline.shadowRoot.appendChild(element.cloneNode(true));
+        }
+    }
+    removeNodes(nodes) {
+        for (const node of getTreeNodes(nodes)) {
+            if (node instanceof HTMLLIElement) {
+                TreeViewTreeElement.get(node)?.remove();
+            }
+            else if (node.treeElement) {
+                removeNode(node.treeElement, Boolean(node.treeElement.parent &&
+                    node.treeElement.parent.configElement?.querySelector('ul[role="group"]')));
+            }
+        }
+    }
+    set hideOverflow(hide) {
+        this.toggleAttribute('hide-overflow', hide);
+    }
+    get hideOverflow() {
+        return hasBooleanAttribute(this, 'hide-overflow');
+    }
+    set navgiationVariant(navigationVariant) {
+        this.toggleAttribute('navigation-variant', navigationVariant);
+    }
+    get navigationVariant() {
+        return hasBooleanAttribute(this, 'navigation-variant');
+    }
+    set dense(dense) {
+        this.toggleAttribute('dense', dense);
+    }
+    get dense() {
+        return hasBooleanAttribute(this, 'dense');
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue === newValue) {
+            return;
+        }
+        const booleanValueIsTrue = newValue !== null && newValue !== 'false';
+        switch (name) {
+            case 'navigation-variant':
+                this.#treeOutline.setVariant(booleanValueIsTrue ? "NavigationTree" /* TreeVariant.NAVIGATION_TREE */ : "Other" /* TreeVariant.OTHER */);
+                break;
+            case 'hide-overflow':
+                this.#treeOutline.setHideOverflow(booleanValueIsTrue);
+                break;
+            case 'dense':
+                this.#treeOutline.setDense(booleanValueIsTrue);
+                break;
+        }
+    }
+}
+(function (TreeViewElement) {
+    class SelectEvent extends CustomEvent {
+        constructor() {
+            super('select');
+        }
+    }
+    TreeViewElement.SelectEvent = SelectEvent;
+    class ExpandEvent extends CustomEvent {
+        constructor(detail) {
+            super('expand', { detail });
+        }
+    }
+    TreeViewElement.ExpandEvent = ExpandEvent;
+})(TreeViewElement || (TreeViewElement = {}));
+export const ifExpanded = Lit.Directive.directive(class extends Lit.Directive.Directive {
+    #partInfo;
+    constructor(partInfo) {
+        if (partInfo.type !== Lit.Directive.PartType.CHILD) {
+            throw new Error('ifExpanded directive must be used in a child node');
+        }
+        super(partInfo);
+        this.#partInfo = partInfo;
+    }
+    render(content) {
+        return this.#isInExpandedRow(this.#partInfo.startNode) ? content : Lit.nothing;
+    }
+    #isInExpandedRow(element) {
+        if (!element) {
+            return false;
+        }
+        if (!(element instanceof HTMLElement)) {
+            element = element.parentNode;
+        }
+        if (!(element instanceof HTMLElement)) {
+            return false;
+        }
+        element = element.closest('li[role="treeitem"]') ?? undefined;
+        if (!(element instanceof HTMLLIElement)) {
+            return false;
+        }
+        if (hasBooleanAttribute(element, 'open')) {
+            return true;
+        }
+        const node = TreeViewTreeElement.get(element);
+        if (!node) {
+            return false;
+        }
+        return node.expanded;
+    }
+});
+export class TreeElementWrapper extends HTMLElement {
+    #treeElement;
+    set treeElement(treeElement) {
+        if (this.#treeElement?.parent) {
+            const parent = this.#treeElement.parent;
+            const index = parent.indexOfChild(this.#treeElement);
+            parent.removeChildAtIndex(index);
+            parent.insertChild(treeElement, index);
+        }
+        this.#treeElement = treeElement;
+    }
+    get treeElement() {
+        return this.#treeElement;
+    }
+}
+customElements.define('devtools-tree', TreeViewElement);
+customElements.define('devtools-tree-wrapper', TreeElementWrapper);
+function loggingParentProvider(e) {
+    const treeElement = TreeElement.getTreeElementBylistItemNode(e);
+    const parentElement = treeElement?.parent?.listItemElement;
+    return parentElement?.isConnected && parentElement || treeElement?.treeOutline?.contentElement;
+}
+VisualLogging.registerParentProvider('parentTreeItem', loggingParentProvider);
 //# sourceMappingURL=Treeoutline.js.map

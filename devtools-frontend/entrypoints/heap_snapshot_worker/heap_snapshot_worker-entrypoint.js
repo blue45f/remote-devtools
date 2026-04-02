@@ -1,15 +1,2 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as HeapSnapshotWorker from './heap_snapshot_worker.js';
-// We need to force the worker context
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ctxSelf = self;
-const dispatcher = new HeapSnapshotWorker.HeapSnapshotWorkerDispatcher.HeapSnapshotWorkerDispatcher(ctxSelf, (message) => self.postMessage(message));
-function installMessageEventListener(listener) {
-    ctxSelf.addEventListener('message', listener, false);
-}
-// @ts-ignore
-installMessageEventListener(dispatcher.dispatchMessage.bind(dispatcher));
-self.postMessage('workerReady');
+import*as e from"./../../core/platform/platform.js";import*as r from"./heap_snapshot_worker.js";var o=new r.HeapSnapshotWorkerDispatcher.HeapSnapshotWorkerDispatcher(e.HostRuntime.HOST_RUNTIME.workerScope.postMessage.bind(e.HostRuntime.HOST_RUNTIME.workerScope));e.HostRuntime.HOST_RUNTIME.workerScope.onmessage=o.dispatchMessage.bind(o);e.HostRuntime.HOST_RUNTIME.workerScope.postMessage("workerReady");
 //# sourceMappingURL=heap_snapshot_worker-entrypoint.js.map

@@ -1,19 +1,14 @@
+import * as Protocol from '../../generated/protocol.js';
 import * as Common from '../common/common.js';
 import type * as Platform from '../platform/platform.js';
-import * as Protocol from '../../generated/protocol.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class ServiceWorkerManager extends SDKModel<EventTypes> {
     #private;
-    serviceWorkerNetworkRequestsPanelStatus: {
-        isOpen: boolean;
-        openedAt: number;
-    };
     constructor(target: Target);
     enable(): Promise<void>;
     disable(): Promise<void>;
     registrations(): Map<string, ServiceWorkerRegistration>;
-    hasRegistrationForURLs(urls: string[]): boolean;
     findVersion(versionId: string): ServiceWorkerVersion | null;
     deleteRegistration(registrationId: string): void;
     updateRegistration(registrationId: string): Promise<void>;
@@ -24,27 +19,25 @@ export declare class ServiceWorkerManager extends SDKModel<EventTypes> {
     startWorker(scopeURL: string): Promise<void>;
     skipWaiting(scopeURL: string): Promise<void>;
     stopWorker(versionId: string): Promise<void>;
-    inspectWorker(versionId: string): Promise<void>;
     workerRegistrationUpdated(registrations: Protocol.ServiceWorker.ServiceWorkerRegistration[]): void;
     workerVersionUpdated(versions: Protocol.ServiceWorker.ServiceWorkerVersion[]): void;
     workerErrorReported(payload: Protocol.ServiceWorker.ServiceWorkerErrorMessage): void;
-    forceUpdateOnReloadSetting(): Common.Settings.Setting<boolean>;
     private forceUpdateSettingChanged;
 }
-export declare enum Events {
-    RegistrationUpdated = "RegistrationUpdated",
-    RegistrationErrorAdded = "RegistrationErrorAdded",
-    RegistrationDeleted = "RegistrationDeleted"
+export declare const enum Events {
+    REGISTRATION_UPDATED = "RegistrationUpdated",
+    REGISTRATION_ERROR_ADDED = "RegistrationErrorAdded",
+    REGISTRATION_DELETED = "RegistrationDeleted"
 }
 export interface RegistrationErrorAddedEvent {
     registration: ServiceWorkerRegistration;
     error: Protocol.ServiceWorker.ServiceWorkerErrorMessage;
 }
-export type EventTypes = {
-    [Events.RegistrationUpdated]: ServiceWorkerRegistration;
-    [Events.RegistrationErrorAdded]: RegistrationErrorAddedEvent;
-    [Events.RegistrationDeleted]: ServiceWorkerRegistration;
-};
+export interface EventTypes {
+    [Events.REGISTRATION_UPDATED]: ServiceWorkerRegistration;
+    [Events.REGISTRATION_ERROR_ADDED]: RegistrationErrorAddedEvent;
+    [Events.REGISTRATION_DELETED]: ServiceWorkerRegistration;
+}
 /**
  * For every version, we keep a history of ServiceWorkerVersionState. Every time
  * a version is updated we will add a new state at the head of the history chain.
@@ -54,9 +47,15 @@ export type EventTypes = {
 export declare class ServiceWorkerVersionState {
     runningStatus: Protocol.ServiceWorker.ServiceWorkerVersionRunningStatus;
     status: Protocol.ServiceWorker.ServiceWorkerVersionStatus;
-    last_updated_timestamp: number;
+    lastUpdatedTimestamp: number;
     previousState: ServiceWorkerVersionState | null;
     constructor(runningStatus: Protocol.ServiceWorker.ServiceWorkerVersionRunningStatus, status: Protocol.ServiceWorker.ServiceWorkerVersionStatus, previousState: ServiceWorkerVersionState | null, timestamp: number);
+}
+export declare class ServiceWorkerRouterRule {
+    condition: string;
+    source: string;
+    id: number;
+    constructor(condition: string, source: string, id: number);
 }
 export declare class ServiceWorkerVersion {
     id: string;
@@ -67,6 +66,7 @@ export declare class ServiceWorkerVersion {
     scriptResponseTime: number | undefined;
     controlledClients: Protocol.Target.TargetID[];
     targetId: string | null;
+    routerRules: ServiceWorkerRouterRule[] | null;
     currentState: ServiceWorkerVersionState;
     registration: ServiceWorkerRegistration;
     constructor(registration: ServiceWorkerRegistration, payload: Protocol.ServiceWorker.ServiceWorkerVersion);
@@ -86,27 +86,28 @@ export declare class ServiceWorkerVersion {
     get status(): Protocol.ServiceWorker.ServiceWorkerVersionStatus;
     get runningStatus(): Protocol.ServiceWorker.ServiceWorkerVersionRunningStatus;
     mode(): string;
+    private parseJSONRules;
 }
 export declare namespace ServiceWorkerVersion {
     const RunningStatus: {
-        running: () => Common.UIString.LocalizedString;
-        starting: () => Common.UIString.LocalizedString;
-        stopped: () => Common.UIString.LocalizedString;
-        stopping: () => Common.UIString.LocalizedString;
+        running: () => Platform.UIString.LocalizedString;
+        starting: () => Platform.UIString.LocalizedString;
+        stopped: () => Platform.UIString.LocalizedString;
+        stopping: () => Platform.UIString.LocalizedString;
     };
     const Status: {
-        activated: () => Common.UIString.LocalizedString;
-        activating: () => Common.UIString.LocalizedString;
-        installed: () => Common.UIString.LocalizedString;
-        installing: () => Common.UIString.LocalizedString;
-        new: () => Common.UIString.LocalizedString;
-        redundant: () => Common.UIString.LocalizedString;
+        activated: () => Platform.UIString.LocalizedString;
+        activating: () => Platform.UIString.LocalizedString;
+        installed: () => Platform.UIString.LocalizedString;
+        installing: () => Platform.UIString.LocalizedString;
+        new: () => Platform.UIString.LocalizedString;
+        redundant: () => Platform.UIString.LocalizedString;
     };
-    enum Modes {
-        Installing = "installing",
-        Waiting = "waiting",
-        Active = "active",
-        Redundant = "redundant"
+    const enum Modes {
+        INSTALLING = "installing",
+        WAITING = "waiting",
+        ACTIVE = "active",
+        REDUNDANT = "redundant"
     }
 }
 export declare class ServiceWorkerRegistration {
@@ -126,5 +127,4 @@ export declare class ServiceWorkerRegistration {
     isRedundant(): boolean;
     shouldBeRemoved(): boolean;
     canBeRemoved(): boolean;
-    clearErrors(): void;
 }

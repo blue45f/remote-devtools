@@ -1,50 +1,51 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
-import * as IssuesComponents from './components/components.js';
 import { AffectedResourcesView } from './AffectedResourcesView.js';
+import * as IssuesComponents from './components/components.js';
 const UIStrings = {
     /**
-     *@description Singular or plural label for number of affected CSP (content security policy,
+     * @description Singular or plural label for number of affected CSP (content security policy,
      * see https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) directives in issue view.
      */
     nDirectives: '{n, plural, =1 {# directive} other {# directives}}',
     /**
-     *@description Indicates that a CSP error should be treated as a warning
+     * @description Indicates that a CSP error should be treated as a warning
      */
     reportonly: 'report-only',
     /**
-     *@description The kind of resolution for a mixed content issue
+     * @description The kind of resolution for a mixed content issue
      */
     blocked: 'blocked',
     /**
-     *@description Tooltip for button linking to the Elements panel
+     * @description Tooltip for button linking to the Elements panel
      */
     clickToRevealTheViolatingDomNode: 'Click to reveal the violating DOM node in the Elements panel',
     /**
-     *@description Header for the section listing affected directives
+     * @description Header for the section listing affected directives
      */
     directiveC: 'Directive',
     /**
-     *@description Label for the column in the element list in the CSS Overview report
+     * @description Label for the column in the element list in the CSS overview report
      */
     element: 'Element',
     /**
-     *@description Header for the source location column
+     * @description Header for the source location column
      */
-    sourceLocation: 'Source Location',
+    sourceLocation: 'Source location',
     /**
-     *@description Text for the status of something
+     * @description Text for the status of something
      */
     status: 'Status',
     /**
-     *@description Text that refers to the resources of the web page
+     * @description Text that refers to the resources of the web page
      */
     resourceC: 'Resource',
 };
@@ -85,7 +86,7 @@ export class AffectedDirectivesView extends AffectedResourcesView {
             const onElementRevealIconClick = () => {
                 const target = model.getTargetIfNotDisposed();
                 if (target) {
-                    Host.userMetrics.issuesPanelResourceOpened(this.issue.getCategory(), "Element" /* AffectedItem.Element */);
+                    Host.userMetrics.issuesPanelResourceOpened(this.issue.getCategory(), "Element" /* AffectedItem.ELEMENT */);
                     const deferredDOMNode = new SDK.DOMModel.DeferredDOMNode(target, violatingNodeId);
                     void Common.Revealer.reveal(deferredDOMNode);
                 }

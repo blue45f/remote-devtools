@@ -1,21 +1,12 @@
-import * as LitHtml from '../../ui/lit-html/lit-html.js';
+import '../../ui/kit/kit.js';
+import * as Lit from '../../ui/lit/lit.js';
 import * as Components from './components/components.js';
 import * as Models from './models/models.js';
-import * as Actions from './recorder-actions.js';
-declare const LitElement: typeof LitHtml.LitElement;
+import * as Actions from './recorder-actions/recorder-actions.js';
+declare const LitElement: typeof Lit.LitElement;
 declare global {
     interface HTMLElementTagNameMap {
         'devtools-recorder-controller': RecorderController;
-    }
-    interface FileSystemWritableFileStream extends WritableStream {
-        write(data: unknown): Promise<void>;
-        close(): Promise<void>;
-    }
-    interface FileSystemHandle {
-        createWritable(): Promise<FileSystemWritableFileStream>;
-    }
-    interface Window {
-        showSaveFilePicker(opts: unknown): Promise<FileSystemHandle>;
     }
 }
 interface StoredRecording {
@@ -23,14 +14,13 @@ interface StoredRecording {
     flow: Models.Schema.UserFlow;
 }
 export declare const enum Pages {
-    StartPage = "StartPage",
-    AllRecordingsPage = "AllRecordingsPage",
-    CreateRecordingPage = "CreateRecordingPage",
-    RecordingPage = "RecordingPage"
+    START_PAGE = "StartPage",
+    ALL_RECORDINGS_PAGE = "AllRecordingsPage",
+    CREATE_RECORDING_PAGE = "CreateRecordingPage",
+    RECORDING_PAGE = "RecordingPage"
 }
 export declare class RecorderController extends LitElement {
     #private;
-    static readonly styles: CSSStyleSheet[];
     private currentRecordingSession?;
     private currentRecording;
     private currentStep?;
@@ -57,10 +47,11 @@ export declare class RecorderController extends LitElement {
     getCurrentRecordingForTesting(): StoredRecording | undefined;
     getStepBreakpointIndexesForTesting(): number[];
     setCurrentRecordingForTesting(recording: StoredRecording | undefined): void;
-    getSectionsForTesting(): Array<Models.Section.Section> | undefined;
+    getSectionsForTesting(): Models.Section.Section[] | undefined;
     getUserFlow(): Models.Schema.UserFlow | undefined;
+    onRecordingCancelled(): Promise<void>;
     handleActions(actionId: Actions.RecorderActions): void;
     isActionPossible(actionId: Actions.RecorderActions): boolean;
-    protected render(): LitHtml.TemplateResult;
+    protected render(): Lit.TemplateResult;
 }
 export {};

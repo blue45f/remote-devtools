@@ -1,33 +1,27 @@
-import * as Common from '../../core/common/common.js';
+import '../../ui/legacy/legacy.js';
 import * as UI from '../../ui/legacy/legacy.js';
-declare const CSSOverviewSidebarPanel_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
-}) & typeof UI.Widget.VBox;
-export declare class CSSOverviewSidebarPanel extends CSSOverviewSidebarPanel_base {
+interface ViewInput {
+    items: Array<{
+        name: string;
+        id: string;
+    }>;
+    selectedId?: string;
+    onReset: () => void;
+    onItemClick: (id: string) => void;
+    onItemKeyDown: (id: string, key: string) => void;
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class CSSOverviewSidebarPanel extends UI.Widget.VBox {
     #private;
-    containerElement: HTMLDivElement;
-    static get ITEM_CLASS_NAME(): string;
-    static get SELECTED(): string;
-    constructor();
-    addItem(name: string, id: string): void;
-    select(id: string): void;
-    wasShown(): void;
+    constructor(element?: HTMLElement, view?: View);
+    performUpdate(): void;
+    set items(items: Array<{
+        name: string;
+        id: string;
+    }>);
+    set selectedId(id: string);
+    set onItemSelected(callback: (id: string, shouldFocus: boolean) => void);
+    set onReset(callback: () => void);
 }
-export declare const enum SidebarEvents {
-    ItemSelected = "ItemSelected",
-    Reset = "Reset"
-}
-export interface ItemSelectedEvent {
-    id: string;
-    isMouseEvent: boolean;
-}
-export type EventTypes = {
-    [SidebarEvents.ItemSelected]: ItemSelectedEvent;
-    [SidebarEvents.Reset]: void;
-};
 export {};

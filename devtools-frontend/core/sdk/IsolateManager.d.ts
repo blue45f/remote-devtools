@@ -1,17 +1,16 @@
 import * as Common from '../common/common.js';
-import { type HeapProfilerModel } from './HeapProfilerModel.js';
+import type { HeapProfilerModel } from './HeapProfilerModel.js';
 import { RuntimeModel } from './RuntimeModel.js';
-import { type SDKModelObserver } from './TargetManager.js';
+import { type SDKModelObserver, TargetManager } from './TargetManager.js';
 export declare class IsolateManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDKModelObserver<RuntimeModel> {
     #private;
-    constructor();
-    static instance({ forceNew }?: {
+    constructor(targetManager?: TargetManager);
+    static instance({ forceNew, targetManager }?: {
         forceNew: boolean;
+        targetManager?: TargetManager;
     }): IsolateManager;
     observeIsolates(observer: Observer): void;
-    unobserveIsolates(observer: Observer): void;
     modelAdded(model: RuntimeModel): void;
-    private modelAddedInternal;
     modelRemoved(model: RuntimeModel): void;
     isolateByModel(model: RuntimeModel): Isolate | null;
     isolates(): Iterable<Isolate>;
@@ -22,17 +21,16 @@ export interface Observer {
     isolateRemoved(isolate: Isolate): void;
     isolateChanged(isolate: Isolate): void;
 }
-export declare enum Events {
-    MemoryChanged = "MemoryChanged"
+export declare const enum Events {
+    MEMORY_CHANGED = "MemoryChanged"
 }
-export type EventTypes = {
-    [Events.MemoryChanged]: Isolate;
-};
+export interface EventTypes {
+    [Events.MEMORY_CHANGED]: Isolate;
+}
 export declare const MemoryTrendWindowMs = 120000;
 export declare class Isolate {
     #private;
-    readonly modelsInternal: Set<RuntimeModel>;
-    constructor(id: string);
+    constructor(id: string, manager: IsolateManager);
     id(): string;
     models(): Set<RuntimeModel>;
     runtimeModel(): RuntimeModel | null;
@@ -44,7 +42,6 @@ export declare class Isolate {
      * bytes per millisecond
      */
     usedHeapSizeGrowRate(): number;
-    isMainThread(): boolean;
 }
 export declare class MemoryTrend {
     #private;

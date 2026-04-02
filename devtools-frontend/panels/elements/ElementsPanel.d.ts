@@ -3,33 +3,42 @@ import * as SDK from '../../core/sdk/sdk.js';
 import type * as Adorners from '../../ui/components/adorners/adorners.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { ComputedStyleWidget } from './ComputedStyleWidget.js';
-import { type MarkerDecorator } from './MarkerDecorator.js';
+import { type ElementsTreeOutline } from './ElementsTreeOutline.js';
+import type { MarkerDecorator } from './MarkerDecorator.js';
 import { StylesSidebarPane } from './StylesSidebarPane.js';
 /**
  * These strings need to match the `SidebarPaneCodes` in UserMetrics.ts. DevTools
  * collects usage metrics for the different sidebar tabs.
  */
 export declare const enum SidebarPaneTabId {
-    Computed = "Computed",
-    Styles = "Styles"
+    COMPUTED = "computed",
+    STYLES = "styles"
 }
+type RevealAndSelectNodeOptsSelectionAndFocus = {
+    showPanel?: false;
+    focusNode?: never;
+} | {
+    showPanel: true;
+    focusNode?: boolean;
+};
+type RevealAndSelectNodeOpts = RevealAndSelectNodeOptsSelectionAndFocus & {
+    highlightInOverlay?: boolean;
+};
+export declare const DEFAULT_COMPUTED_STYLES_DEBOUNCE_MS = 100;
 export declare class ElementsPanel extends UI.Panel.Panel implements UI.SearchableView.Searchable, SDK.TargetManager.SDKModelObserver<SDK.DOMModel.DOMModel>, UI.View.ViewLocationResolver {
+    #private;
     private splitWidget;
-    private readonly searchableViewInternal;
     private mainContainer;
     private domTreeContainer;
     private splitMode;
     private readonly accessibilityTreeView;
     private breadcrumbs;
     stylesWidget: StylesSidebarPane;
-    private readonly computedStyleWidget;
     private readonly metricsWidget;
-    private treeOutlines;
     private searchResults;
     private currentSearchResultIndex;
     pendingNodeReveal: boolean;
     private readonly adornerManager;
-    private adornerSettingsPane;
     private readonly adornersByName;
     accessibilityTreeButton?: HTMLElement;
     domTreeButton?: HTMLElement;
@@ -40,11 +49,16 @@ export declare class ElementsPanel extends UI.Panel.Panel implements UI.Searchab
     private notFirstInspectElement?;
     sidebarPaneView?: UI.View.TabbedViewLocation;
     private stylesViewToReveal?;
+    private nodeInsertedTaskRunner;
     private cssStyleTrackerByCSSModel;
+    getTreeOutlineForTesting(): ElementsTreeOutline | undefined;
     constructor();
-    private initializeFullAccessibilityTreeView;
+    private evaluateTrackingComputedStyleUpdatesForNode;
+    private handleElementExpanded;
+    private handleElementCollapsed;
     private showAccessibilityTree;
     private showDOMTree;
+    toggleAccessibilityTree(): void;
     static instance(opts?: {
         forceNew: boolean | null;
     } | undefined): ElementsPanel;
@@ -53,6 +67,7 @@ export declare class ElementsPanel extends UI.Panel.Panel implements UI.Searchab
     showToolbarPane(widget: UI.Widget.Widget | null, toggle: UI.Toolbar.ToolbarToggle | null): void;
     modelAdded(domModel: SDK.DOMModel.DOMModel): void;
     modelRemoved(domModel: SDK.DOMModel.DOMModel): void;
+    private handleNodeInserted;
     private targetNameChanged;
     private updateTreeOutlineVisibleWidth;
     focus(): void;
@@ -63,32 +78,53 @@ export declare class ElementsPanel extends UI.Panel.Panel implements UI.Searchab
     private selectedNodeChanged;
     private documentUpdatedEvent;
     private documentUpdated;
+    /**
+     * Best-effort restoration of the previously focused node after a reload.
+     *
+     * The CDP path-based mechanism works well for stable DOMs, but can be
+     * unreliable for pages that render asynchronously after the initial
+     * document update. To improve reliability we retry a few times, and also
+     * fall back to evaluating a JS path (document.querySelector(...)) when
+     * possible.
+     *
+     * Node resolution (computation) is separated from view state updates:
+     * resolveNode returns a DOMNode|null, and this method handles selection.
+     */
+    private restoreSelectedNodeAfterUpdate;
+    /**
+     * Attempts to resolve a DOM node by its CDP path.
+     * Pure computation -- does not modify view state.
+     */
+    private resolveNodeForRestoration;
+    private trySetFallbackSelection;
+    cancelPendingRestoration(): void;
     private lastSelectedNodeSelectedForTest;
     private setDefaultSelectedNode;
     onSearchClosed(): void;
     onSearchCanceled(): void;
     performSearch(searchConfig: UI.SearchableView.SearchConfig, shouldJump: boolean, jumpBackwards?: boolean): void;
     private domWordWrapSettingChanged;
-    switchToAndFocus(node: SDK.DOMModel.DOMNode): void;
     private jumpToSearchResult;
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
     private highlightCurrentSearchResult;
     private hideSearchHighlights;
     selectedDOMNode(): SDK.DOMModel.DOMNode | null;
-    selectDOMNode(node: SDK.DOMModel.DOMNode, focus?: boolean): void;
+    selectDOMNode(node: SDK.DOMModel.DOMNode | SDK.DOMModel.AdoptedStyleSheet, focus?: boolean): void;
+    highlightNodeAttribute(node: SDK.DOMModel.DOMNode, attribute: string): void;
     selectAndShowSidebarTab(tabId: SidebarPaneTabId): void;
     private updateBreadcrumbIfNeeded;
     private crumbNodeSelected;
-    private treeOutlineForNode;
-    private treeElementForNode;
     private leaveUserAgentShadowDOM;
-    revealAndSelectNode(nodeToReveal: SDK.DOMModel.DOMNode, focus: boolean, omitHighlight?: boolean): Promise<void>;
+    revealAndSelectNode(nodeToReveal: SDK.DOMModel.DOMNode, opts?: RevealAndSelectNodeOpts): Promise<void>;
+    revealAndSelectAdoptedStyleSheet(nodeToReveal: SDK.DOMModel.AdoptedStyleSheet, opts?: RevealAndSelectNodeOpts): Promise<void>;
     private showUAShadowDOMChanged;
     private setupTextSelectionHack;
     private initializeSidebarPanes;
+    revealComputedStylesPane(): void;
     private updateSidebarPosition;
     private extensionSidebarPaneAdded;
     private addExtensionSidebarPane;
@@ -96,38 +132,40 @@ export declare class ElementsPanel extends UI.Panel.Panel implements UI.Searchab
     private setupStyleTracking;
     private removeStyleTracking;
     private trackedCSSPropertiesUpdated;
-    showAdornerSettingsPane(): void;
+    populateAdornerSettingsContextMenu(contextMenu: UI.ContextMenu.ContextMenu): void;
     isAdornerEnabled(adornerText: string): boolean;
     registerAdorner(adorner: Adorners.Adorner.Adorner): void;
     deregisterAdorner(adorner: Adorners.Adorner.Adorner): void;
-    private static firstInspectElementCompletedForTest;
-    private static firstInspectElementNodeNameForTest;
+    toggleHideElement(node: SDK.DOMModel.DOMNode): void;
+    toggleEditAsHTML(node: SDK.DOMModel.DOMNode): void;
+    duplicateNode(node: SDK.DOMModel.DOMNode): void;
+    copyStyles(node: SDK.DOMModel.DOMNode): void;
+    resolveInitialState(parentElement: Element, reveal: boolean, lookupId: string, anchor?: SDK.DOMModel.DOMNode | SDK.NetworkRequest.NetworkRequest): Promise<{
+        x: number;
+        y: number;
+    } | null>;
+    protected static firstInspectElementCompletedForTest: () => void;
+    protected static firstInspectElementNodeNameForTest: string;
 }
-export declare const enum _splitMode {
-    Vertical = "Vertical",
-    Horizontal = "Horizontal"
+export declare class ContextMenuProvider implements UI.ContextMenu.Provider<SDK.RemoteObject.RemoteObject | SDK.DOMModel.DOMNode | SDK.DOMModel.DeferredDOMNode> {
+    appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, object: SDK.RemoteObject.RemoteObject | SDK.DOMModel.DOMNode | SDK.DOMModel.DeferredDOMNode): void;
 }
-export declare class ContextMenuProvider implements UI.ContextMenu.Provider {
-    appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, object: Object): void;
-    static instance(): ContextMenuProvider;
+/**
+ * Wraps around the Node so we can pass it into the DOMNodeRevealer but
+ * distinguish that we want to reveal the computed styles panel.
+ */
+export declare class NodeComputedStyles {
+    readonly node: SDK.DOMModel.DOMNode;
+    constructor(node: SDK.DOMModel.DOMNode);
 }
-export declare class DOMNodeRevealer implements Common.Revealer.Revealer {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): DOMNodeRevealer;
-    reveal(node: Object, omitFocus?: boolean): Promise<void>;
+export declare class DOMNodeRevealer implements Common.Revealer.Revealer<SDK.DOMModel.DOMNode | SDK.DOMModel.DeferredDOMNode | SDK.RemoteObject.RemoteObject | SDK.DOMModel.AdoptedStyleSheet | NodeComputedStyles> {
+    reveal(node: SDK.DOMModel.DOMNode | SDK.DOMModel.DeferredDOMNode | SDK.RemoteObject.RemoteObject | SDK.DOMModel.AdoptedStyleSheet | NodeComputedStyles, omitFocus?: boolean): Promise<void>;
 }
-export declare class CSSPropertyRevealer implements Common.Revealer.Revealer {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): CSSPropertyRevealer;
-    reveal(property: Object): Promise<void>;
+export declare class CSSPropertyRevealer implements Common.Revealer.Revealer<SDK.CSSProperty.CSSProperty> {
+    reveal(property: SDK.CSSProperty.CSSProperty): Promise<void>;
 }
 export declare class ElementsActionDelegate implements UI.ActionRegistration.ActionDelegate {
     handleAction(context: UI.Context.Context, actionId: string): boolean;
-    static instance(opts?: {
-        forceNew: boolean | null;
-    } | undefined): ElementsActionDelegate;
 }
 export declare class PseudoStateMarkerDecorator implements MarkerDecorator {
     static instance(opts?: {
@@ -138,3 +176,4 @@ export declare class PseudoStateMarkerDecorator implements MarkerDecorator {
         color: string;
     } | null;
 }
+export {};

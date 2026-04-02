@@ -1,5 +1,5 @@
 import * as Common from '../../../core/common/common.js';
-import * as Extensions from '../../../models/extensions/extensions.js';
+import * as PanelCommon from '../../common/common.js';
 export interface Extension {
     getName(): string;
     getMediaType(): string | undefined;
@@ -15,19 +15,11 @@ export declare class ExtensionManager extends Common.ObjectWrapper.ObjectWrapper
     attach(): void;
     detach(): void;
     extensions(): Extension[];
-    getView(descriptorId: string): ExtensionIframe;
+    getView(descriptorId: string): PanelCommon.ExtensionIframe.ExtensionIframe;
 }
-declare class ExtensionIframe {
-    #private;
-    constructor(descriptor: Extensions.RecorderPluginManager.ViewDescriptor);
-    show(): void;
-    hide(): void;
-    frame(): HTMLIFrameElement;
+export declare const enum Events {
+    EXTENSIONS_UPDATED = "extensionsUpdated"
 }
-export declare enum Events {
-    ExtensionsUpdated = "extensionsUpdated"
+export interface EventTypes {
+    [Events.EXTENSIONS_UPDATED]: Extension[];
 }
-export type EventTypes = {
-    [Events.ExtensionsUpdated]: Extension[];
-};
-export {};

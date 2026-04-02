@@ -1,17 +1,16 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Platform from '../../core/platform/platform.js';
 export class FilterSuggestionBuilder {
     keys;
     valueSorter;
-    valuesMap;
+    valuesMap = new Map();
     constructor(keys, valueSorter) {
         this.keys = keys;
-        this.valueSorter = valueSorter || ((key, result) => result.sort());
-        this.valuesMap = new Map();
+        this.valueSorter = valueSorter || ((_, result) => result.sort());
     }
-    completions(expression, prefix, force) {
+    completions(_expression, prefix, force) {
         if (!prefix && !force) {
             return Promise.resolve([]);
         }
@@ -26,7 +25,7 @@ export class FilterSuggestionBuilder {
             const matcher = new RegExp('^' + Platform.StringUtilities.escapeForRegExp(prefix), 'i');
             for (const key of this.keys) {
                 if (matcher.test(key)) {
-                    suggestions.push({ text: modifier + key + ':' });
+                    suggestions.push(({ text: modifier + key + ':' }));
                 }
             }
         }
@@ -38,7 +37,7 @@ export class FilterSuggestionBuilder {
             this.valueSorter(key, values);
             for (const item of values) {
                 if (matcher.test(item) && (item !== value)) {
-                    suggestions.push({ text: modifier + key + ':' + item });
+                    suggestions.push(({ text: modifier + key + ':' + item }));
                 }
             }
         }
@@ -50,7 +49,7 @@ export class FilterSuggestionBuilder {
         }
         let set = this.valuesMap.get(key);
         if (!set) {
-            set = new Set();
+            set = (new Set());
             this.valuesMap.set(key, set);
         }
         set.add(value);

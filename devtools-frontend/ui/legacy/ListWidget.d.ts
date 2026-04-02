@@ -1,19 +1,29 @@
+import './Toolbar.js';
 import { VBox } from './Widget.js';
 export declare class ListWidget<T> extends VBox {
+    #private;
     private delegate;
     private readonly list;
     private lastSeparator;
     private focusRestorer;
-    private items;
     private editable;
     private elements;
     private editor;
     private editItem;
     private editElement;
     private emptyPlaceholder;
-    constructor(delegate: Delegate<T>, delegatesFocus?: boolean | undefined);
+    private isTable;
+    constructor(delegate: Delegate<T>, delegatesFocus?: boolean, isTable?: boolean);
+    get items(): T[];
     clear(): void;
-    appendItem(item: T, editable: boolean): void;
+    updateItem(index: number, newItem: T, editable: boolean, focusable?: boolean, controlLabels?: {
+        edit?: string;
+        delete?: string;
+    }): void;
+    appendItem(item: T, editable: boolean, focusable?: boolean, controlLabels?: {
+        edit?: string;
+        delete?: string;
+    }): void;
     appendSeparator(): void;
     removeItem(index: number): void;
     addNewItem(index: number, item: T): void;
@@ -26,7 +36,8 @@ export declare class ListWidget<T> extends VBox {
     private stopEditing;
 }
 export interface Delegate<T> {
-    renderItem(item: T, editable: boolean): Element;
+    updateItem?(content: Element, newItem: T, editable: boolean, index: number): void;
+    renderItem(item: T, editable: boolean, index: number): Element;
     removeItemRequested(item: T, index: number): void;
     beginEdit(item: T): Editor<T>;
     commitEdit(item: T, editor: Editor<T>, isNew: boolean): void;
@@ -37,8 +48,8 @@ export interface CustomEditorControl<T> extends HTMLElement {
 }
 export type EditorControl<T = string> = (HTMLInputElement | HTMLSelectElement | CustomEditorControl<T>);
 export declare class Editor<T> {
+    #private;
     element: HTMLDivElement;
-    private readonly contentElementInternal;
     private commitButton;
     private readonly cancelButton;
     private errorMessageContainer;

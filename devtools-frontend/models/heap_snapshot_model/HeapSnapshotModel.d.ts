@@ -3,6 +3,7 @@ export declare const HeapSnapshotProgressEvent: {
     BrokenSnapshot: string;
 };
 export declare const baseSystemDistance = 100000000;
+export declare const baseUnreachableDistance: number;
 export declare class AllocationNodeCallers {
     nodesWithSingleCaller: SerializedAllocationNode[];
     branchingCallers: SerializedAllocationNode[];
@@ -41,6 +42,7 @@ export declare class Node {
     canBeQueried: boolean;
     detachedDOMTreeNode: boolean;
     isAddedNotRemoved: boolean | null;
+    ignored: boolean;
     constructor(id: number, name: string, distance: number, nodeIndex: number, retainedSize: number, selfSize: number, type: string);
 }
 export declare class Edge {
@@ -51,23 +53,23 @@ export declare class Edge {
     isAddedNotRemoved: boolean | null;
     constructor(name: string, node: Node, type: string, edgeIndex: number);
 }
-export declare class Aggregate {
+export interface AggregatedInfo {
     count: number;
     distance: number;
     self: number;
     maxRet: number;
-    type: number;
     name: string;
     idxs: number[];
-    constructor();
 }
 export declare class AggregateForDiff {
+    name: string;
     indexes: number[];
     ids: number[];
     selfSizes: number[];
     constructor();
 }
 export declare class Diff {
+    name: string;
     addedCount: number;
     removedCount: number;
     addedSize: number;
@@ -76,18 +78,7 @@ export declare class Diff {
     addedIndexes: number[];
     countDelta: number;
     sizeDelta: number;
-    constructor();
-}
-export declare class DiffForClass {
-    addedCount: number;
-    removedCount: number;
-    addedSize: number;
-    removedSize: number;
-    deletedIndexes: number[];
-    addedIndexes: number[];
-    countDelta: number;
-    sizeDelta: number;
-    constructor();
+    constructor(name: string);
 }
 export declare class ComparatorConfig {
     fieldName1: string;
@@ -96,7 +87,7 @@ export declare class ComparatorConfig {
     ascending2: boolean;
     constructor(fieldName1: string, ascending1: boolean, fieldName2: string, ascending2: boolean);
 }
-export declare class WorkerCommand {
+export interface WorkerCommand {
     callId: number;
     disposition: string;
     objectId: number;
@@ -104,14 +95,13 @@ export declare class WorkerCommand {
     methodName: string;
     methodArguments: any[];
     source: string;
-    constructor();
 }
 export declare class ItemsRange {
     startPosition: number;
     endPosition: number;
     totalLength: number;
-    items: (Node | Edge)[];
-    constructor(startPosition: number, endPosition: number, totalLength: number, items: (Node | Edge)[]);
+    items: Array<Node | Edge>;
+    constructor(startPosition: number, endPosition: number, totalLength: number, items: Array<Node | Edge>);
 }
 export declare class StaticData {
     nodeCount: number;
@@ -120,30 +110,36 @@ export declare class StaticData {
     maxJSObjectId: number;
     constructor(nodeCount: number, rootNodeIndex: number, totalSize: number, maxJSObjectId: number);
 }
-export declare class Statistics {
+export interface Statistics {
     total: number;
-    v8heap: number;
-    native: number;
-    code: number;
-    jsArrays: number;
-    strings: number;
-    system: number;
-    constructor();
+    native: {
+        total: number;
+        typedArrays: number;
+    };
+    v8heap: {
+        total: number;
+        code: number;
+        jsArrays: number;
+        strings: number;
+        system: number;
+    };
 }
 export declare class NodeFilter {
     minNodeId: number | undefined;
     maxNodeId: number | undefined;
     allocationNodeId: number | undefined;
+    filterName: string | undefined;
     constructor(minNodeId?: number, maxNodeId?: number);
     equals(o: NodeFilter): boolean;
 }
 export declare class SearchConfig {
     query: string;
     caseSensitive: boolean;
+    wholeWord: boolean;
     isRegex: boolean;
     shouldJump: boolean;
     jumpBackward: boolean;
-    constructor(query: string, caseSensitive: boolean, isRegex: boolean, shouldJump: boolean, jumpBackward: boolean);
+    constructor(query: string, caseSensitive: boolean, wholeWord: boolean, isRegex: boolean, shouldJump: boolean, jumpBackward: boolean);
     toSearchRegex(_global?: boolean): {
         regex: RegExp;
         fromQuery: boolean;

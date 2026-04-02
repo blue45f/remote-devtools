@@ -1,9 +1,13 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2026 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 // This file is auto-generated, do not edit manually.
 // Re-generate with: npm run generate-protocol-resources
 export const UIStrings = {
+    /**
+     * @description This warning occurs when the website uses Attribution Reporting.
+     */
+    AttributionReporting: "Attribution Reporting is deprecated and will be removed. See https://goo.gle/ps-status for details.",
     /**
      * @description We show this warning when 1) an 'authorization' header is attached to the request by scripts, 2) there is no 'authorization' in the 'access-control-allow-headers' header in the response, and 3) there is a wildcard symbol ('*') in the 'access-control-allow-header' header in the response. This is allowed now, but we're planning to reject such responses and require responses to have an 'access-control-allow-headers' containing 'authorization'.
      */
@@ -25,10 +29,6 @@ export const UIStrings = {
      */
     ChromeLoadTimesWasAlternateProtocolAvailable: "`chrome.loadTimes()` is deprecated, instead use standardized API: `nextHopProtocol` in Navigation Timing 2.",
     /**
-     * @description This warning occurs when the browser attempts to store a cookie containing a banned character. Rather than the cookie string being truncated at the banned character, the entire cookie will be rejected now.
-     */
-    CookieWithTruncatingChar: "Cookies containing a `\\(0|r|n)` character will be rejected instead of truncated.",
-    /**
      * @description This warning occurs when a frame accesses another frame's data after having set `document.domain` without having set the `Origin-Agent-Cluster` http header. This is a companion warning to `documentDomainSettingWithoutOriginAgentClusterHeader`, where that warning occurs when `document.domain` is set, and this warning occurs when an access has been made, based on that previous `document.domain` setting.
      */
     CrossOriginAccessBasedOnDocumentDomain: "Relaxing the same-origin policy by setting `document.domain` is deprecated, and will be disabled by default. This deprecation warning is for a cross-origin access that was enabled by setting `document.domain`.",
@@ -45,35 +45,43 @@ export const UIStrings = {
      */
     CSSSelectorInternalMediaControlsOverlayCastButton: "The `disableRemotePlayback` attribute should be used in order to disable the default Cast integration instead of using `-internal-media-controls-overlay-cast-button` selector.",
     /**
+     * @description Warning displayed to developers to let them know the CSS appearance property value they used is not standard and will be removed.
+     */
+    CSSValueAppearanceSliderVertical: "CSS appearance value `slider-vertical` is not standardized and will be removed.",
+    /**
      * @description Warning displayed to developers when a data: URL is assigned to SVGUseElement to let them know that the support is deprecated.
      */
     DataUrlInSvgUse: "Support for data: URLs in SVGUseElement is deprecated and it will be removed in the future.",
     /**
-     * @description This warning occurs when a script modifies `document.domain` without having set on `Origin-Agent-Cluster` http header. In other words, when a script relies on the default behaviour of `Origin-Agent-Cluster` when setting document.domain.
+     * @description Warning displayed to developers when document.createEvent() is called with 'KeyboardEvents', which is a non-standard event interface that will be removed.
      */
-    DocumentDomainSettingWithoutOriginAgentClusterHeader: "Relaxing the same-origin policy by setting `document.domain` is deprecated, and will be disabled by default. To continue using this feature, please opt-out of origin-keyed agent clusters by sending an `Origin-Agent-Cluster: ?0` header along with the HTTP response for the document and frames. See https://developer.chrome.com/blog/immutable-document-domain/ for more details.",
+    DocumentCreateEventKeyboardEvents: "document.createEvent('KeyboardEvents') is deprecated and will be removed. Use `new KeyboardEvent()` instead.",
     /**
-     * @description Warning displayed to developers when non-standard Mutation Events are used. These are deprecated and will be removed.
+     * @description Warning displayed to developers when document.createEvent() is called with 'TransitionEvent', which is a non-standard event interface that will be removed.
      */
-    DOMMutationEvents: "DOM Mutation Events, including `DOMSubtreeModified`, `DOMNodeInserted`, `DOMNodeRemoved`, `DOMNodeRemovedFromDocument`, `DOMNodeInsertedIntoDocument`, and `DOMCharacterDataModified` are deprecated (https://w3c.github.io/uievents/#legacy-event-types) and will be removed. Please use `MutationObserver` instead.",
+    DocumentCreateEventTransitionEvent: "document.createEvent('TransitionEvent') is deprecated and will be removed. Use `new TransitionEvent()` instead.",
     /**
-     * @description This message is shown when the deprecated Expect-CT header is present.
+     * @description Translation is not needed, this will never be exposed in production code.
      */
-    ExpectCTHeader: "The `Expect-CT` header is deprecated and will be removed. Chrome requires Certificate Transparency for all publicly trusted certificates issued after April 30, 2018.",
+    ExampleBrowserProcessDeprecation: "This is an example for showing the code required for a browser process reported deprecation.",
+    /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when one of the Protected Audience APIs like `navigator.joinAdInterestGroup`, `navigator.getInterestGroupAdAuctionData` or `navigator.runAdAuction` are called.
+     */
+    Fledge: "The Protected Audience API is deprecated and will be removed in a future release.",
     /**
      * @description Warning displayed to developers when the Geolocation API is used from an insecure origin (one that isn't localhost or doesn't use HTTPS) to notify them that this use is no longer supported.
      */
-    GeolocationInsecureOrigin: "`getCurrentPosition()` and `watchPosition()` no longer work on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
+    GeolocationInsecureOrigin: "`getCurrentPosition()` and `watchPosition()` no longer work on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://www.chromium.org/Home/chromium-security/deprecating-powerful-features-on-insecure-origins/ for more details.",
     /**
      * @description Warning displayed to developers when the Geolocation API is used from an insecure origin (one that isn't localhost or doesn't use HTTPS) to notify them that this use is deprecated.
      */
-    GeolocationInsecureOriginDeprecatedNotRemoved: "`getCurrentPosition()` and `watchPosition()` are deprecated on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
+    GeolocationInsecureOriginDeprecatedNotRemoved: "`getCurrentPosition()` and `watchPosition()` are deprecated on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://www.chromium.org/Home/chromium-security/deprecating-powerful-features-on-insecure-origins/ for more details.",
     /**
      * @description This warning occurs when the `getUserMedia()` API is invoked on an insecure (e.g., HTTP) site. This is only permitted on secure sites (e.g., HTTPS).
      */
-    GetUserMediaInsecureOrigin: "`getUserMedia()` no longer works on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
+    GetUserMediaInsecureOrigin: "`getUserMedia()` no longer works on insecure origins. To use this feature, you should consider switching your application to a secure origin, such as HTTPS. See https://www.chromium.org/Home/chromium-security/deprecating-powerful-features-on-insecure-origins/ for more details.",
     /**
-     * @description A deprecation warning shown to developers in the DevTools Issues tab when code tries to use the deprecated hostCandidate field, guiding developers to use the the equivalent information in the .address and .port fields instead.
+     * @description A deprecation warning shown to developers in the DevTools Issues tab when code tries to use the deprecated hostCandidate field, guiding developers to use the equivalent information in the .address and .port fields instead.
      */
     HostCandidateAttributeGetter: "`RTCPeerConnectionIceErrorEvent.hostCandidate` is deprecated. Please use `RTCPeerConnectionIceErrorEvent.address` or `RTCPeerConnectionIceErrorEvent.port` instead.",
     /**
@@ -89,21 +97,41 @@ export const UIStrings = {
      */
     InterestGroupDailyUpdateUrl: "The `dailyUpdateUrl` field of `InterestGroups` passed to `joinAdInterestGroup()` has been renamed to `updateUrl`, to more accurately reflect its behavior.",
     /**
+     * @description Warning displayed to developers that instead of calling the `Intl.v8BreakIterator` constructor, which is not a standard JavaScript API, use ECMA402 standard API Intl.Segmenter shipped in end of 2020 instead.
+     */
+    IntlV8BreakIterator: "`Intl.v8BreakIterator` is deprecated. Please use `Intl.Segmenter` instead.",
+    /**
+     * @description Warning for using deprecated 'inputQuota' attribute.
+     */
+    LanguageModel_InputQuota: "LanguageModel.inputQuota is deprecated. Please use LanguageModel.contextWindow instead. This alias is only available in extensions.",
+    /**
+     * @description Warning for using deprecated 'inputUsage' attribute.
+     */
+    LanguageModel_InputUsage: "LanguageModel.inputUsage is deprecated. Please use LanguageModel.contextUsage instead. This alias is only available in extensions.",
+    /**
+     * @description Warning for using deprecated 'measureInputUsage' method.
+     */
+    LanguageModel_MeasureInputUsage: "LanguageModel.measureInputUsage() is deprecated. Please use LanguageModel.measureContextUsage() instead. This alias is only available in extensions.",
+    /**
+     * @description Warning for using deprecated 'onquotaoverflow' event handler.
+     */
+    LanguageModel_OnQuotaOverflow: "LanguageModel.onquotaoverflow is deprecated. Please use LanguageModel.oncontextoverflow instead. The LanguageModel.onquotaoverflow alias is only available in extensions.",
+    /**
+     * @description Warning message for web developers when they call the deprecated LanguageModel.params() method.
+     */
+    LanguageModelParams: "LanguageModel.params() is deprecated and now only available in extension contexts. The topK and temperature related fields within its result are also deprecated.",
+    /**
+     * @description Warning message for web developers when they use the deprecated 'temperature' option in LanguageModel.create() or access the .temperature attribute.
+     */
+    LanguageModelTemperature: "The 'temperature' parameter/attribute for LanguageModel is deprecated. It is only functional within extensions and may be removed in the future.",
+    /**
+     * @description Warning message for web developers when they use the deprecated 'topK' option in LanguageModel.create() or access the .topK attribute.
+     */
+    LanguageModelTopK: "The 'topK' parameter/attribute for LanguageModel is deprecated. It is only functional within extensions and may be removed in the future.",
+    /**
      * @description This warning occurs when a stylesheet loaded from a local file directive does not end in the file type `.css`.
      */
     LocalCSSFileExtensionRejected: "CSS cannot be loaded from `file:` URLs unless they end in a `.css` file extension.",
-    /**
-     * @description This is a deprecation warning to developers that occurs when the script attempts to use the Media Source Extensions API in a way that is no longer supported by the specification for the API. The usage that is problematic is when the script calls the `SourceBuffer.abort()` method at a time when there is still processing happening in response to a previous `SourceBuffer.remove()` call for the same SourceBuffer object. More precisely, we show this warning to developers when script calls the SourceBuffer abort() method while the asynchronous processing of a remove() call on that SourceBuffer is not yet complete. Early versions of the Media Source Extensions specification allowed such aborts, but standardization of the specification resulted in disallowing the aborts. The script should instead wait for the asynchronous remove() operation to complete, which is observable by listening for the associated 'updateend' event from the SourceBuffer. A note is also included in the warning, describing when abort() is meaningful and allowed by the specification for purposes other than interrupting a remove() operation's asynchronous steps. Those supported purposes include using abort() to interrupt processing that may still be happening in response to a previous appendBuffer() call on that SourceBuffer, or using abort() to clear the internal of any unprocessed data remaining from previous appendBuffer() calls. See https://www.w3.org/TR/media-source-2/#dom-sourcebuffer-abort for the currently specified behavior, which would throw an exception once the deprecated removal abort is no longer supported. See https://github.com/w3c/media-source/issues/19 for the discussion that led to the specification change.
-     */
-    MediaSourceAbortRemove: "Using `SourceBuffer.abort()` to abort `remove()`'s asynchronous range removal is deprecated due to specification change. Support will be removed in the future. You should listen to the `updateend` event instead. `abort()` is intended to only abort an asynchronous media append or reset parser state.",
-    /**
-     * @description This is a deprecation warning to developers that occurs when the script attempts to use the Media Source Extensions API in a way that is no longer supported by the specification for the API. The usage that is problematic is when the script sets the duration attribute of a MediaSource object too low. The duration attribute of a MediaSource must be longer than the actual duration of any media (audio or video) already in the MediaSource. When set too low, the MediaSource must remove audio and video content that is beyond the time indicated by the new duration. Content removal that is caused by setting the duration attribute too low is no longer allowed by the specification. The message describes the minimum allowable duration value as the 'highest presentation timestamp of any buffered coded frames' as a more precise way of describing the duration of content already in the MediaSource: 'coded frames' are the specification's way of describing compressed audio frames or compressed video frames, and they each have a 'presentation timestamp' that describes precisely when that frame's playback occurs in the overall media presentation. Early versions of the Media Source Extensions specification allowed this to happen, but standardization of the specification resulted in disallowing this behavior. The underlying issue leading to this specification change was that setting the duration attribute should be synchronous, but setting it lower than the timestamp of something currently buffered would cause confusing removal of media between that new duration and the previous, larger, duration. The script should instead explicitly remove that range of media first, before lowering the duration. See https://www.w3.org/TR/media-source-2/#dom-mediasource-duration and https://www.w3.org/TR/media-source-2/#dom-mediasource-duration for the currently specified behavior, which would throw an exception once support is removed for deprecated implicit asynchronous range removal when duration is truncated. See both https://github.com/w3c/media-source/issues/20 and https://github.com/w3c/media-source/issues/26 for the discussion that led to the specification change.
-     */
-    MediaSourceDurationTruncatingBuffered: "Setting `MediaSource.duration` below the highest presentation timestamp of any buffered coded frames is deprecated due to specification change. Support for implicit removal of truncated buffered media will be removed in the future. You should instead perform explicit `remove(newDuration, oldDuration)` on all `sourceBuffers`, where `newDuration < oldDuration`.",
-    /**
-     * @description This warning is displayed when a site contains a `<template>` element with the `shadowroot` attribute.
-     */
-    NonStandardDeclarativeShadowDOM: "The older, non-standardized `shadowroot` attribute is deprecated, and will *no longer function* in M119. Please use the new, standardized `shadowrootmode` attribute instead.",
     /**
      * @description This warning occurs when the browser requests Web MIDI access as sysex (system exclusive messages) can be allowed via prompt even if the browser did not specifically request it.
      */
@@ -111,7 +139,7 @@ export const UIStrings = {
     /**
      * @description Warning displayed to developers when the Notification API is used from an insecure origin (one that isn't localhost or doesn't use HTTPS) to notify them that this use is no longer supported.
      */
-    NotificationInsecureOrigin: "The Notification API may no longer be used from insecure origins. You should consider switching your application to a secure origin, such as HTTPS. See https://goo.gle/chrome-insecure-origins for more details.",
+    NotificationInsecureOrigin: "The Notification API may no longer be used from insecure origins. You should consider switching your application to a secure origin, such as HTTPS. See https://www.chromium.org/Home/chromium-security/deprecating-powerful-features-on-insecure-origins/ for more details.",
     /**
      * @description Warning displayed to developers when permission to use notifications has been requested by a cross-origin iframe, to notify them that this use is no longer supported.
      */
@@ -119,7 +147,7 @@ export const UIStrings = {
     /**
      * @description Warning displayed to developers when CreateImageBitmap is used with the newly deprecated option imageOrientation: 'none'.
      */
-    ObsoleteCreateImageBitmapImageOrientationNone: "Option `imageOrientation: 'none'` in createImageBitmap is deprecated. Please use createImageBitmap with option {imageOrientation: 'from-image'} instead.",
+    ObsoleteCreateImageBitmapImageOrientationNone: "Option `imageOrientation: 'none'` in createImageBitmap is deprecated. Please use createImageBitmap with option '{imageOrientation: 'from-image'}' instead.",
     /**
      * @description This warning occurs when the WebRTC protocol attempts to negotiate a connection using an obsolete cipher and risks connection security.
      */
@@ -128,6 +156,10 @@ export const UIStrings = {
      * @description Warning displayed to developers that use overflow:visible for replaced elements. This declaration was earlier ignored but will now change the element's painting based on whether the overflow value allows the element to paint outside its bounds.
      */
     OverflowVisibleOnReplacedElement: "Specifying `overflow: visible` on img, video and canvas tags may cause them to produce visual content outside of the element bounds. See https://github.com/WICG/shared-element-transitions/blob/main/debugging_overflow_on_images.md.",
+    /**
+     * @description Warning displayed to developers when they use a Flash Embed URLS to let them know that the browser will not automatically link to their equivalent HTML5 link.
+     */
+    OverrideFlashEmbedwithHTML: "Legacy flash video embed has been rewritten to HTML iframe. Flash is long gone, this rewriting hack is deprecated and may be removed in the future.",
     /**
      * @description Warning displayed to developers when they use the PaymentInstruments API to let them know this API is deprecated.
      */
@@ -177,13 +209,13 @@ export const UIStrings = {
      */
     PrefixedVideoSupportsFullscreen: "HTMLVideoElement.webkitSupportsFullscreen is deprecated. Please use Document.fullscreenEnabled instead.",
     /**
-     * @description Warning displayed to developers that the API `chrome.privacy.websites.privacySandboxEnabled` is being deprecated in favour of three new more granular APIs: topicsEnabled, FledgeEnabled and adMeasurementEnabled. The `privacySandboxEnabled` API allowed extensions to control the homologous Chrome Setting. The existing Chrome Setting for Privacy Sandbox is also going away in favor of more granular settings that are matched by the new extensions APIs- topicsEnabled, FledgeEnabled and adMeasurementEnabled.
-     */
-    PrivacySandboxExtensionsAPI: "We're deprecating the API `chrome.privacy.websites.privacySandboxEnabled`, though it will remain active for backward compatibility until release M113. Instead, please use `chrome.privacy.websites.topicsEnabled`, `chrome.privacy.websites.fledgeEnabled` and `chrome.privacy.websites.adMeasurementEnabled`. See https://developer.chrome.com/docs/extensions/reference/privacy/#property-websites-privacySandboxEnabled.",
-    /**
      * @description Standard message when one web API is deprecated in favor of another.
      */
     RangeExpand: "Range.expand() is deprecated. Please use Selection.modify() instead.",
+    /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when the Storage Access API is automatically granted by Related Website Sets. The placeholder will always be the string `Related Website Sets`.
+     */
+    RelatedWebsiteSets: "`Related Website Sets` is deprecated and will be removed. See https://privacysandbox.com/news/update-on-plans-for-privacy-sandbox-technologies/ for more details.",
     /**
      * @description This warning occurs when a subresource loaded by a page has a URL with an authority portion. These are disallowed.
      */
@@ -209,25 +241,33 @@ export const UIStrings = {
      */
     SharedArrayBufferConstructedWithoutIsolation: "`SharedArrayBuffer` will require cross-origin isolation. See https://developer.chrome.com/blog/enabling-shared-array-buffer/ for more details.",
     /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when one of the Shared Storage APIs like `sharedStorage.set()`, `sharedStorage.worklet.addModule()`, `sharedStorage.selectURL()`, etc., along with `<img sharedstoragewritable>`, `<iframe sharedstoragewritable>`, or `fetch(url, {sharedStorageWritable: true})` are used.
+     */
+    SharedStorage: "The Shared Storage API is deprecated and will be removed in a future release.",
+    /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when the `document.requestStorageAccessFor` API is called. The placeholder will always be the string `document.requestStorageAccessFor`.
+     */
+    StorageAccessAPI_requestStorageAccessFor_Method: "`document.requestStorageAccessFor` is deprecated and will be removed. See https://privacysandbox.com/news/update-on-plans-for-privacy-sandbox-technologies/ for more details.",
+    /**
      * @description A deprecation warning shown in the DevTools Issues tab. It's shown when the speech synthesis API is called before the page receives a user activation.
      */
     TextToSpeech_DisallowedByAutoplay: "`speechSynthesis.speak()` without user activation is deprecated and will be removed.",
+    /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when one of the Topics APIs like `document.browsingTopics()`, `<img browsingtopics>`, `<iframe browsingtopics>`, or `fetch(url, {browsingTopics: true})` are used.
+     */
+    Topics: "The Topics API is deprecated and will be removed in a future release.",
+    /**
+     * @description A deprecation warning shown in the DevTools Issues tab. It's shown when a listener for the `unload` event is added.
+     */
+    UnloadHandler: "Unload event listeners are deprecated and will be removed.",
     /**
      * @description A deprecation warning shown in the DevTools Issues tab. The placeholder is always the noun 'SharedArrayBuffer' which refers to a JavaScript construct. 'Extensions' refers to Chrome extensions. The warning is shown when Chrome Extensions attempt to use 'SharedArrayBuffer's under insecure circumstances.
      */
     V8SharedArrayBufferConstructedInExtensionWithoutIsolation: "Extensions should opt into cross-origin isolation to continue using `SharedArrayBuffer`. See https://developer.chrome.com/docs/extensions/mv3/cross-origin-isolation/.",
     /**
-     * @description Warning displayed to developers when the Web SQL API is used to let them know this API is deprecated.
+     * @description This warning occurs when the deprecated `BluetoothRemoteGATTCharacteristic.writeValue()` method is used. Developers should use `writeValueWithResponse()` or `writeValueWithoutResponse()` instead.
      */
-    WebSQL: "Web SQL is deprecated. Please use SQLite WebAssembly or Indexed Database",
-    /**
-     * @description A deprecation warning shown in the DevTools Issues tab. 'window-placement' and 'window-management' are the name of the javascript descriptors (do not translate). The warning is shown when web pages attempt to use 'window-placement' in permission APIs (e.g. navigator.permissions.query(...))
-     */
-    WindowPlacementPermissionDescriptorUsed: "The permission descriptor `window-placement` is deprecated. Use `window-management` instead. For more help, check https://bit.ly/window-placement-rename.",
-    /**
-     * @description A deprecation warning shown in the DevTools Issues tab. 'window-placement' and 'window-management' are the name of the policy descriptors (do not translate). The warning is shown when web pages attempt to use 'window-placement' as a permission policy (parsed in iframe or header).
-     */
-    WindowPlacementPermissionPolicyParsed: "The permission policy `window-placement` is deprecated. Use `window-management` instead. For more help, check https://bit.ly/window-placement-rename.",
+    WebBluetoothRemoteCharacteristicWriteValue: "`BluetoothRemoteGATTCharacteristic.writeValue()` is deprecated. Use `writeValueWithResponse()` or `writeValueWithoutResponse()` instead.",
     /**
      * @description Warning displayed to developers that they are using `XMLHttpRequest` API in a way that they expect an unsupported character encoding `UTF-16` could be used in the server reply.
      */
@@ -237,16 +277,22 @@ export const UIStrings = {
      */
     XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload: "Synchronous `XMLHttpRequest` on the main thread is deprecated because of its detrimental effects to the end user's experience. For more help, check https://xhr.spec.whatwg.org/.",
     /**
-     * @description Warning displayed to developers that instead of using `supportsSession()`, which returns a promise that resolves if the XR session can be supported and rejects if not, they should use `isSessionSupported()` which will return a promise which resolves to a boolean indicating if the XR session can be supported or not, but may reject to throw an exception.
+     * @description Warning displayed to developers that they are using either the XSLTProcessor API, or XSLT processing instructions, both of which have been deprecated and are scheduled to be removed.
      */
-    XRSupportsSession: "`supportsSession()` is deprecated. Please use `isSessionSupported()` and check the resolved boolean value instead.",
+    XSLT: "XSLTProcessor and XSLT Processing Instructions have been deprecated by all browsers. These features will be removed from this browser soon.",
 };
 export const DEPRECATIONS_METADATA = {
+    "AttributionReporting": {
+        "chromeStatusFeature": 6320639375966208
+    },
     "AuthorizationCoveredByWildcard": {
         "milestone": 97
     },
     "CSSSelectorInternalMediaControlsOverlayCastButton": {
         "chromeStatusFeature": 5714245488476160
+    },
+    "CSSValueAppearanceSliderVertical": {
+        "chromeStatusFeature": 6001359429566464
     },
     "CanRequestURLHTTPContainingNewline": {
         "chromeStatusFeature": 5735596811091968
@@ -260,26 +306,20 @@ export const DEPRECATIONS_METADATA = {
     "ChromeLoadTimesWasAlternateProtocolAvailable": {
         "chromeStatusFeature": 5637885046816768
     },
-    "CookieWithTruncatingChar": {
-        "milestone": 103
-    },
     "CrossOriginAccessBasedOnDocumentDomain": {
         "milestone": 115
-    },
-    "DOMMutationEvents": {
-        "chromeStatusFeature": 5083947249172480,
-        "milestone": 127
     },
     "DataUrlInSvgUse": {
         "chromeStatusFeature": 5128825141198848,
         "milestone": 119
     },
-    "DocumentDomainSettingWithoutOriginAgentClusterHeader": {
-        "milestone": 115
+    "DocumentCreateEventKeyboardEvents": {
+        "chromeStatusFeature": 5095987863486464,
+        "milestone": 151
     },
-    "ExpectCTHeader": {
-        "chromeStatusFeature": 6244547273687040,
-        "milestone": 107
+    "DocumentCreateEventTransitionEvent": {
+        "chromeStatusFeature": 5095987863486464,
+        "milestone": 151
     },
     "IdentityInCanMakePaymentEvent": {
         "chromeStatusFeature": 5190978431352832
@@ -288,22 +328,33 @@ export const DEPRECATIONS_METADATA = {
         "chromeStatusFeature": 5436853517811712,
         "milestone": 92
     },
+    "LanguageModelParams": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModelTemperature": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModelTopK": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModel_InputQuota": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModel_InputUsage": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModel_MeasureInputUsage": {
+        "chromeStatusFeature": 5134603979063296
+    },
+    "LanguageModel_OnQuotaOverflow": {
+        "chromeStatusFeature": 5134603979063296
+    },
     "LocalCSSFileExtensionRejected": {
         "milestone": 64
-    },
-    "MediaSourceAbortRemove": {
-        "chromeStatusFeature": 6107495151960064
-    },
-    "MediaSourceDurationTruncatingBuffered": {
-        "chromeStatusFeature": 6107495151960064
     },
     "NoSysexWebMIDIWithoutPermission": {
         "chromeStatusFeature": 5138066234671104,
         "milestone": 82
-    },
-    "NonStandardDeclarativeShadowDOM": {
-        "chromeStatusFeature": 6239658726391808,
-        "milestone": 119
     },
     "NotificationPermissionRequestedIframe": {
         "chromeStatusFeature": 6451284559265792
@@ -317,6 +368,9 @@ export const DEPRECATIONS_METADATA = {
     "OverflowVisibleOnReplacedElement": {
         "chromeStatusFeature": 5137515594383360,
         "milestone": 108
+    },
+    "OverrideFlashEmbedwithHTML": {
+        "milestone": 140
     },
     "PaymentInstruments": {
         "chromeStatusFeature": 5099285054488576
@@ -338,6 +392,9 @@ export const DEPRECATIONS_METADATA = {
         "chromeStatusFeature": 4631626228695040,
         "milestone": 117
     },
+    "RelatedWebsiteSets": {
+        "chromeStatusFeature": 5194473869017088
+    },
     "RequestedSubresourceWithEmbeddedCredentials": {
         "chromeStatusFeature": 5669008342777856
     },
@@ -348,30 +405,31 @@ export const DEPRECATIONS_METADATA = {
     "SharedArrayBufferConstructedWithoutIsolation": {
         "milestone": 106
     },
+    "SharedStorage": {
+        "chromeStatusFeature": 5076349064708096
+    },
+    "StorageAccessAPI_requestStorageAccessFor_Method": {
+        "chromeStatusFeature": 5162221567082496
+    },
     "TextToSpeech_DisallowedByAutoplay": {
         "chromeStatusFeature": 5687444770914304,
         "milestone": 71
     },
+    "UnloadHandler": {
+        "chromeStatusFeature": 5579556305502208
+    },
     "V8SharedArrayBufferConstructedInExtensionWithoutIsolation": {
         "milestone": 96
     },
-    "WebSQL": {
-        "chromeStatusFeature": 5134293578285056,
-        "milestone": 115
-    },
-    "WindowPlacementPermissionDescriptorUsed": {
-        "chromeStatusFeature": 5137018030391296,
-        "milestone": 112
-    },
-    "WindowPlacementPermissionPolicyParsed": {
-        "chromeStatusFeature": 5137018030391296,
-        "milestone": 112
+    "WebBluetoothRemoteCharacteristicWriteValue": {
+        "chromeStatusFeature": 5088568590598144
     },
     "XHRJSONEncodingDetection": {
         "milestone": 93
     },
-    "XRSupportsSession": {
-        "milestone": 80
+    "XSLT": {
+        "chromeStatusFeature": 4709671889534976,
+        "milestone": 143
     }
 };
 //# sourceMappingURL=Deprecation.js.map

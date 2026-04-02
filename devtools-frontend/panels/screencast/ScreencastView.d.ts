@@ -2,6 +2,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class ScreencastView extends UI.Widget.VBox implements SDK.OverlayModel.Highlighter {
+    #private;
     private readonly screenCaptureModel;
     private domModel;
     private readonly overlayModel;
@@ -31,7 +32,6 @@ export declare class ScreencastView extends UI.Widget.VBox implements SDK.Overla
     private navigationBack;
     private navigationForward;
     private canvasContainerElement?;
-    private isCasting?;
     private checkerboardPattern?;
     private targetInactive?;
     private deferredCasting?;
@@ -42,11 +42,16 @@ export declare class ScreencastView extends UI.Widget.VBox implements SDK.Overla
     private navigationBar?;
     private navigationReload?;
     private navigationProgressBar?;
+    private touchInputToggle?;
+    private mouseInputToggle?;
+    private touchInputToggleIcon?;
+    private mouseInputToggleIcon?;
     private historyIndex?;
     private historyEntries?;
+    private isCasting;
+    private screencastOperationId?;
     constructor(screenCaptureModel: SDK.ScreenCaptureModel.ScreenCaptureModel);
     initialize(): void;
-    wasShown(): void;
     willHide(): void;
     private startCasting;
     private stopCasting;
@@ -56,9 +61,10 @@ export declare class ScreencastView extends UI.Widget.VBox implements SDK.Overla
     private onSuspendStateChange;
     private updateGlasspane;
     private handleMouseEvent;
+    private handleWheelEvent;
     private handleKeyEvent;
-    private handleContextMenuEvent;
     private handleBlurEvent;
+    private handleContextMenuEvent;
     private convertIntoScreenSpace;
     onResize(): void;
     highlightInOverlay(data: SDK.OverlayModel.HighlightData, config: Protocol.Overlay.HighlightConfig | null): void;

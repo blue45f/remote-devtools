@@ -1,12 +1,19 @@
 import * as Types from '../types/types.js';
+import { ScoreClassification } from './PageLoadMetricsHandler.js';
+import type { HandlerName } from './types.js';
+export declare const LONG_INTERACTION_THRESHOLD: Types.Timing.Micro;
 export interface UserInteractionsData {
-    /** All the user events we found in the trace */
-    allEvents: readonly Types.TraceEvents.TraceEventEventTiming[];
-    /** All the interaction events we found in the trace that had an
+    /** All the BeginCommitCompositorFrame events we found in the trace */
+    beginCommitCompositorFrameEvents: readonly Types.Events.BeginCommitCompositorFrame[];
+    /** All the ParseMetaViewport events we found in the trace */
+    parseMetaViewportEvents: readonly Types.Events.ParseMetaViewport[];
+    /**
+     * All the interaction events we found in the trace that had an
      * interactionId and a duration > 0
      **/
-    interactionEvents: readonly Types.TraceEvents.SyntheticInteractionEvent[];
-    /** If the user rapidly generates interaction events (think typing into a
+    interactionEvents: readonly Types.Events.SyntheticInteractionPair[];
+    /**
+     * If the user rapidly generates interaction events (think typing into a
      * text box), in the UI we only really want to show the user the longest
      * interaction in that set.
      * For example picture interactions like this:
@@ -20,13 +27,14 @@ export interface UserInteractionsData {
      * all the interaction events filtered down, removing any nested interactions
      * entirely.
      **/
-    interactionEventsWithNoNesting: readonly Types.TraceEvents.SyntheticInteractionEvent[];
-    longestInteractionEvent: Readonly<Types.TraceEvents.SyntheticInteractionEvent> | null;
+    interactionEventsWithNoNesting: readonly Types.Events.SyntheticInteractionPair[];
+    longestInteractionEvent: Readonly<Types.Events.SyntheticInteractionPair> | null;
+    interactionsOverThreshold: Readonly<Set<Types.Events.SyntheticInteractionPair>>;
 }
 export declare function reset(): void;
-export declare function handleEvent(event: Types.TraceEvents.TraceEventData): void;
+export declare function handleEvent(event: Types.Events.Event): void;
 export type InteractionCategory = 'KEYBOARD' | 'POINTER' | 'OTHER';
-export declare function categoryOfInteraction(interaction: Types.TraceEvents.SyntheticInteractionEvent): InteractionCategory;
+export declare function categoryOfInteraction(interaction: Types.Events.SyntheticInteractionPair): InteractionCategory;
 /**
  * We define a set of interactions as nested where:
  * 1. Their end times align.
@@ -49,7 +57,22 @@ export declare function categoryOfInteraction(interaction: Types.TraceEvents.Syn
  *   =======B=[keyup]=====
  *    ====C=[pointerdown]=
  *         =D=[pointerup]=
+ *
+ * Additionally, this method will also maximise the processing duration of the
+ * events that we keep as non-nested. We want to make sure we give an accurate
+ * representation of main thread activity, so if we keep an event + hide its
+ * nested children, we set the top level event's processing start &
+ * processing end to be the earliest processing start & the latest processing
+ * end of its children. This ensures we report a more accurate main thread
+ * activity time which is important as we want developers to focus on fixing
+ * this.
  **/
-export declare function removeNestedInteractions(interactions: readonly Types.TraceEvents.SyntheticInteractionEvent[]): readonly Types.TraceEvents.SyntheticInteractionEvent[];
+export declare function removeNestedInteractionsAndSetProcessingTime(interactions: readonly Types.Events.SyntheticInteractionPair[]): readonly Types.Events.SyntheticInteractionPair[];
 export declare function finalize(): Promise<void>;
 export declare function data(): UserInteractionsData;
+export declare function deps(): HandlerName[];
+/**
+ * Classifications sourced from
+ * https://web.dev/articles/inp#good-score
+ */
+export declare function scoreClassificationForInteractionToNextPaint(timing: Types.Timing.Micro): ScoreClassification;

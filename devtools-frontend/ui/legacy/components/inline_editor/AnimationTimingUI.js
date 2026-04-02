@@ -1,7 +1,10 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Geometry from '../../../../models/geometry/geometry.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 import { BezierUI } from './BezierUI.js';
 import { CSSLinearEasingModel } from './CSSLinearEasingModel.js';
@@ -28,9 +31,9 @@ class BezierCurveUI {
         UI.UIUtils.installDragHandle(this.#curve, this.dragStart.bind(this), this.dragMove.bind(this), this.dragEnd.bind(this), 'default');
     }
     dragStart(event) {
-        this.#mouseDownPosition = new UI.Geometry.Point(event.x, event.y);
+        this.#mouseDownPosition = new Geometry.Point(event.x, event.y);
         const ui = this.#curveUI;
-        this.#controlPosition = new UI.Geometry.Point(Platform.NumberUtilities.clamp((event.offsetX - ui.radius) / ui.curveWidth(), 0, 1), (ui.curveHeight() + ui.marginTop + ui.radius - event.offsetY) / ui.curveHeight());
+        this.#controlPosition = new Geometry.Point(Platform.NumberUtilities.clamp((event.offsetX - ui.radius) / ui.curveWidth(), 0, 1), (ui.curveHeight() + ui.marginTop + ui.radius - event.offsetY) / ui.curveHeight());
         const firstControlPointIsCloser = this.#controlPosition.distanceTo(this.#bezier.controlPoints[0]) <
             this.#controlPosition.distanceTo(this.#bezier.controlPoints[1]);
         this.#selectedPoint = firstControlPointIsCloser ? 0 : 1;
@@ -46,7 +49,7 @@ class BezierCurveUI {
         }
         const deltaX = (mouseX - this.#mouseDownPosition.x) / this.#curveUI.curveWidth();
         const deltaY = (mouseY - this.#mouseDownPosition.y) / this.#curveUI.curveHeight();
-        const newPosition = new UI.Geometry.Point(Platform.NumberUtilities.clamp(this.#controlPosition.x + deltaX, 0, 1), this.#controlPosition.y - deltaY);
+        const newPosition = new Geometry.Point(Platform.NumberUtilities.clamp(this.#controlPosition.x + deltaX, 0, 1), this.#controlPosition.y - deltaY);
         this.#bezier.controlPoints[this.#selectedPoint] = newPosition;
     }
     dragMove(event) {
@@ -79,6 +82,7 @@ class LinearEasingPresentation {
     }
     #drawControlPoint(parentElement, controlX, controlY, index) {
         const circle = UI.UIUtils.createSVGChild(parentElement, 'circle', 'bezier-control-circle');
+        circle.setAttribute('jslog', `${VisualLogging.controlPoint('bezier.linear-control-circle').track({ drag: true, dblclick: true })}`);
         circle.setAttribute('data-point-index', String(index));
         circle.setAttribute('cx', String(controlX));
         circle.setAttribute('cy', String(controlY));
@@ -242,7 +246,7 @@ export class PresetUI {
         if (model instanceof CSSLinearEasingModel) {
             this.#linearEasingPresentation.draw(model, svg);
         }
-        else if (model instanceof UI.Geometry.CubicBezier) {
+        else if (model instanceof Geometry.CubicBezier) {
             this.#bezierPresentation.drawCurve(model, svg);
         }
     }
@@ -268,7 +272,7 @@ export class AnimationTimingUI {
         this.#container.appendChild(this.#linearEasingContainer);
         this.#model = model;
         this.#onChange = onChange;
-        if (this.#model instanceof UI.Geometry.CubicBezier) {
+        if (this.#model instanceof Geometry.CubicBezier) {
             this.#bezierCurveUI =
                 new BezierCurveUI({ bezier: this.#model, container: this.#bezierContainer, onBezierChange: this.#onChange });
         }
@@ -285,7 +289,7 @@ export class AnimationTimingUI {
     }
     setModel(model) {
         this.#model = model;
-        if (this.#model instanceof UI.Geometry.CubicBezier) {
+        if (this.#model instanceof Geometry.CubicBezier) {
             if (this.#bezierCurveUI) {
                 this.#bezierCurveUI.setBezier(this.#model);
             }
@@ -307,7 +311,7 @@ export class AnimationTimingUI {
     }
     draw() {
         this.#linearEasingContainer.classList.toggle('hidden', !(this.#model instanceof CSSLinearEasingModel));
-        this.#bezierContainer.classList.toggle('hidden', !(this.#model instanceof UI.Geometry.CubicBezier));
+        this.#bezierContainer.classList.toggle('hidden', !(this.#model instanceof Geometry.CubicBezier));
         if (this.#bezierCurveUI) {
             this.#bezierCurveUI.draw();
         }

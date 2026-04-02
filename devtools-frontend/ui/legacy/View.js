@@ -1,15 +1,25 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import * as Platform from '../../core/platform/platform.js';
 import { ViewManager } from './ViewManager.js';
 import { VBox } from './Widget.js';
 export class SimpleView extends VBox {
     #title;
     #viewId;
-    constructor(title, isWebComponent, viewId) {
-        super(isWebComponent);
-        this.#title = title;
-        this.#viewId = viewId ?? title;
+    /**
+     * Constructs a new `SimpleView` with the given `options`.
+     *
+     * @param options the settings for the resulting view.
+     * @throws TypeError - if `options.viewId` is not in extended kebab case.
+     */
+    constructor(options) {
+        super(options);
+        this.#title = options.title;
+        this.#viewId = options.viewId;
+        if (!Platform.StringUtilities.isExtendedKebabCase(this.#viewId)) {
+            throw new TypeError(`Invalid view ID '${this.#viewId}'`);
+        }
     }
     viewId() {
         return this.#viewId;
@@ -36,6 +46,9 @@ export class SimpleView extends VBox {
     }
     isPreviewFeature() {
         return false;
+    }
+    iconName() {
+        return undefined;
     }
 }
 //# sourceMappingURL=View.js.map

@@ -4,8 +4,7 @@
         "outDir": "."
     },
     "files": [
-        "icon.css.js",
-        "iconButton.css.js",
-        "newIcon.css.js"
+        "fileSourceIcon.css.js",
+        "iconButton.css.js"
     ]
 }

@@ -1,48 +1,46 @@
 import * as Common from '../../../../core/common/common.js';
-import * as Platform from '../../../../core/platform/platform.js';
-import type * as SDK from '../../../../core/sdk/sdk.js';
+import * as Trace from '../../../../models/trace/trace.js';
 import * as UI from '../../legacy.js';
 declare const FilmStripView_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: import("../../../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.HBox;
 export declare class FilmStripView extends FilmStripView_base {
+    #private;
     private statusLabel;
     private zeroTime;
-    private model;
     constructor();
-    static setImageData(imageElement: HTMLImageElement, data: string | null): void;
-    setModel(filmStripModel: SDK.FilmStripModel.FilmStripModel, zeroTime: number): void;
-    createFrameElement(frame: SDK.FilmStripModel.Frame): Promise<Element>;
-    frameByTime(time: number): SDK.FilmStripModel.Frame;
+    static setImageData(imageElement: HTMLImageElement, dataUri: string | null): void;
+    setModel(filmStrip: Trace.Extras.FilmStrip.Data): void;
+    createFrameElement(frame: Trace.Extras.FilmStrip.Frame): HTMLButtonElement;
     update(): void;
     private onMouseEvent;
     private onDoubleClick;
     reset(): void;
     setStatusText(text: string): void;
 }
-export declare enum Events {
-    FrameSelected = "FrameSelected",
-    FrameEnter = "FrameEnter",
-    FrameExit = "FrameExit"
+export declare const enum Events {
+    FRAME_SELECTED = "FrameSelected",
+    FRAME_ENTER = "FrameEnter",
+    FRAME_EXIT = "FrameExit"
 }
-export type EventTypes = {
-    [Events.FrameSelected]: number;
-    [Events.FrameEnter]: number;
-    [Events.FrameExit]: number;
-};
+export interface EventTypes {
+    [Events.FRAME_SELECTED]: number;
+    [Events.FRAME_ENTER]: number;
+    [Events.FRAME_EXIT]: number;
+}
 export declare class Dialog {
-    private fragment;
+    #private;
     private readonly widget;
-    private frames;
     private index;
-    private zeroTime;
     private dialog;
-    constructor(filmStripFrame: SDK.FilmStripModel.Frame, zeroTime?: number);
+    static fromFilmStrip(filmStrip: Trace.Extras.FilmStrip.Data, selectedFrameIndex: number): Dialog;
+    private constructor();
+    hide(): void;
     private resize;
     private keyDown;
     private onPrevFrame;

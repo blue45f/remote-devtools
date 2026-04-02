@@ -1,12 +1,14 @@
-// Copyright 2012 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import '../../ui/kit/kit.js';
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
-import { iconDataForResourceType } from '../../panels/utils/utils.js';
+import { PanelUtils } from '../../panels/utils/utils.js';
+import { Directives, html } from '../../ui/lit/lit.js';
 import { FilteredUISourceCodeListProvider } from './FilteredUISourceCodeListProvider.js';
 import { SourcesView } from './SourcesView.js';
+const { styleMap } = Directives;
 export class OpenFileQuickOpen extends FilteredUISourceCodeListProvider {
     attach() {
         this.setDefaultScores(SourcesView.defaultUISourceCodeScores());
@@ -27,19 +29,13 @@ export class OpenFileQuickOpen extends FilteredUISourceCodeListProvider {
     filterProject(project) {
         return !project.isServiceProject();
     }
-    renderItem(itemIndex, query, titleElement, subtitleElement) {
-        super.renderItem(itemIndex, query, titleElement, subtitleElement);
-        const iconElement = new IconButton.Icon.Icon();
-        const iconData = iconDataForResourceType(this.itemContentTypeAt(itemIndex));
-        iconElement.data = {
-            ...iconData,
-            width: '20px',
-            height: '20px',
-        };
-        titleElement.parentElement?.parentElement?.insertBefore(iconElement, titleElement.parentElement);
-    }
-    renderAsTwoRows() {
-        return true;
+    renderItem(itemIndex, query) {
+        const { iconName, color } = PanelUtils.iconDataForResourceType(this.itemContentTypeAt(itemIndex));
+        // clang-format off
+        return html `
+      <devtools-icon class="large" name=${iconName} style=${styleMap({ color })}></devtools-icon>
+      ${super.renderItem(itemIndex, query)}`;
+        // clang-format on
     }
 }
 //# sourceMappingURL=OpenFileQuickOpen.js.map

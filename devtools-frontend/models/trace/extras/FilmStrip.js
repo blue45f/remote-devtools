@@ -1,30 +1,37 @@
+// Copyright 2023 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+//
 import * as Platform from '../../../core/platform/platform.js';
 // Cache film strips based on:
 // 1. The trace parsed data object
 // 2. The start time.
-const filmStripCache = new Map();
-export function filmStripFromTraceEngine(traceData, customZeroTime) {
+const filmStripCache = new WeakMap();
+export function fromHandlerData(data, customZeroTime) {
     const frames = [];
-    const zeroTime = typeof customZeroTime !== 'undefined' ? customZeroTime : traceData.Meta.traceBounds.min;
-    const fromCache = filmStripCache.get(traceData)?.get(zeroTime);
+    const zeroTime = typeof customZeroTime !== 'undefined' ? customZeroTime : data.Meta.traceBounds.min;
+    const spanTime = data.Meta.traceBounds.range;
+    const fromCache = filmStripCache.get(data)?.get(zeroTime);
     if (fromCache) {
         return fromCache;
     }
-    for (const screenshot of traceData.Screenshots) {
-        if (screenshot.ts < zeroTime) {
+    const screenshots = data.Screenshots.screenshots ?? data.Screenshots.legacySyntheticScreenshots ?? [];
+    for (const screenshotEvent of screenshots) {
+        if (screenshotEvent.ts < zeroTime) {
             continue;
         }
         const frame = {
             index: frames.length,
-            screenshotEvent: screenshot,
-            screenshotAsString: screenshot.args.snapshot,
+            screenshotEvent,
         };
         frames.push(frame);
     }
     const result = {
+        zeroTime,
+        spanTime,
         frames: Array.from(frames),
     };
-    const cachedForData = Platform.MapUtilities.getWithDefault(filmStripCache, traceData, () => new Map());
+    const cachedForData = Platform.MapUtilities.getWithDefault(filmStripCache, data, () => new Map());
     cachedForData.set(zeroTime, result);
     return result;
 }

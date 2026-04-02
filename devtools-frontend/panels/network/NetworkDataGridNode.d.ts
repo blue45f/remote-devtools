@@ -1,23 +1,29 @@
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as HAR from '../../models/har/har.js';
+import type * as NetworkTimeCalculator from '../../models/network_time_calculator/network_time_calculator.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type NetworkTimeCalculator } from './NetworkTimeCalculator.js';
-export declare enum Events {
+export declare const enum Events {
     RequestSelected = "RequestSelected",
     RequestActivated = "RequestActivated"
 }
+export declare const enum RequestPanelBehavior {
+    ShowPanel = "ShowPanel",
+    HidePanel = "HidePanel",
+    Unchanged = "Unchanged"
+}
 export interface RequestActivatedEvent {
-    showPanel: boolean;
+    showPanel: RequestPanelBehavior;
     takeFocus?: boolean;
     tab?: NetworkForward.UIRequestLocation.UIRequestTabs;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.RequestSelected]: SDK.NetworkRequest.NetworkRequest;
     [Events.RequestActivated]: RequestActivatedEvent;
-};
+}
 export interface NetworkLogViewInterface extends Common.EventTarget.EventTarget<EventTypes> {
     onLoadFromFile(file: File): Promise<void>;
     nodeForRequest(request: SDK.NetworkRequest.NetworkRequest): NetworkRequestNode | null;
@@ -31,9 +37,9 @@ export interface NetworkLogViewInterface extends Common.EventTarget.EventTarget<
     addFilmStripFrames(times: number[]): void;
     selectFilmStripFrame(time: number): void;
     clearFilmStripFrame(): void;
-    timeCalculator(): NetworkTimeCalculator;
-    calculator(): NetworkTimeCalculator;
-    setCalculator(x: NetworkTimeCalculator): void;
+    timeCalculator(): NetworkTimeCalculator.NetworkTimeCalculator;
+    calculator(): NetworkTimeCalculator.NetworkTimeCalculator;
+    setCalculator(x: NetworkTimeCalculator.NetworkTimeCalculator): void;
     flatNodesList(): NetworkNode[];
     updateNodeBackground(): void;
     updateNodeSelectedClass(isSelected: boolean): void;
@@ -42,7 +48,7 @@ export interface NetworkLogViewInterface extends Common.EventTarget.EventTarget<
     rowHeight(): number;
     switchViewMode(gridMode: boolean): void;
     handleContextMenuForRequest(contextMenu: UI.ContextMenu.ContextMenu, request: SDK.NetworkRequest.NetworkRequest): void;
-    exportAll(): Promise<void>;
+    exportAll(options: HAR.Log.BuildOptions): Promise<void>;
     revealAndHighlightRequest(request: SDK.NetworkRequest.NetworkRequest): void;
     selectRequest(request: SDK.NetworkRequest.NetworkRequest): void;
     removeAllNodeHighlights(): void;
@@ -59,13 +65,14 @@ export declare class NetworkNode extends DataGrid.SortableDataGrid.SortableDataG
     displayName(): string;
     displayType(): string;
     createCell(columnId: string): HTMLElement;
-    renderCell(cell: Element, columnId: string): void;
-    isFailed(): boolean;
+    renderCell(_cell: Element, _columnId: string): void;
+    isError(): boolean;
+    isWarning(): boolean;
     backgroundColor(): string;
     updateBackgroundColor(): void;
     setStriped(isStriped: boolean): void;
-    select(supressSelectedEvent?: boolean): void;
-    deselect(supressSelectedEvent?: boolean): void;
+    select(suppressSelectedEvent?: boolean): void;
+    deselect(suppressSelectedEvent?: boolean): void;
     parentView(): NetworkLogViewInterface;
     hovered(): boolean;
     showingInitiatorChain(): boolean;
@@ -79,12 +86,9 @@ export declare class NetworkNode extends DataGrid.SortableDataGrid.SortableDataG
     clearFlatNodes(): void;
     requestOrFirstKnownChildRequest(): SDK.NetworkRequest.NetworkRequest | null;
 }
-export declare const _backgroundColors: {
-    [x: string]: string;
-};
+export declare const _backgroundColors: Record<string, string>;
 export declare class NetworkRequestNode extends NetworkNode {
     #private;
-    private nameCell;
     private initiatorCell;
     private requestInternal;
     private readonly isNavigationRequestInternal;
@@ -92,10 +96,13 @@ export declare class NetworkRequestNode extends NetworkNode {
     private isOnInitiatorPathInternal;
     private isOnInitiatedPathInternal;
     private linkifiedInitiatorAnchor?;
+    private static readonly requestNumberByRequest;
     constructor(parentView: NetworkLogViewInterface, request: SDK.NetworkRequest.NetworkRequest);
+    private static requestNumber;
     static NameComparator(a: NetworkNode, b: NetworkNode): number;
     static RemoteAddressComparator(a: NetworkNode, b: NetworkNode): number;
     static SizeComparator(a: NetworkNode, b: NetworkNode): number;
+    static RequestNumberComparator(a: NetworkNode, b: NetworkNode): number;
     static TypeComparator(a: NetworkNode, b: NetworkNode): number;
     static InitiatorComparator(a: NetworkNode, b: NetworkNode): number;
     static InitiatorAddressSpaceComparator(a: NetworkNode, b: NetworkNode): number;
@@ -103,9 +110,13 @@ export declare class NetworkRequestNode extends NetworkNode {
     static RequestCookiesCountComparator(a: NetworkNode, b: NetworkNode): number;
     static ResponseCookiesCountComparator(a: NetworkNode, b: NetworkNode): number;
     static PriorityComparator(a: NetworkNode, b: NetworkNode): number;
+    static IsAdRelatedComparator(a: NetworkNode, b: NetworkNode): number;
+    static RenderBlockingComparator(a: NetworkNode, b: NetworkNode): number;
     static RequestPropertyComparator(propertyName: string, a: NetworkNode, b: NetworkNode): number;
     static RequestURLComparator(a: NetworkNode, b: NetworkNode): number;
-    static ResponseHeaderStringComparator(propertyName: string, a: NetworkNode, b: NetworkNode): number;
+    static HeaderStringComparator(getHeaderValue: (request: SDK.NetworkRequest.NetworkRequest, propertyName: string) => string | undefined, propertyName: string, a: NetworkNode, b: NetworkNode): number;
+    static readonly ResponseHeaderStringComparator: (propertyName: string, a: NetworkNode, b: NetworkNode) => number;
+    static readonly RequestHeaderStringComparator: (propertyName: string, a: NetworkNode, b: NetworkNode) => number;
     static ResponseHeaderNumberComparator(propertyName: string, a: NetworkNode, b: NetworkNode): number;
     static ResponseHeaderDateComparator(propertyName: string, a: NetworkNode, b: NetworkNode): number;
     showingInitiatorChainChanged(): void;
@@ -118,26 +129,31 @@ export declare class NetworkRequestNode extends NetworkNode {
     request(): SDK.NetworkRequest.NetworkRequest;
     isNavigationRequest(): boolean;
     nodeSelfHeight(): number;
-    createCells(element: Element): void;
+    private isPrefetch;
+    throttlingConditions(): SDK.NetworkManager.AppliedNetworkConditions | undefined;
+    isWarning(): boolean;
+    isError(): boolean;
+    createCells(trElement: HTMLElement): void;
     private setTextAndTitle;
     private setTextAndTitleAsLink;
     renderCell(c: Element, columnId: string): void;
     private arrayLength;
-    select(supressSelectedEvent?: boolean): void;
-    highlightMatchedSubstring(regexp: RegExp | null): Object[];
+    select(suppressSelectedEvent?: boolean): void;
     private openInNewTab;
-    isFailed(): boolean;
+    private isFailed;
     private renderPrimaryCell;
     private renderStatusCell;
     private renderProtocolCell;
+    private renderRenderBlockingCell;
     private renderInitiatorCell;
     private renderAddressSpaceCell;
     private renderSizeCell;
     private renderTimeCell;
     private appendSubtitle;
+    private createAiButtonIfAvailable;
 }
 export declare class NetworkGroupNode extends NetworkNode {
     createCells(element: Element): void;
     renderCell(c: Element, columnId: string): void;
-    select(supressSelectedEvent?: boolean): void;
+    select(suppressSelectedEvent?: boolean): void;
 }

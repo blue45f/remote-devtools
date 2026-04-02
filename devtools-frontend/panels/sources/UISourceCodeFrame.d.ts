@@ -3,24 +3,18 @@ import * as Workspace from '../../models/workspace/workspace.js';
 import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import type { Plugin } from './Plugin.js';
 declare const UISourceCodeFrame_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.ToolbarItemsChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.ToolbarItemsChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.ToolbarItemsChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.ToolbarItemsChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.ToolbarItemsChanged>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.TOOLBAR_ITEMS_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.TOOLBAR_ITEMS_CHANGED>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.TOOLBAR_ITEMS_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.TOOLBAR_ITEMS_CHANGED): boolean;
+    dispatchEventToListeners<T extends Events.TOOLBAR_ITEMS_CHANGED>(eventType: import("../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof SourceFrame.SourceFrame.SourceFrameImpl;
 export declare class UISourceCodeFrame extends UISourceCodeFrame_base {
     #private;
-    private uiSourceCodeInternal;
-    private muteSourceCodeEvents;
-    private persistenceBinding;
-    private uiSourceCodeEventListeners;
-    private messageAndDecorationListeners;
-    private readonly boundOnBindingChanged;
     private plugins;
-    private readonly errorPopoverHelper;
     constructor(uiSourceCode: Workspace.UISourceCode.UISourceCode);
     private workingCopy;
     protected editorConfiguration(doc: string): CodeMirror.Extension;
@@ -34,7 +28,6 @@ export declare class UISourceCodeFrame extends UISourceCodeFrame_base {
     wasShown(): void;
     willHide(): void;
     protected getContentType(): string;
-    canEditSourceInternal(): boolean;
     private onNetworkPersistenceChanged;
     commitEditing(): void;
     setContent(content: string): Promise<void>;
@@ -45,6 +38,7 @@ export declare class UISourceCodeFrame extends UISourceCodeFrame_base {
     private onWorkingCopyCommitted;
     private reloadPlugins;
     private onTitleChanged;
+    static sourceFramePlugins(): Array<typeof Plugin>;
     private loadPlugins;
     private disposePlugins;
     private onBindingChanged;
@@ -60,10 +54,10 @@ export declare class UISourceCodeFrame extends UISourceCodeFrame_base {
     toolbarItems(): Promise<UI.Toolbar.ToolbarItem[]>;
     private getErrorPopoverContent;
 }
-export declare enum Events {
-    ToolbarItemsChanged = "ToolbarItemsChanged"
+export declare const enum Events {
+    TOOLBAR_ITEMS_CHANGED = "ToolbarItemsChanged"
 }
-export type EventTypes = {
-    [Events.ToolbarItemsChanged]: void;
-};
+export interface EventTypes {
+    [Events.TOOLBAR_ITEMS_CHANGED]: void;
+}
 export {};

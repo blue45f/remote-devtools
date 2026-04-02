@@ -1,5 +1,5 @@
-import { type ActionRegistry } from './ActionRegistry.js';
-import { KeyboardShortcut } from './KeyboardShortcut.js';
+import type { ActionRegistry } from './ActionRegistry.js';
+import { type Key, KeyboardShortcut, type Modifier } from './KeyboardShortcut.js';
 export declare class ShortcutRegistry {
     private readonly actionRegistry;
     private readonly actionToShortcut;
@@ -19,26 +19,23 @@ export declare class ShortcutRegistry {
     static removeInstance(): void;
     private applicableActions;
     shortcutsForAction(action: string): KeyboardShortcut[];
-    actionsForDescriptors(descriptors: {
+    actionsForDescriptors(descriptors: Array<{
         key: number;
         name: string;
-    }[]): string[];
+    }>): string[];
     globalShortcutKeys(): number[];
-    keysForActions(actionIds: string[]): number[];
+    keysForAction(actionId: string): number[];
     shortcutTitleForAction(actionId: string): string | undefined;
-    handleShortcut(event: KeyboardEvent, handlers?: {
-        [x: string]: () => Promise<boolean>;
-    }): void;
+    keyAndModifiersForAction(actionId: string): {
+        key: Key;
+        modifier: Modifier;
+    } | undefined;
+    devToolsToChromeModifier(devToolsModifier: Modifier): number;
+    handleShortcut(event: KeyboardEvent, handlers?: Record<string, () => Promise<boolean>>): void;
     actionHasDefaultShortcut(actionId: string): boolean;
-    getShortcutListener(handlers: {
-        [x: string]: () => Promise<boolean>;
-    }): (event: KeyboardEvent) => void;
-    addShortcutListener(element: Element, handlers: {
-        [x: string]: () => Promise<boolean>;
-    }): (arg0: Event) => void;
-    handleKey(key: number, domKey: string, event?: KeyboardEvent, handlers?: {
-        [x: string]: () => Promise<boolean>;
-    }): Promise<void>;
+    getShortcutListener(handlers: Record<string, () => Promise<boolean>>): (event: KeyboardEvent) => void;
+    addShortcutListener(element: Element, handlers: Record<string, () => Promise<boolean>>): (arg0: Event) => void;
+    handleKey(key: number, domKey: string, event?: KeyboardEvent, handlers?: Record<string, () => Promise<boolean>>): Promise<void>;
     registerUserShortcut(shortcut: KeyboardShortcut): void;
     removeShortcut(shortcut: KeyboardShortcut): void;
     disabledDefaultsForAction(actionId: string): Set<KeyboardShortcut>;
@@ -49,9 +46,7 @@ export declare class ShortcutRegistry {
     private isDisabledDefault;
 }
 export declare class ShortcutTreeNode {
-    private readonly keyInternal;
-    private actionsInternal;
-    private chordsInternal;
+    #private;
     private readonly depth;
     constructor(key: number, depth?: number);
     addAction(action: string): void;

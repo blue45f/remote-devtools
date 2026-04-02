@@ -1,123 +1,141 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
 import * as Platform from '../platform/platform.js';
 import * as ProtocolClient from '../protocol_client/protocol_client.js';
+import * as Root from '../root/root.js';
 import { SDKModel } from './SDKModel.js';
 export class Target extends ProtocolClient.InspectorBackend.TargetBase {
-    #targetManagerInternal;
-    #nameInternal;
-    #inspectedURLInternal;
-    #inspectedURLName;
+    #targetManager;
+    #name;
+    #inspectedURL = Platform.DevToolsPath.EmptyUrlString;
+    #inspectedURLName = '';
     #capabilitiesMask;
-    #typeInternal;
-    #parentTargetInternal;
-    #idInternal;
-    #modelByConstructor;
+    #type;
+    #parentTarget;
+    #id;
+    #modelByConstructor = new Map();
     #isSuspended;
-    #targetInfoInternal;
+    /**
+     * Generally when a target crashes we don't need to know, with one exception.
+     * If a target crashes during the recording of a performance trace, after the
+     * trace when we try to resume() it, it will fail because it has crashed. This
+     * causes the performance panel to freeze (see crbug.com/333989070). So we
+     * mark the target as crashed so we can exit without trying to resume it. In
+     * `ChildTargetManager` we will mark a target as "un-crashed" when we get the
+     * `targetInfoChanged` event. This helps ensure we can deal with cases where
+     * the page crashes, but a reload fixes it and the targets get restored (see
+     * crbug.com/387258086).
+     */
+    #hasCrashed = false;
+    #targetInfo;
     #creatingModels;
     constructor(targetManager, id, name, type, parentTarget, sessionId, suspended, connection, targetInfo) {
-        const needsNodeJSPatching = type === Type.Node;
-        super(needsNodeJSPatching, parentTarget, sessionId, connection);
-        this.#targetManagerInternal = targetManager;
-        this.#nameInternal = name;
-        this.#inspectedURLInternal = Platform.DevToolsPath.EmptyUrlString;
-        this.#inspectedURLName = '';
+        super(parentTarget, sessionId, connection);
+        this.#targetManager = targetManager;
+        this.#name = name;
         this.#capabilitiesMask = 0;
         switch (type) {
-            case Type.Frame:
-                this.#capabilitiesMask = Capability.Browser | Capability.Storage | Capability.DOM | Capability.JS |
-                    Capability.Log | Capability.Network | Capability.Target | Capability.Tracing | Capability.Emulation |
-                    Capability.Input | Capability.Inspector | Capability.Audits | Capability.WebAuthn | Capability.IO |
-                    Capability.Media;
-                if (parentTarget?.type() !== Type.Frame) {
+            case Type.FRAME:
+                this.#capabilitiesMask = 1 /* Capability.BROWSER */ | 8192 /* Capability.STORAGE */ | 2 /* Capability.DOM */ | 4 /* Capability.JS */ |
+                    8 /* Capability.LOG */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ | 128 /* Capability.TRACING */ | 256 /* Capability.EMULATION */ |
+                    1024 /* Capability.INPUT */ | 2048 /* Capability.INSPECTOR */ | 32768 /* Capability.AUDITS */ | 65536 /* Capability.WEB_AUTHN */ | 131072 /* Capability.IO */ |
+                    262144 /* Capability.MEDIA */ | 524288 /* Capability.EVENT_BREAKPOINTS */ | 1048576 /* Capability.DOM_STORAGE */;
+                if (Root.Runtime.hostConfig.devToolsWebMCPSupport?.enabled) {
+                    this.#capabilitiesMask |= 2097152 /* Capability.WEB_MCP */;
+                }
+                if (parentTarget?.type() !== Type.FRAME) {
                     // This matches backend exposing certain capabilities only for the main frame.
                     this.#capabilitiesMask |=
-                        Capability.DeviceEmulation | Capability.ScreenCapture | Capability.Security | Capability.ServiceWorker;
-                    if (targetInfo?.url.startsWith('chrome-extension://')) {
-                        this.#capabilitiesMask &= ~Capability.Security;
+                        4096 /* Capability.DEVICE_EMULATION */ | 64 /* Capability.SCREEN_CAPTURE */ | 512 /* Capability.SECURITY */ | 16384 /* Capability.SERVICE_WORKER */;
+                    if (Common.ParsedURL.schemeIs(targetInfo?.url, 'chrome-extension:')) {
+                        this.#capabilitiesMask &= ~512 /* Capability.SECURITY */;
                     }
                     // TODO(dgozman): we report service workers for the whole frame tree on the main frame,
                     // while we should be able to only cover the subtree corresponding to the target.
                 }
                 break;
             case Type.ServiceWorker:
-                this.#capabilitiesMask = Capability.JS | Capability.Log | Capability.Network | Capability.Target |
-                    Capability.Inspector | Capability.IO;
-                if (parentTarget?.type() !== Type.Frame) {
-                    this.#capabilitiesMask |= Capability.Browser;
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 8 /* Capability.LOG */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ |
+                    2048 /* Capability.INSPECTOR */ | 131072 /* Capability.IO */ | 524288 /* Capability.EVENT_BREAKPOINTS */;
+                if (parentTarget?.type() !== Type.FRAME) {
+                    // TODO(crbug.com/406991275): This should also grant the `STORAGE` capability, but first the
+                    // crashers in https://crbug.com/466134219 have to be resolved.
+                    this.#capabilitiesMask |= 1 /* Capability.BROWSER */;
                 }
                 break;
-            case Type.SharedWorker:
-                this.#capabilitiesMask = Capability.JS | Capability.Log | Capability.Network | Capability.Target |
-                    Capability.IO | Capability.Media | Capability.Inspector;
+            case Type.SHARED_WORKER:
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 8 /* Capability.LOG */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ |
+                    131072 /* Capability.IO */ | 262144 /* Capability.MEDIA */ | 2048 /* Capability.INSPECTOR */ | 524288 /* Capability.EVENT_BREAKPOINTS */;
+                if (parentTarget?.type() !== Type.FRAME) {
+                    this.#capabilitiesMask |= 8192 /* Capability.STORAGE */;
+                }
+                break;
+            case Type.SHARED_STORAGE_WORKLET:
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 8 /* Capability.LOG */ | 2048 /* Capability.INSPECTOR */ | 524288 /* Capability.EVENT_BREAKPOINTS */;
                 break;
             case Type.Worker:
-                this.#capabilitiesMask = Capability.JS | Capability.Log | Capability.Network | Capability.Target |
-                    Capability.IO | Capability.Media | Capability.Emulation;
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 8 /* Capability.LOG */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ |
+                    131072 /* Capability.IO */ | 262144 /* Capability.MEDIA */ | 256 /* Capability.EMULATION */ | 524288 /* Capability.EVENT_BREAKPOINTS */;
+                if (parentTarget?.type() !== Type.FRAME) {
+                    this.#capabilitiesMask |= 8192 /* Capability.STORAGE */;
+                }
                 break;
-            case Type.Node:
-                this.#capabilitiesMask = Capability.JS;
+            case Type.WORKLET:
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 8 /* Capability.LOG */ | 524288 /* Capability.EVENT_BREAKPOINTS */ | 16 /* Capability.NETWORK */;
                 break;
-            case Type.AuctionWorklet:
-                this.#capabilitiesMask = Capability.JS | Capability.EventBreakpoints;
+            case Type.NODE:
+                this.#capabilitiesMask =
+                    4 /* Capability.JS */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ | 131072 /* Capability.IO */ | 1048576 /* Capability.DOM_STORAGE */;
                 break;
-            case Type.Browser:
-                this.#capabilitiesMask = Capability.Target | Capability.IO;
+            case Type.AUCTION_WORKLET:
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 524288 /* Capability.EVENT_BREAKPOINTS */;
                 break;
-            case Type.Tab:
-                this.#capabilitiesMask = Capability.Target;
+            case Type.BROWSER:
+                this.#capabilitiesMask = 32 /* Capability.TARGET */ | 131072 /* Capability.IO */;
                 break;
+            case Type.TAB:
+                this.#capabilitiesMask = 32 /* Capability.TARGET */ | 128 /* Capability.TRACING */;
+                break;
+            case Type.NODE_WORKER:
+                this.#capabilitiesMask = 4 /* Capability.JS */ | 16 /* Capability.NETWORK */ | 32 /* Capability.TARGET */ | 131072 /* Capability.IO */;
         }
-        this.#typeInternal = type;
-        this.#parentTargetInternal = parentTarget;
-        this.#idInternal = id;
-        /* } */
-        this.#modelByConstructor = new Map();
+        this.#type = type;
+        this.#parentTarget = parentTarget;
+        this.#id = id;
         this.#isSuspended = suspended;
-        this.#targetInfoInternal = targetInfo;
+        this.#targetInfo = targetInfo;
     }
-    createModels(required) {
+    /** Creates the models in the order in which they are provided */
+    createModels(models) {
         this.#creatingModels = true;
-        const registeredModels = Array.from(SDKModel.registeredModels.entries());
-        // Create early models.
-        for (const [modelClass, info] of registeredModels) {
-            if (info.early) {
-                this.model(modelClass);
-            }
-        }
-        // Create autostart and required models.
-        for (const [modelClass, info] of registeredModels) {
-            if (info.autostart || required.has(modelClass)) {
-                this.model(modelClass);
-            }
+        for (const model of models) {
+            this.model(model);
         }
         this.#creatingModels = false;
     }
     id() {
-        return this.#idInternal;
+        return this.#id;
     }
     name() {
-        return this.#nameInternal || this.#inspectedURLName;
+        return this.#name || this.#inspectedURLName;
     }
     setName(name) {
-        if (this.#nameInternal === name) {
+        if (this.#name === name) {
             return;
         }
-        this.#nameInternal = name;
-        this.#targetManagerInternal.onNameChange(this);
+        this.#name = name;
+        this.#targetManager.onNameChange(this);
     }
     type() {
-        return this.#typeInternal;
+        return this.#type;
     }
     markAsNodeJSForTest() {
-        super.markAsNodeJSForTest();
-        this.#typeInternal = Type.Node;
+        this.#type = Type.NODE;
     }
     targetManager() {
-        return this.#targetManagerInternal;
+        return this.#targetManager;
     }
     hasAllCapabilities(capabilitiesMask) {
         // TODO(dgozman): get rid of this method, once we never observe targets with
@@ -125,17 +143,16 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
         return (this.#capabilitiesMask & capabilitiesMask) === capabilitiesMask;
     }
     decorateLabel(label) {
-        return (this.#typeInternal === Type.Worker || this.#typeInternal === Type.ServiceWorker) ? '\u2699 ' + label :
-            label;
+        return (this.#type === Type.Worker || this.#type === Type.ServiceWorker) ? '\u2699 ' + label : label;
     }
     parentTarget() {
-        return this.#parentTargetInternal;
+        return this.#parentTarget;
     }
     outermostTarget() {
         let lastTarget = null;
         let currentTarget = this;
         do {
-            if (currentTarget.type() !== Type.Tab && currentTarget.type() !== Type.Browser) {
+            if (currentTarget.type() !== Type.TAB && currentTarget.type() !== Type.BROWSER) {
                 lastTarget = currentTarget;
             }
             currentTarget = currentTarget.parentTarget();
@@ -144,7 +161,7 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
     }
     dispose(reason) {
         super.dispose(reason);
-        this.#targetManagerInternal.removeTarget(this);
+        this.#targetManager.removeTarget(this);
         for (const model of this.#modelByConstructor.values()) {
             model.dispose();
         }
@@ -153,13 +170,13 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
         if (!this.#modelByConstructor.get(modelClass)) {
             const info = SDKModel.registeredModels.get(modelClass);
             if (info === undefined) {
-                throw 'Model class is not registered @' + new Error().stack;
+                throw new Error('Model class is not registered');
             }
             if ((this.#capabilitiesMask & info.capabilities) === info.capabilities) {
                 const model = new modelClass(this);
                 this.#modelByConstructor.set(modelClass, model);
                 if (!this.#creatingModels) {
-                    this.#targetManagerInternal.modelAdded(this, modelClass, model, this.#targetManagerInternal.isInScope(this));
+                    this.#targetManager.modelAdded(modelClass, model, this.#targetManager.isInScope(this));
                 }
             }
         }
@@ -169,15 +186,29 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
         return this.#modelByConstructor;
     }
     inspectedURL() {
-        return this.#inspectedURLInternal;
+        return this.#inspectedURL;
     }
     setInspectedURL(inspectedURL) {
-        this.#inspectedURLInternal = inspectedURL;
+        this.#inspectedURL = inspectedURL;
         const parsedURL = Common.ParsedURL.ParsedURL.fromString(inspectedURL);
-        this.#inspectedURLName = parsedURL ? parsedURL.lastPathComponentWithFragment() : '#' + this.#idInternal;
-        this.#targetManagerInternal.onInspectedURLChange(this);
-        if (!this.#nameInternal) {
-            this.#targetManagerInternal.onNameChange(this);
+        this.#inspectedURLName = parsedURL ? parsedURL.lastPathComponentWithFragment() : '#' + this.#id;
+        this.#targetManager.onInspectedURLChange(this);
+        if (!this.#name) {
+            this.#targetManager.onNameChange(this);
+        }
+    }
+    hasCrashed() {
+        return this.#hasCrashed;
+    }
+    setHasCrashed(isCrashed) {
+        const wasCrashed = this.#hasCrashed;
+        this.#hasCrashed = isCrashed;
+        // If the target has now been restored, check to see if it needs resuming.
+        // This ensures that if a target crashes whilst suspended, it is resumed
+        // when it is recovered.
+        // If the target is not suspended, resume() is a no-op, so it's safe to call.
+        if (wasCrashed && !isCrashed) {
+            void this.resume();
         }
     }
     async suspend(reason) {
@@ -185,6 +216,12 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
             return;
         }
         this.#isSuspended = true;
+        // If the target has crashed, we will not attempt to suspend all the
+        // models, but we still mark it as suspended so we correctly track the
+        // state.
+        if (this.#hasCrashed) {
+            return;
+        }
         await Promise.all(Array.from(this.models().values(), m => m.preSuspendModel(reason)));
         await Promise.all(Array.from(this.models().values(), m => m.suspendModel(reason)));
     }
@@ -193,6 +230,9 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
             return;
         }
         this.#isSuspended = false;
+        if (this.#hasCrashed) {
+            return;
+        }
         await Promise.all(Array.from(this.models().values(), m => m.resumeModel()));
         await Promise.all(Array.from(this.models().values(), m => m.postResumeModel()));
     }
@@ -200,49 +240,26 @@ export class Target extends ProtocolClient.InspectorBackend.TargetBase {
         return this.#isSuspended;
     }
     updateTargetInfo(targetInfo) {
-        this.#targetInfoInternal = targetInfo;
+        this.#targetInfo = targetInfo;
     }
     targetInfo() {
-        return this.#targetInfoInternal;
+        return this.#targetInfo;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Type;
 (function (Type) {
-    Type["Frame"] = "frame";
+    Type["FRAME"] = "frame";
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- Used by web_tests.
     Type["ServiceWorker"] = "service-worker";
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- Used by web_tests.
     Type["Worker"] = "worker";
-    Type["SharedWorker"] = "shared-worker";
-    Type["Node"] = "node";
-    Type["Browser"] = "browser";
-    Type["AuctionWorklet"] = "auction-worklet";
-    Type["Tab"] = "tab";
+    Type["SHARED_WORKER"] = "shared-worker";
+    Type["SHARED_STORAGE_WORKLET"] = "shared-storage-worklet";
+    Type["NODE"] = "node";
+    Type["BROWSER"] = "browser";
+    Type["AUCTION_WORKLET"] = "auction-worklet";
+    Type["WORKLET"] = "worklet";
+    Type["TAB"] = "tab";
+    Type["NODE_WORKER"] = "node-worker";
 })(Type || (Type = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Capability;
-(function (Capability) {
-    Capability[Capability["Browser"] = 1] = "Browser";
-    Capability[Capability["DOM"] = 2] = "DOM";
-    Capability[Capability["JS"] = 4] = "JS";
-    Capability[Capability["Log"] = 8] = "Log";
-    Capability[Capability["Network"] = 16] = "Network";
-    Capability[Capability["Target"] = 32] = "Target";
-    Capability[Capability["ScreenCapture"] = 64] = "ScreenCapture";
-    Capability[Capability["Tracing"] = 128] = "Tracing";
-    Capability[Capability["Emulation"] = 256] = "Emulation";
-    Capability[Capability["Security"] = 512] = "Security";
-    Capability[Capability["Input"] = 1024] = "Input";
-    Capability[Capability["Inspector"] = 2048] = "Inspector";
-    Capability[Capability["DeviceEmulation"] = 4096] = "DeviceEmulation";
-    Capability[Capability["Storage"] = 8192] = "Storage";
-    Capability[Capability["ServiceWorker"] = 16384] = "ServiceWorker";
-    Capability[Capability["Audits"] = 32768] = "Audits";
-    Capability[Capability["WebAuthn"] = 65536] = "WebAuthn";
-    Capability[Capability["IO"] = 131072] = "IO";
-    Capability[Capability["Media"] = 262144] = "Media";
-    Capability[Capability["EventBreakpoints"] = 524288] = "EventBreakpoints";
-    Capability[Capability["None"] = 0] = "None";
-})(Capability || (Capability = {}));
 //# sourceMappingURL=Target.js.map

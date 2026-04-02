@@ -11,8 +11,13 @@ export interface PieChartData {
     total: number;
     slices: Slice[];
 }
+/**
+ * If the slices are not available when constructing the pie chart, set .data
+ * immediately, with total=0 and slices=[], so that the chart is rendered with
+ * the correct initial size. This avoids a layout shift when the slices are
+ * later populated.
+ **/
 export declare class PieChart extends HTMLElement {
-    static readonly litTagName: import("../../../lit-html/static.js").Static;
     private readonly shadow;
     private chartName;
     private size;
@@ -24,7 +29,6 @@ export declare class PieChart extends HTMLElement {
     private sliceSelected;
     private readonly innerR;
     private lastAngle;
-    connectedCallback(): void;
     set data(data: PieChartData);
     private render;
     private onSliceClicked;

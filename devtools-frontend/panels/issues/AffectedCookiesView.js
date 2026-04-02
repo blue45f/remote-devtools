@@ -1,35 +1,36 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as UI from '../../ui/legacy/legacy.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import { AffectedResourcesView } from './AffectedResourcesView.js';
 const UIStrings = {
     /**
-     *@description Noun, singular or plural. Label for the kind and number of affected resources associated with a DevTools issue. A cookie is a small piece of data that a server sends to the user's web browser. See https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.
+     * @description Noun, singular or plural. Label for the kind and number of affected resources associated with a DevTools issue. A cookie is a small piece of data that a server sends to the user's web browser. See https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.
      */
     nCookies: '{n, plural, =1 {# cookie} other {# cookies}}',
     /**
-     *@description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Each cookie has a name.
+     * @description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Each cookie has a name.
      */
     name: 'Name',
     /**
-     *@description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Cookies may have a 'Domain' attribute: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.#define_where_cookies_are_sent
+     * @description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Cookies may have a 'Domain' attribute: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.#define_where_cookies_are_sent
      */
     domain: 'Domain',
     /**
-     *@description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Cookies may have a 'Path' attribute: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.#define_where_cookies_are_sent
+     * @description Noun, singular. Label for a column in a table which lists cookies in the affected resources section of a DevTools issue. Cookies may have a 'Path' attribute: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies.#define_where_cookies_are_sent
      */
     path: 'Path',
     /**
-     *@description Label for the the number of affected `Set-Cookie` lines associated with a DevTools issue. `Set-Cookie` is a specific header line in an HTTP network request and consists of a single line of text.
+     * @description Label for the the number of affected `Set-Cookie` lines associated with a DevTools issue. `Set-Cookie` is a specific header line in an HTTP network request and consists of a single line of text.
      */
     nRawCookieLines: '{n, plural, =1 {1 Raw `Set-Cookie` header} other {# Raw `Set-Cookie` headers}}',
     /**
-     *@description Title for text button in the Issues panel. Clicking the button navigates the user to the Network Panel. `Set-Cookie` is a specific header line in an HTTP network request and consists of a single line of text.
+     * @description Title for text button in the Issues panel. Clicking the button navigates the user to the Network Panel. `Set-Cookie` is a specific header line in an HTTP network request and consists of a single line of text.
      */
     filterSetCookieTitle: 'Show network requests that include this `Set-Cookie` header in the network panel',
 };
@@ -56,8 +57,13 @@ export class AffectedCookiesView extends AffectedResourcesView {
         element.classList.add('affected-resource-cookie');
         const name = document.createElement('td');
         if (hasAssociatedRequest) {
-            name.appendChild(UI.UIUtils.createTextButton(cookie.name, () => {
-                Host.userMetrics.issuesPanelResourceOpened(this.issue.getCategory(), "Cookie" /* AffectedItem.Cookie */);
+            const link = document.createElement('button');
+            link.classList.add('link', 'devtools-link');
+            link.textContent = cookie.name;
+            link.tabIndex = 0;
+            link.setAttribute('jslog', `${VisualLogging.link('issues.filter-network-requests-by-cookie').track({ click: true })}`);
+            link.addEventListener('click', () => {
+                Host.userMetrics.issuesPanelResourceOpened(this.issue.getCategory(), "Cookie" /* AffectedItem.COOKIE */);
                 void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
                     {
                         filterType: NetworkForward.UIFilter.FilterType.CookieDomain,
@@ -72,7 +78,8 @@ export class AffectedCookiesView extends AffectedResourcesView {
                         filterValue: cookie.path,
                     },
                 ]));
-            }, 'link-style devtools-link'));
+            });
+            name.appendChild(link);
         }
         else {
             name.textContent = cookie.name;
@@ -99,16 +106,21 @@ export class AffectedRawCookieLinesView extends AffectedResourcesView {
             row.classList.add('affected-resource-directive');
             if (cookie.hasRequest) {
                 const cookieLine = document.createElement('td');
-                const textButton = UI.UIUtils.createTextButton(cookie.rawCookieLine, () => {
+                const link = document.createElement('button');
+                link.classList.add('link', 'devtools-link');
+                link.textContent = cookie.rawCookieLine;
+                link.title = i18nString(UIStrings.filterSetCookieTitle);
+                link.tabIndex = 0;
+                link.setAttribute('jslog', `${VisualLogging.link('issues.filter-network-requests-by-raw-cookie').track({ click: true })}`);
+                link.addEventListener('click', () => {
                     void Common.Revealer.reveal(NetworkForward.UIFilter.UIRequestFilter.filters([
                         {
                             filterType: NetworkForward.UIFilter.FilterType.ResponseHeaderValueSetCookie,
                             filterValue: cookie.rawCookieLine,
                         },
                     ]));
-                }, 'link-style devtools-link');
-                textButton.title = i18nString(UIStrings.filterSetCookieTitle);
-                cookieLine.appendChild(textButton);
+                });
+                cookieLine.appendChild(link);
                 row.appendChild(cookieLine);
             }
             else {

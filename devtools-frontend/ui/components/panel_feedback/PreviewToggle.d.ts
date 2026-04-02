@@ -1,16 +1,16 @@
+import '../../../ui/kit/kit.js';
+import '../../legacy/legacy.js';
 import * as Root from '../../../core/root/root.js';
 export interface PreviewToggleData {
     name: string;
     helperText: string | null;
     feedbackURL: string | null;
-    experiment: Root.Runtime.ExperimentName;
+    experiment: Root.ExperimentNames.ExperimentName;
     learnMoreURL?: string;
     onChangeCallback?: (checked: boolean) => void;
 }
 export declare class PreviewToggle extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
-    connectedCallback(): void;
     set data(data: PreviewToggleData);
 }
 declare global {

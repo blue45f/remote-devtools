@@ -1,9 +1,8 @@
-import { type FormattedContentBuilder } from './FormattedContentBuilder.js';
+import type { FormattedContentBuilder } from './FormattedContentBuilder.js';
 export declare class HTMLFormatter {
     #private;
     constructor(builder: FormattedContentBuilder);
     format(text: string, lineEndings: number[]): void;
-    static readonly SupportedJavaScriptMimeTypes: Set<string>;
 }
 export declare class HTMLModel {
     #private;

@@ -1,4 +1,6 @@
-import { Toolbar } from './Toolbar.js';
+import './Toolbar.js';
+import type * as Buttons from '../components/buttons/buttons.js';
+import type { Toolbar } from './Toolbar.js';
 import { VBox } from './Widget.js';
 /**
  * @deprecated Please consider using the web component version of this widget
@@ -17,17 +19,19 @@ export declare class ReportView extends VBox {
     setSubtitle(subtitle: string): void;
     setURL(link: Element | null): void;
     createToolbar(): Toolbar;
-    appendSection(title: string, className?: string): Section;
+    appendSection(title: string, className?: string, jslogContext?: string): Section;
     sortSections(comparator: (arg0: Section, arg1: Section) => number): void;
     setHeaderVisible(visible: boolean): void;
     setBodyScrollable(scrollable: boolean): void;
 }
 export declare class Section extends VBox {
+    jslogContext?: string | undefined;
     private readonly headerElement;
+    private headerButtons;
     private titleElement;
     private fieldList;
     private readonly fieldMap;
-    constructor(title: string, className?: string);
+    constructor(title: string, className?: string, jslogContext?: string | undefined);
     title(): string;
     getTitleElement(): Element;
     getFieldElement(): HTMLElement;
@@ -37,9 +41,10 @@ export declare class Section extends VBox {
      * Declares the overall container to be a group and assigns a title.
      */
     setUiGroupTitle(groupTitle: string): void;
-    createToolbar(): Toolbar;
+    appendButtonToHeader(button: Buttons.Button.Button): void;
+    setHeaderButtonsState(disabled: boolean): void;
     appendField(title: string, textValue?: string): HTMLElement;
-    appendFlexedField(title: string, textValue?: string): Element;
+    appendFlexedField(title: string, textValue?: string): HTMLElement;
     removeField(title: string): void;
     setFieldVisible(title: string, visible: boolean): void;
     fieldValue(title: string): Element | null;
@@ -47,5 +52,4 @@ export declare class Section extends VBox {
     appendSelectableRow(): HTMLElement;
     clearContent(): void;
     markFieldListAsGroup(): void;
-    setIconMasked(masked: boolean): void;
 }

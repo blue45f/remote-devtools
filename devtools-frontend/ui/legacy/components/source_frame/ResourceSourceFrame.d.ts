@@ -1,17 +1,17 @@
-import type * as TextUtils from '../../../../models/text_utils/text_utils.js';
+import '../../legacy.js';
+import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as UI from '../../legacy.js';
-import { SourceFrameImpl, type SourceFrameOptions } from './SourceFrame.js';
+import { type RevealPosition, SourceFrameImpl, type SourceFrameOptions } from './SourceFrame.js';
 export declare class ResourceSourceFrame extends SourceFrameImpl {
-    private readonly givenContentType;
-    private readonly resourceInternal;
+    #private;
     constructor(resource: TextUtils.ContentProvider.ContentProvider, givenContentType: string, options?: SourceFrameOptions);
-    static createSearchableView(resource: TextUtils.ContentProvider.ContentProvider, contentType: string, autoPrettyPrint?: boolean): UI.Widget.Widget;
+    static createSearchableView(resource: TextUtils.ContentProvider.ContentProvider, contentType: string): UI.Widget.Widget;
     protected getContentType(): string;
     get resource(): TextUtils.ContentProvider.ContentProvider;
     protected populateTextAreaContextMenu(contextMenu: UI.ContextMenu.ContextMenu, lineNumber: number, columnNumber: number): void;
 }
 export declare class SearchableContainer extends UI.Widget.VBox {
     private readonly sourceFrame;
-    constructor(resource: TextUtils.ContentProvider.ContentProvider, contentType: string, autoPrettyPrint?: boolean);
-    revealPosition(lineNumber: number, columnNumber?: number): Promise<void>;
+    constructor(resource: TextUtils.ContentProvider.ContentProvider, contentType: string, element?: HTMLElement);
+    revealPosition(position: RevealPosition): Promise<void>;
 }

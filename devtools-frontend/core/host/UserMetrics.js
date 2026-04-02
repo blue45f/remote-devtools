@@ -1,34 +1,7 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import { InspectorFrontendHostInstance } from './InspectorFrontendHost.js';
-import { EnumeratedHistogram } from './InspectorFrontendHostAPI.js';
 export class UserMetrics {
     #panelChangedSinceLaunch;
     #firedLaunchHistogram;
@@ -38,59 +11,32 @@ export class UserMetrics {
         this.#firedLaunchHistogram = false;
         this.#launchPanelName = '';
     }
-    breakpointWithConditionAdded(breakpointWithConditionAdded) {
-        if (breakpointWithConditionAdded >= 2 /* BreakpointWithConditionAdded.MaxValue */) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.BreakpointWithConditionAdded, breakpointWithConditionAdded, 2 /* BreakpointWithConditionAdded.MaxValue */);
-    }
-    breakpointEditDialogRevealedFrom(breakpointEditDialogRevealedFrom) {
-        if (breakpointEditDialogRevealedFrom >= 7 /* BreakpointEditDialogRevealedFrom.MaxValue */) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.BreakpointEditDialogRevealedFrom, breakpointEditDialogRevealedFrom, 7 /* BreakpointEditDialogRevealedFrom.MaxValue */);
-    }
-    panelShown(panelName) {
+    panelShown(panelName, isLaunching) {
         const code = PanelCodes[panelName] || 0;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.PanelShown, code, PanelCodes.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.PanelShown" /* EnumeratedHistogram.PanelShown */, code, PanelCodes.MAX_VALUE);
         InspectorFrontendHostInstance.recordUserMetricsAction('DevTools_PanelShown_' + panelName);
         // Store that the user has changed the panel so we know launch histograms should not be fired.
-        this.#panelChangedSinceLaunch = true;
-    }
-    /**
-     * Fired when a panel is closed (regardless if it exists in the main panel or the drawer)
-     */
-    panelClosed(panelName) {
-        const code = PanelCodes[panelName] || 0;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.PanelClosed, code, PanelCodes.MaxValue);
-        // Store that the user has changed the panel so we know launch histograms should not be fired.
-        this.#panelChangedSinceLaunch = true;
-    }
-    elementsSidebarTabShown(sidebarPaneName) {
-        const code = ElementsSidebarTabCodes[sidebarPaneName] || 0;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ElementsSidebarTabShown, code, ElementsSidebarTabCodes.MaxValue);
-    }
-    sourcesSidebarTabShown(sidebarPaneName) {
-        const code = SourcesSidebarTabCodes[sidebarPaneName] || 0;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.SourcesSidebarTabShown, code, SourcesSidebarTabCodes.MaxValue);
+        if (!isLaunching) {
+            this.#panelChangedSinceLaunch = true;
+        }
     }
     settingsPanelShown(settingsViewId) {
         this.panelShown('settings-' + settingsViewId);
     }
     sourcesPanelFileDebugged(mediaType) {
         const code = (mediaType && MediaTypes[mediaType]) || MediaTypes.Unknown;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.SourcesPanelFileDebugged, code, MediaTypes.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.SourcesPanelFileDebugged" /* EnumeratedHistogram.SourcesPanelFileDebugged */, code, MediaTypes.MAX_VALUE);
     }
     sourcesPanelFileOpened(mediaType) {
         const code = (mediaType && MediaTypes[mediaType]) || MediaTypes.Unknown;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.SourcesPanelFileOpened, code, MediaTypes.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.SourcesPanelFileOpened" /* EnumeratedHistogram.SourcesPanelFileOpened */, code, MediaTypes.MAX_VALUE);
     }
     networkPanelResponsePreviewOpened(mediaType) {
         const code = (mediaType && MediaTypes[mediaType]) || MediaTypes.Unknown;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.NetworkPanelResponsePreviewOpened, code, MediaTypes.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.NetworkPanelResponsePreviewOpened" /* EnumeratedHistogram.NetworkPanelResponsePreviewOpened */, code, MediaTypes.MAX_VALUE);
     }
     actionTaken(action) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ActionTaken, action, Action.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.ActionTaken" /* EnumeratedHistogram.ActionTaken */, action, Action.MAX_VALUE);
     }
     panelLoaded(panelName, histogramName) {
         if (this.#firedLaunchHistogram || panelName !== this.#launchPanelName) {
@@ -117,16 +63,19 @@ export class UserMetrics {
     setLaunchPanel(panelName) {
         this.#launchPanelName = panelName;
     }
+    performanceTraceLoad(measure) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.TraceLoad', measure.duration);
+    }
     keybindSetSettingChanged(keybindSet) {
         const value = KeybindSetSettings[keybindSet] || 0;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.KeybindSetSettingChanged, value, KeybindSetSettings.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.KeybindSetSettingChanged" /* EnumeratedHistogram.KeybindSetSettingChanged */, value, KeybindSetSettings.MAX_VALUE);
     }
     keyboardShortcutFired(actionId) {
         const action = KeyboardShortcutAction[actionId] || KeyboardShortcutAction.OtherShortcut;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.KeyboardShortcutFired, action, KeyboardShortcutAction.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.KeyboardShortcutFired" /* EnumeratedHistogram.KeyboardShortcutFired */, action, KeyboardShortcutAction.MAX_VALUE);
     }
     issuesPanelOpenedFrom(issueOpener) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.IssuesPanelOpenedFrom, issueOpener, IssueOpener.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.IssuesPanelOpenedFrom" /* EnumeratedHistogram.IssuesPanelOpenedFrom */, issueOpener, 6 /* IssueOpener.MAX_VALUE */);
     }
     issuesPanelIssueExpanded(issueExpandedCategory) {
         if (issueExpandedCategory === undefined) {
@@ -136,7 +85,7 @@ export class UserMetrics {
         if (issueExpanded === undefined) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.IssuesPanelIssueExpanded, issueExpanded, IssueExpanded.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.IssuesPanelIssueExpanded" /* EnumeratedHistogram.IssuesPanelIssueExpanded */, issueExpanded, IssueExpanded.MAX_VALUE);
     }
     issuesPanelResourceOpened(issueCategory, type) {
         const key = issueCategory + type;
@@ -144,201 +93,164 @@ export class UserMetrics {
         if (value === undefined) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.IssuesPanelResourceOpened, value, IssueResourceOpened.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.IssuesPanelResourceOpened" /* EnumeratedHistogram.IssuesPanelResourceOpened */, value, IssueResourceOpened.MAX_VALUE);
     }
     issueCreated(code) {
         const issueCreated = IssueCreated[code];
         if (issueCreated === undefined) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.IssueCreated, issueCreated, IssueCreated.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.IssueCreated" /* EnumeratedHistogram.IssueCreated */, issueCreated, IssueCreated.MAX_VALUE);
     }
     experimentEnabledAtLaunch(experimentId) {
         const experiment = DevtoolsExperiments[experimentId];
         if (experiment === undefined) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ExperimentEnabledAtLaunch, experiment, DevtoolsExperiments.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.ExperimentEnabledAtLaunch" /* EnumeratedHistogram.ExperimentEnabledAtLaunch */, experiment, DevtoolsExperiments.MAX_VALUE);
+    }
+    navigationSettingAtFirstTimelineLoad(state) {
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.TimelineNavigationSettingState" /* EnumeratedHistogram.TimelineNavigationSettingState */, state, 4 /* TimelineNavigationSetting.MAX_VALUE */);
+    }
+    experimentDisabledAtLaunch(experimentId) {
+        const experiment = DevtoolsExperiments[experimentId];
+        if (experiment === undefined) {
+            return;
+        }
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.ExperimentDisabledAtLaunch" /* EnumeratedHistogram.ExperimentDisabledAtLaunch */, experiment, DevtoolsExperiments.MAX_VALUE);
     }
     experimentChanged(experimentId, isEnabled) {
         const experiment = DevtoolsExperiments[experimentId];
         if (experiment === undefined) {
             return;
         }
-        const actionName = isEnabled ? EnumeratedHistogram.ExperimentEnabled : EnumeratedHistogram.ExperimentDisabled;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(actionName, experiment, DevtoolsExperiments.MaxValue);
+        const actionName = isEnabled ? "DevTools.ExperimentEnabled" /* EnumeratedHistogram.ExperimentEnabled */ : "DevTools.ExperimentDisabled" /* EnumeratedHistogram.ExperimentDisabled */;
+        InspectorFrontendHostInstance.recordEnumeratedHistogram(actionName, experiment, DevtoolsExperiments.MAX_VALUE);
     }
     developerResourceLoaded(developerResourceLoaded) {
-        if (developerResourceLoaded >= DeveloperResourceLoaded.MaxValue) {
+        if (developerResourceLoaded >= 8 /* DeveloperResourceLoaded.MAX_VALUE */) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.DeveloperResourceLoaded, developerResourceLoaded, DeveloperResourceLoaded.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.DeveloperResourceLoaded" /* EnumeratedHistogram.DeveloperResourceLoaded */, developerResourceLoaded, 8 /* DeveloperResourceLoaded.MAX_VALUE */);
     }
     developerResourceScheme(developerResourceScheme) {
-        if (developerResourceScheme >= DeveloperResourceScheme.MaxValue) {
+        if (developerResourceScheme >= 9 /* DeveloperResourceScheme.MAX_VALUE */) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.DeveloperResourceScheme, developerResourceScheme, DeveloperResourceScheme.MaxValue);
-    }
-    inlineScriptParsed(inlineScriptType) {
-        if (inlineScriptType >= 2 /* VMInlineScriptType.MaxValue */) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.InlineScriptParsed, inlineScriptType, 2 /* VMInlineScriptType.MaxValue */);
-    }
-    vmInlineScriptContentShown(inlineScriptType) {
-        if (inlineScriptType >= 2 /* VMInlineScriptType.MaxValue */) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.VMInlineScriptTypeShown, inlineScriptType, 2 /* VMInlineScriptType.MaxValue */);
-    }
-    linearMemoryInspectorRevealedFrom(linearMemoryInspectorRevealedFrom) {
-        if (linearMemoryInspectorRevealedFrom >= LinearMemoryInspectorRevealedFrom.MaxValue) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.LinearMemoryInspectorRevealedFrom, linearMemoryInspectorRevealedFrom, LinearMemoryInspectorRevealedFrom.MaxValue);
-    }
-    linearMemoryInspectorTarget(linearMemoryInspectorTarget) {
-        if (linearMemoryInspectorTarget >= LinearMemoryInspectorTarget.MaxValue) {
-            return;
-        }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.LinearMemoryInspectorTarget, linearMemoryInspectorTarget, LinearMemoryInspectorTarget.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.DeveloperResourceScheme" /* EnumeratedHistogram.DeveloperResourceScheme */, developerResourceScheme, 9 /* DeveloperResourceScheme.MAX_VALUE */);
     }
     language(language) {
         const languageCode = Language[language];
         if (languageCode === undefined) {
             return;
         }
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.Language, languageCode, Language.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.Language" /* EnumeratedHistogram.Language */, languageCode, Language.MAX_VALUE);
     }
     syncSetting(devtoolsSyncSettingEnabled) {
         InspectorFrontendHostInstance.getSyncInformation(syncInfo => {
-            let settingValue = SyncSetting.ChromeSyncDisabled;
+            let settingValue = 1 /* SyncSetting.CHROME_SYNC_DISABLED */;
             if (syncInfo.isSyncActive && !syncInfo.arePreferencesSynced) {
-                settingValue = SyncSetting.ChromeSyncSettingsDisabled;
+                settingValue = 2 /* SyncSetting.CHROME_SYNC_SETTINGS_DISABLED */;
             }
             else if (syncInfo.isSyncActive && syncInfo.arePreferencesSynced) {
-                settingValue = devtoolsSyncSettingEnabled ? SyncSetting.DevToolsSyncSettingEnabled :
-                    SyncSetting.DevToolsSyncSettingDisabled;
+                settingValue = devtoolsSyncSettingEnabled ? 4 /* SyncSetting.DEVTOOLS_SYNC_SETTING_ENABLED */ :
+                    3 /* SyncSetting.DEVTOOLS_SYNC_SETTING_DISABLED */;
             }
-            InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.SyncSetting, settingValue, SyncSetting.MaxValue);
+            InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.SyncSetting" /* EnumeratedHistogram.SyncSetting */, settingValue, 5 /* SyncSetting.MAX_VALUE */);
         });
     }
-    recordingAssertion(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingAssertion, value, RecordingAssertion.MaxValue);
-    }
     recordingToggled(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingToggled, value, RecordingToggled.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.RecordingToggled" /* EnumeratedHistogram.RecordingToggled */, value, 3 /* RecordingToggled.MAX_VALUE */);
     }
     recordingReplayFinished(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingReplayFinished, value, RecordingReplayFinished.MaxValue);
-    }
-    recordingReplaySpeed(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingReplaySpeed, value, RecordingReplaySpeed.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.RecordingReplayFinished" /* EnumeratedHistogram.RecordingReplayFinished */, value, 5 /* RecordingReplayFinished.MAX_VALUE */);
     }
     recordingReplayStarted(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingReplayStarted, value, RecordingReplayStarted.MaxValue);
-    }
-    recordingEdited(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingEdited, value, RecordingEdited.MaxValue);
-    }
-    recordingExported(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingExported, value, RecordingExported.MaxValue);
-    }
-    recordingCodeToggled(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingCodeToggled, value, RecordingCodeToggled.MaxValue);
-    }
-    recordingCopiedToClipboard(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.RecordingCopiedToClipboard, value, RecordingCopiedToClipboard.MaxValue);
-    }
-    styleTextCopied(value) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.StyleTextCopied, value, StyleTextCopied.MaxValue);
-    }
-    manifestSectionSelected(sectionTitle) {
-        const code = ManifestSectionCodes[sectionTitle] || ManifestSectionCodes.OtherSection;
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ManifestSectionSelected, code, ManifestSectionCodes.MaxValue);
-    }
-    cssHintShown(type) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.CSSHintShown, type, CSSHintType.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.RecordingReplayStarted" /* EnumeratedHistogram.RecordingReplayStarted */, value, 4 /* RecordingReplayStarted.MAX_VALUE */);
     }
     lighthouseModeRun(type) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.LighthouseModeRun, type, LighthouseModeRun.MaxValue);
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.LighthouseModeRun" /* EnumeratedHistogram.LighthouseModeRun */, type, 4 /* LighthouseModeRun.MAX_VALUE */);
     }
-    colorConvertedFrom(type) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ColorConvertedFrom, type, 2 /* ColorConvertedFrom.MaxValue */);
-    }
-    colorPickerOpenedFrom(type) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.ColorPickerOpenedFrom, type, 2 /* ColorPickerOpenedFrom.MaxValue */);
-    }
-    cssPropertyDocumentation(type) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.CSSPropertyDocumentation, type, 3 /* CSSPropertyDocumentation.MaxValue */);
+    lighthouseCategoryUsed(type) {
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.LighthouseCategoryUsed" /* EnumeratedHistogram.LighthouseCategoryUsed */, type, 6 /* LighthouseCategoryUsed.MAX_VALUE */);
     }
     swatchActivated(swatch) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.SwatchActivated, swatch, 10 /* SwatchType.MaxValue */);
-    }
-    badgeActivated(badge) {
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.BadgeActivated, badge, 9 /* BadgeType.MaxValue */);
-    }
-    breakpointsRestoredFromStorage(count) {
-        const countBucket = this.#breakpointCountToBucket(count);
-        InspectorFrontendHostInstance.recordEnumeratedHistogram(EnumeratedHistogram.BreakpointsRestoredFromStorageCount, countBucket, 10 /* BreakpointsRestoredFromStorageCount.MaxValue */);
-    }
-    #breakpointCountToBucket(count) {
-        if (count < 100) {
-            return 0 /* BreakpointsRestoredFromStorageCount.LessThan100 */;
-        }
-        if (count < 300) {
-            return 1 /* BreakpointsRestoredFromStorageCount.LessThan300 */;
-        }
-        if (count < 1000) {
-            return 2 /* BreakpointsRestoredFromStorageCount.LessThan1000 */;
-        }
-        if (count < 3000) {
-            return 3 /* BreakpointsRestoredFromStorageCount.LessThan3000 */;
-        }
-        if (count < 10000) {
-            return 4 /* BreakpointsRestoredFromStorageCount.LessThan10000 */;
-        }
-        if (count < 30000) {
-            return 5 /* BreakpointsRestoredFromStorageCount.LessThan30000 */;
-        }
-        if (count < 100000) {
-            return 6 /* BreakpointsRestoredFromStorageCount.LessThan100000 */;
-        }
-        if (count < 300000) {
-            return 7 /* BreakpointsRestoredFromStorageCount.LessThan300000 */;
-        }
-        if (count < 1000000) {
-            return 8 /* BreakpointsRestoredFromStorageCount.LessThan1000000 */;
-        }
-        return 9 /* BreakpointsRestoredFromStorageCount.Above1000000 */;
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.SwatchActivated" /* EnumeratedHistogram.SwatchActivated */, swatch, 13 /* SwatchType.MAX_VALUE */);
     }
     workspacesPopulated(wallClockTimeInMilliseconds) {
         InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Workspaces.PopulateWallClocktime', wallClockTimeInMilliseconds);
     }
-    workspacesNumberOfFiles(numberOfFilesLoaded, numberOfDirectoriesTraversed) {
-        InspectorFrontendHostInstance.recordCountHistogram('DevTools.Workspaces.NumberOfFilesLoaded', numberOfFilesLoaded, 0, 100_000, 100);
-        InspectorFrontendHostInstance.recordCountHistogram('DevTools.Workspaces.NumberOfDirectoriesTraversed', numberOfDirectoriesTraversed, 0, 10_000, 100);
+    visualLoggingProcessingDone(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.VisualLogging.ProcessingTime', timeInMilliseconds);
+    }
+    freestylerQueryLength(numberOfCharacters) {
+        InspectorFrontendHostInstance.recordCountHistogram('DevTools.Freestyler.QueryLength', numberOfCharacters, 0, 100_000, 100);
+    }
+    freestylerEvalResponseSize(bytes) {
+        InspectorFrontendHostInstance.recordCountHistogram('DevTools.Freestyler.EvalResponseSize', bytes, 0, 100_000, 100);
+    }
+    performanceAINetworkSummaryResponseSize(bytes) {
+        InspectorFrontendHostInstance.recordCountHistogram('DevTools.PerformanceAI.NetworkSummaryResponseSize', bytes, 0, 100_000, 100);
+    }
+    performanceAINetworkRequestDetailResponseSize(bytes) {
+        InspectorFrontendHostInstance.recordCountHistogram('DevTools.PerformanceAI.NetworkRequestDetailResponseSize', bytes, 0, 100_000, 100);
+    }
+    performanceAIMainThreadActivityResponseSize(bytes) {
+        InspectorFrontendHostInstance.recordCountHistogram('DevTools.PerformanceAI.MainThreadActivityResponseSize', bytes, 0, 100_000, 100);
+    }
+    builtInAiAvailability(availability) {
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.BuiltInAiAvailability" /* EnumeratedHistogram.BuiltInAiAvailability */, availability, 10 /* BuiltInAiAvailability.MAX_VALUE */);
+    }
+    consoleInsightTeaserGenerated(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.TeaserGenerationTime', timeInMilliseconds);
+    }
+    consoleInsightTeaserGeneratedMedium(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogramMedium('DevTools.Insights.TeaserGenerationTimeMedium', timeInMilliseconds);
+    }
+    consoleInsightTeaserFirstChunkGenerated(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.TeaserFirstChunkGenerationTime', timeInMilliseconds);
+    }
+    consoleInsightTeaserFirstChunkGeneratedMedium(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogramMedium('DevTools.Insights.TeaserFirstChunkGenerationTimeMedium', timeInMilliseconds);
+    }
+    consoleInsightTeaserChunkToEndMedium(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogramMedium('DevTools.Insights.TeaserChunkToEndMedium', timeInMilliseconds);
+    }
+    consoleInsightTeaserAbortedAfterFirstCharacter(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.TeaserAfterFirstCharacterAbortionTime', timeInMilliseconds);
+    }
+    consoleInsightTeaserAbortedBeforeFirstCharacter(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.TeaserBeforeFirstCharacterAbortionTime', timeInMilliseconds);
+    }
+    consoleInsightLongTeaserGenerated(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.LongTeaserGenerationTime', timeInMilliseconds);
+    }
+    consoleInsightShortTeaserGenerated(timeInMilliseconds) {
+        InspectorFrontendHostInstance.recordPerformanceHistogram('DevTools.Insights.ShortTeaserGenerationTime', timeInMilliseconds);
+    }
+    extensionEvalTarget(target) {
+        InspectorFrontendHostInstance.recordEnumeratedHistogram("DevTools.ExtensionEvalTarget" /* EnumeratedHistogram.ExtensionEvalTarget */, target, 3 /* ExtensionEvalTarget.MAX_VALUE */);
     }
 }
 /**
  * The numeric enum values are not necessarily continuous! It is possible that
  * values have been removed, which results in gaps in the sequence of values.
  * When adding a new value:
- * 1. Add an entry to the bottom of the enum before 'MaxValue'.
- * 2. Set the value of the new entry to the current value of 'MaxValue'.
- * 2. Increment the value of 'MaxValue' by 1.
+ * 1. Add an entry to the bottom of the enum before 'MAX_VALUE'.
+ * 2. Set the value of the new entry to the current value of 'MAX_VALUE'.
+ * 2. Increment the value of 'MAX_VALUE' by 1.
  * When removing a value which is no longer needed:
  * 1. Delete the line with the unneeded value
- * 2. Do not update any 'MaxValue' or any other value.
+ * 2. Do not update any 'MAX_VALUE' or any other value.
  */
-// Codes below are used to collect UMA histograms in the Chromium port.
-// Do not change the values below, additional actions are needed on the Chromium side
-// in order to add more codes.
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
+/**
+ * Codes below are used to collect UMA histograms in the Chromium port.
+ * Do not change the values below, additional actions are needed on the Chromium side
+ * in order to add more codes.
+ **/
 export var Action;
 (function (Action) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     Action[Action["WindowDocked"] = 1] = "WindowDocked";
     Action[Action["WindowUndocked"] = 2] = "WindowUndocked";
     Action[Action["ScriptsBreakpointSet"] = 3] = "ScriptsBreakpointSet";
@@ -411,26 +323,141 @@ export var Action;
     Action[Action["BreakpointsInFileCheckboxToggled"] = 71] = "BreakpointsInFileCheckboxToggled";
     Action[Action["BreakpointsInFileEnabledDisabledFromContextMenu"] = 72] = "BreakpointsInFileEnabledDisabledFromContextMenu";
     Action[Action["BreakpointConditionEditedFromSidebar"] = 73] = "BreakpointConditionEditedFromSidebar";
-    Action[Action["AddFileSystemToWorkspace"] = 74] = "AddFileSystemToWorkspace";
-    Action[Action["RemoveFileSystemFromWorkspace"] = 75] = "RemoveFileSystemFromWorkspace";
-    Action[Action["AddFileSystemForOverrides"] = 76] = "AddFileSystemForOverrides";
-    Action[Action["RemoveFileSystemForOverrides"] = 77] = "RemoveFileSystemForOverrides";
-    Action[Action["FileSystemSourceSelected"] = 78] = "FileSystemSourceSelected";
+    Action[Action["WorkspaceTabAddFolder"] = 74] = "WorkspaceTabAddFolder";
+    Action[Action["WorkspaceTabRemoveFolder"] = 75] = "WorkspaceTabRemoveFolder";
+    Action[Action["OverrideTabAddFolder"] = 76] = "OverrideTabAddFolder";
+    Action[Action["OverrideTabRemoveFolder"] = 77] = "OverrideTabRemoveFolder";
+    Action[Action["WorkspaceSourceSelected"] = 78] = "WorkspaceSourceSelected";
     Action[Action["OverridesSourceSelected"] = 79] = "OverridesSourceSelected";
     Action[Action["StyleSheetInitiatorLinkClicked"] = 80] = "StyleSheetInitiatorLinkClicked";
-    Action[Action["MaxValue"] = 81] = "MaxValue";
+    Action[Action["BreakpointRemovedFromGutterContextMenu"] = 81] = "BreakpointRemovedFromGutterContextMenu";
+    Action[Action["BreakpointRemovedFromGutterToggle"] = 82] = "BreakpointRemovedFromGutterToggle";
+    Action[Action["StylePropertyInsideKeyframeEdited"] = 83] = "StylePropertyInsideKeyframeEdited";
+    Action[Action["OverrideContentFromSourcesContextMenu"] = 84] = "OverrideContentFromSourcesContextMenu";
+    Action[Action["OverrideContentFromNetworkContextMenu"] = 85] = "OverrideContentFromNetworkContextMenu";
+    Action[Action["OverrideScript"] = 86] = "OverrideScript";
+    Action[Action["OverrideStyleSheet"] = 87] = "OverrideStyleSheet";
+    Action[Action["OverrideDocument"] = 88] = "OverrideDocument";
+    Action[Action["OverrideFetchXHR"] = 89] = "OverrideFetchXHR";
+    Action[Action["OverrideImage"] = 90] = "OverrideImage";
+    Action[Action["OverrideFont"] = 91] = "OverrideFont";
+    Action[Action["OverrideContentContextMenuSetup"] = 92] = "OverrideContentContextMenuSetup";
+    Action[Action["OverrideContentContextMenuAbandonSetup"] = 93] = "OverrideContentContextMenuAbandonSetup";
+    Action[Action["OverrideContentContextMenuActivateDisabled"] = 94] = "OverrideContentContextMenuActivateDisabled";
+    Action[Action["OverrideContentContextMenuOpenExistingFile"] = 95] = "OverrideContentContextMenuOpenExistingFile";
+    Action[Action["OverrideContentContextMenuSaveNewFile"] = 96] = "OverrideContentContextMenuSaveNewFile";
+    Action[Action["ShowAllOverridesFromSourcesContextMenu"] = 97] = "ShowAllOverridesFromSourcesContextMenu";
+    Action[Action["ShowAllOverridesFromNetworkContextMenu"] = 98] = "ShowAllOverridesFromNetworkContextMenu";
+    Action[Action["AnimationGroupsCleared"] = 99] = "AnimationGroupsCleared";
+    Action[Action["AnimationsPaused"] = 100] = "AnimationsPaused";
+    Action[Action["AnimationsResumed"] = 101] = "AnimationsResumed";
+    Action[Action["AnimatedNodeDescriptionClicked"] = 102] = "AnimatedNodeDescriptionClicked";
+    Action[Action["AnimationGroupScrubbed"] = 103] = "AnimationGroupScrubbed";
+    Action[Action["AnimationGroupReplayed"] = 104] = "AnimationGroupReplayed";
+    Action[Action["OverrideTabDeleteFolderContextMenu"] = 105] = "OverrideTabDeleteFolderContextMenu";
+    Action[Action["WorkspaceDropFolder"] = 107] = "WorkspaceDropFolder";
+    Action[Action["WorkspaceSelectFolder"] = 108] = "WorkspaceSelectFolder";
+    Action[Action["OverrideContentContextMenuSourceMappedWarning"] = 109] = "OverrideContentContextMenuSourceMappedWarning";
+    Action[Action["OverrideContentContextMenuRedirectToDeployed"] = 110] = "OverrideContentContextMenuRedirectToDeployed";
+    Action[Action["NewStyleRuleAdded"] = 111] = "NewStyleRuleAdded";
+    Action[Action["TraceExpanded"] = 112] = "TraceExpanded";
+    Action[Action["InsightConsoleMessageShown"] = 113] = "InsightConsoleMessageShown";
+    Action[Action["InsightRequestedViaContextMenu"] = 114] = "InsightRequestedViaContextMenu";
+    Action[Action["InsightRequestedViaHoverButton"] = 115] = "InsightRequestedViaHoverButton";
+    Action[Action["InsightRatedPositive"] = 117] = "InsightRatedPositive";
+    Action[Action["InsightRatedNegative"] = 118] = "InsightRatedNegative";
+    Action[Action["InsightClosed"] = 119] = "InsightClosed";
+    Action[Action["InsightErrored"] = 120] = "InsightErrored";
+    Action[Action["InsightHoverButtonShown"] = 121] = "InsightHoverButtonShown";
+    Action[Action["SelfXssWarningConsoleMessageShown"] = 122] = "SelfXssWarningConsoleMessageShown";
+    Action[Action["SelfXssWarningDialogShown"] = 123] = "SelfXssWarningDialogShown";
+    Action[Action["SelfXssAllowPastingInConsole"] = 124] = "SelfXssAllowPastingInConsole";
+    Action[Action["SelfXssAllowPastingInDialog"] = 125] = "SelfXssAllowPastingInDialog";
+    Action[Action["ToggleEmulateFocusedPageFromStylesPaneOn"] = 126] = "ToggleEmulateFocusedPageFromStylesPaneOn";
+    Action[Action["ToggleEmulateFocusedPageFromStylesPaneOff"] = 127] = "ToggleEmulateFocusedPageFromStylesPaneOff";
+    Action[Action["ToggleEmulateFocusedPageFromRenderingTab"] = 128] = "ToggleEmulateFocusedPageFromRenderingTab";
+    Action[Action["ToggleEmulateFocusedPageFromCommandMenu"] = 129] = "ToggleEmulateFocusedPageFromCommandMenu";
+    Action[Action["InsightGenerated"] = 130] = "InsightGenerated";
+    Action[Action["InsightErroredApi"] = 131] = "InsightErroredApi";
+    Action[Action["InsightErroredMarkdown"] = 132] = "InsightErroredMarkdown";
+    Action[Action["ToggleShowWebVitals"] = 133] = "ToggleShowWebVitals";
+    Action[Action["InsightErroredPermissionDenied"] = 134] = "InsightErroredPermissionDenied";
+    Action[Action["InsightErroredCannotSend"] = 135] = "InsightErroredCannotSend";
+    Action[Action["InsightErroredRequestFailed"] = 136] = "InsightErroredRequestFailed";
+    Action[Action["InsightErroredCannotParseChunk"] = 137] = "InsightErroredCannotParseChunk";
+    Action[Action["InsightErroredUnknownChunk"] = 138] = "InsightErroredUnknownChunk";
+    Action[Action["InsightErroredOther"] = 139] = "InsightErroredOther";
+    Action[Action["AutofillReceived"] = 140] = "AutofillReceived";
+    Action[Action["AutofillReceivedAndTabAutoOpened"] = 141] = "AutofillReceivedAndTabAutoOpened";
+    Action[Action["AnimationGroupSelected"] = 142] = "AnimationGroupSelected";
+    Action[Action["ScrollDrivenAnimationGroupSelected"] = 143] = "ScrollDrivenAnimationGroupSelected";
+    Action[Action["ScrollDrivenAnimationGroupScrubbed"] = 144] = "ScrollDrivenAnimationGroupScrubbed";
+    Action[Action["AiAssistanceOpenedFromElementsPanel"] = 145] = "AiAssistanceOpenedFromElementsPanel";
+    Action[Action["AiAssistanceOpenedFromStylesTab"] = 146] = "AiAssistanceOpenedFromStylesTab";
+    Action[Action["ConsoleFilterByContext"] = 147] = "ConsoleFilterByContext";
+    Action[Action["ConsoleFilterBySource"] = 148] = "ConsoleFilterBySource";
+    Action[Action["ConsoleFilterByUrl"] = 149] = "ConsoleFilterByUrl";
+    Action[Action["InsightConsentReminderShown"] = 150] = "InsightConsentReminderShown";
+    Action[Action["InsightConsentReminderCanceled"] = 151] = "InsightConsentReminderCanceled";
+    Action[Action["InsightConsentReminderConfirmed"] = 152] = "InsightConsentReminderConfirmed";
+    Action[Action["InsightsOnboardingShown"] = 153] = "InsightsOnboardingShown";
+    Action[Action["InsightsOnboardingCanceledOnPage1"] = 154] = "InsightsOnboardingCanceledOnPage1";
+    Action[Action["InsightsOnboardingCanceledOnPage2"] = 155] = "InsightsOnboardingCanceledOnPage2";
+    Action[Action["InsightsOnboardingConfirmed"] = 156] = "InsightsOnboardingConfirmed";
+    Action[Action["InsightsOnboardingNextPage"] = 157] = "InsightsOnboardingNextPage";
+    Action[Action["InsightsOnboardingPrevPage"] = 158] = "InsightsOnboardingPrevPage";
+    Action[Action["InsightsOnboardingFeatureDisabled"] = 159] = "InsightsOnboardingFeatureDisabled";
+    Action[Action["InsightsOptInTeaserShown"] = 160] = "InsightsOptInTeaserShown";
+    Action[Action["InsightsOptInTeaserSettingsLinkClicked"] = 161] = "InsightsOptInTeaserSettingsLinkClicked";
+    Action[Action["InsightsOptInTeaserConfirmedInSettings"] = 162] = "InsightsOptInTeaserConfirmedInSettings";
+    Action[Action["InsightsReminderTeaserShown"] = 163] = "InsightsReminderTeaserShown";
+    Action[Action["InsightsReminderTeaserConfirmed"] = 164] = "InsightsReminderTeaserConfirmed";
+    Action[Action["InsightsReminderTeaserCanceled"] = 165] = "InsightsReminderTeaserCanceled";
+    Action[Action["InsightsReminderTeaserSettingsLinkClicked"] = 166] = "InsightsReminderTeaserSettingsLinkClicked";
+    Action[Action["InsightsReminderTeaserAbortedInSettings"] = 167] = "InsightsReminderTeaserAbortedInSettings";
+    Action[Action["GeneratingInsightWithoutDisclaimer"] = 168] = "GeneratingInsightWithoutDisclaimer";
+    Action[Action["AiAssistanceOpenedFromElementsPanelFloatingButton"] = 169] = "AiAssistanceOpenedFromElementsPanelFloatingButton";
+    Action[Action["AiAssistanceOpenedFromNetworkPanel"] = 170] = "AiAssistanceOpenedFromNetworkPanel";
+    Action[Action["AiAssistanceOpenedFromSourcesPanel"] = 171] = "AiAssistanceOpenedFromSourcesPanel";
+    Action[Action["AiAssistanceOpenedFromSourcesPanelFloatingButton"] = 172] = "AiAssistanceOpenedFromSourcesPanelFloatingButton";
+    Action[Action["AiAssistanceOpenedFromPerformancePanelCallTree"] = 173] = "AiAssistanceOpenedFromPerformancePanelCallTree";
+    Action[Action["AiAssistanceOpenedFromNetworkPanelFloatingButton"] = 174] = "AiAssistanceOpenedFromNetworkPanelFloatingButton";
+    Action[Action["AiAssistancePanelOpened"] = 175] = "AiAssistancePanelOpened";
+    Action[Action["AiAssistanceQuerySubmitted"] = 176] = "AiAssistanceQuerySubmitted";
+    Action[Action["AiAssistanceAnswerReceived"] = 177] = "AiAssistanceAnswerReceived";
+    Action[Action["AiAssistanceDynamicSuggestionClicked"] = 178] = "AiAssistanceDynamicSuggestionClicked";
+    Action[Action["AiAssistanceSideEffectConfirmed"] = 179] = "AiAssistanceSideEffectConfirmed";
+    Action[Action["AiAssistanceSideEffectRejected"] = 180] = "AiAssistanceSideEffectRejected";
+    Action[Action["AiAssistanceError"] = 181] = "AiAssistanceError";
+    Action[Action["AiCodeCompletionResponseServedFromCache"] = 184] = "AiCodeCompletionResponseServedFromCache";
+    Action[Action["AiCodeCompletionRequestTriggered"] = 185] = "AiCodeCompletionRequestTriggered";
+    Action[Action["AiCodeCompletionSuggestionDisplayed"] = 186] = "AiCodeCompletionSuggestionDisplayed";
+    Action[Action["AiCodeCompletionSuggestionAccepted"] = 187] = "AiCodeCompletionSuggestionAccepted";
+    Action[Action["AiCodeCompletionError"] = 188] = "AiCodeCompletionError";
+    Action[Action["AttributeLinkClicked"] = 189] = "AttributeLinkClicked";
+    Action[Action["InsightRequestedViaTeaser"] = 190] = "InsightRequestedViaTeaser";
+    Action[Action["InsightTeaserGenerationStarted"] = 191] = "InsightTeaserGenerationStarted";
+    Action[Action["InsightTeaserGenerationCompleted"] = 192] = "InsightTeaserGenerationCompleted";
+    Action[Action["InsightTeaserGenerationAborted"] = 193] = "InsightTeaserGenerationAborted";
+    Action[Action["InsightTeaserGenerationErrored"] = 194] = "InsightTeaserGenerationErrored";
+    Action[Action["AiCodeGenerationSuggestionDisplayed"] = 195] = "AiCodeGenerationSuggestionDisplayed";
+    Action[Action["AiCodeGenerationSuggestionAccepted"] = 196] = "AiCodeGenerationSuggestionAccepted";
+    Action[Action["InsightTeaserModelDownloadStarted"] = 197] = "InsightTeaserModelDownloadStarted";
+    Action[Action["InsightTeaserModelDownloadCompleted"] = 198] = "InsightTeaserModelDownloadCompleted";
+    Action[Action["AiCodeGenerationError"] = 199] = "AiCodeGenerationError";
+    Action[Action["AiCodeGenerationRequestTriggered"] = 200] = "AiCodeGenerationRequestTriggered";
+    Action[Action["MAX_VALUE"] = 201] = "MAX_VALUE";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Action || (Action = {}));
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var PanelCodes;
 (function (PanelCodes) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     PanelCodes[PanelCodes["elements"] = 1] = "elements";
     PanelCodes[PanelCodes["resources"] = 2] = "resources";
     PanelCodes[PanelCodes["network"] = 3] = "network";
     PanelCodes[PanelCodes["sources"] = 4] = "sources";
     PanelCodes[PanelCodes["timeline"] = 5] = "timeline";
-    PanelCodes[PanelCodes["heap_profiler"] = 6] = "heap_profiler";
+    PanelCodes[PanelCodes["heap-profiler"] = 6] = "heap-profiler";
     PanelCodes[PanelCodes["console"] = 8] = "console";
     PanelCodes[PanelCodes["layers"] = 9] = "layers";
     PanelCodes[PanelCodes["console-view"] = 10] = "console-view";
@@ -440,7 +467,7 @@ export var PanelCodes;
     PanelCodes[PanelCodes["sensors"] = 14] = "sensors";
     PanelCodes[PanelCodes["sources.search"] = 15] = "sources.search";
     PanelCodes[PanelCodes["security"] = 16] = "security";
-    PanelCodes[PanelCodes["js_profiler"] = 17] = "js_profiler";
+    PanelCodes[PanelCodes["js-profiler"] = 17] = "js-profiler";
     PanelCodes[PanelCodes["lighthouse"] = 18] = "lighthouse";
     PanelCodes[PanelCodes["coverage"] = 19] = "coverage";
     PanelCodes[PanelCodes["protocol-monitor"] = 20] = "protocol-monitor";
@@ -449,7 +476,7 @@ export var PanelCodes;
     PanelCodes[PanelCodes["changes.changes"] = 23] = "changes.changes";
     PanelCodes[PanelCodes["performance.monitor"] = 24] = "performance.monitor";
     PanelCodes[PanelCodes["release-note"] = 25] = "release-note";
-    PanelCodes[PanelCodes["live_heap_profile"] = 26] = "live_heap_profile";
+    PanelCodes[PanelCodes["live-heap-profile"] = 26] = "live-heap-profile";
     PanelCodes[PanelCodes["sources.quick"] = 27] = "sources.quick";
     PanelCodes[PanelCodes["network.blocked-urls"] = 28] = "network.blocked-urls";
     PanelCodes[PanelCodes["settings-preferences"] = 29] = "settings-preferences";
@@ -463,70 +490,41 @@ export var PanelCodes;
     PanelCodes[PanelCodes["issues-pane"] = 37] = "issues-pane";
     PanelCodes[PanelCodes["settings-keybinds"] = 38] = "settings-keybinds";
     PanelCodes[PanelCodes["cssoverview"] = 39] = "cssoverview";
-    PanelCodes[PanelCodes["chrome_recorder"] = 40] = "chrome_recorder";
-    PanelCodes[PanelCodes["trust_tokens"] = 41] = "trust_tokens";
-    PanelCodes[PanelCodes["reporting_api"] = 42] = "reporting_api";
-    PanelCodes[PanelCodes["interest_groups"] = 43] = "interest_groups";
-    PanelCodes[PanelCodes["back_forward_cache"] = 44] = "back_forward_cache";
-    PanelCodes[PanelCodes["service_worker_cache"] = 45] = "service_worker_cache";
-    PanelCodes[PanelCodes["background_service_backgroundFetch"] = 46] = "background_service_backgroundFetch";
-    PanelCodes[PanelCodes["background_service_backgroundSync"] = 47] = "background_service_backgroundSync";
-    PanelCodes[PanelCodes["background_service_pushMessaging"] = 48] = "background_service_pushMessaging";
-    PanelCodes[PanelCodes["background_service_notifications"] = 49] = "background_service_notifications";
-    PanelCodes[PanelCodes["background_service_paymentHandler"] = 50] = "background_service_paymentHandler";
-    PanelCodes[PanelCodes["background_service_periodicBackgroundSync"] = 51] = "background_service_periodicBackgroundSync";
-    PanelCodes[PanelCodes["service_workers"] = 52] = "service_workers";
-    PanelCodes[PanelCodes["app_manifest"] = 53] = "app_manifest";
+    PanelCodes[PanelCodes["chrome-recorder"] = 40] = "chrome-recorder";
+    PanelCodes[PanelCodes["trust-tokens"] = 41] = "trust-tokens";
+    PanelCodes[PanelCodes["reporting-api"] = 42] = "reporting-api";
+    PanelCodes[PanelCodes["interest-groups"] = 43] = "interest-groups";
+    PanelCodes[PanelCodes["back-forward-cache"] = 44] = "back-forward-cache";
+    PanelCodes[PanelCodes["service-worker-cache"] = 45] = "service-worker-cache";
+    PanelCodes[PanelCodes["background-service-background-fetch"] = 46] = "background-service-background-fetch";
+    PanelCodes[PanelCodes["background-service-background-sync"] = 47] = "background-service-background-sync";
+    PanelCodes[PanelCodes["background-service-push-messaging"] = 48] = "background-service-push-messaging";
+    PanelCodes[PanelCodes["background-service-notifications"] = 49] = "background-service-notifications";
+    PanelCodes[PanelCodes["background-service-payment-handler"] = 50] = "background-service-payment-handler";
+    PanelCodes[PanelCodes["background-service-periodic-background-sync"] = 51] = "background-service-periodic-background-sync";
+    PanelCodes[PanelCodes["service-workers"] = 52] = "service-workers";
+    PanelCodes[PanelCodes["app-manifest"] = 53] = "app-manifest";
     PanelCodes[PanelCodes["storage"] = 54] = "storage";
     PanelCodes[PanelCodes["cookies"] = 55] = "cookies";
-    PanelCodes[PanelCodes["frame_details"] = 56] = "frame_details";
-    PanelCodes[PanelCodes["frame_resource"] = 57] = "frame_resource";
-    PanelCodes[PanelCodes["frame_window"] = 58] = "frame_window";
-    PanelCodes[PanelCodes["frame_worker"] = 59] = "frame_worker";
-    PanelCodes[PanelCodes["dom_storage"] = 60] = "dom_storage";
-    PanelCodes[PanelCodes["indexed_db"] = 61] = "indexed_db";
-    PanelCodes[PanelCodes["web_sql"] = 62] = "web_sql";
-    PanelCodes[PanelCodes["performance_insights"] = 63] = "performance_insights";
+    PanelCodes[PanelCodes["frame-details"] = 56] = "frame-details";
+    PanelCodes[PanelCodes["frame-resource"] = 57] = "frame-resource";
+    PanelCodes[PanelCodes["frame-window"] = 58] = "frame-window";
+    PanelCodes[PanelCodes["frame-worker"] = 59] = "frame-worker";
+    PanelCodes[PanelCodes["dom-storage"] = 60] = "dom-storage";
+    PanelCodes[PanelCodes["indexed-db"] = 61] = "indexed-db";
+    PanelCodes[PanelCodes["web-sql"] = 62] = "web-sql";
+    PanelCodes[PanelCodes["performance-insights"] = 63] = "performance-insights";
     PanelCodes[PanelCodes["preloading"] = 64] = "preloading";
-    PanelCodes[PanelCodes["bounce_tracking_mitigations"] = 65] = "bounce_tracking_mitigations";
-    PanelCodes[PanelCodes["MaxValue"] = 66] = "MaxValue";
+    PanelCodes[PanelCodes["bounce-tracking-mitigations"] = 65] = "bounce-tracking-mitigations";
+    PanelCodes[PanelCodes["developer-resources"] = 66] = "developer-resources";
+    PanelCodes[PanelCodes["autofill-view"] = 67] = "autofill-view";
+    PanelCodes[PanelCodes["freestyler"] = 68] = "freestyler";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    PanelCodes[PanelCodes["MAX_VALUE"] = 69] = "MAX_VALUE";
 })(PanelCodes || (PanelCodes = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var ElementsSidebarTabCodes;
-(function (ElementsSidebarTabCodes) {
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["OtherSidebarPane"] = 0] = "OtherSidebarPane";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["Styles"] = 1] = "Styles";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["Computed"] = 2] = "Computed";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["elements.layout"] = 3] = "elements.layout";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["elements.eventListeners"] = 4] = "elements.eventListeners";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["elements.domBreakpoints"] = 5] = "elements.domBreakpoints";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["elements.domProperties"] = 6] = "elements.domProperties";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["accessibility.view"] = 7] = "accessibility.view";
-    ElementsSidebarTabCodes[ElementsSidebarTabCodes["MaxValue"] = 8] = "MaxValue";
-})(ElementsSidebarTabCodes || (ElementsSidebarTabCodes = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var SourcesSidebarTabCodes;
-(function (SourcesSidebarTabCodes) {
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["OtherSidebarPane"] = 0] = "OtherSidebarPane";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["navigator-network"] = 1] = "navigator-network";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["navigator-files"] = 2] = "navigator-files";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["navigator-overrides"] = 3] = "navigator-overrides";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["navigator-contentScripts"] = 4] = "navigator-contentScripts";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["navigator-snippets"] = 5] = "navigator-snippets";
-    SourcesSidebarTabCodes[SourcesSidebarTabCodes["MaxValue"] = 6] = "MaxValue";
-})(SourcesSidebarTabCodes || (SourcesSidebarTabCodes = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var MediaTypes;
 (function (MediaTypes) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     MediaTypes[MediaTypes["Unknown"] = 0] = "Unknown";
     MediaTypes[MediaTypes["text/css"] = 2] = "text/css";
     MediaTypes[MediaTypes["text/html"] = 3] = "text/html";
@@ -562,28 +560,26 @@ export var MediaTypes;
     MediaTypes[MediaTypes["text/javascript+sourcemapped"] = 33] = "text/javascript+sourcemapped";
     MediaTypes[MediaTypes["text/x.angular"] = 34] = "text/x.angular";
     MediaTypes[MediaTypes["text/x.vue"] = 35] = "text/x.vue";
-    MediaTypes[MediaTypes["MaxValue"] = 36] = "MaxValue";
+    MediaTypes[MediaTypes["text/javascript+snippet"] = 36] = "text/javascript+snippet";
+    MediaTypes[MediaTypes["text/javascript+eval"] = 37] = "text/javascript+eval";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    MediaTypes[MediaTypes["MAX_VALUE"] = 38] = "MAX_VALUE";
 })(MediaTypes || (MediaTypes = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var KeybindSetSettings;
 (function (KeybindSetSettings) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     KeybindSetSettings[KeybindSetSettings["devToolsDefault"] = 0] = "devToolsDefault";
     KeybindSetSettings[KeybindSetSettings["vsCode"] = 1] = "vsCode";
-    KeybindSetSettings[KeybindSetSettings["MaxValue"] = 2] = "MaxValue";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    KeybindSetSettings[KeybindSetSettings["MAX_VALUE"] = 2] = "MAX_VALUE";
 })(KeybindSetSettings || (KeybindSetSettings = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var KeyboardShortcutAction;
 (function (KeyboardShortcutAction) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     KeyboardShortcutAction[KeyboardShortcutAction["OtherShortcut"] = 0] = "OtherShortcut";
-    KeyboardShortcutAction[KeyboardShortcutAction["commandMenu.show"] = 1] = "commandMenu.show";
+    KeyboardShortcutAction[KeyboardShortcutAction["quick-open.show-command-menu"] = 1] = "quick-open.show-command-menu";
     KeyboardShortcutAction[KeyboardShortcutAction["console.clear"] = 2] = "console.clear";
-    KeyboardShortcutAction[KeyboardShortcutAction["console.show"] = 3] = "console.show";
+    KeyboardShortcutAction[KeyboardShortcutAction["console.toggle"] = 3] = "console.toggle";
     KeyboardShortcutAction[KeyboardShortcutAction["debugger.step"] = 4] = "debugger.step";
     KeyboardShortcutAction[KeyboardShortcutAction["debugger.step-into"] = 5] = "debugger.step-into";
     KeyboardShortcutAction[KeyboardShortcutAction["debugger.step-out"] = 6] = "debugger.step-out";
@@ -601,7 +597,7 @@ export var KeyboardShortcutAction;
     KeyboardShortcutAction[KeyboardShortcutAction["network.hide-request-details"] = 18] = "network.hide-request-details";
     KeyboardShortcutAction[KeyboardShortcutAction["network.search"] = 19] = "network.search";
     KeyboardShortcutAction[KeyboardShortcutAction["network.toggle-recording"] = 20] = "network.toggle-recording";
-    KeyboardShortcutAction[KeyboardShortcutAction["quickOpen.show"] = 21] = "quickOpen.show";
+    KeyboardShortcutAction[KeyboardShortcutAction["quick-open.show"] = 21] = "quick-open.show";
     KeyboardShortcutAction[KeyboardShortcutAction["settings.show"] = 22] = "settings.show";
     KeyboardShortcutAction[KeyboardShortcutAction["sources.search"] = 23] = "sources.search";
     KeyboardShortcutAction[KeyboardShortcutAction["background-service.toggle-recording"] = 24] = "background-service.toggle-recording";
@@ -627,9 +623,9 @@ export var KeyboardShortcutAction;
     KeyboardShortcutAction[KeyboardShortcutAction["input.start-replaying"] = 44] = "input.start-replaying";
     KeyboardShortcutAction[KeyboardShortcutAction["input.toggle-pause"] = 45] = "input.toggle-pause";
     KeyboardShortcutAction[KeyboardShortcutAction["input.toggle-recording"] = 46] = "input.toggle-recording";
-    KeyboardShortcutAction[KeyboardShortcutAction["inspector_main.focus-debuggee"] = 47] = "inspector_main.focus-debuggee";
-    KeyboardShortcutAction[KeyboardShortcutAction["inspector_main.hard-reload"] = 48] = "inspector_main.hard-reload";
-    KeyboardShortcutAction[KeyboardShortcutAction["inspector_main.reload"] = 49] = "inspector_main.reload";
+    KeyboardShortcutAction[KeyboardShortcutAction["inspector-main.focus-debuggee"] = 47] = "inspector-main.focus-debuggee";
+    KeyboardShortcutAction[KeyboardShortcutAction["inspector-main.hard-reload"] = 48] = "inspector-main.hard-reload";
+    KeyboardShortcutAction[KeyboardShortcutAction["inspector-main.reload"] = 49] = "inspector-main.reload";
     KeyboardShortcutAction[KeyboardShortcutAction["live-heap-profile.start-with-reload"] = 50] = "live-heap-profile.start-with-reload";
     KeyboardShortcutAction[KeyboardShortcutAction["live-heap-profile.toggle-recording"] = 51] = "live-heap-profile.toggle-recording";
     KeyboardShortcutAction[KeyboardShortcutAction["main.debug-reload"] = 52] = "main.debug-reload";
@@ -688,96 +684,61 @@ export var KeyboardShortcutAction;
     KeyboardShortcutAction[KeyboardShortcutAction["layers.right"] = 105] = "layers.right";
     KeyboardShortcutAction[KeyboardShortcutAction["help.report-translation-issue"] = 106] = "help.report-translation-issue";
     KeyboardShortcutAction[KeyboardShortcutAction["rendering.toggle-prefers-color-scheme"] = 107] = "rendering.toggle-prefers-color-scheme";
-    KeyboardShortcutAction[KeyboardShortcutAction["chrome_recorder.start-recording"] = 108] = "chrome_recorder.start-recording";
-    KeyboardShortcutAction[KeyboardShortcutAction["chrome_recorder.replay-recording"] = 109] = "chrome_recorder.replay-recording";
-    KeyboardShortcutAction[KeyboardShortcutAction["chrome_recorder.toggle-code-view"] = 110] = "chrome_recorder.toggle-code-view";
-    KeyboardShortcutAction[KeyboardShortcutAction["chrome_recorder.copy-recording-or-step"] = 111] = "chrome_recorder.copy-recording-or-step";
-    KeyboardShortcutAction[KeyboardShortcutAction["MaxValue"] = 112] = "MaxValue";
+    KeyboardShortcutAction[KeyboardShortcutAction["chrome-recorder.start-recording"] = 108] = "chrome-recorder.start-recording";
+    KeyboardShortcutAction[KeyboardShortcutAction["chrome-recorder.replay-recording"] = 109] = "chrome-recorder.replay-recording";
+    KeyboardShortcutAction[KeyboardShortcutAction["chrome-recorder.toggle-code-view"] = 110] = "chrome-recorder.toggle-code-view";
+    KeyboardShortcutAction[KeyboardShortcutAction["chrome-recorder.copy-recording-or-step"] = 111] = "chrome-recorder.copy-recording-or-step";
+    KeyboardShortcutAction[KeyboardShortcutAction["elements.new-style-rule"] = 114] = "elements.new-style-rule";
+    KeyboardShortcutAction[KeyboardShortcutAction["elements.refresh-event-listeners"] = 115] = "elements.refresh-event-listeners";
+    KeyboardShortcutAction[KeyboardShortcutAction["coverage.clear"] = 116] = "coverage.clear";
+    KeyboardShortcutAction[KeyboardShortcutAction["coverage.export"] = 117] = "coverage.export";
+    KeyboardShortcutAction[KeyboardShortcutAction["timeline.dim-third-parties"] = 118] = "timeline.dim-third-parties";
+    KeyboardShortcutAction[KeyboardShortcutAction["main.toggle-drawer-orientation"] = 119] = "main.toggle-drawer-orientation";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    KeyboardShortcutAction[KeyboardShortcutAction["MAX_VALUE"] = 120] = "MAX_VALUE";
 })(KeyboardShortcutAction || (KeyboardShortcutAction = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var IssueOpener;
-(function (IssueOpener) {
-    IssueOpener[IssueOpener["ConsoleInfoBar"] = 0] = "ConsoleInfoBar";
-    IssueOpener[IssueOpener["LearnMoreLinkCOEP"] = 1] = "LearnMoreLinkCOEP";
-    IssueOpener[IssueOpener["StatusBarIssuesCounter"] = 2] = "StatusBarIssuesCounter";
-    IssueOpener[IssueOpener["HamburgerMenu"] = 3] = "HamburgerMenu";
-    IssueOpener[IssueOpener["Adorner"] = 4] = "Adorner";
-    IssueOpener[IssueOpener["CommandMenu"] = 5] = "CommandMenu";
-    IssueOpener[IssueOpener["MaxValue"] = 6] = "MaxValue";
-})(IssueOpener || (IssueOpener = {}));
 /**
  * This list should contain the currently active Devtools Experiments,
  * gaps are expected.
  */
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var DevtoolsExperiments;
 (function (DevtoolsExperiments) {
-    DevtoolsExperiments[DevtoolsExperiments["applyCustomStylesheet"] = 0] = "applyCustomStylesheet";
-    DevtoolsExperiments[DevtoolsExperiments["captureNodeCreationStacks"] = 1] = "captureNodeCreationStacks";
-    DevtoolsExperiments[DevtoolsExperiments["sourcesPrettyPrint"] = 2] = "sourcesPrettyPrint";
-    DevtoolsExperiments[DevtoolsExperiments["liveHeapProfile"] = 11] = "liveHeapProfile";
-    DevtoolsExperiments[DevtoolsExperiments["protocolMonitor"] = 13] = "protocolMonitor";
-    DevtoolsExperiments[DevtoolsExperiments["developerResourcesView"] = 15] = "developerResourcesView";
-    DevtoolsExperiments[DevtoolsExperiments["samplingHeapProfilerTimeline"] = 17] = "samplingHeapProfilerTimeline";
-    DevtoolsExperiments[DevtoolsExperiments["showOptionToExposeInternalsInHeapSnapshot"] = 18] = "showOptionToExposeInternalsInHeapSnapshot";
-    DevtoolsExperiments[DevtoolsExperiments["sourceOrderViewer"] = 20] = "sourceOrderViewer";
-    DevtoolsExperiments[DevtoolsExperiments["webauthnPane"] = 22] = "webauthnPane";
-    DevtoolsExperiments[DevtoolsExperiments["timelineEventInitiators"] = 24] = "timelineEventInitiators";
-    DevtoolsExperiments[DevtoolsExperiments["timelineInvalidationTracking"] = 26] = "timelineInvalidationTracking";
-    DevtoolsExperiments[DevtoolsExperiments["timelineShowAllEvents"] = 27] = "timelineShowAllEvents";
-    DevtoolsExperiments[DevtoolsExperiments["timelineV8RuntimeCallStats"] = 28] = "timelineV8RuntimeCallStats";
-    DevtoolsExperiments[DevtoolsExperiments["wasmDWARFDebugging"] = 31] = "wasmDWARFDebugging";
-    DevtoolsExperiments[DevtoolsExperiments["dualScreenSupport"] = 32] = "dualScreenSupport";
-    DevtoolsExperiments[DevtoolsExperiments["keyboardShortcutEditor"] = 35] = "keyboardShortcutEditor";
-    DevtoolsExperiments[DevtoolsExperiments["APCA"] = 39] = "APCA";
-    DevtoolsExperiments[DevtoolsExperiments["cspViolationsView"] = 40] = "cspViolationsView";
-    DevtoolsExperiments[DevtoolsExperiments["fontEditor"] = 41] = "fontEditor";
-    DevtoolsExperiments[DevtoolsExperiments["fullAccessibilityTree"] = 42] = "fullAccessibilityTree";
-    DevtoolsExperiments[DevtoolsExperiments["ignoreListJSFramesOnTimeline"] = 43] = "ignoreListJSFramesOnTimeline";
-    DevtoolsExperiments[DevtoolsExperiments["contrastIssues"] = 44] = "contrastIssues";
-    DevtoolsExperiments[DevtoolsExperiments["experimentalCookieFeatures"] = 45] = "experimentalCookieFeatures";
-    DevtoolsExperiments[DevtoolsExperiments["cssTypeComponentLength"] = 52] = "cssTypeComponentLength";
-    DevtoolsExperiments[DevtoolsExperiments["preciseChanges"] = 53] = "preciseChanges";
-    DevtoolsExperiments[DevtoolsExperiments["bfcacheDisplayTree"] = 54] = "bfcacheDisplayTree";
-    DevtoolsExperiments[DevtoolsExperiments["stylesPaneCSSChanges"] = 55] = "stylesPaneCSSChanges";
-    DevtoolsExperiments[DevtoolsExperiments["headerOverrides"] = 56] = "headerOverrides";
-    DevtoolsExperiments[DevtoolsExperiments["evaluateExpressionsWithSourceMaps"] = 58] = "evaluateExpressionsWithSourceMaps";
-    DevtoolsExperiments[DevtoolsExperiments["eyedropperColorPicker"] = 60] = "eyedropperColorPicker";
-    DevtoolsExperiments[DevtoolsExperiments["instrumentationBreakpoints"] = 61] = "instrumentationBreakpoints";
-    DevtoolsExperiments[DevtoolsExperiments["authoredDeployedGrouping"] = 63] = "authoredDeployedGrouping";
-    DevtoolsExperiments[DevtoolsExperiments["importantDOMProperties"] = 64] = "importantDOMProperties";
-    DevtoolsExperiments[DevtoolsExperiments["justMyCode"] = 65] = "justMyCode";
-    DevtoolsExperiments[DevtoolsExperiments["timelineAsConsoleProfileResultPanel"] = 67] = "timelineAsConsoleProfileResultPanel";
-    DevtoolsExperiments[DevtoolsExperiments["preloadingStatusPanel"] = 68] = "preloadingStatusPanel";
-    DevtoolsExperiments[DevtoolsExperiments["disableColorFormatSetting"] = 69] = "disableColorFormatSetting";
-    DevtoolsExperiments[DevtoolsExperiments["outermostTargetSelector"] = 71] = "outermostTargetSelector";
-    DevtoolsExperiments[DevtoolsExperiments["jsProfilerTemporarilyEnable"] = 72] = "jsProfilerTemporarilyEnable";
-    DevtoolsExperiments[DevtoolsExperiments["highlightErrorsElementsPanel"] = 73] = "highlightErrorsElementsPanel";
-    DevtoolsExperiments[DevtoolsExperiments["setAllBreakpointsEagerly"] = 74] = "setAllBreakpointsEagerly";
+    /* eslint-disable @typescript-eslint/naming-convention */
+    DevtoolsExperiments[DevtoolsExperiments["capture-node-creation-stacks"] = 1] = "capture-node-creation-stacks";
+    DevtoolsExperiments[DevtoolsExperiments["live-heap-profile"] = 11] = "live-heap-profile";
+    DevtoolsExperiments[DevtoolsExperiments["protocol-monitor"] = 13] = "protocol-monitor";
+    DevtoolsExperiments[DevtoolsExperiments["sampling-heap-profiler-timeline"] = 17] = "sampling-heap-profiler-timeline";
+    DevtoolsExperiments[DevtoolsExperiments["timeline-invalidation-tracking"] = 26] = "timeline-invalidation-tracking";
+    DevtoolsExperiments[DevtoolsExperiments["apca"] = 39] = "apca";
+    DevtoolsExperiments[DevtoolsExperiments["font-editor"] = 41] = "font-editor";
+    DevtoolsExperiments[DevtoolsExperiments["instrumentation-breakpoints"] = 61] = "instrumentation-breakpoints";
+    DevtoolsExperiments[DevtoolsExperiments["use-source-map-scopes"] = 76] = "use-source-map-scopes";
+    DevtoolsExperiments[DevtoolsExperiments["timeline-debug-mode"] = 93] = "timeline-debug-mode";
+    DevtoolsExperiments[DevtoolsExperiments["durable-messages"] = 110] = "durable-messages";
+    DevtoolsExperiments[DevtoolsExperiments["jpeg-xl"] = 111] = "jpeg-xl";
+    /* eslint-enable @typescript-eslint/naming-convention */
     // Increment this when new experiments are added.
-    DevtoolsExperiments[DevtoolsExperiments["MaxValue"] = 75] = "MaxValue";
+    DevtoolsExperiments[DevtoolsExperiments["MAX_VALUE"] = 112] = "MAX_VALUE";
 })(DevtoolsExperiments || (DevtoolsExperiments = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
+/** Update DevToolsIssuesPanelIssueExpanded from tools/metrics/histograms/enums.xml if new enum is added. **/
 export var IssueExpanded;
 (function (IssueExpanded) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     IssueExpanded[IssueExpanded["CrossOriginEmbedderPolicy"] = 0] = "CrossOriginEmbedderPolicy";
     IssueExpanded[IssueExpanded["MixedContent"] = 1] = "MixedContent";
-    IssueExpanded[IssueExpanded["Cookie"] = 2] = "Cookie";
+    IssueExpanded[IssueExpanded["SameSiteCookie"] = 2] = "SameSiteCookie";
     IssueExpanded[IssueExpanded["HeavyAd"] = 3] = "HeavyAd";
     IssueExpanded[IssueExpanded["ContentSecurityPolicy"] = 4] = "ContentSecurityPolicy";
     IssueExpanded[IssueExpanded["Other"] = 5] = "Other";
     IssueExpanded[IssueExpanded["Generic"] = 6] = "Generic";
-    IssueExpanded[IssueExpanded["MaxValue"] = 7] = "MaxValue";
+    IssueExpanded[IssueExpanded["ThirdPartyPhaseoutCookie"] = 7] = "ThirdPartyPhaseoutCookie";
+    IssueExpanded[IssueExpanded["GenericCookie"] = 8] = "GenericCookie";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    IssueExpanded[IssueExpanded["MAX_VALUE"] = 9] = "MAX_VALUE";
 })(IssueExpanded || (IssueExpanded = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var IssueResourceOpened;
 (function (IssueResourceOpened) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     IssueResourceOpened[IssueResourceOpened["CrossOriginEmbedderPolicyRequest"] = 0] = "CrossOriginEmbedderPolicyRequest";
     IssueResourceOpened[IssueResourceOpened["CrossOriginEmbedderPolicyElement"] = 1] = "CrossOriginEmbedderPolicyElement";
     IssueResourceOpened[IssueResourceOpened["MixedContentRequest"] = 2] = "MixedContentRequest";
@@ -786,21 +747,16 @@ export var IssueResourceOpened;
     IssueResourceOpened[IssueResourceOpened["HeavyAdElement"] = 5] = "HeavyAdElement";
     IssueResourceOpened[IssueResourceOpened["ContentSecurityPolicyDirective"] = 6] = "ContentSecurityPolicyDirective";
     IssueResourceOpened[IssueResourceOpened["ContentSecurityPolicyElement"] = 7] = "ContentSecurityPolicyElement";
-    IssueResourceOpened[IssueResourceOpened["CrossOriginEmbedderPolicyLearnMore"] = 8] = "CrossOriginEmbedderPolicyLearnMore";
-    IssueResourceOpened[IssueResourceOpened["MixedContentLearnMore"] = 9] = "MixedContentLearnMore";
-    IssueResourceOpened[IssueResourceOpened["SameSiteCookieLearnMore"] = 10] = "SameSiteCookieLearnMore";
-    IssueResourceOpened[IssueResourceOpened["HeavyAdLearnMore"] = 11] = "HeavyAdLearnMore";
-    IssueResourceOpened[IssueResourceOpened["ContentSecurityPolicyLearnMore"] = 12] = "ContentSecurityPolicyLearnMore";
-    IssueResourceOpened[IssueResourceOpened["MaxValue"] = 13] = "MaxValue";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    IssueResourceOpened[IssueResourceOpened["MAX_VALUE"] = 13] = "MAX_VALUE";
 })(IssueResourceOpened || (IssueResourceOpened = {}));
 /**
  * This list should contain the currently active issue types,
  * gaps are expected.
  */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var IssueCreated;
 (function (IssueCreated) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     IssueCreated[IssueCreated["MixedContentIssue"] = 0] = "MixedContentIssue";
     IssueCreated[IssueCreated["ContentSecurityPolicyIssue::kInlineViolation"] = 1] = "ContentSecurityPolicyIssue::kInlineViolation";
     IssueCreated[IssueCreated["ContentSecurityPolicyIssue::kEvalViolation"] = 2] = "ContentSecurityPolicyIssue::kEvalViolation";
@@ -839,8 +795,7 @@ export var IssueCreated;
     IssueCreated[IssueCreated["CookieIssue::WarnSameSiteUnspecifiedCrossSiteContext::SetCookie"] = 35] = "CookieIssue::WarnSameSiteUnspecifiedCrossSiteContext::SetCookie";
     IssueCreated[IssueCreated["SharedArrayBufferIssue::TransferIssue"] = 36] = "SharedArrayBufferIssue::TransferIssue";
     IssueCreated[IssueCreated["SharedArrayBufferIssue::CreationIssue"] = 37] = "SharedArrayBufferIssue::CreationIssue";
-    IssueCreated[IssueCreated["LowTextContrastIssue"] = 41] = "LowTextContrastIssue";
-    IssueCreated[IssueCreated["CorsIssue::InsecurePrivateNetwork"] = 42] = "CorsIssue::InsecurePrivateNetwork";
+    IssueCreated[IssueCreated["CorsIssue::InsecureLocalNetwork"] = 42] = "CorsIssue::InsecureLocalNetwork";
     IssueCreated[IssueCreated["CorsIssue::InvalidHeaders"] = 44] = "CorsIssue::InvalidHeaders";
     IssueCreated[IssueCreated["CorsIssue::WildcardOriginWithCredentials"] = 45] = "CorsIssue::WildcardOriginWithCredentials";
     IssueCreated[IssueCreated["CorsIssue::PreflightResponseInvalid"] = 46] = "CorsIssue::PreflightResponseInvalid";
@@ -859,76 +814,59 @@ export var IssueCreated;
     IssueCreated[IssueCreated["DeprecationIssue"] = 60] = "DeprecationIssue";
     IssueCreated[IssueCreated["ClientHintIssue::MetaTagAllowListInvalidOrigin"] = 61] = "ClientHintIssue::MetaTagAllowListInvalidOrigin";
     IssueCreated[IssueCreated["ClientHintIssue::MetaTagModifiedHTML"] = 62] = "ClientHintIssue::MetaTagModifiedHTML";
-    IssueCreated[IssueCreated["CorsIssue::PreflightAllowPrivateNetworkError"] = 63] = "CorsIssue::PreflightAllowPrivateNetworkError";
     IssueCreated[IssueCreated["GenericIssue::CrossOriginPortalPostMessageError"] = 64] = "GenericIssue::CrossOriginPortalPostMessageError";
     IssueCreated[IssueCreated["GenericIssue::FormLabelForNameError"] = 65] = "GenericIssue::FormLabelForNameError";
     IssueCreated[IssueCreated["GenericIssue::FormDuplicateIdForInputError"] = 66] = "GenericIssue::FormDuplicateIdForInputError";
     IssueCreated[IssueCreated["GenericIssue::FormInputWithNoLabelError"] = 67] = "GenericIssue::FormInputWithNoLabelError";
     IssueCreated[IssueCreated["GenericIssue::FormAutocompleteAttributeEmptyError"] = 68] = "GenericIssue::FormAutocompleteAttributeEmptyError";
     IssueCreated[IssueCreated["GenericIssue::FormEmptyIdAndNameAttributesForInputError"] = 69] = "GenericIssue::FormEmptyIdAndNameAttributesForInputError";
-    IssueCreated[IssueCreated["GenericIssue::FormAriaLabelledByToNonExistingId"] = 70] = "GenericIssue::FormAriaLabelledByToNonExistingId";
+    IssueCreated[IssueCreated["GenericIssue::FormAriaLabelledByToNonExistingIdError"] = 70] = "GenericIssue::FormAriaLabelledByToNonExistingIdError";
     IssueCreated[IssueCreated["GenericIssue::FormInputAssignedAutocompleteValueToIdOrNameAttributeError"] = 71] = "GenericIssue::FormInputAssignedAutocompleteValueToIdOrNameAttributeError";
-    IssueCreated[IssueCreated["GenericIssue::FormLabelHasNeitherForNorNestedInput"] = 72] = "GenericIssue::FormLabelHasNeitherForNorNestedInput";
+    IssueCreated[IssueCreated["GenericIssue::FormLabelHasNeitherForNorNestedInputError"] = 72] = "GenericIssue::FormLabelHasNeitherForNorNestedInputError";
     IssueCreated[IssueCreated["GenericIssue::FormLabelForMatchesNonExistingIdError"] = 73] = "GenericIssue::FormLabelForMatchesNonExistingIdError";
     IssueCreated[IssueCreated["GenericIssue::FormHasPasswordFieldWithoutUsernameFieldError"] = 74] = "GenericIssue::FormHasPasswordFieldWithoutUsernameFieldError";
     IssueCreated[IssueCreated["GenericIssue::FormInputHasWrongButWellIntendedAutocompleteValueError"] = 75] = "GenericIssue::FormInputHasWrongButWellIntendedAutocompleteValueError";
     IssueCreated[IssueCreated["StylesheetLoadingIssue::LateImportRule"] = 76] = "StylesheetLoadingIssue::LateImportRule";
     IssueCreated[IssueCreated["StylesheetLoadingIssue::RequestFailed"] = 77] = "StylesheetLoadingIssue::RequestFailed";
-    IssueCreated[IssueCreated["MaxValue"] = 78] = "MaxValue";
+    IssueCreated[IssueCreated["CookieIssue::WarnThirdPartyPhaseout::ReadCookie"] = 82] = "CookieIssue::WarnThirdPartyPhaseout::ReadCookie";
+    IssueCreated[IssueCreated["CookieIssue::WarnThirdPartyPhaseout::SetCookie"] = 83] = "CookieIssue::WarnThirdPartyPhaseout::SetCookie";
+    IssueCreated[IssueCreated["CookieIssue::ExcludeThirdPartyPhaseout::ReadCookie"] = 84] = "CookieIssue::ExcludeThirdPartyPhaseout::ReadCookie";
+    IssueCreated[IssueCreated["CookieIssue::ExcludeThirdPartyPhaseout::SetCookie"] = 85] = "CookieIssue::ExcludeThirdPartyPhaseout::SetCookie";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::DisallowedSelectChild"] = 86] = "ElementAccessibilityIssue::DisallowedSelectChild";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::DisallowedOptGroupChild"] = 87] = "ElementAccessibilityIssue::DisallowedOptGroupChild";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::NonPhrasingContentOptionChild"] = 88] = "ElementAccessibilityIssue::NonPhrasingContentOptionChild";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::InteractiveContentOptionChild"] = 89] = "ElementAccessibilityIssue::InteractiveContentOptionChild";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::InteractiveContentLegendChild"] = 90] = "ElementAccessibilityIssue::InteractiveContentLegendChild";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::MissingSignatureHeader"] = 91] = "SRIMessageSignatureIssue::MissingSignatureHeader";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::MissingSignatureInputHeader"] = 92] = "SRIMessageSignatureIssue::MissingSignatureInputHeader";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::InvalidSignatureHeader"] = 93] = "SRIMessageSignatureIssue::InvalidSignatureHeader";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::InvalidSignatureInputHeader"] = 94] = "SRIMessageSignatureIssue::InvalidSignatureInputHeader";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureHeaderValueIsNotByteSequence"] = 95] = "SRIMessageSignatureIssue::SignatureHeaderValueIsNotByteSequence";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureHeaderValueIsParameterized"] = 96] = "SRIMessageSignatureIssue::SignatureHeaderValueIsParameterized";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureHeaderValueIsIncorrectLength"] = 97] = "SRIMessageSignatureIssue::SignatureHeaderValueIsIncorrectLength";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderMissingLabel"] = 98] = "SRIMessageSignatureIssue::SignatureInputHeaderMissingLabel";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderValueNotInnerList"] = 99] = "SRIMessageSignatureIssue::SignatureInputHeaderValueNotInnerList";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderValueMissingComponents"] = 100] = "SRIMessageSignatureIssue::SignatureInputHeaderValueMissingComponents";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentType"] = 101] = "SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentType";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentName"] = 102] = "SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentName";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderInvalidHeaderComponentParameter"] = 103] = "SRIMessageSignatureIssue::SignatureInputHeaderInvalidHeaderComponentParameter";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderInvalidDerivedComponentParameter"] = 104] = "SRIMessageSignatureIssue::SignatureInputHeaderInvalidDerivedComponentParameter";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderKeyIdLength"] = 105] = "SRIMessageSignatureIssue::SignatureInputHeaderKeyIdLength";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderInvalidParameter"] = 106] = "SRIMessageSignatureIssue::SignatureInputHeaderInvalidParameter";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::SignatureInputHeaderMissingRequiredParameters"] = 107] = "SRIMessageSignatureIssue::SignatureInputHeaderMissingRequiredParameters";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::ValidationFailedSignatureExpired"] = 108] = "SRIMessageSignatureIssue::ValidationFailedSignatureExpired";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::ValidationFailedInvalidLength"] = 109] = "SRIMessageSignatureIssue::ValidationFailedInvalidLength";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::ValidationFailedSignatureMismatch"] = 110] = "SRIMessageSignatureIssue::ValidationFailedSignatureMismatch";
+    IssueCreated[IssueCreated["CorsIssue::LocalNetworkAccessPermissionDenied"] = 111] = "CorsIssue::LocalNetworkAccessPermissionDenied";
+    IssueCreated[IssueCreated["SRIMessageSignatureIssue::ValidationFailedIntegrityMismatch"] = 112] = "SRIMessageSignatureIssue::ValidationFailedIntegrityMismatch";
+    IssueCreated[IssueCreated["ElementAccessibilityIssue::InteractiveContentSummaryDescendant"] = 113] = "ElementAccessibilityIssue::InteractiveContentSummaryDescendant";
+    IssueCreated[IssueCreated["CorsIssue::InvalidLocalNetworkAccess"] = 114] = "CorsIssue::InvalidLocalNetworkAccess";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    IssueCreated[IssueCreated["MAX_VALUE"] = 115] = "MAX_VALUE";
 })(IssueCreated || (IssueCreated = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var DeveloperResourceLoaded;
-(function (DeveloperResourceLoaded) {
-    DeveloperResourceLoaded[DeveloperResourceLoaded["LoadThroughPageViaTarget"] = 0] = "LoadThroughPageViaTarget";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["LoadThroughPageViaFrame"] = 1] = "LoadThroughPageViaFrame";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["LoadThroughPageFailure"] = 2] = "LoadThroughPageFailure";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["LoadThroughPageFallback"] = 3] = "LoadThroughPageFallback";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["FallbackAfterFailure"] = 4] = "FallbackAfterFailure";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["FallbackPerOverride"] = 5] = "FallbackPerOverride";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["FallbackPerProtocol"] = 6] = "FallbackPerProtocol";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["FallbackFailure"] = 7] = "FallbackFailure";
-    DeveloperResourceLoaded[DeveloperResourceLoaded["MaxValue"] = 8] = "MaxValue";
-})(DeveloperResourceLoaded || (DeveloperResourceLoaded = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var DeveloperResourceScheme;
-(function (DeveloperResourceScheme) {
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeOther"] = 0] = "SchemeOther";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeUnknown"] = 1] = "SchemeUnknown";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeHttp"] = 2] = "SchemeHttp";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeHttps"] = 3] = "SchemeHttps";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeHttpLocalhost"] = 4] = "SchemeHttpLocalhost";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeHttpsLocalhost"] = 5] = "SchemeHttpsLocalhost";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeData"] = 6] = "SchemeData";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeFile"] = 7] = "SchemeFile";
-    DeveloperResourceScheme[DeveloperResourceScheme["SchemeBlob"] = 8] = "SchemeBlob";
-    DeveloperResourceScheme[DeveloperResourceScheme["MaxValue"] = 9] = "MaxValue";
-})(DeveloperResourceScheme || (DeveloperResourceScheme = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var LinearMemoryInspectorRevealedFrom;
-(function (LinearMemoryInspectorRevealedFrom) {
-    LinearMemoryInspectorRevealedFrom[LinearMemoryInspectorRevealedFrom["ContextMenu"] = 0] = "ContextMenu";
-    LinearMemoryInspectorRevealedFrom[LinearMemoryInspectorRevealedFrom["MemoryIcon"] = 1] = "MemoryIcon";
-    LinearMemoryInspectorRevealedFrom[LinearMemoryInspectorRevealedFrom["MaxValue"] = 2] = "MaxValue";
-})(LinearMemoryInspectorRevealedFrom || (LinearMemoryInspectorRevealedFrom = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var LinearMemoryInspectorTarget;
-(function (LinearMemoryInspectorTarget) {
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["DWARFInspectableAddress"] = 0] = "DWARFInspectableAddress";
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["ArrayBuffer"] = 1] = "ArrayBuffer";
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["DataView"] = 2] = "DataView";
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["TypedArray"] = 3] = "TypedArray";
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["WebAssemblyMemory"] = 4] = "WebAssemblyMemory";
-    LinearMemoryInspectorTarget[LinearMemoryInspectorTarget["MaxValue"] = 5] = "MaxValue";
-})(LinearMemoryInspectorTarget || (LinearMemoryInspectorTarget = {}));
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717) = Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Language;
 (function (Language) {
+    /* eslint-disable @typescript-eslint/naming-convention */
     Language[Language["af"] = 1] = "af";
     Language[Language["am"] = 2] = "am";
     Language[Language["ar"] = 3] = "ar";
@@ -1011,180 +949,19 @@ export var Language;
     Language[Language["zh-HK"] = 80] = "zh-HK";
     Language[Language["zh-TW"] = 81] = "zh-TW";
     Language[Language["zu"] = 82] = "zu";
-    Language[Language["MaxValue"] = 83] = "MaxValue";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    Language[Language["MAX_VALUE"] = 83] = "MAX_VALUE";
 })(Language || (Language = {}));
-/* eslint-enable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var SyncSetting;
-(function (SyncSetting) {
-    SyncSetting[SyncSetting["ChromeSyncDisabled"] = 1] = "ChromeSyncDisabled";
-    SyncSetting[SyncSetting["ChromeSyncSettingsDisabled"] = 2] = "ChromeSyncSettingsDisabled";
-    SyncSetting[SyncSetting["DevToolsSyncSettingDisabled"] = 3] = "DevToolsSyncSettingDisabled";
-    SyncSetting[SyncSetting["DevToolsSyncSettingEnabled"] = 4] = "DevToolsSyncSettingEnabled";
-    SyncSetting[SyncSetting["MaxValue"] = 5] = "MaxValue";
-})(SyncSetting || (SyncSetting = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingToggled;
-(function (RecordingToggled) {
-    RecordingToggled[RecordingToggled["RecordingStarted"] = 1] = "RecordingStarted";
-    RecordingToggled[RecordingToggled["RecordingFinished"] = 2] = "RecordingFinished";
-    RecordingToggled[RecordingToggled["MaxValue"] = 3] = "MaxValue";
-})(RecordingToggled || (RecordingToggled = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingAssertion;
-(function (RecordingAssertion) {
-    RecordingAssertion[RecordingAssertion["AssertionAdded"] = 1] = "AssertionAdded";
-    RecordingAssertion[RecordingAssertion["PropertyAssertionEdited"] = 2] = "PropertyAssertionEdited";
-    RecordingAssertion[RecordingAssertion["AttributeAssertionEdited"] = 3] = "AttributeAssertionEdited";
-    RecordingAssertion[RecordingAssertion["MaxValue"] = 4] = "MaxValue";
-})(RecordingAssertion || (RecordingAssertion = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingReplayFinished;
-(function (RecordingReplayFinished) {
-    RecordingReplayFinished[RecordingReplayFinished["Success"] = 1] = "Success";
-    RecordingReplayFinished[RecordingReplayFinished["TimeoutErrorSelectors"] = 2] = "TimeoutErrorSelectors";
-    RecordingReplayFinished[RecordingReplayFinished["TimeoutErrorTarget"] = 3] = "TimeoutErrorTarget";
-    RecordingReplayFinished[RecordingReplayFinished["OtherError"] = 4] = "OtherError";
-    RecordingReplayFinished[RecordingReplayFinished["MaxValue"] = 5] = "MaxValue";
-})(RecordingReplayFinished || (RecordingReplayFinished = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingReplaySpeed;
-(function (RecordingReplaySpeed) {
-    RecordingReplaySpeed[RecordingReplaySpeed["Normal"] = 1] = "Normal";
-    RecordingReplaySpeed[RecordingReplaySpeed["Slow"] = 2] = "Slow";
-    RecordingReplaySpeed[RecordingReplaySpeed["VerySlow"] = 3] = "VerySlow";
-    RecordingReplaySpeed[RecordingReplaySpeed["ExtremelySlow"] = 4] = "ExtremelySlow";
-    RecordingReplaySpeed[RecordingReplaySpeed["MaxValue"] = 5] = "MaxValue";
-})(RecordingReplaySpeed || (RecordingReplaySpeed = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingReplayStarted;
-(function (RecordingReplayStarted) {
-    RecordingReplayStarted[RecordingReplayStarted["ReplayOnly"] = 1] = "ReplayOnly";
-    RecordingReplayStarted[RecordingReplayStarted["ReplayWithPerformanceTracing"] = 2] = "ReplayWithPerformanceTracing";
-    RecordingReplayStarted[RecordingReplayStarted["ReplayViaExtension"] = 3] = "ReplayViaExtension";
-    RecordingReplayStarted[RecordingReplayStarted["MaxValue"] = 4] = "MaxValue";
-})(RecordingReplayStarted || (RecordingReplayStarted = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingEdited;
-(function (RecordingEdited) {
-    RecordingEdited[RecordingEdited["SelectorPickerUsed"] = 1] = "SelectorPickerUsed";
-    RecordingEdited[RecordingEdited["StepAdded"] = 2] = "StepAdded";
-    RecordingEdited[RecordingEdited["StepRemoved"] = 3] = "StepRemoved";
-    RecordingEdited[RecordingEdited["SelectorAdded"] = 4] = "SelectorAdded";
-    RecordingEdited[RecordingEdited["SelectorRemoved"] = 5] = "SelectorRemoved";
-    RecordingEdited[RecordingEdited["SelectorPartAdded"] = 6] = "SelectorPartAdded";
-    RecordingEdited[RecordingEdited["SelectorPartEdited"] = 7] = "SelectorPartEdited";
-    RecordingEdited[RecordingEdited["SelectorPartRemoved"] = 8] = "SelectorPartRemoved";
-    RecordingEdited[RecordingEdited["TypeChanged"] = 9] = "TypeChanged";
-    RecordingEdited[RecordingEdited["OtherEditing"] = 10] = "OtherEditing";
-    RecordingEdited[RecordingEdited["MaxValue"] = 11] = "MaxValue";
-})(RecordingEdited || (RecordingEdited = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingExported;
-(function (RecordingExported) {
-    RecordingExported[RecordingExported["ToPuppeteer"] = 1] = "ToPuppeteer";
-    RecordingExported[RecordingExported["ToJSON"] = 2] = "ToJSON";
-    RecordingExported[RecordingExported["ToPuppeteerReplay"] = 3] = "ToPuppeteerReplay";
-    RecordingExported[RecordingExported["ToExtension"] = 4] = "ToExtension";
-    RecordingExported[RecordingExported["ToLighthouse"] = 5] = "ToLighthouse";
-    RecordingExported[RecordingExported["MaxValue"] = 6] = "MaxValue";
-})(RecordingExported || (RecordingExported = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingCodeToggled;
-(function (RecordingCodeToggled) {
-    RecordingCodeToggled[RecordingCodeToggled["CodeShown"] = 1] = "CodeShown";
-    RecordingCodeToggled[RecordingCodeToggled["CodeHidden"] = 2] = "CodeHidden";
-    RecordingCodeToggled[RecordingCodeToggled["MaxValue"] = 3] = "MaxValue";
-})(RecordingCodeToggled || (RecordingCodeToggled = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var RecordingCopiedToClipboard;
-(function (RecordingCopiedToClipboard) {
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedRecordingWithPuppeteer"] = 1] = "CopiedRecordingWithPuppeteer";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedRecordingWithJSON"] = 2] = "CopiedRecordingWithJSON";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedRecordingWithReplay"] = 3] = "CopiedRecordingWithReplay";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedRecordingWithExtension"] = 4] = "CopiedRecordingWithExtension";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedStepWithPuppeteer"] = 5] = "CopiedStepWithPuppeteer";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedStepWithJSON"] = 6] = "CopiedStepWithJSON";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedStepWithReplay"] = 7] = "CopiedStepWithReplay";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["CopiedStepWithExtension"] = 8] = "CopiedStepWithExtension";
-    RecordingCopiedToClipboard[RecordingCopiedToClipboard["MaxValue"] = 9] = "MaxValue";
-})(RecordingCopiedToClipboard || (RecordingCopiedToClipboard = {}));
-/* eslint-disable @typescript-eslint/naming-convention */
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var ConsoleShowsCorsErrors;
-(function (ConsoleShowsCorsErrors) {
-    ConsoleShowsCorsErrors[ConsoleShowsCorsErrors["false"] = 0] = "false";
-    ConsoleShowsCorsErrors[ConsoleShowsCorsErrors["true"] = 1] = "true";
-    ConsoleShowsCorsErrors[ConsoleShowsCorsErrors["MaxValue"] = 2] = "MaxValue";
-})(ConsoleShowsCorsErrors || (ConsoleShowsCorsErrors = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var StyleTextCopied;
-(function (StyleTextCopied) {
-    StyleTextCopied[StyleTextCopied["DeclarationViaChangedLine"] = 1] = "DeclarationViaChangedLine";
-    StyleTextCopied[StyleTextCopied["AllChangesViaStylesPane"] = 2] = "AllChangesViaStylesPane";
-    StyleTextCopied[StyleTextCopied["DeclarationViaContextMenu"] = 3] = "DeclarationViaContextMenu";
-    StyleTextCopied[StyleTextCopied["PropertyViaContextMenu"] = 4] = "PropertyViaContextMenu";
-    StyleTextCopied[StyleTextCopied["ValueViaContextMenu"] = 5] = "ValueViaContextMenu";
-    StyleTextCopied[StyleTextCopied["DeclarationAsJSViaContextMenu"] = 6] = "DeclarationAsJSViaContextMenu";
-    StyleTextCopied[StyleTextCopied["RuleViaContextMenu"] = 7] = "RuleViaContextMenu";
-    StyleTextCopied[StyleTextCopied["AllDeclarationsViaContextMenu"] = 8] = "AllDeclarationsViaContextMenu";
-    StyleTextCopied[StyleTextCopied["AllDeclarationsAsJSViaContextMenu"] = 9] = "AllDeclarationsAsJSViaContextMenu";
-    StyleTextCopied[StyleTextCopied["SelectorViaContextMenu"] = 10] = "SelectorViaContextMenu";
-    StyleTextCopied[StyleTextCopied["MaxValue"] = 11] = "MaxValue";
-})(StyleTextCopied || (StyleTextCopied = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var ManifestSectionCodes;
 (function (ManifestSectionCodes) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Indexed access. */
     ManifestSectionCodes[ManifestSectionCodes["OtherSection"] = 0] = "OtherSection";
     ManifestSectionCodes[ManifestSectionCodes["Identity"] = 1] = "Identity";
     ManifestSectionCodes[ManifestSectionCodes["Presentation"] = 2] = "Presentation";
     ManifestSectionCodes[ManifestSectionCodes["Protocol Handlers"] = 3] = "Protocol Handlers";
     ManifestSectionCodes[ManifestSectionCodes["Icons"] = 4] = "Icons";
     ManifestSectionCodes[ManifestSectionCodes["Window Controls Overlay"] = 5] = "Window Controls Overlay";
-    ManifestSectionCodes[ManifestSectionCodes["MaxValue"] = 6] = "MaxValue";
+    /* eslint-enable @typescript-eslint/naming-convention */
+    ManifestSectionCodes[ManifestSectionCodes["MAX_VALUE"] = 6] = "MAX_VALUE";
 })(ManifestSectionCodes || (ManifestSectionCodes = {}));
-// The names here match the CSSRuleValidator names in CSSRuleValidator.ts.
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var CSSHintType;
-(function (CSSHintType) {
-    CSSHintType[CSSHintType["Other"] = 0] = "Other";
-    CSSHintType[CSSHintType["AlignContent"] = 1] = "AlignContent";
-    CSSHintType[CSSHintType["FlexItem"] = 2] = "FlexItem";
-    CSSHintType[CSSHintType["FlexContainer"] = 3] = "FlexContainer";
-    CSSHintType[CSSHintType["GridContainer"] = 4] = "GridContainer";
-    CSSHintType[CSSHintType["GridItem"] = 5] = "GridItem";
-    CSSHintType[CSSHintType["FlexGrid"] = 6] = "FlexGrid";
-    CSSHintType[CSSHintType["MulticolFlexGrid"] = 7] = "MulticolFlexGrid";
-    CSSHintType[CSSHintType["Padding"] = 8] = "Padding";
-    CSSHintType[CSSHintType["Position"] = 9] = "Position";
-    CSSHintType[CSSHintType["ZIndex"] = 10] = "ZIndex";
-    CSSHintType[CSSHintType["Sizing"] = 11] = "Sizing";
-    CSSHintType[CSSHintType["FlexOrGridItem"] = 12] = "FlexOrGridItem";
-    CSSHintType[CSSHintType["FontVariationSettings"] = 13] = "FontVariationSettings";
-    CSSHintType[CSSHintType["MaxValue"] = 14] = "MaxValue";
-})(CSSHintType || (CSSHintType = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var LighthouseModeRun;
-(function (LighthouseModeRun) {
-    LighthouseModeRun[LighthouseModeRun["Navigation"] = 0] = "Navigation";
-    LighthouseModeRun[LighthouseModeRun["Timespan"] = 1] = "Timespan";
-    LighthouseModeRun[LighthouseModeRun["Snapshot"] = 2] = "Snapshot";
-    LighthouseModeRun[LighthouseModeRun["LegacyNavigation"] = 3] = "LegacyNavigation";
-    LighthouseModeRun[LighthouseModeRun["MaxValue"] = 4] = "MaxValue";
-})(LighthouseModeRun || (LighthouseModeRun = {}));
 //# sourceMappingURL=UserMetrics.js.map

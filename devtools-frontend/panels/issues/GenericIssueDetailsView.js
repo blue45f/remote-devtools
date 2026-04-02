@@ -1,19 +1,20 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
 import { AffectedResourcesView } from './AffectedResourcesView.js';
 const UIStrings = {
     /**
-     *@description Label for number of affected resources indication in issue view
+     * @description Label for number of affected resources indication in issue view
      */
     nResources: '{n, plural, =1 {# resource} other {# resources}}',
     /**
-     *@description Title for the 'Frame' column.
+     * @description Title for the 'Frame' column.
      */
     frameId: 'Frame',
     /**
-     *@description Label for the violating node link in the issue view.
+     * @description Label for the violating node link in the issue view.
      */
     violatingNode: 'Violating node',
 };
@@ -25,15 +26,22 @@ export class GenericIssueDetailsView extends AffectedResourcesView {
     }
     #appendDetails(genericIssues) {
         const header = document.createElement('tr');
-        const sampleIssueDetails = genericIssues.values().next().value.details();
-        if (sampleIssueDetails.frameId) {
+        const sampleIssueDetails = genericIssues.values().next().value?.details();
+        if (sampleIssueDetails?.frameId) {
             this.appendColumnTitle(header, i18nString(UIStrings.frameId));
         }
+        // Only some `GenericIssueDetails` have information for the 'affected
+        // resources' view. We'll count them and only call `#appendDetail` for
+        // those. `updateAffectedResourceCount` will hide the section if the
+        // count is zero.
         this.affectedResources.appendChild(header);
         let count = 0;
         for (const genericIssue of genericIssues) {
-            count++;
-            void this.#appendDetail(genericIssue);
+            const hasAffectedResource = genericIssue.details().frameId || genericIssue.details().violatingNodeId;
+            if (hasAffectedResource) {
+                count++;
+                void this.#appendDetail(genericIssue);
+            }
         }
         this.updateAffectedResourceCount(count);
     }

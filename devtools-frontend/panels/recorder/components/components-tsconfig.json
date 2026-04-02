@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../../front_end/panels/recorder/components",
     "skipLibCheck": true,
@@ -26,32 +31,26 @@
     "target": "esnext",
     "tsBuildInfoFile": "components-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
     "../../../../../../../front_end/panels/recorder/components/ControlButton.ts",
     "../../../../../../../front_end/panels/recorder/components/CreateRecordingView.ts",
     "../../../../../../../front_end/panels/recorder/components/ExtensionView.ts",
-    "../../../../../../../front_end/panels/recorder/components/RecorderInput.ts",
     "../../../../../../../front_end/panels/recorder/components/RecordingListView.ts",
     "../../../../../../../front_end/panels/recorder/components/RecordingView.ts",
-    "../../../../../../../front_end/panels/recorder/components/ReplayButton.ts",
-    "../../../../../../../front_end/panels/recorder/components/SelectButton.ts",
-    "../../../../../../../front_end/panels/recorder/components/SplitView.ts",
-    "../../../../../../../front_end/panels/recorder/components/StartView.ts",
+    "../../../../../../../front_end/panels/recorder/components/ReplaySection.ts",
+    "../../../../../../../front_end/panels/recorder/components/SelectorPicker.ts",
     "../../../../../../../front_end/panels/recorder/components/StepEditor.ts",
     "../../../../../../../front_end/panels/recorder/components/StepView.ts",
     "../../../../../../../front_end/panels/recorder/components/TimelineSection.ts",
     "../../../../../../../front_end/panels/recorder/components/util.ts",
     "../../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
-    {
-      "path": "../actions-tsconfig.json"
-    },
     {
       "path": "../../../core/common/bundle-tsconfig.json"
     },
@@ -83,9 +82,6 @@
       "path": "../../../ui/components/helpers/bundle-tsconfig.json"
     },
     {
-      "path": "../../../ui/components/icon_button/bundle-tsconfig.json"
-    },
-    {
       "path": "../../../ui/components/input/bundle-tsconfig.json"
     },
     {
@@ -101,16 +97,22 @@
       "path": "../../../ui/components/render_coordinator/bundle-tsconfig.json"
     },
     {
+      "path": "../../../ui/components/suggestion_input/bundle-tsconfig.json"
+    },
+    {
       "path": "../../../ui/components/text_editor/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../ui/kit/bundle-tsconfig.json"
     },
     {
       "path": "../../../ui/legacy/bundle-tsconfig.json"
     },
     {
-      "path": "../../../ui/lit-html/bundle-tsconfig.json"
+      "path": "../../../ui/lit/bundle-tsconfig.json"
     },
     {
-      "path": "../controllers/bundle-tsconfig.json"
+      "path": "../../../ui/visual_logging/bundle-tsconfig.json"
     },
     {
       "path": "../converters/bundle-tsconfig.json"
@@ -120,6 +122,9 @@
     },
     {
       "path": "../models/bundle-tsconfig.json"
+    },
+    {
+      "path": "../recorder-actions/bundle-tsconfig.json"
     }
   ]
 }

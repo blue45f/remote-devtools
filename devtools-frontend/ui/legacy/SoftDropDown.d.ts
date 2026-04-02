@@ -12,8 +12,7 @@ export declare class SoftDropDown<T> implements ListDelegate<T> {
     private list;
     private rowHeight;
     private width;
-    private listWasShowing200msAgo;
-    constructor(model: ListModel<T>, delegate: Delegate<T>);
+    constructor(model: ListModel<T>, delegate: Delegate<T>, jslogContext?: string);
     private show;
     private updateGlasspaneSize;
     private hide;

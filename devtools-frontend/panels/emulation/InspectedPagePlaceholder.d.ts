@@ -1,12 +1,12 @@
 import * as Common from '../../core/common/common.js';
 import * as UI from '../../ui/legacy/legacy.js';
 declare const InspectedPagePlaceholder_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.Update>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.Update>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.Update>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.Update): boolean;
-    dispatchEventToListeners<T_3 extends Events.Update>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.UPDATE>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.UPDATE>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.UPDATE>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.UPDATE): boolean;
+    dispatchEventToListeners<T extends Events.UPDATE>(eventType: import("../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.Widget;
 export declare class InspectedPagePlaceholder extends InspectedPagePlaceholder_base {
     private updateId?;
@@ -21,7 +21,7 @@ export declare class InspectedPagePlaceholder extends InspectedPagePlaceholder_b
     update(force?: boolean): void;
 }
 export declare const enum Events {
-    Update = "Update"
+    UPDATE = "Update"
 }
 export interface Bounds {
     x: number;
@@ -29,7 +29,7 @@ export interface Bounds {
     height: number;
     width: number;
 }
-export type EventTypes = {
-    [Events.Update]: Bounds;
-};
+export interface EventTypes {
+    [Events.UPDATE]: Bounds;
+}
 export {};

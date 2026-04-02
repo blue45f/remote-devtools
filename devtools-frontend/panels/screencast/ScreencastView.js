@@ -1,68 +1,52 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2013 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import { createIcon, Icon } from '../../ui/kit/kit.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { InputModel } from './InputModel.js';
 import screencastViewStyles from './screencastView.css.js';
 const UIStrings = {
     /**
-     *@description Accessible alt text for the screencast canvas rendering of the debug target webpage
+     * @description Accessible alt text for the screencast canvas rendering of the debug target webpage
      */
     screencastViewOfDebugTarget: 'Screencast view of debug target',
     /**
-     *@description Glass pane element text content in Screencast View of the Remote Devices tab when toggling screencast
+     * @description Glass pane element text content in Screencast View of the Remote Devices tab when toggling screencast
      */
     theTabIsInactive: 'The tab is inactive',
     /**
-     *@description Glass pane element text content in Screencast View of the Remote Devices tab when toggling screencast
+     * @description Glass pane element text content in Screencast View of the Remote Devices tab when toggling screencast
      */
     profilingInProgress: 'Profiling in progress',
     /**
-     *@description Accessible text for the screencast back button
+     * @description Accessible text for the screencast back button
      */
     back: 'back',
     /**
-     *@description Accessible text for the screencast forward button
+     * @description Accessible text for the screencast forward button
      */
     forward: 'forward',
     /**
-     *@description Accessible text for the screencast reload button
+     * @description Accessible text for the screencast reload button
      */
     reload: 'reload',
     /**
-     *@description Accessible text for the address bar in screencast view
+     * @description Accessible text for the address bar in screencast view
      */
     addressBar: 'Address bar',
+    /**
+     * @description Accessible text for the touch emulation button.
+     */
+    touchInput: 'Use touch',
+    /**
+     * @description Accessible text for the mouse emulation button.
+     */
+    mouseInput: 'Use mouse',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/screencast/ScreencastView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -96,7 +80,6 @@ export class ScreencastView extends UI.Widget.VBox {
     navigationBack;
     navigationForward;
     canvasContainerElement;
-    isCasting;
     checkerboardPattern;
     targetInactive;
     deferredCasting;
@@ -107,10 +90,17 @@ export class ScreencastView extends UI.Widget.VBox {
     navigationBar;
     navigationReload;
     navigationProgressBar;
+    touchInputToggle;
+    mouseInputToggle;
+    touchInputToggleIcon;
+    mouseInputToggleIcon;
     historyIndex;
     historyEntries;
+    isCasting = false;
+    screencastOperationId;
     constructor(screenCaptureModel) {
         super();
+        this.registerRequiredCSS(screencastViewStyles);
         this.screenCaptureModel = screenCaptureModel;
         this.domModel = screenCaptureModel.target().model(SDK.DOMModel.DOMModel);
         this.overlayModel = screenCaptureModel.target().model(SDK.OverlayModel.OverlayModel);
@@ -128,26 +118,24 @@ export class ScreencastView extends UI.Widget.VBox {
     }
     initialize() {
         this.element.classList.add('screencast');
-        // this.createNavigationBar();
+        this.createNavigationBar();
         this.viewportElement = this.element.createChild('div', 'screencast-viewport hidden');
         this.canvasContainerElement = this.viewportElement.createChild('div', 'screencast-canvas-container');
-        this.glassPaneElement =
-            this.canvasContainerElement.createChild('div', 'screencast-glasspane fill hidden');
+        this.glassPaneElement = this.canvasContainerElement.createChild('div', 'screencast-glasspane fill hidden');
         this.canvasElement = this.canvasContainerElement.createChild('canvas');
         UI.ARIAUtils.setLabel(this.canvasElement, i18nString(UIStrings.screencastViewOfDebugTarget));
         this.canvasElement.tabIndex = 0;
         this.canvasElement.addEventListener('mousedown', this.handleMouseEvent.bind(this), false);
         this.canvasElement.addEventListener('mouseup', this.handleMouseEvent.bind(this), false);
         this.canvasElement.addEventListener('mousemove', this.handleMouseEvent.bind(this), false);
-        this.canvasElement.addEventListener('mousewheel', this.handleMouseEvent.bind(this), false);
+        this.canvasElement.addEventListener('wheel', this.handleWheelEvent.bind(this), false);
         this.canvasElement.addEventListener('click', this.handleMouseEvent.bind(this), false);
         this.canvasElement.addEventListener('contextmenu', this.handleContextMenuEvent.bind(this), false);
         this.canvasElement.addEventListener('keydown', this.handleKeyEvent.bind(this), false);
         this.canvasElement.addEventListener('keyup', this.handleKeyEvent.bind(this), false);
         this.canvasElement.addEventListener('keypress', this.handleKeyEvent.bind(this), false);
         this.canvasElement.addEventListener('blur', this.handleBlurEvent.bind(this), false);
-        this.titleElement =
-            this.canvasContainerElement.createChild('div', 'screencast-element-title monospace hidden');
+        this.titleElement = this.canvasContainerElement.createChild('div', 'screencast-element-title monospace hidden');
         this.tagNameElement = this.titleElement.createChild('span', 'screencast-tag-name');
         this.attributeElement = this.titleElement.createChild('span', 'screencast-attribute');
         UI.UIUtils.createTextChild(this.titleElement, ' ');
@@ -158,22 +146,18 @@ export class ScreencastView extends UI.Widget.VBox {
         this.titleElement.style.top = '0';
         this.titleElement.style.left = '0';
         this.imageElement = new Image();
-        this.isCasting = false;
         this.context = this.canvasElement.getContext('2d');
         this.checkerboardPattern = this.createCheckerboardPattern(this.context);
-        this.shortcuts[UI.KeyboardShortcut.KeyboardShortcut.makeKey('l', UI.KeyboardShortcut.Modifiers.Ctrl)] =
+        this.shortcuts[UI.KeyboardShortcut.KeyboardShortcut.makeKey('l', UI.KeyboardShortcut.Modifiers.Ctrl.value)] =
             this.focusNavigationBar.bind(this);
-        SDK.TargetManager.TargetManager.instance().addEventListener(SDK.TargetManager.Events.SuspendStateChanged, this.onSuspendStateChange, this);
+        SDK.TargetManager.TargetManager.instance().addEventListener("SuspendStateChanged" /* SDK.TargetManager.Events.SUSPEND_STATE_CHANGED */, this.onSuspendStateChange, this);
         this.updateGlasspane();
     }
-    wasShown() {
-        this.startCasting();
-        this.registerCSSFiles([screencastViewStyles]);
-    }
     willHide() {
+        super.willHide();
         this.stopCasting();
     }
-    startCasting() {
+    async startCasting() {
         if (SDK.TargetManager.TargetManager.instance().allTargetsSuspended()) {
             return;
         }
@@ -190,20 +174,18 @@ export class ScreencastView extends UI.Widget.VBox {
         dimensions.width *= window.devicePixelRatio;
         dimensions.height *= window.devicePixelRatio;
         // Note: startScreencast width and height are expected to be integers so must be floored.
-        this.screenCaptureModel.startScreencast("jpeg" /* Protocol.Page.StartScreencastRequestFormat.Jpeg */, 80, Math.floor(Math.min(maxImageDimension, dimensions.width)), Math.floor(Math.min(maxImageDimension, dimensions.height)), undefined, this.screencastFrame.bind(this), this.screencastVisibilityChanged.bind(this));
-        for (const emulationModel of SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel)) {
-            void emulationModel.overrideEmulateTouch(true);
-        }
+        this.screencastOperationId = await this.screenCaptureModel.startScreencast("jpeg" /* Protocol.Page.StartScreencastRequestFormat.Jpeg */, 80, Math.floor(Math.min(maxImageDimension, dimensions.width)), Math.floor(Math.min(maxImageDimension, dimensions.height)), undefined, this.screencastFrame.bind(this), this.screencastVisibilityChanged.bind(this));
         if (this.overlayModel) {
             this.overlayModel.setHighlighter(this);
         }
     }
     stopCasting() {
-        if (!this.isCasting) {
+        if (!this.screencastOperationId) {
             return;
         }
+        this.screenCaptureModel.stopScreencast(this.screencastOperationId);
+        this.screencastOperationId = undefined;
         this.isCasting = false;
-        this.screenCaptureModel.stopScreencast();
         for (const emulationModel of SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel)) {
             void emulationModel.overrideEmulateTouch(false);
         }
@@ -228,7 +210,7 @@ export class ScreencastView extends UI.Widget.VBox {
             this.screenZoom = this.imageElement.naturalWidth * this.imageZoom / metadata.deviceWidth;
             this.viewportElement.style.width = metadata.deviceWidth * this.screenZoom + bordersSize + 'px';
             this.viewportElement.style.height = metadata.deviceHeight * this.screenZoom + bordersSize + 'px';
-            const data = this.highlightNode ? { node: this.highlightNode, selectorList: undefined } : { clear: true };
+            const data = this.highlightNode ? { node: this.highlightNode } : { clear: true };
             void this.updateHighlightInOverlayAndRepaint(data, this.highlightConfig);
         };
         this.imageElement.src = 'data:image/jpg;base64,' + base64Data;
@@ -245,7 +227,7 @@ export class ScreencastView extends UI.Widget.VBox {
             this.stopCasting();
         }
         else {
-            this.startCasting();
+            void this.startCasting();
         }
         this.updateGlasspane();
     }
@@ -270,9 +252,9 @@ export class ScreencastView extends UI.Widget.VBox {
         if (!this.pageScaleFactor || !this.domModel) {
             return;
         }
-        if (!this.inspectModeConfig || event.type === 'mousewheel') {
+        if (!this.inspectModeConfig) {
             if (this.inputModel) {
-                this.inputModel.emitTouchFromMouseEvent(event, this.screenOffsetTop, this.screenZoom);
+                this.inputModel.emitMouseEvent(event, this.screenOffsetTop, this.screenZoom);
             }
             event.preventDefault();
             if (event.type === 'mousedown') {
@@ -281,17 +263,30 @@ export class ScreencastView extends UI.Widget.VBox {
             return;
         }
         const position = this.convertIntoScreenSpace(event);
-        const node = await this.domModel.nodeForLocation(Math.floor(position.x / this.pageScaleFactor + this.scrollOffsetX), Math.floor(position.y / this.pageScaleFactor + this.scrollOffsetY), Common.Settings.Settings.instance().moduleSetting('showUAShadowDOM').get());
+        const node = await this.domModel.nodeForLocation(Math.floor(position.x / this.pageScaleFactor + this.scrollOffsetX), Math.floor(position.y / this.pageScaleFactor + this.scrollOffsetY), Common.Settings.Settings.instance().moduleSetting('show-ua-shadow-dom').get());
         if (!node) {
             return;
         }
         if (event.type === 'mousemove') {
-            void this.updateHighlightInOverlayAndRepaint({ node, selectorList: undefined }, this.inspectModeConfig);
+            void this.updateHighlightInOverlayAndRepaint({ node }, this.inspectModeConfig);
             this.domModel.overlayModel().nodeHighlightRequested({ nodeId: node.id });
         }
         else if (event.type === 'click') {
             this.domModel.overlayModel().inspectNodeRequested({ backendNodeId: node.backendNodeId() });
         }
+    }
+    async handleWheelEvent(event) {
+        if (this.isGlassPaneActive()) {
+            event.consume();
+            return;
+        }
+        if (!this.pageScaleFactor || !this.domModel) {
+            return;
+        }
+        if (this.inputModel) {
+            this.inputModel.emitWheelEvent(event, this.screenOffsetTop, this.screenZoom);
+        }
+        event.preventDefault();
     }
     handleKeyEvent(event) {
         if (this.isGlassPaneActive()) {
@@ -300,7 +295,7 @@ export class ScreencastView extends UI.Widget.VBox {
         }
         const shortcutKey = UI.KeyboardShortcut.KeyboardShortcut.makeKeyFromEvent(event);
         const handler = this.shortcuts[shortcutKey];
-        if (handler && handler(event)) {
+        if (handler?.(event)) {
             event.consume();
             return;
         }
@@ -310,13 +305,14 @@ export class ScreencastView extends UI.Widget.VBox {
         event.consume();
         this.canvasElement.focus();
     }
+    handleBlurEvent() {
+        if (this.inputModel && this.mouseInputToggle?.disabled) {
+            const event = new MouseEvent('mouseup');
+            this.inputModel.emitMouseEvent(event, this.screenOffsetTop, this.screenZoom);
+        }
+    }
     handleContextMenuEvent(event) {
         event.consume(true);
-    }
-    handleBlurEvent(_event) {
-        if (this.inputModel) {
-            this.inputModel.cancelTouch();
-        }
     }
     convertIntoScreenSpace(event) {
         return {
@@ -525,9 +521,9 @@ export class ScreencastView extends UI.Widget.VBox {
         }
         this.context.lineTo(boxX, boxY + titleHeight);
         this.context.closePath();
-        this.context.fillStyle = 'rgb(255, 255, 194)';
+        this.context.fillStyle = 'var(--sys-color-yellow-container)';
         this.context.fill();
-        this.context.strokeStyle = 'rgb(128, 128, 128)';
+        this.context.strokeStyle = 'var(--sys-color-outline)';
         this.context.stroke();
         this.context.restore();
         this.titleElement.style.top = (boxY + 3) + 'px';
@@ -538,7 +534,7 @@ export class ScreencastView extends UI.Widget.VBox {
         const bordersSize = BORDERS_SIZE;
         const width = this.element.offsetWidth - bordersSize - gutterSize;
         const height = this.element.offsetHeight - bordersSize - gutterSize - NAVBAR_HEIGHT;
-        return { width: width, height: height };
+        return { width, height };
     }
     setInspectMode(mode, config) {
         this.inspectModeConfig = mode !== "none" /* Protocol.Overlay.InspectMode.None */ ? config : null;
@@ -551,34 +547,49 @@ export class ScreencastView extends UI.Widget.VBox {
         const size = 32;
         pattern.width = size * 2;
         pattern.height = size * 2;
-        const pctx = pattern.getContext('2d');
-        pctx.fillStyle = 'rgb(195, 195, 195)';
+        const pctx = pattern.getContext('2d', { willReadFrequently: true });
+        pctx.fillStyle = 'var(--sys-color-neutral-outline)';
         pctx.fillRect(0, 0, size * 2, size * 2);
-        pctx.fillStyle = 'rgb(225, 225, 225)';
+        pctx.fillStyle = 'var(--sys-color-surface-variant)';
         pctx.fillRect(0, 0, size, size);
         pctx.fillRect(size, size, size, size);
         return context.createPattern(pattern, 'repeat');
     }
     createNavigationBar() {
         this.navigationBar = this.element.createChild('div', 'screencast-navigation');
-        this.navigationBack = this.navigationBar.createChild('button', 'back');
+        this.navigationBack = this.navigationBar.createChild('button', 'navigation');
+        this.navigationBack.appendChild(createIcon('arrow-back'));
         this.navigationBack.disabled = true;
         UI.ARIAUtils.setLabel(this.navigationBack, i18nString(UIStrings.back));
-        this.navigationForward = this.navigationBar.createChild('button', 'forward');
+        this.navigationForward = this.navigationBar.createChild('button', 'navigation');
+        this.navigationForward.appendChild(createIcon('arrow-forward'));
         this.navigationForward.disabled = true;
         UI.ARIAUtils.setLabel(this.navigationForward, i18nString(UIStrings.forward));
-        this.navigationReload = this.navigationBar.createChild('button', 'reload');
+        this.navigationReload = this.navigationBar.createChild('button', 'navigation');
+        this.navigationReload.appendChild(createIcon('refresh'));
         UI.ARIAUtils.setLabel(this.navigationReload, i18nString(UIStrings.reload));
-        this.navigationUrl = UI.UIUtils.createInput();
-        UI.ARIAUtils.setLabel(this.navigationUrl, i18nString(UIStrings.addressBar));
-        this.navigationBar.appendChild(this.navigationUrl);
+        this.navigationUrl = this.navigationBar.appendChild(UI.UIUtils.createInput());
         this.navigationUrl.type = 'text';
+        UI.ARIAUtils.setLabel(this.navigationUrl, i18nString(UIStrings.addressBar));
+        this.mouseInputToggle = this.navigationBar.createChild('button');
+        this.mouseInputToggle.disabled = true;
+        {
+            this.mouseInputToggleIcon = this.mouseInputToggle.appendChild(new Icon());
+            this.mouseInputToggleIcon.name = 'mouse';
+            this.mouseInputToggleIcon.classList.toggle('toggled', true);
+        }
+        UI.ARIAUtils.setLabel(this.mouseInputToggle, i18nString(UIStrings.mouseInput));
+        this.touchInputToggle = this.navigationBar.createChild('button');
+        this.touchInputToggleIcon = this.touchInputToggle.appendChild(createIcon('touch-app'));
+        UI.ARIAUtils.setLabel(this.touchInputToggle, i18nString(UIStrings.touchInput));
         this.navigationProgressBar = new ProgressTracker(this.resourceTreeModel, this.networkManager, this.navigationBar.createChild('div', 'progress'));
         if (this.resourceTreeModel) {
             this.navigationBack.addEventListener('click', this.navigateToHistoryEntry.bind(this, -1), false);
             this.navigationForward.addEventListener('click', this.navigateToHistoryEntry.bind(this, 1), false);
             this.navigationReload.addEventListener('click', this.navigateReload.bind(this), false);
             this.navigationUrl.addEventListener('keyup', this.navigationUrlKeyUp.bind(this), true);
+            this.touchInputToggle.addEventListener('click', this.#toggleTouchEmulation.bind(this, true), false);
+            this.mouseInputToggle.addEventListener('click', this.#toggleTouchEmulation.bind(this, false), false);
             void this.requestNavigationHistory();
             this.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.PrimaryPageChanged, this.requestNavigationHistoryEvent, this);
             this.resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.CachedResourcesLoaded, this.requestNavigationHistoryEvent, this);
@@ -612,14 +623,25 @@ export class ScreencastView extends UI.Widget.VBox {
         if (!url.match(SCHEME_REGEX)) {
             url = 'http://' + url;
         }
-        // Perform decodeURI in case the user enters an encoded string
-        // decodeURI has no effect on strings that are already decoded
-        // encodeURI ensures an encoded URL is always passed to the backend
-        // This allows the input field to support both encoded and decoded URLs
         if (this.resourceTreeModel) {
-            void this.resourceTreeModel.navigate(encodeURI(decodeURI(url)));
+            void this.resourceTreeModel.navigate(url);
         }
         this.canvasElement.focus();
+    }
+    #toggleTouchEmulation(value) {
+        if (!this.canvasContainerElement || !this.isCasting || !this.mouseInputToggle || !this.touchInputToggle ||
+            !this.mouseInputToggleIcon || !this.touchInputToggleIcon) {
+            return;
+        }
+        const models = SDK.TargetManager.TargetManager.instance().models(SDK.EmulationModel.EmulationModel);
+        for (const model of models) {
+            void model.overrideEmulateTouch(value);
+        }
+        this.mouseInputToggle.disabled = !value;
+        this.touchInputToggle.disabled = value;
+        this.mouseInputToggleIcon.classList.toggle('toggled', this.mouseInputToggle.disabled);
+        this.touchInputToggleIcon.classList.toggle('toggled', this.touchInputToggle.disabled);
+        this.canvasContainerElement.classList.toggle('touchable', value);
     }
     requestNavigationHistoryEvent() {
         void this.requestNavigationHistory();

@@ -8,18 +8,18 @@ export declare class NetworkProjectManager extends Common.ObjectWrapper.ObjectWr
         forceNew: boolean;
     }): NetworkProjectManager;
 }
-export declare enum Events {
-    FrameAttributionAdded = "FrameAttributionAdded",
-    FrameAttributionRemoved = "FrameAttributionRemoved"
+export declare const enum Events {
+    FRAME_ATTRIBUTION_ADDED = "FrameAttributionAdded",
+    FRAME_ATTRIBUTION_REMOVED = "FrameAttributionRemoved"
 }
 export interface FrameAttributionEvent {
     uiSourceCode: Workspace.UISourceCode.UISourceCode;
     frame: SDK.ResourceTreeModel.ResourceTreeFrame;
 }
-export type EventTypes = {
-    [Events.FrameAttributionAdded]: FrameAttributionEvent;
-    [Events.FrameAttributionRemoved]: FrameAttributionEvent;
-};
+export interface EventTypes {
+    [Events.FRAME_ATTRIBUTION_ADDED]: FrameAttributionEvent;
+    [Events.FRAME_ATTRIBUTION_REMOVED]: FrameAttributionEvent;
+}
 export declare class NetworkProject {
     static resolveFrame(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId): SDK.ResourceTreeModel.ResourceTreeFrame | null;
     static setInitialFrameAttribution(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId): void;

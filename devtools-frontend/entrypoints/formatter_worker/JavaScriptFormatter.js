@@ -1,32 +1,6 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Acorn from '../../third_party/acorn/acorn.js';
 import { AcornTokenizer, ECMA_VERSION } from './AcornTokenizer.js';
 import { ESTreeWalker } from './ESTreeWalker.js';
@@ -40,12 +14,12 @@ export class JavaScriptFormatter {
     constructor(builder) {
         this.#builder = builder;
     }
-    format(text, lineEndings, fromOffset, toOffset) {
+    format(text, _lineEndings, fromOffset, toOffset) {
         this.#fromOffset = fromOffset;
         this.#toOffset = toOffset;
         this.#content = text.substring(this.#fromOffset, this.#toOffset);
         this.#lastLineNumber = 0;
-        this.#tokenizer = new AcornTokenizer(this.#content);
+        const tokens = [];
         const ast = Acorn.parse(this.#content, {
             ranges: false,
             preserveParens: true,
@@ -53,9 +27,12 @@ export class JavaScriptFormatter {
             allowImportExportEverywhere: true,
             ecmaVersion: ECMA_VERSION,
             allowHashBang: true,
+            onToken: tokens,
+            onComment: tokens,
         });
+        this.#tokenizer = new AcornTokenizer(this.#content, tokens);
         const walker = new ESTreeWalker(this.#beforeVisit.bind(this), this.#afterVisit.bind(this));
-        // @ts-ignore Technically, the acorn Node type is a subclass of Acorn.ESTree.Node.
+        // @ts-expect-error Technically, the acorn Node type is a subclass of Acorn.ESTree.Node.
         // However, the acorn package currently exports its type without specifying
         // this relationship. So while this is allowed on runtime, we can't properly
         // typecheck it.
@@ -93,16 +70,20 @@ export class JavaScriptFormatter {
         if (!node.parent) {
             return;
         }
+        if (node.type === 'TemplateLiteral') {
+            this.#builder.setEnforceSpaceBetweenWords(false);
+        }
         let token;
         while ((token = this.#tokenizer.peekToken()) && token.start < node.start) {
             const token = this.#tokenizer.nextToken();
-            // @ts-ignore Same reason as above about Acorn types and ESTree types
+            // @ts-expect-error Same reason as above about Acorn types and ESTree types
             const format = this.#formatToken(node.parent, token);
             this.#push(token, format);
         }
-        return;
     }
     #afterVisit(node) {
+        // ${expressions} within a template literal need space enforced.
+        const restore = this.#builder.setEnforceSpaceBetweenWords(node.type !== 'TemplateElement');
         let token;
         while ((token = this.#tokenizer.peekToken()) && token.start < node.end) {
             const token = this.#tokenizer.nextToken();
@@ -110,6 +91,7 @@ export class JavaScriptFormatter {
             this.#push(token, format);
         }
         this.#push(null, this.#finishNode(node));
+        this.#builder.setEnforceSpaceBetweenWords(restore || node.type === 'TemplateLiteral');
     }
     #inForLoopHeader(node) {
         const parent = node.parent;
@@ -135,73 +117,74 @@ export class JavaScriptFormatter {
             return 'tn';
         }
         const token = tokenOrComment;
-        if (node.type === 'ContinueStatement' || node.type === 'BreakStatement') {
+        const nodeType = node.type;
+        if (nodeType === 'ContinueStatement' || nodeType === 'BreakStatement') {
             return node.label && AT.keyword(token) ? 'ts' : 't';
         }
-        if (node.type === 'Identifier') {
+        if (nodeType === 'Identifier') {
             return 't';
         }
-        if (node.type === 'PrivateIdentifier') {
+        if (nodeType === 'PrivateIdentifier') {
             return 't';
         }
-        if (node.type === 'ReturnStatement') {
+        if (nodeType === 'ReturnStatement') {
             if (AT.punctuator(token, ';')) {
                 return 't';
             }
             return node.argument ? 'ts' : 't';
         }
-        if (node.type === 'AwaitExpression') {
+        if (nodeType === 'AwaitExpression') {
             if (AT.punctuator(token, ';')) {
                 return 't';
             }
             return node.argument ? 'ts' : 't';
         }
-        if (node.type === 'Property') {
+        if (nodeType === 'Property') {
             if (AT.punctuator(token, ':')) {
                 return 'ts';
             }
             return 't';
         }
-        if (node.type === 'ArrayExpression') {
+        if (nodeType === 'ArrayExpression') {
             if (AT.punctuator(token, ',')) {
                 return 'ts';
             }
             return 't';
         }
-        if (node.type === 'LabeledStatement') {
+        if (nodeType === 'LabeledStatement') {
             if (AT.punctuator(token, ':')) {
                 return 'ts';
             }
         }
-        else if (node.type === 'LogicalExpression' || node.type === 'AssignmentExpression' || node.type === 'BinaryExpression') {
+        else if (nodeType === 'LogicalExpression' || nodeType === 'AssignmentExpression' || nodeType === 'BinaryExpression') {
             if (AT.punctuator(token) && !AT.punctuator(token, '()')) {
                 return 'sts';
             }
         }
-        else if (node.type === 'ConditionalExpression') {
+        else if (nodeType === 'ConditionalExpression') {
             if (AT.punctuator(token, '?:')) {
                 return 'sts';
             }
         }
-        else if (node.type === 'VariableDeclarator') {
+        else if (nodeType === 'VariableDeclarator') {
             if (AT.punctuator(token, '=')) {
                 return 'sts';
             }
         }
-        else if (node.type === 'ObjectPattern') {
-            if (node.parent && node.parent.type === 'VariableDeclarator' && AT.punctuator(token, '{')) {
+        else if (nodeType === 'ObjectPattern') {
+            if (node.parent?.type === 'VariableDeclarator' && AT.punctuator(token, '{')) {
                 return 'st';
             }
             if (AT.punctuator(token, ',')) {
                 return 'ts';
             }
         }
-        else if (node.type === 'FunctionDeclaration') {
+        else if (nodeType === 'FunctionDeclaration') {
             if (AT.punctuator(token, ',)')) {
                 return 'ts';
             }
         }
-        else if (node.type === 'FunctionExpression') {
+        else if (nodeType === 'FunctionExpression') {
             if (AT.punctuator(token, ',)')) {
                 return 'ts';
             }
@@ -209,12 +192,23 @@ export class JavaScriptFormatter {
                 return node.id ? 'ts' : 't';
             }
         }
-        else if (node.type === 'WithStatement') {
-            if (AT.punctuator(token, ')')) {
-                return node.body && node.body.type === 'BlockStatement' ? 'ts' : 'tn>';
+        else if (nodeType === 'ArrowFunctionExpression') {
+            if (AT.punctuator(token, ',)')) {
+                return 'ts';
+            }
+            if (AT.punctuator(token, '(')) {
+                return 'st';
+            }
+            if (AT.arrowIdentifier(token, '=>')) {
+                return 'sts';
             }
         }
-        else if (node.type === 'SwitchStatement') {
+        else if (nodeType === 'WithStatement') {
+            if (AT.punctuator(token, ')')) {
+                return node.body?.type === 'BlockStatement' ? 'ts' : 'tn>';
+            }
+        }
+        else if (nodeType === 'SwitchStatement') {
             if (AT.punctuator(token, '{')) {
                 return 'tn>';
             }
@@ -225,7 +219,7 @@ export class JavaScriptFormatter {
                 return 'ts';
             }
         }
-        else if (node.type === 'SwitchCase') {
+        else if (nodeType === 'SwitchCase') {
             if (AT.keyword(token, 'case')) {
                 return 'n<ts';
             }
@@ -236,19 +230,19 @@ export class JavaScriptFormatter {
                 return 'tn>';
             }
         }
-        else if (node.type === 'VariableDeclaration') {
+        else if (nodeType === 'VariableDeclaration') {
             if (AT.punctuator(token, ',')) {
                 let allVariablesInitialized = true;
                 const declarations = node.declarations;
                 for (let i = 0; i < declarations.length; ++i) {
-                    // @ts-ignore We are doing a subtype check, without properly checking whether
+                    // @ts-expect-error We are doing a subtype check, without properly checking whether
                     // it exists. We can't fix that, unless we use proper typechecking
                     allVariablesInitialized = allVariablesInitialized && Boolean(declarations[i].init);
                 }
                 return !this.#inForLoopHeader(node) && allVariablesInitialized ? 'nSSts' : 'ts';
             }
         }
-        else if (node.type === 'PropertyDefinition') {
+        else if (nodeType === 'PropertyDefinition') {
             if (AT.punctuator(token, '=')) {
                 return 'sts';
             }
@@ -256,7 +250,7 @@ export class JavaScriptFormatter {
                 return 'tn';
             }
         }
-        else if (node.type === 'BlockStatement') {
+        else if (nodeType === 'BlockStatement') {
             if (AT.punctuator(token, '{')) {
                 return node.body.length ? 'tn>' : 't';
             }
@@ -264,12 +258,12 @@ export class JavaScriptFormatter {
                 return node.body.length ? 'n<t' : 't';
             }
         }
-        else if (node.type === 'CatchClause') {
+        else if (nodeType === 'CatchClause') {
             if (AT.punctuator(token, ')')) {
                 return 'ts';
             }
         }
-        else if (node.type === 'ObjectExpression') {
+        else if (nodeType === 'ObjectExpression') {
             if (!node.properties.length) {
                 return 't';
             }
@@ -283,12 +277,12 @@ export class JavaScriptFormatter {
                 return 'tn';
             }
         }
-        else if (node.type === 'IfStatement') {
+        else if (nodeType === 'IfStatement') {
             if (AT.punctuator(token, ')')) {
-                return node.consequent && node.consequent.type === 'BlockStatement' ? 'ts' : 'tn>';
+                return node.consequent?.type === 'BlockStatement' ? 'ts' : 'tn>';
             }
             if (AT.keyword(token, 'else')) {
-                const preFormat = node.consequent && node.consequent.type === 'BlockStatement' ? 'st' : 'n<t';
+                const preFormat = node.consequent?.type === 'BlockStatement' ? 'st' : 'n<t';
                 let postFormat = 'n>';
                 if (node.alternate && (node.alternate.type === 'BlockStatement' || node.alternate.type === 'IfStatement')) {
                     postFormat = 's';
@@ -296,15 +290,15 @@ export class JavaScriptFormatter {
                 return preFormat + postFormat;
             }
         }
-        else if (node.type === 'CallExpression') {
+        else if (nodeType === 'CallExpression') {
             if (AT.punctuator(token, ',')) {
                 return 'ts';
             }
         }
-        else if (node.type === 'SequenceExpression' && AT.punctuator(token, ',')) {
-            return node.parent && node.parent.type === 'SwitchCase' ? 'ts' : 'tn';
+        else if (nodeType === 'SequenceExpression' && AT.punctuator(token, ',')) {
+            return node.parent?.type === 'SwitchCase' ? 'ts' : 'tn';
         }
-        else if (node.type === 'ForStatement' || node.type === 'ForOfStatement' || node.type === 'ForInStatement') {
+        else if (nodeType === 'ForStatement' || nodeType === 'ForOfStatement' || nodeType === 'ForInStatement') {
             if (AT.punctuator(token, ';')) {
                 return 'ts';
             }
@@ -312,16 +306,16 @@ export class JavaScriptFormatter {
                 return 'sts';
             }
             if (AT.punctuator(token, ')')) {
-                return node.body && node.body.type === 'BlockStatement' ? 'ts' : 'tn>';
+                return node.body?.type === 'BlockStatement' ? 'ts' : 'tn>';
             }
         }
-        else if (node.type === 'WhileStatement') {
+        else if (nodeType === 'WhileStatement') {
             if (AT.punctuator(token, ')')) {
-                return node.body && node.body.type === 'BlockStatement' ? 'ts' : 'tn>';
+                return node.body?.type === 'BlockStatement' ? 'ts' : 'tn>';
             }
         }
-        else if (node.type === 'DoWhileStatement') {
-            const blockBody = node.body && node.body.type === 'BlockStatement';
+        else if (nodeType === 'DoWhileStatement') {
+            const blockBody = node.body?.type === 'BlockStatement';
             if (AT.keyword(token, 'do')) {
                 return blockBody ? 'ts' : 'tn>';
             }
@@ -332,7 +326,7 @@ export class JavaScriptFormatter {
                 return 'tn';
             }
         }
-        else if (node.type === 'ClassBody') {
+        else if (nodeType === 'ClassBody') {
             if (AT.punctuator(token, '{')) {
                 return 'stn>';
             }
@@ -341,22 +335,22 @@ export class JavaScriptFormatter {
             }
             return 't';
         }
-        else if (node.type === 'YieldExpression') {
+        else if (nodeType === 'YieldExpression') {
             return 't';
         }
-        else if (node.type === 'Super') {
+        else if (nodeType === 'Super') {
             return 't';
         }
-        else if (node.type === 'ImportExpression') {
+        else if (nodeType === 'ImportExpression') {
             return 't';
         }
-        else if (node.type === 'ExportAllDeclaration') {
+        else if (nodeType === 'ExportAllDeclaration') {
             if (AT.punctuator(token, '*')) {
                 return 'sts';
             }
             return 't';
         }
-        else if (node.type === 'ExportNamedDeclaration' || node.type === 'ImportDeclaration') {
+        else if (nodeType === 'ExportNamedDeclaration' || nodeType === 'ImportDeclaration') {
             if (AT.punctuator(token, '{')) {
                 return 'st';
             }
@@ -371,68 +365,72 @@ export class JavaScriptFormatter {
             }
             return 't';
         }
+        else if (nodeType === 'MemberExpression') {
+            if (node.object.type === 'Literal' && typeof (node.object.value) === 'number') {
+                return 'st';
+            }
+            return 't';
+        }
         return AT.keyword(token) && !AT.keyword(token, 'this') ? 'ts' : 't';
     }
     #finishNode(node) {
-        if (node.type === 'WithStatement') {
+        const nodeType = node.type;
+        if (nodeType === 'WithStatement') {
             if (node.body && node.body.type !== 'BlockStatement') {
                 return 'n<';
             }
         }
-        else if (node.type === 'VariableDeclaration') {
+        else if (nodeType === 'VariableDeclaration') {
             if (!this.#inForLoopHeader(node)) {
                 return 'n';
             }
         }
-        else if (node.type === 'ForStatement' || node.type === 'ForOfStatement' || node.type === 'ForInStatement') {
+        else if (nodeType === 'ForStatement' || nodeType === 'ForOfStatement' || nodeType === 'ForInStatement') {
             if (node.body && node.body.type !== 'BlockStatement') {
                 return 'n<';
             }
         }
-        else if (node.type === 'BlockStatement') {
-            if (node.parent && node.parent.type === 'IfStatement') {
+        else if (nodeType === 'BlockStatement') {
+            if (node.parent?.type === 'IfStatement') {
                 const parentNode = node.parent;
                 if (parentNode.alternate && parentNode.consequent === node) {
                     return '';
                 }
             }
-            if (node.parent && node.parent.type === 'FunctionExpression' && node.parent.parent &&
-                node.parent.parent.type === 'Property') {
+            if (node.parent?.type === 'FunctionExpression' && node.parent.parent?.type === 'Property') {
                 return '';
             }
-            if (node.parent && node.parent.type === 'FunctionExpression' && node.parent.parent &&
-                node.parent.parent.type === 'VariableDeclarator') {
+            if (node.parent?.type === 'FunctionExpression' && node.parent.parent?.type === 'VariableDeclarator') {
                 return '';
             }
-            if (node.parent && node.parent.type === 'FunctionExpression' && node.parent.parent &&
-                node.parent.parent.type === 'CallExpression') {
+            if (node.parent?.type === 'FunctionExpression' && node.parent.parent?.type === 'CallExpression') {
                 return '';
             }
-            if (node.parent && node.parent.type === 'DoWhileStatement') {
+            if (node.parent?.type === 'DoWhileStatement') {
                 return '';
             }
-            if (node.parent && node.parent.type === 'TryStatement') {
+            if (node.parent?.type === 'TryStatement') {
                 const parentNode = node.parent;
                 if (parentNode.block === node) {
                     return 's';
                 }
             }
-            if (node.parent && node.parent.type === 'CatchClause') {
+            if (node.parent?.type === 'CatchClause') {
                 const parentNode = node.parent;
-                // @ts-ignore We are doing a subtype check, without properly checking whether
+                // @ts-expect-error We are doing a subtype check, without properly checking whether
                 // it exists. We can't fix that, unless we use proper typechecking
-                if (parentNode.parent && parentNode.parent.finalizer) {
+                if (parentNode.parent?.finalizer) {
                     return 's';
                 }
             }
             return 'n';
         }
-        else if (node.type === 'WhileStatement') {
+        else if (nodeType === 'WhileStatement') {
             if (node.body && node.body.type !== 'BlockStatement') {
                 return 'n<';
             }
         }
-        else if (node.type === 'IfStatement') {
+        else if (nodeType === 'IfStatement') {
             if (node.alternate) {
                 if (node.alternate.type !== 'BlockStatement' && node.alternate.type !== 'IfStatement') {
                     return '<';
@@ -444,12 +442,12 @@ export class JavaScriptFormatter {
                 }
             }
         }
-        else if (node.type === 'BreakStatement' || node.type === 'ContinueStatement' || node.type === 'ThrowStatement' ||
-            node.type === 'ReturnStatement' || node.type === 'ExpressionStatement') {
+        else if (nodeType === 'BreakStatement' || nodeType === 'ContinueStatement' || nodeType === 'ThrowStatement' ||
+            nodeType === 'ReturnStatement' || nodeType === 'ExpressionStatement') {
             return 'n';
         }
-        else if (node.type === 'ImportDeclaration' || node.type === 'ExportAllDeclaration' ||
-            node.type === 'ExportDefaultDeclaration' || node.type === 'ExportNamedDeclaration') {
+        else if (nodeType === 'ImportDeclaration' || nodeType === 'ExportAllDeclaration' ||
+            nodeType === 'ExportDefaultDeclaration' || nodeType === 'ExportNamedDeclaration') {
             return 'n';
         }
         return '';

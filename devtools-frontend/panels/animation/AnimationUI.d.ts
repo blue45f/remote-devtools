@@ -1,13 +1,12 @@
 import * as Common from '../../core/common/common.js';
 import type * as SDK from '../../core/sdk/sdk.js';
-import { type AnimationImpl } from './AnimationModel.js';
 import { type AnimationTimeline } from './AnimationTimeline.js';
 export declare class AnimationUI {
     #private;
-    constructor(animation: AnimationImpl, timeline: AnimationTimeline, parentElement: Element);
-    static colorForAnimation(animation: AnimationImpl): string;
+    constructor(animation: SDK.AnimationModel.AnimationImpl, timeline: AnimationTimeline, parentElement: Element);
+    static colorForAnimation(animation: SDK.AnimationModel.AnimationImpl): string;
     static installDragHandleKeyboard(element: Element, elementDrag: (arg0: Event) => void): void;
-    animation(): AnimationImpl;
+    animation(): SDK.AnimationModel.AnimationImpl;
     get nameElement(): HTMLElement;
     get svg(): Element;
     setNode(node: SDK.DOMModel.DOMNode | null): void;
@@ -19,7 +18,7 @@ export declare class AnimationUI {
     redraw(): void;
     private renderTransition;
     private renderIteration;
-    private delay;
+    private delayOrStartTime;
     private duration;
     private offset;
     private mouseDown;
@@ -30,10 +29,10 @@ export declare class AnimationUI {
     private onContextMenu;
 }
 export declare const enum Events {
-    AnimationDrag = "AnimationDrag",
-    KeyframeMove = "KeyframeMove",
-    StartEndpointMove = "StartEndpointMove",
-    FinishEndpointMove = "FinishEndpointMove"
+    ANIMATION_DRAG = "AnimationDrag",
+    KEYFRAME_MOVE = "KeyframeMove",
+    START_ENDPOINT_MOVE = "StartEndpointMove",
+    FINISH_ENDPOINT_MOVE = "FinishEndpointMove"
 }
 export declare const Options: {
     AnimationHeight: number;

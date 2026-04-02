@@ -5,20 +5,6 @@ import * as Protocol from '../../generated/protocol.js';
 import * as Workspace from '../workspace/workspace.js';
 export declare class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.Observer {
     #private;
-    private bindings;
-    private readonly originalResponseContentPromises;
-    private savingForOverrides;
-    private readonly savingSymbol;
-    private enabledSetting;
-    private readonly workspace;
-    private readonly networkUISourceCodeForEncodedPath;
-    private readonly interceptionHandlerBound;
-    private readonly updateInterceptionThrottler;
-    private projectInternal;
-    private readonly activeProject;
-    private activeInternal;
-    private enabled;
-    private eventDescriptors;
     private constructor();
     targetAdded(): void;
     targetRemoved(): void;
@@ -42,10 +28,14 @@ export declare class NetworkPersistenceManager extends Common.ObjectWrapper.Obje
     getOrCreateHeadersUISourceCodeFromUrl(url: Platform.DevToolsPath.UrlString): Promise<Workspace.UISourceCode.UISourceCode | null>;
     private decodeLocalPathToUrlPath;
     private onUISourceCodeWorkingCopyCommitted;
-    canSaveUISourceCodeForOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
+    isActiveHeaderOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
+    isUISourceCodeOverridable(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
+    setupAndStartLocalOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<boolean>;
     saveUISourceCodeForOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<void>;
     private fileCreatedForTest;
     private patternForFileSystemUISourceCode;
+    private isForbiddenFileUrl;
+    static isForbiddenNetworkUrl(urlString: Platform.DevToolsPath.UrlString): boolean;
     private onUISourceCodeAdded;
     private canHandleNetworkUISourceCode;
     private networkUISourceCodeAdded;
@@ -69,14 +59,18 @@ export declare class NetworkPersistenceManager extends Common.ObjectWrapper.Obje
     private interceptionHandler;
 }
 export declare const HEADERS_FILENAME = ".headers";
-export declare enum Events {
-    ProjectChanged = "ProjectChanged",
-    RequestsForHeaderOverridesFileChanged = "RequestsForHeaderOverridesFileChanged"
+export declare const enum Events {
+    PROJECT_CHANGED = "ProjectChanged",
+    REQUEST_FOR_HEADER_OVERRIDES_FILE_CHANGED = "RequestsForHeaderOverridesFileChanged",
+    LOCAL_OVERRIDES_PROJECT_UPDATED = "LocalOverridesProjectUpdated",
+    LOCAL_OVERRIDES_REQUESTED = "LocalOverridesRequested"
 }
-export type EventTypes = {
-    [Events.ProjectChanged]: Workspace.Workspace.Project | null;
-    [Events.RequestsForHeaderOverridesFileChanged]: Workspace.UISourceCode.UISourceCode;
-};
+export interface EventTypes {
+    [Events.PROJECT_CHANGED]: Workspace.Workspace.Project | null;
+    [Events.REQUEST_FOR_HEADER_OVERRIDES_FILE_CHANGED]: Workspace.UISourceCode.UISourceCode;
+    [Events.LOCAL_OVERRIDES_PROJECT_UPDATED]: boolean;
+    [Events.LOCAL_OVERRIDES_REQUESTED]: () => void;
+}
 export interface HeaderOverride {
     applyTo: string;
     headers: Protocol.Fetch.HeaderEntry[];

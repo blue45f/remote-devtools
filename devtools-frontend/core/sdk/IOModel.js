@@ -1,14 +1,10 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
 import { RemoteObject } from './RemoteObject.js';
-import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class IOModel extends SDKModel {
-    constructor(target) {
-        super(target);
-    }
     async read(handle, size, offset) {
         const result = await this.target().ioAgent().invoke_read({ handle, offset, size });
         if (result.getError()) {
@@ -23,10 +19,7 @@ export class IOModel extends SDKModel {
         return result.data;
     }
     async close(handle) {
-        const result = await this.target().ioAgent().invoke_close({ handle });
-        if (result.getError()) {
-            console.error('Could not close stream.');
-        }
+        await this.target().ioAgent().invoke_close({ handle });
     }
     async resolveBlob(objectOrObjectId) {
         const objectId = objectOrObjectId instanceof RemoteObject ? objectOrObjectId.objectId : objectOrObjectId;
@@ -48,7 +41,7 @@ export class IOModel extends SDKModel {
                 strings.push(decoder.decode());
                 break;
             }
-            if (data instanceof ArrayBuffer) {
+            if (data instanceof Uint8Array) {
                 strings.push(decoder.decode(data, { stream: true }));
             }
             else {
@@ -57,6 +50,32 @@ export class IOModel extends SDKModel {
         }
         return strings.join('');
     }
+    async readToBuffer(handle) {
+        const items = [];
+        for (;;) {
+            const data = await this.read(handle, 1024 * 1024);
+            if (data === null) {
+                break;
+            }
+            if (data instanceof Uint8Array) {
+                items.push(data);
+            }
+            else {
+                throw new Error('Unexpected stream data type: expected binary, got a string');
+            }
+        }
+        let length = 0;
+        for (const item of items) {
+            length += item.length;
+        }
+        const result = new Uint8Array(length);
+        let offset = 0;
+        for (const item of items) {
+            result.set(item, offset);
+            offset += item.length;
+        }
+        return result;
+    }
 }
-SDKModel.register(IOModel, { capabilities: Capability.IO, autostart: true });
+SDKModel.register(IOModel, { capabilities: 131072 /* Capability.IO */, autostart: true });
 //# sourceMappingURL=IOModel.js.map

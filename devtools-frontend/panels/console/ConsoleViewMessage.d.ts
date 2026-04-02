@@ -3,11 +3,22 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import type * as IssuesManager from '../../models/issues_manager/issues_manager.js';
 import * as Logs from '../../models/logs/logs.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+import { Icon } from '../../ui/kit/kit.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type ConsoleViewportElement } from './ConsoleViewport.js';
+import { type LitTemplate } from '../../ui/lit/lit.js';
+import type { ConsoleViewportElement } from './ConsoleViewport.js';
 export declare const getMessageForElement: (element: Element) => ConsoleViewMessage | undefined;
+/**
+ * Combines the error description (essentially the `Error#stack` property value)
+ * with the `issueSummary`.
+ *
+ * @param description the `description` property of the `Error` remote object.
+ * @param issueSummary the optional `issueSummary` of the `exceptionMetaData`.
+ * @returns the enriched description.
+ * @see https://goo.gle/devtools-reduce-network-noise-design
+ */
+export declare const concatErrorDescriptionAndIssueSummary: (description: string, issueSummary: string) => string;
 export declare class ConsoleViewMessage implements ConsoleViewportElement {
     #private;
     protected message: SDK.ConsoleModel.ConsoleMessage;
@@ -18,9 +29,10 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     private selectableChildren;
     private readonly messageResized;
     protected elementInternal: HTMLElement | null;
+    protected consoleRowWrapper: HTMLElement | null;
     private readonly previewFormatter;
     private searchRegexInternal;
-    protected messageIcon: IconButton.Icon.Icon | null;
+    protected messageIcon: Icon | null;
     private traceExpanded;
     private expandTrace;
     protected anchorElement: HTMLElement | null;
@@ -39,7 +51,8 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     protected repeatCountElement: UI.UIUtils.DevToolsSmallBubble | null;
     private requestResolver;
     private issueResolver;
-    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>) => void);
+    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<HTMLElement | UI.TreeOutline.TreeElement>) => void);
+    setInsight(insight: LitTemplate): void;
     element(): HTMLElement;
     wasShown(): void;
     onResize(): void;
@@ -54,6 +67,8 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     private createAffectedResourceLinks;
     protected buildMessageAnchor(): HTMLElement | null;
     private buildMessageWithStackTrace;
+    private buildMessageWithIgnoreLinks;
+    private buildMessageHelper;
     private format;
     protected formatParameter(output: SDK.RemoteObject.RemoteObject, forceObjectFormat?: boolean, includePreview?: boolean): HTMLElement;
     private formatParameterAsValue;
@@ -62,15 +77,16 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     private formatParameterAsFunction;
     private formattedParameterAsFunctionForTest;
     private contextMenuEventFired;
-    protected renderPropertyPreviewOrAccessor(object: SDK.RemoteObject.RemoteObject | null, property: Protocol.Runtime.PropertyPreview, propertyPath: {
+    protected renderPropertyPreviewOrAccessor(object: SDK.RemoteObject.RemoteObject | null, property: Protocol.Runtime.PropertyPreview, propertyPath: Array<{
         name: (string | symbol);
-    }[]): HTMLElement;
+    }>): DocumentFragment | HTMLElement;
     private formatParameterAsNode;
     private formattedParameterAsNodeForTest;
     private formatParameterAsString;
     private formatParameterAsError;
-    private retrieveExceptionDetails;
     private formatAsArrayEntry;
+    private renderPropertyPreview;
+    createRemoteObjectAccessorPropertySpan(object: SDK.RemoteObject.RemoteObject | null, propertyPath: string[], callback: (arg0: SDK.RemoteObject.CallFunctionResult) => void): HTMLElement;
     private formatAsAccessorProperty;
     private formatWithSubstitutionString;
     matchesFilterRegex(regexObject: RegExp): boolean;
@@ -96,6 +112,10 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     contentElement(): HTMLElement;
     toMessageElement(): HTMLElement;
     updateMessageElement(): void;
+    shouldShowInsights(): boolean;
+    shouldShowTeaser(): boolean;
+    getExplainLabel(): string;
+    getExplainActionId(): string;
     private shouldRenderAsWarning;
     private updateMessageIcon;
     setAdjacentUserCommandResult(adjacentUserCommandResult: boolean): void;
@@ -106,6 +126,7 @@ export declare class ConsoleViewMessage implements ConsoleViewportElement {
     showRepeatCountElement(): void;
     get text(): string;
     toExportString(): string;
+    toMessageTextString(): string;
     setSearchRegex(regex: RegExp | null): void;
     searchRegex(): RegExp | null;
     searchCount(): number;
@@ -125,8 +146,8 @@ export declare class ConsoleGroupViewMessage extends ConsoleViewMessage {
     private expandGroupIcon;
     private readonly onToggle;
     private groupEndMessageInternal;
-    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onToggle: () => void, onResize: (arg0: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>) => void);
-    private setCollapsed;
+    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onToggle: () => void, onResize: (arg0: Common.EventTarget.EventTargetEvent<HTMLElement | UI.TreeOutline.TreeElement>) => void);
+    setCollapsed(collapsed: boolean): void;
     collapsed(): boolean;
     maybeHandleOnKeyDown(event: KeyboardEvent): boolean;
     toMessageElement(): HTMLElement;
@@ -137,7 +158,7 @@ export declare class ConsoleGroupViewMessage extends ConsoleViewMessage {
 }
 export declare class ConsoleCommand extends ConsoleViewMessage {
     private formattedCommand;
-    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>) => void);
+    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<HTMLElement | UI.TreeOutline.TreeElement>) => void);
     contentElement(): HTMLElement;
     private updateSearch;
 }
@@ -146,17 +167,13 @@ export declare class ConsoleCommandResult extends ConsoleViewMessage {
 }
 export declare class ConsoleTableMessageView extends ConsoleViewMessage {
     private dataGrid;
-    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<UI.TreeOutline.TreeElement>) => void);
+    constructor(consoleMessage: SDK.ConsoleModel.ConsoleMessage, linkifier: Components.Linkifier.Linkifier, requestResolver: Logs.RequestResolver.RequestResolver, issueResolver: IssuesManager.IssueResolver.IssueResolver, onResize: (arg0: Common.EventTarget.EventTargetEvent<HTMLElement | UI.TreeOutline.TreeElement>) => void);
     wasShown(): void;
     onResize(): void;
     contentElement(): HTMLElement;
     private buildTableMessage;
     approximateFastHeight(): number;
 }
-/**
- * @const
- */
-export declare const MaxLengthForLinks: number;
 export declare const getMaxTokenizableStringLength: () => number;
 export declare const setMaxTokenizableStringLength: (length: number) => void;
 export declare const getLongStringVisibleLength: () => number;

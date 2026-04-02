@@ -1,15 +1,12 @@
 import * as Common from '../../core/common/common.js';
-import { type ActionDelegate } from './ActionRegistration.js';
-import { type Context } from './Context.js';
-import { ToolbarButton, type Provider, type ToolbarItem } from './Toolbar.js';
+import type { ActionDelegate } from './ActionRegistration.js';
+import type { Context } from './Context.js';
+import { type Provider, ToolbarButton, type ToolbarItem } from './Toolbar.js';
 export declare class DockController extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
-    private canDockInternal;
+    #private;
     readonly closeButton: ToolbarButton;
     private readonly currentDockStateSetting;
     private readonly lastDockStateSetting;
-    private dockSideInternal;
-    private titles?;
-    private savedFocus?;
     constructor(canDock: boolean);
     static instance(opts?: {
         forceNew: boolean | null;
@@ -18,6 +15,12 @@ export declare class DockController extends Common.ObjectWrapper.ObjectWrapper<E
     initialize(): void;
     private dockSideChanged;
     dockSide(): DockState | undefined;
+    /**
+     * Whether the DevTools can be docked, used to determine if we show docking UI.
+     * Set via `Root.Runtime.Runtime.queryParam('can_dock')`. See https://cs.chromium.org/can_dock+f:window
+     *
+     * Shouldn't be used as a heuristic for target connection state.
+     */
     canDock(): boolean;
     isVertical(): boolean;
     setDockSide(dockSide: DockState): void;
@@ -32,23 +35,20 @@ export declare const enum DockState {
     UNDOCKED = "undocked"
 }
 export declare const enum Events {
-    BeforeDockSideChanged = "BeforeDockSideChanged",
-    DockSideChanged = "DockSideChanged",
-    AfterDockSideChanged = "AfterDockSideChanged"
+    BEFORE_DOCK_SIDE_CHANGED = "BeforeDockSideChanged",
+    DOCK_SIDE_CHANGED = "DockSideChanged",
+    AFTER_DOCK_SIDE_CHANGED = "AfterDockSideChanged"
 }
 export interface ChangeEvent {
     from: DockState | undefined;
     to: DockState;
 }
-export type EventTypes = {
-    [Events.BeforeDockSideChanged]: ChangeEvent;
-    [Events.DockSideChanged]: ChangeEvent;
-    [Events.AfterDockSideChanged]: ChangeEvent;
-};
+export interface EventTypes {
+    [Events.BEFORE_DOCK_SIDE_CHANGED]: ChangeEvent;
+    [Events.DOCK_SIDE_CHANGED]: ChangeEvent;
+    [Events.AFTER_DOCK_SIDE_CHANGED]: ChangeEvent;
+}
 export declare class ToggleDockActionDelegate implements ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ToggleDockActionDelegate;
     handleAction(_context: Context, _actionId: string): boolean;
 }
 export declare class CloseButtonProvider implements Provider {

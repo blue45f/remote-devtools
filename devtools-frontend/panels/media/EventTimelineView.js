@@ -1,17 +1,19 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import { ColdColorScheme, HotColorScheme, TickingFlameChart, } from './TickingFlameChart.js';
 // Has to be a double, see https://v8.dev/blog/react-cliff
 const NO_NORMALIZED_TIMESTAMP = -1.5;
 const UIStrings = {
     /**
-     *@description Title of the 'Playback Status' button
+     * @description Title of the 'Playback Status' button
      */
     playbackStatus: 'Playback Status',
     /**
-     *@description Title of the 'Buffering Status' button
+     * @description Title of the 'Buffering Status' button
      */
     bufferingStatus: 'Buffering Status',
 };
@@ -24,6 +26,7 @@ export class PlayerEventsTimeline extends TickingFlameChart {
     videoBufferingStateEvent;
     constructor() {
         super();
+        this.element.setAttribute('jslog', `${VisualLogging.pane('timeline')}`);
         this.normalizedTimestamp = NO_NORMALIZED_TIMESTAMP;
         this.addGroup(i18nString(UIStrings.playbackStatus), 2);
         this.addGroup(i18nString(UIStrings.bufferingStatus), 2); // video on top, audio on bottom
@@ -39,7 +42,7 @@ export class PlayerEventsTimeline extends TickingFlameChart {
     }
     /**
      * Playback events are {kPlay, kPause, kSuspended, kEnded, and kWebMediaPlayerDestroyed}
-     * once destroyed, a player cannot recieve more events of any kind.
+     * once destroyed, a player cannot receive more events of any kind.
      */
     onPlaybackEvent(event, normalizedTime) {
         switch (event.event) {
@@ -57,7 +60,7 @@ export class PlayerEventsTimeline extends TickingFlameChart {
                 break;
             case 'kPause':
                 // Don't change ticking state - the player is still active even during
-                // video pause. It may recieve buffering events, seeks, etc.
+                // video pause. It may receive buffering events, seeks, etc.
                 this.ensureNoPreviousPlaybackEvent(normalizedTime);
                 // Disabled until Closure is gone.
                 // clang-format off
@@ -109,7 +112,7 @@ export class PlayerEventsTimeline extends TickingFlameChart {
                 // clang-format on
                 break;
             default:
-                throw `_onPlaybackEvent cant handle ${event.event}`;
+                throw new Error(`_onPlaybackEvent cant handle ${event.event}`);
         }
     }
     bufferedEnough(state) {
@@ -125,9 +128,9 @@ export class PlayerEventsTimeline extends TickingFlameChart {
                 // We only want the buffering for audio and video to be displayed.
                 // One event may have changes for a single type, or for both audio/video
                 // simultaneously.
-                // @ts-ignore
+                // @ts-expect-error
                 audioState = event.value['audio_buffering_state'];
-                // @ts-ignore
+                // @ts-expect-error
                 videoState = event.value['video_buffering_state'];
                 if (audioState) {
                     if (this.audioBufferingStateEvent !== null) {
@@ -159,7 +162,7 @@ export class PlayerEventsTimeline extends TickingFlameChart {
                 }
                 break;
             default:
-                throw `_onPlaybackEvent cant handle ${event.event}`;
+                throw new Error(`_onPlaybackEvent cant handle ${event.event}`);
         }
     }
     onEvent(event) {

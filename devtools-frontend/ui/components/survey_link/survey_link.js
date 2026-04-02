@@ -1,6 +1,11 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as SurveyLink from './SurveyLink.js';
-export { SurveyLink, };
+var d=Object.defineProperty;var k=(h,i)=>{for(var e in i)d(h,e,{get:i[e],enumerable:!0})};var c={};k(c,{SurveyLink:()=>t});import"./../../kit/kit.js";import*as a from"./../../../core/common/common.js";import*as s from"./../../../core/i18n/i18n.js";import{html as p,render as v}from"./../../lit/lit.js";var l=`.link-icon{vertical-align:sub;margin-right:0.5ch}.link{padding:var(--issue-link-padding,4px 0 0 0);text-decoration:var(--issue-link-text-decoration,underline);cursor:pointer;font-size:var(--issue-link-font-size,14px);color:var(--sys-color-primary);outline-offset:2px;border:none;background:none;font-family:inherit}.link:focus:not(:focus-visible){outline:none}.pending-link{opacity:75%;pointer-events:none;cursor:default;text-decoration:none}.disabled-link{pointer-events:none;cursor:default;text-decoration:none}
+/*# sourceURL=${import.meta.resolve("./surveyLink.css")} */`;var n={openingSurvey:"Opening survey \u2026",thankYouForYourFeedback:"Thank you for your feedback",anErrorOccurredWithTheSurvey:"An error occurred with the survey"},S=s.i18n.registerUIStrings("ui/components/survey_link/SurveyLink.ts",n),r=s.i18n.getLocalizedString.bind(void 0,S),t=class extends HTMLElement{#s=this.attachShadow({mode:"open"});#e="";#t=a.UIString.LocalizedEmptyString;#o=()=>{};#r=()=>{};#i="Checking";set data(i){this.#e=i.trigger,this.#t=i.promptText,this.#o=i.canShowSurvey,this.#r=i.showSurvey,this.#h()}#h(){this.#i="Checking",this.#o(this.#e,({canShowSurvey:i})=>{i?this.#i="ShowLink":this.#i="DontShowLink",this.#n()})}#l(){this.#i="Sending",this.#n(),this.#r(this.#e,({surveyShown:i})=>{i?this.#i="SurveyShown":this.#i="Failed",this.#n()})}#n(){if(this.#i==="Checking"||this.#i==="DontShowLink")return;let i=this.#t;this.#i==="Sending"?i=r(n.openingSurvey):this.#i==="SurveyShown"?i=r(n.thankYouForYourFeedback):this.#i==="Failed"&&(i=r(n.anErrorOccurredWithTheSurvey));let e="";this.#i==="Sending"?e="pending-link":(this.#i==="Failed"||this.#i==="SurveyShown")&&(e="disabled-link");let o=this.#i!=="ShowLink",u=p`
+      <style>${l}</style>
+      <button
+          class="link ${e}" tabindex=${o?"-1":"0"}
+          .disabled=${o} aria-disabled=${o} @click=${this.#l}>
+        <devtools-icon class="link-icon" name="review" style="color: var(--sys-color-primary); width: var(--issue-link-icon-size, 16px); height: var(--issue-link-icon-size, 16px)">
+        </devtools-icon>
+        ${i}
+      </button>`;v(u,this.#s,{host:this})}};customElements.define("devtools-survey-link",t);export{c as SurveyLink};
 //# sourceMappingURL=survey_link.js.map

@@ -4,33 +4,12 @@ import * as TextUtils from '../text_utils/text_utils.js';
 import { type Project } from './WorkspaceImpl.js';
 export declare class UISourceCode extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements TextUtils.ContentProvider.ContentProvider {
     #private;
-    private projectInternal;
-    private urlInternal;
-    private readonly originInternal;
-    private readonly parentURLInternal;
-    private nameInternal;
-    private contentTypeInternal;
-    private requestContentPromise;
-    private decorations;
-    private hasCommitsInternal;
-    private messagesInternal;
-    private contentLoadedInternal;
-    private contentInternal;
-    private forceLoadOnCheckContentInternal;
-    private checkingContent;
-    private lastAcceptedContent;
-    private workingCopyInternal;
-    private workingCopyGetter;
-    private disableEditInternal;
-    private contentEncodedInternal?;
-    private isKnownThirdPartyInternal;
-    private isUnconditionallyIgnoreListedInternal;
     constructor(project: Project, url: Platform.DevToolsPath.UrlString, contentType: Common.ResourceType.ResourceType);
     requestMetadata(): Promise<UISourceCodeMetadata | null>;
     name(): string;
     mimeType(): string;
     url(): Platform.DevToolsPath.UrlString;
-    canononicalScriptId(): string;
+    canonicalScriptId(): string;
     parentURL(): Platform.DevToolsPath.UrlString;
     origin(): Platform.DevToolsPath.UrlString;
     fullDisplayName(): string;
@@ -38,28 +17,25 @@ export declare class UISourceCode extends Common.ObjectWrapper.ObjectWrapper<Eve
     canRename(): boolean;
     rename(newName: Platform.DevToolsPath.RawPathString): Promise<boolean>;
     remove(): void;
-    private updateName;
     contentURL(): Platform.DevToolsPath.UrlString;
     contentType(): Common.ResourceType.ResourceType;
     project(): Project;
-    requestContent({ cachedWasmOnly }?: {
+    requestContentData({ cachedWasmOnly }?: {
         cachedWasmOnly?: boolean;
-    }): Promise<TextUtils.ContentProvider.DeferredContent>;
-    private requestContentImpl;
+    }): Promise<TextUtils.ContentData.ContentDataOrError>;
     checkContentUpdated(): Promise<void>;
     forceLoadOnCheckContent(): void;
-    private commitContent;
-    private contentCommitted;
     addRevision(content: string): void;
     hasCommits(): boolean;
     workingCopy(): string;
     workingCopyContent(): TextUtils.ContentProvider.DeferredContent;
+    workingCopyContentData(): TextUtils.ContentData.ContentData;
     resetWorkingCopy(): void;
-    private innerResetWorkingCopy;
     setWorkingCopy(newWorkingCopy: string): void;
+    setContainsAiChanges(containsAiChanges: boolean): void;
+    containsAiChanges(): boolean;
     setContent(content: string, isBase64: boolean): void;
     setWorkingCopyGetter(workingCopyGetter: () => string): void;
-    private workingCopyChanged;
     removeWorkingCopyGetter(): void;
     commitWorkingCopy(): void;
     isDirty(): boolean;
@@ -69,6 +45,7 @@ export declare class UISourceCode extends Common.ObjectWrapper.ObjectWrapper<Eve
      * {@link markAsUnconditionallyIgnoreListed}
      */
     isUnconditionallyIgnoreListed(): boolean;
+    isFetchXHR(): boolean;
     /**
      * Unconditionally ignore list this UISourcecode, ignoring any user
      * setting. We use this to mark breakpoint/logpoint condition scripts for now.
@@ -84,11 +61,11 @@ export declare class UISourceCode extends Common.ObjectWrapper.ObjectWrapper<Eve
     addLineMessage(level: Message.Level, text: string, lineNumber: number, columnNumber?: number, clickHandler?: (() => void)): Message;
     addMessage(message: Message): void;
     removeMessage(message: Message): void;
-    private removeAllMessages;
     setDecorationData(type: string, data: any): void;
     getDecorationData(type: string): any;
     disableEdit(): void;
     editDisabled(): boolean;
+    isIgnoreListed(): boolean;
 }
 export declare enum Events {
     WorkingCopyChanged = "WorkingCopyChanged",
@@ -98,19 +75,19 @@ export declare enum Events {
     MessageRemoved = "MessageRemoved",
     DecorationChanged = "DecorationChanged"
 }
-export interface WorkingCopyCommitedEvent {
+export interface WorkingCopyCommittedEvent {
     uiSourceCode: UISourceCode;
     content: string;
     encoded: boolean | undefined;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.WorkingCopyChanged]: UISourceCode;
-    [Events.WorkingCopyCommitted]: WorkingCopyCommitedEvent;
+    [Events.WorkingCopyCommitted]: WorkingCopyCommittedEvent;
     [Events.TitleChanged]: UISourceCode;
     [Events.MessageAdded]: Message;
     [Events.MessageRemoved]: Message;
     [Events.DecorationChanged]: string;
-};
+}
 export declare class UILocation {
     uiSourceCode: UISourceCode;
     lineNumber: number;
@@ -120,9 +97,28 @@ export declare class UILocation {
     lineAndColumnText(showColumnNumber?: boolean): string | undefined;
     id(): string;
     lineId(): string;
-    toUIString(): string;
     static comparator(location1: UILocation, location2: UILocation): number;
     compareTo(other: UILocation): number;
+    isIgnoreListed(): boolean;
+}
+/**
+ * A text range inside a specific {@link UISourceCode}.
+ *
+ * We use a class instead of an interface so we can implement a revealer for it.
+ */
+export declare class UILocationRange {
+    readonly uiSourceCode: UISourceCode;
+    readonly range: TextUtils.TextRange.TextRange;
+    constructor(uiSourceCode: UISourceCode, range: TextUtils.TextRange.TextRange);
+}
+/**
+ * A text range inside a specific {@link UISourceCode}, representing a function.
+ */
+export declare class UIFunctionBounds {
+    readonly uiSourceCode: UISourceCode;
+    readonly range: TextUtils.TextRange.TextRange;
+    readonly name: string;
+    constructor(uiSourceCode: UISourceCode, range: TextUtils.TextRange.TextRange, name: string);
 }
 /**
  * A message associated with a range in a `UISourceCode`. The range will be
@@ -133,10 +129,8 @@ export declare class UILocation {
  * where UISourceCode displaying is handled.
  */
 export declare class Message {
-    private readonly levelInternal;
-    private readonly textInternal;
+    #private;
     range: TextUtils.TextRange.TextRange;
-    private readonly clickHandlerInternal?;
     constructor(level: Message.Level, text: string, clickHandler?: (() => void), range?: TextUtils.TextRange.TextRange);
     level(): Message.Level;
     text(): string;
@@ -146,23 +140,29 @@ export declare class Message {
     isEqual(another: Message): boolean;
 }
 export declare namespace Message {
-    enum Level {
-        Error = "Error",
-        Issue = "Issue",
-        Warning = "Warning"
+    const enum Level {
+        ERROR = "Error",
+        ISSUE = "Issue",
+        WARNING = "Warning"
     }
-}
-export declare class LineMarker {
-    private readonly rangeInternal;
-    private readonly typeInternal;
-    private readonly dataInternal;
-    constructor(range: TextUtils.TextRange.TextRange, type: string, data: any);
-    range(): TextUtils.TextRange.TextRange;
-    type(): string;
-    data(): any;
 }
 export declare class UISourceCodeMetadata {
     modificationTime: Date | null;
     contentSize: number | null;
     constructor(modificationTime: Date | null, contentSize: number | null);
 }
+export declare const enum DecoratorType {
+    PERFORMANCE = "performance",
+    MEMORY = "memory",
+    COVERAGE = "coverage"
+}
+/** 1-based. line => column => value */
+export type LineColumnProfileMap = Map<number, Map<number, number>>;
+/** Used by ProfilePlugin to track runtime/memory costs. */
+export type ProfileDataMap = Map<UISourceCode, LineColumnProfileMap>;
+/**
+ * Converts an existing LineColumnProfileMap to a new one using the provided mapping.
+ *
+ * The input and output line/column of originalToMappedLocation is 0-indexed.
+ */
+export declare function createMappedProfileData(profileData: LineColumnProfileMap, originalToMappedLocation: (line: number, column: number) => number[] | null): LineColumnProfileMap;

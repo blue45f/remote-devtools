@@ -1,73 +1,75 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../../../core/common/common.js';
 export class ContrastInfo extends Common.ObjectWrapper.ObjectWrapper {
-    isNullInternal;
-    contrastRatioInternal;
-    contrastRatioAPCAInternal;
+    #isNull;
+    #contrastRatio;
+    #contrastRatioAPCA;
     contrastRatioThresholds;
-    contrastRationAPCAThreshold;
+    #contrastRatioAPCAThreshold;
     fgColor;
-    bgColorInternal;
-    colorFormatInternal;
+    #bgColor;
+    #colorFormat;
     constructor(contrastInfo) {
         super();
-        this.isNullInternal = true;
-        this.contrastRatioInternal = null;
-        this.contrastRatioAPCAInternal = null;
+        this.#isNull = true;
+        this.#contrastRatio = null;
+        this.#contrastRatioAPCA = null;
         this.contrastRatioThresholds = null;
-        this.contrastRationAPCAThreshold = 0;
+        this.#contrastRatioAPCAThreshold = 0;
         this.fgColor = null;
-        this.bgColorInternal = null;
+        this.#bgColor = null;
         if (!contrastInfo) {
             return;
         }
-        if (!contrastInfo.computedFontSize || !contrastInfo.computedFontWeight || !contrastInfo.backgroundColors ||
-            contrastInfo.backgroundColors.length !== 1) {
+        if (!contrastInfo.computedFontSize || !contrastInfo.computedFontWeight) {
             return;
         }
-        this.isNullInternal = false;
+        this.#isNull = false;
         this.contrastRatioThresholds =
             Common.ColorUtils.getContrastThreshold(contrastInfo.computedFontSize, contrastInfo.computedFontWeight);
-        this.contrastRationAPCAThreshold =
+        this.#contrastRatioAPCAThreshold =
             Common.ColorUtils.getAPCAThreshold(contrastInfo.computedFontSize, contrastInfo.computedFontWeight);
+        if (contrastInfo.backgroundColors?.length !== 1) {
+            return;
+        }
         const bgColorText = contrastInfo.backgroundColors[0];
         const bgColor = Common.Color.parse(bgColorText)?.asLegacyColor();
         if (bgColor) {
-            this.setBgColorInternal(bgColor);
+            this.#setBgColor(bgColor);
         }
     }
     isNull() {
-        return this.isNullInternal;
+        return this.#isNull;
     }
     setColor(fgColor, colorFormat) {
         this.fgColor = fgColor;
-        this.colorFormatInternal = colorFormat;
+        this.#colorFormat = colorFormat;
         this.updateContrastRatio();
-        this.dispatchEventToListeners("ContrastInfoUpdated" /* Events.ContrastInfoUpdated */);
+        this.dispatchEventToListeners("ContrastInfoUpdated" /* Events.CONTRAST_INFO_UPDATED */);
     }
     colorFormat() {
-        return this.colorFormatInternal;
+        return this.#colorFormat;
     }
     color() {
         return this.fgColor;
     }
     contrastRatio() {
-        return this.contrastRatioInternal;
+        return this.#contrastRatio;
     }
     contrastRatioAPCA() {
-        return this.contrastRatioAPCAInternal;
+        return this.#contrastRatioAPCA;
     }
     contrastRatioAPCAThreshold() {
-        return this.contrastRationAPCAThreshold;
+        return this.#contrastRatioAPCAThreshold;
     }
     setBgColor(bgColor) {
-        this.setBgColorInternal(bgColor);
-        this.dispatchEventToListeners("ContrastInfoUpdated" /* Events.ContrastInfoUpdated */);
+        this.#setBgColor(bgColor);
+        this.dispatchEventToListeners("ContrastInfoUpdated" /* Events.CONTRAST_INFO_UPDATED */);
     }
-    setBgColorInternal(bgColor) {
-        this.bgColorInternal = bgColor;
+    #setBgColor(bgColor) {
+        this.#bgColor = bgColor;
         if (!this.fgColor) {
             return;
         }
@@ -77,22 +79,20 @@ export class ContrastInfo extends Common.ObjectWrapper.ObjectWrapper {
         // the unknown background is the same color as the text.
         if (bgColor.hasAlpha()) {
             const blendedRGBA = Common.ColorUtils.blendColors(bgColor.rgba(), fgRGBA);
-            this.bgColorInternal = new Common.Color.Legacy(blendedRGBA, "rgba" /* Common.Color.Format.RGBA */);
+            this.#bgColor = new Common.Color.Legacy(blendedRGBA, "rgba" /* Common.Color.Format.RGBA */);
         }
-        this.contrastRatioInternal = Common.ColorUtils.contrastRatio(fgRGBA, this.bgColorInternal.rgba());
-        this.contrastRatioAPCAInternal =
-            Common.ColorUtils.contrastRatioAPCA(this.fgColor.rgba(), this.bgColorInternal.rgba());
+        this.#contrastRatio = Common.ColorUtils.contrastRatio(fgRGBA, this.#bgColor.rgba());
+        this.#contrastRatioAPCA = Common.ColorUtils.contrastRatioAPCA(this.fgColor.rgba(), this.#bgColor.rgba());
     }
     bgColor() {
-        return this.bgColorInternal;
+        return this.#bgColor;
     }
     updateContrastRatio() {
-        if (!this.bgColorInternal || !this.fgColor) {
+        if (!this.#bgColor || !this.fgColor) {
             return;
         }
-        this.contrastRatioInternal = Common.ColorUtils.contrastRatio(this.fgColor.rgba(), this.bgColorInternal.rgba());
-        this.contrastRatioAPCAInternal =
-            Common.ColorUtils.contrastRatioAPCA(this.fgColor.rgba(), this.bgColorInternal.rgba());
+        this.#contrastRatio = Common.ColorUtils.contrastRatio(this.fgColor.rgba(), this.#bgColor.rgba());
+        this.#contrastRatioAPCA = Common.ColorUtils.contrastRatioAPCA(this.fgColor.rgba(), this.#bgColor.rgba());
     }
     contrastRatioThreshold(level) {
         if (!this.contrastRatioThresholds) {

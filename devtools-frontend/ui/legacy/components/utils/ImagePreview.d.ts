@@ -5,11 +5,17 @@ export interface PrecomputedFeatures {
     renderedHeight: number;
     currentSrc?: Platform.DevToolsPath.UrlString;
 }
+export declare const enum Align {
+    START = "start",
+    CENTER = "center"
+}
 export declare class ImagePreview {
-    static build(target: SDK.Target.Target, originalImageURL: Platform.DevToolsPath.UrlString, showDimensions: boolean, options?: {
-        precomputedFeatures: (PrecomputedFeatures | undefined);
-        imageAltText: (string | undefined);
-    } | undefined): Promise<Element | null>;
-    static loadDimensionsForNode(node: SDK.DOMModel.DOMNode): Promise<PrecomputedFeatures | undefined>;
+    static build(originalImageURL: Platform.DevToolsPath.UrlString, showDimensions: boolean, options?: {
+        align: Align;
+        precomputedFeatures?: PrecomputedFeatures;
+        imageAltText?: string;
+        hideFileData?: boolean;
+    }): Promise<HTMLDivElement | null>;
     static defaultAltTextForImageURL(url: Platform.DevToolsPath.UrlString): string;
 }
+export declare function loadPrecomputedFeatures(node?: SDK.DOMModel.DOMNode | null): Promise<PrecomputedFeatures | undefined>;

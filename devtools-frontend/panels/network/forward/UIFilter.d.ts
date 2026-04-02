@@ -1,6 +1,8 @@
 export declare enum FilterType {
     Domain = "domain",
     HasResponseHeader = "has-response-header",
+    HasRequestHeader = "has-request-header",
+    HasOverrides = "has-overrides",
     ResponseHeaderValueSetCookie = "response-header-set-cookie",
     Is = "is",
     LargerThan = "larger-than",
@@ -20,17 +22,17 @@ export declare enum FilterType {
     StatusCode = "status-code",
     Url = "url"
 }
-export declare enum IsFilterType {
-    Running = "running",
-    FromCache = "from-cache",
-    ServiceWorkerIntercepted = "service-worker-intercepted",
-    ServiceWorkerInitiated = "service-worker-initiated"
+export declare const enum IsFilterType {
+    RUNNING = "running",
+    FROM_CACHE = "from-cache",
+    SERVICE_WORKER_INTERCEPTED = "service-worker-intercepted",
+    SERVICE_WORKER_INITIATED = "service-worker-initiated"
 }
-export declare enum MixedContentFilterValues {
-    All = "all",
-    Displayed = "displayed",
-    Blocked = "blocked",
-    BlockOverridden = "block-overridden"
+export declare const enum MixedContentFilterValues {
+    ALL = "all",
+    DISPLAYED = "displayed",
+    BLOCKED = "blocked",
+    BLOCK_OVERRIDDEN = "block-overridden"
 }
 interface UIFilter {
     filterType: FilterType | null;
@@ -38,7 +40,7 @@ interface UIFilter {
 }
 export declare class UIRequestFilter {
     readonly filters: UIFilter[];
-    private constructor();
+    constructor(filters: UIFilter[]);
     static filters(filters: UIFilter[]): UIRequestFilter;
 }
 export {};

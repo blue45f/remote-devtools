@@ -1,5 +1,6 @@
 import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Formatter from '../../../../models/formatter/formatter.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as CodeMirror from '../../../../third_party/codemirror.next/codemirror.next.js';
 import * as TextEditor from '../../../components/text_editor/text_editor.js';
@@ -9,20 +10,22 @@ export interface SourceFrameOptions {
     lineWrapping?: boolean;
 }
 export declare const enum Events {
-    EditorUpdate = "EditorUpdate",
-    EditorScroll = "EditorScroll"
+    EDITOR_UPDATE = "EditorUpdate",
+    EDITOR_SCROLL = "EditorScroll"
 }
-export type EventTypes = {
-    [Events.EditorUpdate]: CodeMirror.ViewUpdate;
-    [Events.EditorScroll]: void;
-};
+export interface EventTypes {
+    [Events.EDITOR_UPDATE]: CodeMirror.ViewUpdate;
+    [Events.EDITOR_SCROLL]: void;
+}
+type FormatFn = (lineNo: number, state: CodeMirror.EditorState) => string;
+export declare const LINE_NUMBER_FORMATTER: CodeMirror.Facet<FormatFn, FormatFn>;
 declare const SourceFrameImpl_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.View.SimpleView;
 export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.SearchableView.Searchable, UI.SearchableView.Replaceable, Transformer {
     #private;
@@ -30,7 +33,7 @@ export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.
     private readonly lazyContent;
     private prettyInternal;
     private rawContent;
-    private formattedMap;
+    protected formattedMap: Formatter.ScriptFormatter.FormatterSourceMapping | null;
     private readonly prettyToggle;
     private shouldAutoPrettyPrint;
     private readonly progressToolbarItem;
@@ -44,7 +47,6 @@ export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.
     private searchResults;
     private searchRegex;
     private loadError;
-    private muteChangeEventsForSetContent;
     private readonly sourcePosition;
     private searchableView;
     private editable;
@@ -55,13 +57,16 @@ export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.
     private contentRequested;
     private wasmDisassemblyInternal;
     contentSet: boolean;
-    constructor(lazyContent: () => Promise<TextUtils.ContentProvider.DeferredContent>, options?: SourceFrameOptions);
+    private selfXssWarningDisabledSetting;
+    constructor(lazyContent: () => Promise<TextUtils.ContentData.ContentDataOrError>, options?: SourceFrameOptions);
     disposeView(): void;
     private placeholderEditorState;
     protected editorConfiguration(doc: string | CodeMirror.Text): CodeMirror.Extension;
     protected onBlur(): void;
     protected onFocus(): void;
-    get wasmDisassembly(): Common.WasmDisassembly.WasmDisassembly | null;
+    protected onPaste(): boolean;
+    showSelfXssWarning(): Promise<void>;
+    get wasmDisassembly(): TextUtils.WasmDisassembly.WasmDisassembly | null;
     editorLocationToUILocation(lineNumber: number, columnNumber: number): {
         lineNumber: number;
         columnNumber: number;
@@ -92,17 +97,11 @@ export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.
     get contentType(): string;
     protected getContentType(): string;
     private ensureContentLoaded;
-    protected setDeferredContent(deferredContentPromise: Promise<TextUtils.ContentProvider.DeferredContent>): Promise<void>;
-    revealPosition(position: {
-        lineNumber: number;
-        columnNumber?: number;
-    } | number, shouldHighlight?: boolean): void;
-    private innerRevealPositionIfNeeded;
+    protected setContentDataOrError(contentDataPromise: Promise<TextUtils.ContentData.ContentDataOrError>): Promise<void>;
+    revealPosition(position: RevealPosition, shouldHighlight?: boolean): void;
     private clearPositionToReveal;
     scrollToLine(line: number): void;
-    private innerScrollToLineIfNeeded;
     setSelection(textRange: TextUtils.TextRange.TextRange): void;
-    private innerSetSelectionIfNeeded;
     private wasShownOrLoaded;
     onTextChanged(): void;
     isClean(): boolean;
@@ -121,9 +120,10 @@ export declare class SourceFrameImpl extends SourceFrameImpl_base implements UI.
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
     jumpToSearchResult(index: number): void;
-    replaceSelectionWith(searchConfig: UI.SearchableView.SearchConfig, replacement: string): void;
+    replaceSelectionWith(_searchConfig: UI.SearchableView.SearchConfig, replacement: string): void;
     replaceAllWith(searchConfig: UI.SearchableView.SearchConfig, replacement: string): void;
     private collectRegexMatches;
     canEditSource(): boolean;
@@ -148,11 +148,34 @@ export interface Transformer {
         columnNumber: number;
     };
 }
-export declare enum DecoratorType {
-    PERFORMANCE = "performance",
-    MEMORY = "memory",
-    COVERAGE = "coverage"
-}
+/** Effect to add lines (by position) to the set of non-breakable lines. **/
 export declare const addNonBreakableLines: CodeMirror.StateEffectType<readonly number[]>;
 export declare function isBreakableLine(state: CodeMirror.EditorState, line: CodeMirror.Line): boolean;
+/**
+ * Reveal position can either be a single point or a range.
+ *
+ * A single point can either be specified as a line/column combo or as an absolute
+ * editor offset.
+ */
+export type RevealPosition = number | {
+    lineNumber: number;
+    columnNumber?: number;
+} | {
+    from: {
+        lineNumber: number;
+        columnNumber: number;
+    };
+    to: {
+        lineNumber: number;
+        columnNumber: number;
+    };
+};
+/** This is usually an Infobar but is also used for AiCodeCompletionSummaryToolbar **/
+export interface SourceFrameInfobar {
+    element: HTMLElement;
+    order?: number;
+}
+/** Infobar panel state, used to show additional panels below the editor. **/
+export declare const addSourceFrameInfobar: CodeMirror.StateEffectType<SourceFrameInfobar>;
+export declare const removeSourceFrameInfobar: CodeMirror.StateEffectType<SourceFrameInfobar>;
 export {};

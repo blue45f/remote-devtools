@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -33,43 +33,44 @@
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
+import * as TextUtils from '../text_utils/text_utils.js';
 import { Log } from './Log.js';
 const UIStrings = {
     /**
-     *@description Title of progress in harwriter of the network panel
+     * @description Title of progress in harwriter of the network panel
      */
     collectingContent: 'Collecting content…',
     /**
-     *@description Text to indicate DevTools is writing to a file
+     * @description Text to indicate DevTools is writing to a file
      */
     writingFile: 'Writing file…',
 };
 const str_ = i18n.i18n.registerUIStrings('models/har/Writer.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class Writer {
-    static async write(stream, requests, progress) {
+    static async write(stream, requests, options, progress) {
         const compositeProgress = new Common.Progress.CompositeProgress(progress);
-        const content = await Writer.harStringForRequests(requests, compositeProgress);
-        if (progress.isCanceled()) {
+        const content = await Writer.harStringForRequests(requests, options, compositeProgress);
+        if (progress.canceled) {
             return;
         }
         await Writer.writeToStream(stream, compositeProgress, content);
     }
-    static async harStringForRequests(requests, compositeProgress) {
+    static async harStringForRequests(requests, options, compositeProgress) {
         const progress = compositeProgress.createSubProgress();
-        progress.setTitle(i18nString(UIStrings.collectingContent));
-        progress.setTotalWork(requests.length);
+        progress.title = i18nString(UIStrings.collectingContent);
+        progress.totalWork = requests.length;
         // Sort by issueTime because this is recorded as startedDateTime in HAR logs.
         requests.sort((reqA, reqB) => reqA.issueTime() - reqB.issueTime());
-        const harLog = await Log.build(requests);
+        const harLog = await Log.build(requests, options);
         const promises = [];
         for (let i = 0; i < requests.length; i++) {
-            const promise = requests[i].contentData();
+            const promise = requests[i].requestContentData();
             promises.push(promise.then(contentLoaded.bind(null, harLog.entries[i])));
         }
         await Promise.all(promises);
-        progress.done();
-        if (progress.isCanceled()) {
+        progress.done = true;
+        if (progress.canceled) {
             return '';
         }
         return JSON.stringify({ log: harLog }, null, jsonIndent);
@@ -87,9 +88,10 @@ export class Writer {
             }
             return false;
         }
-        function contentLoaded(entry, contentData) {
-            progress.incrementWorked();
-            let encoded = contentData.encoded;
+        function contentLoaded(entry, contentDataOrError) {
+            ++progress.worked;
+            const contentData = TextUtils.ContentData.ContentData.asDeferredContent(contentDataOrError);
+            let encoded = contentData.isEncoded;
             if (contentData.content !== null) {
                 let content = contentData.content;
                 if (content && !encoded && needsEncoding(content)) {
@@ -105,14 +107,14 @@ export class Writer {
     }
     static async writeToStream(stream, compositeProgress, fileContent) {
         const progress = compositeProgress.createSubProgress();
-        progress.setTitle(i18nString(UIStrings.writingFile));
-        progress.setTotalWork(fileContent.length);
-        for (let i = 0; i < fileContent.length && !progress.isCanceled(); i += chunkSize) {
+        progress.title = i18nString(UIStrings.writingFile);
+        progress.totalWork = fileContent.length;
+        for (let i = 0; i < fileContent.length && !progress.canceled; i += chunkSize) {
             const chunk = fileContent.substr(i, chunkSize);
             await stream.write(chunk);
-            progress.incrementWorked(chunk.length);
+            progress.worked += chunk.length;
         }
-        progress.done();
+        progress.done = true;
     }
 }
 export const jsonIndent = 2;

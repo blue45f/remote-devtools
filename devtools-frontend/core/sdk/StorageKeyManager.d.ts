@@ -1,6 +1,6 @@
-import { type Target } from './Target.js';
-import { SDKModel } from './SDKModel.js';
 import type * as Platform from '../platform/platform.js';
+import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class StorageKeyManager extends SDKModel<EventTypes> {
     #private;
     constructor(target: Target);
@@ -23,16 +23,16 @@ export interface StorageKey {
     origin: Platform.DevToolsPath.UrlString;
     components: Map<StorageKeyComponent, string>;
 }
-export declare enum Events {
-    StorageKeyAdded = "StorageKeyAdded",
-    StorageKeyRemoved = "StorageKeyRemoved",
-    MainStorageKeyChanged = "MainStorageKeyChanged"
+export declare const enum Events {
+    STORAGE_KEY_ADDED = "StorageKeyAdded",
+    STORAGE_KEY_REMOVED = "StorageKeyRemoved",
+    MAIN_STORAGE_KEY_CHANGED = "MainStorageKeyChanged"
 }
 export interface MainStorageKeyChangedEvent {
     mainStorageKey: string;
 }
-export type EventTypes = {
-    [Events.StorageKeyAdded]: string;
-    [Events.StorageKeyRemoved]: string;
-    [Events.MainStorageKeyChanged]: MainStorageKeyChangedEvent;
-};
+export interface EventTypes {
+    [Events.STORAGE_KEY_ADDED]: string;
+    [Events.STORAGE_KEY_REMOVED]: string;
+    [Events.MAIN_STORAGE_KEY_CHANGED]: MainStorageKeyChangedEvent;
+}
