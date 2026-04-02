@@ -88,7 +88,7 @@ describe("S3PlaybackService", () => {
         { protocol: {}, timestamp: 3000 },
         { protocol: {}, timestamp: 1000 },
         { protocol: {}, timestamp: 2000 },
-      ];
+      ] as any;
       const sorted = service.sortProtocolsByTimestamp(protocols);
       expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(
         Number(sorted[1].timestamp),

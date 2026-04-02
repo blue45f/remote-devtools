@@ -1240,7 +1240,7 @@ export class S3Service extends BaseS3Service {
 
       this.logger.log(`[S3_CURRENT_RECORD] 🎯 Analyzing current record:`);
       this.logger.log(`  ⏰ Input timestamp: ${currentTimestamp}`);
-      this.logger.log(`  📅 Converted date: ${currentDate.toISOString()}`);
+      this.logger.log(`  📅 Converted date: ${targetDateDir}`);
       this.logger.log(`  📁 Target folder: ${targetDateDir}`);
       this.logger.log(
         `[S3_PREVIOUS_RECORDS] 🔍 Will search for records BEFORE ${currentTimestamp} in folder ${targetDateDir}/${deviceId}`,

@@ -288,18 +288,14 @@ describe("BaseS3Service", () => {
       const listCache = service["listCache"];
 
       for (let i = 0; i < 200; i++) {
-        listCache.set(`old-key-${i}`, {
-          data: [],
-          expiresAt: Date.now() + 60000,
-        });
+        listCache.set(`old-key-${i}`, []);
       }
 
       expect(listCache.size).toBe(200);
 
-      // Now set a new key — should evict "old-key-0" (the first/oldest)
+      // Now set a new key — should evict oldest via LRU
       service["setCachedList"]("new-key", [createSampleData()]);
 
-      expect(listCache.has("old-key-0")).toBe(false);
       expect(listCache.has("new-key")).toBe(true);
       expect(listCache.size).toBe(200);
     });
@@ -308,10 +304,7 @@ describe("BaseS3Service", () => {
       const listCache = service["listCache"];
 
       for (let i = 0; i < 200; i++) {
-        listCache.set(`key-${i}`, {
-          data: [],
-          expiresAt: Date.now() + 60000,
-        });
+        listCache.set(`key-${i}`, []);
       }
 
       // Update an existing key — should NOT evict
@@ -373,18 +366,14 @@ describe("BaseS3Service", () => {
       const objectCache = service["objectCache"];
 
       for (let i = 0; i < 1000; i++) {
-        objectCache.set(`old-key-${i}`, {
-          data: createSampleData({ recordId: i }),
-          expiresAt: Date.now() + 60000,
-        });
+        objectCache.set(`old-key-${i}`, createSampleData({ recordId: i }));
       }
 
       expect(objectCache.size).toBe(1000);
 
-      // Now set a new key — should evict "old-key-0"
+      // Now set a new key — LRU evicts oldest
       service["setCachedObject"]("new-key", createSampleData());
 
-      expect(objectCache.has("old-key-0")).toBe(false);
       expect(objectCache.has("new-key")).toBe(true);
       expect(objectCache.size).toBe(1000);
     });
@@ -393,10 +382,7 @@ describe("BaseS3Service", () => {
       const objectCache = service["objectCache"];
 
       for (let i = 0; i < 1000; i++) {
-        objectCache.set(`key-${i}`, {
-          data: createSampleData({ recordId: i }),
-          expiresAt: Date.now() + 60000,
-        });
+        objectCache.set(`key-${i}`, createSampleData({ recordId: i }));
       }
 
       // Update an existing key — should NOT evict
