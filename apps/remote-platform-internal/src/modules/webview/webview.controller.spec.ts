@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -93,7 +94,14 @@ describe("WebviewController (Internal)", () => {
 
     it("should throw on invalid limit param", async () => {
       await expect(
-        controller.getBackupList(undefined, undefined, undefined, undefined, undefined, "abc"),
+        controller.getBackupList(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          "abc",
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

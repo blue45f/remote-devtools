@@ -1,7 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { BaseS3Service, BufferUploadData } from "./base-s3.service";
+import type { BufferUploadData } from "./base-s3.service";
+import { BaseS3Service } from "./base-s3.service";
 
 // ---------------------------------------------------------------------------
 // Module mocks -- must be declared before imports are resolved

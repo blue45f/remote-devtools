@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 
 import { ImageBase64Service } from "./image-base64.service";
@@ -39,7 +40,9 @@ describe("ImageBase64Service", () => {
         status: 404,
       });
 
-      const result = await service.imageToBase64("https://example.com/missing.png");
+      const result = await service.imageToBase64(
+        "https://example.com/missing.png",
+      );
 
       expect(result).toBe("");
     });
@@ -47,7 +50,9 @@ describe("ImageBase64Service", () => {
     it("should return empty string on network error", async () => {
       mockFetch.mockRejectedValue(new Error("Network timeout"));
 
-      const result = await service.imageToBase64("https://unreachable.com/img.png");
+      const result = await service.imageToBase64(
+        "https://unreachable.com/img.png",
+      );
 
       expect(result).toBe("");
     });

@@ -8,7 +8,7 @@ import {
   ParseIntPipe,
   HttpStatus,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
+import { ApiTags } from "@nestjs/swagger";
 
 import {
   SessionReplayService,

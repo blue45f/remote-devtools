@@ -7,7 +7,7 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
-import { Logger } from "@nestjs/common";
+import type { Logger } from "@nestjs/common";
 import { LRUCache } from "lru-cache";
 
 // ---------------------------------------------------------------------------

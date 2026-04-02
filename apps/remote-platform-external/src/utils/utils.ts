@@ -1,7 +1,7 @@
 import * as CryptoJS from "crypto-js";
 import { UAParser } from "ua-parser-js";
 
-import { UserData } from "../modules/webview/webview.gateway";
+import type { UserData } from "../modules/webview/webview.gateway";
 
 const ENCRYPTION_KEY = CryptoJS.lib.WordArray.create(
   [1935828585, 1734898793, 1852243968],

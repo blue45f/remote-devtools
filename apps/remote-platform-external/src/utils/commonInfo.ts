@@ -1,4 +1,4 @@
-import { CommonInfo } from "../modules/webview/webview.gateway";
+import type { CommonInfo } from "../modules/webview/webview.gateway";
 
 /**
  * CommonInfo의 기본값을 반환합니다.
@@ -30,4 +30,3 @@ export const getDefaultCommonInfo = (): CommonInfo => ({
   URL: "unknown-url",
   userAgent: "unknown-useragent",
 });
-

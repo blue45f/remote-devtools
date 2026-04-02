@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import {
@@ -23,7 +24,10 @@ describe("WebviewGateway (Internal)", () => {
   const mockRuntimeService = { create: vi.fn() };
   const mockScreenService = { upsert: vi.fn(), findScreens: vi.fn() };
   const mockS3Service = { listBackupFiles: vi.fn() };
-  const mockObjectReconstruction = { reconstructObjectAsJson: vi.fn(), collectPropertySnapshots: vi.fn() };
+  const mockObjectReconstruction = {
+    reconstructObjectAsJson: vi.fn(),
+    collectPropertySnapshots: vi.fn(),
+  };
   const mockS3Playback = { clearClientCaches: vi.fn() };
 
   beforeEach(async () => {
@@ -37,7 +41,10 @@ describe("WebviewGateway (Internal)", () => {
         { provide: RuntimeService, useValue: mockRuntimeService },
         { provide: ScreenService, useValue: mockScreenService },
         { provide: S3Service, useValue: mockS3Service },
-        { provide: ObjectReconstructionService, useValue: mockObjectReconstruction },
+        {
+          provide: ObjectReconstructionService,
+          useValue: mockObjectReconstruction,
+        },
         { provide: S3PlaybackService, useValue: mockS3Playback },
       ],
     }).compile();

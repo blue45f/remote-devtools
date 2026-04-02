@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -25,16 +26,29 @@ import { WebviewGateway } from "./webview.gateway";
 describe("WebviewGateway (External)", () => {
   let gateway: WebviewGateway;
 
-  const mockRecordService = { create: vi.fn(), findAll: vi.fn(), updateDuration: vi.fn() };
+  const mockRecordService = {
+    create: vi.fn(),
+    findAll: vi.fn(),
+    updateDuration: vi.fn(),
+  };
   const mockNetworkService = { create: vi.fn() };
   const mockDomService = { upsert: vi.fn() };
   const mockScreenService = { upsert: vi.fn(), findScreens: vi.fn() };
   const mockBufferService = { addEvent: vi.fn(), flush: vi.fn() };
   const mockJiraService = { createTicket: vi.fn() };
-  const mockSlackService = { sendCreateTicketDM: vi.fn(), sendCreateRoomDM: vi.fn() };
+  const mockSlackService = {
+    sendCreateTicketDM: vi.fn(),
+    sendCreateRoomDM: vi.fn(),
+  };
   const mockUserInfoService = { getUserInfoByDeviceId: vi.fn() };
-  const mockCdpPersistence = { persistProtocolEvent: vi.fn(), persistSingleRrwebEvent: vi.fn() };
-  const mockBufferFlush = { flushBufferToFile: vi.fn(), flushBufferToFileForce: vi.fn() };
+  const mockCdpPersistence = {
+    persistProtocolEvent: vi.fn(),
+    persistSingleRrwebEvent: vi.fn(),
+  };
+  const mockBufferFlush = {
+    flushBufferToFile: vi.fn(),
+    flushBufferToFileForce: vi.fn(),
+  };
   const mockRepo = { save: vi.fn(), find: vi.fn() };
 
   beforeEach(async () => {
@@ -53,7 +67,10 @@ describe("WebviewGateway (External)", () => {
         { provide: CdpEventPersistenceService, useValue: mockCdpPersistence },
         { provide: BufferFlushService, useValue: mockBufferFlush },
         { provide: getRepositoryToken(TicketLogEntity), useValue: mockRepo },
-        { provide: getRepositoryToken(TicketComponentEntity), useValue: mockRepo },
+        {
+          provide: getRepositoryToken(TicketComponentEntity),
+          useValue: mockRepo,
+        },
         { provide: getRepositoryToken(TicketLabelEntity), useValue: mockRepo },
       ],
     }).compile();

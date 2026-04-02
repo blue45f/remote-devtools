@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
@@ -62,8 +63,14 @@ describe("WebviewController (External)", () => {
       providers: [
         { provide: RecordService, useValue: mockRecordService },
         { provide: S3Service, useValue: mockS3Service },
-        { provide: getRepositoryToken(TicketLogEntity), useValue: mockTicketLogRepo },
-        { provide: getRepositoryToken(TicketComponentEntity), useValue: mockRepo },
+        {
+          provide: getRepositoryToken(TicketLogEntity),
+          useValue: mockTicketLogRepo,
+        },
+        {
+          provide: getRepositoryToken(TicketComponentEntity),
+          useValue: mockRepo,
+        },
         { provide: getRepositoryToken(TicketLabelEntity), useValue: mockRepo },
         { provide: getRepositoryToken(RecordEntity), useValue: mockRepo },
         { provide: getRepositoryToken(ScreenEntity), useValue: mockRepo },
@@ -100,17 +107,17 @@ describe("WebviewController (External)", () => {
     });
 
     it("should throw for non-numeric recordId", async () => {
-      await expect(
-        controller.generateScreenshot("abc"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.generateScreenshot("abc")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe("getUserTickets", () => {
     it("should throw when deviceId is missing", async () => {
-      await expect(
-        controller.getUserTickets(undefined as any),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.getUserTickets(undefined as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

@@ -7,7 +7,7 @@ export class ImageBase64Service {
     try {
       const base64 = await imageToBase64(url); // image-to-base64 사용
       return base64;
-    } catch (error) {
+    } catch {
       // 에러 처리
       return "";
     }

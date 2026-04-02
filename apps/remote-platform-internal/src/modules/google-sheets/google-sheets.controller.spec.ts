@@ -1,5 +1,9 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { BadRequestException, InternalServerErrorException } from "@nestjs/common";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { GoogleSheetsController } from "./google-sheets.controller";
@@ -46,7 +50,10 @@ describe("GoogleSheetsController", () => {
 
     it("should use default sheet name DebugTools", async () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
-      mockService.getStructuredSheetData.mockResolvedValue({ totalRows: 0, totalColumns: 0 });
+      mockService.getStructuredSheetData.mockResolvedValue({
+        totalRows: 0,
+        totalColumns: 0,
+      });
 
       await controller.readTcSheetFromUrl(validUrl);
 
@@ -58,7 +65,10 @@ describe("GoogleSheetsController", () => {
 
     it("should use custom sheet name when provided", async () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
-      mockService.getStructuredSheetData.mockResolvedValue({ totalRows: 1, totalColumns: 1 });
+      mockService.getStructuredSheetData.mockResolvedValue({
+        totalRows: 1,
+        totalColumns: 1,
+      });
 
       await controller.readTcSheetFromUrl(validUrl, "CustomSheet");
 
@@ -78,9 +88,9 @@ describe("GoogleSheetsController", () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
       mockService.getStructuredSheetData.mockResolvedValue(null);
 
-      await expect(
-        controller.readTcSheetFromUrl(validUrl),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.readTcSheetFromUrl(validUrl)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw InternalServerErrorException for unexpected errors", async () => {
@@ -88,9 +98,9 @@ describe("GoogleSheetsController", () => {
         new Error("Network error"),
       );
 
-      await expect(
-        controller.readTcSheetFromUrl(validUrl),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.readTcSheetFromUrl(validUrl)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });

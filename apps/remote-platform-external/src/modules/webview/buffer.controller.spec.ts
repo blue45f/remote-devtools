@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -46,9 +47,9 @@ describe("BufferController", () => {
     });
 
     it("should throw BadRequestException when deviceId is empty string", async () => {
-      await expect(
-        controller.saveBuffer({ deviceId: "   " }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.saveBuffer({ deviceId: "   " })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should return success:false when gateway returns false", async () => {

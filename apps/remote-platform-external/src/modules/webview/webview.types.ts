@@ -1,4 +1,4 @@
-import * as WebSocket from "ws";
+import type * as WebSocket from "ws";
 
 // ---------------------------------------------------------------------------
 // Types -- WebSocket 룸 및 연결 상태 관련 타입 정의

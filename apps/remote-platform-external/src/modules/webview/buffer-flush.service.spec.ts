@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { ScreenService } from "@remote-platform/core";
@@ -10,8 +11,15 @@ import { BufferFlushService } from "./buffer-flush.service";
 
 describe("BufferFlushService", () => {
   let service: BufferFlushService;
-  const mockBufferService = { getBuffer: vi.fn(), flush: vi.fn(), getBufferSize: vi.fn() };
-  const mockS3Service = { uploadBufferData: vi.fn(), saveBufferDataToFile: vi.fn() };
+  const mockBufferService = {
+    getBuffer: vi.fn(),
+    flush: vi.fn(),
+    getBufferSize: vi.fn(),
+  };
+  const mockS3Service = {
+    uploadBufferData: vi.fn(),
+    saveBufferDataToFile: vi.fn(),
+  };
   const mockScreenService = { upsert: vi.fn() };
   const mockCdpPersistence = {
     persistBufferedEvent: vi.fn(),

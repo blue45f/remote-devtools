@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { ImageBase64Service } from "@remote-platform/core";
@@ -20,7 +21,9 @@ describe("ImageBase64Controller (Internal)", () => {
 
   it("should return base64 for image URL", async () => {
     mockService.imageToBase64.mockResolvedValue("iVBOR");
-    const result = await controller.getImageBase64("https://cdn.example.com/logo.png");
+    const result = await controller.getImageBase64(
+      "https://cdn.example.com/logo.png",
+    );
     expect(result).toEqual({ base64: "iVBOR" });
   });
 

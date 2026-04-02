@@ -1,7 +1,9 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { BufferService, BufferEvent } from "./buffer.service";
+import type { BufferEvent } from "./buffer.service";
+import { BufferService } from "./buffer.service";
 
 describe("BufferService", () => {
   let service: BufferService;

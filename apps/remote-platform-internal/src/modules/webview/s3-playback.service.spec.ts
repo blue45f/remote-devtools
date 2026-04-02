@@ -1,4 +1,5 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach } from "vitest";
 
 import { S3PlaybackService } from "./s3-playback.service";
@@ -58,12 +59,18 @@ describe("S3PlaybackService", () => {
 
   describe("classifyBackupEvents", () => {
     it("should classify events by type", () => {
-      const backupData = [{
-        bufferData: [
-          { method: "Network.requestWillBeSent", params: { requestId: 1 }, timestamp: 1 },
-          { method: "Runtime.consoleAPICalled", params: {}, timestamp: 2 },
-        ],
-      }];
+      const backupData = [
+        {
+          bufferData: [
+            {
+              method: "Network.requestWillBeSent",
+              params: { requestId: 1 },
+              timestamp: 1,
+            },
+            { method: "Runtime.consoleAPICalled", params: {}, timestamp: 2 },
+          ],
+        },
+      ];
       const result = service.classifyBackupEvents(backupData, new Map());
       expect(result.networkProtocols.length).toBeGreaterThanOrEqual(1);
       expect(result.runtimeProtocols.length).toBeGreaterThanOrEqual(1);
@@ -83,7 +90,9 @@ describe("S3PlaybackService", () => {
         { protocol: {}, timestamp: 2000 },
       ];
       const sorted = service.sortProtocolsByTimestamp(protocols);
-      expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(Number(sorted[1].timestamp));
+      expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(
+        Number(sorted[1].timestamp),
+      );
     });
   });
 

@@ -1,4 +1,5 @@
-import { ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
+import type { ArgumentsHost } from "@nestjs/common";
+import { HttpException, HttpStatus } from "@nestjs/common";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { BusinessException } from "../exceptions/business.exception";

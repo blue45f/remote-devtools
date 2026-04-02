@@ -1,6 +1,7 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
+import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository, SelectQueryBuilder } from "typeorm";
+import type { Repository, SelectQueryBuilder } from "typeorm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { RecordEntity } from "@remote-platform/entity";
