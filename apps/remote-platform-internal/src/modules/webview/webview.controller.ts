@@ -161,12 +161,11 @@ export class WebviewController {
     const deviceId = record.deviceId || "unknown-device";
     const url = record.url || "";
 
-    // Convert creation date to KST (UTC+9)
+    // Convert creation date to local timezone
+    const { getLocalDateString } = require("@remote-platform/constants");
     const createdDate = record.createdAt
-      ? new Date(new Date(record.createdAt).getTime() + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0]
-      : new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+      ? getLocalDateString(new Date(record.createdAt).getTime())
+      : getLocalDateString();
 
     return {
       id: record.id,

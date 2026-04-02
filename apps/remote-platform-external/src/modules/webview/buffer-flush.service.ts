@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { getLocalDateString } from "@remote-platform/constants";
 import { ScreenService } from "@remote-platform/core";
 
 import { BufferService, type BufferEvent } from "../buffer/buffer.service";
@@ -554,9 +555,7 @@ export class BufferFlushService {
       title,
       bufferData: flushedBuffer.events,
       timestamp: flushedBuffer.sessionStartTime,
-      date: new Date(flushedBuffer.sessionStartTime + 9 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
+      date: getLocalDateString(flushedBuffer.sessionStartTime),
       sessionStartTime: flushedBuffer.sessionStartTime,
     };
 

@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { Injectable, Logger } from "@nestjs/common";
+import { getLocalDateString } from "@remote-platform/constants";
 import { BaseS3Service, BufferUploadData } from "@remote-platform/core";
 
 export { BufferUploadData };
@@ -82,8 +83,7 @@ export class S3Service extends BaseS3Service {
       const sessionStartTime =
         data.sessionStartTime || data.timestamp || Date.now();
 
-      const koreanTime = new Date(sessionStartTime + 9 * 60 * 60 * 1000);
-      const recordDate = koreanTime.toISOString().split("T")[0];
+      const recordDate = getLocalDateString(sessionStartTime);
 
       const fileName = `session_${sessionStartTime}.json`;
       const deviceDir = path.join(this.backupDir, recordDate, deviceId);
@@ -264,9 +264,7 @@ export class S3Service extends BaseS3Service {
     try {
       const { deviceId, timestamp, date } = data;
 
-      const targetDate =
-        date ||
-        new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const targetDate = date || getLocalDateString();
 
       const devicePath = path.join(
         this.backupDir,
