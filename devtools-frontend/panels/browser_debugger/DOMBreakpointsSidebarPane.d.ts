@@ -1,28 +1,38 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export declare class DOMBreakpointsSidebarPane extends UI.Widget.VBox implements UI.ContextFlavorListener.ContextFlavorListener, UI.ListControl.ListDelegate<SDK.DOMDebuggerModel.DOMBreakpoint> {
+export interface Breakpoint {
+    breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint;
+    label: string;
+    isHighlighted: boolean;
+    isFocused: boolean;
+}
+export interface ViewInput {
+    breakpoints: Breakpoint[];
+    onBreakpointClick: (breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint) => void;
+    onBreakpointCheckboxClick: (breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint) => void;
+    onBreakpointContextMenu: (breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint, event: Event) => void;
+    onBreakpointKeyDown: (breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint, event: Event) => void;
+}
+export type View = (input: ViewInput, output: undefined, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class DOMBreakpointsSidebarPane extends UI.Widget.VBox implements UI.ContextFlavorListener.ContextFlavorListener {
     #private;
-    elementToCheckboxes: WeakMap<Element, HTMLInputElement>;
-    private constructor();
+    set highlightedBreakpoint(breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint | null);
+    set focusedBreakpoint(breakpoint: SDK.DOMDebuggerModel.DOMBreakpoint | null);
+    constructor(view?: View);
     static instance(): DOMBreakpointsSidebarPane;
-    createElementForItem(item: SDK.DOMDebuggerModel.DOMBreakpoint): Element;
-    heightForItem(_item: SDK.DOMDebuggerModel.DOMBreakpoint): number;
-    isItemSelectable(_item: SDK.DOMDebuggerModel.DOMBreakpoint): boolean;
-    updateSelectedItemARIA(_fromElement: Element | null, _toElement: Element | null): boolean;
-    selectedItemChanged(from: SDK.DOMDebuggerModel.DOMBreakpoint | null, to: SDK.DOMDebuggerModel.DOMBreakpoint | null, fromElement: HTMLElement | null, toElement: HTMLElement | null): void;
+    performUpdate(): void;
+    private onBreakpointClick;
+    private onBreakpointKeyDown;
     private breakpointAdded;
     private breakpointToggled;
     private breakpointsRemoved;
     private addBreakpoint;
-    private contextMenu;
-    private checkboxClicked;
+    private onBreakpointContextMenu;
+    private onBreakpointCheckboxClick;
     flavorChanged(_object: Object | null): void;
-    private update;
-    wasShown(): void;
+    update(): void;
 }
-export declare class ContextMenuProvider implements UI.ContextMenu.Provider {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ContextMenuProvider;
-    appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, object: Object): void;
+export declare class ContextMenuProvider implements UI.ContextMenu.Provider<SDK.DOMModel.DOMNode> {
+    appendApplicableItems(_event: Event, contextMenu: UI.ContextMenu.ContextMenu, node: SDK.DOMModel.DOMNode): void;
 }

@@ -1,16 +1,21 @@
+import * as Platform from '../../core/platform/platform.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
-import type * as Platform from '../../core/platform/platform.js';
 import * as Common from '../common/common.js';
-import { Location, type DebuggerModel } from './DebuggerModel.js';
-import { type FrameAssociated } from './FrameAssociated.js';
-import { type PageResourceLoadInitiator } from './PageResourceLoader.js';
-import { type ExecutionContext } from './RuntimeModel.js';
-import { type Target } from './Target.js';
+import { type DebuggerModel, Location } from './DebuggerModel.js';
+import type { FrameAssociated } from './FrameAssociated.js';
+import type { PageResourceLoadInitiator } from './PageResourceLoader.js';
+import type { ExecutionContext } from './RuntimeModel.js';
+import type { DebugId, SourceMap } from './SourceMap.js';
+import type { Target } from './Target.js';
 export declare class Script implements TextUtils.ContentProvider.ContentProvider, FrameAssociated {
     #private;
     debuggerModel: DebuggerModel;
     scriptId: Protocol.Runtime.ScriptId;
+    /**
+     * The URL of the script. When `hasSourceURL` is true, this value comes from a `//# sourceURL=` directive. Otherwise,
+     * it's the original `src` URL from which the script was loaded.
+     */
     sourceURL: Platform.DevToolsPath.UrlString;
     lineOffset: number;
     columnOffset: number;
@@ -24,7 +29,8 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
     contentLength: number;
     originStackTrace: Protocol.Runtime.StackTrace | null;
     readonly isModule: boolean | null;
-    constructor(debuggerModel: DebuggerModel, scriptId: Protocol.Runtime.ScriptId, sourceURL: Platform.DevToolsPath.UrlString, startLine: number, startColumn: number, endLine: number, endColumn: number, executionContextId: number, hash: string, isContentScript: boolean, isLiveEdit: boolean, sourceMapURL: string | undefined, hasSourceURL: boolean, length: number, isModule: boolean | null, originStackTrace: Protocol.Runtime.StackTrace | null, codeOffset: number | null, scriptLanguage: string | null, debugSymbols: Protocol.Debugger.DebugSymbols | null, embedderName: Platform.DevToolsPath.UrlString | null);
+    readonly buildId: string | null;
+    constructor(debuggerModel: DebuggerModel, scriptId: Protocol.Runtime.ScriptId, sourceURL: Platform.DevToolsPath.UrlString, startLine: number, startColumn: number, endLine: number, endColumn: number, executionContextId: number, hash: string, isContentScript: boolean, isLiveEdit: boolean, sourceMapURL: string | undefined, hasSourceURL: boolean, length: number, isModule: boolean | null, originStackTrace: Protocol.Runtime.StackTrace | null, codeOffset: number | null, scriptLanguage: string | null, debugSymbols: Protocol.Debugger.DebugSymbols | null, embedderName: Platform.DevToolsPath.UrlString | null, buildId: string | null);
     embedderName(): Platform.DevToolsPath.UrlString | null;
     target(): Target;
     private static trimSourceURLComment;
@@ -39,8 +45,7 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
     contentType(): Common.ResourceType.ResourceType;
     private loadTextContent;
     private loadWasmContent;
-    requestContent(): Promise<TextUtils.ContentProvider.DeferredContent>;
-    private requestContentInternal;
+    requestContentData(): Promise<TextUtils.ContentData.ContentDataOrError>;
     getWasmBytecode(): Promise<ArrayBuffer>;
     originalContentProvider(): TextUtils.ContentProvider.ContentProvider;
     searchInContent(query: string, caseSensitive: boolean, isRegex: boolean): Promise<TextUtils.ContentProvider.SearchMatch[]>;
@@ -60,7 +65,13 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
      * @returns true, iff this script originates from a breakpoint/logpoint condition
      */
     get isBreakpointCondition(): boolean;
+    /**
+     * @returns the currently attached source map for this Script or `undefined` if there is none or it
+     * hasn't loaded yet.
+     */
+    sourceMap(): SourceMap | undefined;
     createPageResourceLoadInitiator(): PageResourceLoadInitiator;
+    debugId(): DebugId | null;
     /**
      * Translates the `rawLocation` from line and column number in terms of what V8 understands
      * to a script relative location. Specifically this means that for inline `<script>`'s
@@ -111,3 +122,4 @@ export declare class Script implements TextUtils.ContentProvider.ContentProvider
     };
 }
 export declare const sourceURLRegex: RegExp;
+export declare function disassembleWasm(content: string): Promise<TextUtils.WasmDisassembly.WasmDisassembly>;

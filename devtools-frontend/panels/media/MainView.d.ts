@@ -1,6 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
-import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
+import * as UI from '../../ui/legacy/legacy.js';
 import { MediaModel, type PlayerEvent } from './MediaModel.js';
 export interface TriggerHandler {
     onProperty(property: Protocol.Media.PlayerProperty): void;
@@ -31,15 +31,12 @@ export declare class PlayerDataDownloadManager implements TriggerDispatcher {
     deletePlayer(playerID: string): void;
 }
 export declare class MainView extends UI.Panel.PanelWithSidebar implements SDK.TargetManager.SDKModelObserver<MediaModel> {
+    #private;
     private detailPanels;
     private deletedPlayers;
     private readonly downloadStore;
     private readonly sidebar;
-    constructor(downloadStore: PlayerDataDownloadManager);
-    static instance(opts?: {
-        forceNew: boolean;
-        downloadStore?: PlayerDataDownloadManager;
-    }): MainView;
+    constructor(downloadStore?: PlayerDataDownloadManager);
     renderMainPanel(playerID: string): void;
     wasShown(): void;
     willHide(): void;
@@ -47,7 +44,6 @@ export declare class MainView extends UI.Panel.PanelWithSidebar implements SDK.T
     modelRemoved(model: MediaModel): void;
     private addEventListeners;
     private removeEventListeners;
-    private onPlayerCreated;
     private propertiesChanged;
     private eventsAdded;
     private messagesLogged;
@@ -57,7 +53,9 @@ export declare class MainView extends UI.Panel.PanelWithSidebar implements SDK.T
     onError(playerID: string, error: Protocol.Media.PlayerError): void;
     onMessage(playerID: string, message: Protocol.Media.PlayerMessage): void;
     onEvent(playerID: string, event: PlayerEvent): void;
-    private playersCreated;
+    selectPlayerByDOMNodeId(domNodeId: Protocol.DOM.BackendNodeId): void;
+    waitForInitialPlayers(): Promise<void>;
+    private playerCreated;
     markPlayerForDeletion(playerID: string): void;
     markOtherPlayersForDeletion(playerID: string): void;
     exportPlayerData(playerID: string): void;

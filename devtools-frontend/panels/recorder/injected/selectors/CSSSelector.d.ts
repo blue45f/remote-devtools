@@ -1,4 +1,4 @@
-import { SelectorPart, type Selector } from './Selector.js';
+import { type Selector, SelectorPart } from './Selector.js';
 export interface QueryableNode extends Node {
     querySelectorAll(selectors: string): NodeListOf<Element>;
 }
@@ -41,10 +41,10 @@ export declare class SelectorRangeOps implements RangeOps<QueryableNode, string>
 /**
  * Computes the CSS selector for a node.
  *
- * @param node - The node to compute.
+ * @internal
+ * @param node The node to compute.
  * @returns The computed CSS selector.
  *
- * @internal
  */
 export declare const computeCSSSelector: (node: Node, attributes?: string[]) => Selector | undefined;
 export declare const queryCSSSelectorAll: (selectors: Selector) => Element[];

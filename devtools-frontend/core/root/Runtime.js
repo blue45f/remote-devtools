@@ -1,10 +1,16 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Platform from '../platform/platform.js';
-const queryParamsObject = new URLSearchParams(location.search);
 let runtimePlatform = '';
 let runtimeInstance;
+let isNode;
+let isTraceAppEntry;
+/**
+ * Returns the base URL (similar to `<base>`).
+ * Used to resolve the relative URLs of any additional DevTools files (locale strings, etc) needed.
+ * See: https://cs.chromium.org/remoteBase+f:devtools_window
+ */
 export function getRemoteBase(location = self.location.toString()) {
     const url = new URL(location);
     const remoteBase = url.searchParams.get('remoteBase');
@@ -17,6 +23,21 @@ export function getRemoteBase(location = self.location.toString()) {
     }
     return { base: `devtools://devtools/remote/serve_file/${version[1]}/`, version: version[1] };
 }
+export function getPathName() {
+    return window.location.pathname;
+}
+export function isNodeEntry(pathname) {
+    const nodeEntryPoints = ['node_app', 'js_app'];
+    return nodeEntryPoints.some(component => pathname.includes(component));
+}
+export const getChromeVersion = () => {
+    const chromeRegex = /(?:^|\W)(?:Chrome|HeadlessChrome)\/(\S+)/;
+    const chromeMatch = navigator.userAgent.match(chromeRegex);
+    if (chromeMatch && chromeMatch.length > 1) {
+        return chromeMatch[1];
+    }
+    return '';
+};
 export class Runtime {
     constructor() {
     }
@@ -30,20 +51,35 @@ export class Runtime {
     static removeInstance() {
         runtimeInstance = undefined;
     }
+    static #queryParamsObject;
+    static #getSearchParams() {
+        // TODO(crbug.com/451502260): Find a more explicit way to support running in Node.js
+        if (!Runtime.#queryParamsObject && 'location' in globalThis) {
+            Runtime.#queryParamsObject = new URLSearchParams(location.search);
+        }
+        return Runtime.#queryParamsObject;
+    }
     static queryParam(name) {
-        return queryParamsObject.get(name);
+        return Runtime.#getSearchParams()?.get(name) ?? null;
     }
     static setQueryParamForTesting(name, value) {
-        queryParamsObject.set(name, value);
+        Runtime.#getSearchParams()?.set(name, value);
     }
-    static experimentsSetting() {
-        try {
-            return JSON.parse(self.localStorage && self.localStorage['experiments'] ? self.localStorage['experiments'] : '{}');
+    static isNode() {
+        if (isNode === undefined) {
+            isNode = isNodeEntry(getPathName());
         }
-        catch (e) {
-            console.error('Failed to parse localStorage[\'experiments\']');
-            return {};
+        return isNode;
+    }
+    /**
+     * Returns true if viewing the slimmed-down devtools meant for just viewing a
+     * performance trace, e.g. devtools://devtools/bundled/trace_app.html?traceURL=http://...
+     */
+    static isTraceApp() {
+        if (isTraceAppEntry === undefined) {
+            isTraceAppEntry = getPathName().includes('trace_app');
         }
+        return isTraceAppEntry;
     }
     static setPlatform(platform) {
         runtimePlatform = platform;
@@ -52,157 +88,201 @@ export class Runtime {
         return runtimePlatform;
     }
     static isDescriptorEnabled(descriptor) {
-        const activatorExperiment = descriptor['experiment'];
-        if (activatorExperiment === '*') {
+        const { experiment } = descriptor;
+        if (experiment === '*') {
             return true;
         }
-        if (activatorExperiment && activatorExperiment.startsWith('!') &&
-            experiments.isEnabled(activatorExperiment.substring(1))) {
-            return false;
+        if (experiment?.startsWith('!')) {
+            const experimentName = experiment.substring(1);
+            if (experiments.isEnabled(experimentName)) {
+                return false;
+            }
         }
-        if (activatorExperiment && !activatorExperiment.startsWith('!') && !experiments.isEnabled(activatorExperiment)) {
-            return false;
+        if (experiment && !experiment.startsWith('!')) {
+            const experimentName = experiment;
+            if (!experiments.isEnabled(experimentName)) {
+                return false;
+            }
         }
-        const condition = descriptor['condition'];
-        if (condition && !condition.startsWith('!') && !Runtime.queryParam(condition)) {
-            return false;
-        }
-        if (condition && condition.startsWith('!') && Runtime.queryParam(condition.substring(1))) {
-            return false;
-        }
-        return true;
+        const { condition } = descriptor;
+        return condition ? condition(hostConfig) : true;
     }
     loadLegacyModule(modulePath) {
-        return import(`../../${modulePath}`);
+        // eslint-disable-next-line no-console
+        console.log('Loading legacy module: ' + modulePath);
+        const importPath = `../../${modulePath}`; // Extracted as a variable so esbuild doesn't attempt to bundle all the things.
+        return import(importPath).then(m => {
+            // eslint-disable-next-line no-console
+            console.log('Loaded legacy module: ' + modulePath);
+            return m;
+        });
     }
 }
 export class ExperimentsSupport {
-    #experiments;
-    #experimentNames;
-    #enabledTransiently;
-    #enabledByDefault;
-    #serverEnabled;
-    // Experiments in this set won't be shown to the user
-    #nonConfigurable;
-    constructor() {
-        this.#experiments = [];
-        this.#experimentNames = new Set();
-        this.#enabledTransiently = new Set();
-        this.#enabledByDefault = new Set();
-        this.#serverEnabled = new Set();
-        this.#nonConfigurable = new Set();
-    }
+    #experiments = [];
+    #hostExperiments = new Map();
+    #experimentNames = new Set();
+    #enabledForTests = new Set();
+    #enabledByDefault = new Set();
+    #serverEnabled = new Set();
+    #storage = new ExperimentStorage();
     allConfigurableExperiments() {
-        const result = [];
-        for (const experiment of this.#experiments) {
-            if (!this.#enabledTransiently.has(experiment.name) && !this.#nonConfigurable.has(experiment.name)) {
-                result.push(experiment);
-            }
+        return [...this.#experiments, ...this.#hostExperiments.values()];
+    }
+    registerHostExperiment(params) {
+        if (this.#isHostExperiment(params.name) || this.#isExperiment(params.name)) {
+            throw new Error(`Duplicate registration of experiment '${params.name}'`);
         }
-        return result;
+        const hostExperiment = new HostExperiment({ ...params, experiments: this });
+        this.#hostExperiments.set(params.name, hostExperiment);
+        return hostExperiment;
     }
-    enabledExperiments() {
-        return this.#experiments.filter(experiment => experiment.isEnabled());
-    }
-    setExperimentsSetting(value) {
-        if (!self.localStorage) {
-            return;
+    register(experimentName, experimentTitle, docLink, feedbackLink) {
+        if (this.#isHostExperiment(experimentName) || this.#isExperiment(experimentName)) {
+            throw new Error(`Duplicate registration of experiment '${experimentName}'`);
         }
-        self.localStorage['experiments'] = JSON.stringify(value);
-    }
-    register(experimentName, experimentTitle, unstable, docLink, feedbackLink) {
-        Platform.DCHECK(() => !this.#experimentNames.has(experimentName), 'Duplicate registration of experiment ' + experimentName);
         this.#experimentNames.add(experimentName);
-        this.#experiments.push(new Experiment(this, experimentName, experimentTitle, Boolean(unstable), docLink ?? Platform.DevToolsPath.EmptyUrlString, feedbackLink ?? Platform.DevToolsPath.EmptyUrlString));
+        this.#experiments.push(new Experiment(this, experimentName, experimentTitle, docLink ?? Platform.DevToolsPath.EmptyUrlString, feedbackLink ?? Platform.DevToolsPath.EmptyUrlString));
     }
     isEnabled(experimentName) {
-        this.checkExperiment(experimentName);
-        // Check for explicitly disabled #experiments first - the code could call setEnable(false) on the experiment enabled
-        // by default and we should respect that.
-        if (Runtime.experimentsSetting()[experimentName] === false) {
-            return false;
+        if (this.#isHostExperiment(experimentName)) {
+            return this.#enabledForTests.has(experimentName) ||
+                (this.#hostExperiments.get(experimentName)?.isEnabled() ?? false);
         }
-        if (this.#enabledTransiently.has(experimentName) || this.#enabledByDefault.has(experimentName)) {
-            return true;
+        if (this.#isExperiment(experimentName)) {
+            // Check for explicitly disabled #experiments first - the code could call setEnable(false)
+            // on the experiment enabled by default and we should respect that.
+            if (this.#storage.get(experimentName) === false) {
+                return false;
+            }
+            if (this.#enabledForTests.has(experimentName) || this.#enabledByDefault.has(experimentName)) {
+                return true;
+            }
+            if (this.#serverEnabled.has(experimentName)) {
+                return true;
+            }
+            return Boolean(this.#storage.get(experimentName));
         }
-        if (this.#serverEnabled.has(experimentName)) {
-            return true;
-        }
-        return Boolean(Runtime.experimentsSetting()[experimentName]);
+        throw new Error(`Unknown experiment '${experimentName}'`);
+    }
+    getValueFromStorage(experimentName) {
+        return this.#storage.get(experimentName);
     }
     setEnabled(experimentName, enabled) {
-        this.checkExperiment(experimentName);
-        const experimentsSetting = Runtime.experimentsSetting();
-        experimentsSetting[experimentName] = enabled;
-        this.setExperimentsSetting(experimentsSetting);
-    }
-    enableExperimentsTransiently(experimentNames) {
-        for (const experimentName of experimentNames) {
-            this.checkExperiment(experimentName);
-            this.#enabledTransiently.add(experimentName);
+        if (this.#isHostExperiment(experimentName)) {
+            this.#hostExperiments.get(experimentName)?.setEnabled(enabled);
+            return;
         }
+        if (this.#isExperiment(experimentName)) {
+            this.#storage.set(experimentName, enabled);
+            return;
+        }
+        throw new Error(`Unknown experiment '${experimentName}'`);
     }
+    // Only applicable to legacy experiments.
     enableExperimentsByDefault(experimentNames) {
         for (const experimentName of experimentNames) {
-            this.checkExperiment(experimentName);
+            if (!this.#isExperiment(experimentName)) {
+                throw new Error(`Unknown (legacy) experiment '${experimentName}'`);
+            }
             this.#enabledByDefault.add(experimentName);
         }
     }
-    setServerEnabledExperiments(experimentNames) {
-        for (const experiment of experimentNames) {
-            this.checkExperiment(experiment);
-            this.#serverEnabled.add(experiment);
-        }
-    }
-    setNonConfigurableExperiments(experimentNames) {
-        for (const experiment of experimentNames) {
-            this.checkExperiment(experiment);
-            this.#nonConfigurable.add(experiment);
+    // Only applicable to legacy experiments.
+    setServerEnabledExperiments(experiments) {
+        for (const experiment of experiments) {
+            const experimentName = experiment;
+            if (!this.#isExperiment(experimentName)) {
+                throw new Error(`Unknown (legacy) experiment '${experimentName}'`);
+            }
+            this.#serverEnabled.add(experimentName);
         }
     }
     enableForTest(experimentName) {
-        this.checkExperiment(experimentName);
-        this.#enabledTransiently.add(experimentName);
+        if (!this.#isHostExperiment(experimentName) && !this.#isExperiment(experimentName)) {
+            throw new Error(`Unknown experiment '${experimentName}'`);
+        }
+        this.#enabledForTests.add(experimentName);
     }
     disableForTest(experimentName) {
-        this.checkExperiment(experimentName);
-        this.#enabledTransiently.delete(experimentName);
+        if (!this.#isHostExperiment(experimentName) && !this.#isExperiment(experimentName)) {
+            throw new Error(`Unknown experiment '${experimentName}'`);
+        }
+        this.#enabledForTests.delete(experimentName);
+    }
+    isEnabledForTest(experimentName) {
+        return this.#enabledForTests.has(experimentName);
     }
     clearForTest() {
         this.#experiments = [];
+        this.#hostExperiments.clear();
         this.#experimentNames.clear();
-        this.#enabledTransiently.clear();
+        this.#enabledForTests.clear();
         this.#enabledByDefault.clear();
         this.#serverEnabled.clear();
     }
     cleanUpStaleExperiments() {
-        const experimentsSetting = Runtime.experimentsSetting();
-        const cleanedUpExperimentSetting = {};
-        for (const { name: experimentName } of this.#experiments) {
-            if (experimentsSetting.hasOwnProperty(experimentName)) {
-                const isEnabled = experimentsSetting[experimentName];
-                if (isEnabled || this.#enabledByDefault.has(experimentName)) {
-                    cleanedUpExperimentSetting[experimentName] = isEnabled;
-                }
-            }
-        }
-        this.setExperimentsSetting(cleanedUpExperimentSetting);
+        this.#storage.cleanUpStaleExperiments(this.#experimentNames);
     }
-    checkExperiment(experimentName) {
-        Platform.DCHECK(() => this.#experimentNames.has(experimentName), 'Unknown experiment ' + experimentName);
+    #isHostExperiment(experimentName) {
+        return this.#hostExperiments.has(experimentName);
+    }
+    #isExperiment(experimentName) {
+        return this.#experimentNames.has(experimentName);
     }
 }
+/** Manages the 'experiments' dictionary in self.localStorage */
+class ExperimentStorage {
+    #experiments = {};
+    constructor() {
+        try {
+            const storedExperiments = self.localStorage?.getItem('experiments');
+            if (storedExperiments) {
+                this.#experiments = JSON.parse(storedExperiments);
+            }
+        }
+        catch {
+            console.error('Failed to parse localStorage[\'experiments\']');
+        }
+    }
+    /**
+     * Experiments are stored with a tri-state:
+     *   - true: Explicitly enabled.
+     *   - false: Explicitly disabled.
+     *   - undefined: Disabled.
+     */
+    get(experimentName) {
+        return this.#experiments[experimentName];
+    }
+    set(experimentName, enabled) {
+        this.#experiments[experimentName] = enabled;
+        this.#syncToLocalStorage();
+    }
+    cleanUpStaleExperiments(validExperiments) {
+        for (const [key] of Object.entries(this.#experiments)) {
+            if (!validExperiments.has(key)) {
+                delete this.#experiments[key];
+            }
+        }
+        this.#syncToLocalStorage();
+    }
+    #syncToLocalStorage() {
+        self.localStorage?.setItem('experiments', JSON.stringify(this.#experiments));
+    }
+}
+/**
+ * @deprecated Experiments should not be used anymore, instead use base::Feature.
+ * See docs/contributing/settings-experiments-features.md
+ */
 export class Experiment {
     name;
     title;
-    unstable;
     docLink;
     feedbackLink;
     #experiments;
-    constructor(experiments, name, title, unstable, docLink, feedbackLink) {
+    constructor(experiments, name, title, docLink, feedbackLink) {
         this.name = name;
         this.title = title;
-        this.unstable = unstable;
         this.docLink = docLink;
         this.feedbackLink = feedbackLink;
         this.#experiments = experiments;
@@ -214,43 +294,70 @@ export class Experiment {
         this.#experiments.setEnabled(this.name, enabled);
     }
 }
-// This must be constructed after the query parameters have been parsed.
+export class HostExperiment {
+    name;
+    title;
+    #experiments;
+    // This is the name of the corresponding Chromium flag (in chrome/browser/about_flags.cc).
+    // It is NOT the the name of the corresponding Chromium `base::Feature`.
+    aboutFlag;
+    #isEnabled;
+    requiresChromeRestart;
+    docLink;
+    feedbackLink;
+    constructor(params) {
+        this.name = params.name;
+        this.title = params.title;
+        this.#experiments = params.experiments;
+        this.aboutFlag = params.aboutFlag;
+        this.#isEnabled = params.isEnabled;
+        this.requiresChromeRestart = params.requiresChromeRestart;
+        this.docLink = params.docLink;
+        this.feedbackLink = params.feedbackLink;
+    }
+    isEnabled() {
+        return this.#experiments.isEnabledForTest(this.name) || this.#isEnabled;
+    }
+    setEnabled(enabled) {
+        this.#isEnabled = enabled;
+    }
+}
+/** This must be constructed after the query parameters have been parsed. **/
 export const experiments = new ExperimentsSupport();
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var ExperimentName;
-(function (ExperimentName) {
-    ExperimentName["CAPTURE_NODE_CREATION_STACKS"] = "captureNodeCreationStacks";
-    ExperimentName["CSS_OVERVIEW"] = "cssOverview";
-    ExperimentName["LIVE_HEAP_PROFILE"] = "liveHeapProfile";
-    ExperimentName["DEVELOPER_RESOURCES_VIEW"] = "developerResourcesView";
-    ExperimentName["CSP_VIOLATIONS_VIEW"] = "cspViolationsView";
-    ExperimentName["WASM_DWARF_DEBUGGING"] = "wasmDWARFDebugging";
-    ExperimentName["ALL"] = "*";
-    ExperimentName["PROTOCOL_MONITOR"] = "protocolMonitor";
-    ExperimentName["WEBAUTHN_PANE"] = "webauthnPane";
-    ExperimentName["FULL_ACCESSIBILITY_TREE"] = "fullAccessibilityTree";
-    ExperimentName["PRECISE_CHANGES"] = "preciseChanges";
-    ExperimentName["STYLES_PANE_CSS_CHANGES"] = "stylesPaneCSSChanges";
-    ExperimentName["HEADER_OVERRIDES"] = "headerOverrides";
-    ExperimentName["EYEDROPPER_COLOR_PICKER"] = "eyedropperColorPicker";
-    ExperimentName["INSTRUMENTATION_BREAKPOINTS"] = "instrumentationBreakpoints";
-    ExperimentName["AUTHORED_DEPLOYED_GROUPING"] = "authoredDeployedGrouping";
-    ExperimentName["IMPORTANT_DOM_PROPERTIES"] = "importantDOMProperties";
-    ExperimentName["JUST_MY_CODE"] = "justMyCode";
-    ExperimentName["PRELOADING_STATUS_PANEL"] = "preloadingStatusPanel";
-    ExperimentName["DISABLE_COLOR_FORMAT_SETTING"] = "disableColorFormatSetting";
-    ExperimentName["TIMELINE_AS_CONSOLE_PROFILE_RESULT_PANEL"] = "timelineAsConsoleProfileResultPanel";
-    ExperimentName["OUTERMOST_TARGET_SELECTOR"] = "outermostTargetSelector";
-    ExperimentName["JS_PROFILER_TEMP_ENABLE"] = "jsProfilerTemporarilyEnable";
-    ExperimentName["HIGHLIGHT_ERRORS_ELEMENTS_PANEL"] = "highlightErrorsElementsPanel";
-    ExperimentName["SET_ALL_BREAKPOINTS_EAGERLY"] = "setAllBreakpointsEagerly";
-})(ExperimentName || (ExperimentName = {}));
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var ConditionName;
-(function (ConditionName) {
-    ConditionName["CAN_DOCK"] = "can_dock";
-    ConditionName["NOT_SOURCES_HIDE_ADD_FOLDER"] = "!sources.hide_add_folder";
-})(ConditionName || (ConditionName = {}));
+export var GenAiEnterprisePolicyValue;
+(function (GenAiEnterprisePolicyValue) {
+    GenAiEnterprisePolicyValue[GenAiEnterprisePolicyValue["ALLOW"] = 0] = "ALLOW";
+    GenAiEnterprisePolicyValue[GenAiEnterprisePolicyValue["ALLOW_WITHOUT_LOGGING"] = 1] = "ALLOW_WITHOUT_LOGGING";
+    GenAiEnterprisePolicyValue[GenAiEnterprisePolicyValue["DISABLE"] = 2] = "DISABLE";
+})(GenAiEnterprisePolicyValue || (GenAiEnterprisePolicyValue = {}));
+export var HostConfigFreestylerExecutionMode;
+(function (HostConfigFreestylerExecutionMode) {
+    HostConfigFreestylerExecutionMode["ALL_SCRIPTS"] = "ALL_SCRIPTS";
+    HostConfigFreestylerExecutionMode["SIDE_EFFECT_FREE_SCRIPTS_ONLY"] = "SIDE_EFFECT_FREE_SCRIPTS_ONLY";
+    HostConfigFreestylerExecutionMode["NO_SCRIPTS"] = "NO_SCRIPTS";
+})(HostConfigFreestylerExecutionMode || (HostConfigFreestylerExecutionMode = {}));
+export var GdpProfilesEnterprisePolicyValue;
+(function (GdpProfilesEnterprisePolicyValue) {
+    GdpProfilesEnterprisePolicyValue[GdpProfilesEnterprisePolicyValue["ENABLED"] = 0] = "ENABLED";
+    GdpProfilesEnterprisePolicyValue[GdpProfilesEnterprisePolicyValue["ENABLED_WITHOUT_BADGES"] = 1] = "ENABLED_WITHOUT_BADGES";
+    GdpProfilesEnterprisePolicyValue[GdpProfilesEnterprisePolicyValue["DISABLED"] = 2] = "DISABLED";
+})(GdpProfilesEnterprisePolicyValue || (GdpProfilesEnterprisePolicyValue = {}));
+/**
+ * The host configuration for this DevTools instance.
+ *
+ * This is initialized early during app startup and should not be modified
+ * afterwards. In some cases it can be necessary to re-request the host
+ * configuration from Chrome while DevTools is already running. In these
+ * cases, the new host configuration should be reflected here, e.g.:
+ *
+ * ```js
+ * const config = await new Promise<Root.Runtime.HostConfig>(
+ *   resolve => InspectorFrontendHostInstance.getHostConfig(resolve));
+ * Object.assign(Root.runtime.hostConfig, config);
+ * ```
+ */
+export const hostConfig = Object.create(null);
+export const conditions = {
+    canDock: () => Boolean(Runtime.queryParam('can_dock')),
+};
 //# sourceMappingURL=Runtime.js.map

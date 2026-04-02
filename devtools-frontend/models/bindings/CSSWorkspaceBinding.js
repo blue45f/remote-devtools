@@ -1,35 +1,36 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
+import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import { LiveLocationWithPool, } from './LiveLocation.js';
 import { SASSSourceMapping } from './SASSSourceMapping.js';
 import { StylesSourceMapping } from './StylesSourceMapping.js';
-let cssWorkspaceBindingInstance;
 export class CSSWorkspaceBinding {
     #resourceMapping;
     #modelToInfo;
     #liveLocationPromises;
     constructor(resourceMapping, targetManager) {
         this.#resourceMapping = resourceMapping;
+        this.#resourceMapping.cssWorkspaceBinding = this;
         this.#modelToInfo = new Map();
         targetManager.observeModels(SDK.CSSModel.CSSModel, this);
         this.#liveLocationPromises = new Set();
     }
     static instance(opts = { forceNew: null, resourceMapping: null, targetManager: null }) {
         const { forceNew, resourceMapping, targetManager } = opts;
-        if (!cssWorkspaceBindingInstance || forceNew) {
+        if (forceNew) {
             if (!resourceMapping || !targetManager) {
                 throw new Error(`Unable to create CSSWorkspaceBinding: resourceMapping and targetManager must be provided: ${new Error().stack}`);
             }
-            cssWorkspaceBindingInstance = new CSSWorkspaceBinding(resourceMapping, targetManager);
+            Root.DevToolsContext.globalInstance().set(CSSWorkspaceBinding, new CSSWorkspaceBinding(resourceMapping, targetManager));
         }
-        return cssWorkspaceBindingInstance;
+        return Root.DevToolsContext.globalInstance().get(CSSWorkspaceBinding);
     }
     static removeInstance() {
-        cssWorkspaceBindingInstance = undefined;
+        Root.DevToolsContext.globalInstance().delete(CSSWorkspaceBinding);
     }
     get modelToInfo() {
         return this.#modelToInfo;
@@ -38,7 +39,7 @@ export class CSSWorkspaceBinding {
         return this.#modelToInfo.get(cssModel);
     }
     modelAdded(cssModel) {
-        this.#modelToInfo.set(cssModel, new ModelInfo(cssModel, this.#resourceMapping));
+        this.#modelToInfo.set(cssModel, new ModelInfo(cssModel, this.#resourceMapping, this));
     }
     modelRemoved(cssModel) {
         this.getCSSModelInfo(cssModel).dispose();
@@ -109,7 +110,7 @@ export class ModelInfo {
     #sassSourceMapping;
     #locations;
     #unboundLocations;
-    constructor(cssModel, resourceMapping) {
+    constructor(cssModel, resourceMapping, cssWorkspaceBinding) {
         this.#eventListeners = [
             cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetAdded, event => {
                 void this.styleSheetAdded(event);
@@ -121,7 +122,8 @@ export class ModelInfo {
         this.#resourceMapping = resourceMapping;
         this.#stylesSourceMapping = new StylesSourceMapping(cssModel, resourceMapping.workspace);
         const sourceMapManager = cssModel.sourceMapManager();
-        this.#sassSourceMapping = new SASSSourceMapping(cssModel.target(), sourceMapManager, resourceMapping.workspace);
+        this.#sassSourceMapping =
+            new SASSSourceMapping(cssModel.target(), sourceMapManager, resourceMapping.workspace, cssWorkspaceBinding);
         this.#locations = new Platform.MapUtilities.Multimap();
         this.#unboundLocations = new Platform.MapUtilities.Multimap();
     }
@@ -182,6 +184,9 @@ export class ModelInfo {
         await Promise.all(promises);
         this.#locations.deleteAll(header);
     }
+    addSourceMap(sourceUrl, sourceMapUrl) {
+        this.#stylesSourceMapping.addSourceMap(sourceUrl, sourceMapUrl);
+    }
     rawLocationToUILocation(rawLocation) {
         let uiLocation = null;
         uiLocation = uiLocation || this.#sassSourceMapping.rawLocationToUILocation(rawLocation);
@@ -211,34 +216,31 @@ export class LiveLocation extends LiveLocationWithPool {
     #lineNumber;
     #columnNumber;
     #info;
-    headerInternal;
+    #header;
     constructor(rawLocation, info, updateDelegate, locationPool) {
         super(updateDelegate, locationPool);
         this.url = rawLocation.url;
         this.#lineNumber = rawLocation.lineNumber;
         this.#columnNumber = rawLocation.columnNumber;
         this.#info = info;
-        this.headerInternal = null;
+        this.#header = null;
     }
     header() {
-        return this.headerInternal;
+        return this.#header;
     }
     setHeader(header) {
-        this.headerInternal = header;
+        this.#header = header;
     }
     async uiLocation() {
-        if (!this.headerInternal) {
+        if (!this.#header) {
             return null;
         }
-        const rawLocation = new SDK.CSSModel.CSSLocation(this.headerInternal, this.#lineNumber, this.#columnNumber);
+        const rawLocation = new SDK.CSSModel.CSSLocation(this.#header, this.#lineNumber, this.#columnNumber);
         return CSSWorkspaceBinding.instance().rawLocationToUILocation(rawLocation);
     }
     dispose() {
         super.dispose();
         this.#info.disposeLocation(this);
-    }
-    async isIgnoreListed() {
-        return false;
     }
 }
 //# sourceMappingURL=CSSWorkspaceBinding.js.map

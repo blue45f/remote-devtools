@@ -22,7 +22,6 @@ export declare class ServiceWorkersView extends UI.Widget.VBox implements SDK.Ta
     private removeRegistrationFromList;
     private isRegistrationVisible;
     private updateListVisibility;
-    wasShown(): void;
 }
 export declare class Section {
     private manager;
@@ -32,29 +31,28 @@ export declare class Section {
     private readonly pushNotificationDataSetting;
     private readonly syncTagNameSetting;
     private readonly periodicSyncTagNameSetting;
-    private readonly toolbar;
     private readonly updateCycleView;
+    private readonly routerView;
     private readonly networkRequests;
     private readonly updateButton;
     private readonly deleteButton;
     private sourceField;
     private readonly statusField;
     private readonly clientsField;
-    private readonly linkifier;
     private readonly clientInfoCache;
     private readonly throttler;
     private updateCycleField?;
+    private routerField?;
     constructor(manager: SDK.ServiceWorkerManager.ServiceWorkerManager, section: UI.ReportView.Section, registration: SDK.ServiceWorkerManager.ServiceWorkerRegistration);
     private createSyncNotificationField;
     scheduleUpdate(): void;
-    private targetForVersionId;
     private addVersion;
     private updateClientsField;
     private updateSourceField;
     private update;
-    private createLink;
     private unregisterButtonClicked;
     private createUpdateCycleField;
+    private maybeCreateRouterField;
     private updateButtonClicked;
     private networkRequestsClicked;
     private push;
@@ -66,6 +64,5 @@ export declare class Section {
     private startButtonClicked;
     private skipButtonClicked;
     private stopButtonClicked;
-    private inspectButtonClicked;
     private wrapWidget;
 }

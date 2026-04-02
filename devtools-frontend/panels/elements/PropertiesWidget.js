@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -29,26 +29,21 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import { Directives, html, nothing, render } from '../../ui/lit/lit.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import propertiesWidgetStyles from './propertiesWidget.css.js';
-import { StylesSidebarPane } from './StylesSidebarPane.js';
 const OBJECT_GROUP_NAME = 'properties-sidebar-pane';
+const { bindToSetting } = UI.UIUtils;
+const { repeat } = Directives;
 const UIStrings = {
-    /**
-     * @description Placeholder text for a text input used to filter which DOM element properties show up in
-     * the Properties tab of the Elements panel.
-     */
-    filter: 'Filter',
-    /**
-     * @description ARIA accessible name for the text input used to filter which DOM element properties show up
-     * in the Properties tab of the Elements panel.
-     */
-    filterProperties: 'Filter Properties',
     /**
      * @description Text on the checkbox in the Properties tab of the Elements panel, which controls whether
      * all properties of the currently selected DOM element are shown, or only meaningful properties (i.e.
@@ -69,110 +64,151 @@ const UIStrings = {
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/PropertiesWidget.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-let propertiesWidgetInstance;
-export class PropertiesWidget extends UI.ThrottledWidget.ThrottledWidget {
-    node;
+export const DEFAULT_VIEW = (input, _output, target) => {
+    // clang-format off
+    render(html `
+    <div jslog=${VisualLogging.pane('element-properties').track({ resize: true })}>
+      <div class="hbox properties-widget-toolbar">
+        <devtools-toolbar class="styles-pane-toolbar" role="presentation">
+          <devtools-toolbar-input
+            type="filter"
+            ?regex=${true}
+            @change=${input.onFilterChanged}
+            @regextoggle=${input.onRegexToggled}
+            style="flex-grow:1; flex-shrink:1"
+          ></devtools-toolbar-input>
+          <devtools-checkbox title=${i18nString(UIStrings.showAllTooltip)} ${bindToSetting(getShowAllPropertiesSetting())}>
+            ${i18nString(UIStrings.showAll)}
+          </devtools-checkbox>
+        </devtools-toolbar>
+      </div>
+      ${input.objectTree && input.allChildrenFiltered ? html `
+        <div class="gray-info-message">${i18nString(UIStrings.noMatchingProperty)}</div>
+      ` : nothing}
+      <devtools-tree .template=${html `
+        <ul role=tree class="source-code object-properties-section">
+          <style>${ObjectUI.ObjectPropertiesSection.objectValueStyles}</style>;
+          <style>${ObjectUI.ObjectPropertiesSection.objectPropertiesSectionStyles}</style>;
+          ${repeat(ObjectUI.ObjectPropertiesSection.ObjectPropertyTreeElement.createPropertyNodes(input.objectTree?.children ?? {}, true /* skipProto */, true /* skipGettersAndSetters */), node => html `<devtools-tree-wrapper .treeElement=${node}></devtools-tree-wrapper>`)}
+        </ul>
+      `}></devtools-tree>
+    </div>`, target);
+    // clang-format on
+};
+const getShowAllPropertiesSetting = () => Common.Settings.Settings.instance().createSetting('show-all-properties', /* defaultValue */ false);
+export class PropertiesWidget extends UI.Widget.VBox {
     showAllPropertiesSetting;
     filterRegex = null;
-    noMatchesElement;
     treeOutline;
-    expandController;
-    lastRequestedNode;
-    constructor(throttlingTimeout) {
-        super(true /* isWebComponent */, throttlingTimeout);
-        this.showAllPropertiesSetting = Common.Settings.Settings.instance().createSetting('showAllProperties', false);
-        this.showAllPropertiesSetting.addChangeListener(this.filterList.bind(this));
+    #lastRequestedNode = null;
+    #view;
+    #pendingNodeUpdate = true;
+    #objectTree = null;
+    #isRegex = false;
+    #filterText = '';
+    constructor(view = DEFAULT_VIEW) {
+        super({ useShadowDom: true });
+        this.registerRequiredCSS(propertiesWidgetStyles);
+        this.showAllPropertiesSetting = getShowAllPropertiesSetting();
+        this.showAllPropertiesSetting.addChangeListener(this.onFilterChanged.bind(this));
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.AttrModified, this.onNodeChange, this, { scoped: true });
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.AttrRemoved, this.onNodeChange, this, { scoped: true });
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.CharacterDataModified, this.onNodeChange, this, { scoped: true });
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.DOMModel.DOMModel, SDK.DOMModel.Events.ChildNodeCountUpdated, this.onNodeChange, this, { scoped: true });
         UI.Context.Context.instance().addFlavorChangeListener(SDK.DOMModel.DOMNode, this.setNode, this);
-        this.node = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
-        const hbox = this.contentElement.createChild('div', 'hbox properties-widget-toolbar');
-        const filterContainerElement = hbox.createChild('div', 'properties-widget-filter-box');
-        const filterInput = StylesSidebarPane.createPropertyFilterElement(i18nString(UIStrings.filter), hbox, this.filterProperties.bind(this));
-        UI.ARIAUtils.setLabel(filterInput, i18nString(UIStrings.filterProperties));
-        filterContainerElement.appendChild(filterInput);
-        const toolbar = new UI.Toolbar.Toolbar('styles-pane-toolbar', hbox);
-        toolbar.appendToolbarItem(new UI.Toolbar.ToolbarSettingCheckbox(this.showAllPropertiesSetting, i18nString(UIStrings.showAllTooltip), i18nString(UIStrings.showAll)));
-        this.noMatchesElement = this.contentElement.createChild('div', 'gray-info-message hidden');
-        this.noMatchesElement.textContent = i18nString(UIStrings.noMatchingProperty);
-        this.treeOutline = new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline({ readOnly: true });
+        this.#view = view;
+        this.treeOutline = new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline();
         this.treeOutline.setShowSelectionOnKeyboardFocus(/* show */ true, /* preventTabOrder */ false);
-        this.expandController =
-            new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController(this.treeOutline);
-        this.contentElement.appendChild(this.treeOutline.element);
         this.treeOutline.addEventListener(UI.TreeOutline.Events.ElementExpanded, () => {
             Host.userMetrics.actionTaken(Host.UserMetrics.Action.DOMPropertiesExpanded);
         });
-        this.update();
+        this.requestUpdate();
     }
-    static instance(opts) {
-        if (!propertiesWidgetInstance || opts?.forceNew) {
-            propertiesWidgetInstance = new PropertiesWidget(opts?.throttlingTimeout);
+    #buildFilterRegex(text) {
+        if (!text) {
+            return null;
         }
-        return propertiesWidgetInstance;
-    }
-    filterProperties(regex) {
-        this.filterRegex = regex;
-        this.filterList();
-    }
-    filterList() {
-        let noMatches = true;
-        for (const element of this.treeOutline.rootElement().children()) {
-            const { property } = element;
-            const hidden = !property?.match({
-                includeNullOrUndefinedValues: this.showAllPropertiesSetting.get(),
-                regex: this.filterRegex,
-            });
-            if (!hidden) {
-                noMatches = false;
+        if (this.#isRegex) {
+            try {
+                return new RegExp(text, 'i');
             }
-            element.hidden = hidden;
+            catch {
+                // Invalid regex: fall through to plain-text matching.
+            }
         }
-        this.noMatchesElement.classList.toggle('hidden', !noMatches);
+        return new RegExp(Platform.StringUtilities.escapeForRegExp(text), 'i');
     }
-    setNode(event) {
-        this.node = event.data;
-        this.update();
-    }
-    async doUpdate() {
-        if (this.lastRequestedNode) {
-            this.lastRequestedNode.domModel().runtimeModel().releaseObjectGroup(OBJECT_GROUP_NAME);
-            delete this.lastRequestedNode;
+    onFilterChanged(event) {
+        if ('detail' in event) {
+            this.#filterText = event.detail;
+            this.filterRegex = this.#buildFilterRegex(event.detail);
         }
-        if (!this.node) {
-            this.treeOutline.removeChildren();
+        this.#updateFilter();
+        this.requestUpdate();
+    }
+    onRegexToggled() {
+        this.#isRegex = !this.#isRegex;
+        this.filterRegex = this.#buildFilterRegex(this.#filterText);
+        this.#updateFilter();
+        this.requestUpdate();
+    }
+    #updateFilter() {
+        this.#objectTree?.setFilter({
+            includeNullOrUndefinedValues: this.showAllPropertiesSetting.get(),
+            regex: this.filterRegex,
+        });
+    }
+    setNode() {
+        this.#pendingNodeUpdate = true;
+        this.requestUpdate();
+    }
+    async #updateNodeIfRequired() {
+        if (!this.#pendingNodeUpdate) {
             return;
         }
-        this.lastRequestedNode = this.node;
-        const object = await this.node.resolveToObject(OBJECT_GROUP_NAME);
+        this.#pendingNodeUpdate = false;
+        this.#lastRequestedNode?.domModel().runtimeModel().releaseObjectGroup(OBJECT_GROUP_NAME);
+        this.#lastRequestedNode = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
+        if (!this.#lastRequestedNode) {
+            this.#objectTree = null;
+            return;
+        }
+        const object = await this.#lastRequestedNode.resolveToObject(OBJECT_GROUP_NAME);
         if (!object) {
             return;
         }
-        const treeElement = this.treeOutline.rootElement();
-        let { properties } = await SDK.RemoteObject.RemoteObject.loadFromObjectPerProto(object, true /* generatePreview */);
-        treeElement.removeChildren();
-        if (properties === null) {
-            properties = [];
-        }
-        ObjectUI.ObjectPropertiesSection.ObjectPropertyTreeElement.populateWithProperties(treeElement, properties, null, true /* skipProto */, true /* skipGettersAndSetters */, object);
-        this.filterList();
+        this.#objectTree = new ObjectUI.ObjectPropertiesSection.ObjectTree(object, {
+            propertiesMode: 1 /* ObjectUI.ObjectPropertiesSection.ObjectPropertiesMode.OWN_AND_INTERNAL_AND_INHERITED */,
+            readOnly: true,
+        });
+        this.#updateFilter();
+    }
+    async performUpdate() {
+        await this.#updateNodeIfRequired();
+        await this.#objectTree?.populateChildrenIfNeeded();
+        const allChildrenFiltered = !(this.#objectTree?.children?.accessors?.some(c => !c.isFiltered) ||
+            this.#objectTree?.children?.arrayRanges?.some(() => true) ||
+            this.#objectTree?.children?.internalProperties?.some(c => !c.isFiltered) ||
+            this.#objectTree?.children?.properties?.some(c => !c.isFiltered));
+        this.#view({
+            onFilterChanged: this.onFilterChanged.bind(this),
+            onRegexToggled: this.onRegexToggled.bind(this),
+            isRegex: this.#isRegex,
+            allChildrenFiltered,
+            objectTree: this.#objectTree,
+        }, {}, this.contentElement);
     }
     onNodeChange(event) {
-        if (!this.node) {
+        if (!this.#lastRequestedNode) {
             return;
         }
         const data = event.data;
         const node = (data instanceof SDK.DOMModel.DOMNode ? data : data.node);
-        if (this.node !== node) {
+        if (this.#lastRequestedNode !== node) {
             return;
         }
-        this.update();
-    }
-    wasShown() {
-        super.wasShown();
-        this.registerCSSFiles([propertiesWidgetStyles]);
+        this.#pendingNodeUpdate = true;
+        this.requestUpdate();
     }
 }
 //# sourceMappingURL=PropertiesWidget.js.map

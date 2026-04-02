@@ -13,7 +13,7 @@ export declare class KeyboardShortcut {
     equals(shortcut: KeyboardShortcut): boolean;
     static createShortcutFromSettingObject(settingObject: {
         action: string;
-        descriptors: Array<Descriptor>;
+        descriptors: Descriptor[];
         type: Type;
     }): KeyboardShortcut;
     /**
@@ -22,10 +22,10 @@ export declare class KeyboardShortcut {
      */
     static makeKey(keyCode: string | number, modifiers?: number): number;
     static makeKeyFromEvent(keyboardEvent: KeyboardEvent): number;
-    static makeKeyFromEventIgnoringModifiers(keyboardEvent: KeyboardEvent): number;
     static eventHasCtrlEquivalentKey(event: KeyboardEvent | MouseEvent): boolean;
     static eventHasEitherCtrlOrMeta(event: KeyboardEvent | MouseEvent): boolean;
     static hasNoModifiers(event: Event): boolean;
+    static hasAtLeastOneModifier(event: Event): boolean;
     static makeDescriptor(key: string | Key, modifiers?: number): Descriptor;
     static makeDescriptorFromBindingShortcut(shortcut: string): Descriptor;
     static shortcutToString(key: string | Key, modifiers?: number): string;
@@ -37,32 +37,30 @@ export declare class KeyboardShortcut {
     };
     static isModifier(key: number): boolean;
     private static modifiersToString;
+    static keyCodeToKey(keyCode: number): Key | undefined;
+    static modifierValueToModifier(modifierValue: number): Modifier | undefined;
+}
+export interface Modifier {
+    value: number;
+    name: string;
 }
 /**
  * Constants for encoding modifier key set as a bit mask.
  * see #makeKeyFromCodeAndModifiers
  */
-export declare const Modifiers: {
-    [x: string]: number;
-};
-export declare const Keys: {
-    [x: string]: Key;
-};
-export declare enum Type {
-    UserShortcut = "UserShortcut",
-    DefaultShortcut = "DefaultShortcut",
-    DisabledDefault = "DisabledDefault",
-    UnsetShortcut = "UnsetShortcut",
-    KeybindSetShortcut = "KeybindSetShortcut"
+export declare const Modifiers: Record<string, Modifier>;
+export declare const Keys: Record<string, Key>;
+export declare const enum Type {
+    USER_SHORTCUT = "UserShortcut",
+    DEFAULT_SHORTCUT = "DefaultShortcut",
+    DISABLED_DEFAULT = "DisabledDefault",
+    UNSET_SHORTCUT = "UnsetShortcut",
+    KEYBIND_SET_SHORTCUT = "KeybindSetShortcut"
 }
-export declare const KeyBindings: {
-    [x: string]: Key;
-};
+export declare const KeyBindings: Record<string, Key>;
 export interface Key {
     code: number;
-    name: string | {
-        [x: string]: string;
-    };
+    name: string | Record<string, string>;
     shiftKey?: boolean;
 }
 export interface Descriptor {

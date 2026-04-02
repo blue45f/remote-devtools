@@ -1,6 +1,7 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 /*
  * Copyright (C) 2011 Google Inc.  All rights reserved.
  * Copyright (C) 2006, 2007, 2008 Apple Inc.  All rights reserved.
@@ -31,86 +32,86 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import './Toolbar.js';
+import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as TextUtils from '../../models/text_utils/text_utils.js';
-import * as IconButton from '../components/icon_button/icon_button.js';
+import * as Geometry from '../../models/geometry/geometry.js';
+import * as Buttons from '../components/buttons/buttons.js';
+import { Icon } from '../kit/kit.js';
+import * as Lit from '../lit/lit.js';
+import * as VisualLogging from '../visual_logging/visual_logging.js';
+import { ActionRegistry } from './ActionRegistry.js';
 import * as ARIAUtils from './ARIAUtils.js';
+import checkboxTextLabelStyles from './checkboxTextLabel.css.js';
+import confirmDialogStyles from './confirmDialog.css.js';
 import { Dialog } from './Dialog.js';
-import { Size } from './Geometry.js';
+import { appendStyle, deepActiveElement, rangeOfWord } from './DOMUtilities.js';
 import { GlassPane } from './GlassPane.js';
-import { Icon } from './Icon.js';
-import { KeyboardShortcut } from './KeyboardShortcut.js';
-import * as Utils from './utils/utils.js';
-import { Toolbar } from './Toolbar.js';
+import inspectorCommonStyles from './inspectorCommon.css.js';
+import { InspectorView } from './InspectorView.js';
+import { KeyboardShortcut, Keys } from './KeyboardShortcut.js';
+import smallBubbleStyles from './smallBubble.css.js';
 import { Tooltip } from './Tooltip.js';
-import checkboxTextLabelStyles from './checkboxTextLabel.css.legacy.js';
-import closeButtonStyles from './closeButton.css.legacy.js';
-import confirmDialogStyles from './confirmDialog.css.legacy.js';
-import inlineButtonStyles from './inlineButton.css.legacy.js';
-import radioButtonStyles from './radioButton.css.legacy.js';
-import sliderStyles from './slider.css.legacy.js';
-import smallBubbleStyles from './smallBubble.css.legacy.js';
+import { Widget } from './Widget.js';
+const { Directives, render } = Lit;
 const UIStrings = {
     /**
-     *@description label to open link externally
+     * @description label to open link externally
      */
     openInNewTab: 'Open in new tab',
     /**
-     *@description label to copy link address
+     * @description label to copy link address
      */
     copyLinkAddress: 'Copy link address',
     /**
-     *@description label to copy file name
+     * @description label to copy file name
      */
     copyFileName: 'Copy file name',
     /**
-     *@description label for the profiler control button
+     * @description label for the profiler control button
      */
     anotherProfilerIsAlreadyActive: 'Another profiler is already active',
     /**
-     *@description Text in UIUtils
+     * @description Text in UIUtils
      */
     promiseResolvedAsync: 'Promise resolved (async)',
     /**
-     *@description Text in UIUtils
+     * @description Text in UIUtils
      */
     promiseRejectedAsync: 'Promise rejected (async)',
     /**
-     *@description Text in UIUtils
-     *@example {Promise} PH1
-     */
-    sAsync: '{PH1} (async)',
-    /**
-     *@description Text for the title of asynchronous function calls group in Call Stack
+     * @description Text for the title of asynchronous function calls group in Call Stack
      */
     asyncCall: 'Async Call',
     /**
-     *@description Text for the name of anonymous functions
+     * @description Text for the name of anonymous functions
      */
     anonymous: '(anonymous)',
     /**
-     *@description Text to close something
+     * @description Text to close something
      */
     close: 'Close',
     /**
-     *@description Text on a button for message dialog
+     * @description Text on a button for message dialog
      */
     ok: 'OK',
     /**
-     *@description Text to cancel something
+     * @description Text to cancel something
      */
     cancel: 'Cancel',
+    /**
+     * @description Text for the new badge appearing next to some menu items
+     */
+    new: 'NEW',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/UIUtils.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-export const highlightedSearchResultClassName = 'highlighted-search-result';
-export const highlightedCurrentSearchResultClassName = 'current-search-result';
-export function installDragHandle(element, elementDragStart, elementDrag, elementDragEnd, cursor, hoverCursor, startDelay) {
+export function installDragHandle(element, elementDragStart, elementDrag, elementDragEnd, cursor, hoverCursor, startDelay, mouseDownPreventDefault = true) {
     function onMouseDown(event) {
         const dragHandler = new DragHandler();
-        const dragStart = () => dragHandler.elementDragStart(element, elementDragStart, elementDrag, elementDragEnd, cursor, event);
+        const dragStart = () => dragHandler.elementDragStart(element, elementDragStart, elementDrag, elementDragEnd, cursor, event, mouseDownPreventDefault);
         if (startDelay) {
             startTimer = window.setTimeout(dragStart, startDelay);
         }
@@ -153,7 +154,7 @@ class DragHandler {
         this.glassPaneInUse = true;
         if (!DragHandler.glassPaneUsageCount++) {
             DragHandler.glassPane = new GlassPane();
-            DragHandler.glassPane.setPointerEventsBehavior("BlockedByGlassPane" /* PointerEventsBehavior.BlockedByGlassPane */);
+            DragHandler.glassPane.setPointerEventsBehavior("BlockedByGlassPane" /* PointerEventsBehavior.BLOCKED_BY_GLASS_PANE */);
             if (DragHandler.documentForMouseOut) {
                 DragHandler.glassPane.show(DragHandler.documentForMouseOut);
             }
@@ -174,7 +175,7 @@ class DragHandler {
         DragHandler.documentForMouseOut = null;
         DragHandler.rootForMouseOut = null;
     }
-    elementDragStart(targetElement, elementDragStart, elementDrag, elementDragEnd, cursor, ev) {
+    elementDragStart(targetElement, elementDragStart, elementDrag, elementDragEnd, cursor, ev, preventDefault = true) {
         const event = ev;
         // Only drag upon left button. Right will likely cause a context menu. So will ctrl-click on mac.
         if (event.button || (Host.Platform.isMac() && event.ctrlKey)) {
@@ -183,7 +184,7 @@ class DragHandler {
         if (this.elementDraggingEventListener) {
             return;
         }
-        if (elementDragStart && !elementDragStart(event)) {
+        if (elementDragStart && !elementDragStart((event))) {
             return;
         }
         const targetDocument = (event.target instanceof Node && event.target.ownerDocument);
@@ -198,13 +199,12 @@ class DragHandler {
                 this.dragEventsTargetDocumentTop = targetDocument.defaultView.top.document;
             }
         }
-        catch (e) {
+        catch {
             this.dragEventsTargetDocumentTop = this.dragEventsTargetDocument;
         }
         targetDocument.addEventListener('pointermove', this.elementDragMove, true);
         targetDocument.addEventListener('pointerup', this.elementDragEnd, true);
-        DragHandler.rootForMouseOut &&
-            DragHandler.rootForMouseOut.addEventListener('pointerout', this.mouseOutWhileDragging, { capture: true });
+        DragHandler.rootForMouseOut?.addEventListener('pointerout', this.mouseOutWhileDragging, { capture: true });
         if (this.dragEventsTargetDocumentTop && targetDocument !== this.dragEventsTargetDocumentTop) {
             this.dragEventsTargetDocumentTop.addEventListener('pointerup', this.elementDragEnd, true);
         }
@@ -219,7 +219,9 @@ class DragHandler {
             targetHtmlElement.style.cursor = oldCursor;
             this.restoreCursorAfterDrag = undefined;
         }
-        event.preventDefault();
+        if (preventDefault) {
+            event.preventDefault();
+        }
     }
     mouseOutWhileDragging() {
         this.unregisterMouseOutWhileDragging();
@@ -248,7 +250,7 @@ class DragHandler {
             this.elementDragEnd(event);
             return;
         }
-        if (this.elementDraggingEventListener && this.elementDraggingEventListener(event)) {
+        if (this.elementDraggingEventListener?.(event)) {
             this.cancelDragEvents(event);
         }
     }
@@ -299,7 +301,7 @@ export function isEditing() {
     if (elementsBeingEdited.size) {
         return true;
     }
-    const focused = Platform.DOMUtilities.deepActiveElement(document);
+    const focused = deepActiveElement(document);
     if (!focused) {
         return false;
     }
@@ -330,22 +332,28 @@ const numberRegex = /^(-?(?:\d+(?:\.\d+)?|\.\d+))$/;
 export const StyleValueDelimiters = ' \xA0\t\n"\':;,/()';
 export function getValueModificationDirection(event) {
     let direction = null;
-    if (event.type === 'wheel') {
+    if (event instanceof WheelEvent) {
         // When shift is pressed while spinning mousewheel, delta comes as wheelDeltaX.
-        const wheelEvent = event;
-        if (wheelEvent.deltaY < 0 || wheelEvent.deltaX < 0) {
+        if (event.deltaY < 0 || event.deltaX < 0) {
             direction = 'Up';
         }
-        else if (wheelEvent.deltaY > 0 || wheelEvent.deltaX > 0) {
+        else if (event.deltaY > 0 || event.deltaX > 0) {
             direction = 'Down';
         }
     }
-    else {
-        const keyEvent = event;
-        if (keyEvent.key === 'ArrowUp' || keyEvent.key === 'PageUp') {
+    else if (event instanceof MouseEvent) {
+        if (event.movementX < 0) {
+            direction = 'Down';
+        }
+        else if (event.movementX > 0) {
             direction = 'Up';
         }
-        else if (keyEvent.key === 'ArrowDown' || keyEvent.key === 'PageDown') {
+    }
+    else if (event instanceof KeyboardEvent) {
+        if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+            direction = 'Up';
+        }
+        else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
             direction = 'Down';
         }
     }
@@ -399,7 +407,7 @@ function modifiedHexValue(hexString, event) {
     }
     return resultString;
 }
-export function modifiedFloatNumber(number, event, modifierMultiplier) {
+export function modifiedFloatNumber(number, event, modifierMultiplier, range) {
     const direction = getValueModificationDirection(event);
     if (!direction) {
         return null;
@@ -410,15 +418,15 @@ export function modifiedFloatNumber(number, event, modifierMultiplier) {
     // When shift is pressed, increase by 10.
     // When alt is pressed, increase by 0.1.
     // Otherwise increase by 1.
-    let delta = 1;
+    let delta = mouseEvent.type === 'mousemove' ? Math.abs(mouseEvent.movementX) : 1;
     if (KeyboardShortcut.eventHasCtrlEquivalentKey(mouseEvent)) {
-        delta = 100;
+        delta *= 100;
     }
     else if (mouseEvent.shiftKey) {
-        delta = 10;
+        delta *= 10;
     }
     else if (mouseEvent.altKey) {
-        delta = 0.1;
+        delta *= 0.1;
     }
     if (direction === 'Down') {
         delta *= -1;
@@ -428,19 +436,25 @@ export function modifiedFloatNumber(number, event, modifierMultiplier) {
     }
     // Make the new number and constrain it to a precision of 6, this matches numbers the engine returns.
     // Use the Number constructor to forget the fixed precision, so 1.100000 will print as 1.1.
-    const result = Number((number + delta).toFixed(6));
+    let result = Number((number + delta).toFixed(6));
+    if (range?.min !== undefined) {
+        result = Math.max(result, range.min);
+    }
+    if (range?.max !== undefined) {
+        result = Math.min(result, range.max);
+    }
     if (!String(result).match(numberRegex)) {
         return null;
     }
     return result;
 }
-export function createReplacementString(wordString, event, customNumberHandler) {
+export function createReplacementString(wordString, event, customNumberHandler, stepping) {
     let prefix;
     let suffix;
     let number;
     let replacementString = null;
     let matches = /(.*#)([\da-fA-F]+)(.*)/.exec(wordString);
-    if (matches && matches.length) {
+    if (matches?.length) {
         prefix = matches[1];
         suffix = matches[3];
         number = modifiedHexValue(matches[2], event);
@@ -450,10 +464,10 @@ export function createReplacementString(wordString, event, customNumberHandler) 
     }
     else {
         matches = /(.*?)(-?(?:\d+(?:\.\d+)?|\.\d+))(.*)/.exec(wordString);
-        if (matches && matches.length) {
+        if (matches?.length) {
             prefix = matches[1];
             suffix = matches[3];
-            number = modifiedFloatNumber(parseFloat(matches[2]), event);
+            number = modifiedFloatNumber(parseFloat(matches[2]), event, stepping?.step, stepping?.range);
             if (number !== null) {
                 replacementString =
                     customNumberHandler ? customNumberHandler(prefix, number, suffix) : prefix + number + suffix;
@@ -462,15 +476,24 @@ export function createReplacementString(wordString, event, customNumberHandler) 
     }
     return replacementString;
 }
+export function isElementValueModification(event) {
+    if (event instanceof MouseEvent) {
+        const { type } = event;
+        return type === 'mousemove' || type === 'wheel';
+    }
+    if (event instanceof KeyboardEvent) {
+        const { key } = event;
+        return key === 'ArrowUp' || key === 'ArrowDown' || key === 'PageUp' || key === 'PageDown';
+    }
+    return false;
+}
 export function handleElementValueModifications(event, element, finishHandler, suggestionHandler, customNumberHandler) {
-    const arrowKeyOrWheelEvent = (event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
-        event.type === 'wheel');
-    const pageKeyPressed = (event.key === 'PageUp' || event.key === 'PageDown');
-    if (!arrowKeyOrWheelEvent && !pageKeyPressed) {
+    if (!isElementValueModification(event)) {
         return false;
     }
+    void VisualLogging.logKeyDown(event.currentTarget, event, 'element-value-modification');
     const selection = element.getComponentSelection();
-    if (!selection || !selection.rangeCount) {
+    if (!selection?.rangeCount) {
         return false;
     }
     const selectionRange = selection.getRangeAt(0);
@@ -478,9 +501,9 @@ export function handleElementValueModifications(event, element, finishHandler, s
         return false;
     }
     const originalValue = element.textContent;
-    const wordRange = Platform.DOMUtilities.rangeOfWord(selectionRange.startContainer, selectionRange.startOffset, StyleValueDelimiters, element);
+    const wordRange = rangeOfWord(selectionRange.startContainer, selectionRange.startOffset, StyleValueDelimiters, element);
     const wordString = wordRange.toString();
-    if (suggestionHandler && suggestionHandler(wordString)) {
+    if (suggestionHandler?.(wordString)) {
         return false;
     }
     const replacementString = createReplacementString(wordString, event, customNumberHandler);
@@ -514,30 +537,43 @@ export function copyFileNameLabel() {
 export function anotherProfilerActiveLabel() {
     return i18nString(UIStrings.anotherProfilerIsAlreadyActive);
 }
-export function asyncStackTraceLabel(description, previousCallFrames) {
-    if (description) {
-        if (description === 'Promise.resolve') {
-            return i18nString(UIStrings.promiseResolvedAsync);
-        }
-        if (description === 'Promise.reject') {
-            return i18nString(UIStrings.promiseRejectedAsync);
-        }
-        // TODO(crbug.com/1254259): Remove the check for 'async function'
-        // once the relevant V8 inspector CL rolls into Node LTS.
-        if ((description === 'await' || description === 'async function') && previousCallFrames.length !== 0) {
-            const lastPreviousFrame = previousCallFrames[previousCallFrames.length - 1];
-            const lastPreviousFrameName = beautifyFunctionName(lastPreviousFrame.functionName);
-            description = `await in ${lastPreviousFrameName}`;
-        }
-        return i18nString(UIStrings.sAsync, { PH1: description });
+export function asyncFragmentLabel(stackTrace, asyncFragment) {
+    const description = asyncFragment.description;
+    if (!description) {
+        return i18nString(UIStrings.asyncCall);
     }
-    return i18nString(UIStrings.asyncCall);
+    if (description === 'Promise.resolve') {
+        return i18nString(UIStrings.promiseResolvedAsync);
+    }
+    if (description === 'Promise.reject') {
+        return i18nString(UIStrings.promiseRejectedAsync);
+    }
+    if (description === 'await') {
+        const asyncFragments = stackTrace.asyncFragments;
+        const index = asyncFragments.indexOf(asyncFragment);
+        let previousFragment;
+        if (index === 0) {
+            previousFragment = stackTrace.syncFragment;
+        }
+        else if (index > 0) {
+            previousFragment = asyncFragments[index - 1];
+        }
+        const lastPreviousFrame = previousFragment?.frames.at(-1);
+        if (lastPreviousFrame) {
+            const lastPreviousFrameName = beautifyFunctionName(lastPreviousFrame.name || '');
+            return `await in ${lastPreviousFrameName}`;
+        }
+    }
+    return description;
+}
+export function addPlatformClass(element) {
+    element.classList.add('platform-' + Host.Platform.platform());
 }
 export function installComponentRootStyles(element) {
-    Utils.injectCoreStyles(element);
-    element.classList.add('platform-' + Host.Platform.platform());
+    appendStyle(element, inspectorCommonStyles);
+    appendStyle(element, Buttons.textButtonStyles);
     // Detect overlay scrollbar enable by checking for nonzero scrollbar width.
-    if (!Host.Platform.isMac() && Utils.measuredScrollbarWidth(element.ownerDocument) === 0) {
+    if (!Host.Platform.isMac() && measuredScrollbarWidth(element.ownerDocument) === 0) {
         element.classList.add('overlay-scrollbar-enabled');
     }
 }
@@ -556,7 +592,7 @@ export class ElementFocusRestorer {
     previous;
     constructor(element) {
         this.element = element;
-        this.previous = Platform.DOMUtilities.deepActiveElement(element.ownerDocument);
+        this.previous = deepActiveElement(element.ownerDocument);
         element.focus();
     }
     restore() {
@@ -570,166 +606,36 @@ export class ElementFocusRestorer {
         this.element = null;
     }
 }
-export function highlightSearchResult(element, offset, length, domChanges) {
-    const result = highlightSearchResults(element, [new TextUtils.TextRange.SourceRange(offset, length)], domChanges);
-    return result.length ? result[0] : null;
-}
-export function highlightSearchResults(element, resultRanges, changes) {
-    return highlightRangesWithStyleClass(element, resultRanges, highlightedSearchResultClassName, changes);
-}
 export function runCSSAnimationOnce(element, className) {
     function animationEndCallback() {
         element.classList.remove(className);
-        element.removeEventListener('webkitAnimationEnd', animationEndCallback, false);
+        element.removeEventListener('animationend', animationEndCallback, false);
+        element.removeEventListener('animationcancel', animationEndCallback, false);
     }
-    if (element.classList.contains(className)) {
-        element.classList.remove(className);
-    }
-    element.addEventListener('webkitAnimationEnd', animationEndCallback, false);
+    // Remove class if it exists.
+    element.classList.toggle(className, /* force=*/ false);
+    element.addEventListener('animationend', animationEndCallback, false);
+    element.addEventListener('animationcancel', animationEndCallback, false);
     element.classList.add(className);
 }
-export function highlightRangesWithStyleClass(element, resultRanges, styleClass, changes) {
-    changes = changes || [];
-    const highlightNodes = [];
-    const textNodes = element.childTextNodes();
-    const lineText = textNodes
-        .map(function (node) {
-        return node.textContent;
-    })
-        .join('');
-    const ownerDocument = element.ownerDocument;
-    if (textNodes.length === 0) {
-        return highlightNodes;
+class AnimateOnDirective extends Lit.Directive.Directive {
+    #previousValue = false;
+    render(_condition, _className) {
+        return undefined; // Directives don't have to render HTML
     }
-    const nodeRanges = [];
-    let rangeEndOffset = 0;
-    for (const textNode of textNodes) {
-        const range = new TextUtils.TextRange.SourceRange(rangeEndOffset, textNode.textContent ? textNode.textContent.length : 0);
-        rangeEndOffset = range.offset + range.length;
-        nodeRanges.push(range);
+    update(part, [condition, className]) {
+        const el = part.element;
+        // Only trigger if the condition transitioned from false -> true
+        if (condition && !this.#previousValue) {
+            this.#animate(el, className);
+        }
+        this.#previousValue = condition;
     }
-    let startIndex = 0;
-    for (let i = 0; i < resultRanges.length; ++i) {
-        const startOffset = resultRanges[i].offset;
-        const endOffset = startOffset + resultRanges[i].length;
-        while (startIndex < textNodes.length &&
-            nodeRanges[startIndex].offset + nodeRanges[startIndex].length <= startOffset) {
-            startIndex++;
-        }
-        let endIndex = startIndex;
-        while (endIndex < textNodes.length && nodeRanges[endIndex].offset + nodeRanges[endIndex].length < endOffset) {
-            endIndex++;
-        }
-        if (endIndex === textNodes.length) {
-            break;
-        }
-        const highlightNode = ownerDocument.createElement('span');
-        highlightNode.className = styleClass;
-        highlightNode.textContent = lineText.substring(startOffset, endOffset);
-        const lastTextNode = textNodes[endIndex];
-        const lastText = lastTextNode.textContent || '';
-        lastTextNode.textContent = lastText.substring(endOffset - nodeRanges[endIndex].offset);
-        changes.push({
-            node: lastTextNode,
-            type: 'changed',
-            oldText: lastText,
-            newText: lastTextNode.textContent,
-            nextSibling: undefined,
-            parent: undefined,
-        });
-        if (startIndex === endIndex && lastTextNode.parentElement) {
-            lastTextNode.parentElement.insertBefore(highlightNode, lastTextNode);
-            changes.push({
-                node: highlightNode,
-                type: 'added',
-                nextSibling: lastTextNode,
-                parent: lastTextNode.parentElement,
-                oldText: undefined,
-                newText: undefined,
-            });
-            highlightNodes.push(highlightNode);
-            const prefixNode = ownerDocument.createTextNode(lastText.substring(0, startOffset - nodeRanges[startIndex].offset));
-            lastTextNode.parentElement.insertBefore(prefixNode, highlightNode);
-            changes.push({
-                node: prefixNode,
-                type: 'added',
-                nextSibling: highlightNode,
-                parent: lastTextNode.parentElement,
-                oldText: undefined,
-                newText: undefined,
-            });
-        }
-        else {
-            const firstTextNode = textNodes[startIndex];
-            const firstText = firstTextNode.textContent || '';
-            const anchorElement = firstTextNode.nextSibling;
-            if (firstTextNode.parentElement) {
-                firstTextNode.parentElement.insertBefore(highlightNode, anchorElement);
-                changes.push({
-                    node: highlightNode,
-                    type: 'added',
-                    nextSibling: anchorElement || undefined,
-                    parent: firstTextNode.parentElement,
-                    oldText: undefined,
-                    newText: undefined,
-                });
-                highlightNodes.push(highlightNode);
-            }
-            firstTextNode.textContent = firstText.substring(0, startOffset - nodeRanges[startIndex].offset);
-            changes.push({
-                node: firstTextNode,
-                type: 'changed',
-                oldText: firstText,
-                newText: firstTextNode.textContent,
-                nextSibling: undefined,
-                parent: undefined,
-            });
-            for (let j = startIndex + 1; j < endIndex; j++) {
-                const textNode = textNodes[j];
-                const text = textNode.textContent;
-                textNode.textContent = '';
-                changes.push({
-                    node: textNode,
-                    type: 'changed',
-                    oldText: text || undefined,
-                    newText: textNode.textContent,
-                    nextSibling: undefined,
-                    parent: undefined,
-                });
-            }
-        }
-        startIndex = endIndex;
-        nodeRanges[startIndex].offset = endOffset;
-        nodeRanges[startIndex].length = lastTextNode.textContent.length;
-    }
-    return highlightNodes;
-}
-export function applyDomChanges(domChanges) {
-    for (let i = 0, size = domChanges.length; i < size; ++i) {
-        const entry = domChanges[i];
-        switch (entry.type) {
-            case 'added':
-                entry.parent?.insertBefore(entry.node, entry.nextSibling ?? null);
-                break;
-            case 'changed':
-                entry.node.textContent = entry.newText ?? null;
-                break;
-        }
+    #animate(el, className) {
+        runCSSAnimationOnce(el, className);
     }
 }
-export function revertDomChanges(domChanges) {
-    for (let i = domChanges.length - 1; i >= 0; --i) {
-        const entry = domChanges[i];
-        switch (entry.type) {
-            case 'added':
-                entry.node.remove();
-                break;
-            case 'changed':
-                entry.node.textContent = entry.oldText ?? null;
-                break;
-        }
-    }
-}
+export const animateOn = Lit.Directive.directive(AnimateOnDirective);
 export function measurePreferredSize(element, containerElement) {
     const oldParent = element.parentElement;
     const oldNextSibling = element.nextSibling;
@@ -744,7 +650,7 @@ export function measurePreferredSize(element, containerElement) {
     else {
         element.remove();
     }
-    return new Size(result.width, result.height);
+    return new Geometry.Size(result.width, result.height);
 }
 class InvokeOnceHandlers {
     handlers;
@@ -799,12 +705,6 @@ export function endBatchUpdate() {
         postUpdateHandlers.scheduleInvoke();
         postUpdateHandlers = null;
     }
-}
-export function invokeOnceAfterBatchUpdate(object, method) {
-    if (!postUpdateHandlers) {
-        postUpdateHandlers = new InvokeOnceHandlers(true);
-    }
-    postUpdateHandlers.add(object, method);
 }
 export function animateFunction(window, func, params, duration, animationComplete) {
     const start = window.performance.now();
@@ -898,7 +798,7 @@ export function initializeUIUtils(document) {
         document.defaultView.addEventListener('focus', windowFocused.bind(undefined, document), false);
         document.defaultView.addEventListener('blur', windowBlurred.bind(undefined, document), false);
     }
-    document.addEventListener('focus', Utils.focusChanged.bind(undefined), true);
+    document.addEventListener('focus', focusChanged.bind(undefined), true);
     const body = document.body;
     GlassPane.setContainer(body);
 }
@@ -915,23 +815,34 @@ export const createTextChildren = (element, ...childrenText) => {
         createTextChild(element, child);
     }
 };
-export function createTextButton(text, eventHandler, className, primary, alternativeEvent) {
-    const element = document.createElement('button');
-    if (className) {
-        element.className = className;
+export function createTextButton(text, clickHandler, opts) {
+    const button = new Buttons.Button.Button();
+    if (opts?.className) {
+        button.className = opts.className;
     }
-    element.textContent = text;
-    element.classList.add('text-button');
-    if (primary) {
-        element.classList.add('primary-button');
+    button.textContent = text;
+    button.iconName = opts?.icon;
+    button.variant = opts?.variant ? opts.variant : "outlined" /* Buttons.Button.Variant.OUTLINED */;
+    if (clickHandler) {
+        button.addEventListener('click', clickHandler);
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === 'Space') {
+                // Make sure we don't propagate 'Enter' or 'Space' key events to parents,
+                // so that these get turned into 'click' events properly.
+                event.stopImmediatePropagation();
+            }
+        });
     }
-    if (eventHandler) {
-        element.addEventListener(alternativeEvent || 'click', eventHandler);
+    if (opts?.jslogContext) {
+        button.setAttribute('jslog', `${VisualLogging.action().track({ click: true }).context(opts.jslogContext)}`);
     }
-    element.type = 'button';
-    return element;
+    if (opts?.title) {
+        button.setAttribute('title', opts.title);
+    }
+    button.type = 'button';
+    return button;
 }
-export function createInput(className, type) {
+export function createInput(className, type, jslogContext) {
     const element = document.createElement('input');
     if (className) {
         element.className = className;
@@ -941,11 +852,52 @@ export function createInput(className, type) {
     if (type) {
         element.type = type;
     }
+    if (jslogContext) {
+        element.setAttribute('jslog', `${VisualLogging.textField().track({ keydown: 'Enter', change: true }).context(jslogContext)}`);
+    }
     return element;
+}
+export function createHistoryInput(type = 'search', className) {
+    const history = [''];
+    let historyPosition = 0;
+    const historyInput = document.createElement('input');
+    historyInput.type = type;
+    if (className) {
+        historyInput.className = className;
+    }
+    historyInput.addEventListener('input', onInput, false);
+    historyInput.addEventListener('keydown', onKeydown, false);
+    return historyInput;
+    function onInput(_event) {
+        if (history.length === historyPosition + 1) {
+            history[historyPosition] = historyInput.value;
+        }
+    }
+    function onKeydown(event) {
+        if (event.keyCode === Keys.Up.code) {
+            historyPosition = Math.max(historyPosition - 1, 0);
+            historyInput.value = history[historyPosition];
+            historyInput.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+            event.consume(true);
+        }
+        else if (event.keyCode === Keys.Down.code) {
+            historyPosition = Math.min(historyPosition + 1, history.length - 1);
+            historyInput.value = history[historyPosition];
+            historyInput.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+            event.consume(true);
+        }
+        else if (event.keyCode === Keys.Enter.code) {
+            if (history.length > 1 && history[history.length - 2] === historyInput.value) {
+                return;
+            }
+            history[history.length - 1] = historyInput.value;
+            historyPosition = history.length - 1;
+            history.push('');
+        }
+    }
 }
 export function createSelect(name, options) {
     const select = document.createElement('select');
-    select.classList.add('chrome-select');
     ARIAUtils.setLabel(select, name);
     for (const option of options) {
         if (option instanceof Map) {
@@ -954,16 +906,23 @@ export function createSelect(name, options) {
                 optGroup.label = key;
                 for (const child of value) {
                     if (typeof child === 'string') {
-                        optGroup.appendChild(new Option(child, child));
+                        optGroup.appendChild(createOption(child, child, Platform.StringUtilities.toKebabCase(child)));
                     }
                 }
             }
         }
         else if (typeof option === 'string') {
-            select.add(new Option(option, option));
+            select.add(createOption(option, option, Platform.StringUtilities.toKebabCase(option)));
         }
     }
     return select;
+}
+export function createOption(title, value, jslogContext) {
+    const result = new Option(title, value || title);
+    if (jslogContext) {
+        result.setAttribute('jslog', `${VisualLogging.item(jslogContext).track({ click: true })}`);
+    }
+    return result;
 }
 export function createLabel(title, className, associatedControl) {
     const element = document.createElement('label');
@@ -976,15 +935,8 @@ export function createLabel(title, className, associatedControl) {
     }
     return element;
 }
-export function createRadioLabel(name, title, checked) {
-    const element = document.createElement('span', { is: 'dt-radio' });
-    element.radioElement.name = name;
-    element.radioElement.checked = Boolean(checked);
-    createTextChild(element.labelElement, title);
-    return element;
-}
 export function createIconLabel(options) {
-    const element = document.createElement('span', { is: 'dt-icon-label' });
+    const element = document.createElement('dt-icon-label');
     if (options.title) {
         element.createChild('span').textContent = options.title;
     }
@@ -996,70 +948,199 @@ export function createIconLabel(options) {
     };
     return element;
 }
+/**
+ * Creates a radio button, which is comprised of a `<label>` and an `<input type="radio">` element.
+ *
+ * The returned pair contains the `label` element and and the `radio` input element. The latter is
+ * a child of the `label`, and therefore no association via `for` attribute is necessary to make
+ * the radio button accessible.
+ *
+ * The element is automatically styled correctly, as long as the core styles (in particular
+ * `inspectorCommon.css` is injected into the current document / shadow root). The lit
+ * equivalent of calling this method is:
+ *
+ * ```js
+ * const jslog = VisualLogging.toggle().track({change: true}).context(jslogContext);
+ * html`<label><input type="radio" name=${name} jslog=${jslog}>${title}</label>`
+ * ```
+ *
+ * @param name the name of the radio group.
+ * @param title the label text for the radio button.
+ * @param jslogContext the context string for the `jslog` attribute.
+ * @returns the pair of `HTMLLabelElement` and `HTMLInputElement`.
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/radio
+ */
+export function createRadioButton(name, title, jslogContext) {
+    const label = document.createElement('label');
+    const radio = label.createChild('input');
+    radio.type = 'radio';
+    radio.name = name;
+    radio.setAttribute('jslog', `${VisualLogging.toggle().track({ change: true }).context(jslogContext)}`);
+    createTextChild(label, title);
+    return { label, radio };
+}
+/**
+ * Creates an `<input type="range">` element with the specified parameters (a slider)
+ * and a `step` of 1 (the default for the element).
+ *
+ * The element is automatically styled correctly, as long as the core styles (in particular
+ * `inspectorCommon.css` is injected into the current document / shadow root). The lit
+ * equivalent of calling this method is:
+ *
+ * ```js
+ * html`<input type="range" min=${min} max=${max} tabindex=${tabIndex}>`
+ * ```
+ *
+ * @param min the minimum allowed value.
+ * @param max the maximum allowed value.
+ * @param tabIndex the value for the `tabindex` attribute.
+ * @returns the newly created `HTMLInputElement` for the slider.
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/range
+ */
 export function createSlider(min, max, tabIndex) {
-    const element = document.createElement('span', { is: 'dt-slider' });
-    element.sliderElement.min = String(min);
-    element.sliderElement.max = String(max);
-    element.sliderElement.step = String(1);
-    element.sliderElement.tabIndex = tabIndex;
+    const element = document.createElement('input');
+    element.type = 'range';
+    element.min = String(min);
+    element.max = String(max);
+    element.tabIndex = tabIndex;
     return element;
 }
 export function setTitle(element, title) {
     ARIAUtils.setLabel(element, title);
     Tooltip.install(element, title);
 }
-export class CheckboxLabel extends HTMLSpanElement {
-    shadowRootInternal;
-    checkboxElement;
-    textElement;
+export class CheckboxLabel extends HTMLElement {
+    static observedAttributes = ['checked', 'disabled', 'indeterminate', 'name', 'title', 'aria-label'];
+    #shadowRoot;
+    #checkboxElement;
+    #textElement;
     constructor() {
         super();
         CheckboxLabel.lastId = CheckboxLabel.lastId + 1;
         const id = 'ui-checkbox-label' + CheckboxLabel.lastId;
-        this.shadowRootInternal =
-            Utils.createShadowRootWithCoreStyles(this, { cssFile: checkboxTextLabelStyles, delegatesFocus: undefined });
-        this.checkboxElement = this.shadowRootInternal.createChild('input');
-        this.checkboxElement.type = 'checkbox';
-        this.checkboxElement.setAttribute('id', id);
-        this.textElement = this.shadowRootInternal.createChild('label', 'dt-checkbox-text');
-        this.textElement.setAttribute('for', id);
-        this.shadowRootInternal.createChild('slot');
+        this.#shadowRoot = createShadowRootWithCoreStyles(this, { cssFile: checkboxTextLabelStyles, delegatesFocus: true });
+        this.#checkboxElement = this.#shadowRoot.createChild('input');
+        this.#checkboxElement.type = 'checkbox';
+        this.#checkboxElement.setAttribute('id', id);
+        // Change event is not composable, so it doesn't bubble up through the shadow root.
+        this.#checkboxElement.addEventListener('change', () => this.dispatchEvent(new Event('change')));
+        this.#textElement = this.#shadowRoot.createChild('label', 'devtools-checkbox-text');
+        this.#textElement.setAttribute('for', id);
+        // Click events are composable, so both label and checkbox bubble up through the shadow root.
+        // However, clicking the label, also triggers the checkbox click, so we stop the label event
+        // propagation here to avoid duplicate events.
+        this.#textElement.addEventListener('click', e => e.stopPropagation());
+        this.#textElement.createChild('slot');
     }
-    static create(title, checked, subtitle) {
-        if (!CheckboxLabel.constructorInternal) {
-            CheckboxLabel.constructorInternal = Utils.registerCustomElement('span', 'dt-checkbox', CheckboxLabel);
+    static create(title, checked, subtitle, jslogContext, small, tooltip) {
+        const element = document.createElement('devtools-checkbox');
+        element.#checkboxElement.checked = Boolean(checked);
+        if (jslogContext) {
+            element.#checkboxElement.setAttribute('jslog', `${VisualLogging.toggle().track({ change: true }).context(jslogContext)}`);
         }
-        const element = CheckboxLabel.constructorInternal();
-        element.checkboxElement.checked = Boolean(checked);
         if (title !== undefined) {
-            element.textElement.textContent = title;
-            element.checkboxElement.title = title;
+            element.#textElement.textContent = title;
             if (subtitle !== undefined) {
-                element.textElement.createChild('div', 'dt-checkbox-subtitle').textContent = subtitle;
+                element.#textElement.createChild('div', 'devtools-checkbox-subtitle').textContent = subtitle;
             }
         }
+        // checkboxElement tooltip: tooltip first, then title (custom tooltip takes precedence for the input)
+        const inputTooltip = tooltip ?? title;
+        if (inputTooltip) {
+            element.#checkboxElement.title = inputTooltip;
+            // Set aria-description for screen reader announcement
+            element.#checkboxElement.setAttribute('aria-description', inputTooltip);
+        }
+        element.#checkboxElement.classList.toggle('small', small);
         return element;
     }
+    attributeChangedCallback(name, _oldValue, newValue) {
+        if (name === 'checked') {
+            this.#checkboxElement.checked = newValue !== null;
+        }
+        else if (name === 'disabled') {
+            this.#checkboxElement.disabled = newValue !== null;
+        }
+        else if (name === 'indeterminate') {
+            this.#checkboxElement.indeterminate = newValue !== null;
+        }
+        else if (name === 'name') {
+            this.#checkboxElement.name = newValue ?? '';
+        }
+        else if (name === 'title') {
+            this.#checkboxElement.title = newValue ?? '';
+            this.#textElement.title = newValue ?? '';
+        }
+        else if (name === 'aria-label') {
+            this.#checkboxElement.ariaLabel = newValue;
+        }
+    }
+    getLabelText() {
+        return this.#textElement.textContent;
+    }
+    setLabelText(content) {
+        this.#textElement.textContent = content;
+    }
+    get ariaLabel() {
+        return this.#checkboxElement.ariaLabel;
+    }
+    set ariaLabel(ariaLabel) {
+        this.setAttribute('aria-label', ariaLabel);
+    }
+    get checked() {
+        return this.#checkboxElement.checked;
+    }
+    set checked(checked) {
+        this.toggleAttribute('checked', checked);
+    }
+    set disabled(disabled) {
+        this.toggleAttribute('disabled', disabled);
+    }
+    get disabled() {
+        return this.#checkboxElement.disabled;
+    }
+    set indeterminate(indeterminate) {
+        this.toggleAttribute('indeterminate', indeterminate);
+    }
+    get indeterminate() {
+        return this.#checkboxElement.indeterminate;
+    }
+    set title(title) {
+        this.setAttribute('title', title);
+    }
+    get title() {
+        return this.#checkboxElement.title;
+    }
+    set name(name) {
+        this.setAttribute('name', name);
+    }
+    get name() {
+        return this.#checkboxElement.name;
+    }
+    click() {
+        this.#checkboxElement.click();
+    }
+    /** Only to be used when the checkbox label is 'generated' (a regex, a className, etc). Most checkboxes should be create()'d with UIStrings */
+    static createWithStringLiteral(title, checked, jslogContext, small) {
+        const stringLiteral = title;
+        return CheckboxLabel.create(stringLiteral, checked, undefined, jslogContext, small);
+    }
     static lastId = 0;
-    static constructorInternal = null;
 }
-export class DevToolsIconLabel extends HTMLSpanElement {
+customElements.define('devtools-checkbox', CheckboxLabel);
+export class DevToolsIconLabel extends HTMLElement {
     #icon;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, {
-            cssFile: undefined,
-            delegatesFocus: undefined,
-        });
-        this.#icon = new IconButton.Icon.Icon();
+        const root = createShadowRootWithCoreStyles(this);
+        this.#icon = new Icon();
         this.#icon.style.setProperty('margin-right', '4px');
+        this.#icon.style.setProperty('vertical-align', 'baseline');
         root.appendChild(this.#icon);
         root.createChild('slot');
     }
     set data(data) {
         this.#icon.data = data;
-        // TODO(crbug.com/1427397): Clean this up. This was necessary so `DevToolsIconLabel` can use Lit icon
-        //    while being backwards-compatible with the legacy Icon while working for both small and large icons.
         if (data.height === '14px') {
             this.#icon.style.setProperty('margin-bottom', '-2px');
         }
@@ -1068,55 +1149,13 @@ export class DevToolsIconLabel extends HTMLSpanElement {
         }
     }
 }
-let labelId = 0;
-export class DevToolsRadioButton extends HTMLSpanElement {
-    radioElement;
-    labelElement;
-    constructor() {
-        super();
-        this.radioElement = this.createChild('input', 'dt-radio-button');
-        this.labelElement = this.createChild('label');
-        const id = 'dt-radio-button-id' + (++labelId);
-        this.radioElement.id = id;
-        this.radioElement.type = 'radio';
-        this.labelElement.htmlFor = id;
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: radioButtonStyles, delegatesFocus: undefined });
-        root.createChild('slot');
-        this.addEventListener('click', this.radioClickHandler.bind(this), false);
-    }
-    radioClickHandler() {
-        if (this.radioElement.checked || this.radioElement.disabled) {
-            return;
-        }
-        this.radioElement.checked = true;
-        this.radioElement.dispatchEvent(new Event('change'));
-    }
-}
-Utils.registerCustomElement('span', 'dt-radio', DevToolsRadioButton);
-Utils.registerCustomElement('span', 'dt-icon-label', DevToolsIconLabel);
-export class DevToolsSlider extends HTMLSpanElement {
-    sliderElement;
-    constructor() {
-        super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: sliderStyles, delegatesFocus: undefined });
-        this.sliderElement = document.createElement('input');
-        this.sliderElement.classList.add('dt-range-input');
-        this.sliderElement.type = 'range';
-        root.appendChild(this.sliderElement);
-    }
-    set value(amount) {
-        this.sliderElement.value = String(amount);
-    }
-    get value() {
-        return Number(this.sliderElement.value);
-    }
-}
-Utils.registerCustomElement('span', 'dt-slider', DevToolsSlider);
-export class DevToolsSmallBubble extends HTMLSpanElement {
+// eslint-disable-next-line @devtools/enforce-custom-element-prefix
+customElements.define('dt-icon-label', DevToolsIconLabel);
+export class DevToolsSmallBubble extends HTMLElement {
     textElement;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: smallBubbleStyles, delegatesFocus: undefined });
+        const root = createShadowRootWithCoreStyles(this, { cssFile: smallBubbleStyles });
         this.textElement = root.createChild('div');
         this.textElement.className = 'info';
         this.textElement.createChild('slot');
@@ -1125,32 +1164,41 @@ export class DevToolsSmallBubble extends HTMLSpanElement {
         this.textElement.className = type;
     }
 }
-Utils.registerCustomElement('span', 'dt-small-bubble', DevToolsSmallBubble);
-export class DevToolsCloseButton extends HTMLDivElement {
-    buttonElement;
+// eslint-disable-next-line @devtools/enforce-custom-element-prefix
+customElements.define('dt-small-bubble', DevToolsSmallBubble);
+export class DevToolsCloseButton extends HTMLElement {
+    #button;
     constructor() {
         super();
-        const root = Utils.createShadowRootWithCoreStyles(this, { cssFile: closeButtonStyles, delegatesFocus: undefined });
-        this.buttonElement = root.createChild('div', 'close-button');
-        Tooltip.install(this.buttonElement, i18nString(UIStrings.close));
-        ARIAUtils.setLabel(this.buttonElement, i18nString(UIStrings.close));
-        ARIAUtils.markAsButton(this.buttonElement);
-        const regularIcon = Icon.create('cross', 'default-icon');
-        this.buttonElement.appendChild(regularIcon);
+        const root = createShadowRootWithCoreStyles(this);
+        this.#button = new Buttons.Button.Button();
+        this.#button.data = { variant: "icon" /* Buttons.Button.Variant.ICON */, iconName: 'cross' };
+        this.#button.classList.add('close-button');
+        this.#button.setAttribute('jslog', `${VisualLogging.close().track({ click: true })}`);
+        Tooltip.install(this.#button, i18nString(UIStrings.close));
+        ARIAUtils.setLabel(this.#button, i18nString(UIStrings.close));
+        root.appendChild(this.#button);
     }
     setAccessibleName(name) {
-        ARIAUtils.setLabel(this.buttonElement, name);
+        ARIAUtils.setLabel(this.#button, name);
+    }
+    setSize(size) {
+        this.#button.size = size;
     }
     setTabbable(tabbable) {
         if (tabbable) {
-            this.buttonElement.tabIndex = 0;
+            this.#button.tabIndex = 0;
         }
         else {
-            this.buttonElement.tabIndex = -1;
+            this.#button.tabIndex = -1;
         }
     }
+    focus() {
+        this.#button.focus();
+    }
 }
-Utils.registerCustomElement('div', 'dt-close-button', DevToolsCloseButton);
+// eslint-disable-next-line @devtools/enforce-custom-element-prefix
+customElements.define('dt-close-button', DevToolsCloseButton);
 export function bindInput(input, apply, validate, numeric, modifierMultiplier) {
     input.addEventListener('change', onChange, false);
     input.addEventListener('input', onInput, false);
@@ -1160,7 +1208,7 @@ export function bindInput(input, apply, validate, numeric, modifierMultiplier) {
         input.classList.toggle('error-input', !validate(input.value));
     }
     function onChange() {
-        const { valid } = validate(input.value);
+        const valid = validate(input.value);
         input.classList.toggle('error-input', !valid);
         if (valid) {
             apply(input.value);
@@ -1168,7 +1216,7 @@ export function bindInput(input, apply, validate, numeric, modifierMultiplier) {
     }
     function onKeyDown(event) {
         if (event.key === 'Enter') {
-            const { valid } = validate(input.value);
+            const valid = validate(input.value);
             if (valid) {
                 apply(input.value);
             }
@@ -1179,20 +1227,21 @@ export function bindInput(input, apply, validate, numeric, modifierMultiplier) {
             return;
         }
         const value = modifiedFloatNumber(parseFloat(input.value), event, modifierMultiplier);
-        const stringValue = value ? String(value) : '';
-        const { valid } = validate(stringValue);
-        if (!valid || !value) {
+        if (value === null) {
             return;
         }
-        input.value = stringValue;
-        apply(input.value);
+        const stringValue = String(value);
+        const valid = validate(stringValue);
+        if (valid) {
+            setValue(stringValue);
+        }
         event.preventDefault();
     }
     function setValue(value) {
         if (value === input.value) {
             return;
         }
-        const { valid } = validate(value);
+        const valid = validate(value);
         input.classList.toggle('error-input', !valid);
         input.value = value;
     }
@@ -1257,32 +1306,6 @@ export function measureTextWidth(context, text) {
     return width;
 }
 let measureTextWidthCache = null;
-/**
- * Adds a 'utm_source=devtools' as query parameter to the url.
- */
-export function addReferrerToURL(url) {
-    if (/(\?|&)utm_source=devtools/.test(url)) {
-        return url;
-    }
-    if (url.indexOf('?') === -1) {
-        // If the URL does not contain a query, add the referrer query after path
-        // and before (potential) anchor.
-        return url.replace(/^([^#]*)(#.*)?$/g, '$1?utm_source=devtools$2');
-    }
-    // If the URL already contains a query, add the referrer query after the last query
-    // and before (potential) anchor.
-    return url.replace(/^([^#]*)(#.*)?$/g, '$1&utm_source=devtools$2');
-}
-/**
- * We want to add a referrer query param to every request to
- * 'web.dev' or 'developers.google.com'.
- */
-export function addReferrerToURLIfNecessary(url) {
-    if (/(\/\/developers.google.com\/|\/\/web.dev\/|\/\/developer.chrome.com\/)/.test(url)) {
-        return addReferrerToURL(url);
-    }
-    return url;
-}
 export function loadImage(url) {
     return new Promise(fulfill => {
         const image = new Image();
@@ -1291,31 +1314,41 @@ export function loadImage(url) {
         image.src = url;
     });
 }
-export function loadImageFromData(data) {
-    return data ? loadImage('data:image/jpg;base64,' + data) : Promise.resolve(null);
-}
-export function createFileSelectorElement(callback) {
+/**
+ * Creates a file selector element.
+ * @param callback the function that will be called with the file the user selected
+ * @param accept optionally used to set the [`accept`](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/accept) parameter to limit file-types the user can pick.
+ */
+export function createFileSelectorElement(callback, accept) {
     const fileSelectorElement = document.createElement('input');
     fileSelectorElement.type = 'file';
+    if (accept) {
+        fileSelectorElement.setAttribute('accept', accept);
+    }
     fileSelectorElement.style.display = 'none';
     fileSelectorElement.tabIndex = -1;
-    fileSelectorElement.onchange = () => {
-        if (fileSelectorElement.files) {
+    fileSelectorElement.addEventListener('change', () => {
+        if (fileSelectorElement.files?.length) {
             callback(fileSelectorElement.files[0]);
         }
-    };
+    });
+    fileSelectorElement.addEventListener('click', () => {
+        fileSelectorElement.value = '';
+    });
     return fileSelectorElement;
 }
 export const MaxLengthForDisplayedURLs = 150;
+export const MaxLengthForDisplayedURLsInConsole = 40;
 export class MessageDialog {
-    static async show(message, where) {
-        const dialog = new Dialog();
-        dialog.setSizeBehavior("MeasureContent" /* SizeBehavior.MeasureContent */);
+    static async show(header, message, where, jslogContext) {
+        const dialog = new Dialog(jslogContext);
+        dialog.setSizeBehavior("MeasureContent" /* SizeBehavior.MEASURE_CONTENT */);
         dialog.setDimmed(true);
-        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles, delegatesFocus: undefined });
+        const shadowRoot = createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles });
         const content = shadowRoot.createChild('div', 'widget');
         await new Promise(resolve => {
-            const okButton = createTextButton(i18nString(UIStrings.ok), resolve, '', true);
+            const okButton = createTextButton(i18nString(UIStrings.ok), resolve, { jslogContext: 'confirm', variant: "primary" /* Buttons.Button.Variant.PRIMARY */ });
+            content.createChild('span', 'header').textContent = header;
             content.createChild('div', 'message').createChild('span').textContent = message;
             content.createChild('div', 'button').appendChild(okButton);
             dialog.setOutsideClickCallback(event => {
@@ -1329,21 +1362,23 @@ export class MessageDialog {
     }
 }
 export class ConfirmDialog {
-    static async show(message, where) {
-        const dialog = new Dialog();
-        dialog.setSizeBehavior("MeasureContent" /* SizeBehavior.MeasureContent */);
+    static async show(message, header, where, options) {
+        const dialog = new Dialog(options?.jslogContext);
+        dialog.setSizeBehavior("MeasureContent" /* SizeBehavior.MEASURE_CONTENT */);
         dialog.setDimmed(true);
         ARIAUtils.setLabel(dialog.contentElement, message);
-        const shadowRoot = Utils.createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles, delegatesFocus: undefined });
+        const shadowRoot = createShadowRootWithCoreStyles(dialog.contentElement, { cssFile: confirmDialogStyles });
         const content = shadowRoot.createChild('div', 'widget');
+        if (header) {
+            content.createChild('span', 'header').textContent = header;
+        }
         content.createChild('div', 'message').createChild('span').textContent = message;
         const buttonsBar = content.createChild('div', 'button');
         const result = await new Promise(resolve => {
             const okButton = createTextButton(
-            /* text= */ i18nString(UIStrings.ok), /* clickHandler= */ () => resolve(true), /* className= */ '', 
-            /* primary= */ true);
+            /* text= */ options?.okButtonLabel || i18nString(UIStrings.ok), /* clickHandler= */ () => resolve(true), { jslogContext: 'confirm', variant: "primary" /* Buttons.Button.Variant.PRIMARY */ });
             buttonsBar.appendChild(okButton);
-            buttonsBar.appendChild(createTextButton(i18nString(UIStrings.cancel), () => resolve(false)));
+            buttonsBar.appendChild(createTextButton(options?.cancelButtonLabel || i18nString(UIStrings.cancel), () => resolve(false), { jslogContext: 'cancel' }));
             dialog.setOutsideClickCallback(event => {
                 event.consume();
                 resolve(false);
@@ -1355,15 +1390,6 @@ export class ConfirmDialog {
         return result;
     }
 }
-export function createInlineButton(toolbarButton) {
-    const element = document.createElement('span');
-    const shadowRoot = Utils.createShadowRootWithCoreStyles(element, { cssFile: inlineButtonStyles, delegatesFocus: undefined });
-    element.classList.add('inline-button');
-    const toolbar = new Toolbar('');
-    toolbar.appendToolbarItem(toolbarButton);
-    shadowRoot.appendChild(toolbar.element);
-    return element;
-}
 export class Renderer {
     static async render(object, options) {
         if (!object) {
@@ -1374,7 +1400,7 @@ export class Renderer {
             return null;
         }
         const renderer = await extension.loadRenderer();
-        return renderer.render(object, options);
+        return await renderer.render(object, options);
     }
 }
 export function formatTimestamp(timestamp, full) {
@@ -1460,4 +1486,506 @@ export function getApplicableRegisteredRenderers(object) {
         return false;
     }
 }
+function updateWidgetfocusWidgetForNode(node) {
+    while (node) {
+        if (Widget.get(node)) {
+            break;
+        }
+        node = node.parentNodeOrShadowHost();
+    }
+    if (!node) {
+        return;
+    }
+    let widget = Widget.get(node);
+    while (widget?.parentWidget()) {
+        const parentWidget = widget.parentWidget();
+        if (!parentWidget) {
+            break;
+        }
+        parentWidget.setDefaultFocusedChild(widget);
+        widget = parentWidget;
+    }
+}
+function focusChanged(event) {
+    const target = event.target;
+    const document = target ? target.ownerDocument : null;
+    const element = document ? deepActiveElement(document) : null;
+    updateWidgetfocusWidgetForNode(element);
+}
+/**
+ * Creates a new shadow DOM tree with the core styles and an optional list of
+ * additional styles, and attaches it to the specified `element`.
+ *
+ * @param element the `Element` to attach the shadow DOM tree to.
+ * @param options optional additional style sheets and options for `Element#attachShadow()`.
+ * @returns the newly created `ShadowRoot`.
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/attachShadow
+ */
+export function createShadowRootWithCoreStyles(element, options = {}) {
+    const { cssFile, delegatesFocus } = options;
+    const shadowRoot = element.attachShadow({ mode: 'open', delegatesFocus });
+    appendStyle(shadowRoot, inspectorCommonStyles, Buttons.textButtonStyles);
+    if (Array.isArray(cssFile)) {
+        appendStyle(shadowRoot, ...cssFile);
+    }
+    else if (cssFile) {
+        appendStyle(shadowRoot, cssFile);
+    }
+    shadowRoot.addEventListener('focus', focusChanged, true);
+    return shadowRoot;
+}
+let cachedMeasuredScrollbarWidth;
+export function resetMeasuredScrollbarWidthForTest() {
+    cachedMeasuredScrollbarWidth = undefined;
+}
+export function measuredScrollbarWidth(document) {
+    if (typeof cachedMeasuredScrollbarWidth === 'number') {
+        return cachedMeasuredScrollbarWidth;
+    }
+    if (!document) {
+        return 16;
+    }
+    const scrollDiv = document.createElement('div');
+    const innerDiv = document.createElement('div');
+    scrollDiv.setAttribute('style', 'display: block; width: 100px; height: 100px; overflow: scroll;');
+    innerDiv.setAttribute('style', 'height: 200px');
+    scrollDiv.appendChild(innerDiv);
+    document.body.appendChild(scrollDiv);
+    cachedMeasuredScrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
+    document.body.removeChild(scrollDiv);
+    return cachedMeasuredScrollbarWidth;
+}
+const MAX_DISPLAY_COUNT = 10;
+// 60 days in ms
+const MAX_DURATION = 60 * 24 * 60 * 60 * 1000;
+const MAX_INTERACTION_COUNT = 2;
+export class PromotionManager {
+    static #instance;
+    static instance() {
+        if (!PromotionManager.#instance) {
+            PromotionManager.#instance = new PromotionManager();
+        }
+        return PromotionManager.#instance;
+    }
+    getPromotionDisplayState(id) {
+        const displayStateString = localStorage.getItem(id);
+        return displayStateString ? JSON.parse(displayStateString) : null;
+    }
+    setPromotionDisplayState(id, promotionDisplayState) {
+        localStorage.setItem(id, JSON.stringify(promotionDisplayState));
+    }
+    registerPromotion(id) {
+        this.setPromotionDisplayState(id, {
+            displayCount: 0,
+            firstRegistered: Date.now(),
+            featureInteractionCount: 0,
+        });
+    }
+    recordPromotionShown(id) {
+        const displayState = this.getPromotionDisplayState(id);
+        if (!displayState) {
+            throw new Error(`Cannot record promotion shown for unregistered promotion ${id}`);
+        }
+        this.setPromotionDisplayState(id, {
+            ...displayState,
+            displayCount: displayState.displayCount + 1,
+        });
+    }
+    canShowPromotion(id) {
+        const displayState = this.getPromotionDisplayState(id);
+        if (!displayState) {
+            this.registerPromotion(id);
+            return true;
+        }
+        return displayState.displayCount < MAX_DISPLAY_COUNT && Date.now() - displayState.firstRegistered < MAX_DURATION &&
+            displayState.featureInteractionCount < MAX_INTERACTION_COUNT;
+    }
+    recordFeatureInteraction(id) {
+        const displayState = this.getPromotionDisplayState(id);
+        if (!displayState) {
+            throw new Error(`Cannot record feature interaction for unregistered promotion ${id}`);
+        }
+        this.setPromotionDisplayState(id, {
+            ...displayState,
+            featureInteractionCount: displayState.featureInteractionCount + 1,
+        });
+    }
+    maybeShowPromotion(id) {
+        if (this.canShowPromotion(id)) {
+            this.recordPromotionShown(id);
+            return true;
+        }
+        return false;
+    }
+}
+/**
+ * Creates a `<div>` element with the localized text NEW.
+ *
+ * The element is automatically styled correctly, as long as the core styles (in particular
+ * `inspectorCommon.css` is injected into the current document / shadow root). The lit
+ * equivalent of calling this method is:
+ *
+ * ```js
+ * const jslog = VisualLogging.badge('new-badge');
+ * html`<div class='new-badge' jsog=${jslog}>i18nString(UIStrings.new)</div>`
+ *
+ * @returns the newly created `HTMLDivElement` for the new badge.
+ */
+export function maybeCreateNewBadge(promotionId) {
+    const promotionManager = PromotionManager.instance();
+    if (promotionManager.maybeShowPromotion(promotionId)) {
+        const badge = document.createElement('div');
+        badge.className = 'new-badge';
+        badge.textContent = i18nString(UIStrings.new);
+        badge.setAttribute('jslog', `${VisualLogging.badge('new-badge')}`);
+        return badge;
+    }
+    return undefined;
+}
+export function bindToAction(actionName) {
+    const action = ActionRegistry.instance().getAction(actionName);
+    let setEnabled;
+    let toggled;
+    function actionEnabledChanged(event) {
+        setEnabled(event.data);
+    }
+    return Directives.ref((e) => {
+        if (!e || !(e instanceof Buttons.Button.Button)) {
+            action.removeEventListener("Enabled" /* ActionRegistration.Events.ENABLED */, actionEnabledChanged);
+            action.removeEventListener("Toggled" /* ActionRegistration.Events.TOGGLED */, toggled);
+            return;
+        }
+        setEnabled = enabled => {
+            e.disabled = !enabled;
+        };
+        action.addEventListener("Enabled" /* ActionRegistration.Events.ENABLED */, actionEnabledChanged);
+        const toggleable = action.toggleable();
+        const title = action.title();
+        const iconName = action.icon() ?? '';
+        const jslogContext = action.id();
+        const toggledIconName = action.toggledIcon() ?? iconName;
+        const toggleType = action.toggleWithRedColor() ? "red-toggle" /* Buttons.Button.ToggleType.RED */ : "primary-toggle" /* Buttons.Button.ToggleType.PRIMARY */;
+        if (e.childNodes.length) {
+            e.jslogContext = jslogContext;
+        }
+        else if (toggleable) {
+            toggled = () => {
+                e.toggled = action.toggled();
+                if (action.title()) {
+                    e.title = action.title();
+                    Tooltip.installWithActionBinding(e, action.title(), action.id());
+                }
+            };
+            action.addEventListener("Toggled" /* ActionRegistration.Events.TOGGLED */, toggled);
+            e.data = {
+                jslogContext,
+                title,
+                variant: "icon_toggle" /* Buttons.Button.Variant.ICON_TOGGLE */,
+                iconName,
+                toggledIconName,
+                toggleType,
+                toggled: action.toggled(),
+            };
+            toggled();
+        }
+        else if (iconName) {
+            e.data = { iconName, jslogContext, title, variant: "icon" /* Buttons.Button.Variant.ICON */ };
+        }
+        else {
+            e.data = { jslogContext, title, variant: "text" /* Buttons.Button.Variant.TEXT */ };
+        }
+        setEnabled(action.enabled());
+        e.onclick = () => action.execute();
+    });
+}
+export class InterceptBindingDirective extends Lit.Directive.Directive {
+    static #interceptedBindings = new WeakMap();
+    static #attachedBindings = new WeakMap();
+    update(part, [listener]) {
+        if (part.type !== Lit.Directive.PartType.EVENT) {
+            return listener;
+        }
+        let eventListeners = InterceptBindingDirective.#interceptedBindings.get(part.element);
+        if (!eventListeners) {
+            eventListeners = new Map();
+            InterceptBindingDirective.#interceptedBindings.set(part.element, eventListeners);
+        }
+        eventListeners.set(part.name, listener);
+        return this.render(listener);
+    }
+    /* eslint-disable-next-line @typescript-eslint/no-unsafe-function-type */
+    render(listener) {
+        return listener;
+    }
+    static setEventListeners(templateElement, renderedElement) {
+        const attachedListeners = InterceptBindingDirective.#attachedBindings.get(renderedElement);
+        if (attachedListeners) {
+            for (const [name, listener] of attachedListeners) {
+                renderedElement.removeEventListener(name, listener);
+            }
+        }
+        const newListeners = InterceptBindingDirective.#interceptedBindings.get(templateElement);
+        if (newListeners?.size) {
+            for (const [name, listener] of newListeners) {
+                renderedElement.addEventListener(name, listener);
+            }
+            InterceptBindingDirective.#attachedBindings.set(renderedElement, new Map(newListeners));
+        }
+        else {
+            InterceptBindingDirective.#attachedBindings.delete(renderedElement);
+        }
+    }
+}
+export const cloneCustomElement = (element, deep) => {
+    const clone = document.createElement(element.localName);
+    for (const attribute of element.attributes) {
+        clone.setAttribute(attribute.name, attribute.value);
+    }
+    if (deep) {
+        for (const child of element.childNodes) {
+            clone.appendChild(child.cloneNode(deep));
+        }
+    }
+    return clone;
+};
+export class HTMLElementWithLightDOMTemplate extends HTMLElement {
+    #mutationObserver = new MutationObserver(this.#onChange.bind(this));
+    #contentTemplate = null;
+    constructor() {
+        super();
+        this.#mutationObserver.observe(this, { childList: true, attributes: true, subtree: true, characterData: true });
+    }
+    static cloneNode(node) {
+        const clone = node.cloneNode(false);
+        for (const child of node.childNodes) {
+            clone.appendChild(HTMLElementWithLightDOMTemplate.cloneNode(child));
+        }
+        if (node instanceof Element && clone instanceof Element) {
+            InterceptBindingDirective.setEventListeners(node, clone);
+        }
+        return clone;
+    }
+    static patchLitTemplate(template) {
+        const interceptingWrapper = Lit.Directive.directive(InterceptBindingDirective);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const patchingWrapper = (fn) => {
+            return function (...args) {
+                const result = fn.apply(this, args);
+                return patchValue(result);
+            };
+        };
+        if (template === Lit.nothing) {
+            return;
+        }
+        template.values = template.values.map(patchValue);
+        function isLitTemplate(value) {
+            return Boolean(typeof value === 'object' && value && '_$litType$' in value && 'strings' in value && 'values' in value &&
+                value['_$litType$'] === 1);
+        }
+        function isLitDirective(value) {
+            return Boolean(typeof value === 'object' && value && '_$litDirective$' in value && 'values' in value);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        function isCallable(value) {
+            // Native class constructors cannot be invoked without 'new', and we shouldn't attempt to wrap them.
+            // Differentiate them from regular functions by checking their 'prototype' descriptor:
+            // class constructors have a non-writable prototype, whereas regular functions have a writable prototype.
+            return typeof value === 'function' && Object.getOwnPropertyDescriptor(value, 'prototype')?.writable !== false;
+        }
+        function patchValue(value) {
+            if (isCallable(value)) {
+                try {
+                    return interceptingWrapper(value);
+                }
+                catch {
+                    return value;
+                }
+            }
+            if (isLitTemplate(value)) {
+                HTMLElementWithLightDOMTemplate.patchLitTemplate(value);
+                return value;
+            }
+            if (isLitDirective(value)) {
+                for (let i = 0; i < value.values.length; i++) {
+                    const subvalue = value.values[i];
+                    if (isCallable(subvalue)) {
+                        value.values[i] = patchingWrapper(subvalue);
+                    }
+                    else {
+                        value.values[i] = patchValue(subvalue);
+                    }
+                }
+                return value;
+            }
+            if (Array.isArray(value) || value instanceof Iterator) {
+                return value.map(patchValue);
+            }
+            return value;
+        }
+    }
+    get templateRoot() {
+        return this.#contentTemplate?.content ?? this;
+    }
+    set template(template) {
+        if (!this.#contentTemplate) {
+            this.removeChildren();
+            this.#contentTemplate = this.createChild('template');
+            this.#mutationObserver.disconnect();
+            this.#mutationObserver.observe(this.#contentTemplate.content, { childList: true, attributes: true, subtree: true, characterData: true });
+        }
+        HTMLElementWithLightDOMTemplate.patchLitTemplate(template);
+        // eslint-disable-next-line @devtools/no-lit-render-outside-of-view
+        render(template, this.#contentTemplate.content);
+    }
+    #onChange(mutationList) {
+        this.onChange(mutationList);
+        for (const mutation of mutationList) {
+            this.removeNodes(mutation.removedNodes);
+            this.addNodes(mutation.addedNodes, mutation.nextSibling);
+            this.updateNode(mutation.target, mutation.attributeName);
+        }
+    }
+    onChange(_mutationList) {
+    }
+    updateNode(_node, _attributeName) {
+    }
+    addNodes(_nodes, _nextSibling) {
+    }
+    removeNodes(_nodes) {
+    }
+    static findCorrespondingElement(sourceElement, sourceRootElement, targetRootElement) {
+        let currentElement = sourceElement;
+        const childIndexesOnPathToRoot = [];
+        while (currentElement?.parentElement && currentElement !== sourceRootElement) {
+            childIndexesOnPathToRoot.push([...currentElement.parentElement.children].indexOf(currentElement));
+            currentElement = currentElement.parentElement;
+        }
+        if (!currentElement) {
+            return null;
+        }
+        let targetElement = targetRootElement;
+        for (const index of childIndexesOnPathToRoot.reverse()) {
+            targetElement = targetElement.children[index];
+        }
+        return targetElement;
+    }
+}
+/**
+ * @param text Text to copy to clipboard
+ * @param alert Message to send for a11y only required if there
+ * were other UI changes that visually indicated this copy happened.
+ */
+export function copyTextToClipboard(text, alert) {
+    Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(text);
+    if (alert) {
+        ARIAUtils.LiveAnnouncer.alert(alert);
+    }
+}
+export function getDevToolsBoundingElement() {
+    return InspectorView.maybeGetInspectorViewInstance()?.element || document.body;
+}
+/**
+ * @deprecated Prefer {@link bindToSetting} as this function leaks the checkbox via the setting listener.
+ */
+export const bindCheckbox = function (input, setting, metric) {
+    const setValue = bindCheckboxImpl(input, setting.set.bind(setting), metric);
+    setting.addChangeListener(event => setValue(event.data));
+    setValue(setting.get());
+};
+export const bindCheckboxImpl = function (input, apply, metric) {
+    input.addEventListener('change', onInputChanged, false);
+    function onInputChanged() {
+        apply(input.checked);
+        if (input.checked && metric?.enable) {
+            Host.userMetrics.actionTaken(metric.enable);
+        }
+        if (!input.checked && metric?.disable) {
+            Host.userMetrics.actionTaken(metric.disable);
+        }
+        if (metric?.toggle) {
+            Host.userMetrics.actionTaken(metric.toggle);
+        }
+    }
+    return function setValue(value) {
+        if (value !== input.checked) {
+            input.checked = value;
+        }
+    };
+};
+export const bindToSetting = (settingOrName, optionsOrValidator) => {
+    const setting = typeof settingOrName === 'string' ?
+        Common.Settings.Settings.instance().moduleSetting(settingOrName) :
+        settingOrName;
+    let stringValidator;
+    let jslog = true;
+    if (typeof optionsOrValidator === 'function') {
+        stringValidator = optionsOrValidator;
+    }
+    else if (optionsOrValidator) {
+        stringValidator = optionsOrValidator.validator;
+        if (optionsOrValidator.jslog !== undefined) {
+            jslog = optionsOrValidator.jslog;
+        }
+    }
+    const jslogBuilder = jslog ? VisualLogging.toggle(setting.name).track({ change: true }) : null;
+    // We can't use `setValue` as the change listener directly, otherwise we won't
+    // be able to remove it again.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let setValue;
+    function settingChanged() {
+        setValue(setting.get());
+    }
+    if (setting.type() === "boolean" /* Common.Settings.SettingType.BOOLEAN */ || typeof setting.defaultValue === 'boolean') {
+        return Directives.ref(e => {
+            if (e === undefined) {
+                setting.removeChangeListener(settingChanged);
+                return;
+            }
+            if (jslogBuilder) {
+                e.setAttribute('jslog', jslogBuilder.toString());
+            }
+            setting.addChangeListener(settingChanged);
+            setValue =
+                bindCheckboxImpl(e, setting.set.bind(setting));
+            setValue(setting.get());
+        });
+    }
+    if (setting.type() === "regex" /* Common.Settings.SettingType.REGEX */ || setting instanceof Common.Settings.RegExpSetting) {
+        return Directives.ref(e => {
+            if (e === undefined) {
+                setting.removeChangeListener(settingChanged);
+                return;
+            }
+            if (jslogBuilder) {
+                e.setAttribute('jslog', jslogBuilder.toString());
+            }
+            setting.addChangeListener(settingChanged);
+            setValue = bindInput(e, setting.set.bind(setting), (value) => {
+                try {
+                    new RegExp(value);
+                    return true;
+                }
+                catch {
+                    return false;
+                }
+            }, /* numeric */ false);
+            setValue(setting.get());
+        });
+    }
+    if (typeof setting.defaultValue === 'string') {
+        return Directives.ref(e => {
+            if (e === undefined) {
+                setting.removeChangeListener(settingChanged);
+                return;
+            }
+            if (jslogBuilder) {
+                e.setAttribute('jslog', jslogBuilder.toString());
+            }
+            setting.addChangeListener(settingChanged);
+            setValue = bindInput(e, setting.set.bind(setting), stringValidator ?? (() => true), /* numeric */ false);
+            setValue(setting.get());
+        });
+    }
+    throw new Error(`Cannot infer type for setting  '${setting.name}'`);
+};
 //# sourceMappingURL=UIUtils.js.map

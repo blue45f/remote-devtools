@@ -5,7 +5,7 @@ export declare class ServiceWorkerUpdateCycleView {
     private selectedRowIndex;
     tableElement: HTMLElement;
     constructor(registration: SDK.ServiceWorkerManager.ServiceWorkerRegistration);
-    calculateServiceWorkerUpdateRanges(): Array<ServiceWorkerUpdateRange>;
+    calculateServiceWorkerUpdateRanges(): ServiceWorkerUpdateRange[];
     private createTimingTable;
     private createTimingTableHead;
     private removeRows;
@@ -27,9 +27,9 @@ export declare class ServiceWorkerUpdateCycleView {
     refresh(): void;
 }
 export declare const enum ServiceWorkerUpdateNames {
-    Install = "Install",
-    Wait = "Wait",
-    Activate = "Activate"
+    INSTALL = "Install",
+    WAIT = "Wait",
+    ACTIVATE = "Activate"
 }
 export interface ServiceWorkerUpdateRange {
     id: string;

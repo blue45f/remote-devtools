@@ -1,38 +1,10 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-import { NodeURL } from './NodeURL.js';
-export const DevToolsStubErrorCode = -32015;
-// TODO(dgozman): we are not reporting generic errors in tests, but we should
-// instead report them and just have some expected errors in test expectations.
-const GenericError = -32000;
-const ConnectionClosedErrorCode = -32001;
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+import * as InspectorBackendCommands from '../../generated/InspectorBackendCommands.js';
+import { CDPErrorStatus } from './CDPConnection.js';
+import { ConnectionTransport } from './ConnectionTransport.js';
+import { DevToolsCDPConnection } from './DevToolsCDPConnection.js';
 export const splitQualifiedName = (string) => {
     const [domain, eventName] = string.split('.');
     return [domain, eventName];
@@ -42,8 +14,16 @@ export const qualifyName = (domain, name) => {
 };
 export class InspectorBackend {
     agentPrototypes = new Map();
-    #initialized = false;
     #eventParameterNamesForDomain = new Map();
+    typeMap = new Map();
+    enumMap = new Map();
+    constructor() {
+        // Create the global here because registering commands will involve putting
+        // items onto the global.
+        // @ts-expect-error Global namespace instantiation
+        globalThis.Protocol ||= {};
+        InspectorBackendCommands.registerCommands(this);
+    }
     getOrCreateEventParameterNamesForDomain(domain) {
         let map = this.#eventParameterNamesForDomain.get(domain);
         if (!map) {
@@ -64,59 +44,36 @@ export class InspectorBackend {
     static reportProtocolWarning(error, messageObject) {
         console.warn(error + ': ' + JSON.stringify(messageObject));
     }
-    isInitialized() {
-        return this.#initialized;
-    }
     agentPrototype(domain) {
         let prototype = this.agentPrototypes.get(domain);
         if (!prototype) {
-            prototype = new _AgentPrototype(domain);
+            prototype = new AgentPrototype(domain);
             this.agentPrototypes.set(domain, prototype);
         }
         return prototype;
     }
-    registerCommand(method, parameters, replyArgs) {
+    registerCommand(method, parameters, replyArgs, description) {
         const [domain, command] = splitQualifiedName(method);
-        this.agentPrototype(domain).registerCommand(command, parameters, replyArgs);
-        this.#initialized = true;
+        this.agentPrototype(domain).registerCommand(command, parameters, replyArgs, description);
     }
     registerEnum(type, values) {
         const [domain, name] = splitQualifiedName(type);
-        // @ts-ignore globalThis global namespace pollution
+        // @ts-expect-error globalThis global namespace pollution
         if (!globalThis.Protocol[domain]) {
-            // @ts-ignore globalThis global namespace pollution
+            // @ts-expect-error globalThis global namespace pollution
             globalThis.Protocol[domain] = {};
         }
-        // @ts-ignore globalThis global namespace pollution
+        // @ts-expect-error globalThis global namespace pollution
         globalThis.Protocol[domain][name] = values;
-        this.#initialized = true;
+        this.enumMap.set(type, values);
+    }
+    registerType(method, parameters) {
+        this.typeMap.set(method, parameters);
     }
     registerEvent(eventName, params) {
         const domain = eventName.split('.')[0];
         const eventParameterNames = this.getOrCreateEventParameterNamesForDomain(domain);
         eventParameterNames.set(eventName, params);
-        this.#initialized = true;
-    }
-}
-let connectionFactory;
-export class Connection {
-    onMessage;
-    constructor() {
-    }
-    setOnMessage(_onMessage) {
-    }
-    setOnDisconnect(_onDisconnect) {
-    }
-    sendRawMessage(_message) {
-    }
-    disconnect() {
-        throw new Error('not implemented');
-    }
-    static setFactory(factory) {
-        connectionFactory = factory;
-    }
-    static getFactory() {
-        return connectionFactory;
     }
 }
 export const test = {
@@ -148,237 +105,65 @@ export const test = {
      */
     onMessageReceived: null,
 };
-const LongPollingMethods = new Set(['CSS.takeComputedStyleUpdates']);
 export class SessionRouter {
-    #connectionInternal;
-    #lastMessageId;
-    #pendingResponsesCount;
-    #pendingLongPollingMessageIds;
-    #sessions;
-    #pendingScripts;
+    #connection;
+    #sessions = new Map();
     constructor(connection) {
-        this.#connectionInternal = connection;
-        this.#lastMessageId = 1;
-        this.#pendingResponsesCount = 0;
-        this.#pendingLongPollingMessageIds = new Set();
-        this.#sessions = new Map();
-        this.#pendingScripts = [];
-        test.deprecatedRunAfterPendingDispatches = this.deprecatedRunAfterPendingDispatches.bind(this);
-        test.sendRawMessage = this.sendRawMessageForTesting.bind(this);
-        this.#connectionInternal.setOnMessage(this.onMessage.bind(this));
-        this.#connectionInternal.setOnDisconnect(reason => {
-            const session = this.#sessions.get('');
-            if (session) {
-                session.target.dispose(reason);
-            }
-        });
+        this.#connection = connection;
+        this.#connection.observe(this);
     }
-    registerSession(target, sessionId, proxyConnection) {
-        // Only the Audits panel uses proxy connections. If it is ever possible to have multiple active at the
-        // same time, it should be tested thoroughly.
-        if (proxyConnection) {
-            for (const session of this.#sessions.values()) {
-                if (session.proxyConnection) {
-                    console.error('Multiple simultaneous proxy connections are currently unsupported');
-                    break;
-                }
-            }
-        }
-        this.#sessions.set(sessionId, { target, callbacks: new Map(), proxyConnection });
+    registerSession(target, sessionId) {
+        this.#sessions.set(sessionId, { target });
     }
     unregisterSession(sessionId) {
         const session = this.#sessions.get(sessionId);
         if (!session) {
             return;
         }
-        for (const callback of session.callbacks.values()) {
-            SessionRouter.dispatchUnregisterSessionError(callback);
+        if (this.#connection instanceof DevToolsCDPConnection) {
+            this.#connection.resolvePendingCalls(sessionId);
         }
         this.#sessions.delete(sessionId);
     }
-    getTargetBySessionId(sessionId) {
-        const session = this.#sessions.get(sessionId ? sessionId : '');
-        if (!session) {
-            return null;
+    onDisconnect(reason) {
+        const session = this.#sessions.get('');
+        if (session) {
+            session.target.dispose(reason);
         }
-        return session.target;
     }
-    nextMessageId() {
-        return this.#lastMessageId++;
-    }
-    connection() {
-        return this.#connectionInternal;
-    }
-    sendMessage(sessionId, domain, method, params, callback) {
-        const messageId = this.nextMessageId();
-        const messageObject = {
-            id: messageId,
-            method: method,
-        };
-        if (params) {
-            messageObject.params = params;
-        }
-        if (sessionId) {
-            messageObject.sessionId = sessionId;
-        }
-        if (test.dumpProtocol) {
-            test.dumpProtocol('frontend: ' + JSON.stringify(messageObject));
-        }
-        if (test.onMessageSent) {
-            const paramsObject = JSON.parse(JSON.stringify(params || {}));
-            test.onMessageSent({ domain, method, params: paramsObject, id: messageId, sessionId }, this.getTargetBySessionId(sessionId));
-        }
-        ++this.#pendingResponsesCount;
-        if (LongPollingMethods.has(method)) {
-            this.#pendingLongPollingMessageIds.add(messageId);
-        }
+    onEvent(event) {
+        const sessionId = event.sessionId || '';
         const session = this.#sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-        session.callbacks.set(messageId, { callback, method });
-        this.#connectionInternal.sendRawMessage(JSON.stringify(messageObject));
+        session?.target.dispatch(event);
     }
-    sendRawMessageForTesting(method, params, callback, sessionId = '') {
-        const domain = method.split('.')[0];
-        this.sendMessage(sessionId, domain, method, params, callback || (() => { }));
-    }
-    onMessage(message) {
-        if (test.dumpProtocol) {
-            test.dumpProtocol('backend: ' + ((typeof message === 'string') ? message : JSON.stringify(message)));
-        }
-        if (test.onMessageReceived) {
-            const messageObjectCopy = JSON.parse((typeof message === 'string') ? message : JSON.stringify(message));
-            test.onMessageReceived(messageObjectCopy, this.getTargetBySessionId(messageObjectCopy.sessionId));
-        }
-        const messageObject = ((typeof message === 'string') ? JSON.parse(message) : message);
-        // Send all messages to proxy connections.
-        let suppressUnknownMessageErrors = false;
-        for (const session of this.#sessions.values()) {
-            if (!session.proxyConnection) {
-                continue;
-            }
-            if (!session.proxyConnection.onMessage) {
-                InspectorBackend.reportProtocolError('Protocol Error: the session has a proxyConnection with no _onMessage', messageObject);
-                continue;
-            }
-            session.proxyConnection.onMessage(messageObject);
-            suppressUnknownMessageErrors = true;
-        }
-        const sessionId = messageObject.sessionId || '';
-        const session = this.#sessions.get(sessionId);
-        if (!session) {
-            if (!suppressUnknownMessageErrors) {
-                InspectorBackend.reportProtocolError('Protocol Error: the message with wrong session id', messageObject);
-            }
-            return;
-        }
-        // If this message is directly for the target controlled by the proxy connection, don't handle it.
-        if (session.proxyConnection) {
-            return;
-        }
-        if (session.target.getNeedsNodeJSPatching()) {
-            NodeURL.patch(messageObject);
-        }
-        if (messageObject.id !== undefined) { // just a response for some request
-            const callback = session.callbacks.get(messageObject.id);
-            session.callbacks.delete(messageObject.id);
-            if (!callback) {
-                if (messageObject.error?.code === ConnectionClosedErrorCode) {
-                    // Ignore the errors that are sent as responses after the session closes.
-                    return;
-                }
-                if (!suppressUnknownMessageErrors) {
-                    InspectorBackend.reportProtocolError('Protocol Error: the message with wrong id', messageObject);
-                }
-                return;
-            }
-            callback.callback(messageObject.error || null, messageObject.result || null);
-            --this.#pendingResponsesCount;
-            this.#pendingLongPollingMessageIds.delete(messageObject.id);
-            if (this.#pendingScripts.length && !this.hasOutstandingNonLongPollingRequests()) {
-                this.deprecatedRunAfterPendingDispatches();
-            }
-        }
-        else {
-            if (messageObject.method === undefined) {
-                InspectorBackend.reportProtocolError('Protocol Error: the message without method', messageObject);
-                return;
-            }
-            // This cast is justified as we just checked for the presence of messageObject.method.
-            const eventMessage = messageObject;
-            session.target.dispatch(eventMessage);
-        }
-    }
-    hasOutstandingNonLongPollingRequests() {
-        return this.#pendingResponsesCount - this.#pendingLongPollingMessageIds.size > 0;
-    }
-    deprecatedRunAfterPendingDispatches(script) {
-        if (script) {
-            this.#pendingScripts.push(script);
-        }
-        // Execute all promises.
-        window.setTimeout(() => {
-            if (!this.hasOutstandingNonLongPollingRequests()) {
-                this.executeAfterPendingDispatches();
-            }
-            else {
-                this.deprecatedRunAfterPendingDispatches();
-            }
-        }, 0);
-    }
-    executeAfterPendingDispatches() {
-        if (!this.hasOutstandingNonLongPollingRequests()) {
-            const scripts = this.#pendingScripts;
-            this.#pendingScripts = [];
-            for (let id = 0; id < scripts.length; ++id) {
-                scripts[id]();
-            }
-        }
-    }
-    static dispatchConnectionError(callback, method) {
-        const error = {
-            message: `Connection is closed, can\'t dispatch pending call to ${method}`,
-            code: ConnectionClosedErrorCode,
-            data: null,
-        };
-        window.setTimeout(() => callback(error, null), 0);
-    }
-    static dispatchUnregisterSessionError({ callback, method }) {
-        const error = {
-            message: `Session is unregistering, can\'t dispatch pending call to ${method}`,
-            code: ConnectionClosedErrorCode,
-            data: null,
-        };
-        window.setTimeout(() => callback(error, null), 0);
+    get connection() {
+        return this.#connection;
     }
 }
 export class TargetBase {
-    needsNodeJSPatching;
     sessionId;
-    routerInternal;
+    #router;
     #agents = new Map();
     #dispatchers = new Map();
-    constructor(needsNodeJSPatching, parentTarget, sessionId, connection) {
-        this.needsNodeJSPatching = needsNodeJSPatching;
+    constructor(parentTarget, sessionId, connection) {
         this.sessionId = sessionId;
-        if ((!parentTarget && connection) || (!parentTarget && sessionId) || (connection && sessionId)) {
-            throw new Error('Either connection or sessionId (but not both) must be supplied for a child target');
+        if (parentTarget && !sessionId) {
+            throw new Error('Specifying a parent target requires a session ID');
         }
         let router;
-        if (sessionId && parentTarget && parentTarget.routerInternal) {
-            router = parentTarget.routerInternal;
+        if (parentTarget && parentTarget.#router) {
+            router = parentTarget.#router;
         }
         else if (connection) {
             router = new SessionRouter(connection);
         }
         else {
-            router = new SessionRouter(connectionFactory());
+            router = new SessionRouter(new DevToolsCDPConnection(ConnectionTransport.getFactory()()));
         }
-        this.routerInternal = router;
+        this.#router = router;
         router.registerSession(this, this.sessionId);
         for (const [domain, agentPrototype] of inspectorBackend.agentPrototypes) {
-            const agent = Object.create(agentPrototype);
+            const agent = Object.create((agentPrototype));
             agent.target = this;
             this.#agents.set(domain, agent);
         }
@@ -396,20 +181,17 @@ export class TargetBase {
         dispatcher.dispatch(method, eventMessage);
     }
     dispose(_reason) {
-        if (!this.routerInternal) {
+        if (!this.#router) {
             return;
         }
-        this.routerInternal.unregisterSession(this.sessionId);
-        this.routerInternal = null;
+        this.#router.unregisterSession(this.sessionId);
+        this.#router = null;
     }
     isDisposed() {
-        return !this.routerInternal;
-    }
-    markAsNodeJSForTest() {
-        this.needsNodeJSPatching = true;
+        return !this.#router;
     }
     router() {
-        return this.routerInternal;
+        return this.#router;
     }
     // Agent accessors, keep alphabetically sorted.
     /**
@@ -432,6 +214,9 @@ export class TargetBase {
     auditsAgent() {
         return this.getAgent('Audits');
     }
+    autofillAgent() {
+        return this.getAgent('Autofill');
+    }
     browserAgent() {
         return this.getAgent('Browser');
     }
@@ -441,11 +226,11 @@ export class TargetBase {
     cacheStorageAgent() {
         return this.getAgent('CacheStorage');
     }
+    crashReportContextAgent() {
+        return this.getAgent('CrashReportContext');
+    }
     cssAgent() {
         return this.getAgent('CSS');
-    }
-    databaseAgent() {
-        return this.getAgent('Database');
     }
     debuggerAgent() {
         return this.getAgent('Debugger');
@@ -470,6 +255,9 @@ export class TargetBase {
     }
     eventBreakpointsAgent() {
         return this.getAgent('EventBreakpoints');
+    }
+    extensionsAgent() {
+        return this.getAgent('Extensions');
     }
     fetchAgent() {
         return this.getAgent('Fetch');
@@ -546,6 +334,9 @@ export class TargetBase {
     webAuthnAgent() {
         return this.getAgent('WebAuthn');
     }
+    webMCPAgent() {
+        return this.getAgent('WebMCP');
+    }
     // Dispatcher registration and de-registration, keep alphabetically sorted.
     /**
      * Make sure that `Domain` is only ever instantiated with one protocol domain
@@ -572,6 +363,9 @@ export class TargetBase {
     registerAccessibilityDispatcher(dispatcher) {
         this.registerDispatcher('Accessibility', dispatcher);
     }
+    registerAutofillDispatcher(dispatcher) {
+        this.registerDispatcher('Autofill', dispatcher);
+    }
     registerAnimationDispatcher(dispatcher) {
         this.registerDispatcher('Animation', dispatcher);
     }
@@ -580,9 +374,6 @@ export class TargetBase {
     }
     registerCSSDispatcher(dispatcher) {
         this.registerDispatcher('CSS', dispatcher);
-    }
-    registerDatabaseDispatcher(dispatcher) {
-        this.registerDispatcher('Database', dispatcher);
     }
     registerBackgroundServiceDispatcher(dispatcher) {
         this.registerDispatcher('BackgroundService', dispatcher);
@@ -598,6 +389,9 @@ export class TargetBase {
     }
     registerDOMStorageDispatcher(dispatcher) {
         this.registerDispatcher('DOMStorage', dispatcher);
+    }
+    registerEmulationDispatcher(dispatcher) {
+        this.registerDispatcher('Emulation', dispatcher);
     }
     registerFetchDispatcher(dispatcher) {
         this.registerDispatcher('Fetch', dispatcher);
@@ -656,10 +450,17 @@ export class TargetBase {
     registerWebAuthnDispatcher(dispatcher) {
         this.registerDispatcher('WebAuthn', dispatcher);
     }
-    getNeedsNodeJSPatching() {
-        return this.needsNodeJSPatching;
+    registerWebMCPDispatcher(dispatcher) {
+        this.registerDispatcher('WebMCP', dispatcher);
     }
 }
+/** These are not logged as console.error */
+const IGNORED_ERRORS = new Set([
+    CDPErrorStatus.DEVTOOLS_REHYDRATION_ERROR,
+    CDPErrorStatus.DEVTOOLS_STUB_ERROR,
+    CDPErrorStatus.SERVER_ERROR,
+    CDPErrorStatus.SESSION_NOT_FOUND,
+]);
 /**
  * This is a class that serves as the prototype for a domains #agents (every target
  * has it's own set of #agents). The InspectorBackend keeps an instance of this class
@@ -669,114 +470,43 @@ export class TargetBase {
  * The reasons this is done is so that on the prototypes we can install the implementations
  * of the invoke_enable, etc. methods that the front-end uses.
  */
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-class _AgentPrototype {
-    replyArgs;
-    commandParameters;
+class AgentPrototype {
+    description = '';
+    metadata;
     domain;
     target;
     constructor(domain) {
-        this.replyArgs = {};
         this.domain = domain;
-        this.commandParameters = {};
+        this.metadata = {};
     }
-    registerCommand(methodName, parameters, replyArgs) {
+    registerCommand(methodName, parameters, replyArgs, description) {
         const domainAndMethod = qualifyName(this.domain, methodName);
-        function sendMessagePromise(...args) {
-            return _AgentPrototype.prototype.sendMessageToBackendPromise.call(this, domainAndMethod, parameters, args);
-        }
-        // @ts-ignore Method code generation
-        this[methodName] = sendMessagePromise;
-        this.commandParameters[domainAndMethod] = parameters;
+        this.metadata[domainAndMethod] = { parameters, description, replyArgs };
         function invoke(request = {}) {
             return this.invoke(domainAndMethod, request);
         }
-        // @ts-ignore Method code generation
+        // @ts-expect-error Method code generation
         this['invoke_' + methodName] = invoke;
-        this.replyArgs[domainAndMethod] = replyArgs;
-    }
-    prepareParameters(method, parameters, args, errorCallback) {
-        const params = {};
-        let hasParams = false;
-        for (const param of parameters) {
-            const paramName = param.name;
-            const typeName = param.type;
-            const optionalFlag = param.optional;
-            if (!args.length && !optionalFlag) {
-                errorCallback(`Protocol Error: Invalid number of arguments for method '${method}' call. ` +
-                    `It must have the following arguments ${JSON.stringify(parameters)}'.`);
-                return null;
-            }
-            const value = args.shift();
-            if (optionalFlag && typeof value === 'undefined') {
-                continue;
-            }
-            if (typeof value !== typeName) {
-                errorCallback(`Protocol Error: Invalid type of argument '${paramName}' for method '${method}' call. ` +
-                    `It must be '${typeName}' but it is '${typeof value}'.`);
-                return null;
-            }
-            params[paramName] = value;
-            hasParams = true;
-        }
-        if (args.length) {
-            errorCallback(`Protocol Error: Extra ${args.length} arguments in a call to method '${method}'.`);
-            return null;
-        }
-        return hasParams ? params : null;
-    }
-    sendMessageToBackendPromise(method, parameters, args) {
-        let errorMessage;
-        function onError(message) {
-            console.error(message);
-            errorMessage = message;
-        }
-        const params = this.prepareParameters(method, parameters, args, onError);
-        if (errorMessage) {
-            return Promise.resolve(null);
-        }
-        return new Promise(resolve => {
-            // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const callback = (error, result) => {
-                if (error) {
-                    if (!test.suppressRequestErrors && error.code !== DevToolsStubErrorCode && error.code !== GenericError &&
-                        error.code !== ConnectionClosedErrorCode) {
-                        console.error('Request ' + method + ' failed. ' + JSON.stringify(error));
-                    }
-                    resolve(null);
-                    return;
-                }
-                const args = this.replyArgs[method];
-                resolve(result && args.length ? result[args[0]] : undefined);
-            };
-            const router = this.target.router();
-            if (!router) {
-                SessionRouter.dispatchConnectionError(callback, method);
-            }
-            else {
-                router.sendMessage(this.target.sessionId, this.domain, method, params, callback);
-            }
-        });
     }
     invoke(method, request) {
-        return new Promise(fulfill => {
-            const callback = (error, result) => {
-                if (error && !test.suppressRequestErrors && error.code !== DevToolsStubErrorCode &&
-                    error.code !== GenericError && error.code !== ConnectionClosedErrorCode) {
-                    console.error('Request ' + method + ' failed. ' + JSON.stringify(error));
+        const connection = this.target.router()?.connection;
+        if (!connection) {
+            return Promise.resolve({ result: null, getError: () => `Connection is closed, can\'t dispatch pending call to ${method}` });
+        }
+        return connection.send(method, request, this.target.sessionId)
+            .then(response => {
+            if ('error' in response && response.error) {
+                if (!test.suppressRequestErrors && !IGNORED_ERRORS.has(response.error.code)) {
+                    console.error('Request ' + method + ' failed. ' + JSON.stringify(response.error));
                 }
-                const errorMessage = error?.message;
-                fulfill({ ...result, getError: () => errorMessage });
+                return { getError: () => response.error.message };
+            }
+            if ('result' in response) {
+                return { ...response.result, getError: () => undefined };
+            }
+            return {
+                getError: () => `Command ${method} returned neither result nor an error, params: ${JSON.stringify(request, undefined, 2)}`,
             };
-            const router = this.target.router();
-            if (!router) {
-                SessionRouter.dispatchConnectionError(callback, method);
-            }
-            else {
-                router.sendMessage(this.target.sessionId, this.domain, method, request, callback);
-            }
         });
     }
 }
@@ -811,13 +541,12 @@ class DispatcherManager {
             InspectorBackend.reportProtocolWarning(`Protocol Warning: Attempted to dispatch an unspecified event '${messageObject.method}'`, messageObject);
             return;
         }
-        const messageParams = { ...messageObject.params };
         for (let index = 0; index < this.#dispatchers.length; ++index) {
             const dispatcher = this.#dispatchers[index];
             if (event in dispatcher) {
                 const f = dispatcher[event];
-                // @ts-ignore Can't type check the dispatch.
-                f.call(dispatcher, messageParams);
+                // @ts-expect-error Can't type check the dispatch.
+                f.call(dispatcher, messageObject.params);
             }
         }
     }

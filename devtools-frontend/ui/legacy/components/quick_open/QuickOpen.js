@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../../../core/i18n/i18n.js';
@@ -13,15 +13,11 @@ const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/quick_open/QuickO
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export const history = [];
 export class QuickOpenImpl {
-    prefix;
-    prefixes;
-    providers;
-    filteredListWidget;
+    prefix = null;
+    prefixes = [];
+    providers = new Map();
+    filteredListWidget = null;
     constructor() {
-        this.prefix = null;
-        this.prefixes = [];
-        this.providers = new Map();
-        this.filteredListWidget = null;
         getRegisteredProviders().forEach(this.addProvider.bind(this));
         this.prefixes.sort((a, b) => b.length - a.length);
     }
@@ -40,7 +36,11 @@ export class QuickOpenImpl {
         }
         this.prefixes.push(prefix);
         this.providers.set(prefix, {
-            provider: extension.provider,
+            provider: async () => {
+                const provider = await extension.provider();
+                provider.jslogContext = extension.jslogContext;
+                return provider;
+            },
             titlePrefix: extension.titlePrefix,
             titleSuggestion: extension.titleSuggestion,
         });
@@ -57,7 +57,7 @@ export class QuickOpenImpl {
         const titlePrefixFunction = this.providers.get(prefix)?.titlePrefix;
         this.filteredListWidget.setCommandPrefix(titlePrefixFunction ? titlePrefixFunction() : '');
         const titleSuggestionFunction = (query === prefix) && this.providers.get(prefix)?.titleSuggestion;
-        this.filteredListWidget.setCommandSuggestion(titleSuggestionFunction ? titleSuggestionFunction() : '');
+        this.filteredListWidget.setCommandSuggestion(titleSuggestionFunction ? prefix + titleSuggestionFunction() : '');
         if (this.prefix === prefix) {
             return;
         }
@@ -77,18 +77,10 @@ export class QuickOpenImpl {
     providerLoadedForTest(_provider) {
     }
 }
-let showActionDelegateInstance;
 export class ShowActionDelegate {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!showActionDelegateInstance || forceNew) {
-            showActionDelegateInstance = new ShowActionDelegate();
-        }
-        return showActionDelegateInstance;
-    }
-    handleAction(context, actionId) {
+    handleAction(_context, actionId) {
         switch (actionId) {
-            case 'quickOpen.show':
+            case 'quick-open.show':
                 QuickOpenImpl.show('');
                 return true;
         }

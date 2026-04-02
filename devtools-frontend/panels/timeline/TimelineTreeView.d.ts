@@ -1,25 +1,33 @@
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as SDK from '../../core/sdk/sdk.js';
-import * as TimelineModel from '../../models/timeline_model/timeline_model.js';
-import type * as TraceEngine from '../../models/trace/trace.js';
+import * as Trace from '../../models/trace/trace.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type PerformanceModel } from './PerformanceModel.js';
 import { TimelineRegExp } from './TimelineFilters.js';
 import { type TimelineSelection } from './TimelineSelection.js';
-export declare class TimelineTreeView extends UI.Widget.VBox implements UI.SearchableView.Searchable {
+declare const TimelineTreeView_base: (new (...args: any[]) => {
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<TimelineTreeView.EventTypes>;
+    addEventListener<T extends keyof TimelineTreeView.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineTreeView.EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<TimelineTreeView.EventTypes, T>;
+    once<T extends keyof TimelineTreeView.EventTypes>(eventType: T): Promise<TimelineTreeView.EventTypes[T]>;
+    removeEventListener<T extends keyof TimelineTreeView.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineTreeView.EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: keyof TimelineTreeView.EventTypes): boolean;
+    dispatchEventToListeners<T extends keyof TimelineTreeView.EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<TimelineTreeView.EventTypes, T>): void;
+}) & typeof UI.Widget.VBox;
+/**
+ * For an overview, read: https://chromium.googlesource.com/devtools/devtools-frontend/+/refs/heads/main/front_end/panels/timeline/README.md#timeline-tree-views
+ */
+export declare class TimelineTreeView extends TimelineTreeView_base implements UI.SearchableView.Searchable {
     #private;
-    modelInternal: PerformanceModel | null;
     private searchResults;
     linkifier: Components.Linkifier.Linkifier;
     dataGrid: DataGrid.SortableDataGrid.SortableDataGrid<GridNode>;
     private lastHoveredProfileNode;
     private textFilterInternal;
     private taskFilter;
-    protected startTime: number;
-    protected endTime: number;
+    protected startTimeInternal: Trace.Types.Timing.Milli;
+    protected endTimeInternal: Trace.Types.Timing.Milli;
     splitWidget: UI.SplitWidget.SplitWidget;
     detailsView: UI.Widget.Widget;
     private searchableView;
@@ -28,100 +36,157 @@ export declare class TimelineTreeView extends UI.Widget.VBox implements UI.Searc
     private root?;
     private currentResult?;
     textFilterUI?: UI.Toolbar.ToolbarInput;
-    constructor();
-    static eventNameForSorting(event: SDK.TracingModel.Event): string;
-    setSearchableView(searchableView: UI.SearchableView.SearchableView): void;
-    setModelWithEvents(model: PerformanceModel | null, selectedEvents: SDK.TracingModel.CompatibleTraceEvent[] | null, traceParseData?: TraceEngine.Handlers.Migration.PartialTraceData | null): void;
+    private caseSensitiveButton;
+    private regexButton;
+    private matchWholeWord;
+    eventToTreeNode: WeakMap<Trace.Types.Events.Event, Trace.Extras.TraceTree.Node>;
     /**
-     * This method is included only for preventing layout test failures.
-     * TODO(crbug.com/1433692): Port problematic layout tests to unit
-     * tests.
+     * Determines if the first child in the data grid will be selected
+     * by default when refreshTree() gets called.
      */
-    setModel(model: PerformanceModel | null, track: TimelineModel.TimelineModel.Track | null): void;
-    getToolbarInputAccessiblePlaceHolder(): string;
-    model(): PerformanceModel | null;
-    traceParseData(): TraceEngine.Handlers.Migration.PartialTraceData | null;
+    protected autoSelectFirstChildOnRefresh: boolean;
+    constructor(element?: HTMLElement);
+    get selectedEvents(): Trace.Types.Events.Event[];
+    set selectedEvents(selectedEvents: Trace.Types.Events.Event[] | null);
+    set parsedTrace(parsedTrace: Trace.TraceModel.ParsedTrace | null);
+    get parsedTrace(): Trace.TraceModel.ParsedTrace | null;
+    set startTime(startTime: Trace.Types.Timing.Milli);
+    get startTime(): Trace.Types.Timing.Milli;
+    set endTime(endTime: Trace.Types.Timing.Milli);
+    get endTime(): Trace.Types.Timing.Milli;
+    get compactMode(): boolean;
+    set compactMode(v: boolean);
+    get maxLinkLength(): number | undefined;
+    set maxLinkLength(maxLinkLength: number | undefined);
+    get maxRows(): number | undefined;
+    set maxRows(maxRows: number | undefined);
+    setSearchableView(searchableView: UI.SearchableView.SearchableView): void;
+    set model(model: {
+        selectedEvents: Trace.Types.Events.Event[] | null;
+        parsedTrace: Trace.TraceModel.ParsedTrace | null;
+        entityMapper: Trace.EntityMapper.EntityMapper | null;
+    });
+    entityMapper(): Trace.EntityMapper.EntityMapper | null;
+    isThirdPartyTreeView(): boolean;
+    nodeIsFirstParty(_node: Trace.Extras.TraceTree.Node): boolean;
+    nodeIsExtension(_node: Trace.Extras.TraceTree.Node): boolean;
     init(): void;
-    lastSelectedNode(): TimelineModel.TimelineProfileTree.Node | null | undefined;
-    updateContents(selection: TimelineSelection): void;
-    setRange(startTime: number, endTime: number): void;
-    filters(): TimelineModel.TimelineModelFilter.TimelineModelFilter[];
-    filtersWithoutTextFilter(): TimelineModel.TimelineModelFilter.TimelineModelFilter[];
+    wasShown(): void;
+    lastSelectedNode(): Trace.Extras.TraceTree.Node | null | undefined;
+    set activeSelection(selection: TimelineSelection);
+    setRange(startTime: Trace.Types.Timing.Milli, endTime: Trace.Types.Timing.Milli): void;
+    highlightEventInTree(event: Trace.Types.Events.Event | null): void;
+    filters(): Trace.Extras.TraceFilter.TraceFilter[];
+    filtersWithoutTextFilter(): Trace.Extras.TraceFilter.TraceFilter[];
     textFilter(): TimelineRegExp;
     exposePercentages(): boolean;
     populateToolbar(toolbar: UI.Toolbar.Toolbar): void;
-    modelEvents(): SDK.TracingModel.CompatibleTraceEvent[];
-    onHover(_node: TimelineModel.TimelineProfileTree.Node | null): void;
-    appendContextMenuItems(_contextMenu: UI.ContextMenu.ContextMenu, _node: TimelineModel.TimelineProfileTree.Node): void;
-    selectProfileNode(treeNode: TimelineModel.TimelineProfileTree.Node, suppressSelectedEvent: boolean): void;
-    refreshTree(): void;
-    buildTree(): TimelineModel.TimelineProfileTree.Node;
-    buildTopDownTree(doNotAggregate: boolean, groupIdCallback: ((arg0: SDK.TracingModel.CompatibleTraceEvent) => string) | null): TimelineModel.TimelineProfileTree.Node;
+    appendContextMenuItems(_contextMenu: UI.ContextMenu.ContextMenu, _node: Trace.Extras.TraceTree.Node): void;
+    selectProfileNode(treeNode: Trace.Extras.TraceTree.Node, suppressSelectedEvent: boolean): void;
+    /**
+     * Refreshes the tree. By default, it will only do this
+     * if the tree is mounted into the DOM - as in the UI we
+     * have multiple trees and we only want to refresh the
+     * active one. Pass `true` into this function to force a
+     * refresh regardless.
+     */
+    refreshTree(forceRefresh?: boolean): void;
+    buildTree(): Trace.Extras.TraceTree.Node;
+    buildTopDownTree(doNotAggregate: boolean, eventGroupIdCallback: ((arg0: Trace.Types.Events.Event) => string) | null): Trace.Extras.TraceTree.Node;
     populateColumns(columns: DataGrid.DataGrid.ColumnDescriptor[]): void;
-    private sortingChanged;
+    sortingChanged(): void;
+    getSortingFunction(columnId: string): ((a: DataGrid.SortableDataGrid.SortableDataGridNode<GridNode>, b: DataGrid.SortableDataGrid.SortableDataGridNode<GridNode>) => number) | null;
     private onShowModeChanged;
-    private updateDetailsForSelection;
-    showDetailsForNode(_node: TimelineModel.TimelineProfileTree.Node): boolean;
+    protected updateDetailsForSelection(): void;
+    showDetailsForNode(_node: Trace.Extras.TraceTree.Node): boolean;
     private onMouseMove;
+    onHover(node: Trace.Extras.TraceTree.Node | null): void;
+    onClick(node: Trace.Extras.TraceTree.Node | null): void;
+    childWasDetached(_widget: UI.Widget.Widget): void;
+    onGridNodeOpened(): void;
     private onContextMenu;
-    dataGridNodeForTreeNode(treeNode: TimelineModel.TimelineProfileTree.Node): GridNode | null;
+    dataGridElementForEvent(event: Trace.Types.Events.Event | null): HTMLElement | null;
+    dataGridNodeForTreeNode(treeNode: Trace.Extras.TraceTree.Node): GridNode | null;
     onSearchCanceled(): void;
     performSearch(searchConfig: UI.SearchableView.SearchConfig, _shouldJump: boolean, _jumpBackwards?: boolean): void;
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
 }
+export declare namespace TimelineTreeView {
+    const enum Events {
+        TREE_ROW_HOVERED = "TreeRowHovered",
+        BOTTOM_UP_BUTTON_CLICKED = "BottomUpButtonClicked",
+        TREE_ROW_CLICKED = "TreeRowClicked"
+    }
+    interface EventTypes {
+        [Events.TREE_ROW_HOVERED]: {
+            node: Trace.Extras.TraceTree.Node | null;
+            events?: Trace.Types.Events.Event[];
+        };
+        [Events.BOTTOM_UP_BUTTON_CLICKED]: Trace.Extras.TraceTree.Node | null;
+        [Events.TREE_ROW_CLICKED]: {
+            node: Trace.Extras.TraceTree.Node | null;
+            events?: Trace.Types.Events.Event[];
+        };
+    }
+}
+/**
+ * GridNodes are 1:1 with `TraceTree.Node`s but represent them within the DataGrid. It handles the representation as a row.
+ * `TreeGridNode` extends this to maintain relationship to the tree, and handles populate().
+ *
+ * `TimelineStackView` (aka heaviest stack) uses GridNode directly (as there's no hierarchy there), otherwise these TreeGridNode could probably be consolidated.
+ */
 export declare class GridNode extends DataGrid.SortableDataGrid.SortableDataGridNode<GridNode> {
+    #private;
     protected populated: boolean;
-    profileNode: TimelineModel.TimelineProfileTree.Node;
+    profileNode: Trace.Extras.TraceTree.Node;
     protected treeView: TimelineTreeView;
     protected grandTotalTime: number;
     protected maxSelfTime: number;
     protected maxTotalTime: number;
     linkElement: Element | null;
-    constructor(profileNode: TimelineModel.TimelineProfileTree.Node, grandTotalTime: number, maxSelfTime: number, maxTotalTime: number, treeView: TimelineTreeView);
+    constructor(profileNode: Trace.Extras.TraceTree.Node, grandTotalTime: number, maxSelfTime: number, maxTotalTime: number, treeView: TimelineTreeView);
     createCell(columnId: string): HTMLElement;
     private createNameCell;
     private createValueCell;
+    private generateBottomUpButton;
 }
+/**
+ * `TreeGridNode` lets a `GridNode` (row) populate based on its tree children.
+ */
 export declare class TreeGridNode extends GridNode {
-    constructor(profileNode: TimelineModel.TimelineProfileTree.Node, grandTotalTime: number, maxSelfTime: number, maxTotalTime: number, treeView: TimelineTreeView);
+    constructor(profileNode: Trace.Extras.TraceTree.Node, grandTotalTime: number, maxSelfTime: number, maxTotalTime: number, treeView: TimelineTreeView);
     populate(): void;
 }
 export declare class AggregatedTimelineTreeView extends TimelineTreeView {
+    #private;
     protected readonly groupBySetting: Common.Settings.Setting<AggregatedTimelineTreeView.GroupBy>;
-    private readonly stackView;
-    private executionContextNamesByOrigin;
-    constructor();
-    setGroupBySettingForTests(groupBy: AggregatedTimelineTreeView.GroupBy): void;
-    setModelWithEvents(model: PerformanceModel | null, selectedEvents: SDK.TracingModel.CompatibleTraceEvent[] | null, traceParseData?: TraceEngine.Handlers.Migration.PartialTraceData | null): void;
-    /**
-     * This method is included only for preventing layout test failures.
-     * TODO(crbug.com/1433692): Port problematic layout tests to unit
-     * tests.
-     */
-    setModel(model: PerformanceModel | null, track: TimelineModel.TimelineModel.Track | null): void;
-    updateContents(selection: TimelineSelection): void;
-    private updateExtensionResolver;
+    readonly stackView: TimelineStackView;
+    constructor(element?: HTMLElement);
+    setGroupBySetting(groupBy: AggregatedTimelineTreeView.GroupBy): void;
+    set activeSelection(selection: TimelineSelection);
     private beautifyDomainName;
-    displayInfoForGroupNode(node: TimelineModel.TimelineProfileTree.Node): {
+    displayInfoForGroupNode(node: Trace.Extras.TraceTree.Node): {
         name: string;
         color: string;
-        icon: (Element | undefined);
+        icon?: Element;
     };
     populateToolbar(toolbar: UI.Toolbar.Toolbar): void;
     private buildHeaviestStack;
     exposePercentages(): boolean;
     private onStackViewSelectionChanged;
-    showDetailsForNode(node: TimelineModel.TimelineProfileTree.Node): boolean;
-    protected groupingFunction(groupBy: string): ((arg0: SDK.TracingModel.CompatibleTraceEvent) => string) | null;
+    showDetailsForNode(node: Trace.Extras.TraceTree.Node): boolean;
+    protected groupingFunction(groupBy: AggregatedTimelineTreeView.GroupBy): ((arg0: Trace.Types.Events.Event) => string) | null;
     private domainByEvent;
-    appendContextMenuItems(contextMenu: UI.ContextMenu.ContextMenu, node: TimelineModel.TimelineProfileTree.Node): void;
     private static isExtensionInternalURL;
     private static isV8NativeURL;
     private static readonly extensionInternalPrefix;
     private static readonly v8NativePrefix;
+    onHover(node: Trace.Extras.TraceTree.Node | null): void;
+    onClick(node: Trace.Extras.TraceTree.Node | null): void;
 }
 export declare namespace AggregatedTimelineTreeView {
     enum GroupBy {
@@ -131,41 +196,43 @@ export declare namespace AggregatedTimelineTreeView {
         Domain = "Domain",
         Subdomain = "Subdomain",
         URL = "URL",
-        Frame = "Frame"
+        Frame = "Frame",
+        ThirdParties = "ThirdParties"
     }
 }
 export declare class CallTreeTimelineTreeView extends AggregatedTimelineTreeView {
-    constructor();
-    getToolbarInputAccessiblePlaceHolder(): string;
-    buildTree(): TimelineModel.TimelineProfileTree.Node;
+    constructor(element?: HTMLElement);
+    buildTree(): Trace.Extras.TraceTree.Node;
 }
 export declare class BottomUpTimelineTreeView extends AggregatedTimelineTreeView {
-    constructor();
-    getToolbarInputAccessiblePlaceHolder(): string;
-    buildTree(): TimelineModel.TimelineProfileTree.Node;
+    constructor(element?: HTMLElement);
+    buildTree(): Trace.Extras.TraceTree.Node;
 }
 declare const TimelineStackView_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<TimelineStackView.EventTypes>;
-    addEventListener<T extends TimelineStackView.Events.SelectionChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<TimelineStackView.EventTypes, T>;
-    once<T_1 extends TimelineStackView.Events.SelectionChanged>(eventType: T_1): Promise<TimelineStackView.EventTypes[T_1]>;
-    removeEventListener<T_2 extends TimelineStackView.Events.SelectionChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: TimelineStackView.Events.SelectionChanged): boolean;
-    dispatchEventToListeners<T_3 extends TimelineStackView.Events.SelectionChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<TimelineStackView.EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<TimelineStackView.EventTypes>;
+    addEventListener<T extends keyof TimelineStackView.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<TimelineStackView.EventTypes, T>;
+    once<T extends keyof TimelineStackView.EventTypes>(eventType: T): Promise<TimelineStackView.EventTypes[T]>;
+    removeEventListener<T extends keyof TimelineStackView.EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<TimelineStackView.EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: keyof TimelineStackView.EventTypes): boolean;
+    dispatchEventToListeners<T extends keyof TimelineStackView.EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<TimelineStackView.EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class TimelineStackView extends TimelineStackView_base {
     private readonly treeView;
     private readonly dataGrid;
     constructor(treeView: TimelineTreeView);
-    setStack(stack: TimelineModel.TimelineProfileTree.Node[], selectedNode: TimelineModel.TimelineProfileTree.Node): void;
-    selectedTreeNode(): TimelineModel.TimelineProfileTree.Node | null;
+    setStack(stack: Trace.Extras.TraceTree.Node[], selectedNode: Trace.Extras.TraceTree.Node): void;
+    onMouseMove(event: Event): void;
+    selectedTreeNode(): Trace.Extras.TraceTree.Node | null;
     private onSelectionChanged;
 }
 export declare namespace TimelineStackView {
-    enum Events {
-        SelectionChanged = "SelectionChanged"
+    const enum Events {
+        SELECTION_CHANGED = "SelectionChanged",
+        TREE_ROW_HOVERED = "TreeRowHovered"
     }
-    type EventTypes = {
-        [Events.SelectionChanged]: void;
-    };
+    interface EventTypes {
+        [Events.TREE_ROW_HOVERED]: Trace.Extras.TraceTree.Node | null;
+        [Events.SELECTION_CHANGED]: void;
+    }
 }
 export {};

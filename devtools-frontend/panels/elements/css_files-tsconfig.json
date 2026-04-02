@@ -6,8 +6,8 @@
     "files": [
         "accessibilityTreeView.css.js",
         "classesPaneWidget.css.js",
-        "computedStyleSidebarPane.css.js",
-        "domLinkifier.css.js",
+        "computedStyleWidget.css.js",
+        "cssValueTraceView.css.js",
         "elementStatePaneWidget.css.js",
         "elementsPanel.css.js",
         "elementsTreeOutline.css.js",
@@ -17,7 +17,7 @@
         "nodeStackTraceWidget.css.js",
         "platformFontsWidget.css.js",
         "propertiesWidget.css.js",
-        "stylesSectionTree.css.js",
+        "stylePropertiesTreeOutline.css.js",
         "stylesSidebarPane.css.js"
     ]
 }

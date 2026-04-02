@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -6,17 +6,18 @@ import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Persistence from '../../models/persistence/persistence.js';
-import * as UI from '../../ui/legacy/legacy.js';
+import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Workspace from '../../models/workspace/workspace.js';
+import * as UI from '../../ui/legacy/legacy.js';
 const UIStrings = {
     /**
-     *@description Default snippet name when a new snippet is created in the Sources panel
-     *@example {1} PH1
+     * @description Default snippet name when a new snippet is created in the Sources panel
+     * @example {1} PH1
      */
     scriptSnippet: 'Script snippet #{PH1}',
     /**
-     *@description Text to show something is linked to another
-     *@example {example.url} PH1
+     * @description Text to show something is linked to another
+     * @example {example.url} PH1
      */
     linkedTo: 'Linked to {PH1}',
 };
@@ -32,10 +33,10 @@ export class SnippetFileSystem extends Persistence.PlatformFileSystem.PlatformFi
     lastSnippetIdentifierSetting;
     snippetsSetting;
     constructor() {
-        super('snippet://', 'snippets');
+        super('snippet://', Persistence.PlatformFileSystem.PlatformFileSystemType.SNIPPETS, false);
         this.lastSnippetIdentifierSetting =
-            Common.Settings.Settings.instance().createSetting('scriptSnippets_lastIdentifier', 0);
-        this.snippetsSetting = Common.Settings.Settings.instance().createSetting('scriptSnippets', []);
+            Common.Settings.Settings.instance().createSetting('script-snippets-last-identifier', 0);
+        this.snippetsSetting = Common.Settings.Settings.instance().createSetting('script-snippets', []);
     }
     initialFilePaths() {
         const savedSnippets = this.snippetsSetting.get();
@@ -65,9 +66,9 @@ export class SnippetFileSystem extends Persistence.PlatformFileSystem.PlatformFi
         const snippets = this.snippetsSetting.get();
         const snippet = snippets.find(snippet => snippet.name === name);
         if (snippet) {
-            return { content: snippet.content, isEncoded: false };
+            return new TextUtils.ContentData.ContentData(snippet.content, /* isBase64 */ false, 'text/javascript');
         }
-        return { content: null, isEncoded: false, error: `A snippet with name '${name}' was not found` };
+        return { error: `A snippet with name '${name}' was not found` };
     }
     async setFileContent(path, content, _isBase64) {
         const name = unescapeSnippetName(Common.ParsedURL.ParsedURL.substring(path, 1));
@@ -113,7 +114,7 @@ export class SnippetFileSystem extends Persistence.PlatformFileSystem.PlatformFi
     }
 }
 export async function evaluateScriptSnippet(uiSourceCode) {
-    if (!uiSourceCode.url().startsWith('snippet://')) {
+    if (!Common.ParsedURL.schemeIs(uiSourceCode.url(), 'snippet:')) {
         return;
     }
     const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
@@ -122,7 +123,7 @@ export async function evaluateScriptSnippet(uiSourceCode) {
     }
     const runtimeModel = executionContext.runtimeModel;
     const consoleModel = executionContext.target().model(SDK.ConsoleModel.ConsoleModel);
-    await uiSourceCode.requestContent();
+    await uiSourceCode.requestContentData();
     uiSourceCode.commitWorkingCopy();
     const expression = uiSourceCode.workingCopy();
     Common.Console.Console.instance().show();
@@ -158,11 +159,12 @@ export async function evaluateScriptSnippet(uiSourceCode) {
     consoleModel?.addMessage(new SDK.ConsoleModel.ConsoleMessage(runtimeModel, "javascript" /* Protocol.Log.LogEntrySource.Javascript */, "info" /* Protocol.Log.LogEntryLevel.Info */, '', details));
 }
 export function isSnippetsUISourceCode(uiSourceCode) {
-    return uiSourceCode.url().startsWith('snippet://');
+    return Common.ParsedURL.schemeIs(uiSourceCode.url(), 'snippet:');
 }
 export function isSnippetsProject(project) {
     return project.type() === Workspace.Workspace.projectTypes.FileSystem &&
-        Persistence.FileSystemWorkspaceBinding.FileSystemWorkspaceBinding.fileSystemType(project) === 'snippets';
+        Persistence.FileSystemWorkspaceBinding.FileSystemWorkspaceBinding.fileSystemType(project) ===
+            Persistence.PlatformFileSystem.PlatformFileSystemType.SNIPPETS;
 }
 export function findSnippetsProject() {
     const workspaceProject = Workspace.Workspace.WorkspaceImpl.instance()

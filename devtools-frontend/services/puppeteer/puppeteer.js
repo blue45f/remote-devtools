@@ -1,6 +1,2 @@
-// Copyright (c) 2022 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as PuppeteerConnection from './PuppeteerConnection.js';
-export { PuppeteerConnection, };
+var g=Object.defineProperty;var l=(i,s)=>{for(var e in s)g(i,e,{get:s[e],enumerable:!0})};var h={};l(h,{PuppeteerConnectionHelper:()=>p});import*as n from"./../../third_party/puppeteer/puppeteer.js";var d=class extends n.Connection{#e;#s;constructor(s,e){super("",{close:()=>{}}),this.#e=s,this.#e.observe(this),this.#s=e}_rawSend(s,e,o,r,u){return this.#e.send(e,o,r??this.#s).then(t=>"result"in t?t.result:{})}onEvent(s){let{sessionId:e}=s;if(e===this.#s)s.sessionId=void 0;else if(!e||!this._sessions.has(e))return;super.onMessage(JSON.stringify(s))}onDisconnect(){this.dispose()}dispose(){super.dispose(),this.#e.unobserve(this),this.#e.send("Target.detachFromTarget",{sessionId:this.#s},this.#s)}},p=class{static async connectPuppeteerToConnectionViaTab(s){let{connection:e,targetId:o,sessionId:r,isPageTargetCallback:u}=s,t=new d(e,r),f=n.Browser._create(t,[],!1,void 0,void 0,void 0,void 0,void 0,c=>u(c._getTargetInfo()),!1),[,a]=await Promise.all([t._createSession({targetId:o},!0),f]);return await a.waitForTarget(c=>c.type()==="page"),{page:(await a.pages())[0],browser:a,puppeteerConnection:t}}};export{h as PuppeteerConnection};
 //# sourceMappingURL=puppeteer.js.map

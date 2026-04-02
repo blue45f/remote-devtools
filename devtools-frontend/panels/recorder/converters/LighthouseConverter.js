@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as PuppeteerReplay from '../../../third_party/puppeteer-replay/puppeteer-replay.js';
@@ -9,7 +9,7 @@ export class LighthouseConverter {
         this.#indent = indent;
     }
     getId() {
-        return "lighthouse" /* Models.ConverterIds.ConverterIds.Lighthouse */;
+        return "lighthouse" /* Models.ConverterIds.ConverterIds.LIGHTHOUSE */;
     }
     getFormatName() {
         return 'Puppeteer (including Lighthouse analysis)';

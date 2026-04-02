@@ -1,44 +1,37 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as TimelineModel from '../../models/timeline_model/timeline_model.js';
+import * as Trace from '../../models/trace/trace.js';
 import { TimelineUIUtils } from './TimelineUIUtils.js';
-export class IsLong extends TimelineModel.TimelineModelFilter.TimelineModelFilter {
-    minimumRecordDuration;
-    constructor() {
-        super();
-        this.minimumRecordDuration = 0;
-    }
+export class IsLong extends Trace.Extras.TraceFilter.TraceFilter {
+    #minimumRecordDurationMilli = Trace.Types.Timing.Milli(0);
     setMinimumRecordDuration(value) {
-        this.minimumRecordDuration = value;
+        this.#minimumRecordDurationMilli = value;
     }
     accept(event) {
-        const duration = event.endTime ? event.endTime - event.startTime : 0;
-        return duration >= this.minimumRecordDuration;
+        const { duration } = Trace.Helpers.Timing.eventTimingsMilliSeconds(event);
+        return duration >= this.#minimumRecordDurationMilli;
     }
 }
-export class Category extends TimelineModel.TimelineModelFilter.TimelineModelFilter {
-    constructor() {
-        super();
-    }
+export class Category extends Trace.Extras.TraceFilter.TraceFilter {
     accept(event) {
         return !TimelineUIUtils.eventStyle(event).category.hidden;
     }
 }
-export class TimelineRegExp extends TimelineModel.TimelineModelFilter.TimelineModelFilter {
-    regExpInternal;
+export class TimelineRegExp extends Trace.Extras.TraceFilter.TraceFilter {
+    #regExp;
     constructor(regExp) {
         super();
         this.setRegExp(regExp || null);
     }
     setRegExp(regExp) {
-        this.regExpInternal = regExp;
+        this.#regExp = regExp;
     }
     regExp() {
-        return this.regExpInternal;
+        return this.#regExp;
     }
-    accept(event) {
-        return !this.regExpInternal || TimelineUIUtils.testContentMatching(event, this.regExpInternal);
+    accept(event, handlerData) {
+        return !this.#regExp || TimelineUIUtils.testContentMatching(event, this.#regExp, handlerData);
     }
 }
 //# sourceMappingURL=TimelineFilters.js.map

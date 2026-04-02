@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -8,7 +8,7 @@ import * as MobileThrottling from '../../panels/mobile_throttling/mobile_throttl
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 const UIStrings = {
     /**
-     *@description Text that refers to the main target.
+     * @description Text that refers to the main target.
      */
     main: 'Main',
 };
@@ -29,7 +29,7 @@ export class WorkerMainImpl {
                 return;
             }
             SDK.TargetManager.TargetManager.instance().createTarget('main', i18nString(UIStrings.main), SDK.Target.Type.ServiceWorker, null);
-        }, Components.TargetDetachedDialog.TargetDetachedDialog.webSocketConnectionLost);
+        }, Components.TargetDetachedDialog.TargetDetachedDialog.connectionLost);
         new MobileThrottling.NetworkPanelIndicator.NetworkPanelIndicator();
     }
 }

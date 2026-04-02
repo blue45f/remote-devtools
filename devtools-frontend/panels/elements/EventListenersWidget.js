@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -33,88 +33,102 @@ import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import { html, render } from '../../ui/lit/lit.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import * as EventListeners from '../event_listeners/event_listeners.js';
+const { bindToAction, bindToSetting } = UI.UIUtils;
 const UIStrings = {
     /**
-     *@description Title of show framework listeners setting in event listeners widget of the elements panel
+     * @description Title of show framework listeners setting in event listeners widget of the elements panel
      */
-    frameworkListeners: '`Framework` listeners',
+    frameworkListeners: 'Resolve `Framework` listeners',
     /**
-     *@description Text to refresh the page
-     */
-    refresh: 'Refresh',
-    /**
-     *@description Tooltip text that appears on the setting when hovering over it in Event Listeners Widget of the Elements panel
+     * @description Tooltip text that appears on the setting when hovering over it in Event Listeners Widget of the Elements panel
      */
     showListenersOnTheAncestors: 'Show listeners on the ancestors',
     /**
-     *@description Alternative title text of a setting in Event Listeners Widget of the Elements panel
+     * @description Alternative title text of a setting in Event Listeners Widget of the Elements panel
      */
     ancestors: 'Ancestors',
     /**
-     *@description Title of dispatch filter in event listeners widget of the elements panel
+     * @description Title of dispatch filter in event listeners widget of the elements panel
      */
     eventListenersCategory: 'Event listeners category',
     /**
-     *@description Text for everything
+     * @description Text for everything
      */
     all: 'All',
     /**
-     *@description Text in Event Listeners Widget of the Elements panel
+     * @description Text in Event Listeners Widget of the Elements panel
      */
     passive: 'Passive',
     /**
-     *@description Text in Event Listeners Widget of the Elements panel
+     * @description Text in Event Listeners Widget of the Elements panel
      */
     blocking: 'Blocking',
     /**
-     *@description Tooltip text that appears on the setting when hovering over it in Event Listeners Widget of the Elements panel
+     * @description Tooltip text that appears on the setting when hovering over it in Event Listeners Widget of the Elements panel
      */
     resolveEventListenersBoundWith: 'Resolve event listeners bound with framework',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/EventListenersWidget.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+const { widget } = UI.Widget;
 let eventListenersWidgetInstance;
-export class EventListenersWidget extends UI.ThrottledWidget.ThrottledWidget {
-    toolbarItemsInternal;
+export const DEFAULT_VIEW = (input, _output, target) => {
+    // clang-format off
+    render(html `
+    <div jslog=${VisualLogging.pane('elements.event-listeners').track({ resize: true })}>
+      <devtools-toolbar class="event-listener-toolbar" role="presentation">
+        <devtools-button ${bindToAction(input.refreshEventListenersActionName)}></devtools-button>
+        <devtools-checkbox title=${i18nString(UIStrings.showListenersOnTheAncestors)}
+          ${bindToSetting(input.showForAncestorsSetting)}>
+          ${i18nString(UIStrings.ancestors)}
+        </devtools-checkbox>
+        <select class="dispatch-filter"
+          title=${i18nString(UIStrings.eventListenersCategory)}
+          aria-label=${i18nString(UIStrings.eventListenersCategory)}
+          jslog=${VisualLogging.filterDropdown().track({ change: true })}
+          @change=${(e) => input.onDispatchFilterTypeChange(e.target.value)}>
+          ${input.dispatchFilters.map(filter => html `
+            <option value=${filter.value} ?selected=${filter.value === input.selectedDispatchFilter}>
+              ${filter.name}
+            </option>`)}
+        </select>
+        <devtools-checkbox title=${i18nString(UIStrings.resolveEventListenersBoundWith)}
+          ${bindToSetting(input.showFrameworkListenersSetting)}>
+          ${i18nString(UIStrings.frameworkListeners)}
+        </devtools-checkbox>
+      </devtools-toolbar>
+      ${widget(EventListeners.EventListenersView.EventListenersView, {
+        changeCallback: input.onEventListenersViewChange,
+        objects: input.eventListenerObjects,
+        filter: input.filter,
+    })}
+    </div>`, target);
+    // clang-format on
+};
+export class EventListenersWidget extends UI.Widget.VBox {
     showForAncestorsSetting;
     dispatchFilterBySetting;
     showFrameworkListenersSetting;
-    eventListenersView;
     lastRequestedNode;
-    constructor() {
+    #view;
+    constructor(view = DEFAULT_VIEW) {
         super();
-        this.toolbarItemsInternal = [];
-        this.showForAncestorsSetting = Common.Settings.Settings.instance().moduleSetting('showEventListenersForAncestors');
-        this.showForAncestorsSetting.addChangeListener(this.update.bind(this));
+        this.#view = view;
+        this.showForAncestorsSetting =
+            Common.Settings.Settings.instance().moduleSetting('show-event-listeners-for-ancestors');
+        this.showForAncestorsSetting.addChangeListener(this.requestUpdate.bind(this));
         this.dispatchFilterBySetting =
-            Common.Settings.Settings.instance().createSetting('eventListenerDispatchFilterType', DispatchFilterBy.All);
-        this.dispatchFilterBySetting.addChangeListener(this.update.bind(this));
+            Common.Settings.Settings.instance().createSetting('event-listener-dispatch-filter-type', DispatchFilterBy.All);
+        this.dispatchFilterBySetting.addChangeListener(this.requestUpdate.bind(this));
         this.showFrameworkListenersSetting =
-            Common.Settings.Settings.instance().createSetting('showFrameowkrListeners', true);
+            Common.Settings.Settings.instance().createSetting('show-frameowkr-listeners', true);
         this.showFrameworkListenersSetting.setTitle(i18nString(UIStrings.frameworkListeners));
-        this.showFrameworkListenersSetting.addChangeListener(this.showFrameworkListenersChanged.bind(this));
-        this.eventListenersView = new EventListeners.EventListenersView.EventListenersView(this.update.bind(this));
-        this.eventListenersView.show(this.element);
-        const refreshButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.refresh), 'refresh');
-        refreshButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.update.bind(this));
-        this.toolbarItemsInternal.push(refreshButton);
-        this.toolbarItemsInternal.push(new UI.Toolbar.ToolbarSettingCheckbox(this.showForAncestorsSetting, i18nString(UIStrings.showListenersOnTheAncestors), i18nString(UIStrings.ancestors)));
-        const dispatchFilter = new UI.Toolbar.ToolbarComboBox(this.onDispatchFilterTypeChanged.bind(this), i18nString(UIStrings.eventListenersCategory));
-        function addDispatchFilterOption(name, value) {
-            const option = dispatchFilter.createOption(name, value);
-            if (value === this.dispatchFilterBySetting.get()) {
-                dispatchFilter.select(option);
-            }
-        }
-        addDispatchFilterOption.call(this, i18nString(UIStrings.all), DispatchFilterBy.All);
-        addDispatchFilterOption.call(this, i18nString(UIStrings.passive), DispatchFilterBy.Passive);
-        addDispatchFilterOption.call(this, i18nString(UIStrings.blocking), DispatchFilterBy.Blocking);
-        dispatchFilter.setMaxWidth(200);
-        this.toolbarItemsInternal.push(dispatchFilter);
-        this.toolbarItemsInternal.push(new UI.Toolbar.ToolbarSettingCheckbox(this.showFrameworkListenersSetting, i18nString(UIStrings.resolveEventListenersBoundWith)));
-        UI.Context.Context.instance().addFlavorChangeListener(SDK.DOMModel.DOMNode, this.update, this);
-        this.update();
+        this.showFrameworkListenersSetting.addChangeListener(this.requestUpdate.bind(this));
+        UI.Context.Context.instance().addFlavorChangeListener(SDK.DOMModel.DOMNode, this.requestUpdate.bind(this));
+        this.requestUpdate();
     }
     static instance(opts = { forceNew: null }) {
         const { forceNew } = opts;
@@ -123,45 +137,57 @@ export class EventListenersWidget extends UI.ThrottledWidget.ThrottledWidget {
         }
         return eventListenersWidgetInstance;
     }
-    doUpdate() {
+    async performUpdate() {
+        const dispatchFilter = this.dispatchFilterBySetting.get();
+        const showPassive = dispatchFilter === DispatchFilterBy.All || dispatchFilter === DispatchFilterBy.Passive;
+        const showBlocking = dispatchFilter === DispatchFilterBy.All || dispatchFilter === DispatchFilterBy.Blocking;
+        const input = {
+            refreshEventListenersActionName: 'elements.refresh-event-listeners',
+            showForAncestorsSetting: this.showForAncestorsSetting,
+            dispatchFilterBySetting: this.dispatchFilterBySetting,
+            showFrameworkListenersSetting: this.showFrameworkListenersSetting,
+            onDispatchFilterTypeChange: (value) => {
+                this.dispatchFilterBySetting.set(value);
+            },
+            onEventListenersViewChange: this.requestUpdate.bind(this),
+            dispatchFilters: [
+                { name: i18nString(UIStrings.all), value: DispatchFilterBy.All },
+                { name: i18nString(UIStrings.passive), value: DispatchFilterBy.Passive },
+                { name: i18nString(UIStrings.blocking), value: DispatchFilterBy.Blocking },
+            ],
+            selectedDispatchFilter: dispatchFilter,
+            eventListenerObjects: [],
+            filter: { showFramework: this.showFrameworkListenersSetting.get(), showPassive, showBlocking },
+        };
         if (this.lastRequestedNode) {
             this.lastRequestedNode.domModel().runtimeModel().releaseObjectGroup(objectGroupName);
             delete this.lastRequestedNode;
         }
         const node = UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode);
-        if (!node) {
-            this.eventListenersView.reset();
-            this.eventListenersView.addEmptyHolderIfNeeded();
-            return Promise.resolve();
-        }
-        this.lastRequestedNode = node;
-        const selectedNodeOnly = !this.showForAncestorsSetting.get();
-        const promises = [];
-        promises.push(node.resolveToObject(objectGroupName));
-        if (!selectedNodeOnly) {
-            let currentNode = node.parentNode;
-            while (currentNode) {
-                promises.push(currentNode.resolveToObject(objectGroupName));
-                currentNode = currentNode.parentNode;
+        if (node) {
+            this.lastRequestedNode = node;
+            const selectedNodeOnly = !this.showForAncestorsSetting.get();
+            const promises = [];
+            promises.push(node.resolveToObject(objectGroupName));
+            if (!selectedNodeOnly) {
+                let currentNode = node.parentNode;
+                while (currentNode) {
+                    promises.push(currentNode.resolveToObject(objectGroupName));
+                    currentNode = currentNode.parentNode;
+                }
+                promises.push(this.windowObjectInNodeContext(node));
             }
-            promises.push(this.windowObjectInNodeContext(node));
+            input.eventListenerObjects = await Promise.all(promises);
         }
-        return Promise.all(promises)
-            .then(this.eventListenersView.addObjects.bind(this.eventListenersView))
-            .then(this.showFrameworkListenersChanged.bind(this));
+        this.#view(input, {}, this.contentElement);
     }
-    toolbarItems() {
-        return this.toolbarItemsInternal;
+    wasShown() {
+        UI.Context.Context.instance().setFlavor(EventListenersWidget, this);
+        super.wasShown();
     }
-    onDispatchFilterTypeChanged(event) {
-        const filter = event.target;
-        this.dispatchFilterBySetting.set(filter.value);
-    }
-    showFrameworkListenersChanged() {
-        const dispatchFilter = this.dispatchFilterBySetting.get();
-        const showPassive = dispatchFilter === DispatchFilterBy.All || dispatchFilter === DispatchFilterBy.Passive;
-        const showBlocking = dispatchFilter === DispatchFilterBy.All || dispatchFilter === DispatchFilterBy.Blocking;
-        this.eventListenersView.showFrameworkListeners(this.showFrameworkListenersSetting.get(), showPassive, showBlocking);
+    willHide() {
+        super.willHide();
+        UI.Context.Context.instance().setFlavor(EventListenersWidget, null);
     }
     windowObjectInNodeContext(node) {
         const executionContexts = node.domModel().runtimeModel().executionContexts();
@@ -201,4 +227,15 @@ export const DispatchFilterBy = {
     Passive: 'Passive',
 };
 const objectGroupName = 'event-listeners-panel';
+export class ActionDelegate {
+    handleAction(_context, actionId) {
+        switch (actionId) {
+            case 'elements.refresh-event-listeners': {
+                EventListenersWidget.instance().requestUpdate();
+                return true;
+            }
+        }
+        return false;
+    }
+}
 //# sourceMappingURL=EventListenersWidget.js.map

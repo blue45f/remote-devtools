@@ -2,38 +2,40 @@ import * as Common from '../../core/common/common.js';
 import type * as Platform from '../../core/platform/platform.js';
 import type * as SDK from '../../core/sdk/sdk.js';
 import type * as Protocol from '../../generated/protocol.js';
-import { type MarkdownIssueDescription } from './MarkdownIssueDescription.js';
-export declare enum IssueCategory {
-    CrossOriginEmbedderPolicy = "CrossOriginEmbedderPolicy",
-    Generic = "Generic",
-    MixedContent = "MixedContent",
-    Cookie = "Cookie",
-    HeavyAd = "HeavyAd",
-    ContentSecurityPolicy = "ContentSecurityPolicy",
-    LowTextContrast = "LowTextContrast",
-    Cors = "Cors",
-    AttributionReporting = "AttributionReporting",
-    QuirksMode = "QuirksMode",
-    Other = "Other"
+import type { MarkdownIssueDescription } from './MarkdownIssueDescription.js';
+export declare const enum IssueCategory {
+    CROSS_ORIGIN_EMBEDDER_POLICY = "CrossOriginEmbedderPolicy",
+    GENERIC = "Generic",
+    MIXED_CONTENT = "MixedContent",
+    COOKIE = "Cookie",
+    HEAVY_AD = "HeavyAd",
+    CONTENT_SECURITY_POLICY = "ContentSecurityPolicy",
+    LOW_TEXT_CONTRAST = "LowTextContrast",
+    CORS = "Cors",
+    ATTRIBUTION_REPORTING = "AttributionReporting",
+    QUIRKS_MODE = "QuirksMode",
+    PERMISSION_ELEMENT = "PermissionElement",
+    SELECTIVE_PERMISSIONS_INTERVENTION = "SelectivePermissionsIntervention",
+    OTHER = "Other"
 }
-export declare enum IssueKind {
+export declare const enum IssueKind {
     /**
      * Something is not working in the page right now. Issues of this kind need
      * usually be fixed right away. They usually indicate that a Web API is being
      * used in a wrong way, or that a network request was misconfigured.
      */
-    PageError = "PageError",
+    PAGE_ERROR = "PageError",
     /**
      * The page is using a Web API or relying on browser behavior that is going
      * to change in the future. If possible, the message associated with issues
      * of this kind should include a time when the behavior is going to change.
      */
-    BreakingChange = "BreakingChange",
+    BREAKING_CHANGE = "BreakingChange",
     /**
      * Anything that can be improved about the page, but isn't urgent and doesn't
      * impair functionality in a major way.
      */
-    Improvement = "Improvement"
+    IMPROVEMENT = "Improvement"
 }
 export declare function getIssueKindName(issueKind: IssueKind): Common.UIString.LocalizedString;
 export declare function getIssueKindDescription(issueKind: IssueKind): Common.UIString.LocalizedString;
@@ -48,18 +50,20 @@ export interface AffectedElement {
     nodeName: string;
     target: SDK.Target.Target | null;
 }
-export declare abstract class Issue<IssueCode extends string = string> {
+export type ValidIssueDetails = NonNullable<Protocol.Audits.InspectorIssueDetails[keyof Protocol.Audits.InspectorIssueDetails]>;
+export declare abstract class Issue<IssueDetails extends ValidIssueDetails | null = ValidIssueDetails | null, IssueCode extends string = string> {
     #private;
     protected issueId: Protocol.Audits.IssueId | undefined;
     constructor(code: IssueCode | {
         code: IssueCode;
         umaCode: string;
-    }, issuesModel?: SDK.IssuesModel.IssuesModel | null, issueId?: Protocol.Audits.IssueId);
+    }, issueDetails: IssueDetails, issuesModel?: SDK.IssuesModel.IssuesModel | null, issueId?: Protocol.Audits.IssueId);
     code(): IssueCode;
     abstract primaryKey(): string;
     abstract getDescription(): MarkdownIssueDescription | null;
     abstract getCategory(): IssueCategory;
     abstract getKind(): IssueKind;
+    details(): IssueDetails;
     getBlockedByResponseDetails(): Iterable<Protocol.Audits.BlockedByResponseIssueDetails>;
     cookies(): Iterable<Protocol.Audits.AffectedCookie>;
     rawCookieLines(): Iterable<string>;
@@ -76,6 +80,7 @@ export declare abstract class Issue<IssueCode extends string = string> {
     getIssueId(): Protocol.Audits.IssueId | undefined;
     isHidden(): boolean;
     setHidden(hidden: boolean): void;
+    maybeCreateConsoleMessage(): SDK.ConsoleModel.ConsoleMessage | undefined;
 }
 export declare function toZeroBasedLocation(location: Protocol.Audits.SourceCodeLocation | undefined): {
     url: Platform.DevToolsPath.UrlString;

@@ -1,17 +1,20 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
+import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import resourcesPanelStyles from './resourcesPanel.css.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import { ApplicationPanelSidebar, StorageCategoryView } from './ApplicationPanelSidebar.js';
 import { CookieItemsView } from './CookieItemsView.js';
-import { DatabaseQueryView } from './DatabaseQueryView.js';
-import { DatabaseTableView } from './DatabaseTableView.js';
+import { DeviceBoundSessionsView } from './DeviceBoundSessionsView.js';
 import { DOMStorageItemsView } from './DOMStorageItemsView.js';
-import { StorageItemsView } from './StorageItemsView.js';
+import { ExtensionStorageItemsView } from './ExtensionStorageItemsView.js';
+import resourcesPanelStyles from './resourcesPanel.css.js';
+import { StorageItemsToolbar } from './StorageItemsToolbar.js';
 let resourcesPanelInstance;
 export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
     resourcesLastSelectedItemSetting;
@@ -21,30 +24,36 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
     storageViews;
     storageViewToolbar;
     domStorageView;
+    extensionStorageView;
     cookieView;
-    emptyWidget;
+    deviceBoundSessionsView;
     sidebar;
-    constructor() {
+    mode = 'default';
+    constructor(mode = 'default') {
         super('resources');
+        this.mode = mode;
+        this.registerRequiredCSS(resourcesPanelStyles);
         this.resourcesLastSelectedItemSetting =
-            Common.Settings.Settings.instance().createSetting('resourcesLastSelectedElementPath', []);
+            Common.Settings.Settings.instance().createSetting('resources-last-selected-element-path', []);
         this.visibleView = null;
         this.pendingViewPromise = null;
         this.categoryView = null;
         const mainContainer = new UI.Widget.VBox();
+        mainContainer.setMinimumSize(100, 0);
         this.storageViews = mainContainer.element.createChild('div', 'vbox flex-auto');
-        this.storageViewToolbar = new UI.Toolbar.Toolbar('resources-toolbar', mainContainer.element);
+        this.storageViewToolbar = mainContainer.element.createChild('devtools-toolbar', 'resources-toolbar');
         this.splitWidget().setMainWidget(mainContainer);
         this.domStorageView = null;
+        this.extensionStorageView = null;
         this.cookieView = null;
-        this.emptyWidget = null;
+        this.deviceBoundSessionsView = null;
         this.sidebar = new ApplicationPanelSidebar(this);
         this.sidebar.show(this.panelSidebarElement());
     }
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
+    static instance(opts = { forceNew: null, mode: 'default' }) {
+        const { forceNew, mode } = opts;
         if (!resourcesPanelInstance || forceNew) {
-            resourcesPanelInstance = new ResourcesPanel();
+            resourcesPanelInstance = new ResourcesPanel(mode);
         }
         return resourcesPanelInstance;
     }
@@ -53,9 +62,7 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
             SourceFrame.ResourceSourceFrame.ResourceSourceFrame,
             SourceFrame.ImageView.ImageView,
             SourceFrame.FontView.FontView,
-            StorageItemsView,
-            DatabaseQueryView,
-            DatabaseTableView,
+            StorageItemsToolbar,
         ];
         return viewClassesToClose.some(type => view instanceof type);
     }
@@ -90,11 +97,11 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
         }
         this.visibleView = view;
         this.storageViewToolbar.removeToolbarItems();
-        this.storageViewToolbar.element.classList.toggle('hidden', true);
+        this.storageViewToolbar.classList.toggle('hidden', true);
         if (view instanceof UI.View.SimpleView) {
             void view.toolbarItems().then(items => {
                 items.map(item => this.storageViewToolbar.appendToolbarItem(item));
-                this.storageViewToolbar.element.classList.toggle('hidden', !items.length);
+                this.storageViewToolbar.classList.toggle('hidden', !items.length);
             });
         }
     }
@@ -107,11 +114,13 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
         this.showView(view);
         return view;
     }
-    showCategoryView(categoryName, categoryLink) {
+    showCategoryView(categoryName, categoryHeadline, categoryDescription, categoryLink) {
         if (!this.categoryView) {
             this.categoryView = new StorageCategoryView();
         }
-        this.categoryView.setText(categoryName);
+        this.categoryView.element.setAttribute('jslog', `${VisualLogging.pane().context(Platform.StringUtilities.toKebabCase(categoryName))}`);
+        this.categoryView.setHeadline(categoryHeadline);
+        this.categoryView.setText(categoryDescription);
         this.categoryView.setLink(categoryLink);
         this.showView(this.categoryView);
     }
@@ -127,6 +136,18 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
         }
         this.showView(this.domStorageView);
     }
+    showExtensionStorage(extensionStorage) {
+        if (!extensionStorage) {
+            return;
+        }
+        if (!this.extensionStorageView) {
+            this.extensionStorageView = new ExtensionStorageItemsView(extensionStorage);
+        }
+        else {
+            this.extensionStorageView.setStorage(extensionStorage);
+        }
+        this.showView(this.extensionStorageView);
+    }
     showCookies(cookieFrameTarget, cookieDomain) {
         const model = cookieFrameTarget.model(SDK.CookieModel.CookieModel);
         if (!model) {
@@ -141,7 +162,7 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
         this.showView(this.cookieView);
     }
     clearCookies(target, cookieDomain) {
-        const model = target.model(SDK.CookieModel.CookieModel);
+        const model = (target.model(SDK.CookieModel.CookieModel));
         if (!model) {
             return;
         }
@@ -151,43 +172,43 @@ export class ResourcesPanel extends UI.Panel.PanelWithSidebar {
             }
         });
     }
-    wasShown() {
-        super.wasShown();
-        this.registerCSSFiles([resourcesPanelStyles]);
+    showDeviceBoundSession(model, site, sessionId) {
+        if (!this.deviceBoundSessionsView) {
+            this.deviceBoundSessionsView = new DeviceBoundSessionsView();
+        }
+        this.deviceBoundSessionsView.showSession(model, site, sessionId);
+        this.showView(this.deviceBoundSessionsView);
+    }
+    showDeviceBoundSessionDefault(model, title, description) {
+        if (!this.deviceBoundSessionsView) {
+            this.deviceBoundSessionsView = new DeviceBoundSessionsView();
+        }
+        this.deviceBoundSessionsView.showDefault(model, title, description);
+        this.showView(this.deviceBoundSessionsView);
     }
 }
-let resourceRevealerInstance;
 export class ResourceRevealer {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!resourceRevealerInstance || forceNew) {
-            resourceRevealerInstance = new ResourceRevealer();
-        }
-        return resourceRevealerInstance;
-    }
     async reveal(resource) {
-        if (!(resource instanceof SDK.Resource.Resource)) {
-            throw new Error('Internal error: not a resource');
-        }
         const sidebar = await ResourcesPanel.showAndGetSidebar();
         await sidebar.showResource(resource);
     }
 }
-let frameDetailsRevealerInstance;
 export class FrameDetailsRevealer {
-    static instance(opts = { forceNew: null }) {
-        const { forceNew } = opts;
-        if (!frameDetailsRevealerInstance || forceNew) {
-            frameDetailsRevealerInstance = new FrameDetailsRevealer();
-        }
-        return frameDetailsRevealerInstance;
-    }
     async reveal(frame) {
-        if (!(frame instanceof SDK.ResourceTreeModel.ResourceTreeFrame)) {
-            throw new Error('Internal error: not a frame');
-        }
         const sidebar = await ResourcesPanel.showAndGetSidebar();
         sidebar.showFrame(frame);
+    }
+}
+export class RuleSetViewRevealer {
+    async reveal(revealInfo) {
+        const sidebar = await ResourcesPanel.showAndGetSidebar();
+        sidebar.showPreloadingRuleSetView(revealInfo);
+    }
+}
+export class AttemptViewWithFilterRevealer {
+    async reveal(filter) {
+        const sidebar = await ResourcesPanel.showAndGetSidebar();
+        sidebar.showPreloadingAttemptViewWithFilter(filter);
     }
 }
 //# sourceMappingURL=ResourcesPanel.js.map

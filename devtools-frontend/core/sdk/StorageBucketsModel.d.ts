@@ -1,7 +1,7 @@
-import type * as Protocol from '../../generated/protocol.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
-import { type Target } from './Target.js';
+import type * as Protocol from '../../generated/protocol.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class StorageBucketsModel extends SDKModel<EventTypes> implements ProtocolProxyApi.StorageDispatcher {
     private enabled;
     readonly storageAgent: ProtocolProxyApi.StorageApi;
@@ -27,23 +27,26 @@ export declare class StorageBucketsModel extends SDKModel<EventTypes> implements
     storageBucketCreatedOrUpdated({ bucketInfo }: Protocol.Storage.StorageBucketCreatedOrUpdatedEvent): void;
     storageBucketDeleted({ bucketId }: Protocol.Storage.StorageBucketDeletedEvent): void;
     interestGroupAccessed(_event: Protocol.Storage.InterestGroupAccessedEvent): void;
+    interestGroupAuctionEventOccurred(_event: Protocol.Storage.InterestGroupAuctionEventOccurredEvent): void;
+    interestGroupAuctionNetworkRequestCreated(_event: Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent): void;
     indexedDBListUpdated(_event: Protocol.Storage.IndexedDBListUpdatedEvent): void;
     indexedDBContentUpdated(_event: Protocol.Storage.IndexedDBContentUpdatedEvent): void;
     cacheStorageListUpdated(_event: Protocol.Storage.CacheStorageListUpdatedEvent): void;
     cacheStorageContentUpdated(_event: Protocol.Storage.CacheStorageContentUpdatedEvent): void;
     sharedStorageAccessed(_event: Protocol.Storage.SharedStorageAccessedEvent): void;
+    sharedStorageWorkletOperationExecutionFinished(_event: Protocol.Storage.SharedStorageWorkletOperationExecutionFinishedEvent): void;
 }
 export declare const enum Events {
-    BucketAdded = "BucketAdded",
-    BucketRemoved = "BucketRemoved",
-    BucketChanged = "BucketChanged"
+    BUCKET_ADDED = "BucketAdded",
+    BUCKET_REMOVED = "BucketRemoved",
+    BUCKET_CHANGED = "BucketChanged"
 }
 export interface BucketEvent {
     model: StorageBucketsModel;
     bucketInfo: Protocol.Storage.StorageBucketInfo;
 }
-export type EventTypes = {
-    [Events.BucketAdded]: BucketEvent;
-    [Events.BucketRemoved]: BucketEvent;
-    [Events.BucketChanged]: BucketEvent;
-};
+export interface EventTypes {
+    [Events.BUCKET_ADDED]: BucketEvent;
+    [Events.BUCKET_REMOVED]: BucketEvent;
+    [Events.BUCKET_CHANGED]: BucketEvent;
+}

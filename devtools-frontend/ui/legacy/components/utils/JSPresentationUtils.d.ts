@@ -1,21 +1,33 @@
-import * as SDK from '../../../../core/sdk/sdk.js';
-import type * as Protocol from '../../../../generated/protocol.js';
-import { Linkifier } from './Linkifier.js';
-export declare function buildStackTraceRows(stackTrace: Protocol.Runtime.StackTrace, target: SDK.Target.Target | null, linkifier: Linkifier, tabStops: boolean | undefined, updateCallback?: (arg0: (StackTraceRegularRow | StackTraceAsyncRow)[]) => void): (StackTraceRegularRow | StackTraceAsyncRow)[];
-export declare function buildStackTracePreviewContents(target: SDK.Target.Target | null, linkifier: Linkifier, options?: Options): {
-    element: HTMLElement;
-    links: HTMLElement[];
-};
+import * as StackTrace from '../../../../models/stack_trace/stack_trace.js';
+import * as UI from '../../legacy.js';
+export interface ViewInput {
+    stackTrace?: StackTrace.StackTrace.StackTrace;
+    tabStops?: boolean;
+    widthConstrained?: boolean;
+    showColumnNumber?: boolean;
+    expandable?: boolean;
+    expanded?: boolean;
+    showIgnoreListed?: boolean;
+    onExpand: () => void;
+    onShowMore: () => void;
+    onShowLess: () => void;
+}
+export type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
 export interface Options {
-    stackTrace: Protocol.Runtime.StackTrace | undefined;
-    tabStops: boolean | undefined;
+    tabStops?: boolean;
+    widthConstrained?: boolean;
+    showColumnNumber?: boolean;
+    expandable?: boolean;
 }
-export interface StackTraceRegularRow {
-    functionName: string;
-    ignoreListHide: boolean;
-    link: HTMLElement | null;
-}
-export interface StackTraceAsyncRow {
-    asyncDescription: string;
-    ignoreListHide: boolean;
+export declare class StackTracePreviewContent extends UI.Widget.Widget {
+    #private;
+    constructor(element?: HTMLElement, view?: View);
+    hasContent(): boolean;
+    performUpdate(): void;
+    wasShown(): void;
+    willHide(): void;
+    get linkElements(): readonly HTMLElement[];
+    set options(options: Options);
+    set stackTrace(stackTrace: StackTrace.StackTrace.StackTrace);
 }

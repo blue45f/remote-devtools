@@ -1,25 +1,24 @@
 import * as Common from '../../core/common/common.js';
+import type * as SDK from '../../core/sdk/sdk.js';
 import * as HeapSnapshotModel from '../../models/heap_snapshot_model/heap_snapshot_model.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
-import type * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { HeapSnapshotRetainingObjectNode, HeapSnapshotObjectNode, type HeapSnapshotGridNode } from './HeapSnapshotGridNodes.js';
-import { type HeapSnapshotProxy } from './HeapSnapshotProxy.js';
-import { type HeapProfileHeader } from './HeapSnapshotView.js';
-import { type DataDisplayDelegate } from './ProfileHeader.js';
+import { type HeapSnapshotGridNode, HeapSnapshotObjectNode, HeapSnapshotRetainingObjectNode } from './HeapSnapshotGridNodes.js';
+import type { HeapProfileHeader } from './HeapSnapshotView.js';
+import type { DataDisplayDelegate } from './ProfileHeader.js';
 declare class HeapSnapshotSortableDataGridBase extends DataGrid.DataGrid.DataGridImpl<HeapSnapshotGridNode> {
 }
 declare const HeapSnapshotSortableDataGrid_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: import("../../core/platform/typescript-utilities.js").NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: import("../../core/platform/TypescriptUtilities.js").NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof HeapSnapshotSortableDataGridBase;
 export declare class HeapSnapshotSortableDataGrid extends HeapSnapshotSortableDataGrid_base {
-    snapshot: HeapSnapshotProxy | null;
+    snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy | null;
     selectedNode: HeapSnapshotGridNode | null;
     readonly heapProfilerModelInternal: SDK.HeapProfilerModel.HeapProfilerModel | null;
     readonly dataDisplayDelegateInternal: DataDisplayDelegate;
@@ -30,7 +29,7 @@ export declare class HeapSnapshotSortableDataGrid extends HeapSnapshotSortableDa
     lastSortColumnId?: string | null;
     lastSortAscending?: boolean;
     constructor(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null, dataDisplayDelegate: DataDisplayDelegate, dataGridParameters: DataGrid.DataGrid.Parameters);
-    setDataSource(_snapshot: HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
+    setDataSource(_snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
     isFilteredOut(node: HeapSnapshotGridNode): boolean;
     heapProfilerModel(): SDK.HeapProfilerModel.HeapProfilerModel | null;
     dataDisplayDelegate(): DataDisplayDelegate;
@@ -55,21 +54,22 @@ export declare class HeapSnapshotSortableDataGrid extends HeapSnapshotSortableDa
     recursiveSortingEnter(): void;
     recursiveSortingLeave(): void;
     updateVisibleNodes(_force: boolean): void;
-    allChildren(parent: DataGrid.DataGrid.DataGridNode<HeapSnapshotGridNode>): DataGrid.DataGrid.DataGridNode<HeapSnapshotGridNode>[];
+    allChildren(parent: DataGrid.DataGrid.DataGridNode<HeapSnapshotGridNode>): Array<DataGrid.DataGrid.DataGridNode<HeapSnapshotGridNode>>;
     insertChild(parent: HeapSnapshotGridNode, node: HeapSnapshotGridNode, index: number): void;
     removeChildByIndex(parent: HeapSnapshotGridNode, index: number): void;
     removeAllChildren(parent: HeapSnapshotGridNode): void;
+    dataSourceChanged(): Promise<void>;
 }
 export declare enum HeapSnapshotSortableDataGridEvents {
     ContentShown = "ContentShown",
     SortingComplete = "SortingComplete",
     ExpandRetainersComplete = "ExpandRetainersComplete"
 }
-export type EventTypes = {
+export interface EventTypes {
     [HeapSnapshotSortableDataGridEvents.ContentShown]: HeapSnapshotSortableDataGrid;
     [HeapSnapshotSortableDataGridEvents.SortingComplete]: void;
     [HeapSnapshotSortableDataGridEvents.ExpandRetainersComplete]: void;
-};
+}
 export declare class HeapSnapshotViewportDataGrid extends HeapSnapshotSortableDataGrid {
     topPaddingHeight: number;
     bottomPaddingHeight: number;
@@ -89,23 +89,26 @@ export declare class HeapSnapshotViewportDataGrid extends HeapSnapshotSortableDa
     removeChildByIndex(parent: HeapSnapshotGridNode, index: number): void;
     removeAllChildren(parent: HeapSnapshotGridNode): void;
     removeTopLevelNodes(): void;
-    isScrolledIntoView(element: HTMLElement): boolean;
     onResize(): void;
     onScroll(_event: Event): void;
 }
 export declare class HeapSnapshotContainmentDataGrid extends HeapSnapshotSortableDataGrid {
     constructor(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null, dataDisplayDelegate: DataDisplayDelegate, displayName: string, columns?: DataGrid.DataGrid.ColumnDescriptor[]);
-    setDataSource(snapshot: HeapSnapshotProxy, nodeIndex: number): Promise<void>;
-    createRootNode(snapshot: HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node): HeapSnapshotObjectNode;
+    setDataSource(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, nodeIndex: number, nodeId?: number): Promise<void>;
+    createRootNode(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node): HeapSnapshotObjectNode;
     sortingChanged(): void;
 }
 export declare class HeapSnapshotRetainmentDataGrid extends HeapSnapshotContainmentDataGrid {
+    resetRetainersButton: UI.Toolbar.ToolbarButton | undefined;
     constructor(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null, dataDisplayDelegate: DataDisplayDelegate);
-    createRootNode(snapshot: HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node): HeapSnapshotRetainingObjectNode;
+    createRootNode(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node): HeapSnapshotRetainingObjectNode;
     sortFields(sortColumn: string, sortAscending: boolean): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
     reset(): void;
-    setDataSource(snapshot: HeapSnapshotProxy, nodeIndex: number): Promise<void>;
+    updateResetButtonVisibility(): void;
+    setDataSource(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, nodeIndex: number, nodeId?: number): Promise<void>;
+    dataSourceChanged(): Promise<void>;
 }
+/** TODO(crbug.com/1228674): Remove this enum, it is only used in web tests. **/
 export declare enum HeapSnapshotRetainmentDataGridEvents {
     ExpandRetainersComplete = "ExpandRetainersComplete"
 }
@@ -119,22 +122,20 @@ export declare class HeapSnapshotConstructorsDataGrid extends HeapSnapshotViewpo
     sortFields(sortColumn: string, sortAscending: boolean): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
     revealObjectByHeapSnapshotId(id: string): Promise<HeapSnapshotGridNode | null>;
     clear(): void;
-    setDataSource(snapshot: HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
+    setDataSource(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
     setSelectionRange(minNodeId: number, maxNodeId: number): void;
     setAllocationNodeId(allocationNodeId: number): void;
-    aggregatesReceived(nodeFilter: HeapSnapshotModel.HeapSnapshotModel.NodeFilter, aggregates: {
-        [x: string]: HeapSnapshotModel.HeapSnapshotModel.Aggregate;
-    }): void;
+    aggregatesReceived(nodeFilter: HeapSnapshotModel.HeapSnapshotModel.NodeFilter, aggregates: Record<string, HeapSnapshotModel.HeapSnapshotModel.AggregatedInfo>): void;
     populateChildren(maybeNodeFilter?: HeapSnapshotModel.HeapSnapshotModel.NodeFilter): Promise<void>;
-    filterSelectIndexChanged(profiles: HeapProfileHeader[], profileIndex: number): void;
+    filterSelectIndexChanged(profiles: HeapProfileHeader[], profileIndex: number, filterName: string | undefined): void;
 }
 export declare class HeapSnapshotDiffDataGrid extends HeapSnapshotViewportDataGrid {
-    baseSnapshot?: HeapSnapshotProxy;
+    baseSnapshot?: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
     constructor(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null, dataDisplayDelegate: DataDisplayDelegate);
     defaultPopulateCount(): number;
     sortFields(sortColumn: string, sortAscending: boolean): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
-    setDataSource(snapshot: HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
-    setBaseDataSource(baseSnapshot: HeapSnapshotProxy): void;
+    setDataSource(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
+    setBaseDataSource(baseSnapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy): void;
     populateChildren(): Promise<void>;
 }
 export declare class AllocationDataGrid extends HeapSnapshotViewportDataGrid {
@@ -143,7 +144,7 @@ export declare class AllocationDataGrid extends HeapSnapshotViewportDataGrid {
     constructor(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null, dataDisplayDelegate: DataDisplayDelegate);
     get linkifier(): Components.Linkifier.Linkifier;
     dispose(): void;
-    setDataSource(snapshot: HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
+    setDataSource(snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, _nodeIndex: number): Promise<void>;
     populateChildren(): void;
     sortingChanged(): void;
     createComparator(): (arg0: Object, arg1: Object) => number;

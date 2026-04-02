@@ -1,58 +1,16 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2013 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Platform from '../../core/platform/platform.js';
+import { ContentData } from './ContentData.js';
 import { SearchMatch } from './ContentProvider.js';
-import { Text } from './Text.js';
+const KEY_VALUE_FILTER_REGEXP = /(?:^|\s)(\-)?([\w\-]+):([^\s]+)/;
+const REGEXP_FILTER_REGEXP = /(?:^|\s)(\-)?\/([^\/\\]+(\\.[^\/]*)*)\//;
+const TEXT_FILTER_REGEXP = /(?:^|\s)(\-)?([^\s]+)/;
+const SPACE_CHAR_REGEXP = /\s/;
 export const Utils = {
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    get _keyValueFilterRegex() {
-        return /(?:^|\s)(\-)?([\w\-]+):([^\s]+)/;
-    },
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    get _regexFilterRegex() {
-        return /(?:^|\s)(\-)?\/([^\s]+)\//;
-    },
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    get _textFilterRegex() {
-        return /(?:^|\s)(\-)?([^\s]+)/;
-    },
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    get _SpaceCharRegex() {
-        return /\s/;
-    },
     isSpaceChar: function (char) {
-        return Utils._SpaceCharRegex.test(char);
+        return SPACE_CHAR_REGEXP.test(char);
     },
     lineIndent: function (line) {
         let indentation = 0;
@@ -94,7 +52,7 @@ export const Utils = {
                 matches.push({
                     value: match,
                     position: startIndex + result.index,
-                    regexIndex: regexIndex,
+                    regexIndex,
                     captureGroups: result.slice(1),
                 });
                 currentIndex = result.index + match.length;
@@ -115,7 +73,7 @@ export class FilterParser {
         return { key: filter.key, text: filter.text, regex: filter.regex, negative: filter.negative };
     }
     parse(query) {
-        const splitFilters = Utils.splitStringByRegexes(query, [Utils._keyValueFilterRegex, Utils._regexFilterRegex, Utils._textFilterRegex]);
+        const splitFilters = Utils.splitStringByRegexes(query, [KEY_VALUE_FILTER_REGEXP, REGEXP_FILTER_REGEXP, TEXT_FILTER_REGEXP]);
         const parsedFilters = [];
         for (const { regexIndex, captureGroups } of splitFilters) {
             if (regexIndex === -1) {
@@ -128,15 +86,12 @@ export class FilterParser {
                 if (this.keys.indexOf(parsedKey) !== -1) {
                     parsedFilters.push({
                         key: parsedKey,
-                        regex: undefined,
                         text: parsedValue,
                         negative: Boolean(startsWithMinus),
                     });
                 }
                 else {
                     parsedFilters.push({
-                        key: undefined,
-                        regex: undefined,
                         text: `${parsedKey}:${parsedValue}`,
                         negative: Boolean(startsWithMinus),
                     });
@@ -147,16 +102,12 @@ export class FilterParser {
                 const parsedRegex = captureGroups[1];
                 try {
                     parsedFilters.push({
-                        key: undefined,
-                        regex: new RegExp(parsedRegex, 'i'),
-                        text: undefined,
+                        regex: new RegExp(parsedRegex, 'im'),
                         negative: Boolean(startsWithMinus),
                     });
                 }
-                catch (e) {
+                catch {
                     parsedFilters.push({
-                        key: undefined,
-                        regex: undefined,
                         text: `/${parsedRegex}/`,
                         negative: Boolean(startsWithMinus),
                     });
@@ -166,8 +117,6 @@ export class FilterParser {
                 const startsWithMinus = captureGroups[0];
                 const parsedText = captureGroups[1];
                 parsedFilters.push({
-                    key: undefined,
-                    regex: undefined,
                     text: parsedText,
                     negative: Boolean(startsWithMinus),
                 });
@@ -245,6 +194,68 @@ export class BalancedJSONTokenizer {
     }
 }
 /**
+ * Detects the indentation used by a given text document, based on the _Comparing
+ * lines_ approach suggested by Heather Arthur (and also found in Firefox DevTools).
+ *
+ * This implementation differs from the original proposal in that tab indentation
+ * isn't detected by checking if at least 50% of the lines start with a tab, but
+ * instead by comparing the number of lines that start with a tab to the frequency
+ * of the other indentation patterns. This way we also detect small snippets with
+ * long leading comments correctly, when tab indentation is used for the snippets
+ * of code.
+ *
+ * @param lines The input document lines.
+ * @returns The indentation detected for the lines as string or `null` if it's inconclusive.
+ * @see https://heathermoor.medium.com/detecting-code-indentation-eff3ed0fb56b
+ */
+export const detectIndentation = function (lines) {
+    const frequencies = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let tabs = 0, previous = 0;
+    for (const line of lines) {
+        let current = 0;
+        if (line.length !== 0) {
+            let char = line.charAt(0);
+            if (char === '\t') {
+                tabs++;
+                continue;
+            }
+            while (char === ' ') {
+                char = line.charAt(++current);
+            }
+        }
+        if (current === line.length) {
+            // Don't consider empty lines.
+            previous = 0;
+            continue;
+        }
+        const delta = Math.abs(current - previous);
+        if (delta < frequencies.length) {
+            // Don't consider deltas above 8 characters.
+            frequencies[delta] = frequencies[delta] + 1;
+        }
+        previous = current;
+    }
+    // Find most frequent non-zero width difference between adjacent lines.
+    let mostFrequentDelta = 0, highestFrequency = 0;
+    for (let delta = 1; delta < frequencies.length; ++delta) {
+        const frequency = frequencies[delta];
+        if (frequency > highestFrequency) {
+            highestFrequency = frequency;
+            mostFrequentDelta = delta;
+        }
+    }
+    if (tabs > mostFrequentDelta) {
+        // If more lines start with tabs than any other indentation,
+        // we assume that the document was written with tab indentation
+        // in mind. This differs from the original algorithm.
+        return '\t';
+    }
+    if (!mostFrequentDelta) {
+        return null;
+    }
+    return ' '.repeat(mostFrequentDelta);
+};
+/**
  * Heuristic to check whether a given text was likely minified. Intended to
  * be used for HTML, CSS, and JavaScript inputs.
  *
@@ -252,7 +263,7 @@ export class BalancedJSONTokenizer {
  * line length for the whole text is 80 characters or more.
  *
  * @param text The input text to check.
- * @returns
+ * @returns `true` if the heuristic considers `text` to be minified.
  */
 export const isMinified = function (text) {
     let lineCount = 0;
@@ -265,18 +276,72 @@ export const isMinified = function (text) {
     }
     return (text.length - lineCount) / lineCount >= 80;
 };
-export const performSearchInContent = function (content, query, caseSensitive, isRegex) {
+/**
+ * Small wrapper around {@link performSearchInContent} to reduce boilerplate when searching
+ * in {@link ContentDataOrError}.
+ *
+ * @returns empty search matches if `contentData` is an error or not text content.
+ */
+export const performSearchInContentData = function (contentData, query, caseSensitive, isRegex) {
+    if (ContentData.isError(contentData) || !contentData.isTextContent) {
+        return [];
+    }
+    return performSearchInContent(contentData.textObj, query, caseSensitive, isRegex);
+};
+/**
+ * @returns One {@link SearchMatch} per match. Multiple matches on the same line each
+ * result in their own `SearchMatchExact` instance.
+ */
+export const performSearchInContent = function (text, query, caseSensitive, isRegex) {
     const regex = Platform.StringUtilities.createSearchRegex(query, caseSensitive, isRegex);
-    const text = new Text(content);
     const result = [];
     for (let i = 0; i < text.lineCount(); ++i) {
         const lineContent = text.lineAt(i);
-        regex.lastIndex = 0;
-        const match = regex.exec(lineContent);
-        if (match) {
-            result.push(new SearchMatch(i, lineContent, match.index));
+        const matches = lineContent.matchAll(regex);
+        for (const match of matches) {
+            result.push(new SearchMatch(i, lineContent, match.index, match[0].length));
         }
     }
     return result;
+};
+/**
+ * Similar to {@link performSearchInContent} but doesn't search in a whole text but rather
+ * finds the exact matches on a prelminiary search result (i.e. lines with known matches).
+ * @param matches is deliberatedly typed as an object literal so we can pass the
+ *                CDP search result type.
+ */
+export const performSearchInSearchMatches = function (matches, query, caseSensitive, isRegex) {
+    const regex = Platform.StringUtilities.createSearchRegex(query, caseSensitive, isRegex);
+    const result = [];
+    for (const { lineNumber, lineContent } of matches) {
+        const matches = lineContent.matchAll(regex);
+        for (const match of matches) {
+            result.push(new SearchMatch(lineNumber, lineContent, match.index, match[0].length));
+        }
+    }
+    return result;
+};
+/**
+ * Finds the longest overlapping string segment between the end of the first
+ * string and the beginning of the second string.
+ *
+ * @param s1 The first string (whose suffix will be checked).
+ * @param s2 The second string (whose prefix will be checked).
+ * @returns The overlapping string segment, or an empty string ("")
+ * if no overlap is found.
+ */
+export const getOverlap = function (s1, s2) {
+    const minLen = Math.min(s1.length, s2.length);
+    // Check from longest possible overlap down to 1
+    for (let n = minLen; n > 0; n--) {
+        // slice(-n) gets the last 'n' chars
+        const suffix = s1.slice(-n);
+        // substring(0, n) gets the first 'n' chars
+        const prefix = s2.substring(0, n);
+        if (suffix === prefix) {
+            return suffix;
+        }
+    }
+    return null;
 };
 //# sourceMappingURL=TextUtils.js.map

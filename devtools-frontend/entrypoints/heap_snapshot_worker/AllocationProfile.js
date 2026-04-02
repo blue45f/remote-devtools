@@ -1,58 +1,20 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2013 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as HeapSnapshotModel from '../../models/heap_snapshot_model/heap_snapshot_model.js';
 export class AllocationProfile {
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     #strings;
-    #nextNodeId;
-    #functionInfos;
-    #idToNode;
-    #idToTopDownNode;
-    #collapsedTopNodeIdToFunctionInfo;
-    #traceTops;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    #nextNodeId = 1;
+    #functionInfos = [];
+    #idToNode = {};
+    #idToTopDownNode = {};
+    #collapsedTopNodeIdToFunctionInfo = {};
+    #traceTops = null;
     constructor(profile, liveObjectStats) {
         this.#strings = profile.strings;
-        this.#nextNodeId = 1;
-        this.#functionInfos = [];
-        this.#idToNode = {};
-        this.#idToTopDownNode = {};
-        this.#collapsedTopNodeIdToFunctionInfo = {};
-        this.#traceTops = null;
         this.#buildFunctionAllocationInfos(profile);
         this.#buildAllocationTree(profile, liveObjectStats);
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     #buildFunctionAllocationInfos(profile) {
         const strings = this.#strings;
         const functionInfoFields = profile.snapshot.meta.trace_function_info_fields;
@@ -70,8 +32,6 @@ export class AllocationProfile {
             functionInfos[index++] = new FunctionAllocationInfo(strings[rawInfos[i + functionNameOffset]], strings[rawInfos[i + scriptNameOffset]], rawInfos[i + scriptIdOffset], rawInfos[i + lineOffset], rawInfos[i + columnOffset]);
         }
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     #buildAllocationTree(profile, liveObjectStats) {
         const traceTreeRaw = profile.trace_tree;
         const functionInfos = this.#functionInfos;
@@ -178,7 +138,7 @@ export class TopDownAllocationNode {
     liveCount;
     liveSize;
     parent;
-    children;
+    children = [];
     constructor(id, functionInfo, count, size, liveCount, liveSize, parent) {
         this.id = id;
         this.functionInfo = functionInfo;
@@ -187,31 +147,24 @@ export class TopDownAllocationNode {
         this.liveCount = liveCount;
         this.liveSize = liveSize;
         this.parent = parent;
-        this.children = [];
     }
 }
 export class BottomUpAllocationNode {
     functionInfo;
-    allocationCount;
-    allocationSize;
-    liveCount;
-    liveSize;
-    traceTopIds;
-    #callersInternal;
+    allocationCount = 0;
+    allocationSize = 0;
+    liveCount = 0;
+    liveSize = 0;
+    traceTopIds = [];
+    #callers = [];
     constructor(functionInfo) {
         this.functionInfo = functionInfo;
-        this.allocationCount = 0;
-        this.allocationSize = 0;
-        this.liveCount = 0;
-        this.liveSize = 0;
-        this.traceTopIds = [];
-        this.#callersInternal = [];
     }
     addCaller(traceNode) {
         const functionInfo = traceNode.functionInfo;
         let result;
-        for (let i = 0; i < this.#callersInternal.length; i++) {
-            const caller = this.#callersInternal[i];
+        for (let i = 0; i < this.#callers.length; i++) {
+            const caller = this.#callers[i];
             if (caller.functionInfo === functionInfo) {
                 result = caller;
                 break;
@@ -219,15 +172,15 @@ export class BottomUpAllocationNode {
         }
         if (!result) {
             result = new BottomUpAllocationNode(functionInfo);
-            this.#callersInternal.push(result);
+            this.#callers.push(result);
         }
         return result;
     }
     callers() {
-        return this.#callersInternal;
+        return this.#callers;
     }
     hasCallers() {
-        return this.#callersInternal.length > 0;
+        return this.#callers.length > 0;
     }
 }
 export class FunctionAllocationInfo {
@@ -236,11 +189,11 @@ export class FunctionAllocationInfo {
     scriptId;
     line;
     column;
-    totalCount;
-    totalSize;
-    totalLiveCount;
-    totalLiveSize;
-    #traceTops;
+    totalCount = 0;
+    totalSize = 0;
+    totalLiveCount = 0;
+    totalLiveSize = 0;
+    #traceTops = [];
     #bottomUpTree;
     constructor(functionName, scriptName, scriptId, line, column) {
         this.functionName = functionName;
@@ -248,11 +201,6 @@ export class FunctionAllocationInfo {
         this.scriptId = scriptId;
         this.line = line;
         this.column = column;
-        this.totalCount = 0;
-        this.totalSize = 0;
-        this.totalLiveCount = 0;
-        this.totalLiveSize = 0;
-        this.#traceTops = [];
     }
     addTraceTopNode(node) {
         if (node.allocationCount === 0) {
@@ -271,7 +219,7 @@ export class FunctionAllocationInfo {
         if (!this.#bottomUpTree) {
             this.#buildAllocationTraceTree();
         }
-        return this.#bottomUpTree;
+        return this.#bottomUpTree ?? null;
     }
     #buildAllocationTraceTree() {
         this.#bottomUpTree = new BottomUpAllocationNode(this);

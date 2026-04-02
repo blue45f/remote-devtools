@@ -3,7 +3,6 @@ import * as UI from '../../legacy.js';
 export declare class ImageView extends UI.View.SimpleView {
     private url;
     private parsedURL;
-    private readonly mimeType;
     private readonly contentProvider;
     private uiSourceCode;
     private readonly sizeLabel;

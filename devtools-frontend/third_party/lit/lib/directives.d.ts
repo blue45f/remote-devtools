@@ -1,4 +1,8 @@
-/// <reference types="trusted-types" />
+declare class TrustedHTML {
+    private constructor(); // To prevent instantiting with 'new'.
+    private brand: true; // To prevent structural typing.
+}
+
 /**
  * @license
  * Copyright 2017 Google LLC
@@ -16,11 +20,37 @@
  * @return The value to write to the DOM. Usually the same as the input value,
  *     unless sanitization is needed.
  */
-declare type ValueSanitizer = (value: unknown) => unknown;
+type ValueSanitizer = (value: unknown) => unknown;
 /** TemplateResult types */
 declare const HTML_RESULT = 1;
 declare const SVG_RESULT = 2;
-declare type ResultType = typeof HTML_RESULT | typeof SVG_RESULT;
+declare const MATHML_RESULT = 3;
+type ResultType = typeof HTML_RESULT | typeof SVG_RESULT | typeof MATHML_RESULT;
+declare const ATTRIBUTE_PART = 1;
+declare const CHILD_PART = 2;
+declare const PROPERTY_PART = 3;
+declare const BOOLEAN_ATTRIBUTE_PART = 4;
+declare const EVENT_PART = 5;
+declare const ELEMENT_PART = 6;
+declare const COMMENT_PART = 7;
+/**
+ * The return type of the template tag functions, {@linkcode html} and
+ * {@linkcode svg} when it hasn't been compiled by @lit-labs/compiler.
+ *
+ * A `TemplateResult` object holds all the information about a template
+ * expression required to render it: the template strings, expression values,
+ * and type of template (html or svg).
+ *
+ * `TemplateResult` objects do not create any DOM on their own. To create or
+ * update DOM you need to render the `TemplateResult`. See
+ * [Rendering](https://lit.dev/docs/components/rendering) for more information.
+ *
+ */
+type UncompiledTemplateResult<T extends ResultType = ResultType> = {
+    ['_$litType$']: T;
+    strings: TemplateStringsArray;
+    values: unknown[];
+};
 /**
  * The return type of the template tag functions, {@linkcode html} and
  * {@linkcode svg}.
@@ -33,12 +63,13 @@ declare type ResultType = typeof HTML_RESULT | typeof SVG_RESULT;
  * update DOM you need to render the `TemplateResult`. See
  * [Rendering](https://lit.dev/docs/components/rendering) for more information.
  *
+ * In Lit 4, this type will be an alias of
+ * MaybeCompiledTemplateResult, so that code will get type errors if it assumes
+ * that Lit templates are not compiled. When deliberately working with only
+ * one, use either {@linkcode CompiledTemplateResult} or
+ * {@linkcode UncompiledTemplateResult} explicitly.
  */
-declare type TemplateResult<T extends ResultType = ResultType> = {
-    ['_$litType$']: T;
-    strings: TemplateStringsArray;
-    values: unknown[];
-};
+type TemplateResult<T extends ResultType = ResultType> = UncompiledTemplateResult<T>;
 /**
  * A sentinel value that signals that a value was handled by a directive and
  * should not be written to the DOM.
@@ -107,7 +138,8 @@ interface DirectiveParent {
     __directives?: Array<Directive | undefined>;
 }
 declare class Template {
-    constructor({ strings, ['_$litType$']: type }: TemplateResult, options?: RenderOptions);
+    parts: Array<TemplatePart>;
+    constructor({ strings, ['_$litType$']: type }: UncompiledTemplateResult, options?: RenderOptions);
     /** @nocollapse */
     static createElement(html: TrustedHTML, _options?: RenderOptions): HTMLTemplateElement;
 }
@@ -121,13 +153,40 @@ interface Disconnectable {
  * update the template instance.
  */
 declare class TemplateInstance implements Disconnectable {
+    _$template: Template;
+    _$parts: Array<Part | undefined>;
     constructor(template: Template, parent: ChildPart);
     get parentNode(): Node;
     get _$isConnected(): boolean;
     _clone(options: RenderOptions | undefined): Node;
     _update(values: Array<unknown>): void;
 }
-declare type Part = ChildPart | AttributePart | PropertyPart | BooleanAttributePart | ElementPart | EventPart;
+type AttributeTemplatePart = {
+    readonly type: typeof ATTRIBUTE_PART;
+    readonly index: number;
+    readonly name: string;
+    readonly ctor: typeof AttributePart;
+    readonly strings: ReadonlyArray<string>;
+};
+type ChildTemplatePart = {
+    readonly type: typeof CHILD_PART;
+    readonly index: number;
+};
+type ElementTemplatePart = {
+    readonly type: typeof ELEMENT_PART;
+    readonly index: number;
+};
+type CommentTemplatePart = {
+    readonly type: typeof COMMENT_PART;
+    readonly index: number;
+};
+/**
+ * A TemplatePart represents a dynamic part in a template, before the template
+ * is instantiated. When a template is instantiated Parts are created from
+ * TemplateParts.
+ */
+type TemplatePart = ChildTemplatePart | AttributeTemplatePart | ElementTemplatePart | CommentTemplatePart;
+type Part = ChildPart | AttributePart | PropertyPart | BooleanAttributePart | ElementPart | EventPart;
 
 declare class ChildPart implements Disconnectable {
     readonly type = 2;
@@ -173,7 +232,7 @@ declare class ChildPart implements Disconnectable {
     private _commitIterable;
 }
 declare class AttributePart implements Disconnectable {
-    readonly type: 1 | 3 | 4 | 5;
+    readonly type: typeof ATTRIBUTE_PART | typeof PROPERTY_PART | typeof BOOLEAN_ATTRIBUTE_PART | typeof EVENT_PART;
     readonly element: HTMLElement;
     readonly name: string;
     readonly options: RenderOptions | undefined;
@@ -226,7 +285,7 @@ interface DirectiveClass {
  * This utility type extracts the signature of a directive class's render()
  * method so we can use it for the type of the generated directive function.
  */
-declare type DirectiveParameters<C extends Directive> = Parameters<C['render']>;
+type DirectiveParameters<C extends Directive> = Parameters<C['render']>;
 /**
  * A generated directive function doesn't evaluate the directive, but just
  * returns a DirectiveResult object that captures the arguments.
@@ -241,7 +300,7 @@ declare const PartType: {
     readonly EVENT: 5;
     readonly ELEMENT: 6;
 };
-declare type PartType = typeof PartType[keyof typeof PartType];
+type PartType = (typeof PartType)[keyof typeof PartType];
 interface ChildPartInfo {
     readonly type: typeof PartType.CHILD;
 }
@@ -260,7 +319,7 @@ interface ElementPartInfo {
  * This is useful for checking that a directive is attached to a valid part,
  * such as with directive that can only be used on attribute bindings.
  */
-declare type PartInfo = ChildPartInfo | AttributePartInfo | ElementPartInfo;
+type PartInfo = ChildPartInfo | AttributePartInfo | ElementPartInfo;
 /**
  * Base class for creating custom directives. Users should extend this class,
  * implement `render` and/or `update`, and then pass their subclass to
@@ -277,7 +336,7 @@ declare abstract class Directive implements Disconnectable {
  * A key-value set of class names to truthy values.
  */
 interface ClassInfo {
-    readonly [name: string]: string | boolean | number;
+    [name: string]: string | boolean | number;
 }
 declare class ClassMapDirective extends Directive {
     /**
@@ -296,7 +355,7 @@ declare class ClassMapDirective extends Directive {
  * This must be used in the `class` attribute and must be the only part used in
  * the attribute. It takes each property in the `classInfo` argument and adds
  * the property name to the element's `classList` if the property value is
- * truthy; if the property value is falsey, the property name is removed from
+ * truthy; if the property value is falsy, the property name is removed from
  * the element's `class`.
  *
  * For example `{foo: bar}` applies the class `foo` if the value of `bar` is
@@ -320,10 +379,19 @@ declare const classMap: (classInfo: ClassInfo) => DirectiveResult<typeof ClassMa
  */
 declare const ifDefined: <T>(value: T) => typeof nothing | NonNullable<T>;
 
-declare class LiveDirective extends Directive {
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+declare class LiveDirective<T> extends Directive {
     constructor(partInfo: PartInfo);
-    render(value: unknown): unknown;
-    update(part: AttributePart, [value]: DirectiveParameters<this>): unknown;
+    render(value: T): T;
+    update(part: AttributePart, [value]: DirectiveParameters<this>): typeof noChange | T;
+}
+interface Live {
+    <T>(value: T): DirectiveResult<typeof LiveDirective<T>>;
 }
 /**
  * Checks binding values against live DOM values, instead of previously bound
@@ -349,7 +417,7 @@ declare class LiveDirective extends Directive {
  * you use `live()` with an attribute binding, make sure that only strings are
  * passed in, or the binding will update every render.
  */
-declare const live: (value: unknown) => DirectiveResult<typeof LiveDirective>;
+declare const live: Live;
 
 /**
  * @license
@@ -357,8 +425,8 @@ declare const live: (value: unknown) => DirectiveResult<typeof LiveDirective>;
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-declare type KeyFn<T> = (item: T, index: number) => unknown;
-declare type ItemTemplate<T> = (item: T, index: number) => unknown;
+type KeyFn<T> = (item: T, index: number) => unknown;
+type ItemTemplate<T> = (item: T, index: number) => unknown;
 declare class RepeatDirective extends Directive {
     private _itemKeys?;
     constructor(partInfo: PartInfo);
@@ -417,10 +485,10 @@ declare const repeat: RepeatDirectiveFn;
  * for CSSStyleDeclaration like `backgroundColor`.
  */
 interface StyleInfo {
-    [name: string]: string | undefined | null;
+    [name: string]: string | number | undefined | null;
 }
 declare class StyleMapDirective extends Directive {
-    _previousStyleProperties?: Set<string>;
+    private _previousStyleProperties?;
     constructor(partInfo: PartInfo);
     render(styleInfo: Readonly<StyleInfo>): string;
     update(part: AttributePart, [styleInfo]: DirectiveParameters<this>): string | typeof noChange;
@@ -430,8 +498,10 @@ declare class StyleMapDirective extends Directive {
  *
  * `styleMap` can only be used in the `style` attribute and must be the only
  * expression in the attribute. It takes the property names in the
- * {@link StyleInfo styleInfo} object and adds the property values as CSS
- * properties. Property names with dashes (`-`) are assumed to be valid CSS
+ * {@link StyleInfo styleInfo} object and adds the properties to the inline
+ * style of the element.
+ *
+ * Property names with dashes (`-`) are assumed to be valid CSS
  * property names and set on the element's style object using `setProperty()`.
  * Names without dashes are assumed to be camelCased JavaScript property names
  * and set on the element's style object using property assignment, allowing the
@@ -451,7 +521,7 @@ declare class UnsafeHTMLDirective extends Directive {
     private _value;
     private _templateResult?;
     constructor(partInfo: PartInfo);
-    render(value: string | typeof nothing | typeof noChange | undefined | null): typeof noChange | typeof nothing | TemplateResult<1 | 2> | null | undefined;
+    render(value: string | typeof nothing | typeof noChange | undefined | null): typeof noChange | typeof nothing | TemplateResult | null | undefined;
 }
 /**
  * Renders the result as HTML, rather than text.
@@ -469,6 +539,119 @@ declare const unsafeHTML: (value: string | typeof noChange | typeof nothing | nu
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
+ */
+/**
+ * Overview:
+ *
+ * This module is designed to add support for an async `setValue` API and
+ * `disconnected` callback to directives with the least impact on the core
+ * runtime or payload when that feature is not used.
+ *
+ * The strategy is to introduce a `AsyncDirective` subclass of
+ * `Directive` that climbs the "parent" tree in its constructor to note which
+ * branches of lit-html's "logical tree" of data structures contain such
+ * directives and thus need to be crawled when a subtree is being cleared (or
+ * manually disconnected) in order to run the `disconnected` callback.
+ *
+ * The "nodes" of the logical tree include Parts, TemplateInstances (for when a
+ * TemplateResult is committed to a value of a ChildPart), and Directives; these
+ * all implement a common interface called `DisconnectableChild`. Each has a
+ * `_$parent` reference which is set during construction in the core code, and a
+ * `_$disconnectableChildren` field which is initially undefined.
+ *
+ * The sparse tree created by means of the `AsyncDirective` constructor
+ * crawling up the `_$parent` tree and placing a `_$disconnectableChildren` Set
+ * on each parent that includes each child that contains a
+ * `AsyncDirective` directly or transitively via its children. In order to
+ * notify connection state changes and disconnect (or reconnect) a tree, the
+ * `_$notifyConnectionChanged` API is patched onto ChildParts as a directive
+ * climbs the parent tree, which is called by the core when clearing a part if
+ * it exists. When called, that method iterates over the sparse tree of
+ * Set<DisconnectableChildren> built up by AsyncDirectives, and calls
+ * `_$notifyDirectiveConnectionChanged` on any directives that are encountered
+ * in that tree, running the required callbacks.
+ *
+ * A given "logical tree" of lit-html data-structures might look like this:
+ *
+ *  ChildPart(N1) _$dC=[D2,T3]
+ *   ._directive
+ *     AsyncDirective(D2)
+ *   ._value // user value was TemplateResult
+ *     TemplateInstance(T3) _$dC=[A4,A6,N10,N12]
+ *      ._$parts[]
+ *        AttributePart(A4) _$dC=[D5]
+ *         ._directives[]
+ *           AsyncDirective(D5)
+ *        AttributePart(A6) _$dC=[D7,D8]
+ *         ._directives[]
+ *           AsyncDirective(D7)
+ *           Directive(D8) _$dC=[D9]
+ *            ._directive
+ *              AsyncDirective(D9)
+ *        ChildPart(N10) _$dC=[D11]
+ *         ._directive
+ *           AsyncDirective(D11)
+ *         ._value
+ *           string
+ *        ChildPart(N12) _$dC=[D13,N14,N16]
+ *         ._directive
+ *           AsyncDirective(D13)
+ *         ._value // user value was iterable
+ *           Array<ChildPart>
+ *             ChildPart(N14) _$dC=[D15]
+ *              ._value
+ *                string
+ *             ChildPart(N16) _$dC=[D17,T18]
+ *              ._directive
+ *                AsyncDirective(D17)
+ *              ._value // user value was TemplateResult
+ *                TemplateInstance(T18) _$dC=[A19,A21,N25]
+ *                 ._$parts[]
+ *                   AttributePart(A19) _$dC=[D20]
+ *                    ._directives[]
+ *                      AsyncDirective(D20)
+ *                   AttributePart(A21) _$dC=[22,23]
+ *                    ._directives[]
+ *                      AsyncDirective(D22)
+ *                      Directive(D23) _$dC=[D24]
+ *                       ._directive
+ *                         AsyncDirective(D24)
+ *                   ChildPart(N25) _$dC=[D26]
+ *                    ._directive
+ *                      AsyncDirective(D26)
+ *                    ._value
+ *                      string
+ *
+ * Example 1: The directive in ChildPart(N12) updates and returns `nothing`. The
+ * ChildPart will _clear() itself, and so we need to disconnect the "value" of
+ * the ChildPart (but not its directive). In this case, when `_clear()` calls
+ * `_$notifyConnectionChanged()`, we don't iterate all of the
+ * _$disconnectableChildren, rather we do a value-specific disconnection: i.e.
+ * since the _value was an Array<ChildPart> (because an iterable had been
+ * committed), we iterate the array of ChildParts (N14, N16) and run
+ * `setConnected` on them (which does recurse down the full tree of
+ * `_$disconnectableChildren` below it, and also removes N14 and N16 from N12's
+ * `_$disconnectableChildren`). Once the values have been disconnected, we then
+ * check whether the ChildPart(N12)'s list of `_$disconnectableChildren` is empty
+ * (and would remove it from its parent TemplateInstance(T3) if so), but since
+ * it would still contain its directive D13, it stays in the disconnectable
+ * tree.
+ *
+ * Example 2: In the course of Example 1, `setConnected` will reach
+ * ChildPart(N16); in this case the entire part is being disconnected, so we
+ * simply iterate all of N16's `_$disconnectableChildren` (D17,T18) and
+ * recursively run `setConnected` on them. Note that we only remove children
+ * from `_$disconnectableChildren` for the top-level values being disconnected
+ * on a clear; doing this bookkeeping lower in the tree is wasteful since it's
+ * all being thrown away.
+ *
+ * Example 3: If the LitElement containing the entire tree above becomes
+ * disconnected, it will run `childPart.setConnected()` (which calls
+ * `childPart._$notifyConnectionChanged()` if it exists); in this case, we
+ * recursively run `setConnected()` over the entire tree, without removing any
+ * children from `_$disconnectableChildren`, since this tree is required to
+ * re-connect the tree, which does the same operation, simply passing
+ * `isConnected: true` down the tree, signaling which callback to run.
  */
 
 /**
@@ -521,15 +704,25 @@ declare abstract class AsyncDirective extends Directive {
     protected reconnected(): void;
 }
 
-declare class UntilDirective extends AsyncDirective {
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
+declare class UntilDirective<T> extends AsyncDirective {
     private __lastRenderedIndex;
     private __values;
     private __weakThis;
     private __pauser;
-    render(...args: Array<unknown>): unknown;
+    render(...args: Array<T>): UnwrapPromise<T>;
     update(_part: Part, args: Array<unknown>): unknown;
     disconnected(): void;
     reconnected(): void;
+}
+interface Until {
+    <T extends Array<unknown>>(...args: T): DirectiveResult<typeof UntilDirective<T[number]>>;
 }
 /**
  * Renders one of a series of values, including Promises, to a Part.
@@ -552,7 +745,7 @@ declare class UntilDirective extends AsyncDirective {
  * html`${until(content, html`<span>Loading...</span>`)}`
  * ```
  */
-declare const until: (...values: unknown[]) => DirectiveResult<typeof UntilDirective>;
+declare const until: Until;
 
 /**
  * Creates a new Ref object, which is container for a reference to an element.
@@ -569,12 +762,12 @@ declare class Ref<T = Element> {
     readonly value?: T;
 }
 
-declare type RefOrCallback = Ref | ((el: Element | undefined) => void);
+type RefOrCallback<T = Element> = Ref<T> | ((el: T | undefined) => void);
 declare class RefDirective extends AsyncDirective {
     private _element?;
     private _ref?;
     private _context?;
-    render(_ref: RefOrCallback): symbol;
+    render(_ref?: RefOrCallback): symbol;
     update(part: ElementPart, [ref]: Parameters<this['render']>): symbol;
     private _updateRefValue;
     private get _lastElementForRef();
@@ -606,6 +799,6 @@ declare class RefDirective extends AsyncDirective {
  * render(html`<input ${ref(callback)}>`, container);
  * ```
  */
-declare const ref: (_ref: RefOrCallback) => DirectiveResult<typeof RefDirective>;
+declare const ref: (_ref?: RefOrCallback<Element> | undefined) => DirectiveResult<typeof RefDirective>;
 
-export { ClassInfo, ClassMapDirective, ItemTemplate, KeyFn, LiveDirective, Ref, RefDirective, RefOrCallback, RepeatDirective, RepeatDirectiveFn, StyleInfo, StyleMapDirective, UnsafeHTMLDirective, UntilDirective, classMap, createRef, ifDefined, live, ref, repeat, styleMap, unsafeHTML, until };
+export { type ClassInfo, ClassMapDirective, type ItemTemplate, type KeyFn, LiveDirective, Ref, RefDirective, type RefOrCallback, RepeatDirective, type RepeatDirectiveFn, type StyleInfo, StyleMapDirective, UnsafeHTMLDirective, UntilDirective, classMap, createRef, ifDefined, live, ref, repeat, styleMap, unsafeHTML, until };

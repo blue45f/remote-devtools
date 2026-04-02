@@ -5,17 +5,14 @@ export declare class KeybindsSettingsTab extends UI.Widget.VBox implements UI.Li
     private editingItem;
     private editingRow;
     constructor();
-    static instance(opts?: {
-        forceNew: null;
-    }): KeybindsSettingsTab;
     createElementForItem(item: KeybindsItem): Element;
     commitChanges(item: UI.ActionRegistration.Action, editedShortcuts: Map<UI.KeyboardShortcut.KeyboardShortcut, UI.KeyboardShortcut.Descriptor[] | null>): void;
     /**
      * This method will never be called.
      */
     heightForItem(_item: KeybindsItem): number;
-    isItemSelectable(_item: KeybindsItem): boolean;
-    selectedItemChanged(from: KeybindsItem | null, to: KeybindsItem | null, fromElement: HTMLElement | null, toElement: HTMLElement | null): void;
+    isItemSelectable(item: KeybindsItem): boolean;
+    selectedItemChanged(_from: KeybindsItem | null, to: KeybindsItem | null, fromElement: HTMLElement | null, toElement: HTMLElement | null): void;
     updateSelectedItemARIA(_fromElement: Element | null, _toElement: Element | null): boolean;
     startEditing(action: UI.ActionRegistration.Action): void;
     stopEditing(action: UI.ActionRegistration.Action): void;
@@ -23,7 +20,6 @@ export declare class KeybindsSettingsTab extends UI.Widget.VBox implements UI.Li
     onEscapeKeyPressed(event: Event): void;
     update(): void;
     willHide(): void;
-    wasShown(): void;
 }
 export declare class ShortcutListItem {
     private isEditing;

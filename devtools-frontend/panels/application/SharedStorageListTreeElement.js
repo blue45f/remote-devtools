@@ -1,16 +1,16 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as UI from '../../ui/legacy/legacy.js';
+import { createIcon } from '../../ui/kit/kit.js';
 import { ApplicationPanelTreeElement } from './ApplicationPanelTreeElement.js';
 import { SharedStorageEventsView } from './SharedStorageEventsView.js';
 const UIStrings = {
     /**
-     *@description Text in SharedStorage Category View of the Application panel
+     * @description Text in SharedStorage Category View of the Application panel
      */
-    sharedStorage: 'Shared Storage',
+    sharedStorage: 'Shared storage',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/application/SharedStorageListTreeElement.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -18,10 +18,10 @@ export class SharedStorageListTreeElement extends ApplicationPanelTreeElement {
     #expandedSetting;
     view;
     constructor(resourcesPanel, expandedSettingsDefault = false) {
-        super(resourcesPanel, i18nString(UIStrings.sharedStorage), false);
+        super(resourcesPanel, i18nString(UIStrings.sharedStorage), false, 'shared-storage');
         this.#expandedSetting =
-            Common.Settings.Settings.instance().createSetting('resourcesSharedStorageExpanded', expandedSettingsDefault);
-        const sharedStorageIcon = UI.Icon.Icon.create('database', 'resource-tree-item');
+            Common.Settings.Settings.instance().createSetting('resources-shared-storage-expanded', expandedSettingsDefault);
+        const sharedStorageIcon = createIcon('database');
         this.setLeadingIcons([sharedStorageIcon]);
         this.view = new SharedStorageEventsView();
     }

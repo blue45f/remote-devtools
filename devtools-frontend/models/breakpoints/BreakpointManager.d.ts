@@ -1,5 +1,5 @@
 import * as Common from '../../core/common/common.js';
-import * as Platform from '../../core/platform/platform.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as Bindings from '../bindings/bindings.js';
@@ -16,6 +16,8 @@ export declare class BreakpointManager extends Common.ObjectWrapper.ObjectWrappe
         targetManager: SDK.TargetManager.TargetManager | null;
         workspace: Workspace.Workspace.WorkspaceImpl | null;
         debuggerWorkspaceBinding: Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding | null;
+        settings: Common.Settings.Settings | null;
+        restoreInitialBreakpointCount?: number;
     }): BreakpointManager;
     modelAdded(debuggerModel: SDK.DebuggerModel.DebuggerModel): void;
     modelRemoved(debuggerModel: SDK.DebuggerModel.DebuggerModel): void;
@@ -36,7 +38,6 @@ export declare class BreakpointManager extends Common.ObjectWrapper.ObjectWrappe
     private projectRemoved;
     private removeUISourceCode;
     setBreakpoint(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber: number | undefined, condition: UserCondition, enabled: boolean, isLogpoint: boolean, origin: BreakpointOrigin): Promise<Breakpoint | undefined>;
-    private innerSetBreakpoint;
     findBreakpoint(uiLocation: Workspace.UISourceCode.UILocation): BreakpointLocation | null;
     addHomeUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode, breakpoint: Breakpoint): void;
     removeHomeUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode, breakpoint: Breakpoint): void;
@@ -45,17 +46,17 @@ export declare class BreakpointManager extends Common.ObjectWrapper.ObjectWrappe
     allBreakpointLocations(): BreakpointLocation[];
     removeBreakpoint(breakpoint: Breakpoint, removeFromStorage: boolean): void;
     uiLocationAdded(breakpoint: Breakpoint, uiLocation: Workspace.UISourceCode.UILocation): void;
-    uiLocationRemoved(breakpoint: Breakpoint, uiLocation: Workspace.UISourceCode.UILocation): void;
+    uiLocationRemoved(uiLocation: Workspace.UISourceCode.UILocation): void;
     supportsConditionalBreakpoints(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
 }
 export declare enum Events {
     BreakpointAdded = "breakpoint-added",
     BreakpointRemoved = "breakpoint-removed"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.BreakpointAdded]: BreakpointLocation;
     [Events.BreakpointRemoved]: BreakpointLocation;
-};
+}
 export declare const enum DebuggerUpdateResult {
     OK = "OK",
     ERROR_BREAKPOINT_CLASH = "ERROR_BREAKPOINT_CLASH",
@@ -87,7 +88,6 @@ export declare class Breakpoint implements SDK.TargetManager.SDKModelObserver<SD
     uiLocationRemoved(uiLocation: Workspace.UISourceCode.UILocation): void;
     enabled(): boolean;
     bound(): boolean;
-    hasBoundScript(): boolean;
     setEnabled(enabled: boolean): void;
     /**
      * The breakpoint condition as entered by the user.
@@ -97,6 +97,7 @@ export declare class Breakpoint implements SDK.TargetManager.SDKModelObserver<SD
      * The breakpoint condition as it is sent to V8.
      */
     backendCondition(): SDK.DebuggerModel.BackendCondition;
+    backendCondition(location: SDK.DebuggerModel.Location): Promise<SDK.DebuggerModel.BackendCondition>;
     setCondition(condition: UserCondition, isLogpoint: boolean): void;
     isLogpoint(): boolean;
     get storageState(): BreakpointStorageState;
@@ -159,14 +160,14 @@ export declare const enum BreakpointOrigin {
 export declare namespace Breakpoint {
     type State = Position[];
     namespace State {
-        function equals(stateA?: State | null, stateB?: State | null): boolean;
+        function subset(stateA?: State | null, stateB?: State | null): boolean;
     }
 }
 declare class Storage {
     #private;
     readonly setting: Common.Settings.Setting<BreakpointStorageState[]>;
     readonly breakpoints: Map<string, BreakpointStorageState>;
-    constructor();
+    constructor(settings: Common.Settings.Settings);
     mute(): void;
     unmute(): void;
     breakpointItems(url: Platform.DevToolsPath.UrlString, resourceTypeName?: string): BreakpointStorageState[];

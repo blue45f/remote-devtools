@@ -1,54 +1,31 @@
-import * as Common from '../../core/common/common.js';
 import type * as Platform from '../../core/platform/platform.js';
-import * as SDK from '../../core/sdk/sdk.js';
 import type * as Protocol from '../../generated/protocol.js';
-import * as TimelineModel from '../../models/timeline_model/timeline_model.js';
+import * as Trace from '../../models/trace/trace.js';
+import type { Client } from './TimelineController.js';
 /**
- * This class handles loading traces from file and URL, and from the Lighthouse panel
- * It also handles loading cpuprofiles from file, url and console.profileEnd()
- *
- * Meanwhile, the normal trace recording flow bypasses TimelineLoader entirely,
- * as it's handled from TracingManager => TimelineController.
+ * This class handles loading traces from URL, and from the Lighthouse panel
+ * It also handles loading cpuprofiles from url and console.profileEnd()
  */
-export declare class TimelineLoader implements Common.StringOutputStream.OutputStream {
+export declare class TimelineLoader {
+    #private;
     private client;
-    private tracingModel;
     private canceledCallback;
-    private state;
-    private buffer;
-    private firstRawChunk;
-    private firstChunk;
-    private loadedBytes;
-    private totalSize;
-    private readonly jsonTokenizer;
     private filter;
-    constructor(client: Client, title?: string);
-    static loadFromFile(file: File, client: Client): Promise<TimelineLoader>;
-    static loadFromEvents(events: SDK.TracingManager.EventPayload[], client: Client): TimelineLoader;
-    static getCpuProfileFilter(): TimelineModel.TimelineModelFilter.TimelineVisibleEventsFilter;
-    static loadFromCpuProfile(profile: Protocol.Profiler.Profile | null, client: Client, title?: string): TimelineLoader;
+    constructor(client: Client);
+    static loadFromParsedJsonFile(contents: ParsedJSONFile, client: Client): TimelineLoader;
+    static loadFromEvents(events: Trace.Types.Events.Event[], client: Client): TimelineLoader;
+    static loadFromTraceFile(traceFile: Trace.Types.File.TraceFile, client: Client): TimelineLoader;
+    static loadFromCpuProfile(profile: Protocol.Profiler.Profile, client: Client): TimelineLoader;
     static loadFromURL(url: Platform.DevToolsPath.UrlString, client: Client): Promise<TimelineLoader>;
-    addEvents(events: SDK.TracingManager.EventPayload[]): Promise<void>;
+    addEvents(events: readonly Trace.Types.Events.Event[], metadata: Trace.Types.File.MetaData | null): Promise<void>;
     cancel(): Promise<void>;
-    write(chunk: string): Promise<void>;
-    private writeBalancedJSON;
     private reportErrorAndCancelLoading;
-    private looksLikeAppVersion;
     close(): Promise<void>;
     private finalizeTrace;
-    private parseCPUProfileFormat;
+    traceFinalizedForTest(): Promise<void>;
 }
-export declare const TransferChunkLengthBytes = 5000000;
-export interface Client {
-    loadingStarted(): Promise<void>;
-    loadingProgress(progress?: number): Promise<void>;
-    processingStarted(): Promise<void>;
-    loadingComplete(tracingModel: SDK.TracingModel.TracingModel | null, exclusiveFilter: TimelineModel.TimelineModelFilter.TimelineModelFilter | null): Promise<void>;
-}
-export declare enum State {
-    Initial = "Initial",
-    LookingForEvents = "LookingForEvents",
-    ReadingEvents = "ReadingEvents",
-    SkippingTail = "SkippingTail",
-    LoadingCPUProfileFormat = "LoadingCPUProfileFormat"
-}
+/**
+ * Used when we parse the input, but do not yet know if it is a raw CPU Profile or a Trace
+ **/
+type ParsedJSONFile = Trace.Types.File.Contents | Protocol.Profiler.Profile;
+export {};

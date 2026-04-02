@@ -1,14 +1,14 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as ComponentHelpers from '../../components/helpers/helpers.js';
-import * as LitHtml from '../../lit-html/lit-html.js';
-import { Icon } from './Icon.js';
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
+import '../../kit/kit.js';
+import * as Lit from '../../lit/lit.js';
 import iconButtonStyles from './iconButton.css.js';
+const { html } = Lit;
 export class IconButton extends HTMLElement {
-    static litTagName = LitHtml.literal `icon-button`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #clickHandler = undefined;
+    #clickHandler;
     #groups = [];
     #compact = false;
     #leadingText = '';
@@ -25,16 +25,13 @@ export class IconButton extends HTMLElement {
     }
     get data() {
         return {
-            groups: this.#groups.map(group => ({ ...group })),
+            groups: this.#groups.map(group => ({ ...group })), // Ensure we make a deep copy.
             accessibleName: this.#accessibleName,
             clickHandler: this.#clickHandler,
             leadingText: this.#leadingText,
             trailingText: this.#trailingText,
             compact: this.#compact,
         };
-    }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [iconButtonStyles];
     }
     #onClickHandler(event) {
         if (this.#clickHandler) {
@@ -43,29 +40,30 @@ export class IconButton extends HTMLElement {
         }
     }
     #render() {
-        const buttonClasses = LitHtml.Directives.classMap({
+        const buttonClasses = Lit.Directives.classMap({
             'icon-button': true,
             'with-click-handler': Boolean(this.#clickHandler),
-            'compact': this.#compact,
+            compact: this.#compact,
         });
         const filteredGroups = this.#groups.filter(counter => counter.text !== undefined)
             .filter((_, index) => this.#compact ? index === 0 : true);
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
-      <button class=${buttonClasses} @click=${this.#onClickHandler} aria-label=${LitHtml.Directives.ifDefined(this.#accessibleName)}>
-      ${(!this.#compact && this.#leadingText) ? LitHtml.html `<span class="icon-button-title">${this.#leadingText}</span>` : LitHtml.nothing}
-      ${filteredGroups.map(counter => LitHtml.html `
-      <${Icon.litTagName} class="status-icon"
-      .data=${{ iconName: counter.iconName, color: counter.iconColor, width: counter.iconWidth || '1.5ex', height: counter.iconHeight || '1.5ex' }}>
-      </${Icon.litTagName}>
-      ${this.#compact ? LitHtml.html `<!-- Force line-height for this element --><span>&#8203;</span>` : LitHtml.nothing}
-      <span class="icon-button-title">${counter.text}</span>
-      </button>`)}
-      ${(!this.#compact && this.#trailingText) ? LitHtml.html `<span class="icon-button-title">${this.#trailingText}</span>` : LitHtml.nothing}
+        Lit.render(html `
+      <style>${iconButtonStyles}</style>
+      <button class=${buttonClasses} @click=${this.#onClickHandler} aria-label=${Lit.Directives.ifDefined(this.#accessibleName)}>
+      ${(!this.#compact && this.#leadingText) ? html `<span class="icon-button-title">${this.#leadingText}</span>` : Lit.nothing}
+      ${filteredGroups.map(counter => html `
+      <devtools-icon class="status-icon" name=${counter.iconName} style="color: ${counter.iconColor}; width: ${counter.iconWidth || 'var(--sys-size-7)'}; height: ${counter.iconHeight || 'var(--sys-size-7)'}">
+      </devtools-icon>
+      ${this.#compact ? html `<!-- Force line-height for this element --><span>&#8203;</span>` : Lit.nothing}
+      <span class="icon-button-title">${counter.text}</span>`)}
+      </button>
+      ${(!this.#compact && this.#trailingText) ? html `<span class="icon-button-title">${this.#trailingText}</span>` : Lit.nothing}
     `, this.#shadow, { host: this });
         // clang-format on
     }
 }
-ComponentHelpers.CustomElements.defineComponent('icon-button', IconButton);
+// eslint-disable-next-line @devtools/enforce-custom-element-prefix
+customElements.define('icon-button', IconButton);
 //# sourceMappingURL=IconButton.js.map

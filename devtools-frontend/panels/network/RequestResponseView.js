@@ -1,163 +1,102 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
-import * as Root from '../../core/root/root.js';
-import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
+import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as Lit from '../../ui/lit/lit.js';
+import { BinaryResourceView } from './BinaryResourceView.js';
+const { html, render } = Lit;
 const UIStrings = {
     /**
-     *@description Text in Request Response View of the Network panel
+     * @description Text in Request Response View of the Network panel if no preview can be shown
      */
-    thisRequestHasNoResponseData: 'This request has no response data available.',
+    noPreview: 'Nothing to preview',
     /**
-     *@description Text in Request Preview View of the Network panel
+     * @description Text in Request Response View of the Network panel
+     */
+    thisRequestHasNoResponseData: 'This request has no response data available',
+    /**
+     * @description Text in Request Preview View of the Network panel
      */
     failedToLoadResponseData: 'Failed to load response data',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/network/RequestResponseView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+const { widgetRef, widget } = UI.Widget;
+export const DEFAULT_VIEW = (input, output, target) => {
+    let widgetTemplate;
+    if (TextUtils.StreamingContentData.isError(input.contentData)) {
+        // clang-format off
+        widgetTemplate = html `${widget(element => new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.failedToLoadResponseData), input.contentData.error, element))}`;
+        // clang-format on
+    }
+    else if (input.request.statusCode === 204 || input.request.failed) {
+        // clang-format off
+        widgetTemplate = html `${widget(element => new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.noPreview), i18nString(UIStrings.thisRequestHasNoResponseData), element))}`;
+        // clang-format on
+    }
+    else if (input.renderAsText) {
+        // clang-format off
+        widgetTemplate = html `<devtools-widget ${widget(element => new SourceFrame.ResourceSourceFrame.SearchableContainer(input.request, input.mimeType, element))}
+                    ${widgetRef(SourceFrame.ResourceSourceFrame.SearchableContainer, widget => { output.revealPosition = widget.revealPosition.bind(widget); })}></devtools-widget>`;
+        // clang-format on
+    }
+    else {
+        // clang-format off
+        widgetTemplate = html `${widget(element => new BinaryResourceView(input.contentData, input.request.url(), input.request.resourceType(), element))}`;
+        // clang-format on
+    }
+    render(widgetTemplate, target);
+};
 export class RequestResponseView extends UI.Widget.VBox {
     request;
-    contentViewPromise;
-    constructor(request) {
+    #view;
+    #revealPosition;
+    constructor(request, view = DEFAULT_VIEW) {
         super();
-        this.element.classList.add('request-view');
         this.request = request;
-        this.contentViewPromise = null;
-    }
-    static hasTextContent(request, contentData) {
-        const mimeType = request.mimeType || '';
-        let resourceType = Common.ResourceType.ResourceType.fromMimeType(mimeType);
-        if (resourceType === Common.ResourceType.resourceTypes.Other) {
-            resourceType = request.contentType();
-        }
-        if (resourceType === Common.ResourceType.resourceTypes.Image) {
-            return mimeType.startsWith('image/svg');
-        }
-        if (resourceType.isTextType()) {
-            return true;
-        }
-        if (contentData.error) {
-            return false;
-        }
-        if (resourceType === Common.ResourceType.resourceTypes.Other) {
-            return Boolean(contentData.content) && !contentData.encoded;
-        }
-        return false;
-    }
-    static async sourceViewForRequest(request) {
-        let sourceView = requestToSourceView.get(request);
-        if (sourceView !== undefined) {
-            return sourceView;
-        }
-        const contentData = await request.contentData();
-        if (!RequestResponseView.hasTextContent(request, contentData)) {
-            requestToSourceView.delete(request);
-            return null;
-        }
-        
-        // MIME 타입 가져오기 개선 - 여러 소스에서 시도
-        let mimeType = request.resourceType().canonicalMimeType() || request.mimeType;
-        
-        // mimeType이 null이거나 빈 문자열인 경우 Content-Type 헤더에서 직접 가져오기
-        if (!mimeType && request.responseHeaders) {
-            const contentTypeHeader = request.responseHeaders.find(
-                header => header.name.toLowerCase() === 'content-type'
-            );
-            if (contentTypeHeader) {
-                // Content-Type에서 charset 등을 제거하고 MIME 타입만 추출
-                mimeType = contentTypeHeader.value.split(';')[0].trim();
-            }
-        }
-        
-        // 그래도 없으면 resourceType에 기반한 기본값 사용
-        if (!mimeType) {
-            const resourceType = request.resourceType();
-            if (resourceType === Common.ResourceType.resourceTypes.XHR || 
-                resourceType === Common.ResourceType.resourceTypes.Fetch) {
-                // XHR/Fetch 요청이고 내용이 JSON처럼 보이면 application/json으로 간주
-                if (contentData.content && (contentData.content.trim().startsWith('{') || contentData.content.trim().startsWith('['))) {
-                    mimeType = 'application/json';
-                }
-            }
-        }
-        
-        const mediaType = Common.ResourceType.ResourceType.mediaTypeForMetrics(mimeType, request.resourceType().isFromSourceMap(), TextUtils.TextUtils.isMinified(contentData.content ?? ''));
-        Host.userMetrics.networkPanelResponsePreviewOpened(mediaType);
-        const autoPrettyPrint = Root.Runtime.experiments.isEnabled('sourcesPrettyPrint');
-        
-        sourceView =
-            SourceFrame.ResourceSourceFrame.ResourceSourceFrame.createSearchableView(request, mimeType || '', autoPrettyPrint);
-        requestToSourceView.set(request, sourceView);
-        return sourceView;
+        this.#view = view;
     }
     wasShown() {
-        void this.doShowPreview();
+        super.wasShown();
+        this.requestUpdate();
     }
-    doShowPreview() {
-        if (!this.contentViewPromise) {
-            this.contentViewPromise = this.showPreview();
+    async performUpdate() {
+        const contentData = await this.request.requestStreamingContent();
+        let renderAsText = false;
+        const mimeType = this.getMimeTypeForDisplay();
+        if (!TextUtils.StreamingContentData.isError(contentData)) {
+            const isWasm = contentData.mimeType === 'application/wasm';
+            renderAsText = contentData.isTextContent || isWasm;
+            const isMinified = isWasm || !contentData.isTextContent ? false : TextUtils.TextUtils.isMinified(contentData.content().text);
+            const mediaType = Common.ResourceType.ResourceType.mediaTypeForMetrics(mimeType, this.request.resourceType().isFromSourceMap(), isMinified, false, false);
+            Host.userMetrics.networkPanelResponsePreviewOpened(mediaType);
         }
-        return this.contentViewPromise;
+        const viewInput = { request: this.request, contentData, mimeType, renderAsText };
+        const that = this;
+        const viewOutput = {
+            set revealPosition(reveal) {
+                that.#revealPosition = reveal;
+            },
+        };
+        this.#view(viewInput, viewOutput, this.contentElement);
     }
-    async showPreview() {
-        const responseView = await this.createPreview();
-        responseView.show(this.element);
-        return responseView;
+    getMimeTypeForDisplay() {
+        // If the main document is of type JSON (or any JSON subtype), do not use the more generic canonical MIME type,
+        // which would prevent the JSON from being pretty-printed. See https://crbug.com/406900
+        if (Common.ResourceType.ResourceType.simplifyContentType(this.request.mimeType) === 'application/json') {
+            return this.request.mimeType;
+        }
+        return this.request.resourceType().canonicalMimeType() || this.request.mimeType;
     }
-    async createPreview() {
-        const contentData = await this.request.contentData();
-        const sourceView = await RequestResponseView.sourceViewForRequest(this.request);
-        if ((!contentData.content || !sourceView) && !contentData.error) {
-            return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.thisRequestHasNoResponseData));
-        }
-        if (contentData.content && sourceView) {
-            return sourceView;
-        }
-        if (contentData.error) {
-            return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.failedToLoadResponseData) + ': ' + contentData.error);
-        }
-        if (this.request.statusCode === 204) {
-            return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.thisRequestHasNoResponseData));
-        }
-        return new UI.EmptyWidget.EmptyWidget(i18nString(UIStrings.failedToLoadResponseData));
-    }
-    async revealLine(line) {
-        const view = await this.doShowPreview();
-        if (view instanceof SourceFrame.ResourceSourceFrame.SearchableContainer) {
-            void view.revealPosition(line);
-        }
+    async revealPosition(position) {
+        this.requestUpdate();
+        await this.updateComplete;
+        await this.#revealPosition?.(position);
     }
 }
-const requestToSourceView = new WeakMap();
 //# sourceMappingURL=RequestResponseView.js.map

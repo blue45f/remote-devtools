@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as SDK from '../../core/sdk/sdk.js';
@@ -86,9 +86,7 @@ export class ConsoleFilter {
                         break;
                     }
                     case FilterType.Source: {
-                        const sourceNameForMessage = message.source ?
-                            SDK.ConsoleModel.MessageSourceDisplayName.get(message.source) :
-                            message.source;
+                        const sourceNameForMessage = message.source ? SDK.ConsoleModel.MessageSourceDisplayName.get((message.source)) : message.source;
                         if (!passesFilter(filter, sourceNameForMessage, true /* exactMatch */)) {
                             return false;
                         }
@@ -111,7 +109,7 @@ export class ConsoleFilter {
             if (!value) {
                 return !filter.text === !filter.negative;
             }
-            const filterText = filter.text.toLowerCase();
+            const filterText = (filter.text).toLowerCase();
             const lowerCaseValue = value.toLowerCase();
             if (exactMatch && (lowerCaseValue === filterText) === filter.negative) {
                 return false;
@@ -123,12 +121,12 @@ export class ConsoleFilter {
         }
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var FilterType;
 (function (FilterType) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     FilterType["Context"] = "context";
     FilterType["Source"] = "source";
     FilterType["Url"] = "url";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(FilterType || (FilterType = {}));
 //# sourceMappingURL=ConsoleFilter.js.map

@@ -1,27 +1,27 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '../../panels/accessibility/accessibility-legacy.js';
 import '../elements_test_runner/elements_test_runner.js';
 import '../../core/i18n/i18n.js';
 
+import * as Accessibility from '../../panels/accessibility/accessibility.js';
 import {TestRunner} from '../test_runner/test_runner.js';
 
 /**
- * @fileoverview using private properties isn't a Closure violation in tests.
+ * @file using private properties isn't a Closure violation in tests.
  */
 
 export const AccessibilityTestRunner = {};
 
 AccessibilityTestRunner.accessibilitySidebarPane = function() {
-  return Accessibility.AccessibilitySidebarView.instance();
+  return Accessibility.AccessibilitySidebarView.AccessibilitySidebarView.instance();
 };
 
 AccessibilityTestRunner.selectNodeAndWaitForAccessibility = function(idValue) {
   return new Promise(resolve => {
     ElementsTestRunner.selectNodeWithId(idValue, function() {
-      Accessibility.AccessibilitySidebarView.instance().doUpdate().then(resolve);
+      Accessibility.AccessibilitySidebarView.AccessibilitySidebarView.instance().doUpdate().then(resolve);
     });
   });
 };

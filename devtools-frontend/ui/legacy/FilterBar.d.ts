@@ -1,59 +1,60 @@
+import './Toolbar.js';
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
-import { type Suggestions } from './SuggestBox.js';
+import filterStyles from './filter.css.js';
+import type { Suggestions } from './SuggestBox.js';
 import { type ToolbarButton } from './Toolbar.js';
 import { HBox } from './Widget.js';
+export { filterStyles };
 declare const FilterBar_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<FilterBarEventTypes>;
-    addEventListener<T extends FilterBarEvents.Changed>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<FilterBarEventTypes, T>;
-    once<T_1 extends FilterBarEvents.Changed>(eventType: T_1): Promise<FilterBarEventTypes[T_1]>;
-    removeEventListener<T_2 extends FilterBarEvents.Changed>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: FilterBarEvents.Changed): boolean;
-    dispatchEventToListeners<T_3 extends FilterBarEvents.Changed>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<FilterBarEventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<FilterBarEventTypes>;
+    addEventListener<T extends FilterBarEvents.CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<FilterBarEventTypes, T>;
+    once<T extends FilterBarEvents.CHANGED>(eventType: T): Promise<FilterBarEventTypes[T]>;
+    removeEventListener<T extends FilterBarEvents.CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<FilterBarEventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: FilterBarEvents.CHANGED): boolean;
+    dispatchEventToListeners<T extends FilterBarEvents.CHANGED>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<FilterBarEventTypes, T>): void;
 }) & typeof HBox;
 export declare class FilterBar extends FilterBar_base {
+    #private;
     private enabled;
     private readonly stateSetting;
-    private readonly filterButtonInternal;
     private filters;
     private alwaysShowFilters?;
     private showingWidget?;
     constructor(name: string, visibleByDefault?: boolean);
     filterButton(): ToolbarButton;
+    addDivider(): void;
     addFilter(filter: FilterUI): void;
     setEnabled(enabled: boolean): void;
-    forceShowFilterBar(): void;
-    showOnce(): void;
     private filterChanged;
     wasShown(): void;
     private updateFilterBar;
     focus(): void;
+    hasActiveFilter(): boolean;
     private updateFilterButton;
     clear(): void;
     setting(): Common.Settings.Setting<boolean>;
     visible(): boolean;
 }
 export declare const enum FilterBarEvents {
-    Changed = "Changed"
+    CHANGED = "Changed"
 }
-export type FilterBarEventTypes = {
-    [FilterBarEvents.Changed]: void;
-};
+export interface FilterBarEventTypes {
+    [FilterBarEvents.CHANGED]: void;
+}
 export interface FilterUI extends Common.EventTarget.EventTarget<FilterUIEventTypes> {
     isActive(): boolean;
     element(): Element;
 }
 export declare const enum FilterUIEvents {
-    FilterChanged = "FilterChanged"
+    FILTER_CHANGED = "FilterChanged"
 }
-export type FilterUIEventTypes = {
-    [FilterUIEvents.FilterChanged]: void;
-};
+export interface FilterUIEventTypes {
+    [FilterUIEvents.FILTER_CHANGED]: void;
+}
 export declare class TextFilterUI extends Common.ObjectWrapper.ObjectWrapper<FilterUIEventTypes> implements FilterUI {
+    #private;
     private readonly filterElement;
-    private readonly filterInputElement;
-    private prompt;
-    private readonly proxyElement;
     private suggestionProvider;
     constructor();
     private completions;
@@ -64,8 +65,16 @@ export declare class TextFilterUI extends Common.ObjectWrapper.ObjectWrapper<Fil
     focus(): void;
     setSuggestionProvider(suggestionProvider: (arg0: string, arg1: string, arg2?: boolean | undefined) => Promise<Suggestions>): void;
     private valueChanged;
-    private updateEmptyStyles;
     clear(): void;
+}
+interface NamedBitSetFilterUIOptions {
+    items: Item[];
+    setting?: Common.Settings.Setting<Record<string, boolean>>;
+}
+export declare class NamedBitSetFilterUIElement extends HTMLElement {
+    #private;
+    set options(options: NamedBitSetFilterUIOptions);
+    getOrCreateNamedBitSetFilterUI(): NamedBitSetFilterUI;
 }
 export declare class NamedBitSetFilterUI extends Common.ObjectWrapper.ObjectWrapper<FilterUIEventTypes> implements FilterUI {
     private readonly filtersElement;
@@ -73,9 +82,7 @@ export declare class NamedBitSetFilterUI extends Common.ObjectWrapper.ObjectWrap
     private allowedTypes;
     private readonly typeFilterElements;
     private readonly setting;
-    constructor(items: Item[], setting?: Common.Settings.Setting<{
-        [key: string]: boolean;
-    }>);
+    constructor(items: Item[], setting?: Common.Settings.Setting<Record<string, boolean>>);
     reset(): void;
     isActive(): boolean;
     element(): Element;
@@ -92,9 +99,8 @@ export declare class NamedBitSetFilterUI extends Common.ObjectWrapper.ObjectWrap
 export declare class CheckboxFilterUI extends Common.ObjectWrapper.ObjectWrapper<FilterUIEventTypes> implements FilterUI {
     private readonly filterElement;
     private readonly activeWhenChecked;
-    private label;
-    private checkboxElement;
-    constructor(className: string, title: string, activeWhenChecked?: boolean, setting?: Common.Settings.Setting<boolean>);
+    private checkbox;
+    constructor(title: Common.UIString.LocalizedString, activeWhenChecked?: boolean, setting?: Common.Settings.Setting<boolean>, jslogContext?: string);
     isActive(): boolean;
     checked(): boolean;
     setChecked(checked: boolean): void;
@@ -106,5 +112,5 @@ export interface Item {
     name: string;
     label: () => string;
     title?: string;
+    jslogContext: string;
 }
-export {};

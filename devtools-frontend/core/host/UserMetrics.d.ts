@@ -1,15 +1,7 @@
 export declare class UserMetrics {
     #private;
     constructor();
-    breakpointWithConditionAdded(breakpointWithConditionAdded: BreakpointWithConditionAdded): void;
-    breakpointEditDialogRevealedFrom(breakpointEditDialogRevealedFrom: BreakpointEditDialogRevealedFrom): void;
-    panelShown(panelName: string): void;
-    /**
-     * Fired when a panel is closed (regardless if it exists in the main panel or the drawer)
-     */
-    panelClosed(panelName: string): void;
-    elementsSidebarTabShown(sidebarPaneName: string): void;
-    sourcesSidebarTabShown(sidebarPaneName: string): void;
+    panelShown(panelName: string, isLaunching?: boolean): void;
     settingsPanelShown(settingsViewId: string): void;
     sourcesPanelFileDebugged(mediaType?: string): void;
     sourcesPanelFileOpened(mediaType?: string): void;
@@ -17,55 +9,62 @@ export declare class UserMetrics {
     actionTaken(action: Action): void;
     panelLoaded(panelName: string, histogramName: string): void;
     setLaunchPanel(panelName: string | null): void;
+    performanceTraceLoad(measure: PerformanceMeasure): void;
     keybindSetSettingChanged(keybindSet: string): void;
     keyboardShortcutFired(actionId: string): void;
     issuesPanelOpenedFrom(issueOpener: IssueOpener): void;
-    issuesPanelIssueExpanded(issueExpandedCategory: string | undefined): void;
+    issuesPanelIssueExpanded(issueExpandedCategory?: string): void;
     issuesPanelResourceOpened(issueCategory: string, type: string): void;
     issueCreated(code: string): void;
     experimentEnabledAtLaunch(experimentId: string): void;
+    navigationSettingAtFirstTimelineLoad(state: TimelineNavigationSetting): void;
+    experimentDisabledAtLaunch(experimentId: string): void;
     experimentChanged(experimentId: string, isEnabled: boolean): void;
     developerResourceLoaded(developerResourceLoaded: DeveloperResourceLoaded): void;
     developerResourceScheme(developerResourceScheme: DeveloperResourceScheme): void;
-    inlineScriptParsed(inlineScriptType: VMInlineScriptType): void;
-    vmInlineScriptContentShown(inlineScriptType: VMInlineScriptType): void;
-    linearMemoryInspectorRevealedFrom(linearMemoryInspectorRevealedFrom: LinearMemoryInspectorRevealedFrom): void;
-    linearMemoryInspectorTarget(linearMemoryInspectorTarget: LinearMemoryInspectorTarget): void;
     language(language: Intl.UnicodeBCP47LocaleIdentifier): void;
     syncSetting(devtoolsSyncSettingEnabled: boolean): void;
-    recordingAssertion(value: RecordingAssertion): void;
     recordingToggled(value: RecordingToggled): void;
     recordingReplayFinished(value: RecordingReplayFinished): void;
-    recordingReplaySpeed(value: RecordingReplaySpeed): void;
     recordingReplayStarted(value: RecordingReplayStarted): void;
-    recordingEdited(value: RecordingEdited): void;
-    recordingExported(value: RecordingExported): void;
-    recordingCodeToggled(value: RecordingCodeToggled): void;
-    recordingCopiedToClipboard(value: RecordingCopiedToClipboard): void;
-    styleTextCopied(value: StyleTextCopied): void;
-    manifestSectionSelected(sectionTitle: string): void;
-    cssHintShown(type: CSSHintType): void;
     lighthouseModeRun(type: LighthouseModeRun): void;
-    colorConvertedFrom(type: ColorConvertedFrom): void;
-    colorPickerOpenedFrom(type: ColorPickerOpenedFrom): void;
-    cssPropertyDocumentation(type: CSSPropertyDocumentation): void;
+    lighthouseCategoryUsed(type: LighthouseCategoryUsed): void;
     swatchActivated(swatch: SwatchType): void;
-    badgeActivated(badge: BadgeType): void;
-    breakpointsRestoredFromStorage(count: number): void;
     workspacesPopulated(wallClockTimeInMilliseconds: number): void;
-    workspacesNumberOfFiles(numberOfFilesLoaded: number, numberOfDirectoriesTraversed: number): void;
+    visualLoggingProcessingDone(timeInMilliseconds: number): void;
+    freestylerQueryLength(numberOfCharacters: number): void;
+    freestylerEvalResponseSize(bytes: number): void;
+    performanceAINetworkSummaryResponseSize(bytes: number): void;
+    performanceAINetworkRequestDetailResponseSize(bytes: number): void;
+    performanceAIMainThreadActivityResponseSize(bytes: number): void;
+    builtInAiAvailability(availability: BuiltInAiAvailability): void;
+    consoleInsightTeaserGenerated(timeInMilliseconds: number): void;
+    consoleInsightTeaserGeneratedMedium(timeInMilliseconds: number): void;
+    consoleInsightTeaserFirstChunkGenerated(timeInMilliseconds: number): void;
+    consoleInsightTeaserFirstChunkGeneratedMedium(timeInMilliseconds: number): void;
+    consoleInsightTeaserChunkToEndMedium(timeInMilliseconds: number): void;
+    consoleInsightTeaserAbortedAfterFirstCharacter(timeInMilliseconds: number): void;
+    consoleInsightTeaserAbortedBeforeFirstCharacter(timeInMilliseconds: number): void;
+    consoleInsightLongTeaserGenerated(timeInMilliseconds: number): void;
+    consoleInsightShortTeaserGenerated(timeInMilliseconds: number): void;
+    extensionEvalTarget(target: ExtensionEvalTarget): void;
 }
 /**
  * The numeric enum values are not necessarily continuous! It is possible that
  * values have been removed, which results in gaps in the sequence of values.
  * When adding a new value:
- * 1. Add an entry to the bottom of the enum before 'MaxValue'.
- * 2. Set the value of the new entry to the current value of 'MaxValue'.
- * 2. Increment the value of 'MaxValue' by 1.
+ * 1. Add an entry to the bottom of the enum before 'MAX_VALUE'.
+ * 2. Set the value of the new entry to the current value of 'MAX_VALUE'.
+ * 2. Increment the value of 'MAX_VALUE' by 1.
  * When removing a value which is no longer needed:
  * 1. Delete the line with the unneeded value
- * 2. Do not update any 'MaxValue' or any other value.
+ * 2. Do not update any 'MAX_VALUE' or any other value.
  */
+/**
+ * Codes below are used to collect UMA histograms in the Chromium port.
+ * Do not change the values below, additional actions are needed on the Chromium side
+ * in order to add more codes.
+ **/
 export declare enum Action {
     WindowDocked = 1,
     WindowUndocked = 2,
@@ -139,14 +138,130 @@ export declare enum Action {
     BreakpointsInFileCheckboxToggled = 71,
     BreakpointsInFileEnabledDisabledFromContextMenu = 72,
     BreakpointConditionEditedFromSidebar = 73,
-    AddFileSystemToWorkspace = 74,
-    RemoveFileSystemFromWorkspace = 75,
-    AddFileSystemForOverrides = 76,
-    RemoveFileSystemForOverrides = 77,
-    FileSystemSourceSelected = 78,
+    WorkspaceTabAddFolder = 74,
+    WorkspaceTabRemoveFolder = 75,
+    OverrideTabAddFolder = 76,
+    OverrideTabRemoveFolder = 77,
+    WorkspaceSourceSelected = 78,
     OverridesSourceSelected = 79,
     StyleSheetInitiatorLinkClicked = 80,
-    MaxValue = 81
+    BreakpointRemovedFromGutterContextMenu = 81,
+    BreakpointRemovedFromGutterToggle = 82,
+    StylePropertyInsideKeyframeEdited = 83,
+    OverrideContentFromSourcesContextMenu = 84,
+    OverrideContentFromNetworkContextMenu = 85,
+    OverrideScript = 86,
+    OverrideStyleSheet = 87,
+    OverrideDocument = 88,
+    OverrideFetchXHR = 89,
+    OverrideImage = 90,
+    OverrideFont = 91,
+    OverrideContentContextMenuSetup = 92,
+    OverrideContentContextMenuAbandonSetup = 93,
+    OverrideContentContextMenuActivateDisabled = 94,
+    OverrideContentContextMenuOpenExistingFile = 95,
+    OverrideContentContextMenuSaveNewFile = 96,
+    ShowAllOverridesFromSourcesContextMenu = 97,
+    ShowAllOverridesFromNetworkContextMenu = 98,
+    AnimationGroupsCleared = 99,
+    AnimationsPaused = 100,
+    AnimationsResumed = 101,
+    AnimatedNodeDescriptionClicked = 102,
+    AnimationGroupScrubbed = 103,
+    AnimationGroupReplayed = 104,
+    OverrideTabDeleteFolderContextMenu = 105,
+    WorkspaceDropFolder = 107,
+    WorkspaceSelectFolder = 108,
+    OverrideContentContextMenuSourceMappedWarning = 109,
+    OverrideContentContextMenuRedirectToDeployed = 110,
+    NewStyleRuleAdded = 111,
+    TraceExpanded = 112,
+    InsightConsoleMessageShown = 113,
+    InsightRequestedViaContextMenu = 114,
+    InsightRequestedViaHoverButton = 115,
+    InsightRatedPositive = 117,
+    InsightRatedNegative = 118,
+    InsightClosed = 119,
+    InsightErrored = 120,
+    InsightHoverButtonShown = 121,
+    SelfXssWarningConsoleMessageShown = 122,
+    SelfXssWarningDialogShown = 123,
+    SelfXssAllowPastingInConsole = 124,
+    SelfXssAllowPastingInDialog = 125,
+    ToggleEmulateFocusedPageFromStylesPaneOn = 126,
+    ToggleEmulateFocusedPageFromStylesPaneOff = 127,
+    ToggleEmulateFocusedPageFromRenderingTab = 128,
+    ToggleEmulateFocusedPageFromCommandMenu = 129,
+    InsightGenerated = 130,
+    InsightErroredApi = 131,
+    InsightErroredMarkdown = 132,
+    ToggleShowWebVitals = 133,
+    InsightErroredPermissionDenied = 134,
+    InsightErroredCannotSend = 135,
+    InsightErroredRequestFailed = 136,
+    InsightErroredCannotParseChunk = 137,
+    InsightErroredUnknownChunk = 138,
+    InsightErroredOther = 139,
+    AutofillReceived = 140,
+    AutofillReceivedAndTabAutoOpened = 141,
+    AnimationGroupSelected = 142,
+    ScrollDrivenAnimationGroupSelected = 143,
+    ScrollDrivenAnimationGroupScrubbed = 144,
+    AiAssistanceOpenedFromElementsPanel = 145,
+    AiAssistanceOpenedFromStylesTab = 146,
+    ConsoleFilterByContext = 147,
+    ConsoleFilterBySource = 148,
+    ConsoleFilterByUrl = 149,
+    InsightConsentReminderShown = 150,
+    InsightConsentReminderCanceled = 151,
+    InsightConsentReminderConfirmed = 152,
+    InsightsOnboardingShown = 153,
+    InsightsOnboardingCanceledOnPage1 = 154,
+    InsightsOnboardingCanceledOnPage2 = 155,
+    InsightsOnboardingConfirmed = 156,
+    InsightsOnboardingNextPage = 157,
+    InsightsOnboardingPrevPage = 158,
+    InsightsOnboardingFeatureDisabled = 159,
+    InsightsOptInTeaserShown = 160,
+    InsightsOptInTeaserSettingsLinkClicked = 161,
+    InsightsOptInTeaserConfirmedInSettings = 162,
+    InsightsReminderTeaserShown = 163,
+    InsightsReminderTeaserConfirmed = 164,
+    InsightsReminderTeaserCanceled = 165,
+    InsightsReminderTeaserSettingsLinkClicked = 166,
+    InsightsReminderTeaserAbortedInSettings = 167,
+    GeneratingInsightWithoutDisclaimer = 168,
+    AiAssistanceOpenedFromElementsPanelFloatingButton = 169,
+    AiAssistanceOpenedFromNetworkPanel = 170,
+    AiAssistanceOpenedFromSourcesPanel = 171,
+    AiAssistanceOpenedFromSourcesPanelFloatingButton = 172,
+    AiAssistanceOpenedFromPerformancePanelCallTree = 173,
+    AiAssistanceOpenedFromNetworkPanelFloatingButton = 174,
+    AiAssistancePanelOpened = 175,
+    AiAssistanceQuerySubmitted = 176,
+    AiAssistanceAnswerReceived = 177,
+    AiAssistanceDynamicSuggestionClicked = 178,
+    AiAssistanceSideEffectConfirmed = 179,
+    AiAssistanceSideEffectRejected = 180,
+    AiAssistanceError = 181,
+    AiCodeCompletionResponseServedFromCache = 184,
+    AiCodeCompletionRequestTriggered = 185,
+    AiCodeCompletionSuggestionDisplayed = 186,
+    AiCodeCompletionSuggestionAccepted = 187,
+    AiCodeCompletionError = 188,
+    AttributeLinkClicked = 189,
+    InsightRequestedViaTeaser = 190,
+    InsightTeaserGenerationStarted = 191,
+    InsightTeaserGenerationCompleted = 192,
+    InsightTeaserGenerationAborted = 193,
+    InsightTeaserGenerationErrored = 194,
+    AiCodeGenerationSuggestionDisplayed = 195,
+    AiCodeGenerationSuggestionAccepted = 196,
+    InsightTeaserModelDownloadStarted = 197,
+    InsightTeaserModelDownloadCompleted = 198,
+    AiCodeGenerationError = 199,
+    AiCodeGenerationRequestTriggered = 200,
+    MAX_VALUE = 201
 }
 export declare enum PanelCodes {
     elements = 1,
@@ -154,26 +269,26 @@ export declare enum PanelCodes {
     network = 3,
     sources = 4,
     timeline = 5,
-    heap_profiler = 6,
+    'heap-profiler' = 6,
     console = 8,
     layers = 9,
     'console-view' = 10,
-    'animations' = 11,
+    animations = 11,
     'network.config' = 12,
-    'rendering' = 13,
-    'sensors' = 14,
+    rendering = 13,
+    sensors = 14,
     'sources.search' = 15,
     security = 16,
-    js_profiler = 17,
+    'js-profiler' = 17,
     lighthouse = 18,
-    'coverage' = 19,
+    coverage = 19,
     'protocol-monitor' = 20,
     'remote-devices' = 21,
     'web-audio' = 22,
     'changes.changes' = 23,
     'performance.monitor' = 24,
     'release-note' = 25,
-    'live_heap_profile' = 26,
+    'live-heap-profile' = 26,
     'sources.quick' = 27,
     'network.blocked-urls' = 28,
     'settings-preferences' = 29,
@@ -186,54 +301,37 @@ export declare enum PanelCodes {
     'settings-shortcuts' = 36,
     'issues-pane' = 37,
     'settings-keybinds' = 38,
-    'cssoverview' = 39,
-    'chrome_recorder' = 40,
-    'trust_tokens' = 41,
-    'reporting_api' = 42,
-    'interest_groups' = 43,
-    'back_forward_cache' = 44,
-    'service_worker_cache' = 45,
-    'background_service_backgroundFetch' = 46,
-    'background_service_backgroundSync' = 47,
-    'background_service_pushMessaging' = 48,
-    'background_service_notifications' = 49,
-    'background_service_paymentHandler' = 50,
-    'background_service_periodicBackgroundSync' = 51,
-    'service_workers' = 52,
-    'app_manifest' = 53,
-    'storage' = 54,
-    'cookies' = 55,
-    'frame_details' = 56,
-    'frame_resource' = 57,
-    'frame_window' = 58,
-    'frame_worker' = 59,
-    'dom_storage' = 60,
-    'indexed_db' = 61,
-    'web_sql' = 62,
-    'performance_insights' = 63,
-    'preloading' = 64,
-    'bounce_tracking_mitigations' = 65,
-    MaxValue = 66
-}
-export declare enum ElementsSidebarTabCodes {
-    'OtherSidebarPane' = 0,
-    'Styles' = 1,
-    'Computed' = 2,
-    'elements.layout' = 3,
-    'elements.eventListeners' = 4,
-    'elements.domBreakpoints' = 5,
-    'elements.domProperties' = 6,
-    'accessibility.view' = 7,
-    MaxValue = 8
-}
-export declare enum SourcesSidebarTabCodes {
-    'OtherSidebarPane' = 0,
-    'navigator-network' = 1,
-    'navigator-files' = 2,
-    'navigator-overrides' = 3,
-    'navigator-contentScripts' = 4,
-    'navigator-snippets' = 5,
-    MaxValue = 6
+    cssoverview = 39,
+    'chrome-recorder' = 40,
+    'trust-tokens' = 41,
+    'reporting-api' = 42,
+    'interest-groups' = 43,
+    'back-forward-cache' = 44,
+    'service-worker-cache' = 45,
+    'background-service-background-fetch' = 46,
+    'background-service-background-sync' = 47,
+    'background-service-push-messaging' = 48,
+    'background-service-notifications' = 49,
+    'background-service-payment-handler' = 50,
+    'background-service-periodic-background-sync' = 51,
+    'service-workers' = 52,
+    'app-manifest' = 53,
+    storage = 54,
+    cookies = 55,
+    'frame-details' = 56,
+    'frame-resource' = 57,
+    'frame-window' = 58,
+    'frame-worker' = 59,
+    'dom-storage' = 60,
+    'indexed-db' = 61,
+    'web-sql' = 62,
+    'performance-insights' = 63,
+    preloading = 64,
+    'bounce-tracking-mitigations' = 65,
+    'developer-resources' = 66,
+    'autofill-view' = 67,
+    freestyler = 68,
+    MAX_VALUE = 69
 }
 export declare enum MediaTypes {
     Unknown = 0,
@@ -271,18 +369,20 @@ export declare enum MediaTypes {
     'text/javascript+sourcemapped' = 33,
     'text/x.angular' = 34,
     'text/x.vue' = 35,
-    MaxValue = 36
+    'text/javascript+snippet' = 36,
+    'text/javascript+eval' = 37,// Scripts resulting from console inputs or page "eval"s with no sourceUrl comment.
+    MAX_VALUE = 38
 }
 export declare enum KeybindSetSettings {
-    'devToolsDefault' = 0,
-    'vsCode' = 1,
-    MaxValue = 2
+    devToolsDefault = 0,
+    vsCode = 1,
+    MAX_VALUE = 2
 }
 export declare enum KeyboardShortcutAction {
     OtherShortcut = 0,
-    'commandMenu.show' = 1,
+    'quick-open.show-command-menu' = 1,
     'console.clear' = 2,
-    'console.show' = 3,
+    'console.toggle' = 3,
     'debugger.step' = 4,
     'debugger.step-into' = 5,
     'debugger.step-out' = 6,
@@ -300,7 +400,7 @@ export declare enum KeyboardShortcutAction {
     'network.hide-request-details' = 18,
     'network.search' = 19,
     'network.toggle-recording' = 20,
-    'quickOpen.show' = 21,
+    'quick-open.show' = 21,
     'settings.show' = 22,
     'sources.search' = 23,
     'background-service.toggle-recording' = 24,
@@ -326,9 +426,9 @@ export declare enum KeyboardShortcutAction {
     'input.start-replaying' = 44,
     'input.toggle-pause' = 45,
     'input.toggle-recording' = 46,
-    'inspector_main.focus-debuggee' = 47,
-    'inspector_main.hard-reload' = 48,
-    'inspector_main.reload' = 49,
+    'inspector-main.focus-debuggee' = 47,
+    'inspector-main.hard-reload' = 48,
+    'inspector-main.reload' = 49,
     'live-heap-profile.start-with-reload' = 50,
     'live-heap-profile.toggle-recording' = 51,
     'main.debug-reload' = 52,
@@ -387,123 +487,58 @@ export declare enum KeyboardShortcutAction {
     'layers.right' = 105,
     'help.report-translation-issue' = 106,
     'rendering.toggle-prefers-color-scheme' = 107,
-    'chrome_recorder.start-recording' = 108,
-    'chrome_recorder.replay-recording' = 109,
-    'chrome_recorder.toggle-code-view' = 110,
-    'chrome_recorder.copy-recording-or-step' = 111,
-    MaxValue = 112
+    'chrome-recorder.start-recording' = 108,
+    'chrome-recorder.replay-recording' = 109,
+    'chrome-recorder.toggle-code-view' = 110,
+    'chrome-recorder.copy-recording-or-step' = 111,
+    'elements.new-style-rule' = 114,
+    'elements.refresh-event-listeners' = 115,
+    'coverage.clear' = 116,
+    'coverage.export' = 117,
+    'timeline.dim-third-parties' = 118,
+    'main.toggle-drawer-orientation' = 119,
+    MAX_VALUE = 120
 }
-export declare enum IssueOpener {
-    ConsoleInfoBar = 0,
-    LearnMoreLinkCOEP = 1,
-    StatusBarIssuesCounter = 2,
-    HamburgerMenu = 3,
-    Adorner = 4,
-    CommandMenu = 5,
-    MaxValue = 6
+export declare const enum IssueOpener {
+    CONSOLE_INFO_BAR = 0,
+    LEARN_MORE_LINK_COEP = 1,
+    STATUS_BAR_ISSUES_COUNTER = 2,
+    HAMBURGER_MENU = 3,
+    ADORNER = 4,
+    COMMAND_MENU = 5,
+    MAX_VALUE = 6
 }
 /**
  * This list should contain the currently active Devtools Experiments,
  * gaps are expected.
  */
 export declare enum DevtoolsExperiments {
-    'applyCustomStylesheet' = 0,
-    'captureNodeCreationStacks' = 1,
-    'sourcesPrettyPrint' = 2,
-    'liveHeapProfile' = 11,
-    'protocolMonitor' = 13,
-    'developerResourcesView' = 15,
-    'samplingHeapProfilerTimeline' = 17,
-    'showOptionToExposeInternalsInHeapSnapshot' = 18,
-    'sourceOrderViewer' = 20,
-    'webauthnPane' = 22,
-    'timelineEventInitiators' = 24,
-    'timelineInvalidationTracking' = 26,
-    'timelineShowAllEvents' = 27,
-    'timelineV8RuntimeCallStats' = 28,
-    'wasmDWARFDebugging' = 31,
-    'dualScreenSupport' = 32,
-    'keyboardShortcutEditor' = 35,
-    'APCA' = 39,
-    'cspViolationsView' = 40,
-    'fontEditor' = 41,
-    'fullAccessibilityTree' = 42,
-    'ignoreListJSFramesOnTimeline' = 43,
-    'contrastIssues' = 44,
-    'experimentalCookieFeatures' = 45,
-    'cssTypeComponentLength' = 52,
-    'preciseChanges' = 53,
-    'bfcacheDisplayTree' = 54,
-    'stylesPaneCSSChanges' = 55,
-    'headerOverrides' = 56,
-    'evaluateExpressionsWithSourceMaps' = 58,
-    'eyedropperColorPicker' = 60,
-    'instrumentationBreakpoints' = 61,
-    'authoredDeployedGrouping' = 63,
-    'importantDOMProperties' = 64,
-    'justMyCode' = 65,
-    'timelineAsConsoleProfileResultPanel' = 67,
-    'preloadingStatusPanel' = 68,
-    'disableColorFormatSetting' = 69,
-    'outermostTargetSelector' = 71,
-    'jsProfilerTemporarilyEnable' = 72,
-    'highlightErrorsElementsPanel' = 73,
-    'setAllBreakpointsEagerly' = 74,
-    'MaxValue' = 75
+    'capture-node-creation-stacks' = 1,
+    'live-heap-profile' = 11,
+    'protocol-monitor' = 13,
+    'sampling-heap-profiler-timeline' = 17,
+    'timeline-invalidation-tracking' = 26,
+    apca = 39,
+    'font-editor' = 41,
+    'instrumentation-breakpoints' = 61,
+    'use-source-map-scopes' = 76,
+    'timeline-debug-mode' = 93,
+    'durable-messages' = 110,
+    'jpeg-xl' = 111,
+    MAX_VALUE = 112
 }
-export declare const enum BreakpointWithConditionAdded {
-    Logpoint = 0,
-    ConditionalBreakpoint = 1,
-    MaxValue = 2
-}
-export declare const enum BreakpointEditDialogRevealedFrom {
-    BreakpointSidebarContextMenu = 0,
-    BreakpointSidebarEditButton = 1,
-    BreakpointMarkerContextMenu = 2,
-    LineGutterContextMenu = 3,
-    KeyboardShortcut = 4,
-    Linkifier = 5,
-    MouseClick = 6,
-    MaxValue = 7
-}
-export declare const enum ColorConvertedFrom {
-    ColorSwatch = 0,
-    ColorPicker = 1,
-    MaxValue = 2
-}
-export declare const enum ColorPickerOpenedFrom {
-    SourcesPanel = 0,
-    StylesPane = 1,
-    MaxValue = 2
-}
-export declare const enum CSSPropertyDocumentation {
-    Shown = 0,
-    ToggledOn = 1,
-    ToggledOff = 2,
-    MaxValue = 3
-}
-export declare const enum BreakpointsRestoredFromStorageCount {
-    LessThan100 = 0,
-    LessThan300 = 1,
-    LessThan1000 = 2,
-    LessThan3000 = 3,
-    LessThan10000 = 4,
-    LessThan30000 = 5,
-    LessThan100000 = 6,
-    LessThan300000 = 7,
-    LessThan1000000 = 8,
-    Above1000000 = 9,
-    MaxValue = 10
-}
+/** Update DevToolsIssuesPanelIssueExpanded from tools/metrics/histograms/enums.xml if new enum is added. **/
 export declare enum IssueExpanded {
     CrossOriginEmbedderPolicy = 0,
     MixedContent = 1,
-    Cookie = 2,
+    SameSiteCookie = 2,
     HeavyAd = 3,
     ContentSecurityPolicy = 4,
     Other = 5,
     Generic = 6,
-    MaxValue = 7
+    ThirdPartyPhaseoutCookie = 7,
+    GenericCookie = 8,
+    MAX_VALUE = 9
 }
 export declare enum IssueResourceOpened {
     CrossOriginEmbedderPolicyRequest = 0,
@@ -514,12 +549,7 @@ export declare enum IssueResourceOpened {
     HeavyAdElement = 5,
     ContentSecurityPolicyDirective = 6,
     ContentSecurityPolicyElement = 7,
-    CrossOriginEmbedderPolicyLearnMore = 8,
-    MixedContentLearnMore = 9,
-    SameSiteCookieLearnMore = 10,
-    HeavyAdLearnMore = 11,
-    ContentSecurityPolicyLearnMore = 12,
-    MaxValue = 13
+    MAX_VALUE = 13
 }
 /**
  * This list should contain the currently active issue types,
@@ -564,8 +594,7 @@ export declare enum IssueCreated {
     'CookieIssue::WarnSameSiteUnspecifiedCrossSiteContext::SetCookie' = 35,
     'SharedArrayBufferIssue::TransferIssue' = 36,
     'SharedArrayBufferIssue::CreationIssue' = 37,
-    LowTextContrastIssue = 41,
-    'CorsIssue::InsecurePrivateNetwork' = 42,
+    'CorsIssue::InsecureLocalNetwork' = 42,
     'CorsIssue::InvalidHeaders' = 44,
     'CorsIssue::WildcardOriginWithCredentials' = 45,
     'CorsIssue::PreflightResponseInvalid' = 46,
@@ -584,287 +613,276 @@ export declare enum IssueCreated {
     DeprecationIssue = 60,
     'ClientHintIssue::MetaTagAllowListInvalidOrigin' = 61,
     'ClientHintIssue::MetaTagModifiedHTML' = 62,
-    'CorsIssue::PreflightAllowPrivateNetworkError' = 63,
     'GenericIssue::CrossOriginPortalPostMessageError' = 64,
     'GenericIssue::FormLabelForNameError' = 65,
     'GenericIssue::FormDuplicateIdForInputError' = 66,
     'GenericIssue::FormInputWithNoLabelError' = 67,
     'GenericIssue::FormAutocompleteAttributeEmptyError' = 68,
     'GenericIssue::FormEmptyIdAndNameAttributesForInputError' = 69,
-    'GenericIssue::FormAriaLabelledByToNonExistingId' = 70,
+    'GenericIssue::FormAriaLabelledByToNonExistingIdError' = 70,
     'GenericIssue::FormInputAssignedAutocompleteValueToIdOrNameAttributeError' = 71,
-    'GenericIssue::FormLabelHasNeitherForNorNestedInput' = 72,
+    'GenericIssue::FormLabelHasNeitherForNorNestedInputError' = 72,
     'GenericIssue::FormLabelForMatchesNonExistingIdError' = 73,
     'GenericIssue::FormHasPasswordFieldWithoutUsernameFieldError' = 74,
     'GenericIssue::FormInputHasWrongButWellIntendedAutocompleteValueError' = 75,
     'StylesheetLoadingIssue::LateImportRule' = 76,
     'StylesheetLoadingIssue::RequestFailed' = 77,
-    MaxValue = 78
+    'CookieIssue::WarnThirdPartyPhaseout::ReadCookie' = 82,
+    'CookieIssue::WarnThirdPartyPhaseout::SetCookie' = 83,
+    'CookieIssue::ExcludeThirdPartyPhaseout::ReadCookie' = 84,
+    'CookieIssue::ExcludeThirdPartyPhaseout::SetCookie' = 85,
+    'ElementAccessibilityIssue::DisallowedSelectChild' = 86,
+    'ElementAccessibilityIssue::DisallowedOptGroupChild' = 87,
+    'ElementAccessibilityIssue::NonPhrasingContentOptionChild' = 88,
+    'ElementAccessibilityIssue::InteractiveContentOptionChild' = 89,
+    'ElementAccessibilityIssue::InteractiveContentLegendChild' = 90,
+    'SRIMessageSignatureIssue::MissingSignatureHeader' = 91,
+    'SRIMessageSignatureIssue::MissingSignatureInputHeader' = 92,
+    'SRIMessageSignatureIssue::InvalidSignatureHeader' = 93,
+    'SRIMessageSignatureIssue::InvalidSignatureInputHeader' = 94,
+    'SRIMessageSignatureIssue::SignatureHeaderValueIsNotByteSequence' = 95,
+    'SRIMessageSignatureIssue::SignatureHeaderValueIsParameterized' = 96,
+    'SRIMessageSignatureIssue::SignatureHeaderValueIsIncorrectLength' = 97,
+    'SRIMessageSignatureIssue::SignatureInputHeaderMissingLabel' = 98,
+    'SRIMessageSignatureIssue::SignatureInputHeaderValueNotInnerList' = 99,
+    'SRIMessageSignatureIssue::SignatureInputHeaderValueMissingComponents' = 100,
+    'SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentType' = 101,
+    'SRIMessageSignatureIssue::SignatureInputHeaderInvalidComponentName' = 102,
+    'SRIMessageSignatureIssue::SignatureInputHeaderInvalidHeaderComponentParameter' = 103,
+    'SRIMessageSignatureIssue::SignatureInputHeaderInvalidDerivedComponentParameter' = 104,
+    'SRIMessageSignatureIssue::SignatureInputHeaderKeyIdLength' = 105,
+    'SRIMessageSignatureIssue::SignatureInputHeaderInvalidParameter' = 106,
+    'SRIMessageSignatureIssue::SignatureInputHeaderMissingRequiredParameters' = 107,
+    'SRIMessageSignatureIssue::ValidationFailedSignatureExpired' = 108,
+    'SRIMessageSignatureIssue::ValidationFailedInvalidLength' = 109,
+    'SRIMessageSignatureIssue::ValidationFailedSignatureMismatch' = 110,
+    'CorsIssue::LocalNetworkAccessPermissionDenied' = 111,
+    'SRIMessageSignatureIssue::ValidationFailedIntegrityMismatch' = 112,
+    'ElementAccessibilityIssue::InteractiveContentSummaryDescendant' = 113,
+    'CorsIssue::InvalidLocalNetworkAccess' = 114,
+    MAX_VALUE = 115
 }
-export declare enum DeveloperResourceLoaded {
-    LoadThroughPageViaTarget = 0,
-    LoadThroughPageViaFrame = 1,
-    LoadThroughPageFailure = 2,
-    LoadThroughPageFallback = 3,
-    FallbackAfterFailure = 4,
-    FallbackPerOverride = 5,
-    FallbackPerProtocol = 6,
-    FallbackFailure = 7,
-    MaxValue = 8
+export declare const enum DeveloperResourceLoaded {
+    LOAD_THROUGH_PAGE_VIA_TARGET = 0,
+    LOAD_THROUGH_PAGE_FAILURE = 2,
+    LOAD_THROUGH_PAGE_FALLBACK = 3,
+    FALLBACK_AFTER_FAILURE = 4,
+    FALLBACK_PER_OVERRIDE = 5,
+    FALLBACK_PER_PROTOCOL = 6,
+    FALLBACK_FAILURE = 7,
+    MAX_VALUE = 8
 }
-export declare enum DeveloperResourceScheme {
-    SchemeOther = 0,
-    SchemeUnknown = 1,
-    SchemeHttp = 2,
-    SchemeHttps = 3,
-    SchemeHttpLocalhost = 4,
-    SchemeHttpsLocalhost = 5,
-    SchemeData = 6,
-    SchemeFile = 7,
-    SchemeBlob = 8,
-    MaxValue = 9
-}
-export declare enum LinearMemoryInspectorRevealedFrom {
-    ContextMenu = 0,
-    MemoryIcon = 1,
-    MaxValue = 2
-}
-export declare enum LinearMemoryInspectorTarget {
-    DWARFInspectableAddress = 0,
-    ArrayBuffer = 1,
-    DataView = 2,
-    TypedArray = 3,
-    WebAssemblyMemory = 4,
-    MaxValue = 5
-}
-export declare const enum VMInlineScriptType {
-    MODULE_SCRIPT = 0,
-    CLASSIC_SCRIPT = 1,
-    MaxValue = 2
+export declare const enum DeveloperResourceScheme {
+    OTHER = 0,
+    UKNOWN = 1,
+    HTTP = 2,
+    HTTPS = 3,
+    HTTP_LOCALHOST = 4,
+    HTTPS_LOCALHOST = 5,
+    DATA = 6,
+    FILE = 7,
+    BLOB = 8,
+    MAX_VALUE = 9
 }
 export declare enum Language {
-    'af' = 1,
-    'am' = 2,
-    'ar' = 3,
-    'as' = 4,
-    'az' = 5,
-    'be' = 6,
-    'bg' = 7,
-    'bn' = 8,
-    'bs' = 9,
-    'ca' = 10,
-    'cs' = 11,
-    'cy' = 12,
-    'da' = 13,
-    'de' = 14,
-    'el' = 15,
+    af = 1,
+    am = 2,
+    ar = 3,
+    as = 4,
+    az = 5,
+    be = 6,
+    bg = 7,
+    bn = 8,
+    bs = 9,
+    ca = 10,
+    cs = 11,
+    cy = 12,
+    da = 13,
+    de = 14,
+    el = 15,
     'en-GB' = 16,
     'en-US' = 17,
     'es-419' = 18,
-    'es' = 19,
-    'et' = 20,
-    'eu' = 21,
-    'fa' = 22,
-    'fi' = 23,
-    'fil' = 24,
+    es = 19,
+    et = 20,
+    eu = 21,
+    fa = 22,
+    fi = 23,
+    fil = 24,
     'fr-CA' = 25,
-    'fr' = 26,
-    'gl' = 27,
-    'gu' = 28,
-    'he' = 29,
-    'hi' = 30,
-    'hr' = 31,
-    'hu' = 32,
-    'hy' = 33,
-    'id' = 34,
-    'is' = 35,
-    'it' = 36,
-    'ja' = 37,
-    'ka' = 38,
-    'kk' = 39,
-    'km' = 40,
-    'kn' = 41,
-    'ko' = 42,
-    'ky' = 43,
-    'lo' = 44,
-    'lt' = 45,
-    'lv' = 46,
-    'mk' = 47,
-    'ml' = 48,
-    'mn' = 49,
-    'mr' = 50,
-    'ms' = 51,
-    'my' = 52,
-    'ne' = 53,
-    'nl' = 54,
-    'no' = 55,
-    'or' = 56,
-    'pa' = 57,
-    'pl' = 58,
+    fr = 26,
+    gl = 27,
+    gu = 28,
+    he = 29,
+    hi = 30,
+    hr = 31,
+    hu = 32,
+    hy = 33,
+    id = 34,
+    is = 35,
+    it = 36,
+    ja = 37,
+    ka = 38,
+    kk = 39,
+    km = 40,
+    kn = 41,
+    ko = 42,
+    ky = 43,
+    lo = 44,
+    lt = 45,
+    lv = 46,
+    mk = 47,
+    ml = 48,
+    mn = 49,
+    mr = 50,
+    ms = 51,
+    my = 52,
+    ne = 53,
+    nl = 54,
+    no = 55,
+    or = 56,
+    pa = 57,
+    pl = 58,
     'pt-PT' = 59,
-    'pt' = 60,
-    'ro' = 61,
-    'ru' = 62,
-    'si' = 63,
-    'sk' = 64,
-    'sl' = 65,
-    'sq' = 66,
+    pt = 60,
+    ro = 61,
+    ru = 62,
+    si = 63,
+    sk = 64,
+    sl = 65,
+    sq = 66,
     'sr-Latn' = 67,
-    'sr' = 68,
-    'sv' = 69,
-    'sw' = 70,
-    'ta' = 71,
-    'te' = 72,
-    'th' = 73,
-    'tr' = 74,
-    'uk' = 75,
-    'ur' = 76,
-    'uz' = 77,
-    'vi' = 78,
-    'zh' = 79,
+    sr = 68,
+    sv = 69,
+    sw = 70,
+    ta = 71,
+    te = 72,
+    th = 73,
+    tr = 74,
+    uk = 75,
+    ur = 76,
+    uz = 77,
+    vi = 78,
+    zh = 79,
     'zh-HK' = 80,
     'zh-TW' = 81,
-    'zu' = 82,
-    MaxValue = 83
+    zu = 82,
+    MAX_VALUE = 83
 }
-export declare enum SyncSetting {
-    ChromeSyncDisabled = 1,
-    ChromeSyncSettingsDisabled = 2,
-    DevToolsSyncSettingDisabled = 3,
-    DevToolsSyncSettingEnabled = 4,
-    MaxValue = 5
+export declare const enum SyncSetting {
+    CHROME_SYNC_DISABLED = 1,
+    CHROME_SYNC_SETTINGS_DISABLED = 2,
+    DEVTOOLS_SYNC_SETTING_DISABLED = 3,
+    DEVTOOLS_SYNC_SETTING_ENABLED = 4,
+    MAX_VALUE = 5
 }
-export declare enum RecordingToggled {
-    RecordingStarted = 1,
-    RecordingFinished = 2,
-    MaxValue = 3
+export declare const enum RecordingToggled {
+    RECORDING_STARTED = 1,
+    RECORDING_FINISHED = 2,
+    MAX_VALUE = 3
 }
-export declare enum RecordingAssertion {
-    AssertionAdded = 1,
-    PropertyAssertionEdited = 2,
-    AttributeAssertionEdited = 3,
-    MaxValue = 4
+export declare const enum RecordingAssertion {
+    ASSERTION_ADDED = 1,
+    PROPERTY_ASSERTION_EDITED = 2,
+    ATTRIBUTE_ASSERTION_EDITED = 3,
+    MAX_VALUE = 4
 }
-export declare enum RecordingReplayFinished {
-    Success = 1,
-    TimeoutErrorSelectors = 2,
-    TimeoutErrorTarget = 3,
-    OtherError = 4,
-    MaxValue = 5
+export declare const enum RecordingReplayFinished {
+    SUCCESS = 1,
+    TIMEOUT_ERROR_SELECTORS = 2,
+    TIMEOUT_ERROR_TARGET = 3,
+    OTHER_ERROR = 4,
+    MAX_VALUE = 5
 }
-export declare enum RecordingReplaySpeed {
-    Normal = 1,
-    Slow = 2,
-    VerySlow = 3,
-    ExtremelySlow = 4,
-    MaxValue = 5
+export declare const enum RecordingReplaySpeed {
+    NORMAL = 1,
+    SLOW = 2,
+    VERY_SLOW = 3,
+    EXTREMELY_SLOW = 4,
+    MAX_VALUE = 5
 }
-export declare enum RecordingReplayStarted {
-    ReplayOnly = 1,
-    ReplayWithPerformanceTracing = 2,
-    ReplayViaExtension = 3,
-    MaxValue = 4
+export declare const enum RecordingReplayStarted {
+    REPLAY_ONLY = 1,
+    REPLAY_WITH_PERFORMANCE_TRACING = 2,
+    REPLAY_VIA_EXTENSION = 3,
+    MAX_VALUE = 4
 }
-export declare enum RecordingEdited {
-    SelectorPickerUsed = 1,
-    StepAdded = 2,
-    StepRemoved = 3,
-    SelectorAdded = 4,
-    SelectorRemoved = 5,
-    SelectorPartAdded = 6,
-    SelectorPartEdited = 7,
-    SelectorPartRemoved = 8,
-    TypeChanged = 9,
-    OtherEditing = 10,
-    MaxValue = 11
+export declare const enum RecordingEdited {
+    SELECTOR_PICKER_USED = 1,
+    STEP_ADDED = 2,
+    STEP_REMOVED = 3,
+    SELECTOR_ADDED = 4,
+    SELECTOR_REMOVED = 5,
+    SELECTOR_PART_ADDED = 6,
+    SELECTOR_PART_EDITED = 7,
+    SELECTOR_PART_REMOVED = 8,
+    TYPE_CHANGED = 9,
+    OTHER_EDITING = 10,
+    MAX_VALUE = 11
 }
-export declare enum RecordingExported {
-    ToPuppeteer = 1,
-    ToJSON = 2,
-    ToPuppeteerReplay = 3,
-    ToExtension = 4,
-    ToLighthouse = 5,
-    MaxValue = 6
+export declare const enum RecordingExported {
+    TO_PUPPETEER = 1,
+    TO_JSON = 2,
+    TO_PUPPETEER_REPLAY = 3,
+    TO_EXTENSION = 4,
+    TO_LIGHTHOUSE = 5,
+    MAX_VALUE = 6
 }
-export declare enum RecordingCodeToggled {
-    CodeShown = 1,
-    CodeHidden = 2,
-    MaxValue = 3
+export declare const enum RecordingCodeToggled {
+    CODE_SHOWN = 1,
+    CODE_HIDDEN = 2,
+    MAX_VALUE = 3
 }
-export declare enum RecordingCopiedToClipboard {
-    CopiedRecordingWithPuppeteer = 1,
-    CopiedRecordingWithJSON = 2,
-    CopiedRecordingWithReplay = 3,
-    CopiedRecordingWithExtension = 4,
-    CopiedStepWithPuppeteer = 5,
-    CopiedStepWithJSON = 6,
-    CopiedStepWithReplay = 7,
-    CopiedStepWithExtension = 8,
-    MaxValue = 9
-}
-export declare enum ConsoleShowsCorsErrors {
-    'false' = 0,
-    'true' = 1,
-    MaxValue = 2
-}
-export declare enum StyleTextCopied {
-    DeclarationViaChangedLine = 1,
-    AllChangesViaStylesPane = 2,
-    DeclarationViaContextMenu = 3,
-    PropertyViaContextMenu = 4,
-    ValueViaContextMenu = 5,
-    DeclarationAsJSViaContextMenu = 6,
-    RuleViaContextMenu = 7,
-    AllDeclarationsViaContextMenu = 8,
-    AllDeclarationsAsJSViaContextMenu = 9,
-    SelectorViaContextMenu = 10,
-    MaxValue = 11
+export declare const enum RecordingCopiedToClipboard {
+    COPIED_RECORDING_WITH_PUPPETEER = 1,
+    COPIED_RECORDING_WITH_JSON = 2,
+    COPIED_RECORDING_WITH_REPLAY = 3,
+    COPIED_RECORDING_WITH_EXTENSION = 4,
+    COPIED_STEP_WITH_PUPPETEER = 5,
+    COPIED_STEP_WITH_JSON = 6,
+    COPIED_STEP_WITH_REPLAY = 7,
+    COPIED_STEP_WITH_EXTENSION = 8,
+    MAX_VALUE = 9
 }
 export declare enum ManifestSectionCodes {
     OtherSection = 0,
-    'Identity' = 1,
-    'Presentation' = 2,
+    Identity = 1,
+    Presentation = 2,
     'Protocol Handlers' = 3,
-    'Icons' = 4,
+    Icons = 4,
     'Window Controls Overlay' = 5,
-    MaxValue = 6
+    MAX_VALUE = 6
 }
-export declare enum CSSHintType {
-    Other = 0,
-    AlignContent = 1,
-    FlexItem = 2,
-    FlexContainer = 3,
-    GridContainer = 4,
-    GridItem = 5,
-    FlexGrid = 6,
-    MulticolFlexGrid = 7,
-    Padding = 8,
-    Position = 9,
-    ZIndex = 10,
-    Sizing = 11,
-    FlexOrGridItem = 12,
-    FontVariationSettings = 13,
-    MaxValue = 14
+export declare const enum LighthouseModeRun {
+    NAVIGATION = 0,
+    TIMESPAN = 1,
+    SNAPSHOT = 2,
+    LEGACY_NAVIGATION = 3,
+    MAX_VALUE = 4
 }
-export declare enum LighthouseModeRun {
-    Navigation = 0,
-    Timespan = 1,
-    Snapshot = 2,
-    LegacyNavigation = 3,
-    MaxValue = 4
+export declare const enum LighthouseCategoryUsed {
+    PERFORMANCE = 0,
+    ACCESSIBILITY = 1,
+    BEST_PRACTICES = 2,
+    SEO = 3,
+    PWA = 4,
+    PUB_ADS = 5,
+    MAX_VALUE = 6
 }
 export declare const enum SwatchType {
-    VarLink = 0,
-    AnimationNameLink = 1,
-    Color = 2,
-    AnimationTiming = 3,
-    Shadow = 4,
-    Grid = 5,
-    Flex = 6,
-    Angle = 7,
-    Length = 8,
-    PositionFallbackLink = 9,
-    MaxValue = 10
+    VAR_LINK = 0,
+    ANIMATION_NAME_LINK = 1,
+    COLOR = 2,
+    ANIMATION_TIMING = 3,
+    SHADOW = 4,
+    GRID = 5,
+    FLEX = 6,
+    ANGLE = 7,
+    LENGTH = 8,
+    POSITION_TRY_LINK = 10,
+    ATTR_LINK = 11,
+    GRID_LANES = 12,
+    MAX_VALUE = 13
 }
 export declare const enum BadgeType {
     GRID = 0,
@@ -876,5 +894,38 @@ export declare const enum BadgeType {
     SLOT = 6,
     TOP_LAYER = 7,
     REVEAL = 8,
-    MaxValue = 9
+    MAX_VALUE = 9
+}
+export declare const enum AnimationsPlaybackRate {
+    PERCENT_100 = 0,
+    PERCENT_25 = 1,
+    PERCENT_10 = 2,
+    OTHER = 3,
+    MAX_VALUE = 4
+}
+export declare const enum TimelineNavigationSetting {
+    CLASSIC_AT_SESSION_FIRST_TRACE = 0,
+    MODERN_AT_SESSION_FIRST_TRACE = 1,
+    SWITCHED_TO_CLASSIC = 2,
+    SWITCHED_TO_MODERN = 3,
+    MAX_VALUE = 4
+}
+export declare const enum BuiltInAiAvailability {
+    UNAVAILABLE_HAS_GPU = 0,
+    DOWNLOADABLE_HAS_GPU = 1,
+    DOWNLOADING_HAS_GPU = 2,
+    AVAILABLE_HAS_GPU = 3,
+    DISABLED_HAS_GPU = 4,
+    UNAVAILABLE_NO_GPU = 5,
+    DOWNLOADABLE_NO_GPU = 6,
+    DOWNLOADING_NO_GPU = 7,
+    AVAILABLE_NO_GPU = 8,
+    DISABLED_NO_GPU = 9,
+    MAX_VALUE = 10
+}
+export declare const enum ExtensionEvalTarget {
+    WEB_PAGE = 0,
+    SAME_EXTENSION = 1,
+    OTHER_EXTENSION = 2,
+    MAX_VALUE = 3
 }

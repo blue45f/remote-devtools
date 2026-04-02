@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class FormattedContentBuilder {
@@ -24,10 +24,12 @@ export class FormattedContentBuilder {
         return oldValue;
     }
     addToken(token, offset) {
-        const lastCharOfLastToken = this.#formattedContent.at(-1)?.at(-1) ?? '';
-        if (this.#enforceSpaceBetweenWords && this.#canBeIdentifierOrNumber.test(lastCharOfLastToken) &&
-            this.#canBeIdentifierOrNumber.test(token)) {
-            this.addSoftSpace();
+        // Skip the regex check if `addSoftSpace` will be a no-op.
+        if (this.#enforceSpaceBetweenWords && !this.#hardSpaces && !this.#softSpace) {
+            const lastCharOfLastToken = this.#formattedContent.at(-1)?.at(-1) ?? '';
+            if (this.#canBeIdentifierOrNumber.test(lastCharOfLastToken) && this.#canBeIdentifierOrNumber.test(token)) {
+                this.addSoftSpace();
+            }
         }
         this.#appendFormatting();
         // Insert token.

@@ -1,25 +1,23 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../../../core/common/common.js';
-import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
-import * as Coordinator from '../../../components/render_coordinator/render_coordinator.js';
+import * as RenderCoordinator from '../../../components/render_coordinator/render_coordinator.js';
 import * as UI from '../../legacy.js';
-import chartViewPortStyles from './chartViewport.css.legacy.js';
+import chartViewPortStyles from './chartViewport.css.js';
 import { MinimalTimeWindowMs } from './FlameChart.js';
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
 export class ChartViewport extends UI.Widget.VBox {
     delegate;
     viewportElement;
-    alwaysShowVerticalScrollInternal;
+    #alwaysShowVerticalScroll;
     rangeSelectionEnabled;
     vScrollElement;
     vScrollContent;
     selectionOverlay;
-    selectedTimeSpanLabel;
     cursorElement;
-    isDraggingInternal;
+    #isDragging;
     totalHeight;
     offsetHeight;
     scrollTop;
@@ -34,14 +32,16 @@ export class ChartViewport extends UI.Widget.VBox {
     targetLeftTime;
     targetRightTime;
     selectionOffsetShiftX;
-    selectionOffsetShiftY;
     selectionStartX;
     lastMouseOffsetX;
     minimumBoundary;
     totalTime;
+    isUpdateScheduled;
     cancelWindowTimesAnimation;
-    constructor(delegate) {
+    #config;
+    constructor(delegate, config) {
         super();
+        this.#config = config;
         this.registerRequiredCSS(chartViewPortStyles);
         this.delegate = delegate;
         this.viewportElement = this.contentElement.createChild('div', 'fill');
@@ -52,36 +52,37 @@ export class ChartViewport extends UI.Widget.VBox {
         this.viewportElement.addEventListener('keyup', this.onChartKeyUp.bind(this), false);
         UI.UIUtils.installDragHandle(this.viewportElement, this.startDragging.bind(this), this.dragging.bind(this), this.endDragging.bind(this), '-webkit-grabbing', null);
         UI.UIUtils.installDragHandle(this.viewportElement, this.startRangeSelection.bind(this), this.rangeSelectionDragging.bind(this), this.endRangeSelection.bind(this), 'text', null);
-        this.alwaysShowVerticalScrollInternal = false;
+        this.#alwaysShowVerticalScroll = false;
         this.rangeSelectionEnabled = true;
         this.vScrollElement = this.contentElement.createChild('div', 'chart-viewport-v-scroll');
         this.vScrollContent = this.vScrollElement.createChild('div');
         this.vScrollElement.addEventListener('scroll', this.onScroll.bind(this), false);
         this.selectionOverlay = this.contentElement.createChild('div', 'chart-viewport-selection-overlay hidden');
-        this.selectedTimeSpanLabel = this.selectionOverlay.createChild('div', 'time-span');
         this.cursorElement = this.contentElement.createChild('div', 'chart-cursor-element hidden');
         this.reset();
         this.rangeSelectionStart = null;
         this.rangeSelectionEnd = null;
     }
     alwaysShowVerticalScroll() {
-        this.alwaysShowVerticalScrollInternal = true;
+        this.#alwaysShowVerticalScroll = true;
         this.vScrollElement.classList.add('always-show-scrollbar');
     }
     disableRangeSelection() {
         this.rangeSelectionEnabled = false;
         this.rangeSelectionStart = null;
         this.rangeSelectionEnd = null;
-        this.updateRangeSelectionOverlay();
     }
     isDragging() {
-        return this.isDraggingInternal;
+        return this.#isDragging;
     }
     elementsToRestoreScrollPositionsFor() {
         return [this.vScrollElement];
     }
+    verticalScrollBarVisible() {
+        return !this.vScrollElement.classList.contains('hidden');
+    }
     updateScrollBar() {
-        const showScroll = this.alwaysShowVerticalScrollInternal || this.totalHeight > this.offsetHeight;
+        const showScroll = this.#alwaysShowVerticalScroll || this.totalHeight > this.offsetHeight;
         if (this.vScrollElement.classList.contains('hidden') !== showScroll) {
             return;
         }
@@ -98,7 +99,7 @@ export class ChartViewport extends UI.Widget.VBox {
         this.scrollTop = 0;
         this.rangeSelectionStart = null;
         this.rangeSelectionEnd = null;
-        this.isDraggingInternal = false;
+        this.#isDragging = false;
         this.dragStartPointX = 0;
         this.dragStartPointY = 0;
         this.dragStartScrollTop = 0;
@@ -109,6 +110,7 @@ export class ChartViewport extends UI.Widget.VBox {
         this.totalHeight = 0;
         this.targetLeftTime = 0;
         this.targetRightTime = 0;
+        this.isUpdateScheduled = false;
         this.updateContentElementSize();
     }
     updateContentElementSize() {
@@ -131,17 +133,31 @@ export class ChartViewport extends UI.Widget.VBox {
         this.scrollTop = Math.max(0, totalHeight - this.offsetHeight);
         this.vScrollElement.scrollTop = this.scrollTop;
     }
-    setScrollOffset(offset, height) {
+    /**
+     * @param centered If true, scrolls offset to where it is centered on the chart,
+     * based on current the this.offsetHeight value.
+     */
+    setScrollOffset(offset, height, centered) {
         height = height || 0;
-        if (this.vScrollElement.scrollTop > offset) {
+        if (centered) {
+            // Half of the height for padding.
+            const halfPadding = Math.floor(this.offsetHeight / 2);
+            if (this.vScrollElement.scrollTop > offset) {
+                // Need to scroll up, include height.
+                this.vScrollElement.scrollTop = offset - (height + halfPadding);
+            }
+        }
+        else if (this.vScrollElement.scrollTop > offset) {
             this.vScrollElement.scrollTop = offset;
         }
-        else if (this.vScrollElement.scrollTop < offset - this.offsetHeight + height) {
+        if (this.vScrollElement.scrollTop < offset - this.offsetHeight + height) {
             this.vScrollElement.scrollTop = offset - this.offsetHeight + height;
         }
     }
     scrollOffset() {
-        return this.vScrollElement.scrollTop;
+        // Return the cached value, rather than the live value (which typically incurs a forced reflow)
+        // In practice, this is true whenever scrollOffset() is called:  `this.scrollTop === this.vScrollElement.scrollTop`
+        return this.scrollTop;
     }
     chartHeight() {
         return this.offsetHeight;
@@ -150,30 +166,62 @@ export class ChartViewport extends UI.Widget.VBox {
         this.minimumBoundary = zeroTime;
         this.totalTime = totalTime;
     }
-    onMouseWheel(e) {
-        const wheelEvent = e;
-        const doZoomInstead = wheelEvent.shiftKey !==
-            (Common.Settings.Settings.instance().moduleSetting('flamechartMouseWheelAction').get() === 'zoom');
-        const panVertically = !doZoomInstead && (wheelEvent.deltaY || Math.abs(wheelEvent.deltaX) === 53);
-        const panHorizontally = doZoomInstead && Math.abs(wheelEvent.deltaX) > Math.abs(wheelEvent.deltaY);
-        if (panVertically) {
-            this.vScrollElement.scrollTop += (wheelEvent.deltaY || wheelEvent.deltaX) / 53 * this.offsetHeight / 8;
+    /**
+     * The mouse wheel can results in flamechart zoom, scroll and pan actions, depending on the scroll deltas and the selected navigation:
+     *
+     * Classic navigation:
+     * 1. Mouse Wheel --> Zoom
+     * 2. Mouse Wheel + Shift --> Scroll
+     * 3. Trackpad: Mouse Wheel AND horizontal scroll (deltaX > deltaY): --> Pan left/right
+     *
+     * Modern navigation:
+     * 1. Mouse Wheel -> Scroll
+     * 2. Mouse Wheel + Shift -> Pan left/right
+     * 3. Mouse Wheel + Ctrl/Cmd -> Zoom
+     * 4. Trackpad: Mouse Wheel AND horizontal scroll (deltaX > deltaY): --> Zoom
+     */
+    onMouseWheel(wheelEvent) {
+        const navigation = Common.Settings.Settings.instance().moduleSetting('flamechart-selected-navigation').get();
+        // Delta for navigation left, right, up and down.
+        // Calculated from horizontal or vertical scroll delta, depending on which one exists.
+        const panDelta = (wheelEvent.deltaY || wheelEvent.deltaX) / 53 * this.offsetHeight / 8;
+        const zoomDelta = Math.pow(1.2, (wheelEvent.deltaY || wheelEvent.deltaX) * 1 / 53) - 1;
+        if (navigation === 'classic') {
+            if (wheelEvent.shiftKey) { // Scroll
+                this.vScrollElement.scrollTop += panDelta;
+            }
+            else if (Math.abs(wheelEvent.deltaX) > Math.abs(wheelEvent.deltaY)) { // Pan left/right on trackpad horizontal scroll
+                // Horizontal scroll on the trackpad feels smoother when only deltaX is taken into account
+                this.handleHorizontalPanGesture(wheelEvent.deltaX, /* animate */ true);
+            }
+            else { // Zoom
+                this.handleZoomGesture(zoomDelta);
+            }
         }
-        else if (panHorizontally) {
-            this.handlePanGesture(wheelEvent.deltaX, /* animate */ true);
-        }
-        else { // Zoom.
-            const wheelZoomSpeed = 1 / 53;
-            this.handleZoomGesture(Math.pow(1.2, (wheelEvent.deltaY || wheelEvent.deltaX) * wheelZoomSpeed) - 1);
+        else if (navigation === 'modern') {
+            const isCtrlOrCmd = UI.KeyboardShortcut.KeyboardShortcut.eventHasCtrlEquivalentKey(wheelEvent);
+            if (wheelEvent.shiftKey) { // Pan left/right
+                this.handleHorizontalPanGesture(panDelta, /* animate */ true);
+            }
+            else if (Math.abs(wheelEvent.deltaX) > Math.abs(wheelEvent.deltaY)) { // Pan left/right on trackpad horizontal scroll
+                // Horizontal scroll on the trackpad feels smoother when only deltaX is taken into account
+                this.handleHorizontalPanGesture(wheelEvent.deltaX, /* animate */ true);
+            }
+            else if (isCtrlOrCmd) { // Zoom
+                this.handleZoomGesture(zoomDelta);
+            }
+            else { // Scroll
+                this.vScrollElement.scrollTop += panDelta;
+            }
         }
         // Block swipe gesture.
-        e.consume(true);
+        wheelEvent.consume(true);
     }
     startDragging(event) {
         if (event.shiftKey) {
             return false;
         }
-        this.isDraggingInternal = true;
+        this.#isDragging = true;
         this.dragStartPointX = event.pageX;
         this.dragStartPointY = event.pageY;
         this.dragStartScrollTop = this.vScrollElement.scrollTop;
@@ -183,30 +231,24 @@ export class ChartViewport extends UI.Widget.VBox {
     dragging(event) {
         const pixelShift = this.dragStartPointX - event.pageX;
         this.dragStartPointX = event.pageX;
-        this.handlePanGesture(pixelShift);
+        this.handleHorizontalPanGesture(pixelShift);
         const pixelScroll = this.dragStartPointY - event.pageY;
         this.vScrollElement.scrollTop = this.dragStartScrollTop + pixelScroll;
     }
     endDragging() {
-        this.isDraggingInternal = false;
+        this.#isDragging = false;
     }
     startRangeSelection(event) {
         if (!event.shiftKey || !this.rangeSelectionEnabled) {
             return false;
         }
-        this.isDraggingInternal = true;
+        this.#isDragging = true;
         this.selectionOffsetShiftX = event.offsetX - event.pageX;
-        this.selectionOffsetShiftY = event.offsetY - event.pageY;
         this.selectionStartX = event.offsetX;
-        const style = this.selectionOverlay.style;
-        style.left = this.selectionStartX + 'px';
-        style.width = '1px';
-        this.selectedTimeSpanLabel.textContent = '';
-        this.selectionOverlay.classList.remove('hidden');
         return true;
     }
     endRangeSelection() {
-        this.isDraggingInternal = false;
+        this.#isDragging = false;
         this.selectionStartX = null;
     }
     hideRangeSelection() {
@@ -214,13 +256,17 @@ export class ChartViewport extends UI.Widget.VBox {
         this.rangeSelectionStart = null;
         this.rangeSelectionEnd = null;
     }
+    /**
+     * @param startTime the start time of the selection in MilliSeconds
+     * @param endTime the end time of the selection in MilliSeconds
+     * TODO(crbug.com/346312365): update the type definitions in ChartViewport.ts
+     */
     setRangeSelection(startTime, endTime) {
         if (!this.rangeSelectionEnabled) {
             return;
         }
         this.rangeSelectionStart = Math.min(startTime, endTime);
         this.rangeSelectionEnd = Math.max(startTime, endTime);
-        this.updateRangeSelectionOverlay();
         this.delegate.updateRangeSelection(this.rangeSelectionStart, this.rangeSelectionEnd);
     }
     onClick(event) {
@@ -238,18 +284,6 @@ export class ChartViewport extends UI.Widget.VBox {
         const end = this.pixelToTime(x);
         this.setRangeSelection(start, end);
     }
-    updateRangeSelectionOverlay() {
-        const rangeSelectionStart = this.rangeSelectionStart || 0;
-        const rangeSelectionEnd = this.rangeSelectionEnd || 0;
-        const margin = 100;
-        const left = Platform.NumberUtilities.clamp(this.timeToPosition(rangeSelectionStart), -margin, this.offsetWidth + margin);
-        const right = Platform.NumberUtilities.clamp(this.timeToPosition(rangeSelectionEnd), -margin, this.offsetWidth + margin);
-        const style = this.selectionOverlay.style;
-        style.left = left + 'px';
-        style.width = (right - left) + 'px';
-        const timeSpan = rangeSelectionEnd - rangeSelectionStart;
-        this.selectedTimeSpanLabel.textContent = i18n.TimeUtilities.preciseMillisToString(timeSpan, 2);
-    }
     onScroll() {
         this.scrollTop = this.vScrollElement.scrollTop;
         this.scheduleUpdate();
@@ -260,9 +294,12 @@ export class ChartViewport extends UI.Widget.VBox {
     }
     updateCursorPosition(e) {
         const mouseEvent = e;
-        this.showCursor(mouseEvent.shiftKey);
-        this.cursorElement.style.left = mouseEvent.offsetX + 'px';
         this.lastMouseOffsetX = mouseEvent.offsetX;
+        const shouldShowCursor = this.#config.enableCursorElement && mouseEvent.shiftKey && !mouseEvent.metaKey;
+        this.showCursor(shouldShowCursor);
+        if (shouldShowCursor) {
+            this.cursorElement.style.left = mouseEvent.offsetX + 'px';
+        }
     }
     pixelToTime(x) {
         return this.pixelToTimeOffset(x) + this.visibleLeftTime;
@@ -277,50 +314,74 @@ export class ChartViewport extends UI.Widget.VBox {
         return this.offsetWidth / (this.visibleRightTime - this.visibleLeftTime);
     }
     showCursor(visible) {
-        this.cursorElement.classList.toggle('hidden', !visible || this.isDraggingInternal);
+        this.cursorElement.classList.toggle('hidden', !visible || this.#isDragging);
     }
-    onChartKeyDown(e) {
-        const mouseEvent = e;
-        this.showCursor(mouseEvent.shiftKey);
-        this.handleZoomPanKeys(e);
+    onChartKeyDown(keyboardEvent) {
+        this.showCursor(keyboardEvent.shiftKey);
+        this.handleZoomPanScrollKeys(keyboardEvent);
     }
-    onChartKeyUp(e) {
-        const mouseEvent = e;
-        this.showCursor(mouseEvent.shiftKey);
+    onChartKeyUp(keyboardEvent) {
+        this.showCursor(keyboardEvent.shiftKey);
     }
-    handleZoomPanKeys(e) {
-        if (!UI.KeyboardShortcut.KeyboardShortcut.hasNoModifiers(e)) {
+    handleZoomPanScrollKeys(keyboardEvent) {
+        // Do not zoom, pan or scroll if the key combination has any modifiers other than shift key
+        if (UI.KeyboardShortcut.KeyboardShortcut.hasAtLeastOneModifier(keyboardEvent) && !keyboardEvent.shiftKey) {
             return;
         }
-        const keyboardEvent = e;
         const zoomFactor = keyboardEvent.shiftKey ? 0.8 : 0.3;
-        const panOffset = keyboardEvent.shiftKey ? 320 : 160;
+        const panOffset = 160;
+        const scrollOffset = 50;
         switch (keyboardEvent.code) {
             case 'KeyA':
-                this.handlePanGesture(-panOffset, /* animate */ true);
+                this.handleHorizontalPanGesture(-panOffset, /* animate */ true);
                 break;
             case 'KeyD':
-                this.handlePanGesture(panOffset, /* animate */ true);
+                this.handleHorizontalPanGesture(panOffset, /* animate */ true);
                 break;
+            case 'Equal': // '+' key for zoom in
             case 'KeyW':
                 this.handleZoomGesture(-zoomFactor);
                 break;
+            case 'Minus': // '-' key for zoom out
             case 'KeyS':
                 this.handleZoomGesture(zoomFactor);
+                break;
+            case 'ArrowUp':
+                if (keyboardEvent.shiftKey) {
+                    this.vScrollElement.scrollTop -= scrollOffset;
+                }
+                break;
+            case 'ArrowDown':
+                if (keyboardEvent.shiftKey) {
+                    this.vScrollElement.scrollTop += scrollOffset;
+                }
+                break;
+            case 'ArrowLeft':
+                if (keyboardEvent.shiftKey) {
+                    this.handleHorizontalPanGesture(-panOffset, /* animate */ true);
+                }
+                break;
+            case 'ArrowRight':
+                if (keyboardEvent.shiftKey) {
+                    this.handleHorizontalPanGesture(panOffset, /* animate */ true);
+                }
                 break;
             default:
                 return;
         }
-        e.consume(true);
+        keyboardEvent.consume(true);
     }
     handleZoomGesture(zoom) {
         const bounds = { left: this.targetLeftTime, right: this.targetRightTime };
-        const cursorTime = this.pixelToTime(this.lastMouseOffsetX);
+        // If the user has not moved their mouse over the panel (unlikely but
+        // possible!), the offsetX will be undefined. In that case, let's just use
+        // the minimum time / pixel 0 as their mouse point.
+        const cursorTime = this.pixelToTime(this.lastMouseOffsetX || 0);
         bounds.left += (bounds.left - cursorTime) * zoom;
         bounds.right += (bounds.right - cursorTime) * zoom;
         this.requestWindowTimes(bounds, /* animate */ true);
     }
-    handlePanGesture(offset, animate) {
+    handleHorizontalPanGesture(offset, animate) {
         const bounds = { left: this.targetLeftTime, right: this.targetRightTime };
         const timeOffset = Platform.NumberUtilities.clamp(this.pixelToTimeOffset(offset), this.minimumBoundary - bounds.left, this.totalTime + this.minimumBoundary - bounds.right);
         bounds.left += timeOffset;
@@ -343,14 +404,27 @@ export class ChartViewport extends UI.Widget.VBox {
         this.delegate.windowChanged(bounds.left, bounds.right, animate);
     }
     scheduleUpdate() {
-        if (this.cancelWindowTimesAnimation) {
+        if (this.cancelWindowTimesAnimation || this.isUpdateScheduled) {
             return;
         }
-        void coordinator.write(() => this.update());
+        this.isUpdateScheduled = true;
+        void RenderCoordinator.write(() => {
+            this.isUpdateScheduled = false;
+            this.update();
+        });
     }
     update() {
-        this.updateRangeSelectionOverlay();
         this.delegate.update();
+    }
+    willHide() {
+        super.willHide();
+        // Stop animations when the view is hidden (or destroyed).
+        // In this case, we also jump the time immediately to the target time, so
+        // that if the view is restored, the time shown is correct.
+        if (this.cancelWindowTimesAnimation) {
+            this.cancelWindowTimesAnimation();
+            this.setWindowTimes(this.targetLeftTime, this.targetRightTime, false);
+        }
     }
     setWindowTimes(startTime, endTime, animate) {
         if (startTime === this.targetLeftTime && endTime === this.targetRightTime) {
@@ -377,6 +451,11 @@ export class ChartViewport extends UI.Widget.VBox {
             this.cancelWindowTimesAnimation = null;
         });
         function animateWindowTimes(startTime, endTime) {
+            // We cancel the animation in the willHide method, but as an extra check
+            // bail here if we are hidden rather than queue an update.
+            if (!this.isShowing()) {
+                return;
+            }
             this.visibleLeftTime = startTime;
             this.visibleRightTime = endTime;
             this.update();

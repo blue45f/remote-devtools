@@ -1,9 +1,9 @@
-import * as Common from '../common/common.js';
 import type * as Protocol from '../../generated/protocol.js';
-import { type Resource } from './Resource.js';
-import { ResourceTreeModel, type ResourceTreeFrame } from './ResourceTreeModel.js';
-import { type Target } from './Target.js';
-import { type SDKModelObserver } from './TargetManager.js';
+import * as Common from '../common/common.js';
+import type { Resource } from './Resource.js';
+import { type ResourceTreeFrame, ResourceTreeModel } from './ResourceTreeModel.js';
+import type { Target } from './Target.js';
+import { type SDKModelObserver, TargetManager } from './TargetManager.js';
 /**
  * The FrameManager is a central storage for all #frames. It collects #frames from all
  * ResourceTreeModel-instances (one per target), so that #frames can be found by id
@@ -11,10 +11,11 @@ import { type SDKModelObserver } from './TargetManager.js';
  */
 export declare class FrameManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDKModelObserver<ResourceTreeModel> {
     #private;
-    constructor();
+    constructor(targetManager: TargetManager);
     static instance({ forceNew }?: {
         forceNew: boolean;
     }): FrameManager;
+    static removeInstance(): void;
     modelAdded(resourceTreeModel: ResourceTreeModel): void;
     modelRemoved(resourceTreeModel: ResourceTreeModel): void;
     private frameAdded;
@@ -41,27 +42,27 @@ export declare class FrameManager extends Common.ObjectWrapper.ObjectWrapper<Eve
     getOrWaitForFrame(frameId: Protocol.Page.FrameId, notInTarget?: Target): Promise<ResourceTreeFrame>;
     private resolveAwaitedFrame;
 }
-export declare enum Events {
-    FrameAddedToTarget = "FrameAddedToTarget",
-    FrameNavigated = "FrameNavigated",
-    FrameRemoved = "FrameRemoved",
-    ResourceAdded = "ResourceAdded",
-    OutermostFrameNavigated = "OutermostFrameNavigated"
+export declare const enum Events {
+    FRAME_ADDED_TO_TARGET = "FrameAddedToTarget",
+    FRAME_NAVIGATED = "FrameNavigated",
+    FRAME_REMOVED = "FrameRemoved",
+    RESOURCE_ADDED = "ResourceAdded",
+    OUTERMOST_FRAME_NAVIGATED = "OutermostFrameNavigated"
 }
-export type EventTypes = {
-    [Events.FrameAddedToTarget]: {
+export interface EventTypes {
+    [Events.FRAME_ADDED_TO_TARGET]: {
         frame: ResourceTreeFrame;
     };
-    [Events.FrameNavigated]: {
+    [Events.FRAME_NAVIGATED]: {
         frame: ResourceTreeFrame;
     };
-    [Events.FrameRemoved]: {
+    [Events.FRAME_REMOVED]: {
         frameId: Protocol.Page.FrameId;
     };
-    [Events.ResourceAdded]: {
+    [Events.RESOURCE_ADDED]: {
         resource: Resource;
     };
-    [Events.OutermostFrameNavigated]: {
+    [Events.OUTERMOST_FRAME_NAVIGATED]: {
         frame: ResourceTreeFrame;
     };
-};
+}

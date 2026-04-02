@@ -1,10 +1,10 @@
-export type Point = {
+export interface Point {
     input: number;
     output: number;
-};
+}
 export declare class CSSLinearEasingModel {
     #private;
-    private constructor();
+    constructor(points: Point[]);
     static parse(text: string): CSSLinearEasingModel | null;
     addPoint(point: Point, index?: number): void;
     removePoint(index: number): void;

@@ -1,5 +1,5 @@
 import * as I18n from '../../third_party/i18n/i18n.js';
-import * as Platform from '../platform/platform.js';
+import type * as Platform from '../platform/platform.js';
 import { DevToolsLocale } from './DevToolsLocale.js';
 import type * as i18nTypes from './i18nTypes.js';
 /**
@@ -17,11 +17,14 @@ export declare function lookupClosestSupportedDevToolsLocale(locale: string): st
 export declare function getAllSupportedDevToolsLocales(): string[];
 /**
  * Fetches the locale data of the specified locale.
- * Callers have to ensure that `locale` is an officilly supported locale.
+ * Callers have to ensure that `locale` is an officially supported locale.
  * Depending whether a locale is present in `bundledLocales`, the data will be
  * fetched locally or remotely.
  */
 export declare function fetchAndRegisterLocaleData(locale: Intl.UnicodeBCP47LocaleIdentifier, location?: string): Promise<void>;
+export declare function hasLocaleDataForTest(locale: Intl.UnicodeBCP47LocaleIdentifier): boolean;
+export declare function resetLocaleDataForTest(): void;
+export declare function registerLocaleDataForTest(locale: Intl.UnicodeBCP47LocaleIdentifier, messages: I18n.I18n.LocalizedMessages): void;
 /**
  * Returns an anonymous function that wraps a call to retrieve a localized string.
  * This is introduced so that localized strings can be declared in environments where
@@ -37,13 +40,7 @@ export declare function getLocalizedString(registeredStrings: I18n.LocalizedStri
 /**
  * Register a file's UIStrings with i18n, return function to generate the string ids.
  */
-export declare function registerUIStrings(path: string, stringStructure: {
-    [key: string]: string;
-}): I18n.LocalizedStringSet.RegisteredFileStrings;
-/**
- * Returns a span element that may contains other DOM element as placeholders
- */
-export declare function getFormatLocalizedString(registeredStrings: I18n.LocalizedStringSet.RegisteredFileStrings, stringId: string, placeholders: Record<string, Object>): Element;
+export declare function registerUIStrings(path: string, stringStructure: Record<string, string>): I18n.LocalizedStringSet.RegisteredFileStrings;
 export declare function serializeUIString(string: string, values?: Record<string, Object>): string;
 export declare function deserializeUIString(serializedMessage: string): i18nTypes.SerializedMessage;
 /**

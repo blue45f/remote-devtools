@@ -1,9 +1,10 @@
-import * as SDK from '../../core/sdk/sdk.js';
-import * as Bindings from '../../models/bindings/bindings.js';
-import type * as Workspace from '../../models/workspace/workspace.js';
+import * as Platform from '../../core/platform/platform.js';
+import type * as SDK from '../../core/sdk/sdk.js';
+import * as StackTrace from '../../models/stack_trace/stack_trace.js';
+import * as Workspace from '../../models/workspace/workspace.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as Protocol from '../../generated/protocol.js';
 export declare class CallStackSidebarPane extends UI.View.SimpleView implements UI.ContextFlavorListener.ContextFlavorListener, UI.ListControl.ListDelegate<Item> {
+    #private;
     private readonly ignoreListMessageElement;
     private readonly ignoreListCheckboxElement;
     private readonly notPausedMessageElement;
@@ -12,22 +13,16 @@ export declare class CallStackSidebarPane extends UI.View.SimpleView implements 
     private list;
     private readonly showMoreMessageElement;
     private showIgnoreListed;
-    private readonly locationPool;
-    private readonly updateThrottler;
     private maxAsyncStackChainDepth;
     private readonly updateItemThrottler;
     private readonly scheduledForUpdateItems;
     private muteActivateItem?;
-    private lastDebuggerModel;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
     }): CallStackSidebarPane;
-    flavorChanged(_object: Object | null): void;
-    private debugInfoAttached;
-    private setSourceMapSubscription;
-    private update;
-    private doUpdate;
+    flavorChanged(details: SDK.DebuggerModel.DebuggerPausedDetails | null): Promise<void>;
+    performUpdate(): void;
     private updatedForTest;
     private refreshItem;
     createElementForItem(item: Item): Element;
@@ -35,25 +30,18 @@ export declare class CallStackSidebarPane extends UI.View.SimpleView implements 
     isItemSelectable(_item: Item): boolean;
     selectedItemChanged(_from: Item | null, _to: Item | null, fromElement: HTMLElement | null, toElement: HTMLElement | null): void;
     updateSelectedItemARIA(_fromElement: Element | null, _toElement: Element | null): boolean;
-    private createIgnoreListMessageElementAndCheckbox;
-    private createShowMoreMessageElement;
     private onContextMenu;
-    private onClick;
     private activateItem;
     activeCallFrameItem(): Item | null;
     appendIgnoreListURLContextMenuItems(contextMenu: UI.ContextMenu.ContextMenu, uiSourceCode: Workspace.UISourceCode.UISourceCode): void;
     selectNextCallFrameOnStack(): void;
     selectPreviousCallFrameOnStack(): void;
     private copyStackTrace;
-    wasShown(): void;
 }
 export declare const elementSymbol: unique symbol;
 export declare const defaultMaxAsyncStackChainDepth = 32;
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
-    handleAction(context: UI.Context.Context, actionId: string): boolean;
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
 }
 export declare class Item {
     isIgnoreListed: boolean;
@@ -61,9 +49,14 @@ export declare class Item {
     linkText: string;
     uiLocation: Workspace.UISourceCode.UILocation | null;
     isAsyncHeader: boolean;
-    updateDelegate: (arg0: Item) => void;
-    static createForDebuggerCallFrame(frame: SDK.DebuggerModel.CallFrame, locationPool: Bindings.LiveLocation.LiveLocationPool, updateDelegate: (arg0: Item) => void): Promise<Item>;
-    static createItemsForAsyncStack(title: string, debuggerModel: SDK.DebuggerModel.DebuggerModel, frames: Protocol.Runtime.CallFrame[], locationPool: Bindings.LiveLocation.LiveLocationPool, updateDelegate: (arg0: Item) => void): Promise<Item[]>;
-    constructor(title: string, updateDelegate: (arg0: Item) => void);
-    private update;
+    /** Only set for synchronous frames */
+    frame?: StackTrace.StackTrace.DebuggableFrame;
+    static createForDebuggableFrame(frame: StackTrace.StackTrace.DebuggableFrame): Item;
+    static createForFrame(frame: StackTrace.StackTrace.Frame): Item;
+    static createForAsyncHeader(stackTrace: StackTrace.StackTrace.StackTrace, fragment: StackTrace.StackTrace.AsyncFragment): Item;
+    private constructor();
 }
+export declare function convertMissingDebugInfo(missingDebugInfo: StackTrace.StackTrace.MissingDebugInfo, functionName: string | undefined): {
+    details: Platform.UIString.LocalizedString;
+    resources: SDK.DebuggerModel.MissingDebugFiles[];
+};

@@ -1,10 +1,11 @@
 import type * as Common from '../../core/common/common.js';
+import * as Buttons from '../../ui/components/buttons/buttons.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { type DataDisplayDelegate, type ProfileHeader, type StatusUpdate } from './ProfileHeader.js';
-export declare function setSharedFileSelectorElement(element: HTMLInputElement): void;
 export declare class ProfileSidebarTreeElement extends UI.TreeOutline.TreeElement {
     readonly iconElement: HTMLDivElement;
     readonly titlesElement: HTMLDivElement;
+    readonly menuElement: Buttons.Button.Button;
     titleContainer: HTMLElement;
     titleElement: HTMLElement;
     subtitleElement: HTMLElement;
@@ -12,22 +13,18 @@ export declare class ProfileSidebarTreeElement extends UI.TreeOutline.TreeElemen
     small: boolean;
     readonly dataDisplayDelegate: DataDisplayDelegate;
     profile: ProfileHeader;
-    saveLinkElement?: HTMLElement;
-    editing?: UI.InplaceEditor.Controller | null;
+    editing: UI.InplaceEditor.Controller | null;
     constructor(dataDisplayDelegate: DataDisplayDelegate, profile: ProfileHeader, className: string);
-    createSaveLink(): void;
-    onProfileReceived(): void;
     updateStatus(event: Common.EventTarget.EventTargetEvent<StatusUpdate>): void;
     ondblclick(event: Event): boolean;
     startEditing(eventTarget: Element): void;
-    editingCommitted(container: Element, newTitle: string): void;
+    editingCommitted(_container: Element, newTitle: string): void;
     editingCancelled(): void;
     dispose(): void;
     onselect(): boolean;
     ondelete(): boolean;
     onattach(): void;
     handleContextMenuEvent(event: Event): void;
-    saveProfile(_event: Event): void;
     setSmall(small: boolean): void;
     setMainTitle(title: string): void;
 }

@@ -51,7 +51,6 @@ export declare class HAREntry extends HARBase {
     time: number;
     request: HARRequest;
     response: HARResponse;
-    cache: {};
     timings: HARTimings;
     serverIPAddress: string | undefined;
     connection: string | undefined;
@@ -86,7 +85,7 @@ declare class HARResponse extends HARBase {
     comment: string | undefined;
     constructor(data: any);
 }
-declare class HARCookie extends HARBase {
+export declare class HARCookie extends HARBase {
     name: string;
     value: string;
     path: string | undefined;

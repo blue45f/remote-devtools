@@ -1,13 +1,13 @@
-import type * as Protocol from '../../generated/protocol.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import type * as Protocol from '../../generated/protocol.js';
 import { DeferredDOMNode, type DOMNode } from './DOMModel.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
-export declare enum CoreAxPropertyName {
-    Name = "name",
-    Description = "description",
-    Value = "value",
-    Role = "role"
+import { type Target } from './Target.js';
+export declare const enum CoreAxPropertyName {
+    NAME = "name",
+    DESCRIPTION = "description",
+    VALUE = "value",
+    ROLE = "role"
 }
 export interface CoreOrProtocolAxProperty {
     name: CoreAxPropertyName | Protocol.Accessibility.AXPropertyName;
@@ -37,14 +37,14 @@ export declare class AccessibilityNode {
     hasUnloadedChildren(): boolean;
     getFrameId(): Protocol.Page.FrameId | null;
 }
-export declare enum Events {
-    TreeUpdated = "TreeUpdated"
+export declare const enum Events {
+    TREE_UPDATED = "TreeUpdated"
 }
-export type EventTypes = {
-    [Events.TreeUpdated]: {
+export interface EventTypes {
+    [Events.TREE_UPDATED]: {
         root?: AccessibilityNode;
     };
-};
+}
 export declare class AccessibilityModel extends SDKModel<EventTypes> implements ProtocolProxyApi.AccessibilityDispatcher {
     #private;
     agent: ProtocolProxyApi.AccessibilityApi;
@@ -61,7 +61,6 @@ export declare class AccessibilityModel extends SDKModel<EventTypes> implements 
     requestAndLoadSubTreeToNode(node: DOMNode): Promise<AccessibilityNode[] | null>;
     axNodeForId(axId: Protocol.Accessibility.AXNodeId): AccessibilityNode | null;
     setRootAXNodeForFrameId(frameId: Protocol.Page.FrameId, axNode: AccessibilityNode): void;
-    axNodeForFrameId(frameId: Protocol.Page.FrameId): AccessibilityNode | null;
     setAXNodeForAXId(axId: string, axNode: AccessibilityNode): void;
     axNodeForDOMNode(domNode: DOMNode | null): AccessibilityNode | null;
     setAXNodeForBackendDOMNodeId(backendDOMNodeId: Protocol.DOM.BackendNodeId, axNode: AccessibilityNode): void;

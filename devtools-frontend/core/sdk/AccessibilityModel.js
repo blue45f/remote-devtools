@@ -1,56 +1,46 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import { DeferredDOMNode } from './DOMModel.js';
-import { Capability } from './Target.js';
+import { DeferredDOMNode, DOMModel, Events as DOMModelEvents } from './DOMModel.js';
 import { SDKModel } from './SDKModel.js';
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var CoreAxPropertyName;
-(function (CoreAxPropertyName) {
-    CoreAxPropertyName["Name"] = "name";
-    CoreAxPropertyName["Description"] = "description";
-    CoreAxPropertyName["Value"] = "value";
-    CoreAxPropertyName["Role"] = "role";
-})(CoreAxPropertyName || (CoreAxPropertyName = {}));
 export class AccessibilityNode {
-    #accessibilityModelInternal;
-    #idInternal;
-    #backendDOMNodeIdInternal;
-    #deferredDOMNodeInternal;
-    #ignoredInternal;
-    #ignoredReasonsInternal;
-    #roleInternal;
-    #nameInternal;
-    #descriptionInternal;
-    #valueInternal;
-    #propertiesInternal;
+    #accessibilityModel;
+    #id;
+    #backendDOMNodeId;
+    #deferredDOMNode;
+    #ignored;
+    #ignoredReasons;
+    #role;
+    #name;
+    #description;
+    #value;
+    #properties;
     #parentId;
     #frameId;
     #childIds;
     constructor(accessibilityModel, payload) {
-        this.#accessibilityModelInternal = accessibilityModel;
-        this.#idInternal = payload.nodeId;
-        accessibilityModel.setAXNodeForAXId(this.#idInternal, this);
+        this.#accessibilityModel = accessibilityModel;
+        this.#id = payload.nodeId;
+        accessibilityModel.setAXNodeForAXId(this.#id, this);
         if (payload.backendDOMNodeId) {
             accessibilityModel.setAXNodeForBackendDOMNodeId(payload.backendDOMNodeId, this);
-            this.#backendDOMNodeIdInternal = payload.backendDOMNodeId;
-            this.#deferredDOMNodeInternal = new DeferredDOMNode(accessibilityModel.target(), payload.backendDOMNodeId);
+            this.#backendDOMNodeId = payload.backendDOMNodeId;
+            this.#deferredDOMNode = new DeferredDOMNode(accessibilityModel.target(), payload.backendDOMNodeId);
         }
         else {
-            this.#backendDOMNodeIdInternal = null;
-            this.#deferredDOMNodeInternal = null;
+            this.#backendDOMNodeId = null;
+            this.#deferredDOMNode = null;
         }
-        this.#ignoredInternal = payload.ignored;
-        if (this.#ignoredInternal && 'ignoredReasons' in payload) {
-            this.#ignoredReasonsInternal = payload.ignoredReasons;
+        this.#ignored = payload.ignored;
+        if (this.#ignored && 'ignoredReasons' in payload) {
+            this.#ignoredReasons = payload.ignoredReasons;
         }
-        this.#roleInternal = payload.role || null;
-        this.#nameInternal = payload.name || null;
-        this.#descriptionInternal = payload.description || null;
-        this.#valueInternal = payload.value || null;
-        this.#propertiesInternal = payload.properties || null;
-        this.#childIds = payload.childIds || null;
+        this.#role = payload.role || null;
+        this.#name = payload.name || null;
+        this.#description = payload.description || null;
+        this.#value = payload.value || null;
+        this.#properties = payload.properties || null;
+        this.#childIds = [...new Set(payload.childIds)];
         this.#parentId = payload.parentId || null;
         if (payload.frameId && !payload.parentId) {
             this.#frameId = payload.frameId;
@@ -61,59 +51,59 @@ export class AccessibilityNode {
         }
     }
     id() {
-        return this.#idInternal;
+        return this.#id;
     }
     accessibilityModel() {
-        return this.#accessibilityModelInternal;
+        return this.#accessibilityModel;
     }
     ignored() {
-        return this.#ignoredInternal;
+        return this.#ignored;
     }
     ignoredReasons() {
-        return this.#ignoredReasonsInternal || null;
+        return this.#ignoredReasons || null;
     }
     role() {
-        return this.#roleInternal || null;
+        return this.#role || null;
     }
     coreProperties() {
         const properties = [];
-        if (this.#nameInternal) {
-            properties.push({ name: CoreAxPropertyName.Name, value: this.#nameInternal });
+        if (this.#name) {
+            properties.push({ name: "name" /* CoreAxPropertyName.NAME */, value: this.#name });
         }
-        if (this.#descriptionInternal) {
-            properties.push({ name: CoreAxPropertyName.Description, value: this.#descriptionInternal });
+        if (this.#description) {
+            properties.push({ name: "description" /* CoreAxPropertyName.DESCRIPTION */, value: this.#description });
         }
-        if (this.#valueInternal) {
-            properties.push({ name: CoreAxPropertyName.Value, value: this.#valueInternal });
+        if (this.#value) {
+            properties.push({ name: "value" /* CoreAxPropertyName.VALUE */, value: this.#value });
         }
         return properties;
     }
     name() {
-        return this.#nameInternal || null;
+        return this.#name || null;
     }
     description() {
-        return this.#descriptionInternal || null;
+        return this.#description || null;
     }
     value() {
-        return this.#valueInternal || null;
+        return this.#value || null;
     }
     properties() {
-        return this.#propertiesInternal || null;
+        return this.#properties || null;
     }
     parentNode() {
         if (this.#parentId) {
-            return this.#accessibilityModelInternal.axNodeForId(this.#parentId);
+            return this.#accessibilityModel.axNodeForId(this.#parentId);
         }
         return null;
     }
     isDOMNode() {
-        return Boolean(this.#backendDOMNodeIdInternal);
+        return Boolean(this.#backendDOMNodeId);
     }
     backendDOMNodeId() {
-        return this.#backendDOMNodeIdInternal;
+        return this.#backendDOMNodeId;
     }
     deferredDOMNode() {
-        return this.#deferredDOMNodeInternal;
+        return this.#deferredDOMNode;
     }
     highlightDOMNode() {
         const deferredNode = this.deferredDOMNode();
@@ -129,7 +119,7 @@ export class AccessibilityNode {
         }
         const children = [];
         for (const childId of this.#childIds) {
-            const child = this.#accessibilityModelInternal.axNodeForId(childId);
+            const child = this.#accessibilityModel.axNodeForId(childId);
             if (child) {
                 children.push(child);
             }
@@ -146,42 +136,42 @@ export class AccessibilityNode {
         if (!this.#childIds || !this.#childIds.length) {
             return false;
         }
-        return this.#childIds.every(id => this.#accessibilityModelInternal.axNodeForId(id) === null);
+        return this.#childIds.every(id => this.#accessibilityModel.axNodeForId(id) === null);
     }
     hasUnloadedChildren() {
         if (!this.#childIds || !this.#childIds.length) {
             return false;
         }
-        return this.#childIds.some(id => this.#accessibilityModelInternal.axNodeForId(id) === null);
+        return this.#childIds.some(id => this.#accessibilityModel.axNodeForId(id) === null);
     }
     // Only the root node gets a frameId, so nodes have to walk up the tree to find their frameId.
     getFrameId() {
         return this.#frameId || this.parentNode()?.getFrameId() || null;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["TreeUpdated"] = "TreeUpdated";
-})(Events || (Events = {}));
 export class AccessibilityModel extends SDKModel {
     agent;
-    #axIdToAXNode;
-    #backendDOMNodeIdToAXNode;
-    #frameIdToAXNode;
-    #pendingChildRequests;
-    #root;
+    #axIdToAXNode = new Map();
+    #backendDOMNodeIdToAXNode = new Map();
+    #frameIdToAXNode = new Map();
+    #pendingChildRequests = new Map();
+    #root = null;
     constructor(target) {
         super(target);
         target.registerAccessibilityDispatcher(this);
         this.agent = target.accessibilityAgent();
         void this.resumeModel();
-        this.#axIdToAXNode = new Map();
-        this.#backendDOMNodeIdToAXNode = new Map();
-        this.#frameIdToAXNode = new Map();
-        this.#pendingChildRequests = new Map();
-        this.#root = null;
+        const domModel = target.model(DOMModel);
+        if (domModel) {
+            domModel.addEventListener(DOMModelEvents.NodeRemoved, () => {
+                this.clear();
+                this.dispatchEventToListeners("TreeUpdated" /* Events.TREE_UPDATED */, {});
+            });
+            domModel.addEventListener(DOMModelEvents.NodeInserted, () => {
+                this.clear();
+                this.dispatchEventToListeners("TreeUpdated" /* Events.TREE_UPDATED */, {});
+            });
+        }
     }
     clear() {
         this.#root = null;
@@ -208,11 +198,11 @@ export class AccessibilityModel extends SDKModel {
     loadComplete({ root }) {
         this.clear();
         this.#root = new AccessibilityNode(this, root);
-        this.dispatchEventToListeners(Events.TreeUpdated, { root: this.#root });
+        this.dispatchEventToListeners("TreeUpdated" /* Events.TREE_UPDATED */, { root: this.#root });
     }
     nodesUpdated({ nodes }) {
         this.createNodesFromPayload(nodes);
-        this.dispatchEventToListeners(Events.TreeUpdated, {});
+        this.dispatchEventToListeners("TreeUpdated" /* Events.TREE_UPDATED */, {});
         return;
     }
     createNodesFromPayload(payloadNodes) {
@@ -238,7 +228,7 @@ export class AccessibilityModel extends SDKModel {
     async requestAXChildren(nodeId, frameId) {
         const parent = this.#axIdToAXNode.get(nodeId);
         if (!parent) {
-            throw Error('Cannot request children before parent');
+            throw new Error('Cannot request children before parent');
         }
         if (!parent.hasUnloadedChildren()) {
             return parent.children();
@@ -283,9 +273,6 @@ export class AccessibilityModel extends SDKModel {
     setRootAXNodeForFrameId(frameId, axNode) {
         this.#frameIdToAXNode.set(frameId, axNode);
     }
-    axNodeForFrameId(frameId) {
-        return this.#frameIdToAXNode.get(frameId) ?? null;
-    }
     setAXNodeForAXId(axId, axNode) {
         this.#axIdToAXNode.set(axId, axNode);
     }
@@ -302,5 +289,5 @@ export class AccessibilityModel extends SDKModel {
         return this.agent;
     }
 }
-SDKModel.register(AccessibilityModel, { capabilities: Capability.DOM, autostart: false });
+SDKModel.register(AccessibilityModel, { capabilities: 2 /* Capability.DOM */, autostart: false });
 //# sourceMappingURL=AccessibilityModel.js.map

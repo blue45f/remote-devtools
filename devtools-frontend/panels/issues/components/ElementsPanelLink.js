@@ -1,11 +1,11 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+/* eslint-disable @devtools/no-lit-render-outside-of-view */
+import { html, render } from '../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 import elementsPanelLinkStyles from './elementsPanelLink.css.js';
 export class ElementsPanelLink extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-elements-panel-link`;
     #shadow = this.attachShadow({ mode: 'open' });
     #onElementRevealIconClick = () => { };
     #onElementRevealIconMouseEnter = () => { };
@@ -19,14 +19,13 @@ export class ElementsPanelLink extends HTMLElement {
     #update() {
         this.#render();
     }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [elementsPanelLinkStyles];
-    }
     #render() {
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${elementsPanelLinkStyles}</style>
       <span
         class="element-reveal-icon"
+        jslog=${VisualLogging.link('elements-panel').track({ click: true })}
         @click=${this.#onElementRevealIconClick}
         @mouseenter=${this.#onElementRevealIconMouseEnter}
         @mouseleave=${this.#onElementRevealIconMouseLeave}></span>
@@ -34,5 +33,5 @@ export class ElementsPanelLink extends HTMLElement {
         // clang-format on
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-elements-panel-link', ElementsPanelLink);
+customElements.define('devtools-elements-panel-link', ElementsPanelLink);
 //# sourceMappingURL=ElementsPanelLink.js.map

@@ -1,120 +1,54 @@
+import type * as Types from './../types/types.js';
 import type * as ModelHandlers from './ModelHandlers.js';
-export interface TraceEventHandler {
+export type FinalizeOptions = Types.Configuration.ParseOptions & {
+    allTraceEvents: readonly Types.Events.Event[];
+};
+export interface Handler {
     reset(): void;
-    initialize?(freshRecording?: boolean): void;
-    handleEvent(data: {}): void;
-    finalize?(): Promise<void>;
+    handleEvent(data: object): void;
+    finalize(options?: FinalizeOptions): Promise<void>;
     data(): unknown;
-    deps?(): TraceEventHandlerName[];
+    deps?(): HandlerName[];
+    handleUserConfig?(config: Types.Configuration.Configuration): void;
 }
-export type TraceEventHandlerName = keyof typeof ModelHandlers;
-export type EnabledHandlerDataWithMeta<T extends {
-    [key: string]: TraceEventHandler;
-}> = {
+export type HandlerName = keyof typeof ModelHandlers;
+/**
+ * This type maps Handler names to the return type of their data
+ * function. So, for example, if we are given an object with a key of 'foo'
+ * and a value which is a TraceHandler containing a data() function that
+ * returns a string, this type will be { foo: string }.
+ *
+ * This allows us to model the behavior of the TraceProcessor in the model,
+ * which takes an object with Handlers as part of its config, and
+ * which ultimately returns an object keyed off the names of the
+ * Handlers, and with values that are derived from each
+ * Handler's data function.
+ *
+ * So, concretely, we provide a Handler for calculating the #time
+ * bounds of a trace called TraceBounds, whose data() function returns a
+ * TraceWindow. The HandlerData, therefore, would determine that the
+ * TraceProcessor would contain a key called 'TraceBounds' whose value is
+ * a TraceWindow.
+ **/
+export type EnabledHandlerDataWithMeta<T extends Record<string, Handler>> = {
     Meta: Readonly<ReturnType<typeof ModelHandlers['Meta']['data']>>;
 } & {
     [K in keyof T]: Readonly<ReturnType<T[K]['data']>>;
 };
-export type HandlersWithMeta<T extends {
-    [key: string]: TraceEventHandler;
-}> = {
+export type HandlersWithMeta<T extends Record<string, Handler>> = {
     Meta: typeof ModelHandlers.Meta;
 } & {
     [K in keyof T]: T[K];
 };
-export type TraceParseData = Readonly<EnabledHandlerDataWithMeta<typeof ModelHandlers>>;
+/**
+ * Represents the final data from all of the handlers. If you instantiate a
+ * TraceProcessor with a subset of handlers, you should instead use
+ * `EnabledHandlerDataWithMeta<>`.
+ **/
+export type HandlerData = Readonly<EnabledHandlerDataWithMeta<typeof ModelHandlers>>;
+type DeepWriteable<T> = {
+    -readonly [P in keyof T]: DeepWriteable<T[P]>;
+};
+export type HandlerDataMutable = DeepWriteable<HandlerData>;
 export type Handlers = typeof ModelHandlers;
-export declare const enum HandlerState {
-    UNINITIALIZED = 1,
-    INITIALIZED = 2,
-    FINALIZED = 3
-}
-export declare const enum EventCategory {
-    Parse = "Parse",
-    V8 = "V8",
-    Js = "Js",
-    Gc = "Gc",
-    Layout = "Layout",
-    Paint = "Paint",
-    Load = "Load",
-    Other = "Other"
-}
-export declare const enum KnownEventName {
-    Program = "Program",
-    RunTask = "RunTask",
-    AsyncTask = "AsyncTask",
-    XHRLoad = "XHRLoad",
-    XHRReadyStateChange = "XHRReadyStateChange",
-    ParseHTML = "ParseHTML",
-    ParseCSS = "ParseAuthorStyleSheet",
-    CompileScript = "V8.CompileScript",
-    CompileCode = "V8.CompileCode",
-    CompileModule = "V8.CompileModule",
-    Optimize = "V8.OptimizeCode",
-    WasmStreamFromResponseCallback = "v8.wasm.streamFromResponseCallback",
-    WasmCompiledModule = "v8.wasm.compiledModule",
-    WasmCachedModule = "v8.wasm.cachedModule",
-    WasmModuleCacheHit = "v8.wasm.moduleCacheHit",
-    WasmModuleCacheInvalid = "v8.wasm.moduleCacheInvalid",
-    RunMicrotasks = "RunMicrotasks",
-    EvaluateScript = "EvaluateScript",
-    FunctionCall = "FunctionCall",
-    EventDispatch = "EventDispatch",
-    RequestMainThreadFrame = "RequestMainThreadFrame",
-    RequestAnimationFrame = "RequestAnimationFrame",
-    CancelAnimationFrame = "CancelAnimationFrame",
-    FireAnimationFrame = "FireAnimationFrame",
-    RequestIdleCallback = "RequestIdleCallback",
-    CancelIdleCallback = "CancelIdleCallback",
-    FireIdleCallback = "FireIdleCallback",
-    TimerInstall = "TimerInstall",
-    TimerRemove = "TimerRemove",
-    TimerFire = "TimerFire",
-    WebSocketCreate = "WebSocketCreate",
-    WebSocketSendHandshake = "WebSocketSendHandshakeRequest",
-    WebSocketReceiveHandshake = "WebSocketReceiveHandshakeResponse",
-    WebSocketDestroy = "WebSocketDestroy",
-    CryptoDoEncrypt = "DoEncrypt",
-    CryptoDoEncryptReply = "DoEncryptReply",
-    CryptoDoDecrypt = "DoDecrypt",
-    CryptoDoDecryptReply = "DoDecryptReply",
-    CryptoDoDigest = "DoDigest",
-    CryptoDoDigestReply = "DoDigestReply",
-    CryptoDoSign = "DoSign",
-    CryptoDoSignReply = "DoSignReply",
-    CryptoDoVerify = "DoVerify",
-    CryptoDoVerifyReply = "DoVerifyReply",
-    GC = "GCEvent",
-    DOMGC = "BlinkGC.AtomicPhase",
-    IncrementalGCMarking = "V8.GCIncrementalMarking",
-    MajorGC = "MajorGC",
-    MinorGC = "MinorGC",
-    ScheduleStyleRecalculation = "ScheduleStyleRecalculation",
-    RecalculateStyles = "RecalculateStyles",
-    Layout = "Layout",
-    UpdateLayoutTree = "UpdateLayoutTree",
-    InvalidateLayout = "InvalidateLayout",
-    LayoutInvalidationTracking = "LayoutInvalidationTracking",
-    ComputeIntersections = "ComputeIntersections",
-    HitTest = "HitTest",
-    PrePaint = "PrePaint",
-    ScrollLayer = "ScrollLayer",
-    UpdateLayer = "UpdateLayer",
-    PaintSetup = "PaintSetup",
-    Paint = "Paint",
-    PaintImage = "PaintImage",
-    Commit = "Commit",
-    CompositeLayers = "CompositeLayers",
-    RasterTask = "RasterTask",
-    ImageDecodeTask = "ImageDecodeTask",
-    ImageUploadTask = "ImageUploadTask",
-    DecodeImage = "Decode Image",
-    ResizeImage = "Resize Image",
-    DrawLazyPixelRef = "Draw LazyPixelRef",
-    DecodeLazyPixelRef = "Decode LazyPixelRef",
-    GPUTask = "GPUTask"
-}
-export declare const KNOWN_EVENTS: Map<KnownEventName, {
-    category: EventCategory;
-    label: string;
-}>;
+export {};

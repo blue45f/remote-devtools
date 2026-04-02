@@ -4,48 +4,49 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as HeapSnapshotModel from '../../models/heap_snapshot_model/heap_snapshot_model.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type ChildrenProvider } from './ChildrenProvider.js';
 import { type AllocationDataGrid, type HeapSnapshotConstructorsDataGrid, type HeapSnapshotDiffDataGrid, type HeapSnapshotSortableDataGrid } from './HeapSnapshotDataGrids.js';
-import { type HeapSnapshotProviderProxy, type HeapSnapshotProxy } from './HeapSnapshotProxy.js';
-import { type DataDisplayDelegate } from './ProfileHeader.js';
+import type { DataDisplayDelegate } from './ProfileHeader.js';
 declare class HeapSnapshotGridNodeBase extends DataGrid.DataGrid.DataGridNode<HeapSnapshotGridNode> {
 }
 declare const HeapSnapshotGridNode_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<HeapSnapshotGridNode.EventTypes>;
-    addEventListener<T extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<HeapSnapshotGridNode.EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<HeapSnapshotGridNode.EventTypes, T>;
-    once<T_1 extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T_1): Promise<HeapSnapshotGridNode.EventTypes[T_1]>;
-    removeEventListener<T_2 extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<HeapSnapshotGridNode.EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<HeapSnapshotGridNode.EventTypes>;
+    addEventListener<T extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<HeapSnapshotGridNode.EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<HeapSnapshotGridNode.EventTypes, T>;
+    once<T extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T): Promise<HeapSnapshotGridNode.EventTypes[T]>;
+    removeEventListener<T extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<HeapSnapshotGridNode.EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: HeapSnapshotGridNode.Events.PopulateComplete): boolean;
-    dispatchEventToListeners<T_3 extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<HeapSnapshotGridNode.EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends HeapSnapshotGridNode.Events.PopulateComplete>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<HeapSnapshotGridNode.EventTypes, T>): void;
 }) & typeof HeapSnapshotGridNodeBase;
 export declare class HeapSnapshotGridNode extends HeapSnapshotGridNode_base {
     dataGridInternal: HeapSnapshotSortableDataGrid;
     instanceCount: number;
     readonly savedChildren: Map<number, HeapSnapshotGridNode>;
-    retrievedChildrenRanges: {
+    retrievedChildrenRanges: Array<{
         from: number;
         to: number;
-    }[];
-    providerObject: ChildrenProvider | null;
+    }>;
+    providerObject: HeapSnapshotModel.ChildrenProvider.ChildrenProvider | null;
     reachableFromWindow: boolean;
     populated?: boolean;
     constructor(tree: HeapSnapshotSortableDataGrid, hasChildren: boolean);
     get name(): string | undefined;
-    heapSnapshotDataGrid(): HeapSnapshotSortableDataGrid;
-    createProvider(): ChildrenProvider;
+    createProvider(): HeapSnapshotModel.ChildrenProvider.ChildrenProvider;
     comparator(): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
     getHash(): number;
     createChildNode(_item: HeapSnapshotModel.HeapSnapshotModel.Node | HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotGridNode;
     retainersDataSource(): {
-        snapshot: HeapSnapshotProxy;
+        snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
         snapshotNodeIndex: number;
+        snapshotNodeId: number | undefined;
     } | null;
-    provider(): ChildrenProvider;
+    provider(): HeapSnapshotModel.ChildrenProvider.ChildrenProvider;
     createCell(columnId: string): HTMLElement;
     collapse(): void;
     expand(): void;
     dispose(): void;
-    queryObjectContent(_heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, _objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject>;
+    queryObjectContent(_heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, _objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject | {
+        description: string;
+        link: string;
+    }>;
     tryQueryObjectContent(_heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, _objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject | null>;
     populateContextMenu(_contextMenu: UI.ContextMenu.ContextMenu, _dataDisplayDelegate: DataDisplayDelegate, _heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null): void;
     toPercentString(num: number): string;
@@ -65,9 +66,9 @@ export declare namespace HeapSnapshotGridNode {
     enum Events {
         PopulateComplete = "PopulateComplete"
     }
-    type EventTypes = {
+    interface EventTypes {
         [Events.PopulateComplete]: void;
-    };
+    }
 }
 export declare abstract class HeapSnapshotGenericObjectNode extends HeapSnapshotGridNode {
     referenceName?: string | null;
@@ -83,16 +84,24 @@ export declare abstract class HeapSnapshotGenericObjectNode extends HeapSnapshot
     constructor(dataGrid: HeapSnapshotSortableDataGrid, node: HeapSnapshotModel.HeapSnapshotModel.Node);
     get name(): string | undefined;
     retainersDataSource(): {
-        snapshot: HeapSnapshotProxy;
+        snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
         snapshotNodeIndex: number;
+        snapshotNodeId: number | undefined;
     } | null;
     createCell(columnId: string): HTMLElement;
     createObjectCell(): HTMLElement;
     createObjectCellWithValue(valueStyle: string, value: string): HTMLElement;
     prefixObjectCell(_div: Element): void;
     appendSourceLocation(div: Element): Promise<void>;
-    queryObjectContent(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject>;
+    queryObjectContent(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject | {
+        description: string;
+        link: string;
+    }>;
     tryQueryObjectContent(heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel, objectGroupName: string): Promise<SDK.RemoteObject.RemoteObject | null>;
+    tryGetTooltipDescription(): {
+        description: string;
+        link: string;
+    } | undefined;
     updateHasChildren(): Promise<void>;
     shortenWindowURL(fullName: string, hasObjectId: boolean): string;
     populateContextMenu(contextMenu: UI.ContextMenu.ContextMenu, dataDisplayDelegate: DataDisplayDelegate, heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null): void;
@@ -101,15 +110,16 @@ export declare class HeapSnapshotObjectNode extends HeapSnapshotGenericObjectNod
     referenceName: string;
     readonly referenceType: string;
     readonly edgeIndex: number;
-    readonly snapshot: HeapSnapshotProxy;
+    readonly snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
     parentObjectNode: HeapSnapshotObjectNode | null;
     readonly cycledWithAncestorGridNode: HeapSnapshotObjectNode | null;
-    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotProxy, edge: HeapSnapshotModel.HeapSnapshotModel.Edge, parentObjectNode: HeapSnapshotObjectNode | null);
+    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, edge: HeapSnapshotModel.HeapSnapshotModel.Edge, parentObjectNode: HeapSnapshotObjectNode | null);
     retainersDataSource(): {
-        snapshot: HeapSnapshotProxy;
+        snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
         snapshotNodeIndex: number;
+        snapshotNodeId: number | undefined;
     } | null;
-    createProvider(): HeapSnapshotProviderProxy;
+    createProvider(): HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
     findAncestorWithSameSnapshotNodeId(): HeapSnapshotObjectNode | null;
     createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node | HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotObjectNode;
     getHash(): number;
@@ -118,48 +128,56 @@ export declare class HeapSnapshotObjectNode extends HeapSnapshotGenericObjectNod
     edgeNodeSeparator(): string;
 }
 export declare class HeapSnapshotRetainingObjectNode extends HeapSnapshotObjectNode {
-    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotProxy, edge: HeapSnapshotModel.HeapSnapshotModel.Edge, parentRetainingObjectNode: HeapSnapshotRetainingObjectNode | null);
-    createProvider(): HeapSnapshotProviderProxy;
+    #private;
+    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, edge: HeapSnapshotModel.HeapSnapshotModel.Edge, parentRetainingObjectNode: HeapSnapshotRetainingObjectNode | null);
+    createProvider(): HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
     createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node | HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotRetainingObjectNode;
     edgeNodeSeparator(): string;
     expand(): void;
+    populateContextMenu(contextMenu: UI.ContextMenu.ContextMenu, dataDisplayDelegate: DataDisplayDelegate, heapProfilerModel: SDK.HeapProfilerModel.HeapProfilerModel | null): void;
+    isReachable(): boolean;
+    prefixObjectCell(div: Element): void;
     expandRetainersChain(maxExpandLevels: number): void;
+    comparator(): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
 }
 export declare class HeapSnapshotInstanceNode extends HeapSnapshotGenericObjectNode {
-    readonly baseSnapshotOrSnapshot: HeapSnapshotProxy;
+    readonly baseSnapshotOrSnapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
     readonly isDeletedNode: boolean;
-    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node, isDeletedNode: boolean);
+    constructor(dataGrid: HeapSnapshotSortableDataGrid, snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy, node: HeapSnapshotModel.HeapSnapshotModel.Node, isDeletedNode: boolean);
     retainersDataSource(): {
-        snapshot: HeapSnapshotProxy;
+        snapshot: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProxy;
         snapshotNodeIndex: number;
+        snapshotNodeId: number | undefined;
     } | null;
-    createProvider(): HeapSnapshotProviderProxy;
+    createProvider(): HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
     createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node | HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotObjectNode;
     getHash(): number;
     comparator(): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
 }
 export declare class HeapSnapshotConstructorNode extends HeapSnapshotGridNode {
+    #private;
     readonly nameInternal: string;
     readonly nodeFilter: HeapSnapshotModel.HeapSnapshotModel.NodeFilter;
     readonly distance: number;
     readonly count: number;
     readonly shallowSize: number;
     readonly retainedSize: number;
-    constructor(dataGrid: HeapSnapshotConstructorsDataGrid, className: string, aggregate: HeapSnapshotModel.HeapSnapshotModel.Aggregate, nodeFilter: HeapSnapshotModel.HeapSnapshotModel.NodeFilter);
+    readonly classKey: string;
+    constructor(dataGrid: HeapSnapshotConstructorsDataGrid, classKey: string, aggregate: HeapSnapshotModel.HeapSnapshotModel.AggregatedInfo, nodeFilter: HeapSnapshotModel.HeapSnapshotModel.NodeFilter);
     get name(): string | undefined;
-    createProvider(): HeapSnapshotProviderProxy;
+    createProvider(): HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
     populateNodeBySnapshotObjectId(snapshotObjectId: number): Promise<HeapSnapshotGridNode[]>;
     filteredOut(filterValue: string): boolean;
     createCell(columnId: string): HTMLElement;
     createChildNode(item: HeapSnapshotModel.HeapSnapshotModel.Node | HeapSnapshotModel.HeapSnapshotModel.Edge): HeapSnapshotInstanceNode;
     comparator(): HeapSnapshotModel.HeapSnapshotModel.ComparatorConfig;
 }
-export declare class HeapSnapshotDiffNodesProvider implements ChildrenProvider {
-    addedNodesProvider: HeapSnapshotProviderProxy;
-    deletedNodesProvider: HeapSnapshotProviderProxy;
+export declare class HeapSnapshotDiffNodesProvider implements HeapSnapshotModel.ChildrenProvider.ChildrenProvider {
+    addedNodesProvider: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
+    deletedNodesProvider: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy;
     addedCount: number;
     removedCount: number;
-    constructor(addedNodesProvider: HeapSnapshotProviderProxy, deletedNodesProvider: HeapSnapshotProviderProxy, addedCount: number, removedCount: number);
+    constructor(addedNodesProvider: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy, deletedNodesProvider: HeapSnapshotModel.HeapSnapshotProxy.HeapSnapshotProviderProxy, addedCount: number, removedCount: number);
     dispose(): void;
     nodePosition(_snapshotObjectId: number): Promise<number>;
     isEmpty(): Promise<boolean>;
@@ -175,7 +193,8 @@ export declare class HeapSnapshotDiffNode extends HeapSnapshotGridNode {
     readonly removedSize: number;
     readonly sizeDelta: number;
     readonly deletedIndexes: number[];
-    constructor(dataGrid: HeapSnapshotDiffDataGrid, className: string, diffForClass: HeapSnapshotModel.HeapSnapshotModel.DiffForClass);
+    readonly classKey: string;
+    constructor(dataGrid: HeapSnapshotDiffDataGrid, classKey: string, diffForClass: HeapSnapshotModel.HeapSnapshotModel.Diff);
     get name(): string | undefined;
     createProvider(): HeapSnapshotDiffNodesProvider;
     createCell(columnId: string): HTMLElement;

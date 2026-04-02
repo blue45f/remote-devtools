@@ -1,8 +1,8 @@
 export declare class ConsoleViewport {
+    #private;
     element: HTMLElement;
     private topGapElement;
     private topGapElementActive;
-    private contentElementInternal;
     private bottomGapElement;
     private bottomGapElementActive;
     private provider;
@@ -17,7 +17,6 @@ export declare class ConsoleViewport {
     private muteCopyHandler;
     private readonly observer;
     private readonly observerConfig;
-    private stickToBottomInternal;
     private selectionIsBackward;
     private lastSelectedElement?;
     private cachedProviderElements?;
@@ -45,7 +44,6 @@ export declare class ConsoleViewport {
     private restoreSelection;
     private selectionContainsTable;
     refresh(): void;
-    private innerRefresh;
     private partialViewportUpdate;
     private selectedText;
     private textOffsetInNode;

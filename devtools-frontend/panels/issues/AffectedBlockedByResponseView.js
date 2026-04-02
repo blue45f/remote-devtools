@@ -1,25 +1,26 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
+import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as IssuesManager from '../../models/issues_manager/issues_manager.js';
-import * as Host from '../../core/host/host.js';
 import { AffectedResourcesView } from './AffectedResourcesView.js';
 const UIStrings = {
     /**
-     *@description Noun for singular or plural network requests. Label for the affected resources section in the issue view.
+     * @description Noun for singular or plural network requests. Label for the affected resources section in the issue view.
      */
     nRequests: '{n, plural, =1 {# request} other {# requests}}',
     /**
-     *@description Noun for a singular network request. Label for a column in the affected resources table in the issue view.
+     * @description Noun for a singular network request. Label for a column in the affected resources table in the issue view.
      */
     requestC: 'Request',
     /**
-     *@description Noun for a singular parent frame. Label for a column in the affected resources table in the issue view.
+     * @description Noun for a singular parent frame. Label for a column in the affected resources table in the issue view.
      */
     parentFrame: 'Parent Frame',
     /**
-     *@description Noun for a singular resource that was blocked (an example for a blocked resource would be a frame). Label for a column in the affected resources table in the issue view.
+     * @description Noun for a singular resource that was blocked (an example for a blocked resource would be a frame). Label for a column in the affected resources table in the issue view.
      */
     blockedResource: 'Blocked Resource',
 };
@@ -47,7 +48,7 @@ export class AffectedBlockedByResponseView extends AffectedResourcesView {
         element.classList.add('affected-resource-row');
         const requestCell = this.createRequestCell(details.request, {
             additionalOnClickAction() {
-                Host.userMetrics.issuesPanelResourceOpened(IssuesManager.Issue.IssueCategory.CrossOriginEmbedderPolicy, "Request" /* AffectedItem.Request */);
+                Host.userMetrics.issuesPanelResourceOpened("CrossOriginEmbedderPolicy" /* IssuesManager.Issue.IssueCategory.CROSS_ORIGIN_EMBEDDER_POLICY */, "Request" /* AffectedItem.REQUEST */);
             },
         });
         element.appendChild(requestCell);

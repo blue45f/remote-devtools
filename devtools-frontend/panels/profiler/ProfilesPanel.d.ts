@@ -1,32 +1,33 @@
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type DataDisplayDelegate, type ProfileHeader, type ProfileType } from './ProfileHeader.js';
+import { type DataDisplayDelegate, ProfileHeader, type ProfileType } from './ProfileHeader.js';
 import { ProfileLauncherView } from './ProfileLauncherView.js';
 import { ProfileSidebarTreeElement } from './ProfileSidebarTreeElement.js';
+import type { ProfileTypeRegistry } from './ProfileTypeRegistry.js';
 export declare class ProfilesPanel extends UI.Panel.PanelWithSidebar implements DataDisplayDelegate {
-    readonly profileTypes: ProfileType[];
+    #private;
     profilesItemTreeElement: ProfilesSidebarTreeElement;
     sidebarTree: UI.TreeOutline.TreeOutlineInShadow;
     profileViews: HTMLDivElement;
     readonly toolbarElement: HTMLDivElement;
     toggleRecordAction: UI.ActionRegistration.Action;
     readonly toggleRecordButton: UI.Toolbar.ToolbarButton;
-    clearResultsButton: UI.Toolbar.ToolbarButton;
     readonly profileViewToolbar: UI.Toolbar.Toolbar;
-    profileGroups: {};
+    profileGroups: Record<string, ProfileGroup>;
     launcherView: ProfileLauncherView;
     visibleView: UI.Widget.Widget | undefined;
-    readonly profileToView: {
+    readonly profileToView: Array<{
         profile: ProfileHeader;
         view: UI.Widget.Widget;
-    }[];
-    typeIdToSidebarSection: {
-        [x: string]: ProfileTypeSidebarSection;
-    };
+    }>;
+    typeIdToSidebarSection: Record<string, ProfileTypeSidebarSection>;
     fileSelectorElement: HTMLInputElement;
     selectedProfileType?: ProfileType;
-    constructor(name: string, profileTypes: ProfileType[], recordingActionId: string);
-    onKeyDown(ev: Event): void;
+    static registry: ProfileTypeRegistry;
+    constructor(name: string, recordingActionId: string);
+    get profileTypes(): ProfileType[];
+    onKeyDown(event: KeyboardEvent): void;
     searchableView(): UI.SearchableView.SearchableView | null;
     createFileSelectorElement(): void;
     findProfileTypeByExtension(fileName: string): ProfileType | null;
@@ -40,7 +41,6 @@ export declare class ProfilesPanel extends UI.Panel.PanelWithSidebar implements 
     reset(): void;
     showLauncherView(): void;
     registerProfileType(profileType: ProfileType): void;
-    handleContextMenuEvent(event: Event): void;
     showLoadFromFileDialog(): void;
     addProfileHeader(profile: ProfileHeader): void;
     removeProfileHeader(profile: ProfileHeader): void;
@@ -52,13 +52,12 @@ export declare class ProfilesPanel extends UI.Panel.PanelWithSidebar implements 
     closeVisibleView(): void;
     focus(): void;
     wasShown(): void;
+    willHide(): void;
 }
 export declare class ProfileTypeSidebarSection extends UI.TreeOutline.TreeElement {
     dataDisplayDelegate: DataDisplayDelegate;
     readonly profileTreeElements: ProfileSidebarTreeElement[];
-    profileGroups: {
-        [x: string]: ProfileGroup;
-    };
+    profileGroups: Record<string, ProfileGroup>;
     constructor(dataDisplayDelegate: DataDisplayDelegate, profileType: ProfileType);
     addProfileHeader(profile: ProfileHeader): void;
     removeProfileHeader(profile: ProfileHeader): boolean;
@@ -66,15 +65,13 @@ export declare class ProfileTypeSidebarSection extends UI.TreeOutline.TreeElemen
     sidebarElementIndex(profile: ProfileHeader): number;
     onattach(): void;
 }
-export declare class ProfileGroup {
+export interface ProfileGroup {
     profileSidebarTreeElements: ProfileSidebarTreeElement[];
     sidebarTreeElement: ProfileGroupSidebarTreeElement | null;
-    constructor();
 }
 export declare class ProfileGroupSidebarTreeElement extends UI.TreeOutline.TreeElement {
     readonly dataDisplayDelegate: DataDisplayDelegate;
     profileTitle: string;
-    toggleOnClick: boolean;
     constructor(dataDisplayDelegate: DataDisplayDelegate, title: string);
     onselect(): boolean;
     onattach(): void;
@@ -85,13 +82,6 @@ export declare class ProfilesSidebarTreeElement extends UI.TreeOutline.TreeEleme
     onselect(): boolean;
     onattach(): void;
 }
-export declare class JSProfilerPanel extends ProfilesPanel implements UI.ActionRegistration.ActionDelegate {
-    #private;
-    constructor();
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): JSProfilerPanel;
-    wasShown(): void;
-    willHide(): void;
-    handleAction(_context: UI.Context.Context, _actionId: string): boolean;
+export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
+    handleAction(context: UI.Context.Context, actionId: string): boolean;
 }

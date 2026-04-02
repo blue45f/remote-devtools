@@ -1,39 +1,14 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+// eslint-disable-next-line @devtools/es-modules-import
+import * as StackTraceImpl from '../stack_trace/stack_trace_impl.js';
 import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 import { ContentProviderBasedProject } from './ContentProviderBasedProject.js';
-import { IgnoreListManager } from './IgnoreListManager.js';
 import { NetworkProject } from './NetworkProject.js';
 /**
  * The `CompilerScriptMapping` maps script entities from source maps to scripts and vice versa.
@@ -64,9 +39,13 @@ export class CompilerScriptMapping {
     #projects = new Map();
     #sourceMapToProject = new Map();
     #uiSourceCodeToSourceMaps = new Platform.MapUtilities.Multimap();
+    #debuggerModel;
+    #ignoreListManager;
     constructor(debuggerModel, workspace, debuggerWorkspaceBinding) {
         this.#sourceMapManager = debuggerModel.sourceMapManager();
         this.#debuggerWorkspaceBinding = debuggerWorkspaceBinding;
+        this.#debuggerModel = debuggerModel;
+        this.#ignoreListManager = debuggerWorkspaceBinding.ignoreListManager;
         this.#stubProject = new ContentProviderBasedProject(workspace, 'jsSourceMaps:stub:' + debuggerModel.target().id(), Workspace.Workspace.projectTypes.Service, '', true /* isServiceProject */);
         this.#eventListeners = [
             this.#sourceMapManager.addEventListener(SDK.SourceMapManager.Events.SourceMapWillAttach, this.sourceMapWillAttach, this),
@@ -74,6 +53,11 @@ export class CompilerScriptMapping {
             this.#sourceMapManager.addEventListener(SDK.SourceMapManager.Events.SourceMapAttached, this.sourceMapAttached, this),
             this.#sourceMapManager.addEventListener(SDK.SourceMapManager.Events.SourceMapDetached, this.sourceMapDetached, this),
         ];
+    }
+    setFunctionRanges(uiSourceCode, ranges) {
+        for (const sourceMap of this.#uiSourceCodeToSourceMaps.get(uiSourceCode)) {
+            sourceMap.augmentWithScopes(uiSourceCode.url(), ranges);
+        }
     }
     addStubUISourceCode(script) {
         const stubUISourceCode = this.#stubProject.addContentProvider(Common.ParsedURL.ParsedURL.concatenate(script.sourceURL, ':sourcemap'), TextUtils.StaticContentProvider.StaticContentProvider.fromString(script.sourceURL, Common.ResourceType.resourceTypes.Script, '\n\n\n\n\n// Please wait a bit.\n// Compiled script is not shown while source map is being loaded!'), 'text/javascript');
@@ -99,7 +83,7 @@ export class CompilerScriptMapping {
         // Find the source location for the raw location.
         const { lineNumber, columnNumber } = script.rawLocationToRelativeLocation(rawLocation);
         const entry = sourceMap.findEntry(lineNumber, columnNumber);
-        if (!entry || !entry.sourceURL) {
+        if (!entry?.sourceURL) {
             return [];
         }
         const project = this.#sourceMapToProject.get(sourceMap);
@@ -170,8 +154,8 @@ export class CompilerScriptMapping {
         if (!project) {
             return null;
         }
-        const entry = sourceMap.findEntry(lineNumber, columnNumber);
-        if (!entry || !entry.sourceURL) {
+        const entry = sourceMap.findEntry(lineNumber, columnNumber, rawLocation.inlineFrameIndex);
+        if (!entry?.sourceURL) {
             return null;
         }
         const uiSourceCode = project.uiSourceCodeForURL(entry.sourceURL);
@@ -236,12 +220,91 @@ export class CompilerScriptMapping {
         }
         return ranges;
     }
+    async functionBoundsAtRawLocation(rawLocation) {
+        const script = rawLocation.script();
+        if (!script) {
+            return null;
+        }
+        const sourceMap = this.#sourceMapManager.sourceMapForClient(script);
+        if (!sourceMap) {
+            return null;
+        }
+        await sourceMap.waitForScopeInfo();
+        const { lineNumber, columnNumber } = script.rawLocationToRelativeLocation(rawLocation);
+        const { url, scope } = sourceMap.findOriginalFunctionScope({ line: lineNumber, column: columnNumber }) ?? {};
+        if (!scope || !url) {
+            return null;
+        }
+        const project = this.#sourceMapToProject.get(sourceMap);
+        if (!project) {
+            return null;
+        }
+        const uiSourceCode = project.uiSourceCodeForURL(url);
+        if (!uiSourceCode) {
+            return null;
+        }
+        // If there's no original source content, callers can't get the source code for
+        // the given scope. Presently that's the only reason to get a function's bounds,
+        // so in that case return null and allow ResourceScriptMapping to fulfill this
+        // request.
+        const contentData = await uiSourceCode.requestContentData();
+        if ('error' in contentData) {
+            return null;
+        }
+        const name = scope.name ?? '';
+        const range = new TextUtils.TextRange.TextRange(scope.start.line, scope.start.column, scope.end.line, scope.end.column);
+        return new Workspace.UISourceCode.UIFunctionBounds(uiSourceCode, range, name);
+    }
+    async translateRawFramesStep(rawFrames, translatedFrames) {
+        const frame = rawFrames[0];
+        if (StackTraceImpl.Trie.isBuiltinFrame(frame)) {
+            return false;
+        }
+        const sourceMapWithScopeInfoForFrame = async (rawFrame) => {
+            const script = this.#debuggerModel.scriptForId(rawFrame.scriptId ?? '');
+            if (!script || this.#stubUISourceCodes.has(script)) {
+                // Use fallback while source map is being loaded.
+                return null;
+            }
+            const sourceMap = script.sourceMap();
+            await sourceMap?.waitForScopeInfo();
+            return sourceMap?.hasScopeInfo() ? { sourceMap, script } : null;
+        };
+        const sourceMapAndScript = await sourceMapWithScopeInfoForFrame(frame);
+        if (!sourceMapAndScript) {
+            return false;
+        }
+        const { sourceMap, script } = sourceMapAndScript;
+        const { lineNumber, columnNumber } = script.relativeLocationToRawLocation(frame);
+        if (!sourceMap.isOutlinedFrame(lineNumber, columnNumber)) {
+            const frames = sourceMap.translateCallSite(lineNumber, columnNumber);
+            if (!frames.length) {
+                return false;
+            }
+            rawFrames.shift();
+            const result = [];
+            translatedFrames.push(result);
+            const project = this.#sourceMapToProject.get(sourceMap);
+            for (const frame of frames) {
+                // Switch out url for UISourceCode where we have it.
+                const uiSourceCode = frame.url ? project?.uiSourceCodeForURL(frame.url) : undefined;
+                result.push({
+                    ...frame,
+                    url: uiSourceCode ? undefined : frame.url,
+                    uiSourceCode: uiSourceCode ?? undefined,
+                });
+            }
+            return true;
+        }
+        // TODO(crbug.com/433162438): Consolidate outlined frames.
+        return false;
+    }
     /**
      * Computes the set of line numbers which are source-mapped to a script within the
      * given {@link uiSourceCode}.
      *
      * @param uiSourceCode the source mapped entity.
-     * @return a set of source-mapped line numbers or `null` if the {@link uiSourceCode}
+     * @returns a set of source-mapped line numbers or `null` if the {@link uiSourceCode}
      *         is not provided by this {@link CompilerScriptMapping} instance.
      */
     getMappedLines(uiSourceCode) {
@@ -273,6 +336,9 @@ export class CompilerScriptMapping {
         // Create stub UISourceCode for the time source mapping is being loaded.
         this.addStubUISourceCode(script);
         void this.#debuggerWorkspaceBinding.updateLocations(script);
+        if (this.#ignoreListManager.isUserIgnoreListedURL(script.sourceURL, { isContentScript: script.isContentScript() })) {
+            this.#sourceMapManager.cancelAttachSourceMap(script);
+        }
     }
     /**
      * Invoked by the {@link SDK.SourceMapManager.SourceMapManager} after an attempt to load the
@@ -305,70 +371,68 @@ export class CompilerScriptMapping {
         const { client: script, sourceMap } = event.data;
         const scripts = new Set([script]);
         this.removeStubUISourceCode(script);
-        if (!IgnoreListManager.instance().isUserIgnoreListedURL(script.sourceURL, { isContentScript: script.isContentScript() })) {
-            const target = script.target();
-            const projectId = `jsSourceMaps:${script.isContentScript() ? 'extensions' : ''}:${target.id()}`;
-            let project = this.#projects.get(projectId);
-            if (!project) {
-                const projectType = script.isContentScript() ? Workspace.Workspace.projectTypes.ContentScripts :
-                    Workspace.Workspace.projectTypes.Network;
-                project = new ContentProviderBasedProject(this.#stubProject.workspace(), projectId, projectType, /* displayName */ '', /* isServiceProject */ false);
-                NetworkProject.setTargetForProject(project, target);
-                this.#projects.set(projectId, project);
+        const target = script.target();
+        const projectId = `jsSourceMaps:${script.isContentScript() ? 'extensions' : ''}:${target.id()}`;
+        let project = this.#projects.get(projectId);
+        if (!project) {
+            const projectType = script.isContentScript() ? Workspace.Workspace.projectTypes.ContentScripts :
+                Workspace.Workspace.projectTypes.Network;
+            project = new ContentProviderBasedProject(this.#stubProject.workspace(), projectId, projectType, /* displayName */ '', /* isServiceProject */ false);
+            NetworkProject.setTargetForProject(project, target);
+            this.#projects.set(projectId, project);
+        }
+        this.#sourceMapToProject.set(sourceMap, project);
+        for (const url of sourceMap.sourceURLs()) {
+            const contentType = Common.ResourceType.resourceTypes.SourceMapScript;
+            const uiSourceCode = project.createUISourceCode(url, contentType);
+            if (sourceMap.hasIgnoreListHint(url)) {
+                uiSourceCode.markKnownThirdParty();
             }
-            this.#sourceMapToProject.set(sourceMap, project);
-            for (const url of sourceMap.sourceURLs()) {
-                const contentType = Common.ResourceType.resourceTypes.SourceMapScript;
-                const uiSourceCode = project.createUISourceCode(url, contentType);
-                if (sourceMap.hasIgnoreListHint(url)) {
-                    uiSourceCode.markKnownThirdParty();
-                }
-                const content = sourceMap.embeddedContentByURL(url);
-                const contentProvider = content !== null ?
-                    TextUtils.StaticContentProvider.StaticContentProvider.fromString(url, contentType, content) :
-                    new SDK.CompilerSourceMappingContentProvider.CompilerSourceMappingContentProvider(url, contentType, script.createPageResourceLoadInitiator());
-                let metadata = null;
-                if (content !== null) {
-                    const encoder = new TextEncoder();
-                    metadata = new Workspace.UISourceCode.UISourceCodeMetadata(null, encoder.encode(content).length);
-                }
-                const mimeType = Common.ResourceType.ResourceType.mimeFromURL(url) ?? contentType.canonicalMimeType();
-                this.#uiSourceCodeToSourceMaps.set(uiSourceCode, sourceMap);
-                NetworkProject.setInitialFrameAttribution(uiSourceCode, script.frameId);
-                // Check if there was already an `UISourceCode` for the given `url`, and if so, discard
-                // the previous one. While it would be possible to keep the previous one and just add
-                // the new mapping (from the `sourceMap`) to it as long as there's no conflict, this
-                // doesn't really work with the way the `BreakpointManager` and other parts of the front-end
-                // work, which only listen for additions/removals of `UISourceCode`s, since there's no
-                // notion of a 'UISourceCodeChanged` event (yet).
-                //
-                // Therefore, unless we discard any previous `UISourceCode` for the `url` and publish the
-                // new `uiSourceCode`, the `BreakpointManager` will not restore / set breakpoints in newly
-                // added scripts in case of code-splitting, since it won't find out about these new mappings.
-                // By removing and (re)adding a `UISourceCode` for the `url` we effectively force restoration
-                // of breakpoints.
-                const otherUISourceCode = project.uiSourceCodeForURL(url);
-                if (otherUISourceCode !== null) {
-                    // Copy the existing source mappings from the `otherUISourceCode` over as long as
-                    // they are compatible with the `sourceMap` wrt. `url`. While doing so, also clean
-                    // up the `otherUISourceCode` (in particular its frame attributions).
-                    for (const otherSourceMap of this.#uiSourceCodeToSourceMaps.get(otherUISourceCode)) {
-                        this.#uiSourceCodeToSourceMaps.delete(otherUISourceCode, otherSourceMap);
-                        const otherScript = this.#sourceMapManager.clientForSourceMap(otherSourceMap);
-                        if (!otherScript) {
-                            continue;
-                        }
-                        NetworkProject.removeFrameAttribution(otherUISourceCode, otherScript.frameId);
-                        if (sourceMap.compatibleForURL(url, otherSourceMap)) {
-                            this.#uiSourceCodeToSourceMaps.set(uiSourceCode, otherSourceMap);
-                            NetworkProject.addFrameAttribution(uiSourceCode, otherScript.frameId);
-                        }
-                        scripts.add(otherScript);
+            const content = sourceMap.embeddedContentByURL(url);
+            const contentProvider = content !== null ?
+                TextUtils.StaticContentProvider.StaticContentProvider.fromString(url, contentType, content) :
+                new SDK.CompilerSourceMappingContentProvider.CompilerSourceMappingContentProvider(url, contentType, script.createPageResourceLoadInitiator());
+            let metadata = null;
+            if (content !== null) {
+                const encoder = new TextEncoder();
+                metadata = new Workspace.UISourceCode.UISourceCodeMetadata(null, encoder.encode(content).length);
+            }
+            const mimeType = Common.ResourceType.ResourceType.mimeFromURL(url) ?? contentType.canonicalMimeType();
+            this.#uiSourceCodeToSourceMaps.set(uiSourceCode, sourceMap);
+            NetworkProject.setInitialFrameAttribution(uiSourceCode, script.frameId);
+            // Check if there was already an `UISourceCode` for the given `url`, and if so, discard
+            // the previous one. While it would be possible to keep the previous one and just add
+            // the new mapping (from the `sourceMap`) to it as long as there's no conflict, this
+            // doesn't really work with the way the `BreakpointManager` and other parts of the front-end
+            // work, which only listen for additions/removals of `UISourceCode`s, since there's no
+            // notion of a 'UISourceCodeChanged` event (yet).
+            //
+            // Therefore, unless we discard any previous `UISourceCode` for the `url` and publish the
+            // new `uiSourceCode`, the `BreakpointManager` will not restore / set breakpoints in newly
+            // added scripts in case of code-splitting, since it won't find out about these new mappings.
+            // By removing and (re)adding a `UISourceCode` for the `url` we effectively force restoration
+            // of breakpoints.
+            const otherUISourceCode = project.uiSourceCodeForURL(url);
+            if (otherUISourceCode !== null) {
+                // Copy the existing source mappings from the `otherUISourceCode` over as long as
+                // they are compatible with the `sourceMap` wrt. `url`. While doing so, also clean
+                // up the `otherUISourceCode` (in particular its frame attributions).
+                for (const otherSourceMap of this.#uiSourceCodeToSourceMaps.get(otherUISourceCode)) {
+                    this.#uiSourceCodeToSourceMaps.delete(otherUISourceCode, otherSourceMap);
+                    const otherScript = this.#sourceMapManager.clientForSourceMap(otherSourceMap);
+                    if (!otherScript) {
+                        continue;
                     }
-                    project.removeUISourceCode(url);
+                    NetworkProject.removeFrameAttribution(otherUISourceCode, otherScript.frameId);
+                    if (sourceMap.compatibleForURL(url, otherSourceMap)) {
+                        this.#uiSourceCodeToSourceMaps.set(uiSourceCode, otherSourceMap);
+                        NetworkProject.addFrameAttribution(uiSourceCode, otherScript.frameId);
+                    }
+                    scripts.add(otherScript);
                 }
-                project.addUISourceCodeWithProvider(uiSourceCode, contentProvider, metadata, mimeType);
+                project.removeUISourceCode(url);
             }
+            project.addUISourceCodeWithProvider(uiSourceCode, contentProvider, metadata, mimeType);
         }
         void Promise.all([...scripts].map(script => this.#debuggerWorkspaceBinding.updateLocations(script)))
             .then(() => this.sourceMapAttachedForTest(sourceMap));

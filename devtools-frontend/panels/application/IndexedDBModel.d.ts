@@ -1,6 +1,6 @@
 import * as SDK from '../../core/sdk/sdk.js';
-import * as Protocol from '../../generated/protocol.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import * as Protocol from '../../generated/protocol.js';
 export declare class IndexedDBModel extends SDK.SDKModel.SDKModel<EventTypes> implements ProtocolProxyApi.StorageDispatcher {
     private readonly storageBucketModel;
     private readonly indexedDBAgent;
@@ -32,8 +32,8 @@ export declare class IndexedDBModel extends SDK.SDKModel.SDKModel<EventTypes> im
     private databaseRemovedForStorageBucket;
     private loadDatabaseNamesByStorageBucket;
     private loadDatabase;
-    loadObjectStoreData(databaseId: DatabaseId, objectStoreName: string, idbKeyRange: IDBKeyRange | null, skipCount: number, pageSize: number, callback: (arg0: Array<Entry>, arg1: boolean) => void): void;
-    loadIndexData(databaseId: DatabaseId, objectStoreName: string, indexName: string, idbKeyRange: IDBKeyRange | null, skipCount: number, pageSize: number, callback: (arg0: Array<Entry>, arg1: boolean) => void): void;
+    loadObjectStoreData(databaseId: DatabaseId, objectStoreName: string, idbKeyRange: IDBKeyRange | null, skipCount: number, pageSize: number, callback: (arg0: Entry[], arg1: boolean) => void): void;
+    loadIndexData(databaseId: DatabaseId, objectStoreName: string, indexName: string, idbKeyRange: IDBKeyRange | null, skipCount: number, pageSize: number, callback: (arg0: Entry[], arg1: boolean) => void): void;
     private requestData;
     getMetadata(databaseId: DatabaseId, objectStore: ObjectStore): Promise<ObjectStoreMetadata | null>;
     private refreshDatabaseListForStorageBucket;
@@ -42,7 +42,10 @@ export declare class IndexedDBModel extends SDK.SDKModel.SDKModel<EventTypes> im
     cacheStorageListUpdated(_event: Protocol.Storage.CacheStorageListUpdatedEvent): void;
     cacheStorageContentUpdated(_event: Protocol.Storage.CacheStorageContentUpdatedEvent): void;
     interestGroupAccessed(_event: Protocol.Storage.InterestGroupAccessedEvent): void;
+    interestGroupAuctionEventOccurred(_event: Protocol.Storage.InterestGroupAuctionEventOccurredEvent): void;
+    interestGroupAuctionNetworkRequestCreated(_event: Protocol.Storage.InterestGroupAuctionNetworkRequestCreatedEvent): void;
     sharedStorageAccessed(_event: Protocol.Storage.SharedStorageAccessedEvent): void;
+    sharedStorageWorkletOperationExecutionFinished(_event: Protocol.Storage.SharedStorageWorkletOperationExecutionFinishedEvent): void;
     storageBucketCreatedOrUpdated(_event: Protocol.Storage.StorageBucketCreatedOrUpdatedEvent): void;
     storageBucketDeleted(_event: Protocol.Storage.StorageBucketDeletedEvent): void;
 }
@@ -53,7 +56,7 @@ export declare enum Events {
     DatabaseNamesRefreshed = "DatabaseNamesRefreshed",
     IndexedDBContentUpdated = "IndexedDBContentUpdated"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.DatabaseAdded]: {
         model: IndexedDBModel;
         databaseId: DatabaseId;
@@ -73,7 +76,7 @@ export type EventTypes = {
         databaseId: DatabaseId;
         objectStoreName: string;
     };
-};
+}
 export declare class Entry {
     key: SDK.RemoteObject.RemoteObject;
     primaryKey: SDK.RemoteObject.RemoteObject;
@@ -84,6 +87,7 @@ export declare class DatabaseId {
     readonly storageBucket: Protocol.Storage.StorageBucket;
     name: string;
     constructor(storageBucket: Protocol.Storage.StorageBucket, name: string);
+    inBucket(storageBucket: Protocol.Storage.StorageBucket): boolean;
     equals(databaseId: DatabaseId): boolean;
     inSet(databaseSet: Set<DatabaseId>): boolean;
 }

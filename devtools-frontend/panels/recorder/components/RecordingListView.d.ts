@@ -1,3 +1,5 @@
+import '../../../ui/kit/kit.js';
+import * as UI from '../../../ui/legacy/legacy.js';
 declare global {
     interface HTMLElementTagNameMap {
         'devtools-recording-list-view': RecordingListView;
@@ -30,11 +32,23 @@ interface Recording {
     storageName: string;
     name: string;
 }
-export declare class RecordingListView extends HTMLElement {
+interface ViewInput {
+    recordings: readonly Recording[];
+    replayAllowed: boolean;
+    onCreateClick: () => void;
+    onDeleteClick: (storageName: string, event: Event) => void;
+    onOpenClick: (storageName: string, event: Event) => void;
+    onPlayRecordingClick: (storageName: string, event: Event) => void;
+    onKeyDown: (storageName: string, event: Event) => void;
+}
+export type ViewOutput = object;
+export declare const DEFAULT_VIEW: (input: ViewInput, _output: ViewOutput, target: HTMLElement) => void;
+export declare class RecordingListView extends UI.Widget.Widget {
     #private;
-    static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
-    connectedCallback(): void;
-    set recordings(recordings: Recording[]);
+    constructor(element?: HTMLElement, view?: typeof DEFAULT_VIEW);
+    set recordings(recordings: readonly Recording[]);
     set replayAllowed(value: boolean);
+    performUpdate(): void;
+    wasShown(): void;
 }
 export {};

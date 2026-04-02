@@ -1,12 +1,12 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Platform from '../../core/platform/platform.js';
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-let _id = 0;
+import { Dialog } from './Dialog.js';
+import { getEnclosingShadowRootForNode } from './DOMUtilities.js';
+let id = 0;
 export function nextId(prefix) {
-    return (prefix || '') + ++_id;
+    return (prefix || '') + ++id;
 }
 export function bindLabelToControl(label, control) {
     const controlId = nextId('labelledControl');
@@ -112,9 +112,6 @@ export function markAsOption(element) {
 export function markAsRadioGroup(element) {
     element.setAttribute('role', 'radiogroup');
 }
-export function markAsHidden(element) {
-    element.setAttribute('aria-hidden', 'true');
-}
 export function markAsSlider(element, min = 0, max = 100) {
     element.setAttribute('role', 'slider');
     element.setAttribute('aria-valuemin', String(min));
@@ -129,9 +126,6 @@ export function markAsPoliteLiveRegion(element, isAtomic) {
     if (isAtomic) {
         element.setAttribute('aria-atomic', 'true');
     }
-}
-export function markAsLog(element) {
-    element.setAttribute('role', 'log');
 }
 export function hasRole(element) {
     return element.hasAttribute('role');
@@ -192,36 +186,19 @@ export function unsetExpandable(element) {
     element.removeAttribute('aria-expanded');
 }
 export function setHidden(element, value) {
-    element.setAttribute('aria-hidden', (Boolean(value)).toString());
+    element.setAttribute('aria-hidden', value.toString());
 }
 export function setLevel(element, level) {
     element.setAttribute('aria-level', level.toString());
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var AutocompleteInteractionModel;
-(function (AutocompleteInteractionModel) {
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    AutocompleteInteractionModel["inline"] = "inline";
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    AutocompleteInteractionModel["list"] = "list";
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    AutocompleteInteractionModel["both"] = "both";
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    AutocompleteInteractionModel["none"] = "none";
-})(AutocompleteInteractionModel || (AutocompleteInteractionModel = {}));
-export function setAutocomplete(element, interactionModel = AutocompleteInteractionModel.none) {
+export function setAutocomplete(element, interactionModel = "none" /* AutocompleteInteractionModel.NONE */) {
     element.setAttribute('aria-autocomplete', interactionModel);
 }
 export function clearAutocomplete(element) {
     element.removeAttribute('aria-autocomplete');
 }
-export function setHasPopup(element, value = "false" /* PopupRole.False */) {
-    if (value !== "false" /* PopupRole.False */) {
+export function setHasPopup(element, value = "false" /* PopupRole.FALSE */) {
+    if (value !== "false" /* PopupRole.FALSE */) {
         element.setAttribute('aria-haspopup', value);
     }
     else {
@@ -286,8 +263,7 @@ export function setActiveDescendant(element, activedescendant) {
         return;
     }
     if (activedescendant.isConnected && element.isConnected) {
-        console.assert(Platform.DOMUtilities.getEnclosingShadowRootForNode(activedescendant) ===
-            Platform.DOMUtilities.getEnclosingShadowRootForNode(element), 'elements are not in the same shadow dom');
+        console.assert(getEnclosingShadowRootForNode(activedescendant) === getEnclosingShadowRootForNode(element), 'elements are not in the same shadow dom');
     }
     ensureId(activedescendant);
     element.setAttribute('aria-activedescendant', activedescendant.id);
@@ -298,49 +274,72 @@ export function setSetSize(element, size) {
 export function setPositionInSet(element, position) {
     element.setAttribute('aria-posinset', position.toString());
 }
-function hideFromLayout(element) {
-    element.style.position = 'absolute';
-    element.style.left = '-999em';
-    element.style.width = '100em';
-    element.style.overflow = 'hidden';
-}
-let alertElementOne;
-let alertElementTwo;
-let alertToggle = false;
-/**
- * This function instantiates and switches off returning one of two offscreen alert elements.
- * We utilize two alert elements to ensure that alerts with the same string are still registered
- * as changes and trigger screen reader announcement.
- */
-export function alertElementInstance() {
-    if (!alertElementOne) {
-        const element = document.body.createChild('div');
-        hideFromLayout(element);
-        element.setAttribute('role', 'alert');
+export class LiveAnnouncer {
+    static #announcerElementsByRole = {
+        ["alert" /* AnnouncerRole.ALERT */]: new WeakMap(),
+        ["status" /* AnnouncerRole.STATUS */]: new WeakMap(),
+    };
+    static #hideFromLayout(element) {
+        element.style.position = 'absolute';
+        element.style.left = '-999em';
+        element.style.width = '100em';
+        element.style.overflow = 'hidden';
+    }
+    static #createAnnouncerElement(container, role) {
+        const element = container.createChild('div');
+        LiveAnnouncer.#hideFromLayout(element);
+        element.setAttribute('role', role);
         element.setAttribute('aria-atomic', 'true');
-        alertElementOne = element;
+        return element;
     }
-    if (!alertElementTwo) {
-        const element = document.body.createChild('div');
-        hideFromLayout(element);
-        element.setAttribute('role', 'alert');
-        element.setAttribute('aria-atomic', 'true');
-        alertElementTwo = element;
+    static #removeAnnouncerElement(container, role) {
+        const element = LiveAnnouncer.#announcerElementsByRole[role].get(container);
+        if (element) {
+            element.remove();
+            LiveAnnouncer.#announcerElementsByRole[role].delete(container);
+        }
     }
-    alertToggle = !alertToggle;
-    if (alertToggle) {
-        alertElementTwo.textContent = '';
-        return alertElementOne;
+    /**
+     * Announces the provided message using a dedicated ARIA alert element (`role="alert"`).
+     * Ensures messages are announced even if identical to the previous message by appending
+     * a non-breaking space ('\u00A0') when necessary. This works around screen reader
+     * optimizations that might otherwise silence repeated identical alerts. The element's
+     * `aria-atomic="true"` attribute ensures the entire message is announced upon change.
+     *
+     * The alert element is associated with the currently active dialog's content element
+     * if a dialog is showing, otherwise defaults to an element associated with the document body.
+     * Messages longer than 10000 characters will be trimmed.
+     *
+     * @param message The message to be announced.
+     */
+    static #announce(message, role) {
+        const dialog = Dialog.getInstance();
+        const element = LiveAnnouncer.getOrCreateAnnouncerElement(dialog?.isShowing() ? dialog.contentElement : undefined, role);
+        const announcedMessage = element.textContent === message ? `${message}\u00A0` : message;
+        element.textContent = Platform.StringUtilities.trimEndWithMaxLength(announcedMessage, 10000);
     }
-    alertElementOne.textContent = '';
-    return alertElementTwo;
-}
-/**
- * This function is used to announce a message with the screen reader.
- * Setting the textContent would allow the SR to access the offscreen element via browse mode
- */
-export function alert(message) {
-    const element = alertElementInstance();
-    element.textContent = Platform.StringUtilities.trimEndWithMaxLength(message, 10000);
+    static getOrCreateAnnouncerElement(container = document.body, role, opts) {
+        const existingAnnouncerElement = LiveAnnouncer.#announcerElementsByRole[role].get(container);
+        if (existingAnnouncerElement && existingAnnouncerElement.isConnected && !opts?.force) {
+            return existingAnnouncerElement;
+        }
+        const newAnnouncerElement = LiveAnnouncer.#createAnnouncerElement(container, role);
+        LiveAnnouncer.#announcerElementsByRole[role].set(container, newAnnouncerElement);
+        return newAnnouncerElement;
+    }
+    static initializeAnnouncerElements(container = document.body) {
+        LiveAnnouncer.getOrCreateAnnouncerElement(container, "alert" /* AnnouncerRole.ALERT */);
+        LiveAnnouncer.getOrCreateAnnouncerElement(container, "status" /* AnnouncerRole.STATUS */);
+    }
+    static removeAnnouncerElements(container = document.body) {
+        LiveAnnouncer.#removeAnnouncerElement(container, "alert" /* AnnouncerRole.ALERT */);
+        LiveAnnouncer.#removeAnnouncerElement(container, "status" /* AnnouncerRole.STATUS */);
+    }
+    static alert(message) {
+        LiveAnnouncer.#announce(message, "alert" /* AnnouncerRole.ALERT */);
+    }
+    static status(message) {
+        LiveAnnouncer.#announce(message, "status" /* AnnouncerRole.STATUS */);
+    }
 }
 //# sourceMappingURL=ARIAUtils.js.map

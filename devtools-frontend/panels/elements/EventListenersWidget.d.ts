@@ -1,19 +1,40 @@
+import * as Common from '../../core/common/common.js';
+import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export declare class EventListenersWidget extends UI.ThrottledWidget.ThrottledWidget implements UI.Toolbar.ItemsProvider {
-    private readonly toolbarItemsInternal;
+interface ViewInput {
+    refreshEventListenersActionName: string;
+    showForAncestorsSetting: Common.Settings.Setting<boolean>;
+    dispatchFilterBySetting: Common.Settings.Setting<string>;
+    showFrameworkListenersSetting: Common.Settings.Setting<boolean>;
+    onDispatchFilterTypeChange: (value: string) => void;
+    onEventListenersViewChange: () => void;
+    dispatchFilters: Array<{
+        name: string;
+        value: string;
+    }>;
+    selectedDispatchFilter: string;
+    eventListenerObjects: Array<SDK.RemoteObject.RemoteObject | null>;
+    filter: {
+        showFramework: boolean;
+        showPassive: boolean;
+        showBlocking: boolean;
+    };
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class EventListenersWidget extends UI.Widget.VBox {
+    #private;
     private showForAncestorsSetting;
     private readonly dispatchFilterBySetting;
     private readonly showFrameworkListenersSetting;
-    private readonly eventListenersView;
     private lastRequestedNode?;
-    constructor();
+    constructor(view?: View);
     static instance(opts?: {
         forceNew: boolean | null;
     } | undefined): EventListenersWidget;
-    doUpdate(): Promise<void>;
-    toolbarItems(): UI.Toolbar.ToolbarItem[];
-    private onDispatchFilterTypeChanged;
-    private showFrameworkListenersChanged;
+    performUpdate(): Promise<void>;
+    wasShown(): void;
+    willHide(): void;
     private windowObjectInNodeContext;
     eventListenersArrivedForTest(): void;
 }
@@ -22,3 +43,7 @@ export declare const DispatchFilterBy: {
     Blocking: string;
     Passive: string;
 };
+export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
+}
+export {};

@@ -1,6 +1,2 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as ExtensionManager from './ExtensionManager.js';
-export { ExtensionManager };
+var c=Object.defineProperty;var g=(i,e)=>{for(var n in e)c(i,n,{get:e[n],enumerable:!0})};var d={};g(d,{ExtensionManager:()=>r});import*as o from"./../../../core/common/common.js";import*as t from"./../../../models/extensions/extensions.js";import*as a from"./../../common/common.js";var s=null,r=class i extends o.ObjectWrapper.ObjectWrapper{static instance(){return s||(s=new i),s}#e=new Map;constructor(){super(),this.attach()}attach(){let e=t.RecorderPluginManager.RecorderPluginManager.instance();e.addEventListener("pluginAdded",this.#n),e.addEventListener("pluginRemoved",this.#n),e.addEventListener("viewRegistered",this.#t);for(let n of e.views())this.#t({data:n})}detach(){let e=t.RecorderPluginManager.RecorderPluginManager.instance();e.removeEventListener("pluginAdded",this.#n),e.removeEventListener("pluginRemoved",this.#n),e.removeEventListener("viewRegistered",this.#t),this.#e.clear()}extensions(){return t.RecorderPluginManager.RecorderPluginManager.instance().plugins()}getView(e){let n=this.#e.get(e);if(!n)throw new Error("View not found");return n}#n=()=>{this.dispatchEventToListeners("extensionsUpdated",this.extensions())};#t=e=>{let n=e.data;this.#e.has(n.id)||this.#e.set(n.id,new a.ExtensionIframe.ExtensionIframe(n))}};export{d as ExtensionManager};
 //# sourceMappingURL=extensions.js.map

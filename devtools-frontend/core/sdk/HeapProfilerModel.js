@@ -1,27 +1,24 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { RuntimeModel } from './RuntimeModel.js';
-import { Capability } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export class HeapProfilerModel extends SDKModel {
-    #enabled;
+    #enabled = false;
     #heapProfilerAgent;
-    #runtimeModelInternal;
-    #samplingProfilerDepth;
+    #runtimeModel;
+    #samplingProfilerDepth = 0;
     constructor(target) {
         super(target);
         target.registerHeapProfilerDispatcher(new HeapProfilerDispatcher(this));
-        this.#enabled = false;
         this.#heapProfilerAgent = target.heapProfilerAgent();
-        this.#runtimeModelInternal = target.model(RuntimeModel);
-        this.#samplingProfilerDepth = 0;
+        this.#runtimeModel = target.model(RuntimeModel);
     }
     debuggerModel() {
-        return this.#runtimeModelInternal.debuggerModel();
+        return this.#runtimeModel.debuggerModel();
     }
     runtimeModel() {
-        return this.#runtimeModelInternal;
+        return this.#runtimeModel;
     }
     async enable() {
         if (this.#enabled) {
@@ -43,7 +40,7 @@ export class HeapProfilerModel extends SDKModel {
             throw new Error('Sampling profiler is not running.');
         }
         if (--this.#samplingProfilerDepth) {
-            return this.getSamplingProfile();
+            return await this.getSamplingProfile();
         }
         const response = await this.#heapProfilerAgent.invoke_stopSampling();
         if (response.getError()) {
@@ -74,14 +71,20 @@ export class HeapProfilerModel extends SDKModel {
         if (result.getError()) {
             return null;
         }
-        return this.#runtimeModelInternal.createRemoteObject(result.result);
+        return this.#runtimeModel.createRemoteObject(result.result);
     }
     async addInspectedHeapObject(snapshotObjectId) {
         const response = await this.#heapProfilerAgent.invoke_addInspectedHeapObject({ heapObjectId: snapshotObjectId });
         return Boolean(response.getError());
     }
     async takeHeapSnapshot(heapSnapshotOptions) {
-        await this.#heapProfilerAgent.invoke_takeHeapSnapshot(heapSnapshotOptions);
+        await this.target().targetManager().suspendAllTargets('heap-snapshot');
+        try {
+            await this.#heapProfilerAgent.invoke_takeHeapSnapshot(heapSnapshotOptions);
+        }
+        finally {
+            await this.target().targetManager().resumeAllTargets();
+        }
     }
     async startTrackingHeapObjects(recordAllocationStacks) {
         const response = await this.#heapProfilerAgent.invoke_startTrackingHeapObjects({ trackAllocations: recordAllocationStacks });
@@ -92,31 +95,21 @@ export class HeapProfilerModel extends SDKModel {
         return Boolean(response.getError());
     }
     heapStatsUpdate(samples) {
-        this.dispatchEventToListeners(Events.HeapStatsUpdate, samples);
+        this.dispatchEventToListeners("HeapStatsUpdate" /* Events.HEAP_STATS_UPDATED */, samples);
     }
     lastSeenObjectId(lastSeenObjectId, timestamp) {
-        this.dispatchEventToListeners(Events.LastSeenObjectId, { lastSeenObjectId: lastSeenObjectId, timestamp: timestamp });
+        this.dispatchEventToListeners("LastSeenObjectId" /* Events.LAST_SEEN_OBJECT_ID */, { lastSeenObjectId, timestamp });
     }
     addHeapSnapshotChunk(chunk) {
-        this.dispatchEventToListeners(Events.AddHeapSnapshotChunk, chunk);
+        this.dispatchEventToListeners("AddHeapSnapshotChunk" /* Events.ADD_HEAP_SNAPSHOT_CHUNK */, chunk);
     }
     reportHeapSnapshotProgress(done, total, finished) {
-        this.dispatchEventToListeners(Events.ReportHeapSnapshotProgress, { done: done, total: total, finished: finished });
+        this.dispatchEventToListeners("ReportHeapSnapshotProgress" /* Events.REPORT_HEAP_SNAPSHOT_PROGRESS */, { done, total, finished });
     }
     resetProfiles() {
-        this.dispatchEventToListeners(Events.ResetProfiles, this);
+        this.dispatchEventToListeners("ResetProfiles" /* Events.RESET_PROFILES */, this);
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["HeapStatsUpdate"] = "HeapStatsUpdate";
-    Events["LastSeenObjectId"] = "LastSeenObjectId";
-    Events["AddHeapSnapshotChunk"] = "AddHeapSnapshotChunk";
-    Events["ReportHeapSnapshotProgress"] = "ReportHeapSnapshotProgress";
-    Events["ResetProfiles"] = "ResetProfiles";
-})(Events || (Events = {}));
 class HeapProfilerDispatcher {
     #heapProfilerModel;
     constructor(model) {
@@ -138,5 +131,5 @@ class HeapProfilerDispatcher {
         this.#heapProfilerModel.resetProfiles();
     }
 }
-SDKModel.register(HeapProfilerModel, { capabilities: Capability.JS, autostart: false });
+SDKModel.register(HeapProfilerModel, { capabilities: 4 /* Capability.JS */, autostart: false });
 //# sourceMappingURL=HeapProfilerModel.js.map

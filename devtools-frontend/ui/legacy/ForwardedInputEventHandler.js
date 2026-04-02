@@ -1,12 +1,14 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Host from '../../core/host/host.js';
 import { Context } from './Context.js';
 import { KeyboardShortcut } from './KeyboardShortcut.js';
 import { ForwardedShortcut, ShortcutRegistry } from './ShortcutRegistry.js';
-// This handler only forwards the keystrokes if DevTools front-end is
-// not running in hosted mode.
+/**
+ * This handler only forwards the keystrokes if DevTools front-end is
+ * not running in hosted mode.
+ **/
 export class ForwardedInputEventHandler {
     constructor() {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.addEventListener(Host.InspectorFrontendHostAPI.Events.KeyEventUnhandled, this.onKeyEventUnhandled, this);

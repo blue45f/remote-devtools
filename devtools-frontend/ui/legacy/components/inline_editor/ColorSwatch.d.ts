@@ -1,40 +1,42 @@
-import * as Common from '../../../../core/common/common.js';
+import type * as Common from '../../../../core/common/common.js';
+export declare class ColorFormatChangedEvent extends Event {
+    static readonly eventName = "colorformatchanged";
+    data: {
+        color: Common.Color.Color;
+    };
+    constructor(color: Common.Color.Color);
+}
 export declare class ColorChangedEvent extends Event {
     static readonly eventName = "colorchanged";
     data: {
-        text: string;
+        color: Common.Color.Color;
     };
-    constructor(text: string);
+    constructor(color: Common.Color.Color);
 }
 export declare class ClickEvent extends Event {
     static readonly eventName = "swatchclick";
     constructor();
 }
 export declare class ColorSwatch extends HTMLElement {
-    static readonly litTagName: import("../../../lit-html/static.js").Static;
+    #private;
     private readonly shadow;
     private tooltip;
-    private text;
-    private color;
-    private format;
-    constructor();
+    private readonly;
+    constructor(tooltip?: string);
     static isColorSwatch(element: Element): element is ColorSwatch;
-    getColor(): Common.Color.Color | null;
-    getFormat(): Common.Color.Format | null;
-    getText(): string | null;
+    setReadonly(readonly: boolean): void;
+    set color(color: Common.Color.Color);
+    get color(): Common.Color.Color | null;
     get anchorBox(): AnchorBox | null;
+    getText(): string | undefined;
     /**
      * Render this swatch given a color object or text to be parsed as a color.
      * @param color The color object or string to use for this swatch.
-     * @param formatOrUseUserSetting Either the format to be used as a string, or true to auto-detect the user-set format.
-     * @param tooltip The tooltip to use on the swatch.
      */
-    renderColor(color: Common.Color.Color | string, formatOrUseUserSetting?: string | boolean, tooltip?: string): void;
-    private renderTextOnly;
-    private render;
-    private onClick;
+    renderColor(color: Common.Color.Color): void;
+    private onActivate;
     private consume;
-    setFormat(format: Common.Color.Format): void;
+    setColor(color: Common.Color.Color): void;
     private showFormatPicker;
 }
 declare global {
@@ -43,6 +45,7 @@ declare global {
     }
     interface HTMLElementEventMap {
         [ColorChangedEvent.eventName]: ColorChangedEvent;
+        [ColorFormatChangedEvent.eventName]: ColorFormatChangedEvent;
         [ClickEvent.eventName]: Event;
     }
 }

@@ -1,6 +1,2 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as LegacyWrapper from './LegacyWrapper.js';
-export { LegacyWrapper, };
+var a=Object.defineProperty;var o=(t,r)=>{for(var e in r)a(t,e,{get:r[e],enumerable:!0})};var n={};o(n,{WrappableComponent:()=>s,legacyWrapper:()=>p});import*as i from"./../../visual_logging/visual_logging.js";var s=class extends HTMLElement{wrapper=null;async render(){}wasShown(){}willHide(){}};function p(t,r,e){return new class extends t{#e;constructor(...l){super(!0),this.#e=r,this.#e.wrapper=this,this.#e.render(),this.contentElement.appendChild(this.#e),e&&this.element.setAttribute("jslog",`${i.pane().context(e)}`)}wasShown(){super.wasShown(),this.#e.wasShown(),this.#e.render()}willHide(){super.willHide(),this.#e.willHide()}async performUpdate(){await this.#e.render()}getComponent(){return this.#e}}}export{n as LegacyWrapper};
 //# sourceMappingURL=legacy_wrapper.js.map

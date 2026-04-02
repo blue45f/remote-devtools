@@ -1,27 +1,26 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Common from '../common/common.js';
 import * as i18n from '../i18n/i18n.js';
 import * as Platform from '../platform/platform.js';
-import * as Root from '../root/root.js';
 import { DeferredDOMNode } from './DOMModel.js';
 import { ResourceTreeModel } from './ResourceTreeModel.js';
 const UIStrings = {
     /**
-     *@description Error message for when a CSS file can't be loaded
+     * @description Error message for when a CSS file can't be loaded
      */
     couldNotFindTheOriginalStyle: 'Could not find the original style sheet.',
     /**
-     *@description Error message to display when a source CSS file could not be retrieved.
+     * @description Error message to display when a source CSS file could not be retrieved.
      */
     thereWasAnErrorRetrievingThe: 'There was an error retrieving the source styles.',
 };
 const str_ = i18n.i18n.registerUIStrings('core/sdk/CSSStyleSheetHeader.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class CSSStyleSheetHeader {
-    #cssModelInternal;
+    #cssModel;
     id;
     frameId;
     sourceURL;
@@ -40,9 +39,9 @@ export class CSSStyleSheetHeader {
     ownerNode;
     sourceMapURL;
     loadingFailed;
-    #originalContentProviderInternal;
+    #originalContentProvider;
     constructor(cssModel, payload) {
-        this.#cssModelInternal = cssModel;
+        this.#cssModel = cssModel;
         this.id = payload.styleSheetId;
         this.frameId = payload.frameId;
         this.sourceURL = payload.sourceURL;
@@ -63,43 +62,39 @@ export class CSSStyleSheetHeader {
         }
         this.sourceMapURL = payload.sourceMapURL;
         this.loadingFailed = payload.loadingFailed ?? false;
-        this.#originalContentProviderInternal = null;
+        this.#originalContentProvider = null;
     }
     originalContentProvider() {
-        if (!this.#originalContentProviderInternal) {
+        if (!this.#originalContentProvider) {
             const lazyContent = (async () => {
-                const originalText = await this.#cssModelInternal.originalStyleSheetText(this);
+                const originalText = await this.#cssModel.originalStyleSheetText(this);
                 if (originalText === null) {
-                    return { content: null, error: i18nString(UIStrings.couldNotFindTheOriginalStyle), isEncoded: false };
+                    return { error: i18nString(UIStrings.couldNotFindTheOriginalStyle) };
                 }
-                return { content: originalText, isEncoded: false };
+                return new TextUtils.ContentData.ContentData(originalText, /* isBase64=*/ false, 'text/css');
             });
-            this.#originalContentProviderInternal =
+            this.#originalContentProvider =
                 new TextUtils.StaticContentProvider.StaticContentProvider(this.contentURL(), this.contentType(), lazyContent);
         }
-        return this.#originalContentProviderInternal;
+        return this.#originalContentProvider;
     }
     setSourceMapURL(sourceMapURL) {
         this.sourceMapURL = sourceMapURL;
     }
     cssModel() {
-        return this.#cssModelInternal;
+        return this.#cssModel;
     }
     isAnonymousInlineStyleSheet() {
-        return !this.resourceURL() && !this.#cssModelInternal.sourceMapManager().sourceMapForClient(this);
+        return !this.resourceURL() && !this.#cssModel.sourceMapManager().sourceMapForClient(this);
     }
     isConstructedByNew() {
         return this.isConstructed && this.sourceURL.length === 0;
     }
     resourceURL() {
-        const url = this.isViaInspector() ? this.viaInspectorResourceURL() : this.sourceURL;
-        if (!url && Root.Runtime.experiments.isEnabled(Root.Runtime.ExperimentName.STYLES_PANE_CSS_CHANGES)) {
-            return this.dynamicStyleURL();
-        }
-        return url;
+        return this.isViaInspector() ? this.viaInspectorResourceURL() : this.sourceURL;
     }
     getFrameURLPath() {
-        const model = this.#cssModelInternal.target().model(ResourceTreeModel);
+        const model = this.#cssModel.target().model(ResourceTreeModel);
         console.assert(Boolean(model));
         if (!model) {
             return '';
@@ -110,17 +105,18 @@ export class CSSStyleSheetHeader {
         }
         console.assert(Boolean(frame));
         const parsedURL = new Common.ParsedURL.ParsedURL(frame.url);
-        let urlPath = parsedURL.host + parsedURL.folderPathComponents;
+        let urlPath = parsedURL.host;
+        if (parsedURL.port) {
+            urlPath += ':' + parsedURL.port;
+        }
+        urlPath += parsedURL.folderPathComponents;
         if (!urlPath.endsWith('/')) {
             urlPath += '/';
         }
         return urlPath;
     }
     viaInspectorResourceURL() {
-        return `inspector://${this.getFrameURLPath()}inspector-stylesheet`;
-    }
-    dynamicStyleURL() {
-        return `stylesheet://${this.getFrameURLPath()}style#${this.id}`;
+        return `inspector://${this.getFrameURLPath()}inspector-stylesheet#${this.id}`;
     }
     lineNumberInSource(lineNumberInStyleSheet) {
         return this.startLine + lineNumberInStyleSheet;
@@ -143,35 +139,29 @@ export class CSSStyleSheetHeader {
     contentType() {
         return Common.ResourceType.resourceTypes.Stylesheet;
     }
-    async requestContent() {
-        try {
-            const cssText = await this.#cssModelInternal.getStyleSheetText(this.id);
-            return { content: cssText, isEncoded: false };
+    async requestContentData() {
+        const cssText = await this.#cssModel.getStyleSheetText(this.id);
+        if (cssText === null) {
+            return { error: i18nString(UIStrings.thereWasAnErrorRetrievingThe) };
         }
-        catch (err) {
-            return {
-                content: null,
-                error: i18nString(UIStrings.thereWasAnErrorRetrievingThe),
-                isEncoded: false,
-            };
-        }
+        return new TextUtils.ContentData.ContentData(cssText, /* isBase64=*/ false, 'text/css');
     }
     async searchInContent(query, caseSensitive, isRegex) {
-        const requestedContent = await this.requestContent();
-        if (requestedContent.content === null) {
-            return [];
-        }
-        return TextUtils.TextUtils.performSearchInContent(requestedContent.content, query, caseSensitive, isRegex);
+        const contentData = await this.requestContentData();
+        return TextUtils.TextUtils.performSearchInContentData(contentData, query, caseSensitive, isRegex);
     }
     isViaInspector() {
         return this.origin === 'inspector';
     }
     createPageResourceLoadInitiator() {
         return {
-            target: null,
+            target: this.#cssModel.target(),
             frameId: this.frameId,
             initiatorUrl: this.hasSourceURL ? Platform.DevToolsPath.EmptyUrlString : this.sourceURL,
         };
+    }
+    debugId() {
+        return null;
     }
 }
 //# sourceMappingURL=CSSStyleSheetHeader.js.map

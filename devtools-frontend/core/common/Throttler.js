@@ -1,4 +1,4 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 export class Throttler {
@@ -7,8 +7,7 @@ export class Throttler {
     #asSoonAsPossible;
     #process;
     #lastCompleteTime;
-    #schedulePromise;
-    #scheduleResolve;
+    #scheduler = Promise.withResolvers();
     #processTimeout;
     constructor(timeout) {
         this.#timeout = timeout;
@@ -16,71 +15,58 @@ export class Throttler {
         this.#asSoonAsPossible = false;
         this.#process = null;
         this.#lastCompleteTime = 0;
-        this.#schedulePromise = new Promise(fulfill => {
-            this.#scheduleResolve = fulfill;
-        });
     }
-    processCompleted() {
-        this.#lastCompleteTime = this.getTime();
+    #processCompleted() {
+        this.#lastCompleteTime = this.#getTime();
         this.#isRunningProcess = false;
         if (this.#process) {
-            this.innerSchedule(false);
+            this.#schedule(false);
         }
-        this.processCompletedForTests();
-    }
-    processCompletedForTests() {
-        // For sniffing in tests.
     }
     get process() {
         return this.#process;
     }
-    onTimeout() {
+    get processCompleted() {
+        return this.#process ? this.#scheduler.promise : null;
+    }
+    #onTimeout() {
         this.#processTimeout = undefined;
         this.#asSoonAsPossible = false;
         this.#isRunningProcess = true;
         void Promise.resolve()
             .then(this.#process)
             .catch(console.error.bind(console))
-            .then(this.processCompleted.bind(this))
-            .then(this.#scheduleResolve);
-        this.#schedulePromise = new Promise(fulfill => {
-            this.#scheduleResolve = fulfill;
-        });
+            .then(this.#processCompleted.bind(this))
+            .then(this.#scheduler.resolve);
+        this.#scheduler = Promise.withResolvers();
         this.#process = null;
     }
-    schedule(process, asSoonAsPossible) {
+    async schedule(process, scheduling = "Default" /* Scheduling.DEFAULT */) {
         // Deliberately skip previous #process.
         this.#process = process;
         // Run the first scheduled task instantly.
         const hasScheduledTasks = Boolean(this.#processTimeout) || this.#isRunningProcess;
-        const okToFire = this.getTime() - this.#lastCompleteTime > this.#timeout;
-        asSoonAsPossible = Boolean(asSoonAsPossible) || (!hasScheduledTasks && okToFire);
+        const okToFire = this.#getTime() - this.#lastCompleteTime > this.#timeout;
+        const asSoonAsPossible = scheduling === "AsSoonAsPossible" /* Scheduling.AS_SOON_AS_POSSIBLE */ ||
+            (scheduling === "Default" /* Scheduling.DEFAULT */ && !hasScheduledTasks && okToFire);
         const forceTimerUpdate = asSoonAsPossible && !this.#asSoonAsPossible;
         this.#asSoonAsPossible = this.#asSoonAsPossible || asSoonAsPossible;
-        this.innerSchedule(forceTimerUpdate);
-        return this.#schedulePromise;
+        this.#schedule(forceTimerUpdate);
+        await this.#scheduler.promise;
     }
-    innerSchedule(forceTimerUpdate) {
+    #schedule(forceTimerUpdate) {
         if (this.#isRunningProcess) {
             return;
         }
         if (this.#processTimeout && !forceTimerUpdate) {
             return;
         }
-        if (this.#processTimeout) {
-            this.clearTimeout(this.#processTimeout);
-        }
+        clearTimeout(this.#processTimeout);
         const timeout = this.#asSoonAsPossible ? 0 : this.#timeout;
-        this.#processTimeout = this.setTimeout(this.onTimeout.bind(this), timeout);
+        this.#processTimeout = setTimeout(this.#onTimeout.bind(this), timeout);
     }
-    clearTimeout(timeoutId) {
-        clearTimeout(timeoutId);
-    }
-    setTimeout(operation, timeout) {
-        return window.setTimeout(operation, timeout);
-    }
-    getTime() {
-        return window.performance.now();
+    #getTime() {
+        return performance.now();
     }
 }
 //# sourceMappingURL=Throttler.js.map

@@ -1,38 +1,15 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the #name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+var _a;
 import * as TextUtils from '../../models/text_utils/text_utils.js';
+import * as ScopesCodec from '../../third_party/source-map-scopes-codec/source-map-scopes-codec.js';
 import * as Common from '../common/common.js';
 import * as Platform from '../platform/platform.js';
+import * as Root from '../root/root.js';
+import { scopeTreeForScript } from './ScopeTreeCache.js';
+import { buildOriginalScopes, decodePastaRanges } from './SourceMapFunctionRanges.js';
+import { SourceMapScopesInfo } from './SourceMapScopesInfo.js';
 /**
  * Parses the {@link content} as JSON, ignoring BOM markers in the beginning, and
  * also handling the CORB bypass prefix correctly.
@@ -53,13 +30,15 @@ export function parseSourceMap(content) {
 export class SourceMapEntry {
     lineNumber;
     columnNumber;
+    sourceIndex;
     sourceURL;
     sourceLineNumber;
     sourceColumnNumber;
     name;
-    constructor(lineNumber, columnNumber, sourceURL, sourceLineNumber, sourceColumnNumber, name) {
+    constructor(lineNumber, columnNumber, sourceIndex, sourceURL, sourceLineNumber, sourceColumnNumber, name) {
         this.lineNumber = lineNumber;
         this.columnNumber = columnNumber;
+        this.sourceIndex = sourceIndex;
         this.sourceURL = sourceURL;
         this.sourceLineNumber = sourceLineNumber;
         this.sourceColumnNumber = sourceColumnNumber;
@@ -72,30 +51,30 @@ export class SourceMapEntry {
         return entry1.columnNumber - entry2.columnNumber;
     }
 }
-const base64Digits = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-const base64Map = new Map();
-for (let i = 0; i < base64Digits.length; ++i) {
-    base64Map.set(base64Digits.charAt(i), i);
-}
-const sourceMapToSourceList = new WeakMap();
 export class SourceMap {
+    static retainRawSourceMaps = false;
     #json;
-    #compiledURLInternal;
+    #compiledURL;
     #sourceMappingURL;
     #baseURL;
-    #mappingsInternal;
-    #sourceInfos;
+    #mappings = null;
+    #sourceInfos = [];
+    #sourceInfoByURL = new Map();
+    #script;
+    #scopesInfo = null;
+    #debugId;
+    #scopesFallbackPromise;
     /**
      * Implements Source Map V3 model. See https://github.com/google/closure-compiler/wiki/Source-Maps
      * for format description.
      */
-    constructor(compiledURL, sourceMappingURL, payload) {
+    constructor(compiledURL, sourceMappingURL, payload, script) {
         this.#json = payload;
-        this.#compiledURLInternal = compiledURL;
+        this.#script = script;
+        this.#compiledURL = compiledURL;
         this.#sourceMappingURL = sourceMappingURL;
-        this.#baseURL = (sourceMappingURL.startsWith('data:') ? compiledURL : sourceMappingURL);
-        this.#mappingsInternal = null;
-        this.#sourceInfos = new Map();
+        this.#baseURL = (Common.ParsedURL.schemeIs(sourceMappingURL, 'data:')) ? compiledURL : sourceMappingURL;
+        this.#debugId = 'debugId' in payload ? payload.debugId : undefined;
         if ('sections' in this.#json) {
             if (this.#json.sections.find(section => 'url' in section)) {
                 Common.Console.Console.instance().warn(`SourceMap "${sourceMappingURL}" contains unsupported "URL" field in one of its sections.`);
@@ -103,30 +82,100 @@ export class SourceMap {
         }
         this.eachSection(this.parseSources.bind(this));
     }
+    json() {
+        return this.#json;
+    }
+    augmentWithScopes(scriptUrl, ranges) {
+        this.#ensureSourceMapProcessed();
+        if (this.#json && this.#json.version > 3) {
+            throw new Error('Only support augmenting source maps up to version 3.');
+        }
+        // Ensure scriptUrl is associated with sourceMap sources
+        const sourceIdx = this.#sourceIndex(scriptUrl);
+        if (sourceIdx >= 0) {
+            if (!this.#scopesInfo || this.#scopesFallbackPromise !== undefined) {
+                // First time seeing this sourcemap, create an new empty scopesInfo object.
+                // Also reset the fallback scope info since the extension will provide it.
+                this.#scopesInfo = new SourceMapScopesInfo(this, { scopes: [], ranges: [] });
+                this.#scopesFallbackPromise = undefined;
+            }
+            if (!this.#scopesInfo.hasOriginalScopes(sourceIdx)) {
+                const originalScopes = buildOriginalScopes(ranges);
+                this.#scopesInfo.addOriginalScopesAtIndex(sourceIdx, originalScopes);
+            }
+        }
+        else {
+            throw new Error(`Could not find sourceURL ${scriptUrl} in sourceMap`);
+        }
+    }
+    #sourceIndex(sourceURL) {
+        return this.#sourceInfos.findIndex(info => info.sourceURL === sourceURL);
+    }
     compiledURL() {
-        return this.#compiledURLInternal;
+        return this.#compiledURL;
     }
     url() {
         return this.#sourceMappingURL;
     }
+    debugId() {
+        return this.#debugId ?? null;
+    }
+    sourceURLForSourceIndex(index) {
+        return this.#sourceInfos[index]?.sourceURL;
+    }
     sourceURLs() {
-        return [...this.#sourceInfos.keys()];
+        return [...this.#sourceInfoByURL.keys()];
     }
     embeddedContentByURL(sourceURL) {
-        const entry = this.#sourceInfos.get(sourceURL);
+        const entry = this.#sourceInfoByURL.get(sourceURL);
         if (!entry) {
             return null;
         }
         return entry.content;
     }
-    findEntry(lineNumber, columnNumber) {
+    hasScopeInfo() {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo !== null && !this.#scopesInfo.isEmpty();
+    }
+    waitForScopeInfo() {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesFallbackPromise ?? Promise.resolve();
+    }
+    findEntry(lineNumber, columnNumber, inlineFrameIndex) {
+        this.#ensureSourceMapProcessed();
+        if (inlineFrameIndex && this.#scopesInfo !== null) {
+            // For inlineFrameIndex != 0 we use the callsite info for the corresponding inlining site.
+            // Note that the callsite for "inlineFrameIndex" is actually in the previous frame.
+            const { inlinedFunctions } = this.#scopesInfo.findInlinedFunctions(lineNumber, columnNumber);
+            const { callsite } = inlinedFunctions[inlineFrameIndex - 1];
+            if (!callsite) {
+                console.error('Malformed source map. Expected to have a callsite info for index', inlineFrameIndex);
+                return null;
+            }
+            return {
+                lineNumber,
+                columnNumber,
+                sourceIndex: callsite.sourceIndex,
+                sourceURL: this.sourceURLs()[callsite.sourceIndex],
+                sourceLineNumber: callsite.line,
+                sourceColumnNumber: callsite.column,
+            };
+        }
         const mappings = this.mappings();
-        const index = Platform.ArrayUtilities.upperBound(mappings, undefined, (unused, entry) => lineNumber - entry.lineNumber || columnNumber - entry.columnNumber);
+        const index = Platform.ArrayUtilities.upperBound(mappings, undefined, (_, entry) => lineNumber - entry.lineNumber || columnNumber - entry.columnNumber);
         return index ? mappings[index - 1] : null;
+    }
+    /** Returns the entry at the given position but only if an entry exists for that exact position */
+    findEntryExact(lineNumber, columnNumber) {
+        const entry = this.findEntry(lineNumber, columnNumber);
+        if (entry?.lineNumber === lineNumber && entry.columnNumber === columnNumber) {
+            return entry;
+        }
+        return null;
     }
     findEntryRanges(lineNumber, columnNumber) {
         const mappings = this.mappings();
-        const endIndex = Platform.ArrayUtilities.upperBound(mappings, undefined, (unused, entry) => lineNumber - entry.lineNumber || columnNumber - entry.columnNumber);
+        const endIndex = Platform.ArrayUtilities.upperBound(mappings, undefined, (_, entry) => lineNumber - entry.lineNumber || columnNumber - entry.columnNumber);
         if (!endIndex) {
             // If the line and column are preceding all the entries, then there is nothing to map.
             return null;
@@ -145,7 +194,7 @@ export class SourceMap {
         const reverseMappings = this.reversedMappings(sourceURL);
         const startSourceLine = mappings[startIndex].sourceLineNumber;
         const startSourceColumn = mappings[startIndex].sourceColumnNumber;
-        const endReverseIndex = Platform.ArrayUtilities.upperBound(reverseMappings, undefined, (unused, i) => startSourceLine - mappings[i].sourceLineNumber || startSourceColumn - mappings[i].sourceColumnNumber);
+        const endReverseIndex = Platform.ArrayUtilities.upperBound(reverseMappings, undefined, (_, i) => startSourceLine - mappings[i].sourceLineNumber || startSourceColumn - mappings[i].sourceColumnNumber);
         if (!endReverseIndex) {
             return null;
         }
@@ -180,7 +229,7 @@ export class SourceMap {
     findReverseIndices(sourceURL, lineNumber, columnNumber) {
         const mappings = this.mappings();
         const reverseMappings = this.reversedMappings(sourceURL);
-        const endIndex = Platform.ArrayUtilities.upperBound(reverseMappings, undefined, (unused, i) => lineNumber - mappings[i].sourceLineNumber || columnNumber - mappings[i].sourceColumnNumber);
+        const endIndex = Platform.ArrayUtilities.upperBound(reverseMappings, undefined, (_, i) => lineNumber - mappings[i].sourceLineNumber || columnNumber - mappings[i].sourceColumnNumber);
         let startIndex = endIndex;
         while (startIndex > 0 &&
             mappings[reverseMappings[startIndex - 1]].sourceLineNumber ===
@@ -223,27 +272,53 @@ export class SourceMap {
         return ranges;
     }
     mappings() {
-        this.#ensureMappingsProcessed();
-        return this.#mappingsInternal ?? [];
+        this.#ensureSourceMapProcessed();
+        return this.#mappings ?? [];
+    }
+    /**
+     * If the source map does not contain scope information by itself (e.g. "scopes proposal"
+     * or "pasta" scopes), then we'll use this getter to calculate basic function name information from
+     * the AST and mappings.
+     */
+    async #buildScopesFallback() {
+        const scopeTreeAndText = this.#script ? await scopeTreeForScript(this.#script) : null;
+        if (!scopeTreeAndText) {
+            return null;
+        }
+        const { scopeTree, text } = scopeTreeAndText;
+        return SourceMapScopesInfo.createFromAst(this, scopeTree, text);
     }
     reversedMappings(sourceURL) {
-        this.#ensureMappingsProcessed();
-        return this.#sourceInfos.get(sourceURL)?.reverseMappings ?? [];
+        this.#ensureSourceMapProcessed();
+        return this.#sourceInfoByURL.get(sourceURL)?.reverseMappings ?? [];
     }
-    #ensureMappingsProcessed() {
-        if (this.#mappingsInternal === null) {
-            this.#mappingsInternal = [];
-            this.eachSection(this.parseMap.bind(this));
+    #ensureSourceMapProcessed() {
+        if (this.#mappings === null) {
+            this.#mappings = [];
+            try {
+                this.eachSection(this.parseMap.bind(this));
+                if (!this.hasScopeInfo()) {
+                    this.#scopesFallbackPromise = this.#buildScopesFallback().then(info => {
+                        this.#scopesInfo = info;
+                    });
+                }
+            }
+            catch (e) {
+                console.error('Failed to parse source map', e);
+                this.#mappings = [];
+            }
             // As per spec, mappings are not necessarily sorted.
             this.mappings().sort(SourceMapEntry.compare);
-            this.#computeReverseMappings(this.#mappingsInternal);
+            this.#computeReverseMappings(this.#mappings);
+        }
+        if (!_a.retainRawSourceMaps) {
             this.#json = null;
         }
     }
     #computeReverseMappings(mappings) {
         const reverseMappingsPerUrl = new Map();
         for (let i = 0; i < mappings.length; i++) {
-            const entryUrl = mappings[i].sourceURL;
+            const entryUrl = mappings[i]?.sourceURL;
             if (!entryUrl) {
                 continue;
             }
@@ -255,7 +330,7 @@ export class SourceMap {
             reverseMap.push(i);
         }
         for (const [url, reverseMap] of reverseMappingsPerUrl.entries()) {
-            const info = this.#sourceInfos.get(url);
+            const info = this.#sourceInfoByURL.get(url);
             if (!info) {
                 continue;
             }
@@ -274,20 +349,21 @@ export class SourceMap {
             return;
         }
         if ('sections' in this.#json) {
+            let sourcesIndex = 0;
             for (const section of this.#json.sections) {
                 if ('map' in section) {
-                    callback(section.map, section.offset.line, section.offset.column);
+                    callback(section.map, sourcesIndex, section.offset.line, section.offset.column);
+                    sourcesIndex += section.map.sources.length;
                 }
             }
         }
         else {
-            callback(this.#json, 0, 0);
+            callback(this.#json, 0, 0, 0);
         }
     }
     parseSources(sourceMap) {
-        const sourcesList = [];
         const sourceRoot = sourceMap.sourceRoot ?? '';
-        const ignoreList = new Set(sourceMap.x_google_ignoreList);
+        const ignoreList = new Set(sourceMap.ignoreList ?? sourceMap.x_google_ignoreList);
         for (let i = 0; i < sourceMap.sources.length; ++i) {
             let href = sourceMap.sources[i];
             // The source map v3 proposal says to prepend the sourceRoot to the source URL
@@ -304,84 +380,100 @@ export class SourceMap {
                 }
             }
             const url = Common.ParsedURL.ParsedURL.completeURL(this.#baseURL, href) || href;
-            const source = sourceMap.sourcesContent && sourceMap.sourcesContent[i];
-            sourcesList.push(url);
-            if (!this.#sourceInfos.has(url)) {
-                const content = source ?? null;
-                const ignoreListHint = ignoreList.has(i);
-                this.#sourceInfos.set(url, { content, ignoreListHint, reverseMappings: null });
+            const source = sourceMap.sourcesContent?.[i];
+            const sourceInfo = {
+                sourceURL: url,
+                content: source ?? null,
+                ignoreListHint: ignoreList.has(i),
+                reverseMappings: null,
+            };
+            this.#sourceInfos.push(sourceInfo);
+            if (!this.#sourceInfoByURL.has(url)) {
+                this.#sourceInfoByURL.set(url, sourceInfo);
             }
         }
-        sourceMapToSourceList.set(sourceMap, sourcesList);
     }
-    parseMap(map, lineNumber, columnNumber) {
-        let sourceIndex = 0;
+    parseMap(map, baseSourceIndex, baseLineNumber, baseColumnNumber) {
+        let sourceIndex = baseSourceIndex;
+        let lineNumber = baseLineNumber;
+        let columnNumber = baseColumnNumber;
         let sourceLineNumber = 0;
         let sourceColumnNumber = 0;
         let nameIndex = 0;
-        // TODO(crbug.com/1011811): refactor away map.
-        // `sources` can be undefined if it wasn't previously
-        // processed and added to the list. However, that
-        // is not WAI and we should make sure that we can
-        // only reach this point when we are certain
-        // we have the list available.
-        const sources = sourceMapToSourceList.get(map);
         const names = map.names ?? [];
-        const stringCharIterator = new SourceMap.StringCharIterator(map.mappings);
-        let sourceURL = sources && sources[sourceIndex];
+        const tokenIter = new TokenIterator(map.mappings);
+        let sourceURL = this.#sourceInfos[sourceIndex]?.sourceURL;
         while (true) {
-            if (stringCharIterator.peek() === ',') {
-                stringCharIterator.next();
+            if (tokenIter.peek() === ',') {
+                tokenIter.next();
             }
             else {
-                while (stringCharIterator.peek() === ';') {
+                while (tokenIter.peek() === ';') {
                     lineNumber += 1;
                     columnNumber = 0;
-                    stringCharIterator.next();
+                    tokenIter.next();
                 }
-                if (!stringCharIterator.hasNext()) {
+                if (!tokenIter.hasNext()) {
                     break;
                 }
             }
-            columnNumber += this.decodeVLQ(stringCharIterator);
-            if (!stringCharIterator.hasNext() || this.isSeparator(stringCharIterator.peek())) {
+            columnNumber += tokenIter.nextVLQ();
+            if (!tokenIter.hasNext() || this.isSeparator(tokenIter.peek())) {
                 this.mappings().push(new SourceMapEntry(lineNumber, columnNumber));
                 continue;
             }
-            const sourceIndexDelta = this.decodeVLQ(stringCharIterator);
+            const sourceIndexDelta = tokenIter.nextVLQ();
             if (sourceIndexDelta) {
                 sourceIndex += sourceIndexDelta;
-                if (sources) {
-                    sourceURL = sources[sourceIndex];
-                }
+                sourceURL = this.#sourceInfos[sourceIndex]?.sourceURL;
             }
-            sourceLineNumber += this.decodeVLQ(stringCharIterator);
-            sourceColumnNumber += this.decodeVLQ(stringCharIterator);
-            if (!stringCharIterator.hasNext() || this.isSeparator(stringCharIterator.peek())) {
-                this.mappings().push(new SourceMapEntry(lineNumber, columnNumber, sourceURL, sourceLineNumber, sourceColumnNumber));
+            sourceLineNumber += tokenIter.nextVLQ();
+            sourceColumnNumber += tokenIter.nextVLQ();
+            if (!tokenIter.hasNext() || this.isSeparator(tokenIter.peek())) {
+                this.mappings().push(new SourceMapEntry(lineNumber, columnNumber, sourceIndex, sourceURL, sourceLineNumber, sourceColumnNumber));
                 continue;
             }
-            nameIndex += this.decodeVLQ(stringCharIterator);
-            this.mappings().push(new SourceMapEntry(lineNumber, columnNumber, sourceURL, sourceLineNumber, sourceColumnNumber, names[nameIndex]));
+            nameIndex += tokenIter.nextVLQ();
+            this.mappings().push(new SourceMapEntry(lineNumber, columnNumber, sourceIndex, sourceURL, sourceLineNumber, sourceColumnNumber, names[nameIndex]));
         }
+        if (Root.Runtime.experiments.isEnabled(Root.ExperimentNames.ExperimentName.USE_SOURCE_MAP_SCOPES)) {
+            if (!this.#scopesInfo) {
+                this.#scopesInfo = new SourceMapScopesInfo(this, { scopes: [], ranges: [] });
+            }
+            if (map.scopes) {
+                const { scopes, ranges } = ScopesCodec.decode(map, { mode: 2 /* ScopesCodec.DecodeMode.LAX */, generatedOffset: { line: baseLineNumber, column: baseColumnNumber } });
+                this.#scopesInfo.addOriginalScopes(scopes);
+                this.#scopesInfo.addGeneratedRanges(ranges);
+            }
+            else if (map.x_com_bloomberg_sourcesFunctionMappings) {
+                const originalScopes = this.parseBloombergScopes(map);
+                this.#scopesInfo.addOriginalScopes(originalScopes);
+            }
+            else {
+                // Keep the OriginalScope[] tree array consistent with sources.
+                this.#scopesInfo.addOriginalScopes(new Array(map.sources.length).fill(null));
+            }
+        }
+    }
+    parseBloombergScopes(map) {
+        const scopeList = map.x_com_bloomberg_sourcesFunctionMappings;
+        if (!scopeList) {
+            throw new Error('Cant decode pasta scopes without x_com_bloomberg_sourcesFunctionMappings field');
+        }
+        else if (scopeList.length !== map.sources.length) {
+            throw new Error(`x_com_bloomberg_sourcesFunctionMappings must have ${map.sources.length} scope trees`);
+        }
+        const names = map.names ?? [];
+        return scopeList.map(rawScopes => {
+            if (!rawScopes) {
+                return null;
+            }
+            const ranges = decodePastaRanges(rawScopes, names);
+            return buildOriginalScopes(ranges);
+        });
     }
     isSeparator(char) {
         return char === ',' || char === ';';
-    }
-    decodeVLQ(stringCharIterator) {
-        // Read unsigned value.
-        let result = 0;
-        let shift = 0;
-        let digit = SourceMap._VLQ_CONTINUATION_MASK;
-        while (digit & SourceMap._VLQ_CONTINUATION_MASK) {
-            digit = base64Map.get(stringCharIterator.next()) || 0;
-            result += (digit & SourceMap._VLQ_BASE_MASK) << shift;
-            shift += SourceMap._VLQ_BASE_SHIFT;
-        }
-        // Fix the sign.
-        const negative = result & 1;
-        result >>= 1;
-        return negative ? -result : result;
     }
     /**
      * Finds all the reverse mappings that intersect with the given `textRange` within the
@@ -460,7 +552,7 @@ export class SourceMap {
         return false;
     }
     hasIgnoreListHint(sourceURL) {
-        return this.#sourceInfos.get(sourceURL)?.ignoreListHint ?? false;
+        return this.#sourceInfoByURL.get(sourceURL)?.ignoreListHint ?? false;
     }
     /**
      * Returns a list of ranges in the generated script for original sources that
@@ -512,34 +604,95 @@ export class SourceMap {
         return this.embeddedContentByURL(sourceURL) === other.embeddedContentByURL(sourceURL) &&
             this.hasIgnoreListHint(sourceURL) === other.hasIgnoreListHint(sourceURL);
     }
+    resolveScopeChain(frame) {
+        this.#ensureSourceMapProcessed();
+        if (this.#scopesInfo === null) {
+            return null;
+        }
+        return this.#scopesInfo.resolveMappedScopeChain(frame);
+    }
+    findOriginalFunctionName(position) {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo?.findOriginalFunctionName(position) ?? null;
+    }
+    findOriginalFunctionScope(position) {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo?.findOriginalFunctionScope(position) ?? null;
+    }
+    isOutlinedFrame(generatedLine, generatedColumn) {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo?.isOutlinedFrame(generatedLine, generatedColumn) ?? false;
+    }
+    hasInlinedFrames(generatedLine, generatedColumn) {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo?.hasInlinedFrames(generatedLine, generatedColumn) ?? false;
+    }
+    translateCallSite(generatedLine, generatedColumn) {
+        this.#ensureSourceMapProcessed();
+        return this.#scopesInfo?.translateCallSite(generatedLine, generatedColumn) ?? [];
+    }
 }
-(function (SourceMap) {
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    SourceMap._VLQ_BASE_SHIFT = 5;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    SourceMap._VLQ_BASE_MASK = (1 << 5) - 1;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    SourceMap._VLQ_CONTINUATION_MASK = 1 << 5;
-    class StringCharIterator {
-        string;
-        position;
-        constructor(string) {
-            this.string = string;
-            this.position = 0;
+_a = SourceMap;
+const VLQ_BASE_SHIFT = 5;
+const VLQ_BASE_MASK = (1 << 5) - 1;
+const VLQ_CONTINUATION_MASK = 1 << 5;
+export class TokenIterator {
+    #string;
+    #position;
+    constructor(string) {
+        this.#string = string;
+        this.#position = 0;
+    }
+    next() {
+        return this.#string.charAt(this.#position++);
+    }
+    /** Returns the unicode value of the next character and advances the iterator  */
+    nextCharCode() {
+        return this.#string.charCodeAt(this.#position++);
+    }
+    peek() {
+        return this.#string.charAt(this.#position);
+    }
+    hasNext() {
+        return this.#position < this.#string.length;
+    }
+    nextVLQ() {
+        // Read unsigned value.
+        let result = 0;
+        let shift = 0;
+        let digit = VLQ_CONTINUATION_MASK;
+        while (digit & VLQ_CONTINUATION_MASK) {
+            if (!this.hasNext()) {
+                throw new Error('Unexpected end of input while decodling VLQ number!');
+            }
+            const charCode = this.nextCharCode();
+            digit = Common.Base64.BASE64_CODES[charCode];
+            if (charCode !== 65 /* 'A' */ && digit === 0) {
+                throw new Error(`Unexpected char '${String.fromCharCode(charCode)}' encountered while decoding`);
+            }
+            result += (digit & VLQ_BASE_MASK) << shift;
+            shift += VLQ_BASE_SHIFT;
         }
-        next() {
-            return this.string.charAt(this.position++);
+        // Fix the sign.
+        const negative = result & 1;
+        result >>= 1;
+        return negative ? -result : result;
+    }
+    /**
+     * @returns the next VLQ number without iterating further. Or returns null if
+     * the iterator is at the end or it's not a valid number.
+     */
+    peekVLQ() {
+        const pos = this.#position;
+        try {
+            return this.nextVLQ();
         }
-        peek() {
-            return this.string.charAt(this.position);
+        catch {
+            return null;
         }
-        hasNext() {
-            return this.position < this.string.length;
+        finally {
+            this.#position = pos; // Reset the iterator.
         }
     }
-    SourceMap.StringCharIterator = StringCharIterator;
-})(SourceMap || (SourceMap = {}));
+}
 //# sourceMappingURL=SourceMap.js.map

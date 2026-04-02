@@ -1,8 +1,6 @@
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
 export declare class SecurityOriginManager extends SDKModel<EventTypes> {
     #private;
-    constructor(target: Target);
     updateSecurityOrigins(securityOrigins: Set<string>): void;
     securityOrigins(): string[];
     mainSecurityOrigin(): string;
@@ -18,8 +16,8 @@ export interface MainSecurityOriginChangedEvent {
     mainSecurityOrigin: string;
     unreachableMainSecurityOrigin: string | null;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.SecurityOriginAdded]: string;
     [Events.SecurityOriginRemoved]: string;
     [Events.MainSecurityOriginChanged]: MainSecurityOriginChangedEvent;
-};
+}

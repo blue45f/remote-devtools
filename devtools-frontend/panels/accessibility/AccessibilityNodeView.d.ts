@@ -11,7 +11,6 @@ export declare class AXNodeSubPane extends AccessibilitySubPane {
     constructor();
     setAXNode(axNode: SDK.AccessibilityModel.AccessibilityNode | null): void;
     setNode(node: SDK.DOMModel.DOMNode | null): void;
-    wasShown(): void;
 }
 export declare class AXNodePropertyTreeElement extends UI.TreeOutline.TreeElement {
     protected axNode: SDK.AccessibilityModel.AccessibilityNode;
@@ -24,9 +23,7 @@ export declare class AXNodePropertyTreeElement extends UI.TreeOutline.TreeElemen
     appendRelatedNodeInline(relatedNode: Protocol.Accessibility.AXRelatedNode): void;
     appendRelatedNodeListValueElement(value: Protocol.Accessibility.AXValue): void;
 }
-export declare const TypeStyles: {
-    [x: string]: string;
-};
+export declare const TypeStyles: Record<string, string>;
 export declare const StringProperties: Set<Protocol.Accessibility.AXValueType>;
 export declare class AXNodePropertyTreePropertyElement extends AXNodePropertyTreeElement {
     private readonly property;
@@ -58,11 +55,10 @@ export declare class AXRelatedNodeSourceTreeElement extends UI.TreeOutline.TreeE
 export declare class AXRelatedNodeElement {
     private readonly deferredNode;
     private readonly idref;
-    private readonly value;
     constructor(node: {
         deferredNode?: SDK.DOMModel.DeferredDOMNode;
         idref?: string;
-    }, value?: Protocol.Accessibility.AXRelatedNode);
+    });
     render(): Element;
     /**
      * Attempts to cause the node referred to by the related node to be selected in the tree.

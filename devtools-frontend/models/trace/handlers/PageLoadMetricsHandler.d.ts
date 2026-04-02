@@ -1,46 +1,56 @@
-import { type TraceEventHandlerName, type EnabledHandlerDataWithMeta, type Handlers } from './types.js';
 import * as Types from '../types/types.js';
+import type { HandlerName } from './types.js';
+type AnyNavigationStart = Types.Events.NavigationStart | Types.Events.SoftNavigationStart;
 export declare function reset(): void;
-export declare const MarkerName: readonly ["MarkDOMContent", "MarkLoad", "firstPaint", "firstContentfulPaint", "largestContentfulPaint::Candidate"];
-interface MakerEvent extends Types.TraceEvents.TraceEventData {
-    name: typeof MarkerName[number];
-}
-export declare function isTraceEventMarkerEvent(event: Types.TraceEvents.TraceEventData): event is MakerEvent;
-export declare function eventIsPageLoadEvent(event: Types.TraceEvents.TraceEventData): event is Types.TraceEvents.PageLoadEvent;
-export declare function handleEvent(event: Types.TraceEvents.TraceEventData): void;
-export declare function getFrameIdForPageLoadEvent(event: Types.TraceEvents.PageLoadEvent): string;
-export declare function getFirstFCPTimestampFromModelData(model: EnabledHandlerDataWithMeta<Handlers>): Types.Timing.MicroSeconds | null;
+export declare function handleEvent(event: Types.Events.Event): void;
+export declare function getFrameIdForPageLoadEvent(event: Types.Events.PageLoadEvent): string;
 /**
  * Classifications sourced from
  * https://web.dev/fcp/
  */
-export declare function scoreClassificationForFirstContentfulPaint(fcpScoreInMicroseconds: Types.Timing.MicroSeconds): ScoreClassification;
+export declare function scoreClassificationForFirstContentfulPaint(fcpScoreInMicroseconds: Types.Timing.Micro): ScoreClassification;
 /**
  * Classifications sourced from
  * https://web.dev/interactive/#how-lighthouse-determines-your-tti-score
  */
-export declare function scoreClassificationForTimeToInteractive(ttiTimeInMicroseconds: Types.Timing.MicroSeconds): ScoreClassification;
+export declare function scoreClassificationForTimeToInteractive(ttiTimeInMicroseconds: Types.Timing.Micro): ScoreClassification;
 /**
  * Classifications sourced from
  * https://web.dev/lcp/#what-is-lcp
  */
-export declare function scoreClassificationForLargestContentfulPaint(lcpTimeInMicroseconds: Types.Timing.MicroSeconds): ScoreClassification;
+export declare function scoreClassificationForLargestContentfulPaint(lcpTimeInMicroseconds: Types.Timing.Micro): ScoreClassification;
 /**
  * DCL does not have a classification.
  */
-export declare function scoreClassificationForDOMContentLoaded(_dclTimeInMicroseconds: Types.Timing.MicroSeconds): ScoreClassification;
+export declare function scoreClassificationForDOMContentLoaded(_dclTimeInMicroseconds: Types.Timing.Micro): ScoreClassification;
 /**
  * Classifications sourced from
  * https://web.dev/lighthouse-total-blocking-#time/
  */
-export declare function scoreClassificationForTotalBlockingTime(tbtTimeInMicroseconds: Types.Timing.MicroSeconds): ScoreClassification;
+export declare function scoreClassificationForTotalBlockingTime(tbtTimeInMicroseconds: Types.Timing.Micro): ScoreClassification;
 export declare function finalize(): Promise<void>;
-export type PageLoadMetricsData = {
-    metricScoresByFrameId: Map<string, Map<string, Map<MetricName, MetricScore>>>;
-    allMarkerEvents: Types.TraceEvents.PageLoadEvent[];
-};
+export interface PageLoadMetricsData {
+    /**
+     * This represents the metric scores for all navigations, for all frames in a trace.
+     * Given a frame id, the map points to another map from navigation id to metric scores.
+     * The metric scores include the event related to the metric as well as the data regarding
+     * the score itself.
+     *
+     * Includes soft navigations.
+     */
+    metricScoresByFrameId: Map<string, Map<AnyNavigationStart, Map<MetricName, MetricScore>>>;
+    /**
+     * Page load events with no associated duration that happened in the
+     * main frame.
+     */
+    allMarkerEvents: Types.Events.PageLoadEvent[];
+    /**
+     * MetaCharsetCheck events grouped by navigation.
+     */
+    metaCharsetCheckEventsByNavigation: Map<AnyNavigationStart, Types.Events.MetaCharsetCheck[]>;
+}
 export declare function data(): PageLoadMetricsData;
-export declare function deps(): TraceEventHandlerName[];
+export declare function deps(): HandlerName[];
 export declare const enum ScoreClassification {
     GOOD = "good",
     OK = "ok",
@@ -55,14 +65,22 @@ export declare const enum MetricName {
     DCL = "DCL",
     TTI = "TTI",
     TBT = "TBT",
-    CLS = "CLS"
+    CLS = "CLS",
+    NAV = "Nav",
+    SOFT_NAV = "Nav*",
+    SOFT_LCP = "LCP*"
 }
 export interface MetricScore {
-    score: string;
     metricName: MetricName;
     classification: ScoreClassification;
-    event?: Types.TraceEvents.PageLoadEvent;
-    navigation?: Types.TraceEvents.TraceEventNavigationStart;
+    event?: Types.Events.PageLoadEvent;
+    navigation?: AnyNavigationStart;
     estimated?: boolean;
+    timing: Types.Timing.Micro;
 }
+export type LCPMetricScore = MetricScore & {
+    event: Types.Events.LargestContentfulPaintCandidate;
+    metricName: MetricName.LCP;
+};
+export declare function metricIsLCP(metric: MetricScore): metric is LCPMetricScore;
 export {};

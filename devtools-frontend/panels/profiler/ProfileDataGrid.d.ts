@@ -1,12 +1,12 @@
 import * as Platform from '../../core/platform/platform.js';
+import type * as CPUProfile from '../../models/cpu_profile/cpu_profile.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
-import type * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode<unknown> {
     searchMatchedSelfColumn: boolean;
     searchMatchedTotalColumn: boolean;
     searchMatchedFunctionColumn: boolean;
-    profileNode: SDK.ProfileTreeModel.ProfileNode;
+    profileNode: CPUProfile.ProfileTreeModel.ProfileNode;
     tree: ProfileDataGridTree;
     childrenByCallUID: Map<string, ProfileDataGridNode>;
     lastComparator: unknown;
@@ -20,8 +20,8 @@ export declare class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode<
     populated: boolean;
     savedSelf?: number;
     savedTotal?: number;
-    savedChildren?: DataGrid.DataGrid.DataGridNode<unknown>[];
-    constructor(profileNode: SDK.ProfileTreeModel.ProfileNode, owningTree: ProfileDataGridTree, hasChildren: boolean);
+    savedChildren?: Array<DataGrid.DataGrid.DataGridNode<unknown>>;
+    constructor(profileNode: CPUProfile.ProfileTreeModel.ProfileNode, owningTree: ProfileDataGridTree, hasChildren: boolean);
     static sort<T>(gridNodeGroups: ProfileDataGridNode[][], comparator: (arg0: T, arg1: T) => number, force: boolean): void;
     static merge(container: ProfileDataGridTree | ProfileDataGridNode, child: ProfileDataGridNode, shouldAbsorb: boolean): void;
     static populate(container: ProfileDataGridTree | ProfileDataGridNode): void;
@@ -31,7 +31,7 @@ export declare class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode<
     insertChild(child: DataGrid.DataGrid.DataGridNode<unknown>, index: number): void;
     removeChild(profileDataGridNode: DataGrid.DataGrid.DataGridNode<unknown>): void;
     removeChildren(): void;
-    findChild(node: SDK.ProfileTreeModel.ProfileNode): ProfileDataGridNode | null;
+    findChild(node: CPUProfile.ProfileTreeModel.ProfileNode): ProfileDataGridNode | null;
     get selfPercent(): number;
     get totalPercent(): number;
     populate(): void;
@@ -55,18 +55,14 @@ export declare class ProfileDataGridTree implements UI.SearchableView.Searchable
     childrenByCallUID: Map<string, ProfileDataGridNode>;
     deepSearch: boolean;
     populated: boolean;
-    searchResults: {
+    searchResults: Array<{
         profileNode: ProfileDataGridNode;
-    }[];
+    }>;
     savedTotal?: number;
     savedChildren?: ProfileDataGridNode[] | null;
     searchResultIndex: number;
     constructor(formatter: Formatter, searchableView: UI.SearchableView.SearchableView, total: number);
-    static propertyComparator(property: string, isAscending: boolean): (arg0: {
-        [x: string]: unknown;
-    }, arg1: {
-        [x: string]: unknown;
-    }) => number;
+    static propertyComparator(property: string, isAscending: boolean): (arg0: Record<string, unknown>, arg1: Record<string, unknown>) => number;
     get expanded(): boolean;
     appendChild(child: ProfileDataGridNode): void;
     focus(_profileDataGridNode: ProfileDataGridNode): void;
@@ -74,21 +70,19 @@ export declare class ProfileDataGridTree implements UI.SearchableView.Searchable
     insertChild(child: ProfileDataGridNode, index: number): void;
     removeChildren(): void;
     populateChildren(): void;
-    findChild(node: SDK.ProfileTreeModel.ProfileNode): ProfileDataGridNode | null;
+    findChild(node: CPUProfile.ProfileTreeModel.ProfileNode): ProfileDataGridNode | null;
     sort<T>(comparator: (arg0: T, arg1: T) => number, force: boolean): void;
     save(): void;
     restore(): void;
     matchFunction(searchConfig: UI.SearchableView.SearchConfig): ((arg0: ProfileDataGridNode) => boolean) | null;
-    performSearch(searchConfig: UI.SearchableView.SearchConfig, shouldJump: boolean, jumpBackwards?: boolean): void;
+    performSearch(searchConfig: UI.SearchableView.SearchConfig, _shouldJump: boolean, jumpBackwards?: boolean): void;
     onSearchCanceled(): void;
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
     jumpToSearchResult(index: number): void;
-    static readonly propertyComparators: {
-        [key: string]: unknown;
-    }[];
 }
 export interface Formatter {
     formatValue(value: number, node: ProfileDataGridNode): string;

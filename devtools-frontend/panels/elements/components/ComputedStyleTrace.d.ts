@@ -1,12 +1,12 @@
+import type * as Lit from '../../../ui/lit/lit.js';
 export interface ComputedStyleTraceData {
     selector: string;
     active: boolean;
     onNavigateToSource: (event?: Event) => void;
-    ruleOriginNode?: Node;
+    ruleOriginNode?: Lit.LitTemplate;
 }
 export declare class ComputedStyleTrace extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
     connectedCallback(): void;
     set data(data: ComputedStyleTraceData);
 }

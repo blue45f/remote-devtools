@@ -1,3 +1,5 @@
+import '../../../ui/kit/kit.js';
+import '../../../ui/legacy/legacy.js';
 interface Hint {
     getMessage(): string;
     getPossibleFixMessage(): string | null;
@@ -5,7 +7,6 @@ interface Hint {
 }
 export declare class CSSHintDetailsView extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
     constructor(authoringHint: Hint);
 }
 declare global {

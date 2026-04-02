@@ -1,22 +1,23 @@
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
+import type * as NetworkTimeCalculator from '../../models/network_time_calculator/network_time_calculator.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
 declare const HeapTimelineOverview_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.IdsRangeChanged>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.IdsRangeChanged>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends Events.IdsRangeChanged>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.IdsRangeChanged): boolean;
-    dispatchEventToListeners<T_3 extends Events.IdsRangeChanged>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends Events.IDS_RANGE_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends Events.IDS_RANGE_CHANGED>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends Events.IDS_RANGE_CHANGED>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
+    hasEventListeners(eventType: Events.IDS_RANGE_CHANGED): boolean;
+    dispatchEventToListeners<T extends Events.IDS_RANGE_CHANGED>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof UI.Widget.VBox;
 export declare class HeapTimelineOverview extends HeapTimelineOverview_base {
     readonly overviewCalculator: OverviewCalculator;
     overviewContainer: HTMLElement;
     overviewGrid: PerfUI.OverviewGrid.OverviewGrid;
     overviewCanvas: HTMLCanvasElement;
-    windowLeft: number;
-    windowRight: number;
+    windowLeftRatio: number;
+    windowRightRatio: number;
     readonly yScale: SmoothScale;
     readonly xScale: SmoothScale;
     profileSamples: Samples;
@@ -24,7 +25,7 @@ export declare class HeapTimelineOverview extends HeapTimelineOverview_base {
     updateOverviewCanvas?: boolean;
     updateGridTimerId?: number;
     updateTimerId?: number | null;
-    windowWidth?: number;
+    windowWidthRatio?: number;
     constructor();
     start(): void;
     stop(): void;
@@ -38,16 +39,16 @@ export declare class HeapTimelineOverview extends HeapTimelineOverview_base {
     updateGrid(): void;
 }
 export declare const enum Events {
-    IdsRangeChanged = "IdsRangeChanged"
+    IDS_RANGE_CHANGED = "IdsRangeChanged"
 }
 export interface IdsRangeChangedEvent {
     minId: number;
     maxId: number;
     size: number;
 }
-export type EventTypes = {
-    [Events.IdsRangeChanged]: IdsRangeChangedEvent;
-};
+export interface EventTypes {
+    [Events.IDS_RANGE_CHANGED]: IdsRangeChangedEvent;
+}
 export declare class SmoothScale {
     lastUpdate: number;
     currentScale: number;
@@ -62,7 +63,7 @@ export declare class Samples {
     totalTime: number;
     constructor();
 }
-export declare class OverviewCalculator implements PerfUI.TimelineGrid.Calculator {
+export declare class OverviewCalculator implements NetworkTimeCalculator.Calculator {
     maximumBoundaries: number;
     minimumBoundaries: number;
     xScaleFactor: number;

@@ -1,15 +1,15 @@
 import * as Common from '../../core/common/common.js';
-import * as Platform from '../../core/platform/platform.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import { type ProtocolService, type LighthouseRun } from './LighthouseProtocolService.js';
-import { type RunnerResult } from './LighthouseReporterTypes.js';
+import type * as LighthouseModel from '../../models/lighthouse/lighthouse.js';
+import type { LighthouseRun as LighthouseRunType, ProtocolService } from './LighthouseProtocolService.js';
 export declare class LighthouseController extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.SDKModelObserver<SDK.ServiceWorkerManager.ServiceWorkerManager> {
     private readonly protocolService;
     private manager?;
     private serviceWorkerListeners?;
     private inspectedURL?;
     private currentLighthouseRun?;
-    private emulationStateBefore?;
+    private lastAction;
     constructor(protocolService: ProtocolService);
     modelAdded(serviceWorkerManager: SDK.ServiceWorkerManager.ServiceWorkerManager): void;
     modelRemoved(serviceWorkerManager: SDK.ServiceWorkerManager.ServiceWorkerManager): void;
@@ -19,34 +19,28 @@ export declare class LighthouseController extends Common.ObjectWrapper.ObjectWra
     private javaScriptDisabled;
     private hasImportantResourcesNotCleared;
     private evaluateInspectedURL;
-    getCurrentRun(): LighthouseRun | undefined;
+    getCurrentRun(): LighthouseRunType | undefined;
     getFlags(): {
         formFactor: (string | undefined);
-        legacyNavigation: boolean;
         mode: string;
     };
-    getCategoryIDs(): string[];
+    getCategoryIDs(): LighthouseModel.RunTypes.CategoryId[];
     getInspectedURL(options?: {
         force: boolean;
     }): Promise<Platform.DevToolsPath.UrlString>;
     recomputePageAuditability(): void;
     private recordMetrics;
-    startLighthouse(): Promise<void>;
-    collectLighthouseResults(): Promise<RunnerResult>;
-    cancelLighthouse(): Promise<void>;
     /**
-     * We set the device emulation on the DevTools-side for two reasons:
-     * 1. To workaround some odd device metrics emulation bugs like occuluding viewports
-     * 2. To get the attractive device outline
+     * Starts a LH run. By default it will use the categories based on what the
+     * user has selected in the UI, but these can be overridden by passing in the
+     * category IDs, in which case these take priority.
      */
-    private setupEmulationAndProtocolConnection;
-    private restoreEmulationAndProtocolConnection;
+    startLighthouse(overrides?: LighthouseModel.RunTypes.RunOverrides): Promise<void>;
+    collectLighthouseResults(): Promise<LighthouseModel.ReporterTypes.RunnerResult>;
+    cancelLighthouse(): Promise<void>;
 }
-export declare const Presets: Preset[];
-export type Flags = {
-    [flag: string]: string | boolean;
-};
-export declare const RuntimeSettings: RuntimeSetting[];
+export declare function getPresets(): LighthouseModel.RunTypes.Preset[];
+export declare function getRuntimeSettings(): LighthouseModel.RunTypes.RuntimeSetting[];
 export declare enum Events {
     PageAuditabilityChanged = "PageAuditabilityChanged",
     PageWarningsChanged = "PageWarningsChanged",
@@ -61,28 +55,8 @@ export interface PageWarningsChangedEvent {
 export interface AuditProgressChangedEvent {
     message: string;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.PageAuditabilityChanged]: PageAuditabilityChangedEvent;
     [Events.PageWarningsChanged]: PageWarningsChangedEvent;
     [Events.AuditProgressChanged]: AuditProgressChangedEvent;
-};
-export interface Preset {
-    setting: Common.Settings.Setting<boolean>;
-    configID: string;
-    title: () => Common.UIString.LocalizedString;
-    description: () => Common.UIString.LocalizedString;
-    plugin: boolean;
-    supportedModes: string[];
-}
-export interface RuntimeSetting {
-    setting: Common.Settings.Setting<string | boolean>;
-    description: () => Common.UIString.LocalizedString;
-    setFlags: (flags: Flags, value: string | boolean) => void;
-    options?: {
-        label: () => Common.UIString.LocalizedString;
-        value: string;
-        tooltip?: () => Common.UIString.LocalizedString;
-    }[];
-    title?: () => Common.UIString.LocalizedString;
-    learnMore?: Platform.DevToolsPath.UrlString;
 }

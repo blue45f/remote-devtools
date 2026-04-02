@@ -2,9 +2,9 @@ import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
-import type * as TextUtils from '../text_utils/text_utils.js';
+import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
-import { DebuggerWorkspaceBinding, type DebuggerSourceMapping } from './DebuggerWorkspaceBinding.js';
+import { type DebuggerSourceMapping, DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 export declare class ResourceScriptMapping implements DebuggerSourceMapping {
     #private;
     readonly debuggerModel: SDK.DebuggerModel.DebuggerModel;
@@ -16,6 +16,7 @@ export declare class ResourceScriptMapping implements DebuggerSourceMapping {
     uiLocationToRawLocations(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber: number): SDK.DebuggerModel.Location[];
     uiLocationRangeToRawLocationRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, { startLine, startColumn, endLine, endColumn }: TextUtils.TextRange.TextRange): SDK.DebuggerModel.LocationRange[] | null;
     private inspectedURLChanged;
+    functionBoundsAtRawLocation(rawLocation: SDK.DebuggerModel.Location): Promise<Workspace.UISourceCode.UIFunctionBounds | null>;
     private addScript;
     scriptFile(uiSourceCode: Workspace.UISourceCode.UISourceCode): ResourceScriptFile | null;
     private removeScripts;
@@ -26,6 +27,8 @@ export declare class ResourceScriptMapping implements DebuggerSourceMapping {
 }
 export declare class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapper<ResourceScriptFile.EventTypes> {
     #private;
+    readonly uiSourceCode: Workspace.UISourceCode.UISourceCode;
+    readonly script: SDK.Script.Script | null;
     constructor(resourceScriptMapping: ResourceScriptMapping, uiSourceCode: Workspace.UISourceCode.UISourceCode, script: SDK.Script.Script);
     private isDiverged;
     private workingCopyChanged;
@@ -43,17 +46,15 @@ export declare class ResourceScriptFile extends Common.ObjectWrapper.ObjectWrapp
     addSourceMapURL(sourceMapURL: Platform.DevToolsPath.UrlString): void;
     addDebugInfoURL(debugInfoURL: Platform.DevToolsPath.UrlString): void;
     hasSourceMapURL(): boolean;
-    missingSymbolFiles(): Promise<string[] | null>;
-    get script(): SDK.Script.Script | null;
-    get uiSourceCode(): Workspace.UISourceCode.UISourceCode;
+    missingSymbolFiles(): Promise<SDK.DebuggerModel.MissingDebugFiles[] | null>;
 }
 export declare namespace ResourceScriptFile {
     const enum Events {
-        DidMergeToVM = "DidMergeToVM",
-        DidDivergeFromVM = "DidDivergeFromVM"
+        DID_MERGE_TO_VM = "DidMergeToVM",
+        DID_DIVERGE_FROM_VM = "DidDivergeFromVM"
     }
-    type EventTypes = {
-        [Events.DidMergeToVM]: void;
-        [Events.DidDivergeFromVM]: void;
-    };
+    interface EventTypes {
+        [Events.DID_MERGE_TO_VM]: void;
+        [Events.DID_DIVERGE_FROM_VM]: void;
+    }
 }

@@ -3,17 +3,21 @@ export interface LinkifierData {
     url: Platform.DevToolsPath.UrlString;
     lineNumber?: number;
     columnNumber?: number;
+    linkText?: string;
+    title?: string;
 }
 export declare class LinkifierClick extends Event {
     data: LinkifierData;
     static readonly eventName = "linkifieractivated";
     constructor(data: LinkifierData);
 }
+/**
+ * @deprecated do not use
+ */
 export declare class Linkifier extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     set data(data: LinkifierData);
-    connectedCallback(): void;
+    cloneNode(deep?: boolean): Node;
 }
 declare global {
     interface HTMLElementTagNameMap {

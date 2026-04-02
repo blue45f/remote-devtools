@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as SDK from '../../core/sdk/sdk.js';
@@ -13,7 +13,7 @@ export class MediaModel extends SDK.SDKModel.SDKModel {
     }
     async resumeModel() {
         if (!this.enabled) {
-            return Promise.resolve();
+            return await Promise.resolve();
         }
         await this.agent.invoke_enable();
     }
@@ -22,20 +22,20 @@ export class MediaModel extends SDK.SDKModel.SDKModel {
         this.enabled = true;
     }
     playerPropertiesChanged(event) {
-        this.dispatchEventToListeners("PlayerPropertiesChanged" /* Events.PlayerPropertiesChanged */, event);
+        this.dispatchEventToListeners("PlayerPropertiesChanged" /* Events.PLAYER_PROPERTIES_CHANGED */, event);
     }
     playerEventsAdded(event) {
-        this.dispatchEventToListeners("PlayerEventsAdded" /* Events.PlayerEventsAdded */, event);
+        this.dispatchEventToListeners("PlayerEventsAdded" /* Events.PLAYER_EVENTS_ADDED */, event);
     }
     playerMessagesLogged(event) {
-        this.dispatchEventToListeners("PlayerMessagesLogged" /* Events.PlayerMessagesLogged */, event);
+        this.dispatchEventToListeners("PlayerMessagesLogged" /* Events.PLAYER_MESSAGES_LOGGED */, event);
     }
     playerErrorsRaised(event) {
-        this.dispatchEventToListeners("PlayerErrorsRaised" /* Events.PlayerErrorsRaised */, event);
+        this.dispatchEventToListeners("PlayerErrorsRaised" /* Events.PLAYER_ERRORS_RAISED */, event);
     }
-    playersCreated({ players }) {
-        this.dispatchEventToListeners("PlayersCreated" /* Events.PlayersCreated */, players);
+    playerCreated({ player }) {
+        this.dispatchEventToListeners("PlayerCreated" /* Events.PLAYER_CREATED */, player);
     }
 }
-SDK.SDKModel.SDKModel.register(MediaModel, { capabilities: SDK.Target.Capability.Media, autostart: false });
+SDK.SDKModel.SDKModel.register(MediaModel, { capabilities: 262144 /* SDK.Target.Capability.MEDIA */, autostart: false });
 //# sourceMappingURL=MediaModel.js.map

@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -35,25 +35,19 @@ import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Workspace from '../workspace/workspace.js';
 export function resourceForURL(url) {
-    for (const resourceTreeModel of SDK.TargetManager.TargetManager.instance().models(SDK.ResourceTreeModel.ResourceTreeModel)) {
-        const resource = resourceTreeModel.resourceForURL(url);
-        if (resource) {
-            return resource;
-        }
-    }
-    return null;
+    return SDK.ResourceTreeModel.ResourceTreeModel.resourceForURL(url);
 }
 export function displayNameForURL(url) {
     if (!url) {
         return '';
     }
-    const resource = resourceForURL(url);
-    if (resource) {
-        return resource.displayName;
-    }
     const uiSourceCode = Workspace.Workspace.WorkspaceImpl.instance().uiSourceCodeForURL(url);
     if (uiSourceCode) {
         return uiSourceCode.displayName();
+    }
+    const resource = resourceForURL(url);
+    if (resource) {
+        return resource.displayName;
     }
     const inspectedURL = SDK.TargetManager.TargetManager.instance().inspectedURL();
     if (!inspectedURL) {
@@ -67,7 +61,7 @@ export function displayNameForURL(url) {
     const index = inspectedURL.indexOf(lastPathComponent);
     if (index !== -1 && index + lastPathComponent.length === inspectedURL.length) {
         const baseURL = inspectedURL.substring(0, index);
-        if (url.startsWith(baseURL)) {
+        if (url.startsWith(baseURL) && url.length > index) {
             return url.substring(index);
         }
     }

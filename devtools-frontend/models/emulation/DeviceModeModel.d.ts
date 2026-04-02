@@ -1,7 +1,7 @@
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
-import * as UI from '../../ui/legacy/legacy.js';
+import * as Geometry from '../geometry/geometry.js';
 import { type EmulatedDevice, type Mode } from './EmulatedDevices.js';
 export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes> implements SDK.TargetManager.SDKModelObserver<SDK.EmulationModel.EmulationModel> {
     #private;
@@ -9,6 +9,16 @@ export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<
     static instance(opts?: {
         forceNew: boolean;
     }): DeviceModeModel;
+    /**
+     * This wraps `instance()` in a try/catch because in some DevTools entry points
+     * (such as worker_app.ts) the Emulation panel is not included and as such
+     * the below code fails; it tries to instantiate the model which requires
+     * reading the value of a setting which has not been registered.
+     * See crbug.com/361515458 for an example bug that this resolves.
+     */
+    static tryInstance(opts?: {
+        forceNew: boolean;
+    }): DeviceModeModel | null;
     static widthValidator(value: string): {
         valid: boolean;
         errorMessage: (string | undefined);
@@ -22,7 +32,7 @@ export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<
         errorMessage: (string | undefined);
     };
     get scaleSettingInternal(): Common.Settings.Setting<number>;
-    setAvailableSize(availableSize: UI.Geometry.Size, preferredSize: UI.Geometry.Size): void;
+    setAvailableSize(availableSize: Geometry.Size, preferredSize: Geometry.Size): void;
     emulate(type: Type, device: EmulatedDevice | null, mode: Mode | null, scale?: number): void;
     setWidth(width: number): void;
     setWidthAndScaleToFit(width: number): void;
@@ -39,11 +49,11 @@ export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<
     visiblePageRect(): Rect;
     scale(): number;
     fitScale(): number;
-    appliedDeviceSize(): UI.Geometry.Size;
+    appliedDeviceSize(): Geometry.Size;
     appliedDeviceScaleFactor(): number;
     appliedUserAgentType(): UA;
     isFullHeight(): boolean;
-    private isMobile;
+    isMobile(): boolean;
     enabledSetting(): Common.Settings.Setting<boolean>;
     scaleSetting(): Common.Settings.Setting<number>;
     uaSetting(): Common.Settings.Setting<UA>;
@@ -55,6 +65,9 @@ export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<
     modelRemoved(emulationModel: SDK.EmulationModel.EmulationModel): void;
     inspectedURL(): string | null;
     private onFrameChange;
+    private onScreenOrientationLockChanged;
+    private applyOrientationLock;
+    isScreenOrientationLocked(): boolean;
     private scaleSettingChanged;
     private widthSettingChanged;
     private heightSettingChanged;
@@ -72,8 +85,6 @@ export declare class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper<
     private applyUserAgent;
     private applyDeviceMetrics;
     exitHingeMode(): void;
-    webPlatformExperimentalFeaturesEnabled(): boolean;
-    shouldReportDisplayFeature(): boolean;
     captureScreenshot(fullSize: boolean, clip?: Protocol.Page.Viewport): Promise<string | null>;
     private applyTouch;
     private showHingeIfApplicable;
@@ -100,21 +111,21 @@ export declare class Rect {
     rebaseTo(origin: Rect): Rect;
 }
 export declare const enum Events {
-    Updated = "Updated"
+    UPDATED = "Updated"
 }
-export type EventTypes = {
-    [Events.Updated]: void;
-};
+export interface EventTypes {
+    [Events.UPDATED]: void;
+}
 export declare enum Type {
     None = "None",
     Responsive = "Responsive",
     Device = "Device"
 }
-export declare enum UA {
-    Mobile = "Mobile",
-    MobileNoTouch = "Mobile (no touch)",
-    Desktop = "Desktop",
-    DesktopTouch = "Desktop (touch)"
+export declare const enum UA {
+    MOBILE = "Mobile",
+    MOBILE_NO_TOUCH = "Mobile (no touch)",
+    DESKTOP = "Desktop",
+    DESKTOP_TOUCH = "Desktop (touch)"
 }
 export declare const MinDeviceSize = 50;
 export declare const MaxDeviceSize = 9999;

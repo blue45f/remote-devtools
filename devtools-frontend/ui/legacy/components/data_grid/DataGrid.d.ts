@@ -1,23 +1,21 @@
 import * as Common from '../../../../core/common/common.js';
 import * as UI from '../../legacy.js';
+import type { DataGridInternalToken } from './DataGridElement.js';
 export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<EventTypes<T>> {
+    #private;
     element: HTMLDivElement;
     displayName: string;
     private editCallback;
-    private readonly deleteCallback;
-    private readonly refreshCallback;
+    deleteCallback: ((arg0: any) => void) | undefined;
+    refreshCallback: (() => void) | undefined;
     private dataTableHeaders;
     scrollContainerInternal: Element;
-    private dataContainerInternal;
     private readonly dataTable;
     protected inline: boolean;
     private columnsArray;
-    columns: {
-        [x: string]: ColumnDescriptor;
-    };
+    columns: Record<string, ColumnDescriptor>;
     visibleColumnsArray: ColumnDescriptor[];
     cellClass: string | null;
-    private dataTableHeadInternal;
     private readonly headerRow;
     private readonly dataTableColumnGroup;
     dataTableBody: Element;
@@ -36,13 +34,13 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     elementToDataGridNode: WeakMap<Node, DataGridNode<T>>;
     disclosureColumnId?: string;
     private sortColumnCell?;
-    private rootNodeInternal?;
     private editingNode?;
     private columnWeightsSetting?;
-    creationNode?: CreationDataGridNode<any>;
+    creationNode?: DataGridNode<any>;
     private currentResizer?;
     private dataGridWidget?;
     constructor(dataGridParameters: Parameters);
+    setEditCallback(editCallback: ((node: any, columnId: string, valueBeforeEditing: any, newText: any, moveDirection?: string) => void) | undefined, _internalToken: DataGridInternalToken): void;
     private firstSelectableNode;
     private lastSelectableNode;
     setElementContent(element: Element, value: string): void;
@@ -52,17 +50,17 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     setStriped(isStriped: boolean): void;
     setFocusable(focusable: boolean): void;
     setHasSelection(hasSelected: boolean): void;
-    updateGridAccessibleName(text?: string): void;
+    announceSelectedGridNode(): void;
+    protected getNumberOfRows(): number;
     updateGridAccessibleNameOnFocus(): void;
-    private innerAddColumn;
     addColumn(column: ColumnDescriptor, position?: number): void;
-    private innerRemoveColumn;
     removeColumn(columnId: string): void;
     setCellClass(cellClass: string): void;
     private refreshHeader;
     protected setVerticalPadding(top: number, bottom: number, isConstructorTime?: boolean): void;
     protected setRootNode(rootNode: DataGridNode<T>): void;
     rootNode(): DataGridNode<T>;
+    isColumnEditable(columnId: string): boolean;
     private ondblclick;
     private startEditingColumnOfDataGridNode;
     startEditingNextEditableColumnOfDataGridNode(node: DataGridNode<T>, columnIdentifier: string, inclusive?: boolean): void;
@@ -78,6 +76,8 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     private autoSizeWidths;
     /**
      * The range of |minPercent| and |maxPercent| is [0, 100].
+     *
+     * FYI: Only used in test: chromium/src/third_party/blink/web_tests/http/tests/devtools/components/datagrid.js
      */
     autoSizeColumns(minPercent: number, maxPercent?: number, maxDescentLevel?: number): void;
     private enumerateChildren;
@@ -92,7 +92,7 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     willHide(): void;
     private getPreferredWidth;
     private applyColumnWeights;
-    setColumnsVisiblity(columnsVisibility: Set<string>): void;
+    setColumnsVisibility(columnsVisibility: Set<string>): void;
     get scrollContainer(): HTMLElement;
     private positionResizers;
     addCreationNode(hasChildren?: boolean): void;
@@ -100,7 +100,21 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     updateSelectionBeforeRemoval(root: DataGridNode<T> | null, _onlyAffectsSubtree: boolean): void;
     dataGridNodeFromNode(target: Node): DataGridNode<T> | null;
     columnIdFromNode(target: Node): string | null;
+    /**
+     * Mark the data-grid as inert, meaning that it will not capture any user interactions.
+     * Useful in some panels where the empty state is actually an absolutely
+     * positioned div put over the panel, and in that case we need to ensure the
+     * hidden, empty data grid, does not capture any user interaction - in particular if they tab through the UI.
+     */
+    setInert(isInert: boolean): void;
     private clickInHeaderCell;
+    private keydownHeaderCell;
+    /**
+     * Sorts by column header cell.
+     * Additionally applies the aria-sort label to a column's th.
+     * Guidance on values of attribute taken from
+     * https://www.w3.org/TR/wai-aria-practices/examples/grid/dataGrids.html.
+     */
     private sortByColumnHeaderCell;
     markColumnAsSortedBy(columnId: string, sortOrder: Order): void;
     headerTableHeader(columnId: string): Element;
@@ -115,65 +129,63 @@ export declare class DataGridImpl<T> extends Common.ObjectWrapper.ObjectWrapper<
     private resizerDragging;
     private setPreferredWidth;
     columnOffset(columnId: string): number;
-    asWidget(): DataGridWidget<T>;
+    asWidget(element?: HTMLElement): DataGridWidget<T>;
     topFillerRowElement(): HTMLElement;
     protected headerHeightInScroller(): number;
     headerHeight(): number;
     revealNode(element: HTMLElement): void;
 }
+/** Keep in sync with .data-grid col.corner style rule. **/
 export declare const CornerWidth = 14;
-export declare enum Events {
-    SelectedNode = "SelectedNode",
-    DeselectedNode = "DeselectedNode",
-    OpenedNode = "OpenedNode",
-    SortingChanged = "SortingChanged",
-    PaddingChanged = "PaddingChanged"
+export declare const enum Events {
+    SELECTED_NODE = "SelectedNode",
+    DESELECTED_NODE = "DeselectedNode",
+    OPENED_NODE = "OpenedNode",
+    SORTING_CHANGED = "SortingChanged",
+    PADDING_CHANGED = "PaddingChanged",
+    EXPANDED_NODE = "ExpandedNode",
+    COLLAPSED_NODE = "CollapsedNode"
 }
-export type EventTypes<T> = {
-    [Events.SelectedNode]: DataGridNode<T>;
-    [Events.DeselectedNode]: void;
-    [Events.OpenedNode]: DataGridNode<T>;
-    [Events.SortingChanged]: void;
-    [Events.PaddingChanged]: void;
-};
+export interface EventTypes<T> {
+    [Events.SELECTED_NODE]: DataGridNode<T>;
+    [Events.DESELECTED_NODE]: void;
+    [Events.OPENED_NODE]: DataGridNode<T>;
+    [Events.SORTING_CHANGED]: void;
+    [Events.PADDING_CHANGED]: void;
+    [Events.EXPANDED_NODE]: DataGridNode<T>;
+    [Events.COLLAPSED_NODE]: DataGridNode<T>;
+}
 export declare enum Order {
     Ascending = "sort-ascending",
     Descending = "sort-descending"
 }
-export declare enum Align {
-    Center = "center",
-    Right = "right"
+export declare const enum Align {
+    CENTER = "center",
+    RIGHT = "right"
 }
-export declare enum DataType {
-    String = "String",
-    Boolean = "Boolean"
+export declare const enum DataType {
+    STRING = "String",
+    BOOLEAN = "Boolean"
 }
-export declare const ColumnResizePadding = 24;
+export declare const ColumnResizePadding = 30;
 export declare const CenterResizerOverBorderAdjustment = 3;
-export declare enum ResizeMethod {
-    Nearest = "nearest",
-    First = "first",
-    Last = "last"
+export declare const enum ResizeMethod {
+    NEAREST = "nearest",
+    FIRST = "first",
+    LAST = "last"
 }
-export type DataGridData = {
-    [key: string]: any;
-};
+export type DataGridData = Record<string, any>;
 export declare class DataGridNode<T> {
     #private;
-    elementInternal: Element | null;
+    elementInternal: HTMLElement | null;
     expandedInternal: boolean;
-    private selectedInternal;
     private dirty;
     private inactive;
-    key: string;
-    private depthInternal;
+    private highlighted;
     revealedInternal: boolean | undefined;
     protected attachedInternal: boolean;
     private savedPosition;
-    private shouldRefreshChildrenInternal;
-    private dataInternal;
-    private hasChildrenInternal;
-    children: DataGridNode<T>[];
+    children: Array<DataGridNode<T>>;
     dataGrid: DataGridImpl<T> | null;
     parent: DataGridNode<T> | null;
     previousSibling: DataGridNode<T> | null;
@@ -185,8 +197,8 @@ export declare class DataGridNode<T> {
     isCreationNode: boolean;
     constructor(data?: DataGridData | null, hasChildren?: boolean);
     element(): Element;
-    protected createElement(): Element;
-    existingElement(): Element | null;
+    protected createElement(): HTMLElement;
+    existingElement(): HTMLElement | null;
     protected resetElement(): void;
     protected createCells(element: Element): void;
     get data(): DataGridData;
@@ -195,8 +207,8 @@ export declare class DataGridNode<T> {
     set revealed(x: boolean);
     isDirty(): boolean;
     setDirty(dirty: boolean): void;
-    isInactive(): boolean;
     setInactive(inactive: boolean): void;
+    setHighlighted(highlighted: boolean): void;
     hasChildren(): boolean;
     setHasChildren(x: boolean): void;
     get depth(): number;
@@ -241,14 +253,11 @@ export declare class DataGridNode<T> {
 }
 export declare class CreationDataGridNode<T> extends DataGridNode<T> {
     isCreationNode: boolean;
-    constructor(data?: {
-        [x: string]: any;
-    } | null, hasChildren?: boolean);
-    makeNormal(): void;
+    constructor(data?: Record<string, any> | null, hasChildren?: boolean);
 }
 export declare class DataGridWidget<T> extends UI.Widget.VBox {
-    private readonly dataGrid;
-    constructor(dataGrid: DataGridImpl<T>);
+    readonly dataGrid: DataGridImpl<T>;
+    constructor(dataGrid: DataGridImpl<T>, element?: HTMLElement);
     wasShown(): void;
     willHide(): void;
     onResize(): void;
@@ -257,7 +266,6 @@ export declare class DataGridWidget<T> extends UI.Widget.VBox {
 export interface Parameters {
     displayName: string;
     columns: ColumnDescriptor[];
-    editCallback?: ((arg0: any, arg1: string, arg2: any, arg3: any) => void);
     deleteCallback?: ((arg0: any) => void);
     refreshCallback?: (() => void);
 }

@@ -1,8 +1,10 @@
+import '../../../ui/kit/kit.js';
+import '../../../ui/legacy/legacy.js';
 import { type IconInfo } from './CSSPropertyIconResolver.js';
 declare global {
     interface HTMLElementEventMap {
-        'propertyselected': PropertySelectedEvent;
-        'propertydeselected': PropertyDeselectedEvent;
+        propertyselected: PropertySelectedEvent;
+        propertydeselected: PropertyDeselectedEvent;
     }
 }
 interface FlexEditorData {
@@ -32,13 +34,12 @@ export declare class PropertyDeselectedEvent extends Event {
 export declare class StylePropertyEditor extends HTMLElement {
     #private;
     protected readonly editableProperties: EditableProperty[];
-    constructor();
-    connectedCallback(): void;
     getEditableProperties(): EditableProperty[];
     set data(data: FlexEditorData);
     protected findIcon(_query: string, _computedProperties: Map<string, string>): IconInfo | null;
 }
 export declare class FlexboxEditor extends StylePropertyEditor {
+    readonly jslogContext = "cssFlexboxEditor";
     protected readonly editableProperties: EditableProperty[];
     protected findIcon(query: string, computedProperties: Map<string, string>): IconInfo | null;
 }
@@ -48,6 +49,7 @@ declare global {
     }
 }
 export declare class GridEditor extends StylePropertyEditor {
+    readonly jslogContext = "cssGridEditor";
     protected readonly editableProperties: EditableProperty[];
     protected findIcon(query: string, computedProperties: Map<string, string>): IconInfo | null;
 }
@@ -56,11 +58,25 @@ declare global {
         'devtools-grid-editor': GridEditor;
     }
 }
+export declare class GridLanesEditor extends StylePropertyEditor {
+    readonly jslogContext = "cssGridLanesEditor";
+    protected readonly editableProperties: EditableProperty[];
+    protected findIcon(query: string, computedProperties: Map<string, string>): IconInfo | null;
+}
+declare global {
+    interface HTMLElementTagNameMap {
+        'devtools-grid-lanes-editor': GridLanesEditor;
+    }
+}
 export declare const FlexboxEditableProperties: {
     propertyName: string;
     propertyValues: string[];
 }[];
 export declare const GridEditableProperties: {
+    propertyName: string;
+    propertyValues: string[];
+}[];
+export declare const GridLanesEditableProperties: {
     propertyName: string;
     propertyValues: string[];
 }[];

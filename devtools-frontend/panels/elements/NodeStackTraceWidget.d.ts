@@ -1,14 +1,15 @@
+import type * as StackTrace from '../../models/stack_trace/stack_trace.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export declare class NodeStackTraceWidget extends UI.ThrottledWidget.ThrottledWidget {
-    private readonly noStackTraceElement;
-    private readonly creationStackTraceElement;
-    private readonly linkifier;
-    constructor();
-    static instance(opts?: {
-        forceNew: boolean | null;
-    } | undefined): NodeStackTraceWidget;
+interface ViewInput {
+    stackTrace?: StackTrace.StackTrace.StackTrace;
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class NodeStackTraceWidget extends UI.Widget.VBox {
+    #private;
+    constructor(view?: View);
     wasShown(): void;
     willHide(): void;
-    doUpdate(): Promise<void>;
+    performUpdate(): Promise<void>;
 }
-export declare const MaxLengthForLinks = 40;
+export {};

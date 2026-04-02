@@ -1,59 +1,70 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
 import * as Host from '../host/host.js';
 import * as i18n from '../i18n/i18n.js';
-import { FrameManager } from './FrameManager.js';
+import * as Root from '../root/root.js';
 import { IOModel } from './IOModel.js';
-import { MultitargetNetworkManager } from './NetworkManager.js';
-import { NetworkManager } from './NetworkManager.js';
+import { MultitargetNetworkManager, NetworkManager } from './NetworkManager.js';
 import { Events as ResourceTreeModelEvents, ResourceTreeModel, } from './ResourceTreeModel.js';
 import { TargetManager } from './TargetManager.js';
 const UIStrings = {
     /**
-     *@description Error message for canceled source map loads
+     * @description Error message for canceled source map loads
      */
     loadCanceledDueToReloadOf: 'Load canceled due to reload of inspected page',
 };
 const str_ = i18n.i18n.registerUIStrings('core/sdk/PageResourceLoader.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
-let pageResourceLoader = null;
+function isExtensionInitiator(initiator) {
+    return 'extensionId' in initiator;
+}
+/** Used for revealing a resource. **/
+export class ResourceKey {
+    key;
+    constructor(key) {
+        this.key = key;
+    }
+}
 /**
  * The page resource loader is a bottleneck for all DevTools-initiated resource loads. For each such load, it keeps a
  * `PageResource` object around that holds meta information. This can be as the basis for reporting to the user which
  * resources were loaded, and whether there was a load error.
  */
 export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
-    #currentlyLoading;
+    #targetManager;
+    #settings;
+    #userAgentProvider;
+    #currentlyLoading = 0;
+    #currentlyLoadingPerTarget = new Map();
     #maxConcurrentLoads;
-    #pageResources;
-    #queuedLoads;
+    #pageResources = new Map();
+    #queuedLoads = [];
     #loadOverride;
-    constructor(loadOverride, maxConcurrentLoads) {
+    constructor(targetManager, settings, userAgentProvider, loadOverride, maxConcurrentLoads = 500) {
         super();
-        this.#currentlyLoading = 0;
+        this.#targetManager = targetManager;
+        this.#settings = settings;
+        this.#userAgentProvider = userAgentProvider;
         this.#maxConcurrentLoads = maxConcurrentLoads;
-        this.#pageResources = new Map();
-        this.#queuedLoads = [];
-        TargetManager.instance().addModelListener(ResourceTreeModel, ResourceTreeModelEvents.PrimaryPageChanged, this.onPrimaryPageChanged, this);
+        this.#targetManager.addModelListener(ResourceTreeModel, ResourceTreeModelEvents.PrimaryPageChanged, this.onPrimaryPageChanged, this);
         this.#loadOverride = loadOverride;
     }
-    static instance({ forceNew, loadOverride, maxConcurrentLoads } = {
+    static instance({ forceNew, targetManager, settings, userAgentProvider, loadOverride, maxConcurrentLoads } = {
         forceNew: false,
         loadOverride: null,
-        maxConcurrentLoads: 500,
     }) {
-        if (!pageResourceLoader || forceNew) {
-            pageResourceLoader = new PageResourceLoader(loadOverride, maxConcurrentLoads);
+        if (forceNew) {
+            Root.DevToolsContext.globalInstance().set(PageResourceLoader, new PageResourceLoader(targetManager ?? TargetManager.instance(), settings ?? Common.Settings.Settings.instance(), userAgentProvider ?? MultitargetNetworkManager.instance(), loadOverride, maxConcurrentLoads));
         }
-        return pageResourceLoader;
+        return Root.DevToolsContext.globalInstance().get(PageResourceLoader);
     }
     static removeInstance() {
-        pageResourceLoader = null;
+        Root.DevToolsContext.globalInstance().delete(PageResourceLoader);
     }
     onPrimaryPageChanged(event) {
-        const mainFrame = event.data.frame;
+        const { frame: mainFrame, type } = event.data;
         if (!mainFrame.isOutermostFrame()) {
             return;
         }
@@ -61,11 +72,25 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
             reject(new Error(i18nString(UIStrings.loadCanceledDueToReloadOf)));
         }
         this.#queuedLoads = [];
-        this.#pageResources.clear();
-        this.dispatchEventToListeners(Events.Update);
+        const mainFrameTarget = mainFrame.resourceTreeModel().target();
+        const keptResources = new Map();
+        // If the navigation is a prerender-activation, the pageResources for the destination page have
+        // already been preloaded. In such cases, we therefore don't just discard all pageResources, but
+        // instead make sure to keep the pageResources for the prerendered target.
+        for (const [key, pageResource] of this.#pageResources.entries()) {
+            if ((type === "Activation" /* PrimaryPageChangeType.ACTIVATION */) && mainFrameTarget === pageResource.initiator.target) {
+                keptResources.set(key, pageResource);
+            }
+        }
+        this.#pageResources = keptResources;
+        this.dispatchEventToListeners("Update" /* Events.UPDATE */);
     }
     getResourcesLoaded() {
         return this.#pageResources;
+    }
+    getScopedResourcesLoaded() {
+        return new Map([...this.#pageResources].filter(([_, pageResource]) => this.#targetManager.isInScope(pageResource.initiator.target) ||
+            isExtensionInitiator(pageResource.initiator)));
     }
     /**
      * Loading is the number of currently loading and queued items. Resources is the total number of resources,
@@ -75,24 +100,46 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
     getNumberOfResources() {
         return { loading: this.#currentlyLoading, queued: this.#queuedLoads.length, resources: this.#pageResources.size };
     }
-    async acquireLoadSlot() {
+    getScopedNumberOfResources() {
+        let loadingCount = 0;
+        for (const [targetId, count] of this.#currentlyLoadingPerTarget) {
+            const target = this.#targetManager.targetById(targetId);
+            if (this.#targetManager.isInScope(target)) {
+                loadingCount += count;
+            }
+        }
+        return { loading: loadingCount, resources: this.getScopedResourcesLoaded().size };
+    }
+    async acquireLoadSlot(target) {
         this.#currentlyLoading++;
+        if (target) {
+            const currentCount = this.#currentlyLoadingPerTarget.get(target.id()) || 0;
+            this.#currentlyLoadingPerTarget.set(target.id(), currentCount + 1);
+        }
         if (this.#currentlyLoading > this.#maxConcurrentLoads) {
-            const entry = { resolve: () => { }, reject: () => { } };
-            const waitForCapacity = new Promise((resolve, reject) => {
-                entry.resolve = resolve;
-                entry.reject = reject;
-            });
-            this.#queuedLoads.push(entry);
+            const { promise: waitForCapacity, resolve, reject, } = Promise.withResolvers();
+            this.#queuedLoads.push({ resolve, reject });
             await waitForCapacity;
         }
     }
-    releaseLoadSlot() {
+    releaseLoadSlot(target) {
         this.#currentlyLoading--;
+        if (target) {
+            const currentCount = this.#currentlyLoadingPerTarget.get(target.id());
+            if (currentCount) {
+                this.#currentlyLoadingPerTarget.set(target.id(), currentCount - 1);
+            }
+        }
         const entry = this.#queuedLoads.shift();
         if (entry) {
             entry.resolve();
         }
+    }
+    static makeExtensionKey(url, initiator) {
+        if (isExtensionInitiator(initiator) && initiator.extensionId) {
+            return `${url}-${initiator.extensionId}`;
+        }
+        throw new Error('Invalid initiator');
     }
     static makeKey(url, initiator) {
         if (initiator.frameId) {
@@ -103,14 +150,29 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
         }
         throw new Error('Invalid initiator');
     }
-    async loadResource(url, initiator) {
-        const key = PageResourceLoader.makeKey(url, initiator);
-        const pageResource = { success: null, size: null, errorMessage: undefined, url, initiator };
+    resourceLoadedThroughExtension(pageResource) {
+        const key = PageResourceLoader.makeExtensionKey(pageResource.url, pageResource.initiator);
         this.#pageResources.set(key, pageResource);
-        this.dispatchEventToListeners(Events.Update);
+        this.dispatchEventToListeners("Update" /* Events.UPDATE */);
+    }
+    async loadResource(url, initiator, isBinary = false) {
+        if (isExtensionInitiator(initiator)) {
+            throw new Error('Invalid initiator');
+        }
+        const key = PageResourceLoader.makeKey(url, initiator);
+        const pageResource = {
+            success: null,
+            size: null,
+            duration: null,
+            url,
+            initiator,
+        };
+        this.#pageResources.set(key, pageResource);
+        this.dispatchEventToListeners("Update" /* Events.UPDATE */);
+        const startTime = performance.now();
         try {
-            await this.acquireLoadSlot();
-            const resultPromise = this.dispatchLoad(url, initiator);
+            await this.acquireLoadSlot(initiator.target);
+            const resultPromise = this.dispatchLoad(url, initiator, isBinary);
             const result = await resultPromise;
             pageResource.errorMessage = result.errorDescription.message;
             pageResource.success = result.success;
@@ -130,50 +192,76 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
             throw e;
         }
         finally {
-            this.releaseLoadSlot();
-            this.dispatchEventToListeners(Events.Update);
+            pageResource.duration = performance.now() - startTime;
+            this.releaseLoadSlot(initiator.target);
+            this.dispatchEventToListeners("Update" /* Events.UPDATE */);
         }
     }
-    async dispatchLoad(url, initiator) {
-        let failureReason = null;
+    async dispatchLoad(url, initiator, isBinary) {
+        if (isExtensionInitiator(initiator)) {
+            throw new Error('Invalid initiator');
+        }
+        const failureReason = null;
         if (this.#loadOverride) {
-            return this.#loadOverride(url);
+            return await this.#loadOverride(url);
         }
         const parsedURL = new Common.ParsedURL.ParsedURL(url);
-        const eligibleForLoadFromTarget = getLoadThroughTargetSetting().get() && parsedURL && parsedURL.scheme !== 'file' &&
-            parsedURL.scheme !== 'data' && parsedURL.scheme !== 'devtools';
+        const eligibleForLoadFromTarget = this.getLoadThroughTargetSetting().get() && parsedURL &&
+            parsedURL.scheme !== 'file' && parsedURL.scheme !== 'data' && parsedURL.scheme !== 'devtools' &&
+            initiator.target;
         Host.userMetrics.developerResourceScheme(this.getDeveloperResourceScheme(parsedURL));
         if (eligibleForLoadFromTarget) {
+            let mustEnforceCSP = false;
+            const isHttp = parsedURL.scheme === 'http' || parsedURL.scheme === 'https';
+            if (isHttp && initiator.target) {
+                const networkManager = initiator.target.model(NetworkManager);
+                if (networkManager) {
+                    let status = await networkManager.getSecurityIsolationStatus(initiator.frameId);
+                    if (!status && initiator.frameId) {
+                        status = await networkManager.getSecurityIsolationStatus(null);
+                    }
+                    if (status?.csp) {
+                        for (const csp of status.csp) {
+                            const directives = csp.effectiveDirectives;
+                            if (directives.includes('connect-src') || directives.includes('default-src')) {
+                                mustEnforceCSP = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             try {
-                if (initiator.target) {
-                    Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LoadThroughPageViaTarget);
-                    const result = await this.loadFromTarget(initiator.target, initiator.frameId, url);
-                    return result;
-                }
-                const frame = FrameManager.instance().getFrame(initiator.frameId);
-                if (frame) {
-                    Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LoadThroughPageViaFrame);
-                    const result = await this.loadFromTarget(frame.resourceTreeModel().target(), initiator.frameId, url);
-                    return result;
-                }
+                Host.userMetrics.developerResourceLoaded(0 /* Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_VIA_TARGET */);
+                const result = await this.loadFromTarget(initiator.target, initiator.frameId, url, isBinary);
+                return result;
             }
             catch (e) {
                 if (e instanceof Error) {
-                    Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LoadThroughPageFailure);
-                    failureReason = e.message;
+                    Host.userMetrics.developerResourceLoaded(2 /* Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_FAILURE */);
+                    if (mustEnforceCSP || e.message.includes('CSP violation')) {
+                        return {
+                            success: false,
+                            content: '',
+                            errorDescription: {
+                                statusCode: 0,
+                                message: e.message,
+                            }
+                        };
+                    }
                 }
             }
-            Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LoadThroughPageFallback);
-            console.warn('Fallback triggered', url, initiator);
+            Host.userMetrics.developerResourceLoaded(3 /* Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_FALLBACK */);
         }
         else {
-            const code = getLoadThroughTargetSetting().get() ? Host.UserMetrics.DeveloperResourceLoaded.FallbackPerProtocol :
-                Host.UserMetrics.DeveloperResourceLoaded.FallbackPerOverride;
+            const code = this.getLoadThroughTargetSetting().get() ?
+                6 /* Host.UserMetrics.DeveloperResourceLoaded.FALLBACK_PER_PROTOCOL */ :
+                5 /* Host.UserMetrics.DeveloperResourceLoaded.FALLBACK_PER_OVERRIDE */;
             Host.userMetrics.developerResourceLoaded(code);
         }
-        const result = await MultitargetNetworkManager.instance().loadResource(url);
+        const result = await this.loadFromHostBindings(url);
         if (eligibleForLoadFromTarget && !result.success) {
-            Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.FallbackFailure);
+            Host.userMetrics.developerResourceLoaded(7 /* Host.UserMetrics.DeveloperResourceLoaded.FALLBACK_FAILURE */);
         }
         if (failureReason) {
             // In case we have a success, add a note about why the load through the target failed.
@@ -184,32 +272,34 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
     }
     getDeveloperResourceScheme(parsedURL) {
         if (!parsedURL || parsedURL.scheme === '') {
-            return Host.UserMetrics.DeveloperResourceScheme.SchemeUnknown;
+            return 1 /* Host.UserMetrics.DeveloperResourceScheme.UKNOWN */;
         }
         const isLocalhost = parsedURL.host === 'localhost' || parsedURL.host.endsWith('.localhost');
         switch (parsedURL.scheme) {
             case 'file':
-                return Host.UserMetrics.DeveloperResourceScheme.SchemeFile;
+                return 7 /* Host.UserMetrics.DeveloperResourceScheme.FILE */;
             case 'data':
-                return Host.UserMetrics.DeveloperResourceScheme.SchemeData;
+                return 6 /* Host.UserMetrics.DeveloperResourceScheme.DATA */;
             case 'blob':
-                return Host.UserMetrics.DeveloperResourceScheme.SchemeBlob;
+                return 8 /* Host.UserMetrics.DeveloperResourceScheme.BLOB */;
             case 'http':
-                return isLocalhost ? Host.UserMetrics.DeveloperResourceScheme.SchemeHttpLocalhost :
-                    Host.UserMetrics.DeveloperResourceScheme.SchemeHttp;
+                return isLocalhost ? 4 /* Host.UserMetrics.DeveloperResourceScheme.HTTP_LOCALHOST */ :
+                    2 /* Host.UserMetrics.DeveloperResourceScheme.HTTP */;
             case 'https':
-                return isLocalhost ? Host.UserMetrics.DeveloperResourceScheme.SchemeHttpsLocalhost :
-                    Host.UserMetrics.DeveloperResourceScheme.SchemeHttps;
+                return isLocalhost ? 5 /* Host.UserMetrics.DeveloperResourceScheme.HTTPS_LOCALHOST */ :
+                    3 /* Host.UserMetrics.DeveloperResourceScheme.HTTPS */;
         }
-        return Host.UserMetrics.DeveloperResourceScheme.SchemeOther;
+        return 0 /* Host.UserMetrics.DeveloperResourceScheme.OTHER */;
     }
-    async loadFromTarget(target, frameId, url) {
+    async loadFromTarget(target, frameId, url, isBinary) {
         const networkManager = target.model(NetworkManager);
         const ioModel = target.model(IOModel);
-        const disableCache = Common.Settings.Settings.instance().moduleSetting('cacheDisabled').get();
+        const disableCache = this.#settings.moduleSetting('cache-disabled').get();
         const resource = await networkManager.loadNetworkResource(frameId, url, { disableCache, includeCredentials: true });
         try {
-            const content = resource.stream ? await ioModel.readToString(resource.stream) : '';
+            const content = resource.stream ?
+                (isBinary ? await ioModel.readToBuffer(resource.stream) : await ioModel.readToString(resource.stream)) :
+                '';
             return {
                 success: resource.success,
                 content,
@@ -219,7 +309,6 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
                     netErrorName: resource.netErrorName,
                     message: Host.ResourceLoader.netErrorToMessage(resource.netError, resource.httpStatusCode, resource.netErrorName) ||
                         '',
-                    urlValid: undefined,
                 },
             };
         }
@@ -229,14 +318,22 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper {
             }
         }
     }
+    async loadFromHostBindings(url) {
+        const headers = {};
+        const currentUserAgent = this.#userAgentProvider.currentUserAgent();
+        if (currentUserAgent) {
+            headers['User-Agent'] = currentUserAgent;
+        }
+        if (this.#settings.moduleSetting('cache-disabled').get()) {
+            headers['Cache-Control'] = 'no-cache';
+        }
+        const allowRemoteFilePaths = this.#settings.moduleSetting('network.enable-remote-file-loading').get();
+        return await new Promise(resolve => Host.ResourceLoader.load(url, headers, (success, _responseHeaders, content, errorDescription) => {
+            resolve({ success, content, errorDescription });
+        }, allowRemoteFilePaths));
+    }
+    getLoadThroughTargetSetting() {
+        return this.#settings.createSetting('load-through-target', true);
+    }
 }
-export function getLoadThroughTargetSetting() {
-    return Common.Settings.Settings.instance().createSetting('loadThroughTarget', true);
-}
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["Update"] = "Update";
-})(Events || (Events = {}));
 //# sourceMappingURL=PageResourceLoader.js.map

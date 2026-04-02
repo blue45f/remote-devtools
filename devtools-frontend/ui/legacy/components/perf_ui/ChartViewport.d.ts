@@ -5,17 +5,25 @@ export interface ChartViewportDelegate {
     setSize(width: number, height: number): void;
     update(): void;
 }
+export interface Config {
+    /**
+     * Configures if the Chart should show a vertical line at the position of the
+     * mouse cursor when the user holds the `Shift` key.
+     * The reason this is configurable is because within the Performance Panel
+     * we use our own overlays system for UI like this, so we do not need the
+     * ChartViewport to manage it.
+     */
+    enableCursorElement: boolean;
+}
 export declare class ChartViewport extends UI.Widget.VBox {
+    #private;
     private readonly delegate;
     viewportElement: HTMLElement;
-    private alwaysShowVerticalScrollInternal;
     private rangeSelectionEnabled;
     private vScrollElement;
     private vScrollContent;
     private readonly selectionOverlay;
-    private selectedTimeSpanLabel;
     private cursorElement;
-    private isDraggingInternal;
     private totalHeight;
     private offsetHeight;
     private scrollTop;
@@ -30,26 +38,45 @@ export declare class ChartViewport extends UI.Widget.VBox {
     private targetLeftTime;
     private targetRightTime;
     private selectionOffsetShiftX;
-    private selectionOffsetShiftY;
     private selectionStartX;
-    private lastMouseOffsetX;
+    private lastMouseOffsetX?;
     private minimumBoundary;
     private totalTime;
+    private isUpdateScheduled?;
     private cancelWindowTimesAnimation?;
-    constructor(delegate: ChartViewportDelegate);
+    constructor(delegate: ChartViewportDelegate, config: Config);
     alwaysShowVerticalScroll(): void;
     disableRangeSelection(): void;
     isDragging(): boolean;
     elementsToRestoreScrollPositionsFor(): Element[];
+    verticalScrollBarVisible(): boolean;
     private updateScrollBar;
     onResize(): void;
     reset(): void;
     private updateContentElementSize;
     setContentHeight(totalHeight: number): void;
-    setScrollOffset(offset: number, height?: number): void;
+    /**
+     * @param centered If true, scrolls offset to where it is centered on the chart,
+     * based on current the this.offsetHeight value.
+     */
+    setScrollOffset(offset: number, height?: number, centered?: boolean): void;
     scrollOffset(): number;
     chartHeight(): number;
     setBoundaries(zeroTime: number, totalTime: number): void;
+    /**
+     * The mouse wheel can results in flamechart zoom, scroll and pan actions, depending on the scroll deltas and the selected navigation:
+     *
+     * Classic navigation:
+     * 1. Mouse Wheel --> Zoom
+     * 2. Mouse Wheel + Shift --> Scroll
+     * 3. Trackpad: Mouse Wheel AND horizontal scroll (deltaX > deltaY): --> Pan left/right
+     *
+     * Modern navigation:
+     * 1. Mouse Wheel -> Scroll
+     * 2. Mouse Wheel + Shift -> Pan left/right
+     * 3. Mouse Wheel + Ctrl/Cmd -> Zoom
+     * 4. Trackpad: Mouse Wheel AND horizontal scroll (deltaX > deltaY): --> Zoom
+     */
     private onMouseWheel;
     private startDragging;
     private dragging;
@@ -57,10 +84,14 @@ export declare class ChartViewport extends UI.Widget.VBox {
     private startRangeSelection;
     private endRangeSelection;
     hideRangeSelection(): void;
+    /**
+     * @param startTime the start time of the selection in MilliSeconds
+     * @param endTime the end time of the selection in MilliSeconds
+     * TODO(crbug.com/346312365): update the type definitions in ChartViewport.ts
+     */
     setRangeSelection(startTime: number, endTime: number): void;
-    onClick(event: Event): void;
+    onClick(event: MouseEvent): void;
     private rangeSelectionDragging;
-    private updateRangeSelectionOverlay;
     private onScroll;
     private onMouseOut;
     private updateCursorPosition;
@@ -71,12 +102,13 @@ export declare class ChartViewport extends UI.Widget.VBox {
     private showCursor;
     private onChartKeyDown;
     private onChartKeyUp;
-    private handleZoomPanKeys;
+    private handleZoomPanScrollKeys;
     private handleZoomGesture;
-    private handlePanGesture;
+    private handleHorizontalPanGesture;
     private requestWindowTimes;
     scheduleUpdate(): void;
-    private update;
+    update(): void;
+    willHide(): void;
     setWindowTimes(startTime: number, endTime: number, animate?: boolean): void;
     windowLeftTime(): number;
     windowRightTime(): number;

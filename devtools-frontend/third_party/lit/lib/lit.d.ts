@@ -1,4 +1,3 @@
-/// <reference types="trusted-types" />
 /**
  * @license
  * Copyright 2019 Google LLC
@@ -15,12 +14,12 @@ declare const supportsAdoptingStyleSheets: boolean;
  * object can be used for styling along side CSSResult from the `css`
  * template tag.
  */
-declare type CSSResultOrNative = CSSResult | CSSStyleSheet;
-declare type CSSResultArray = Array<CSSResultOrNative | CSSResultArray>;
+type CSSResultOrNative = CSSResult | CSSStyleSheet;
+type CSSResultArray = Array<CSSResultOrNative | CSSResultArray>;
 /**
  * A single CSSResult, CSSStyleSheet, or an array or nested arrays of those.
  */
-declare type CSSResultGroup = CSSResultOrNative | CSSResultArray;
+type CSSResultGroup = CSSResultOrNative | CSSResultArray;
 /**
  * A container for a string of CSS text, that may be used to create a CSSStyleSheet.
  *
@@ -57,7 +56,7 @@ declare const css: (strings: TemplateStringsArray, ...values: (CSSResultGroup | 
 /**
  * Applies the given styles to a `shadowRoot`. When Shadow DOM is
  * available but `adoptedStyleSheets` is not, styles are appended to the
- * `shadowRoot` to [mimic spec behavior](https://wicg.github.io/construct-stylesheets/#using-constructed-stylesheets).
+ * `shadowRoot` to [mimic the native feature](https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/adoptedStyleSheets).
  * Note, when shimming is used, any styles that are subsequently placed into
  * the shadowRoot should be placed *before* any shimmed adopted styles. This
  * will match spec behavior that gives adopted sheets precedence over styles in
@@ -148,6 +147,11 @@ interface ReactiveController {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
+/**
+ * Use this module if you want to create your own base class extending
+ * {@link ReactiveElement}.
+ * @packageDocumentation
+ */
 
 /**
  * Contains types that are part of the unstable debug API.
@@ -190,7 +194,7 @@ interface ComplexAttributeConverter<Type = unknown, TypeHint = unknown> {
      */
     toAttribute?(value: Type, type?: TypeHint): unknown;
 }
-declare type AttributeConverter<Type = unknown, TypeHint = unknown> = ComplexAttributeConverter<Type> | ((value: string | null, type?: TypeHint) => Type);
+type AttributeConverter<Type = unknown, TypeHint = unknown> = ComplexAttributeConverter<Type> | ((value: string | null, type?: TypeHint) => Type);
 /**
  * Defines options for a property accessor.
  */
@@ -253,6 +257,24 @@ interface PropertyDeclaration<Type = unknown, TypeHint = unknown> {
      * the property changes.
      */
     readonly noAccessor?: boolean;
+    /**
+     * When `true`, uses the initial value of the property as the default value,
+     * which changes how attributes are handled:
+     *  - The initial value does *not* reflect, even if the `reflect` option is `true`.
+     *    Subsequent changes to the property will reflect, even if they are equal to the
+     *     default value.
+     *  - When the attribute is removed, the property is set to the default value
+     *  - The initial value will not trigger an old value in the `changedProperties` map
+     *    argument to update lifecycle methods.
+     *
+     * When set, properties must be initialized, either with a field initializer, or an
+     * assignment in the constructor. Not initializing the property may lead to
+     * improper handling of subsequent property assignments.
+     *
+     * While this behavior is opt-in, most properties that reflect to attributes should
+     * use `useDefault: true` so that their initial values do not reflect.
+     */
+    useDefault?: boolean;
 }
 /**
  * Map of properties to PropertyDeclaration options. For each property an
@@ -262,7 +284,7 @@ interface PropertyDeclaration<Type = unknown, TypeHint = unknown> {
 interface PropertyDeclarations {
     readonly [key: string]: PropertyDeclaration;
 }
-declare type PropertyDeclarationMap = Map<PropertyKey, PropertyDeclaration>;
+type PropertyDeclarationMap = Map<PropertyKey, PropertyDeclaration>;
 /**
  * A Map of property keys to values.
  *
@@ -274,12 +296,12 @@ declare type PropertyDeclarationMap = Map<PropertyKey, PropertyDeclaration>;
  * other lifecycle methods in order to get stronger type-checking on keys
  * and values.
  */
-declare type PropertyValues<T = any> = T extends object ? PropertyValueMap<T> : Map<PropertyKey, unknown>;
+type PropertyValues<T = any> = T extends object ? PropertyValueMap<T> : Map<PropertyKey, unknown>;
 /**
  * Do not use, instead prefer {@linkcode PropertyValues}.
  */
 interface PropertyValueMap<T> extends Map<PropertyKey, unknown> {
-    get<K extends keyof T>(k: K): T[K];
+    get<K extends keyof T>(k: K): T[K] | undefined;
     set<K extends keyof T>(key: K, value: T[K]): this;
     has<K extends keyof T>(k: K): boolean;
     delete<K extends keyof T>(k: K): boolean;
@@ -294,21 +316,22 @@ interface HasChanged {
  */
 declare const notEqual: HasChanged;
 /**
- * The Closure JS Compiler doesn't currently have good support for static
- * property semantics where "this" is dynamic (e.g.
- * https://github.com/google/closure-compiler/issues/3177 and others) so we use
- * this hack to bypass any rewriting by the compiler.
- */
-declare const finalized = "finalized";
-/**
  * A string representing one of the supported dev mode warning categories.
  */
-declare type WarningKind = 'change-in-update' | 'migration';
-declare type Initializer = (element: ReactiveElement) => void;
+type WarningKind = 'change-in-update' | 'migration' | 'async-perform-update';
+type Initializer = (element: ReactiveElement) => void;
+declare global {
+    interface SymbolConstructor {
+        readonly metadata: unique symbol;
+    }
+}
+declare global {
+    var litPropertyMetadata: WeakMap<object, Map<PropertyKey, PropertyDeclaration>>;
+}
 /**
  * Base element class which manages element properties and attributes. When
  * properties change, the `update` method is asynchronously called. This method
- * should be supplied by subclassers to render updates as desired.
+ * should be supplied by subclasses to render updates as desired.
  * @noInheritDoc
  */
 declare abstract class ReactiveElement extends HTMLElement implements ReactiveControllerHost {
@@ -400,12 +423,16 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      */
     private static __attributeToPropertyMap;
     /**
-     * Marks class as having finished creating properties.
+     * Marks class as having been finalized, which includes creating properties
+     * from `static properties`, but does *not* include all properties created
+     * from decorators.
+     * @nocollapse
      */
-    protected static [finalized]: boolean;
+    protected static finalized: true | undefined;
     /**
-     * Memoized list of all element properties, including any superclass properties.
-     * Created lazily on user subclasses when finalizing the class.
+     * Memoized list of all element properties, including any superclass
+     * properties. Created lazily on user subclasses when finalizing the class.
+     *
      * @nocollapse
      * @category properties
      */
@@ -471,17 +498,12 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      */
     static styles?: CSSResultGroup;
     /**
-     * The set of properties defined by this class that caused an accessor to be
-     * added during `createProperty`.
-     * @nocollapse
-     */
-    private static __reactivePropertyKeys?;
-    /**
      * Returns a list of attributes corresponding to the registered properties.
      * @nocollapse
      * @category attributes
      */
     static get observedAttributes(): string[];
+    private __instanceProperties?;
     /**
      * Creates a property accessor on the element prototype if one does not exist
      * and stores a {@linkcode PropertyDeclaration} for the property with the
@@ -551,13 +573,31 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * @category properties
      */
     static getPropertyOptions(name: PropertyKey): PropertyDeclaration<unknown, unknown>;
+    static [Symbol.metadata]: object & Record<PropertyKey, unknown>;
     /**
-     * Creates property accessors for registered properties, sets up element
-     * styling, and ensures any superclasses are also finalized. Returns true if
-     * the element was finalized.
+     * Initializes static own properties of the class used in bookkeeping
+     * for element properties, initializers, etc.
+     *
+     * Can be called multiple times by code that needs to ensure these
+     * properties exist before using them.
+     *
+     * This method ensures the superclass is finalized so that inherited
+     * property metadata can be copied down.
      * @nocollapse
      */
-    protected static finalize(): boolean;
+    private static __prepare;
+    /**
+     * Finishes setting up the class so that it's ready to be registered
+     * as a custom element and instantiated.
+     *
+     * This method is called by the ReactiveElement.observedAttributes getter.
+     * If you override the observedAttributes getter, you must either call
+     * super.observedAttributes to trigger finalization, or call finalize()
+     * yourself.
+     *
+     * @nocollapse
+     */
+    protected static finalize(): void;
     /**
      * Options used when calling `attachShadow`. Set this property to customize
      * the options for the shadowRoot; for example, to create a closed
@@ -589,13 +629,12 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * to an open shadowRoot.
      * @category rendering
      */
-    readonly renderRoot: HTMLElement | ShadowRoot;
+    readonly renderRoot: HTMLElement | DocumentFragment;
     /**
      * Returns the property name for the given attribute `name`.
      * @nocollapse
      */
     private static __attributeNameForProperty;
-    private __instanceProperties?;
     private __updatePromise;
     /**
      * True if there is a pending update as a result of calling `requestUpdate()`.
@@ -610,7 +649,12 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      */
     hasUpdated: boolean;
     /**
-     * Map with keys of properties that should be reflected when updated.
+     * Records property default values when the
+     * `useDefault` option is used.
+     */
+    private __defaultValues?;
+    /**
+     * Properties that should be reflected when updated.
      */
     private __reflectingProperties?;
     /**
@@ -622,6 +666,11 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      */
     private __controllers?;
     constructor();
+    /**
+     * Internal only override point for customizing work done when elements
+     * are constructed.
+     */
+    private __initialize;
     /**
      * Registers a `ReactiveController` to participate in the element's reactive
      * update cycle. The element automatically calls into any registered
@@ -641,13 +690,7 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * Fixes any properties set on the instance before upgrade time.
      * Otherwise these would shadow the accessor and break these properties.
      * The properties are stored in a Map which is played back after the
-     * constructor runs. Note, on very old versions of Safari (<=9) or Chrome
-     * (<=41), properties created for native platform properties like (`id` or
-     * `name`) may not have default values set in the element constructor. On
-     * these browsers native properties appear on instances and therefore their
-     * default value will overwrite any element default (e.g. if the element sets
-     * this.id = 'id' in the constructor, the 'id' will become '' since this is
-     * the native platform default).
+     * constructor runs.
      */
     private __saveInstanceProperties;
     /**
@@ -659,7 +702,7 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * @return Returns a node into which to render.
      * @category rendering
      */
-    protected createRenderRoot(): Element | ShadowRoot;
+    protected createRenderRoot(): HTMLElement | DocumentFragment;
     /**
      * On first connection, creates the element's renderRoot, sets up
      * element styling, and enables updating.
@@ -688,7 +731,7 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * overridden, `super.attributeChangedCallback(name, _old, value)` must be
      * called.
      *
-     * See [using the lifecycle callbacks](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks)
+     * See [responding to attribute changes](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#responding_to_attribute_changes)
      * on MDN for more information about the `attributeChangedCallback`.
      * @category attributes
      */
@@ -706,9 +749,15 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * @param oldValue old value of requesting property
      * @param options property options to use instead of the previously
      *     configured options
+     * @param useNewValue if true, the newValue argument is used instead of
+     *     reading the property value. This is important to use if the reactive
+     *     property is a standard private accessor, as opposed to a plain
+     *     property, since private members can't be dynamically read by name.
+     * @param newValue the new value of the property. This is only used if
+     *     `useNewValue` is true.
      * @category updates
      */
-    requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: PropertyDeclaration): void;
+    requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: PropertyDeclaration, useNewValue?: boolean, newValue?: unknown): void;
     /**
      * Sets up the element to asynchronously update.
      */
@@ -739,16 +788,9 @@ declare abstract class ReactiveElement extends HTMLElement implements ReactiveCo
      * generally not be needed, but it can be done in rare cases when you need to
      * update synchronously.
      *
-     * Note: To ensure `performUpdate()` synchronously completes a pending update,
-     * it should not be overridden. In LitElement 2.x it was suggested to override
-     * `performUpdate()` to also customizing update scheduling. Instead, you should now
-     * override `scheduleUpdate()`. For backwards compatibility with LitElement 2.x,
-     * scheduling updates via `performUpdate()` continues to work, but will make
-     * also calling `performUpdate()` to synchronously process updates difficult.
-     *
      * @category updates
      */
-    protected performUpdate(): void | Promise<unknown>;
+    protected performUpdate(): void;
     /**
      * Invoked before `update()` to compute values needed during the update.
      *
@@ -876,7 +918,7 @@ declare const PartType: {
     readonly EVENT: 5;
     readonly ELEMENT: 6;
 };
-declare type PartType = typeof PartType[keyof typeof PartType];
+type PartType = (typeof PartType)[keyof typeof PartType];
 interface ChildPartInfo {
     readonly type: typeof PartType.CHILD;
 }
@@ -895,7 +937,7 @@ interface ElementPartInfo {
  * This is useful for checking that a directive is attached to a valid part,
  * such as with directive that can only be used on attribute bindings.
  */
-declare type PartInfo = ChildPartInfo | AttributePartInfo | ElementPartInfo;
+type PartInfo = ChildPartInfo | AttributePartInfo | ElementPartInfo;
 /**
  * Base class for creating custom directives. Users should extend this class,
  * implement `render` and/or `update`, and then pass their subclass to
@@ -906,6 +948,11 @@ declare abstract class Directive implements Disconnectable {
     get _$isConnected(): boolean;
     abstract render(...props: Array<unknown>): unknown;
     update(_part: Part, props: Array<unknown>): unknown;
+}
+
+declare class TrustedHTML {
+    private constructor(); // To prevent instantiting with 'new'.
+    private brand: true; // To prevent structural typing.
 }
 
 /**
@@ -943,7 +990,7 @@ declare namespace LitUnstable {
             kind: 'begin render';
             id: number;
             value: unknown;
-            container: HTMLElement | DocumentFragment;
+            container: RenderRootNode;
             options: RenderOptions | undefined;
             part: ChildPart | undefined;
         }
@@ -951,7 +998,7 @@ declare namespace LitUnstable {
             kind: 'end render';
             id: number;
             value: unknown;
-            container: HTMLElement | DocumentFragment;
+            container: RenderRootNode;
             options: RenderOptions | undefined;
             part: ChildPart;
         }
@@ -1070,7 +1117,7 @@ declare namespace LitUnstable {
  *     be to a property or a node.
  * @return A function that will sanitize this class of writes.
  */
-declare type SanitizerFactory = (node: Node, name: string, type: 'property' | 'attribute') => ValueSanitizer;
+type SanitizerFactory = (node: Node, name: string, type: 'property' | 'attribute') => ValueSanitizer;
 /**
  * A function which can sanitize values that will be written to a specific kind
  * of DOM sink.
@@ -1082,15 +1129,47 @@ declare type SanitizerFactory = (node: Node, name: string, type: 'property' | 'a
  * @return The value to write to the DOM. Usually the same as the input value,
  *     unless sanitization is needed.
  */
-declare type ValueSanitizer = (value: unknown) => unknown;
+type ValueSanitizer = (value: unknown) => unknown;
 /** TemplateResult types */
 declare const HTML_RESULT = 1;
 declare const SVG_RESULT = 2;
-declare type ResultType = typeof HTML_RESULT | typeof SVG_RESULT;
+declare const MATHML_RESULT = 3;
+type ResultType = typeof HTML_RESULT | typeof SVG_RESULT | typeof MATHML_RESULT;
 declare const ATTRIBUTE_PART = 1;
 declare const CHILD_PART = 2;
+declare const PROPERTY_PART = 3;
+declare const BOOLEAN_ATTRIBUTE_PART = 4;
+declare const EVENT_PART = 5;
 declare const ELEMENT_PART = 6;
 declare const COMMENT_PART = 7;
+/**
+ * The return type of the template tag functions, {@linkcode html} and
+ * {@linkcode svg} when it hasn't been compiled by @lit-labs/compiler.
+ *
+ * A `TemplateResult` object holds all the information about a template
+ * expression required to render it: the template strings, expression values,
+ * and type of template (html or svg).
+ *
+ * `TemplateResult` objects do not create any DOM on their own. To create or
+ * update DOM you need to render the `TemplateResult`. See
+ * [Rendering](https://lit.dev/docs/components/rendering) for more information.
+ *
+ */
+type UncompiledTemplateResult<T extends ResultType = ResultType> = {
+    ['_$litType$']: T;
+    strings: TemplateStringsArray;
+    values: unknown[];
+};
+/**
+ * This is a template result that may be either uncompiled or compiled.
+ *
+ * In the future, TemplateResult will be this type. If you want to explicitly
+ * note that a template result is potentially compiled, you can reference this
+ * type and it will continue to behave the same through the next major version
+ * of Lit. This can be useful for code that wants to prepare for the next
+ * major version of Lit.
+ */
+type MaybeCompiledTemplateResult<T extends ResultType = ResultType> = UncompiledTemplateResult<T> | CompiledTemplateResult;
 /**
  * The return type of the template tag functions, {@linkcode html} and
  * {@linkcode svg}.
@@ -1103,21 +1182,27 @@ declare const COMMENT_PART = 7;
  * update DOM you need to render the `TemplateResult`. See
  * [Rendering](https://lit.dev/docs/components/rendering) for more information.
  *
+ * In Lit 4, this type will be an alias of
+ * MaybeCompiledTemplateResult, so that code will get type errors if it assumes
+ * that Lit templates are not compiled. When deliberately working with only
+ * one, use either {@linkcode CompiledTemplateResult} or
+ * {@linkcode UncompiledTemplateResult} explicitly.
  */
-declare type TemplateResult<T extends ResultType = ResultType> = {
-    ['_$litType$']: T;
-    strings: TemplateStringsArray;
-    values: unknown[];
-};
-declare type HTMLTemplateResult = TemplateResult<typeof HTML_RESULT>;
-declare type SVGTemplateResult = TemplateResult<typeof SVG_RESULT>;
+type TemplateResult<T extends ResultType = ResultType> = UncompiledTemplateResult<T>;
+type HTMLTemplateResult = TemplateResult<typeof HTML_RESULT>;
+type SVGTemplateResult = TemplateResult<typeof SVG_RESULT>;
+type MathMLTemplateResult = TemplateResult<typeof MATHML_RESULT>;
+/**
+ * A TemplateResult that has been compiled by @lit-labs/compiler, skipping the
+ * prepare step.
+ */
 interface CompiledTemplateResult {
     ['_$litType$']: CompiledTemplate;
     values: unknown[];
 }
 interface CompiledTemplate extends Omit<Template, 'el'> {
     el?: HTMLTemplateElement;
-    h: TrustedHTML;
+    h: TemplateStringsArray;
 }
 /**
  * Interprets a template literal as an HTML template that can efficiently
@@ -1134,8 +1219,8 @@ interface CompiledTemplate extends Omit<Template, 'el'> {
  */
 declare const html: (strings: TemplateStringsArray, ...values: unknown[]) => TemplateResult<1>;
 /**
- * Interprets a template literal as an SVG fragment that can efficiently
- * render to and update a container.
+ * Interprets a template literal as an SVG fragment that can efficiently render
+ * to and update a container.
  *
  * ```ts
  * const rect = svg`<rect width="10" height="10"></rect>`;
@@ -1154,9 +1239,35 @@ declare const html: (strings: TemplateStringsArray, ...values: unknown[]) => Tem
  *
  * In LitElement usage, it's invalid to return an SVG fragment from the
  * `render()` method, as the SVG fragment will be contained within the element's
- * shadow root and thus cannot be used within an `<svg>` HTML element.
+ * shadow root and thus not be properly contained within an `<svg>` HTML
+ * element.
  */
 declare const svg: (strings: TemplateStringsArray, ...values: unknown[]) => TemplateResult<2>;
+/**
+ * Interprets a template literal as MathML fragment that can efficiently render
+ * to and update a container.
+ *
+ * ```ts
+ * const num = mathml`<mn>1</mn>`;
+ *
+ * const eq = html`
+ *   <math>
+ *     ${num}
+ *   </math>`;
+ * ```
+ *
+ * The `mathml` *tag function* should only be used for MathML fragments, or
+ * elements that would be contained **inside** a `<math>` HTML element. A common
+ * error is placing a `<math>` *element* in a template tagged with the `mathml`
+ * tag function. The `<math>` element is an HTML element and should be used
+ * within a template tagged with the {@linkcode html} tag function.
+ *
+ * In LitElement usage, it's invalid to return an MathML fragment from the
+ * `render()` method, as the MathML fragment will be contained within the
+ * element's shadow root and thus not be properly contained within a `<math>`
+ * HTML element.
+ */
+declare const mathml: (strings: TemplateStringsArray, ...values: unknown[]) => TemplateResult<3>;
 /**
  * A sentinel value that signals that a value was handled by a directive and
  * should not be written to the DOM.
@@ -1218,6 +1329,10 @@ interface RenderOptions {
      */
     isConnected?: boolean;
 }
+/**
+ * The root DOM node for rendering.
+ */
+type RenderRootNode = HTMLElement | SVGElement | DocumentFragment;
 interface DirectiveParent {
     _$parent?: DirectiveParent;
     _$isConnected: boolean;
@@ -1225,7 +1340,8 @@ interface DirectiveParent {
     __directives?: Array<Directive | undefined>;
 }
 declare class Template {
-    constructor({ strings, ['_$litType$']: type }: TemplateResult, options?: RenderOptions);
+    parts: Array<TemplatePart>;
+    constructor({ strings, ['_$litType$']: type }: UncompiledTemplateResult, options?: RenderOptions);
     /** @nocollapse */
     static createElement(html: TrustedHTML, _options?: RenderOptions): HTMLTemplateElement;
 }
@@ -1235,31 +1351,36 @@ interface Disconnectable {
     _$isConnected: boolean;
 }
 declare function resolveDirective(part: ChildPart | AttributePart | ElementPart, value: unknown, parent?: DirectiveParent, attributeIndex?: number): unknown;
+
 /**
  * An updateable instance of a Template. Holds references to the Parts used to
  * update the template instance.
  */
 declare class TemplateInstance implements Disconnectable {
+    _$template: Template;
+    _$parts: Array<Part | undefined>;
     constructor(template: Template, parent: ChildPart);
     get parentNode(): Node;
     get _$isConnected(): boolean;
     _clone(options: RenderOptions | undefined): Node;
     _update(values: Array<unknown>): void;
 }
-declare type AttributeTemplatePart = {
+type AttributeTemplatePart = {
     readonly type: typeof ATTRIBUTE_PART;
     readonly index: number;
     readonly name: string;
+    readonly ctor: typeof AttributePart;
+    readonly strings: ReadonlyArray<string>;
 };
-declare type NodeTemplatePart = {
+type ChildTemplatePart = {
     readonly type: typeof CHILD_PART;
     readonly index: number;
 };
-declare type ElementTemplatePart = {
+type ElementTemplatePart = {
     readonly type: typeof ELEMENT_PART;
     readonly index: number;
 };
-declare type CommentTemplatePart = {
+type CommentTemplatePart = {
     readonly type: typeof COMMENT_PART;
     readonly index: number;
 };
@@ -1268,8 +1389,8 @@ declare type CommentTemplatePart = {
  * is instantiated. When a template is instantiated Parts are created from
  * TemplateParts.
  */
-declare type TemplatePart = NodeTemplatePart | AttributeTemplatePart | ElementTemplatePart | CommentTemplatePart;
-declare type Part = ChildPart | AttributePart | PropertyPart | BooleanAttributePart | ElementPart | EventPart;
+type TemplatePart = ChildTemplatePart | AttributeTemplatePart | ElementTemplatePart | CommentTemplatePart;
+type Part = ChildPart | AttributePart | PropertyPart | BooleanAttributePart | ElementPart | EventPart;
 
 declare class ChildPart implements Disconnectable {
     readonly type = 2;
@@ -1327,7 +1448,7 @@ interface RootPart extends ChildPart {
      * as such, it is the responsibility of the caller to `render` to ensure that
      * `part.setConnected(false)` is called before the part object is potentially
      * discarded, to ensure that `AsyncDirective`s have a chance to dispose of
-     * any resources being held. If a `RootPart` that was prevously
+     * any resources being held. If a `RootPart` that was previously
      * disconnected is subsequently re-connected (and its `AsyncDirective`s should
      * re-connect), `setConnected(true)` should be called.
      *
@@ -1338,7 +1459,7 @@ interface RootPart extends ChildPart {
 }
 
 declare class AttributePart implements Disconnectable {
-    readonly type: 1 | 3 | 4 | 5;
+    readonly type: typeof ATTRIBUTE_PART | typeof PROPERTY_PART | typeof BOOLEAN_ATTRIBUTE_PART | typeof EVENT_PART;
     readonly element: HTMLElement;
     readonly name: string;
     readonly options: RenderOptions | undefined;
@@ -1384,7 +1505,7 @@ declare class ElementPart implements Disconnectable {
  * external users.
  *
  * We currently do not make a mangled rollup build of the lit-ssr code. In order
- * to keep a number of (otherwise private) top-level exports  mangled in the
+ * to keep a number of (otherwise private) top-level exports mangled in the
  * client side code, we export a _$LH object containing those members (or
  * helper methods for accessing private fields of those members), and then
  * re-export them for use in lit-ssr. This keeps lit-ssr agnostic to whether the
@@ -1400,7 +1521,7 @@ declare const _$LH: {
     _marker: string;
     _markerMatch: string;
     _HTML_RESULT: number;
-    _getTemplateHtml: (strings: TemplateStringsArray, type: ResultType) => [TrustedHTML, Array<string | undefined>];
+    _getTemplateHtml: (strings: TemplateStringsArray, type: ResultType) => [TrustedHTML, Array<string>];
     _TemplateInstance: typeof TemplateInstance;
     _isIterable: (value: unknown) => value is Iterable<unknown>;
     _resolveDirective: typeof resolveDirective;
@@ -1437,7 +1558,7 @@ declare const _$LH: {
  * {@link https://lit.dev/docs/libraries/standalone-templates/#rendering-lit-html-templates| Rendering Lit HTML Templates}
  */
 declare const render: {
-    (value: unknown, container: HTMLElement | DocumentFragment, options?: RenderOptions): RootPart;
+    (value: unknown, container: RenderRootNode, options?: RenderOptions): RootPart;
     setSanitizer: (newSanitizer: SanitizerFactory) => void;
     createSanitizer: SanitizerFactory;
     _testOnlyClearSanitizerFactoryDoNotCallOrElse: () => void;
@@ -1447,6 +1568,48 @@ declare const render: {
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
+ */
+/**
+ * The main LitElement module, which defines the {@linkcode LitElement} base
+ * class and related APIs.
+ *
+ * LitElement components can define a template and a set of observed
+ * properties. Changing an observed property triggers a re-render of the
+ * element.
+ *
+ * Import {@linkcode LitElement} and {@linkcode html} from this module to
+ * create a component:
+ *
+ *  ```js
+ * import {LitElement, html} from 'lit-element';
+ *
+ * class MyElement extends LitElement {
+ *
+ *   // Declare observed properties
+ *   static get properties() {
+ *     return {
+ *       adjective: {}
+ *     }
+ *   }
+ *
+ *   constructor() {
+ *     this.adjective = 'awesome';
+ *   }
+ *
+ *   // Define the element's template
+ *   render() {
+ *     return html`<p>your ${adjective} template here</p>`;
+ *   }
+ * }
+ *
+ * customElements.define('my-element', MyElement);
+ * ```
+ *
+ * `LitElement` extends {@linkcode ReactiveElement} and adds lit-html
+ * templating. The `ReactiveElement` class is provided for users that want to
+ * build their own custom element base classes that don't use lit-html.
+ *
+ * @packageDocumentation
  */
 
 /**
@@ -1469,7 +1632,6 @@ declare namespace Unstable {
         type Entry = LitUnstable.DebugLog.Entry | ReactiveUnstable.DebugLog.Entry;
     }
 }
-declare const UpdatingElement: typeof ReactiveElement;
 /**
  * Base element class that manages element properties and attributes, and
  * renders a lit-html template.
@@ -1480,14 +1642,6 @@ declare const UpdatingElement: typeof ReactiveElement;
  * {@linkcode property} decorator.
  */
 declare class LitElement extends ReactiveElement {
-    /**
-     * Ensure this class is marked as `finalized` as an optimization ensuring
-     * it will not needlessly try to `finalize`.
-     *
-     * Note this property name is a string to prevent breaking Closure JS Compiler
-     * optimizations. See @lit/reactive-element for more information.
-     */
-    protected static ['finalized']: boolean;
     static ['_$litElement$']: boolean;
     /**
      * @category rendering
@@ -1497,7 +1651,7 @@ declare class LitElement extends ReactiveElement {
     /**
      * @category rendering
      */
-    protected createRenderRoot(): Element | ShadowRoot;
+    protected createRenderRoot(): HTMLElement | DocumentFragment;
     /**
      * Updates the element. This method reflects property values to attributes
      * and calls `render` to render DOM via lit-html. Setting properties inside
@@ -1594,4 +1748,4 @@ declare const _$LE: {
  */
 declare const isServer = false;
 
-export { AttributePart, BooleanAttributePart, CSSResult, CSSResultArray, CSSResultGroup, CSSResultOrNative, ChildPart, CompiledTemplate, CompiledTemplateResult, ComplexAttributeConverter, DirectiveParent, Disconnectable, ElementPart, EventPart, HTMLTemplateResult, HasChanged, Initializer, LitElement, LitUnstable, Part, PropertyDeclaration, PropertyDeclarations, PropertyPart, PropertyValueMap, PropertyValues, ReactiveController, ReactiveControllerHost, ReactiveElement, ReactiveUnstable, RenderOptions, RootPart, SVGTemplateResult, SanitizerFactory, TemplateResult, Unstable, UpdatingElement, ValueSanitizer, WarningKind, _$LE, _$LH, adoptStyles, css, defaultConverter, getCompatibleStyle, html, isServer, noChange, notEqual, nothing, render, supportsAdoptingStyleSheets, svg, unsafeCSS };
+export { AttributePart, BooleanAttributePart, CSSResult, type CSSResultArray, type CSSResultGroup, type CSSResultOrNative, ChildPart, type CompiledTemplate, type CompiledTemplateResult, type ComplexAttributeConverter, type DirectiveParent, type Disconnectable, ElementPart, EventPart, type HTMLTemplateResult, type HasChanged, type Initializer, LitElement, LitUnstable, type MathMLTemplateResult, type MaybeCompiledTemplateResult, type Part, type PropertyDeclaration, type PropertyDeclarations, PropertyPart, type PropertyValueMap, type PropertyValues, type ReactiveController, type ReactiveControllerHost, ReactiveElement, ReactiveUnstable, type RenderOptions, type RenderRootNode, type RootPart, type SVGTemplateResult, type SanitizerFactory, TemplateInstance, type TemplateResult, type UncompiledTemplateResult, Unstable, type ValueSanitizer, type WarningKind, _$LE, _$LH, adoptStyles, css, defaultConverter, getCompatibleStyle, html, isServer, mathml, noChange, notEqual, nothing, render, supportsAdoptingStyleSheets, svg, unsafeCSS };

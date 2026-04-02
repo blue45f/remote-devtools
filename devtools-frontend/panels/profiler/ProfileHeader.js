@@ -1,39 +1,28 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 export class ProfileHeader extends Common.ObjectWrapper.ObjectWrapper {
-    profileTypeInternal;
+    #profileType;
     title;
     uid;
-    fromFileInternal;
-    tempFile;
+    #fromFile = false;
+    tempFile = null;
     constructor(profileType, title) {
         super();
-        this.profileTypeInternal = profileType;
+        this.#profileType = profileType;
         this.title = title;
         this.uid = profileType.incrementProfileUid();
-        this.fromFileInternal = false;
-        this.tempFile = null;
     }
     setTitle(title) {
         this.title = title;
-        this.dispatchEventToListeners(Events.ProfileTitleChanged, this);
+        this.dispatchEventToListeners("ProfileTitleChanged" /* Events.PROFILE_TITLE_CHANGED */, this);
     }
     profileType() {
-        return this.profileTypeInternal;
+        return this.#profileType;
     }
     updateStatus(subtitle, wait) {
-        this.dispatchEventToListeners(Events.UpdateStatus, new StatusUpdate(subtitle, wait));
-    }
-    /**
-     * Must be implemented by subclasses.
-     */
-    createSidebarTreeElement(_dataDisplayDelegate) {
-        throw new Error('Not implemented.');
-    }
-    createView(_dataDisplayDelegate) {
-        throw new Error('Not implemented.');
+        this.dispatchEventToListeners("UpdateStatus" /* Events.UPDATE_STATUS */, new StatusUpdate(subtitle, wait));
     }
     removeTempFile() {
         if (this.tempFile) {
@@ -52,10 +41,10 @@ export class ProfileHeader extends Common.ObjectWrapper.ObjectWrapper {
         throw new Error('Not implemented.');
     }
     fromFile() {
-        return this.fromFileInternal;
+        return this.#fromFile;
     }
     setFromFile() {
-        this.fromFileInternal = true;
+        this.#fromFile = true;
     }
     setProfile(_profile) {
     }
@@ -68,39 +57,28 @@ export class StatusUpdate {
         this.wait = wait;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["UpdateStatus"] = "UpdateStatus";
-    Events["ProfileReceived"] = "ProfileReceived";
-    Events["ProfileTitleChanged"] = "ProfileTitleChanged";
-})(Events || (Events = {}));
 export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
-    idInternal;
-    nameInternal;
-    profiles;
-    profileBeingRecordedInternal;
-    nextProfileUidInternal;
+    #id;
+    #name;
+    profiles = [];
+    #profileBeingRecorded = null;
+    #nextProfileUid = 1;
     constructor(id, name) {
         super();
-        this.idInternal = id;
-        this.nameInternal = name;
-        this.profiles = [];
-        this.profileBeingRecordedInternal = null;
-        this.nextProfileUidInternal = 1;
+        this.#id = id;
+        this.#name = name;
         if (!window.opener) {
-            window.addEventListener('unload', this.clearTempStorage.bind(this), false);
+            window.addEventListener('pagehide', this.clearTempStorage.bind(this), false);
         }
     }
     typeName() {
         return '';
     }
     nextProfileUid() {
-        return this.nextProfileUidInternal;
+        return this.#nextProfileUid;
     }
     incrementProfileUid() {
-        return this.nextProfileUidInternal++;
+        return this.#nextProfileUid++;
     }
     hasTemporaryView() {
         return false;
@@ -112,13 +90,13 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
         return '';
     }
     get id() {
-        return this.idInternal;
+        return this.#id;
     }
     get treeItemTitle() {
-        return this.nameInternal;
+        return this.#name;
     }
     get name() {
-        return this.nameInternal;
+        return this.#name;
     }
     buttonClicked() {
         return false;
@@ -133,23 +111,12 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
         return true;
     }
     getProfiles() {
-        function isFinished(profile) {
-            return this.profileBeingRecordedInternal !== profile;
-        }
-        return this.profiles.filter(isFinished.bind(this));
+        return this.profiles.filter(profile => this.#profileBeingRecorded !== profile);
     }
     customContent() {
         return null;
     }
     setCustomContentEnabled(_enable) {
-    }
-    getProfile(uid) {
-        for (let i = 0; i < this.profiles.length; ++i) {
-            if (this.profiles[i].uid === uid) {
-                return this.profiles[i];
-            }
-        }
-        return null;
     }
     loadFromFile(file) {
         let name = file.name;
@@ -168,7 +135,7 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
     }
     addProfile(profile) {
         this.profiles.push(profile);
-        this.dispatchEventToListeners(ProfileEvents.AddProfileHeader, profile);
+        this.dispatchEventToListeners("add-profile-header" /* ProfileEvents.ADD_PROFILE_HEADER */, profile);
     }
     removeProfile(profile) {
         const index = this.profiles.indexOf(profile);
@@ -184,10 +151,10 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
     profileBeingRecorded() {
-        return this.profileBeingRecordedInternal;
+        return this.#profileBeingRecorded;
     }
     setProfileBeingRecorded(profile) {
-        this.profileBeingRecordedInternal = profile;
+        this.#profileBeingRecorded = profile;
     }
     profileBeingRecordedRemoved() {
     }
@@ -196,24 +163,15 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
             this.disposeProfile(profile);
         }
         this.profiles = [];
-        this.nextProfileUidInternal = 1;
+        this.#nextProfileUid = 1;
     }
     disposeProfile(profile) {
-        this.dispatchEventToListeners(ProfileEvents.RemoveProfileHeader, profile);
+        this.dispatchEventToListeners("remove-profile-header" /* ProfileEvents.REMOVE_PROFILE_HEADER */, profile);
         profile.dispose();
-        if (this.profileBeingRecordedInternal === profile) {
+        if (this.#profileBeingRecorded === profile) {
             this.profileBeingRecordedRemoved();
             this.setProfileBeingRecorded(null);
         }
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var ProfileEvents;
-(function (ProfileEvents) {
-    ProfileEvents["AddProfileHeader"] = "add-profile-header";
-    ProfileEvents["ProfileComplete"] = "profile-complete";
-    ProfileEvents["RemoveProfileHeader"] = "remove-profile-header";
-    ProfileEvents["ViewUpdated"] = "view-updated";
-})(ProfileEvents || (ProfileEvents = {}));
 //# sourceMappingURL=ProfileHeader.js.map

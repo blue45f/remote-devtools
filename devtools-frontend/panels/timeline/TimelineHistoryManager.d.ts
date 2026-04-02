@@ -1,70 +1,92 @@
-import type * as SDK from '../../core/sdk/sdk.js';
+import * as Common from '../../core/common/common.js';
+import * as Trace from '../../models/trace/trace.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as TraceEngine from '../../models/trace/trace.js';
-import { type PerformanceModel } from './PerformanceModel.js';
-export type RecordingData = {
-    legacyModel: PerformanceModel;
-    traceParseData: TraceEngine.Handlers.Migration.PartialTraceData | null;
-    filmStripModel: SDK.FilmStripModel.FilmStripModel;
-};
+import type { TimelineMiniMap } from './TimelineMiniMap.js';
+/**
+ * The dropdown works by returning an index which is the trace index; but we
+ * also need a way to signify that the user picked the "Landing Page" option. We
+ * represent that as Infinity so we never accidentally collide with an actual
+ * trace (in reality a large number like 99 would probably suffice...)
+ */
+export declare const LANDING_PAGE_INDEX_DROPDOWN_CHOICE: number;
+/**
+ * The dropdown includes an option to navigate to the landing page; hence the
+ * two types for storing recordings. The TimelineHistoryManager automatically
+ * includes a link to go back to the landing page.
+ */
+interface TraceRecordingHistoryItem {
+    type: 'TRACE_INDEX';
+    parsedTraceIndex: number;
+}
+interface LandingPageHistoryItem {
+    type: 'LANDING_PAGE';
+}
+export type RecordingData = TraceRecordingHistoryItem | LandingPageHistoryItem;
+export interface NewHistoryRecordingData {
+    data: TraceRecordingHistoryItem;
+    filmStripForPreview: Trace.Extras.FilmStrip.Data | null;
+    parsedTrace: Trace.TraceModel.ParsedTrace;
+}
 export declare class TimelineHistoryManager {
+    #private;
     private recordings;
     private readonly action;
     private readonly nextNumberByDomain;
-    private readonly buttonInternal;
     private readonly allOverviews;
     private totalHeight;
     private enabled;
-    private lastActiveModel;
-    constructor();
-    addRecording(performanceModel: PerformanceModel, traceParseData: TraceEngine.Handlers.Migration.PartialTraceData | null, filmStripModel: SDK.FilmStripModel.FilmStripModel): void;
+    private lastActiveTrace;
+    constructor(minimapComponent?: TimelineMiniMap, isNode?: boolean);
+    addRecording(newInput: NewHistoryRecordingData): void;
     setEnabled(enabled: boolean): void;
     button(): ToolbarButton;
     clear(): void;
     showHistoryDropDown(): Promise<RecordingData | null>;
     cancelIfShowing(): void;
-    navigate(direction: number): RecordingData | null;
-    private setCurrentModel;
+    /**
+     * Navigate by 1 in either direction to the next trace.
+     * Navigating in this way does not include the landing page; it will loop
+     * over only the traces.
+     */
+    navigate(direction: number): TraceRecordingHistoryItem | null;
+    navigateToLandingPage(): void;
     private updateState;
-    static previewElement(performanceModel: PerformanceModel): Element;
-    private static coarseAge;
+    static previewElement(parsedTraceIndex: number): Element;
     private title;
-    private buildPreview;
-    private buildTextDetails;
-    private buildScreenshotThumbnail;
-    private buildOverview;
-    private static dataForModel;
+    private static dataForTraceIndex;
 }
 export declare const maxRecordings = 5;
-export declare const previewWidth = 450;
-export declare class DropDown implements UI.ListControl.ListDelegate<PerformanceModel> {
+export declare const previewWidth = 500;
+export interface PreviewData {
+    preview: Element;
+    lastUsed: number;
+    title: string;
+}
+export declare class DropDown implements UI.ListControl.ListDelegate<number> {
+    #private;
     private readonly glassPane;
     private readonly listControl;
     private readonly focusRestorer;
     private selectionDone;
-    constructor(models: PerformanceModel[]);
-    static show(models: PerformanceModel[], currentModel: PerformanceModel, anchor: Element): Promise<PerformanceModel | null>;
+    contentElement: HTMLElement;
+    constructor(availableparsedTraceIndexes: number[], landingPageTitle: Common.UIString.LocalizedString);
+    static show(availableparsedTraceIndexes: number[], activeparsedTraceIndex: number, anchor: Element, landingPageTitle?: Common.UIString.LocalizedString): Promise<number | null>;
     static cancelIfShowing(): void;
     private show;
     private onMouseMove;
     private onClick;
     private onKeyDown;
     private close;
-    createElementForItem(item: PerformanceModel): Element;
-    heightForItem(_item: PerformanceModel): number;
-    isItemSelectable(_item: PerformanceModel): boolean;
-    selectedItemChanged(from: PerformanceModel | null, to: PerformanceModel | null, fromElement: Element | null, toElement: Element | null): void;
+    createElementForItem(parsedTraceIndex: number): Element;
+    heightForItem(_parsedTraceIndex: number): number;
+    isItemSelectable(_parsedTraceIndex: number): boolean;
+    selectedItemChanged(_from: number | null, _to: number | null, fromElement: Element | null, toElement: Element | null): void;
     updateSelectedItemARIA(_fromElement: Element | null, _toElement: Element | null): boolean;
-    private static instance;
+    static instance: DropDown | null;
 }
 export declare class ToolbarButton extends UI.Toolbar.ToolbarItem {
     private contentElement;
     constructor(action: UI.ActionRegistration.Action);
     setText(text: string): void;
 }
-export interface PreviewData {
-    preview: Element;
-    time: Element;
-    lastUsed: number;
-    title: string;
-}
+export {};

@@ -1,11 +1,11 @@
-import * as Platform from '../platform/platform.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
 import * as Protocol from '../../generated/protocol.js';
-import { DOMModel, type DeferredDOMNode, type DOMNode } from './DOMModel.js';
-import { type NetworkRequest } from './NetworkRequest.js';
+import * as Platform from '../platform/platform.js';
+import { type DeferredDOMNode, DOMModel, type DOMNode } from './DOMModel.js';
+import type { NetworkRequest } from './NetworkRequest.js';
 import { Resource } from './Resource.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class ResourceTreeModel extends SDKModel<EventTypes> {
     #private;
     readonly agent: ProtocolProxyApi.PageApi;
@@ -33,23 +33,22 @@ export declare class ResourceTreeModel extends SDKModel<EventTypes> {
     frameForId(frameId: Protocol.Page.FrameId): ResourceTreeFrame | null;
     forAllResources(callback: (arg0: Resource) => boolean): boolean;
     frames(): ResourceTreeFrame[];
-    resourceForURL(url: Platform.DevToolsPath.UrlString): Resource | null;
     private addFramesRecursively;
     private createResourceFromFramePayload;
     suspendReload(): void;
     resumeReload(): void;
     reloadPage(ignoreCache?: boolean, scriptToEvaluateOnLoad?: string): void;
-    navigate(url: Platform.DevToolsPath.UrlString): Promise<any>;
+    navigate(url: Platform.DevToolsPath.UrlString): Promise<Protocol.Page.NavigateResponse>;
     navigationHistory(): Promise<{
         currentIndex: number;
-        entries: Array<Protocol.Page.NavigationEntry>;
+        entries: Protocol.Page.NavigationEntry[];
     } | null>;
     navigateToHistoryEntry(entry: Protocol.Page.NavigationEntry): void;
     setLifecycleEventsEnabled(enabled: boolean): Promise<Protocol.ProtocolResponseWithError>;
     fetchAppManifest(): Promise<{
         url: Platform.DevToolsPath.UrlString;
         data: string | null;
-        errors: Array<Protocol.Page.AppManifestError>;
+        errors: Protocol.Page.AppManifestError[];
     }>;
     getInstallabilityErrors(): Promise<Protocol.Page.InstallabilityError[]>;
     getAppId(): Promise<Protocol.Page.GetAppIdResponse>;
@@ -61,7 +60,6 @@ export declare class ResourceTreeModel extends SDKModel<EventTypes> {
     getMainStorageKey(): Promise<string | null>;
     getMainSecurityOrigin(): string | null;
     onBackForwardCacheNotUsed(event: Protocol.Page.BackForwardCacheNotUsedEvent): void;
-    onPrerenderAttemptCompleted(event: Protocol.Preload.PrerenderAttemptCompletedEvent): void;
     processPendingEvents(frame: ResourceTreeFrame): void;
 }
 export declare enum Events {
@@ -70,6 +68,7 @@ export declare enum Events {
     FrameDetached = "FrameDetached",
     FrameResized = "FrameResized",
     FrameWillNavigate = "FrameWillNavigate",
+    DocumentOpened = "DocumentOpened",
     PrimaryPageChanged = "PrimaryPageChanged",
     ResourceAdded = "ResourceAdded",
     WillLoadCachedResources = "WillLoadCachedResources",
@@ -82,11 +81,9 @@ export declare enum Events {
     InterstitialShown = "InterstitialShown",
     InterstitialHidden = "InterstitialHidden",
     BackForwardCacheDetailsUpdated = "BackForwardCacheDetailsUpdated",
-    PrerenderingStatusUpdated = "PrerenderingStatusUpdated",
-    PrerenderAttemptCompleted = "PrerenderAttemptCompleted",
     JavaScriptDialogOpening = "JavaScriptDialogOpening"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.FrameAdded]: ResourceTreeFrame;
     [Events.FrameNavigated]: ResourceTreeFrame;
     [Events.FrameDetached]: {
@@ -95,6 +92,7 @@ export type EventTypes = {
     };
     [Events.FrameResized]: void;
     [Events.FrameWillNavigate]: ResourceTreeFrame;
+    [Events.DocumentOpened]: ResourceTreeFrame;
     [Events.PrimaryPageChanged]: {
         frame: ResourceTreeFrame;
         type: PrimaryPageChangeType;
@@ -116,21 +114,17 @@ export type EventTypes = {
     [Events.InterstitialShown]: void;
     [Events.InterstitialHidden]: void;
     [Events.BackForwardCacheDetailsUpdated]: ResourceTreeFrame;
-    [Events.PrerenderingStatusUpdated]: ResourceTreeFrame;
-    [Events.PrerenderAttemptCompleted]: Protocol.Preload.PrerenderAttemptCompletedEvent;
     [Events.JavaScriptDialogOpening]: Protocol.Page.JavascriptDialogOpeningEvent;
-};
+}
 export declare class ResourceTreeFrame {
     #private;
     crossTargetParentFrameId: string | null;
     resourcesMap: Map<Platform.DevToolsPath.UrlString, Resource>;
     backForwardCacheDetails: {
-        restoredFromCache: boolean | undefined;
         explanations: Protocol.Page.BackForwardCacheNotRestoredExplanation[];
-        explanationsTree: Protocol.Page.BackForwardCacheNotRestoredExplanationTree | undefined;
+        restoredFromCache?: boolean;
+        explanationsTree?: Protocol.Page.BackForwardCacheNotRestoredExplanationTree;
     };
-    prerenderFinalStatus: Protocol.Preload.PrerenderFinalStatus | null;
-    prerenderDisallowedApiMethod: string | null;
     constructor(model: ResourceTreeModel, parentFrame: ResourceTreeFrame | null, frameId: Protocol.Page.FrameId, payload: Protocol.Page.Frame | null, creationStackTrace: Protocol.Runtime.StackTrace | null);
     isSecureContext(): boolean;
     getSecureContextType(): Protocol.Page.SecureContextType | null;
@@ -147,11 +141,12 @@ export declare class ResourceTreeFrame {
     get name(): string;
     get url(): Platform.DevToolsPath.UrlString;
     domainAndRegistry(): string;
-    getAdScriptId(frameId: Protocol.Page.FrameId): Promise<Protocol.Page.AdScriptId | null>;
+    getAdScriptAncestry(frameId: Protocol.Page.FrameId): Promise<Protocol.Network.AdAncestry | null>;
     get securityOrigin(): string | null;
+    get securityOriginDetails(): Protocol.Page.SecurityOriginDetails | null;
     getStorageKey(forceFetch: boolean): Promise<string | null>;
     unreachableUrl(): Platform.DevToolsPath.UrlString;
-    get loaderId(): string;
+    get loaderId(): Protocol.Network.LoaderId;
     adFrameType(): Protocol.Page.AdFrameType;
     adFrameStatus(): Protocol.Page.AdFrameStatus | undefined;
     get childFrames(): ResourceTreeFrame[];
@@ -181,7 +176,7 @@ export declare class ResourceTreeFrame {
      */
     isOutermostFrame(): boolean;
     /**
-     * Returns true is this is the primary frame of the browser tab. There can only be one primary frame for each
+     * Returns true if this is the primary frame of the browser tab. There can only be one primary frame for each
      * browser tab. It is the outermost frame being actively displayed in the browser tab.
      * https://chromium.googlesource.com/chromium/src/+/HEAD/docs/frame_trees.md
      */
@@ -206,8 +201,6 @@ export declare class ResourceTreeFrame {
     }): void;
     setBackForwardCacheDetails(event: Protocol.Page.BackForwardCacheNotUsedEvent): void;
     getResourcesMap(): Map<string, Resource>;
-    setPrerenderFinalStatus(status: Protocol.Preload.PrerenderFinalStatus): void;
-    setPrerenderDisallowedApiMethod(disallowedApiMethod: string): void;
 }
 export declare class PageDispatcher implements ProtocolProxyApi.PageDispatcher {
     #private;
@@ -220,11 +213,13 @@ export declare class PageDispatcher implements ProtocolProxyApi.PageDispatcher {
     frameNavigated({ frame, type }: Protocol.Page.FrameNavigatedEvent): void;
     documentOpened({ frame }: Protocol.Page.DocumentOpenedEvent): void;
     frameDetached({ frameId, reason }: Protocol.Page.FrameDetachedEvent): void;
+    frameSubtreeWillBeDetached(_params: Protocol.Page.FrameSubtreeWillBeDetachedEvent): void;
     frameStartedLoading({}: Protocol.Page.FrameStartedLoadingEvent): void;
     frameStoppedLoading({}: Protocol.Page.FrameStoppedLoadingEvent): void;
     frameRequestedNavigation({}: Protocol.Page.FrameRequestedNavigationEvent): void;
     frameScheduledNavigation({}: Protocol.Page.FrameScheduledNavigationEvent): void;
     frameClearedScheduledNavigation({}: Protocol.Page.FrameClearedScheduledNavigationEvent): void;
+    frameStartedNavigating({}: Protocol.Page.FrameStartedNavigatingEvent): void;
     navigatedWithinDocument({}: Protocol.Page.NavigatedWithinDocumentEvent): void;
     frameResized(): void;
     javascriptDialogOpening(event: Protocol.Page.JavascriptDialogOpeningEvent): void;
@@ -249,6 +244,6 @@ export interface StorageKeyData {
     mainStorageKey: string | null;
 }
 export declare const enum PrimaryPageChangeType {
-    Navigation = "Navigation",
-    Activation = "Activation"
+    NAVIGATION = "Navigation",
+    ACTIVATION = "Activation"
 }

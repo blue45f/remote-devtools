@@ -1,3 +1,4 @@
+import '../../ui/legacy/legacy.js';
 import * as Protocol from '../../generated/protocol.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
@@ -63,7 +64,6 @@ export declare class BackgroundServiceView extends UI.Widget.VBox {
      * Saves all currently displayed events in a file (JSON format).
      */
     private saveToFile;
-    wasShown(): void;
 }
 export declare class EventDataNode extends DataGrid.DataGrid.DataGridNode<EventData> {
     private readonly eventMetadata;
@@ -71,9 +71,6 @@ export declare class EventDataNode extends DataGrid.DataGrid.DataGridNode<EventD
     createPreview(): UI.Widget.VBox;
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
     handleAction(context: UI.Context.Context, actionId: string): boolean;
 }
 export interface RecordingState {
@@ -84,8 +81,8 @@ export interface EventData {
     id: number;
     timestamp: string;
     origin: string;
-    storageKey: string;
-    swScope: string;
-    eventName: string;
-    instanceId: string;
+    'storage-key': string;
+    'sw-scope': string;
+    'event-name': string;
+    'instance-id': string;
 }

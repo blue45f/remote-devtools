@@ -1,8 +1,9 @@
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as StackTraceImpl from '../stack_trace/stack_trace_impl.js';
 import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
-import { type DebuggerSourceMapping, type DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
+import type { DebuggerSourceMapping, DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 /**
  * The `CompilerScriptMapping` maps script entities from source maps to scripts and vice versa.
  * It is part of the {@link DebuggerWorkspaceBinding} and operates on top of the
@@ -26,6 +27,7 @@ import { type DebuggerSourceMapping, type DebuggerWorkspaceBinding } from './Deb
 export declare class CompilerScriptMapping implements DebuggerSourceMapping {
     #private;
     constructor(debuggerModel: SDK.DebuggerModel.DebuggerModel, workspace: Workspace.Workspace.WorkspaceImpl, debuggerWorkspaceBinding: DebuggerWorkspaceBinding);
+    setFunctionRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, ranges: SDK.SourceMapFunctionRanges.NamedFunctionRange[]): void;
     private addStubUISourceCode;
     private removeStubUISourceCode;
     getLocationRangesForSameSourceLocation(rawLocation: SDK.DebuggerModel.Location): SDK.DebuggerModel.LocationRange[];
@@ -61,12 +63,14 @@ export declare class CompilerScriptMapping implements DebuggerSourceMapping {
      */
     uiLocationToRawLocations(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber: number): SDK.DebuggerModel.Location[];
     uiLocationRangeToRawLocationRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, textRange: TextUtils.TextRange.TextRange): SDK.DebuggerModel.LocationRange[] | null;
+    functionBoundsAtRawLocation(rawLocation: SDK.DebuggerModel.Location): Promise<Workspace.UISourceCode.UIFunctionBounds | null>;
+    translateRawFramesStep(rawFrames: StackTraceImpl.Trie.RawFrame[], translatedFrames: Awaited<ReturnType<StackTraceImpl.StackTraceModel.TranslateRawFrames>>): Promise<boolean>;
     /**
      * Computes the set of line numbers which are source-mapped to a script within the
      * given {@link uiSourceCode}.
      *
      * @param uiSourceCode the source mapped entity.
-     * @return a set of source-mapped line numbers or `null` if the {@link uiSourceCode}
+     * @returns a set of source-mapped line numbers or `null` if the {@link uiSourceCode}
      *         is not provided by this {@link CompilerScriptMapping} instance.
      */
     getMappedLines(uiSourceCode: Workspace.UISourceCode.UISourceCode): Set<number> | null;

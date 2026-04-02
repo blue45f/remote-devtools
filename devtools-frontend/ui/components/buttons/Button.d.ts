@@ -1,3 +1,4 @@
+import '../../kit/kit.js';
 declare global {
     interface HTMLElementTagNameMap {
         'devtools-button': Button;
@@ -5,62 +6,95 @@ declare global {
 }
 export declare const enum Variant {
     PRIMARY = "primary",
-    SECONDARY = "secondary",
+    TONAL = "tonal",
+    OUTLINED = "outlined",
+    TEXT = "text",
     TOOLBAR = "toolbar",
     PRIMARY_TOOLBAR = "primary_toolbar",
-    ROUND = "round"
+    ICON = "icon",
+    ICON_TOGGLE = "icon_toggle",
+    ADORNER_ICON = "adorner_icon"
 }
 export declare const enum Size {
+    MICRO = "MICRO",
     SMALL = "SMALL",
-    MEDIUM = "MEDIUM",
-    TINY = "TINY"
+    REGULAR = "REGULAR"
+}
+export declare const enum ToggleType {
+    PRIMARY = "primary-toggle",
+    RED = "red-toggle"
 }
 type ButtonType = 'button' | 'submit' | 'reset';
 interface CommonButtonData {
     variant: Variant;
-    iconUrl?: string;
     iconName?: string;
+    toggledIconName?: string;
+    toggleType?: ToggleType;
+    toggleOnClick?: boolean;
     size?: Size;
+    reducedFocusRing?: boolean;
     disabled?: boolean;
+    toggled?: boolean;
+    checked?: boolean;
     active?: boolean;
     spinner?: boolean;
     type?: ButtonType;
     value?: string;
     title?: string;
-    iconWidth?: string;
-    iconHeight?: string;
+    jslogContext?: string;
+    longClickable?: boolean;
+    inverseColorTheme?: boolean;
+    /**
+     * Sets aria-label on the internal <button> element.
+     */
+    accessibleLabel?: string;
 }
 export type ButtonData = CommonButtonData & ({
-    variant: Variant.PRIMARY_TOOLBAR | Variant.TOOLBAR | Variant.ROUND;
-    iconUrl: string;
-} | {
-    variant: Variant.PRIMARY_TOOLBAR | Variant.TOOLBAR | Variant.ROUND;
+    variant: Variant.PRIMARY_TOOLBAR | Variant.TOOLBAR | Variant.ICON;
     iconName: string;
 } | {
-    variant: Variant.PRIMARY | Variant.SECONDARY;
+    variant: Variant.PRIMARY | Variant.OUTLINED | Variant.TONAL | Variant.TEXT | Variant.ADORNER_ICON;
+} | {
+    variant: Variant.ICON_TOGGLE;
+    iconName: string;
+    toggledIconName: string;
+    toggleType: ToggleType;
+    toggled: boolean;
 });
 export declare class Button extends HTMLElement {
     #private;
     static formAssociated: boolean;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     constructor();
+    cloneNode(deep?: boolean): Node;
     /**
      * Perfer using the .data= setter instead of setting the individual properties
      * for increased type-safety.
      */
     set data(data: ButtonData);
-    set iconUrl(iconUrl: string | undefined);
     set iconName(iconName: string | undefined);
+    set toggledIconName(toggledIconName: string);
+    set toggleType(toggleType: ToggleType);
     set variant(variant: Variant);
     set size(size: Size);
-    set iconWidth(iconWidth: string);
-    set iconHeight(iconHeight: string);
+    set accessibleLabel(label: string | undefined);
+    get accessibleLabel(): string | undefined;
+    set reducedFocusRing(reducedFocusRing: boolean);
     set type(type: ButtonType);
+    get title(): string;
     set title(title: string);
+    get disabled(): boolean;
     set disabled(disabled: boolean);
+    set toggleOnClick(toggleOnClick: boolean);
+    set toggled(toggled: boolean);
+    get toggled(): boolean;
+    set checked(checked: boolean);
     set active(active: boolean);
+    get active(): boolean;
     set spinner(spinner: boolean);
-    focus(): void;
+    get jslogContext(): string | undefined;
+    set jslogContext(jslogContext: string | undefined);
+    set longClickable(longClickable: boolean);
+    set inverseColorTheme(inverseColorTheme: boolean);
     connectedCallback(): void;
     get value(): string;
     set value(value: string);

@@ -1,11 +1,12 @@
 import * as Common from '../common/common.js';
-import { type Target } from './Target.js';
+import type { Target } from './Target.js';
 export interface RegistrationInfo {
     capabilities: number;
     autostart: boolean;
     early?: boolean;
 }
-declare const registeredModels: Map<new (arg1: Target) => SDKModel, RegistrationInfo>;
+export type SDKModelConstructor<T extends SDKModel = SDKModel> = new (target: Target) => T;
+declare const registeredModels: Map<SDKModelConstructor<SDKModel<any>>, RegistrationInfo>;
 export declare class SDKModel<Events = any> extends Common.ObjectWrapper.ObjectWrapper<Events> {
     #private;
     constructor(target: Target);
@@ -23,7 +24,7 @@ export declare class SDKModel<Events = any> extends Common.ObjectWrapper.ObjectW
      */
     postResumeModel(): Promise<void>;
     dispose(): void;
-    static register(modelClass: new (arg1: Target) => SDKModel, registrationInfo: RegistrationInfo): void;
+    static register(modelClass: SDKModelConstructor, registrationInfo: RegistrationInfo): void;
     static get registeredModels(): typeof registeredModels;
 }
 export {};

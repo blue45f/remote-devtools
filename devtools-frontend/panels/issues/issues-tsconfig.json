@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../front_end/panels/issues",
     "skipLibCheck": true,
@@ -26,35 +31,35 @@
     "target": "esnext",
     "tsBuildInfoFile": "issues-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
     "../../../../../../front_end/panels/issues/AffectedBlockedByResponseView.ts",
     "../../../../../../front_end/panels/issues/AffectedCookiesView.ts",
+    "../../../../../../front_end/panels/issues/AffectedDescendantsWithinSelectElementView.ts",
     "../../../../../../front_end/panels/issues/AffectedDirectivesView.ts",
     "../../../../../../front_end/panels/issues/AffectedDocumentsInQuirksModeView.ts",
     "../../../../../../front_end/panels/issues/AffectedElementsView.ts",
-    "../../../../../../front_end/panels/issues/AffectedElementsWithLowContrastView.ts",
     "../../../../../../front_end/panels/issues/AffectedHeavyAdView.ts",
+    "../../../../../../front_end/panels/issues/AffectedMetadataAllowedSitesView.ts",
+    "../../../../../../front_end/panels/issues/AffectedPartitioningBlobURLView.ts",
+    "../../../../../../front_end/panels/issues/AffectedPermissionElementsView.ts",
     "../../../../../../front_end/panels/issues/AffectedResourcesView.ts",
+    "../../../../../../front_end/panels/issues/AffectedSelectivePermissionsInterventionView.ts",
     "../../../../../../front_end/panels/issues/AffectedSharedArrayBufferIssueDetailsView.ts",
     "../../../../../../front_end/panels/issues/AffectedSourcesView.ts",
     "../../../../../../front_end/panels/issues/AffectedTrackingSitesView.ts",
     "../../../../../../front_end/panels/issues/AttributionReportingIssueDetailsView.ts",
-    "../../../../../../front_end/panels/issues/CSPViolationsListView.ts",
-    "../../../../../../front_end/panels/issues/CSPViolationsView.ts",
-    "../../../../../../front_end/panels/issues/ComboBoxOfCheckBoxes.ts",
     "../../../../../../front_end/panels/issues/CorsIssueDetailsView.ts",
     "../../../../../../front_end/panels/issues/GenericIssueDetailsView.ts",
     "../../../../../../front_end/panels/issues/HiddenIssuesRow.ts",
-    "../../../../../../front_end/panels/issues/IssueAggregator.ts",
     "../../../../../../front_end/panels/issues/IssueKindView.ts",
     "../../../../../../front_end/panels/issues/IssueRevealer.ts",
     "../../../../../../front_end/panels/issues/IssueView.ts",
     "../../../../../../front_end/panels/issues/IssuesPane.ts",
     "../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
@@ -62,10 +67,22 @@
       "path": "../../core/common/bundle-tsconfig.json"
     },
     {
+      "path": "../../core/host/bundle-tsconfig.json"
+    },
+    {
       "path": "../../core/i18n/bundle-tsconfig.json"
     },
     {
+      "path": "../../core/platform/bundle-tsconfig.json"
+    },
+    {
       "path": "../../core/sdk/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../generated/protocol-tsconfig.json"
+    },
+    {
+      "path": "../../models/bindings/bundle-tsconfig.json"
     },
     {
       "path": "../../models/issues_manager/bundle-tsconfig.json"
@@ -83,7 +100,10 @@
       "path": "../../ui/components/adorners/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/components/data_grid/bundle-tsconfig.json"
+      "path": "../../ui/components/buttons/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/issue_counter/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/components/linkifier/bundle-tsconfig.json"
@@ -95,13 +115,22 @@
       "path": "../../ui/components/request_link_icon/bundle-tsconfig.json"
     },
     {
+      "path": "../../ui/kit/bundle-tsconfig.json"
+    },
+    {
       "path": "../../ui/legacy/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/legacy/components/utils/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/lit-html/bundle-tsconfig.json"
+      "path": "../../ui/lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/visual_logging/bundle-tsconfig.json"
+    },
+    {
+      "path": "../common/bundle-tsconfig.json"
     },
     {
       "path": "components/bundle-tsconfig.json"

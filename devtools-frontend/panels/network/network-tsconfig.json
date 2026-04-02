@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../front_end/panels/network",
     "skipLibCheck": true,
@@ -26,11 +31,11 @@
     "target": "esnext",
     "tsBuildInfoFile": "network-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
     "../../../../../../front_end/panels/network/BinaryResourceView.ts",
-    "../../../../../../front_end/panels/network/BlockedURLsPane.ts",
     "../../../../../../front_end/panels/network/EventSourceMessagesView.ts",
     "../../../../../../front_end/panels/network/NetworkConfigView.ts",
     "../../../../../../front_end/panels/network/NetworkDataGridNode.ts",
@@ -42,9 +47,10 @@
     "../../../../../../front_end/panels/network/NetworkOverview.ts",
     "../../../../../../front_end/panels/network/NetworkPanel.ts",
     "../../../../../../front_end/panels/network/NetworkSearchScope.ts",
-    "../../../../../../front_end/panels/network/NetworkTimeCalculator.ts",
     "../../../../../../front_end/panels/network/NetworkWaterfallColumn.ts",
+    "../../../../../../front_end/panels/network/RequestConditionsDrawer.ts",
     "../../../../../../front_end/panels/network/RequestCookiesView.ts",
+    "../../../../../../front_end/panels/network/RequestDeviceBoundSessionsView.ts",
     "../../../../../../front_end/panels/network/RequestHTMLView.ts",
     "../../../../../../front_end/panels/network/RequestHeadersView.ts",
     "../../../../../../front_end/panels/network/RequestInitiatorView.ts",
@@ -52,11 +58,13 @@
     "../../../../../../front_end/panels/network/RequestPreviewView.ts",
     "../../../../../../front_end/panels/network/RequestResponseView.ts",
     "../../../../../../front_end/panels/network/RequestTimingView.ts",
+    "../../../../../../front_end/panels/network/ResourceChunkView.ts",
+    "../../../../../../front_end/panels/network/ResourceDirectSocketChunkView.ts",
     "../../../../../../front_end/panels/network/ResourceWebSocketFrameView.ts",
+    "../../../../../../front_end/panels/network/ShowMoreDetailsWidget.ts",
     "../../../../../../front_end/panels/network/SignedExchangeInfoView.ts",
     "../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
@@ -79,6 +87,12 @@
       "path": "../../core/sdk/bundle-tsconfig.json"
     },
     {
+      "path": "../../generated/protocol-tsconfig.json"
+    },
+    {
+      "path": "../../models/annotations/bundle-tsconfig.json"
+    },
+    {
       "path": "../../models/bindings/bundle-tsconfig.json"
     },
     {
@@ -91,13 +105,31 @@
       "path": "../../models/logs/bundle-tsconfig.json"
     },
     {
+      "path": "../../models/network_time_calculator/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/persistence/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/stack_trace/bundle-tsconfig.json"
+    },
+    {
       "path": "../../models/text_utils/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../models/trace/bundle-tsconfig.json"
     },
     {
       "path": "../../models/workspace/bundle-tsconfig.json"
     },
     {
+      "path": "../common/bundle-tsconfig.json"
+    },
+    {
       "path": "../elements/bundle-tsconfig.json"
+    },
+    {
+      "path": "../linear_memory_inspector/bundle-tsconfig.json"
     },
     {
       "path": "../mobile_throttling/bundle-tsconfig.json"
@@ -112,13 +144,34 @@
       "path": "../utils/bundle-tsconfig.json"
     },
     {
+      "path": "../../services/tracing/bundle-tsconfig.json"
+    },
+    {
       "path": "../../third_party/chromium/client-variations/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/adorners/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/buttons/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/components/expandable_list/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/components/icon_button/bundle-tsconfig.json"
+      "path": "../../ui/components/legacy_wrapper/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/render_coordinator/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/components/tooltips/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/i18n/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/kit/bundle-tsconfig.json"
     },
     {
       "path": "../../ui/legacy/bundle-tsconfig.json"
@@ -136,6 +189,9 @@
       "path": "../../ui/legacy/components/perf_ui/bundle-tsconfig.json"
     },
     {
+      "path": "../../ui/legacy/components/settings_ui/bundle-tsconfig.json"
+    },
+    {
       "path": "../../ui/legacy/components/source_frame/bundle-tsconfig.json"
     },
     {
@@ -145,7 +201,10 @@
       "path": "../../ui/legacy/theme_support/bundle-tsconfig.json"
     },
     {
-      "path": "../../ui/lit-html/bundle-tsconfig.json"
+      "path": "../../ui/lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../ui/visual_logging/bundle-tsconfig.json"
     },
     {
       "path": "../settings/emulation/components/bundle-tsconfig.json"

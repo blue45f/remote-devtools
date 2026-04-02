@@ -1,6 +1,6 @@
+import * as NetworkTimeCalculator from '../../models/network_time_calculator/network_time_calculator.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type NetworkNode } from './NetworkDataGridNode.js';
-import { type NetworkTimeCalculator } from './NetworkTimeCalculator.js';
+import type { NetworkNode } from './NetworkDataGridNode.js';
 export declare class NetworkWaterfallColumn extends UI.Widget.VBox {
     private canvas;
     private canvasPosition;
@@ -10,7 +10,6 @@ export declare class NetworkWaterfallColumn extends UI.Widget.VBox {
     private scrollTop;
     private headerHeight;
     private calculator;
-    private rawRowHeight;
     private rowHeight;
     private offsetWidth;
     private offsetHeight;
@@ -27,7 +26,7 @@ export declare class NetworkWaterfallColumn extends UI.Widget.VBox {
     private readonly hoverDetailsStyle;
     private readonly pathForStyle;
     private textLayers;
-    constructor(calculator: NetworkTimeCalculator);
+    constructor(calculator: NetworkTimeCalculator.NetworkTimeCalculator);
     private static buildRequestTimeRangeStyle;
     private static buildResourceTypeStyle;
     private resetPaths;
@@ -39,11 +38,10 @@ export declare class NetworkWaterfallColumn extends UI.Widget.VBox {
     private setHoveredNode;
     private setSelectedNode;
     setRowHeight(height: number): void;
-    private updateRowHeight;
     setHeaderHeight(height: number): void;
     setRightPadding(padding: number): void;
-    setCalculator(calculator: NetworkTimeCalculator): void;
-    getNodeFromPoint(x: number, y: number): NetworkNode | null;
+    setCalculator(calculator: NetworkTimeCalculator.NetworkTimeCalculator): void;
+    getNodeFromPoint(y: number): NetworkNode | null;
     scheduleDraw(): void;
     update(scrollTop?: number, eventDividers?: Map<string, number[]>, nodes?: NetworkNode[]): void;
     private resetCanvas;
@@ -59,14 +57,4 @@ export declare class NetworkWaterfallColumn extends UI.Widget.VBox {
     private buildSimplifiedBarLayers;
     private buildTimingBarLayers;
     private decorateRow;
-}
-export interface _TextLayer {
-    x: number;
-    y: number;
-    text: string;
-}
-export interface _LayerStyle {
-    fillStyle?: string;
-    lineWidth?: number;
-    borderColor?: string;
 }

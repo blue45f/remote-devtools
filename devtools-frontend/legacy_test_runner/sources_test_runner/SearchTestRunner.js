@@ -1,13 +1,16 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/**
- * @fileoverview using private properties isn't a Closure violation in tests.
- */
-self.SourcesTestRunner = self.SourcesTestRunner || {};
+import * as Common from '../../core/common/common.js';
+import * as Sources from '../../panels/sources/sources.js';
+import {TestRunner} from '../test_runner/test_runner.js';
 
-SourcesTestRunner.dumpSearchResults = function(searchResults) {
+/**
+ * @file using private properties isn't a Closure violation in tests.
+ */
+
+export const dumpSearchResults = function(searchResults) {
   function comparator(a, b) {
     a.url.localeCompare(b.url);
   }
@@ -23,7 +26,7 @@ SourcesTestRunner.dumpSearchResults = function(searchResults) {
   TestRunner.addResult('');
 };
 
-SourcesTestRunner.dumpSearchMatches = function(searchMatches) {
+export const dumpSearchMatches = function(searchMatches) {
   TestRunner.addResult('Search matches: ');
 
   for (let i = 0; i < searchMatches.length; i++) {
@@ -34,9 +37,9 @@ SourcesTestRunner.dumpSearchMatches = function(searchMatches) {
   TestRunner.addResult('');
 };
 
-SourcesTestRunner.runSearchAndDumpResults = function(scope, searchConfig, callback) {
+export const runSearchAndDumpResults = function(scope, searchConfig, callback) {
   const searchResults = [];
-  const progress = new Common.Progress();
+  const progress = new Common.Progress.Progress();
   scope.performSearch(searchConfig, progress, searchResultCallback, searchFinishedCallback);
 
   function searchResultCallback(searchResult) {
@@ -76,7 +79,7 @@ SourcesTestRunner.runSearchAndDumpResults = function(scope, searchConfig, callba
   }
 };
 
-SourcesTestRunner.replaceAndDumpChange = function(sourceFrame, searchConfig, replacement, replaceAll) {
+export const replaceAndDumpChange = function(sourceFrame, searchConfig, replacement, replaceAll) {
   const modifiers = [];
 
   if (searchConfig.isRegex) {
@@ -101,7 +104,7 @@ SourcesTestRunner.replaceAndDumpChange = function(sourceFrame, searchConfig, rep
     oldLines.push(editor.line(i));
   }
 
-  const searchableView = UI.panels.sources.sourcesView().searchableView();
+  const searchableView = Sources.SourcesPanel.SourcesPanel.instance().sourcesView().searchableView();
   searchableView.showSearchField();
   searchableView.caseSensitiveButton.setToggled(searchConfig.caseSensitive);
   searchableView.regexButton.setToggled(searchConfig.isRegex);

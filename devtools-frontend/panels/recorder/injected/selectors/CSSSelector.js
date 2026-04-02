@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import { SelectorPart } from './Selector.js';
@@ -69,7 +69,7 @@ export const getSelectorPart = (node, attributes = []) => {
     if (!(node instanceof Element)) {
         return;
     }
-    // Declared attibutes have the greatest priority.
+    // Declared attributes have the greatest priority.
     for (const attribute of attributes) {
         const value = node.getAttribute(attribute);
         if (value) {
@@ -177,10 +177,10 @@ export class SelectorRangeOps {
 /**
  * Computes the CSS selector for a node.
  *
- * @param node - The node to compute.
+ * @internal
+ * @param node The node to compute.
  * @returns The computed CSS selector.
  *
- * @internal
  */
 export const computeCSSSelector = (node, attributes) => {
     const selectors = [];

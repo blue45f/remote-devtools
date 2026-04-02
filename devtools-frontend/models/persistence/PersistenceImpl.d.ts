@@ -4,11 +4,6 @@ import * as BreakpointManager from '../breakpoints/breakpoints.js';
 import * as Workspace from '../workspace/workspace.js';
 export declare class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     #private;
-    private readonly workspace;
-    private readonly breakpointManager;
-    private readonly filePathPrefixesToBindingCount;
-    private subscribedBindingEventListeners;
-    private readonly mapping;
     constructor(workspace: Workspace.Workspace.WorkspaceImpl, breakpointManager: BreakpointManager.BreakpointManager.BreakpointManager);
     static instance(opts?: {
         forceNew: boolean | null;
@@ -21,8 +16,6 @@ export declare class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<
     addBindingForTest(binding: PersistenceBinding): Promise<void>;
     removeBinding(binding: PersistenceBinding): Promise<void>;
     removeBindingForTest(binding: PersistenceBinding): Promise<void>;
-    private innerAddBinding;
-    private innerRemoveBinding;
     private onStatusAdded;
     private onStatusRemoved;
     private onWorkingCopyChanged;
@@ -34,6 +27,11 @@ export declare class PersistenceImpl extends Common.ObjectWrapper.ObjectWrapper<
     private moveBreakpoints;
     hasUnsavedCommittedChanges(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
     binding(uiSourceCode: Workspace.UISourceCode.UISourceCode): PersistenceBinding | null;
+    /**
+     * Returns whether the UISourceCode has editable content - either its project
+     * supports file content changes, or it has a persistence binding to a file system.
+     */
+    hasEditableContent(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean;
     subscribeForBindingEvent(uiSourceCode: Workspace.UISourceCode.UISourceCode, listener: () => void): void;
     unsubscribeFromBindingEvent(uiSourceCode: Workspace.UISourceCode.UISourceCode, listener: () => void): void;
     private notifyBindingEvent;
@@ -48,12 +46,12 @@ export declare enum Events {
     BindingCreated = "BindingCreated",
     BindingRemoved = "BindingRemoved"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.BindingCreated]: PersistenceBinding;
     [Events.BindingRemoved]: PersistenceBinding;
-};
+}
 export declare class PersistenceBinding {
-    network: Workspace.UISourceCode.UISourceCode;
-    fileSystem: Workspace.UISourceCode.UISourceCode;
+    readonly network: Workspace.UISourceCode.UISourceCode;
+    readonly fileSystem: Workspace.UISourceCode.UISourceCode;
     constructor(network: Workspace.UISourceCode.UISourceCode, fileSystem: Workspace.UISourceCode.UISourceCode);
 }

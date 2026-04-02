@@ -1,8 +1,9 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import { createIcon } from '../../ui/kit/kit.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { NetworkGroupNode } from './NetworkDataGridNode.js';
 export class NetworkFrameGrouper {
@@ -43,7 +44,7 @@ export class FrameGroupNode extends NetworkGroupNode {
         const columnIndex = this.dataGrid.indexOfVisibleColumn(columnId);
         if (columnIndex === 0) {
             const name = this.displayName();
-            cell.appendChild(UI.Icon.Icon.create('frame', 'network-frame-group-icon'));
+            cell.appendChild(createIcon('frame', 'network-frame-group-icon'));
             UI.UIUtils.createTextChild(cell, name);
             UI.Tooltip.Tooltip.install(cell, name);
             this.setCellAccessibleName(cell.textContent || '', cell, columnId);

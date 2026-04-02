@@ -1,24 +1,21 @@
-// Copyright (c) 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as ComponentHelpers from '../../components/helpers/helpers.js';
-import * as IconButton from '../../components/icon_button/icon_button.js';
-import * as LitHtml from '../../lit-html/lit-html.js';
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
+import '../../kit/kit.js';
+import * as Lit from '../../lit/lit.js';
 import markdownImageStyles from './markdownImage.css.js';
 import { getMarkdownImage } from './MarkdownImagesMap.js';
+const { html, Directives: { ifDefined } } = Lit;
 /**
  * Component to render images from parsed markdown.
  * Parsed images from markdown are not directly rendered, instead they have to be added to the MarkdownImagesMap.ts.
  * This makes sure that all icons/images are accounted for in markdown.
  */
 export class MarkdownImage extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-markdown-image`;
     #shadow = this.attachShadow({ mode: 'open' });
     #imageData;
     #imageTitle;
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [markdownImageStyles];
-    }
     set data(data) {
         const { key, title } = data;
         const markdownImage = getMarkdownImage(key);
@@ -28,20 +25,20 @@ export class MarkdownImage extends HTMLElement {
     }
     #getIconComponent() {
         if (!this.#imageData) {
-            return LitHtml.html ``;
+            return Lit.nothing;
         }
         const { src, color, width = '100%', height = '100%' } = this.#imageData;
-        return LitHtml.html `
-      <${IconButton.Icon.Icon.litTagName} .data=${{ iconPath: src, color, width, height }}></${IconButton.Icon.Icon.litTagName}>
+        return html `
+      <devtools-icon .data=${{ iconPath: src, color, width, height }}></devtools-icon>
     `;
     }
     #getImageComponent() {
         if (!this.#imageData) {
-            return LitHtml.html ``;
+            return Lit.nothing;
         }
         const { src, width = '100%', height = '100%' } = this.#imageData;
-        return LitHtml.html `
-      <img class="markdown-image" src=${src} alt=${this.#imageTitle} width=${width} height=${height}/>
+        return html `
+      <img class="markdown-image" src=${src} alt=${ifDefined(this.#imageTitle)} width=${width} height=${height} />
     `;
     }
     #render() {
@@ -50,8 +47,11 @@ export class MarkdownImage extends HTMLElement {
         }
         const { isIcon } = this.#imageData;
         const imageComponent = isIcon ? this.#getIconComponent() : this.#getImageComponent();
-        LitHtml.render(imageComponent, this.#shadow, { host: this });
+        Lit.render(html `
+      <style>${markdownImageStyles}</style>
+      ${imageComponent}
+    `, this.#shadow, { host: this });
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-markdown-image', MarkdownImage);
+customElements.define('devtools-markdown-image', MarkdownImage);
 //# sourceMappingURL=MarkdownImage.js.map

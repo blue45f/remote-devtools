@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -33,146 +33,130 @@ import * as i18n from '../i18n/i18n.js';
 import { ParsedURL } from './ParsedURL.js';
 const UIStrings = {
     /**
-     *@description Text that appears in a tooltip the xhr and fetch resource types filter.
+     * @description Text that appears in a tooltip the fetch and xhr resource types filter.
      */
-    xhrAndFetch: '`XHR` and `Fetch`',
+    fetchAndXHR: '`Fetch` and `XHR`',
     /**
-     *@description Text that appears in a tooltip for the JavaScript types filter.
+     * @description Text that appears in a tooltip for the JavaScript types filter.
      */
-    scripts: 'Scripts',
+    javascript: 'JavaScript',
     /**
-     *@description Text that appears on a button for the JavaScript resource type filter.
+     * @description Text that appears on a button for the JavaScript resource type filter.
      */
     js: 'JS',
     /**
-     *@description Text that appears in a tooltip for the css types filter.
-     */
-    stylesheets: 'Stylesheets',
-    /**
-     *@description Text that appears on a button for the css resource type filter.
+     * @description Text that appears on a button for the css resource type filter.
      */
     css: 'CSS',
     /**
-     *@description Text that appears in a tooltip for the image types filter.
-     */
-    images: 'Images',
-    /**
-     *@description Text that appears on a button for the image resource type filter.
+     * @description Text that appears on a button for the image resource type filter.
      */
     img: 'Img',
     /**
-     *@description Text that appears on a button for the media resource type filter.
+     * @description Text that appears on a button for the media resource type filter.
      */
     media: 'Media',
     /**
-     *@description Text that appears in a tooltip for the resource types filter.
-     */
-    fonts: 'Fonts',
-    /**
-     *@description Text that appears on a button for the font resource type filter.
+     * @description Text that appears on a button for the font resource type filter.
      */
     font: 'Font',
     /**
-     *@description Text for documents, a type of resources
-     */
-    documents: 'Documents',
-    /**
-     *@description Text that appears on a button for the document resource type filter.
+     * @description Text that appears on a button for the document resource type filter.
      */
     doc: 'Doc',
     /**
-     *@description Text that appears in a tooltip for the websocket types filter.
+     * @description Text that appears on a button for the websocket, webtransport, directsocket resource type filter.
      */
-    websockets: 'WebSockets',
+    socketShort: 'Socket',
     /**
-     *@description Text that appears on a button for the websocket resource type filter.
-     */
-    ws: 'WS',
-    /**
-     *@description Text that appears in a tooltip for the WebAssembly types filter.
+     * @description Text that appears in a tooltip for the WebAssembly types filter.
      */
     webassembly: 'WebAssembly',
     /**
-     *@description Text that appears on a button for the WebAssembly resource type filter.
+     * @description Text that appears on a button for the WebAssembly resource type filter.
      */
     wasm: 'Wasm',
     /**
-     *@description Text that appears on a button for the manifest resource type filter.
+     * @description Text that appears on a button for the manifest resource type filter.
      */
     manifest: 'Manifest',
     /**
-     *@description Text for other types of items
+     * @description Text for other types of items
      */
     other: 'Other',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     document: 'Document',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     stylesheet: 'Stylesheet',
     /**
-     *@description Text in Image View of the Sources panel
+     * @description Text in Image View of the Sources panel
      */
     image: 'Image',
     /**
-     *@description Label for a group of JavaScript files
+     * @description Label for a group of JavaScript files
      */
     script: 'Script',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     texttrack: 'TextTrack',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     fetch: 'Fetch',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     eventsource: 'EventSource',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     websocket: 'WebSocket',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     webtransport: 'WebTransport',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
+     */
+    directsocket: 'DirectSocket',
+    /**
+     * @description Name of a network resource type
      */
     signedexchange: 'SignedExchange',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     ping: 'Ping',
     /**
-     *@description Name of a network resource type
+     * @description Name of a network resource type
      */
     cspviolationreport: 'CSPViolationReport',
     /**
-     *@description Name of a network initiator type
+     * @description Name of a network initiator type
      */
     preflight: 'Preflight',
     /**
-     *@description Name of a network initiator type
+     * @description Name of a network initiator type for FedCM requests
      */
-    webbundle: 'WebBundle',
+    fedcm: 'FedCM',
 };
 const str_ = i18n.i18n.registerUIStrings('core/common/ResourceType.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class ResourceType {
-    #nameInternal;
-    #titleInternal;
-    #categoryInternal;
-    #isTextTypeInternal;
+    #name;
+    #title;
+    #category;
+    #isTextType;
     constructor(name, title, category, isTextType) {
-        this.#nameInternal = name;
-        this.#titleInternal = title;
-        this.#categoryInternal = category;
-        this.#isTextTypeInternal = isTextType;
+        this.#name = name;
+        this.#title = title;
+        this.#category = category;
+        this.#isTextType = isTextType;
     }
     static fromMimeType(mimeType) {
         if (!mimeType) {
@@ -211,17 +195,13 @@ export class ResourceType {
         if (mimeType === 'application/wasm') {
             return resourceTypes.Wasm;
         }
-        if (mimeType === 'application/webbundle') {
-            return resourceTypes.WebBundle;
-        }
         return null;
     }
     static fromURL(url) {
         return resourceTypeByExtension.get(ParsedURL.extractExtension(url)) || null;
     }
     static fromName(name) {
-        for (const resourceTypeId in resourceTypes) {
-            const resourceType = resourceTypes[resourceTypeId];
+        for (const resourceType of Object.values(resourceTypes)) {
             if (resourceType.name() === name) {
                 return resourceType;
             }
@@ -229,6 +209,9 @@ export class ResourceType {
         return null;
     }
     static mimeFromURL(url) {
+        if (url.startsWith('snippet://') || url.startsWith('debugger://')) {
+            return 'text/javascript';
+        }
         const name = ParsedURL.extractName(url);
         if (mimeTypeByName.has(name)) {
             return mimeTypeByName.get(name);
@@ -242,11 +225,21 @@ export class ResourceType {
     static mimeFromExtension(ext) {
         return mimeTypeByExtension.get(ext);
     }
+    static simplifyContentType(contentType) {
+        const regex = new RegExp('^application(.*json$|\/json\+.*)');
+        return regex.test(contentType) ? 'application/json' : contentType;
+    }
+    /**
+     * Checks whether the given MIME type represents JavaScript content.
+     */
+    static isJavaScriptMimeType(mimeType) {
+        return mimeType === 'application/javascript' || mimeType === 'text/javascript';
+    }
     /**
      * Adds suffixes iff the mimeType is 'text/javascript' to denote whether the JS is minified or from
      * a source map.
      */
-    static mediaTypeForMetrics(mimeType, isFromSourceMap, isMinified) {
+    static mediaTypeForMetrics(mimeType, isFromSourceMap, isMinified, isSnippet, isDebugger) {
         if (mimeType !== 'text/javascript') {
             return mimeType;
         }
@@ -258,52 +251,55 @@ export class ResourceType {
         if (isMinified) {
             return 'text/javascript+minified';
         }
+        if (isSnippet) {
+            return 'text/javascript+snippet';
+        }
+        if (isDebugger) {
+            return 'text/javascript+eval';
+        }
         return 'text/javascript+plain';
     }
     name() {
-        return this.#nameInternal;
+        return this.#name;
     }
     title() {
-        return this.#titleInternal();
+        return this.#title();
     }
     category() {
-        return this.#categoryInternal;
+        return this.#category;
     }
     isTextType() {
-        return this.#isTextTypeInternal;
+        return this.#isTextType;
     }
     isScript() {
-        return this.#nameInternal === 'script' || this.#nameInternal === 'sm-script';
+        return this.#name === 'script' || this.#name === 'sm-script';
     }
     hasScripts() {
         return this.isScript() || this.isDocument();
     }
     isStyleSheet() {
-        return this.#nameInternal === 'stylesheet' || this.#nameInternal === 'sm-stylesheet';
+        return this.#name === 'stylesheet' || this.#name === 'sm-stylesheet';
     }
     hasStyleSheets() {
         return this.isStyleSheet() || this.isDocument();
     }
     isDocument() {
-        return this.#nameInternal === 'document';
+        return this.#name === 'document';
     }
     isDocumentOrScriptOrStyleSheet() {
         return this.isDocument() || this.isScript() || this.isStyleSheet();
     }
     isFont() {
-        return this.#nameInternal === 'font';
+        return this.#name === 'font';
     }
     isImage() {
-        return this.#nameInternal === 'image';
+        return this.#name === 'image';
     }
     isFromSourceMap() {
-        return this.#nameInternal.startsWith('sm-');
-    }
-    isWebbundle() {
-        return this.#nameInternal === 'webbundle';
+        return this.#name.startsWith('sm-');
     }
     toString() {
-        return this.#nameInternal;
+        return this.#name;
     }
     canonicalMimeType() {
         if (this.isDocument()) {
@@ -319,25 +315,27 @@ export class ResourceType {
     }
 }
 export class ResourceCategory {
+    name;
     title;
     shortTitle;
-    constructor(title, shortTitle) {
+    constructor(name, title, shortTitle) {
+        this.name = name;
         this.title = title;
         this.shortTitle = shortTitle;
     }
 }
 export const resourceCategories = {
-    XHR: new ResourceCategory(i18nLazyString(UIStrings.xhrAndFetch), i18n.i18n.lockedLazyString('Fetch/XHR')),
-    Script: new ResourceCategory(i18nLazyString(UIStrings.scripts), i18nLazyString(UIStrings.js)),
-    Stylesheet: new ResourceCategory(i18nLazyString(UIStrings.stylesheets), i18nLazyString(UIStrings.css)),
-    Image: new ResourceCategory(i18nLazyString(UIStrings.images), i18nLazyString(UIStrings.img)),
-    Media: new ResourceCategory(i18nLazyString(UIStrings.media), i18nLazyString(UIStrings.media)),
-    Font: new ResourceCategory(i18nLazyString(UIStrings.fonts), i18nLazyString(UIStrings.font)),
-    Document: new ResourceCategory(i18nLazyString(UIStrings.documents), i18nLazyString(UIStrings.doc)),
-    WebSocket: new ResourceCategory(i18nLazyString(UIStrings.websockets), i18nLazyString(UIStrings.ws)),
-    Wasm: new ResourceCategory(i18nLazyString(UIStrings.webassembly), i18nLazyString(UIStrings.wasm)),
-    Manifest: new ResourceCategory(i18nLazyString(UIStrings.manifest), i18nLazyString(UIStrings.manifest)),
-    Other: new ResourceCategory(i18nLazyString(UIStrings.other), i18nLazyString(UIStrings.other)),
+    XHR: new ResourceCategory('Fetch and XHR', i18nLazyString(UIStrings.fetchAndXHR), i18n.i18n.lockedLazyString('Fetch/XHR')),
+    Document: new ResourceCategory(UIStrings.document, i18nLazyString(UIStrings.document), i18nLazyString(UIStrings.doc)),
+    Stylesheet: new ResourceCategory(UIStrings.css, i18nLazyString(UIStrings.css), i18nLazyString(UIStrings.css)),
+    Script: new ResourceCategory(UIStrings.javascript, i18nLazyString(UIStrings.javascript), i18nLazyString(UIStrings.js)),
+    Font: new ResourceCategory(UIStrings.font, i18nLazyString(UIStrings.font), i18nLazyString(UIStrings.font)),
+    Image: new ResourceCategory(UIStrings.image, i18nLazyString(UIStrings.image), i18nLazyString(UIStrings.img)),
+    Media: new ResourceCategory(UIStrings.media, i18nLazyString(UIStrings.media), i18nLazyString(UIStrings.media)),
+    Manifest: new ResourceCategory(UIStrings.manifest, i18nLazyString(UIStrings.manifest), i18nLazyString(UIStrings.manifest)),
+    Socket: new ResourceCategory('Socket', i18n.i18n.lockedLazyString('WebSocket | WebTransport | DirectSocket'), i18nLazyString(UIStrings.socketShort)),
+    Wasm: new ResourceCategory(UIStrings.webassembly, i18nLazyString(UIStrings.webassembly), i18nLazyString(UIStrings.wasm)),
+    Other: new ResourceCategory(UIStrings.other, i18nLazyString(UIStrings.other), i18nLazyString(UIStrings.other)),
 };
 /**
  * This enum is a superset of all types defined in WebCore::InspectorPageAgent::resourceTypeJson
@@ -357,9 +355,9 @@ export const resourceTypes = {
     Fetch: new ResourceType('fetch', i18nLazyString(UIStrings.fetch), resourceCategories.XHR, true),
     Prefetch: new ResourceType('prefetch', i18n.i18n.lockedLazyString('Prefetch'), resourceCategories.Document, true),
     EventSource: new ResourceType('eventsource', i18nLazyString(UIStrings.eventsource), resourceCategories.XHR, true),
-    WebSocket: new ResourceType('websocket', i18nLazyString(UIStrings.websocket), resourceCategories.WebSocket, false),
-    // TODO(yoichio): Consider creating new category WT or WS/WT with WebSocket.
-    WebTransport: new ResourceType('webtransport', i18nLazyString(UIStrings.webtransport), resourceCategories.WebSocket, false),
+    WebSocket: new ResourceType('websocket', i18nLazyString(UIStrings.websocket), resourceCategories.Socket, false),
+    WebTransport: new ResourceType('webtransport', i18nLazyString(UIStrings.webtransport), resourceCategories.Socket, false),
+    DirectSocket: new ResourceType('directsocket', i18nLazyString(UIStrings.directsocket), resourceCategories.Socket, false),
     Wasm: new ResourceType('wasm', i18nLazyString(UIStrings.wasm), resourceCategories.Wasm, false),
     Manifest: new ResourceType('manifest', i18nLazyString(UIStrings.manifest), resourceCategories.Manifest, true),
     SignedExchange: new ResourceType('signed-exchange', i18nLazyString(UIStrings.signedexchange), resourceCategories.Other, false),
@@ -369,7 +367,7 @@ export const resourceTypes = {
     Preflight: new ResourceType('preflight', i18nLazyString(UIStrings.preflight), resourceCategories.Other, true),
     SourceMapScript: new ResourceType('sm-script', i18nLazyString(UIStrings.script), resourceCategories.Script, true),
     SourceMapStyleSheet: new ResourceType('sm-stylesheet', i18nLazyString(UIStrings.stylesheet), resourceCategories.Stylesheet, true),
-    WebBundle: new ResourceType('webbundle', i18nLazyString(UIStrings.webbundle), resourceCategories.Other, false),
+    FedCM: new ResourceType('fedcm', i18nLazyString(UIStrings.fedcm), resourceCategories.Other, false),
 };
 const mimeTypeByName = new Map([
     // CoffeeScript

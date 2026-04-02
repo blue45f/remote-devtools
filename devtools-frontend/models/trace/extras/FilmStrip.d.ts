@@ -1,12 +1,19 @@
-import type * as Types from '../types/types.js';
 import type * as Handlers from '../handlers/handlers.js';
-export interface FilmStripData {
-    frames: readonly FilmStripFrame[];
+import type * as Types from '../types/types.js';
+export interface Data {
+    zeroTime: Types.Timing.Micro;
+    spanTime: Types.Timing.Micro;
+    frames: readonly Frame[];
 }
-export interface FilmStripFrame {
-    screenshotEvent: Types.TraceEvents.TraceEventSnapshot;
-    screenshotAsString: string;
+export interface Frame {
+    screenshotEvent: Types.Events.LegacySyntheticScreenshot | Types.Events.Screenshot;
     index: number;
 }
-export declare function filmStripFromTraceEngine(traceData: Handlers.Migration.PartialTraceData, customZeroTime?: Types.Timing.MicroSeconds): FilmStripData;
-export declare function frameClosestToTimestamp(filmStrip: FilmStripData, searchTimestamp: Types.Timing.MicroSeconds): FilmStripFrame | null;
+export type HandlersWithFilmStrip = Handlers.Types.HandlersWithMeta<{
+    Screenshots: typeof Handlers.ModelHandlers.Screenshots;
+}>;
+export type HandlerDataWithScreenshots = Handlers.Types.EnabledHandlerDataWithMeta<{
+    Screenshots: typeof Handlers.ModelHandlers.Screenshots;
+}>;
+export declare function fromHandlerData(data: HandlerDataWithScreenshots, customZeroTime?: Types.Timing.Micro): Data;
+export declare function frameClosestToTimestamp(filmStrip: Data, searchTimestamp: Types.Timing.Micro): Frame | null;

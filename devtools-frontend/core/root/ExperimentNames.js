@@ -1,0 +1,24 @@
+// Copyright 2026 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+export var ExperimentName;
+(function (ExperimentName) {
+    ExperimentName["ALL"] = "*";
+    ExperimentName["CAPTURE_NODE_CREATION_STACKS"] = "capture-node-creation-stacks";
+    ExperimentName["LIVE_HEAP_PROFILE"] = "live-heap-profile";
+    ExperimentName["PROTOCOL_MONITOR"] = "protocol-monitor";
+    ExperimentName["SAMPLING_HEAP_PROFILER_TIMELINE"] = "sampling-heap-profiler-timeline";
+    ExperimentName["TIMELINE_INVALIDATION_TRACKING"] = "timeline-invalidation-tracking";
+    ExperimentName["APCA"] = "apca";
+    ExperimentName["FONT_EDITOR"] = "font-editor";
+    ExperimentName["INSTRUMENTATION_BREAKPOINTS"] = "instrumentation-breakpoints";
+    ExperimentName["USE_SOURCE_MAP_SCOPES"] = "use-source-map-scopes";
+    ExperimentName["TIMELINE_DEBUG_MODE"] = "timeline-debug-mode";
+    ExperimentName["DURABLE_MESSAGES"] = "durable-messages";
+    ExperimentName["JPEG_XL"] = "jpeg-xl";
+    // Adding or removing an entry from this enum?
+    // You will need to update:
+    // 1. DevToolsExperiments enum in host/UserMetrics.ts
+    // 2. Maybe REGISTERED_EXPERIMENTS in EnvironmentHelpers.ts (to create this experiment in the test env)
+})(ExperimentName || (ExperimentName = {}));
+//# sourceMappingURL=ExperimentNames.js.map

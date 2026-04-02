@@ -1,6 +1,7 @@
+import './Toolbar.js';
 import { VBox } from './Widget.js';
 export declare class SearchableView extends VBox {
-    private searchProvider;
+    protected searchProvider: Searchable;
     private replaceProvider;
     private setting;
     private replaceable;
@@ -9,23 +10,21 @@ export declare class SearchableView extends VBox {
     private replaceToggleButton;
     private searchInputElement;
     private matchesElement;
+    private matchesElementValue;
     private searchNavigationPrevElement;
     private searchNavigationNextElement;
     private readonly replaceInputElement;
-    private readonly buttonsContainer;
     private caseSensitiveButton;
+    private wholeWordButton;
     private regexButton;
-    private readonly secondRowButtons;
     private replaceButtonElement;
     private replaceAllButtonElement;
     private minimalSearchQuerySize;
     private searchIsVisible?;
     private currentQuery?;
     private valueChangedTimeoutId?;
-    constructor(searchable: Searchable, replaceable: Replaceable | null, settingName?: string);
+    constructor(searchable: Searchable, replaceable: Replaceable | null, settingName?: string, element?: HTMLElement);
     static fromElement(element: Element | null): SearchableView | null;
-    private toggleCaseSensitiveSearch;
-    private toggleRegexSearch;
     private toggleReplace;
     private saveSetting;
     private loadSetting;
@@ -34,7 +33,6 @@ export declare class SearchableView extends VBox {
     setReplaceable(replaceable: boolean): void;
     updateSearchMatchesCount(matches: number): void;
     updateCurrentMatchIndex(currentMatchIndex: number): void;
-    isSearchVisible(): boolean;
     closeSearch(): void;
     private toggleSearchBar;
     cancelSearch(): void;
@@ -62,14 +60,17 @@ export declare class SearchableView extends VBox {
     private onInput;
     private onValueChanged;
 }
-export declare const _symbol: unique symbol;
 export interface Searchable {
+    supportsMatchCounts?(): boolean;
+    currentQuery?: string;
+    currentSearchMatches?: number;
     onSearchCanceled(): void;
     onSearchClosed?: () => void;
     performSearch(searchConfig: SearchConfig, shouldJump: boolean, jumpBackwards?: boolean): void;
     jumpToNextSearchResult(): void;
     jumpToPreviousSearchResult(): void;
     supportsCaseSensitiveSearch(): boolean;
+    supportsWholeWordSearch(): boolean;
     supportsRegexSearch(): boolean;
 }
 export interface Replaceable {
@@ -83,7 +84,8 @@ export interface SearchRegexResult {
 export declare class SearchConfig {
     query: string;
     caseSensitive: boolean;
+    wholeWord: boolean;
     isRegex: boolean;
-    constructor(query: string, caseSensitive: boolean, isRegex: boolean);
+    constructor(query: string, caseSensitive: boolean, wholeWord: boolean, isRegex: boolean);
     toSearchRegex(global?: boolean): SearchRegexResult;
 }

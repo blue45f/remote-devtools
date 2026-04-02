@@ -1,4 +1,4 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -15,11 +15,11 @@ export class SharedStorageForOrigin extends Common.ObjectWrapper.ObjectWrapper {
         return this.#securityOrigin;
     }
     async getMetadata() {
-        return this.#model.storageAgent.invoke_getSharedStorageMetadata({ ownerOrigin: this.securityOrigin })
+        return await this.#model.storageAgent.invoke_getSharedStorageMetadata({ ownerOrigin: this.securityOrigin })
             .then(({ metadata }) => metadata);
     }
     async getEntries() {
-        return this.#model.storageAgent.invoke_getSharedStorageEntries({ ownerOrigin: this.securityOrigin })
+        return await this.#model.storageAgent.invoke_getSharedStorageEntries({ ownerOrigin: this.securityOrigin })
             .then(({ entries }) => entries);
     }
     async setEntry(key, value, ignoreIfPresent) {
@@ -35,14 +35,6 @@ export class SharedStorageForOrigin extends Common.ObjectWrapper.ObjectWrapper {
         await this.#model.storageAgent.invoke_resetSharedStorageBudget({ ownerOrigin: this.securityOrigin });
     }
 }
-(function (SharedStorageForOrigin) {
-    // TODO(crbug.com/1167717): Make this a const enum.
-    // eslint-disable-next-line rulesdir/const_enum
-    let Events;
-    (function (Events) {
-        Events["SharedStorageChanged"] = "SharedStorageChanged";
-    })(Events = SharedStorageForOrigin.Events || (SharedStorageForOrigin.Events = {}));
-})(SharedStorageForOrigin || (SharedStorageForOrigin = {}));
 export class SharedStorageModel extends SDK.SDKModel.SDKModel {
     #securityOriginManager;
     #storages;
@@ -105,7 +97,7 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel {
         }
         const storage = new SharedStorageForOrigin(this, securityOrigin);
         this.#storages.set(securityOrigin, storage);
-        this.dispatchEventToListeners(Events.SharedStorageAdded, storage);
+        this.dispatchEventToListeners("SharedStorageAdded" /* Events.SHARED_STORAGE_ADDED */, storage);
     }
     #securityOriginRemoved(event) {
         this.#removeOrigin(event.data);
@@ -116,7 +108,7 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel {
             return;
         }
         this.#storages.delete(securityOrigin);
-        this.dispatchEventToListeners(Events.SharedStorageRemoved, storage);
+        this.dispatchEventToListeners("SharedStorageRemoved" /* Events.SHARED_STORAGE_REMOVED */, storage);
     }
     storages() {
         return this.#storages.values();
@@ -129,29 +121,34 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel {
     }
     isChangeEvent(event) {
         return [
-            "documentSet" /* Protocol.Storage.SharedStorageAccessType.DocumentSet */,
-            "documentAppend" /* Protocol.Storage.SharedStorageAccessType.DocumentAppend */,
-            "documentDelete" /* Protocol.Storage.SharedStorageAccessType.DocumentDelete */,
-            "documentClear" /* Protocol.Storage.SharedStorageAccessType.DocumentClear */,
-            "workletSet" /* Protocol.Storage.SharedStorageAccessType.WorkletSet */,
-            "workletAppend" /* Protocol.Storage.SharedStorageAccessType.WorkletAppend */,
-            "workletDelete" /* Protocol.Storage.SharedStorageAccessType.WorkletDelete */,
-            "workletClear" /* Protocol.Storage.SharedStorageAccessType.WorkletClear */,
-        ].includes(event.type);
+            "set" /* Protocol.Storage.SharedStorageAccessMethod.Set */,
+            "append" /* Protocol.Storage.SharedStorageAccessMethod.Append */,
+            "delete" /* Protocol.Storage.SharedStorageAccessMethod.Delete */,
+            "clear" /* Protocol.Storage.SharedStorageAccessMethod.Clear */,
+        ].includes(event.method);
     }
     sharedStorageAccessed(event) {
         if (this.isChangeEvent(event)) {
             const sharedStorage = this.storageForOrigin(event.ownerOrigin);
             if (sharedStorage) {
-                const eventData = { accessTime: event.accessTime, type: event.type, mainFrameId: event.mainFrameId, params: event.params };
+                const eventData = {
+                    accessTime: event.accessTime,
+                    method: event.method,
+                    mainFrameId: event.mainFrameId,
+                    ownerSite: event.ownerSite,
+                    params: event.params,
+                    scope: event.scope,
+                };
                 // Forward events that may have changed `sharedStorage` to listeners for `sharedStorage`.
-                sharedStorage.dispatchEventToListeners(SharedStorageForOrigin.Events.SharedStorageChanged, eventData);
+                sharedStorage.dispatchEventToListeners("SharedStorageChanged" /* SharedStorageForOrigin.Events.SHARED_STORAGE_CHANGED */, eventData);
             }
             else {
                 void this.#maybeAddOrigin(event.ownerOrigin);
             }
         }
-        this.dispatchEventToListeners(Events.SharedStorageAccess, event);
+        this.dispatchEventToListeners("SharedStorageAccess" /* Events.SHARED_STORAGE_ACCESS */, event);
+    }
+    sharedStorageWorkletOperationExecutionFinished(_event) {
     }
     indexedDBListUpdated(_event) {
     }
@@ -163,17 +160,14 @@ export class SharedStorageModel extends SDK.SDKModel.SDKModel {
     }
     interestGroupAccessed(_event) {
     }
+    interestGroupAuctionEventOccurred(_event) {
+    }
+    interestGroupAuctionNetworkRequestCreated(_event) {
+    }
     storageBucketCreatedOrUpdated(_event) {
     }
     storageBucketDeleted(_event) {
     }
 }
-SDK.SDKModel.SDKModel.register(SharedStorageModel, { capabilities: SDK.Target.Capability.Storage, autostart: false });
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["SharedStorageAccess"] = "SharedStorageAccess";
-    Events["SharedStorageAdded"] = "SharedStorageAdded";
-    Events["SharedStorageRemoved"] = "SharedStorageRemoved";
-})(Events || (Events = {}));
+SDK.SDKModel.SDKModel.register(SharedStorageModel, { capabilities: 8192 /* SDK.Target.Capability.STORAGE */, autostart: false });
 //# sourceMappingURL=SharedStorageModel.js.map

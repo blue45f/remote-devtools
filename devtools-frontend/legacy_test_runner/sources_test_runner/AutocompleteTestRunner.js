@@ -1,13 +1,17 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/**
- * @fileoverview using private properties isn't a Closure violation in tests.
- */
-self.SourcesTestRunner = self.SourcesTestRunner || {};
+import * as TextUtils from '../../models/text_utils/text_utils.js';
+import {TestRunner} from '../test_runner/test_runner.js';
 
-SourcesTestRunner.dumpSuggestions = function(textEditor, lines) {
+import {dumpTextWithSelection} from './EditorTestRunner.js';
+
+/**
+ * @file using private properties isn't a Closure violation in tests.
+ */
+
+export const dumpSuggestions = function(textEditor, lines) {
   let resolve;
   const promise = new Promise(fulfill => {
     resolve = fulfill;
@@ -29,14 +33,14 @@ SourcesTestRunner.dumpSuggestions = function(textEditor, lines) {
   }
 
   textEditor.setText(lines.join('\n').replace('|', ''));
-  textEditor.setSelection(TextUtils.TextRange.createFromLocation(lineNumber, columnNumber));
+  textEditor.setSelection(TextUtils.TextRange.TextRange.createFromLocation(lineNumber, columnNumber));
   TestRunner.addSniffer(
       TextEditor.TextEditorAutocompleteController.prototype, 'onSuggestionsShownForTest', suggestionsShown);
   textEditor.autocompleteController.autocomplete();
 
   function suggestionsShown(words) {
     TestRunner.addResult('========= Selection In Editor =========');
-    SourcesTestRunner.dumpTextWithSelection(textEditor);
+    dumpTextWithSelection(textEditor);
     TestRunner.addResult('======= Autocomplete Suggestions =======');
     TestRunner.addResult('[' + words.map(item => item.text).join(', ') + ']');
     resolve();

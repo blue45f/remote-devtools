@@ -1,11 +1,12 @@
 import * as Common from '../../core/common/common.js';
+import type * as NetworkTimeCalculator from '../../models/network_time_calculator/network_time_calculator.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import { type NetworkNode } from './NetworkDataGridNode.js';
-import { type NetworkLogView } from './NetworkLogView.js';
-import { type NetworkTimeCalculator, type NetworkTransferDurationCalculator, type NetworkTransferTimeCalculator } from './NetworkTimeCalculator.js';
+import type { NetworkLogView } from './NetworkLogView.js';
 export declare class NetworkLogViewColumns {
+    #private;
     private networkLogView;
-    private readonly persistantSettings;
+    private readonly persistentSettings;
     private readonly networkLogLargeRowsSetting;
     private readonly eventDividers;
     private eventDividersShown;
@@ -16,7 +17,6 @@ export declare class NetworkLogViewColumns {
     private readonly popupLinkifier;
     private calculatorsMap;
     private lastWheelTime;
-    private dataGridInternal;
     private splitWidget;
     private waterfallColumn;
     private activeScroller;
@@ -29,7 +29,7 @@ export declare class NetworkLogViewColumns {
     private popoverHelper?;
     private hasScrollerTouchStarted?;
     private scrollerTouchStartPos?;
-    constructor(networkLogView: NetworkLogView, timeCalculator: NetworkTransferTimeCalculator, durationCalculator: NetworkTransferDurationCalculator, networkLogLargeRowsSetting: Common.Settings.Setting<boolean>);
+    constructor(networkLogView: NetworkLogView, timeCalculator: NetworkTimeCalculator.NetworkTransferTimeCalculator, durationCalculator: NetworkTimeCalculator.NetworkTransferDurationCalculator, networkLogLargeRowsSetting: Common.Settings.Setting<boolean>);
     private static convertToDataGridDescriptor;
     wasShown(): void;
     willHide(): void;
@@ -44,23 +44,25 @@ export declare class NetworkLogViewColumns {
     private updateScrollerWidthIfNeeded;
     private redrawWaterfallColumn;
     private createWaterfallHeader;
-    setCalculator(x: NetworkTimeCalculator): void;
+    setCalculator(x: NetworkTimeCalculator.NetworkTimeCalculator): void;
     scheduleRefresh(): void;
     private updateRowsSize;
     show(element: Element): void;
     setHidden(value: boolean): void;
     dataGrid(): DataGrid.SortableDataGrid.SortableDataGrid<NetworkNode>;
     sortByCurrentColumn(): void;
+    filterChanged(): void;
     private sortHandler;
     private dataGridSortedForTest;
     private updateColumns;
     switchViewMode(gridMode: boolean): void;
     private toggleColumnVisibility;
+    private setWaterfallVisibility;
     private saveColumnsSettings;
     private loadCustomColumnsAndSettings;
     private makeHeaderFragment;
-    private innerHeaderContextMenu;
-    private manageCustomHeaderDialog;
+    private manageRequestCustomHeaderDialog;
+    private manageResponseCustomHeaderDialog;
     private removeCustomHeader;
     private addCustomHeader;
     private changeCustomHeader;
@@ -70,20 +72,6 @@ export declare class NetworkLogViewColumns {
     showEventDividers(): void;
     selectFilmStripFrame(time: number): void;
     clearFilmStripFrame(): void;
-}
-export declare const _initialSortColumn = "waterfall";
-export declare enum _calculatorTypes {
-    Duration = "Duration",
-    Time = "Time"
-}
-export declare const _defaultColumnConfig: Object;
-export declare const _filmStripDividerColor = "#fccc49";
-export declare enum WaterfallSortIds {
-    StartTime = "startTime",
-    ResponseTime = "responseReceivedTime",
-    EndTime = "endTime",
-    Duration = "duration",
-    Latency = "latency"
 }
 export interface Descriptor {
     id: string;
@@ -96,8 +84,9 @@ export interface Descriptor {
     hideableGroup: string | null;
     nonSelectable: boolean;
     sortable: boolean;
-    align?: string | null;
+    align?: DataGrid.DataGrid.Align | null;
     isResponseHeader: boolean;
+    isRequestHeader: boolean;
     sortingFunction: (arg0: NetworkNode, arg1: NetworkNode) => number | undefined;
     isCustomHeader: boolean;
     allowInSortByEvenWhenHidden: boolean;

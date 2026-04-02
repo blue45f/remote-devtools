@@ -1,8 +1,10 @@
-// Copyright (c) 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as ComponentHelpers from '../../components/helpers/helpers.js';
-import * as LitHtml from '../../lit-html/lit-html.js';
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
+import * as Platform from '../../../core/platform/platform.js';
+import * as Components from '../../legacy/components/utils/utils.js';
+import { html, nothing, render } from '../../lit/lit.js';
 import reportStyles from './report.css.js';
 import reportKeyStyles from './reportKey.css.js';
 import reportSectionStyles from './reportSection.css.js';
@@ -10,23 +12,29 @@ import reportSectionDividerStyles from './reportSectionDivider.css.js';
 import reportSectionHeaderStyles from './reportSectionHeader.css.js';
 import reportValueStyles from './reportValue.css.js';
 export class Report extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report`;
     #shadow = this.attachShadow({ mode: 'open' });
     #reportTitle = '';
-    set data({ reportTitle }) {
+    #reportUrl = Platform.DevToolsPath.EmptyUrlString;
+    set data({ reportTitle, reportUrl }) {
         this.#reportTitle = reportTitle;
+        this.#reportUrl = reportUrl ?? Platform.DevToolsPath.EmptyUrlString;
         this.#render();
     }
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportStyles}</style>
+      ${this.#reportTitle ? html `<h1 class="report-title">
+        ${this.#reportTitle}
+        ${this.#reportUrl ? Components.Linkifier.Linkifier.linkifyURL(this.#reportUrl, {
+            tabStop: true, jslogContext: 'source-location', className: 'report-url'
+        }) : nothing}
+      </h1>` : nothing}
       <div class="content">
-        ${this.#reportTitle ? LitHtml.html `<div class="report-title">${this.#reportTitle}</div>` : LitHtml.nothing}
         <slot></slot>
       </div>
     `, this.#shadow, { host: this });
@@ -34,16 +42,15 @@ export class Report extends HTMLElement {
     }
 }
 export class ReportSection extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report-section`;
     #shadow = this.attachShadow({ mode: 'open' });
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportSectionStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportSectionStyles}</style>
       <div class="section">
         <slot></slot>
       </div>
@@ -52,16 +59,15 @@ export class ReportSection extends HTMLElement {
     }
 }
 export class ReportSectionHeader extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report-section-header`;
     #shadow = this.attachShadow({ mode: 'open' });
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportSectionHeaderStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportSectionHeaderStyles}</style>
       <div class="section-header">
         <slot></slot>
       </div>
@@ -70,16 +76,15 @@ export class ReportSectionHeader extends HTMLElement {
     }
 }
 export class ReportSectionDivider extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report-divider`;
     #shadow = this.attachShadow({ mode: 'open' });
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportSectionDividerStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportSectionDividerStyles}</style>
       <div class="section-divider">
       </div>
     `, this.#shadow, { host: this });
@@ -87,41 +92,39 @@ export class ReportSectionDivider extends HTMLElement {
     }
 }
 export class ReportKey extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report-key`;
     #shadow = this.attachShadow({ mode: 'open' });
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportKeyStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportKeyStyles}</style>
       <div class="key"><slot></slot></div>
     `, this.#shadow, { host: this });
         // clang-format on
     }
 }
 export class ReportValue extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-report-value`;
     #shadow = this.attachShadow({ mode: 'open' });
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [reportValueStyles];
         this.#render();
     }
     #render() {
         // Disabled until https://crbug.com/1079231 is fixed.
         // clang-format off
-        LitHtml.render(LitHtml.html `
+        render(html `
+      <style>${reportValueStyles}</style>
       <div class="value"><slot></slot></div>
     `, this.#shadow, { host: this });
         // clang-format on
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-report', Report);
-ComponentHelpers.CustomElements.defineComponent('devtools-report-section', ReportSection);
-ComponentHelpers.CustomElements.defineComponent('devtools-report-section-header', ReportSectionHeader);
-ComponentHelpers.CustomElements.defineComponent('devtools-report-key', ReportKey);
-ComponentHelpers.CustomElements.defineComponent('devtools-report-value', ReportValue);
-ComponentHelpers.CustomElements.defineComponent('devtools-report-divider', ReportSectionDivider);
+customElements.define('devtools-report', Report);
+customElements.define('devtools-report-section', ReportSection);
+customElements.define('devtools-report-section-header', ReportSectionHeader);
+customElements.define('devtools-report-key', ReportKey);
+customElements.define('devtools-report-value', ReportValue);
+customElements.define('devtools-report-divider', ReportSectionDivider);
 //# sourceMappingURL=ReportView.js.map

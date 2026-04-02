@@ -12,5 +12,6 @@ export declare class ActionRegistry {
     availableActions(): Action[];
     actions(): Action[];
     applicableActions(actionIds: string[], context: Context): Action[];
-    action(actionId: string): Action | null;
+    hasAction(actionId: string): boolean;
+    getAction(actionId: string): Action;
 }

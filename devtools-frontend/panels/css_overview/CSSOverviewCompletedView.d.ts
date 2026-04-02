@@ -1,12 +1,13 @@
+import '../../ui/legacy/components/data_grid/data_grid.js';
+import '../../ui/kit/kit.js';
 import * as Common from '../../core/common/common.js';
-import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
-import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
+import type * as Protocol from '../../generated/protocol.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as Protocol from '../../generated/protocol.js';
-import { type OverviewController, type PopulateNodesEventNodes, type PopulateNodesEventNodeTypes } from './CSSOverviewController.js';
-import { type UnusedDeclaration } from './CSSOverviewUnusedDeclarations.js';
+import { type LitTemplate } from '../../ui/lit/lit.js';
+import type { GlobalStyleStats } from './CSSOverviewModel.js';
+import type { UnusedDeclaration } from './CSSOverviewUnusedDeclarations.js';
 export type NodeStyleStats = Map<string, Set<number>>;
 export interface ContrastIssue {
     nodeId: Protocol.DOM.BackendNodeId;
@@ -44,44 +45,97 @@ export interface OverviewData {
     unusedDeclarations: Map<string, UnusedDeclaration[]>;
 }
 export type FontInfo = Map<string, Map<string, Map<string, number[]>>>;
-export declare class CSSOverviewCompletedView extends UI.Panel.PanelWithSidebar {
+interface FontMetric {
+    label: string;
+    values: Array<{
+        title: string;
+        nodes: number[];
+    }>;
+}
+interface ViewInput {
+    elementCount: number;
+    backgroundColors: string[];
+    textColors: string[];
+    textColorContrastIssues: Map<string, ContrastIssue[]>;
+    fillColors: string[];
+    borderColors: string[];
+    globalStyleStats: GlobalStyleStats;
+    mediaQueries: Array<{
+        title: string;
+        nodes: Protocol.CSS.CSSMedia[];
+    }>;
+    unusedDeclarations: Array<{
+        title: string;
+        nodes: UnusedDeclaration[];
+    }>;
+    fontInfo: Array<{
+        font: string;
+        fontMetrics: FontMetric[];
+    }>;
+    selectedSection: string;
+    onClick: (evt: Event) => void;
+    onSectionSelected: (section: string, withKeyboard: boolean) => void;
+    onReset: () => void;
+}
+interface ViewOutput {
+    revealSection: Map<string, (setFocus: boolean) => void>;
+    closeAllTabs: () => void;
+    addTab: (id: string, tabTitle: string, view: UI.Widget.Widget, jslogContext: string) => void;
+}
+type View = (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+type PopulateNodesEvent = {
+    type: 'contrast';
+    key: string;
+    section: string | undefined;
+    nodes: ContrastIssue[];
+} | {
+    type: 'color';
+    color: string;
+    section: string | undefined;
+    nodes: Array<{
+        nodeId: Protocol.DOM.BackendNodeId;
+    }>;
+} | {
+    type: 'unused-declarations';
+    declaration: string;
+    nodes: UnusedDeclaration[];
+} | {
+    type: 'media-queries';
+    text: string;
+    nodes: Protocol.CSS.CSSMedia[];
+} | {
+    type: 'font-info';
+    name: string;
+    nodes: Array<{
+        nodeId: Protocol.DOM.BackendNodeId;
+    }>;
+};
+export type PopulateNodesEventNodes = PopulateNodesEvent['nodes'];
+export type PopulateNodesEventNodeTypes = PopulateNodesEventNodes[0];
+export declare class CSSOverviewCompletedView extends UI.Widget.VBox {
     #private;
-    constructor(controller: OverviewController);
-    wasShown(): void;
-    initializeModels(target: SDK.Target.Target): void;
-    setOverviewData(data: OverviewData): void;
+    onReset: () => void;
+    constructor(element?: HTMLElement, view?: View);
+    set target(target: SDK.Target.Target | undefined);
+    performUpdate(): void;
+    set overviewData(data: OverviewData);
     static readonly pushedNodes: Set<Protocol.DOM.BackendNodeId>;
 }
-declare const DetailsView_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends Events.TabClosed>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends Events.TabClosed>(eventType: T_1): Promise<EventTypes[T_1]>; /**
-     *@description Title of font info subsection in the CSS Overview Panel
-     */
-    removeEventListener<T_2 extends Events.TabClosed>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
-    hasEventListeners(eventType: Events.TabClosed): boolean;
-    dispatchEventToListeners<T_3 extends Events.TabClosed>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
-}) & typeof UI.Widget.VBox;
-export declare class DetailsView extends DetailsView_base {
-    #private;
-    constructor();
-    appendTab(id: string, tabTitle: string, view: UI.Widget.Widget, isCloseable?: boolean): void;
-    closeTabs(): void;
+interface ElementDetailsViewInput {
+    items: Array<{
+        data: PopulateNodesEventNodeTypes;
+        link?: LitTemplate;
+        showNode?: () => void;
+    }>;
+    visibility: Set<string>;
 }
-export declare const enum Events {
-    TabClosed = "TabClosed"
-}
-export type EventTypes = {
-    [Events.TabClosed]: number;
-};
+type ElementDetailsViewFunction = (input: ElementDetailsViewInput, output: object, target: HTMLElement) => void;
+export declare const ELEMENT_DETAILS_DEFAULT_VIEW: ElementDetailsViewFunction;
 export declare class ElementDetailsView extends UI.Widget.Widget {
     #private;
-    constructor(controller: OverviewController, domModel: SDK.DOMModel.DOMModel, cssModel: SDK.CSSModel.CSSModel, linkifier: Components.Linkifier.Linkifier);
-    populateNodes(data: PopulateNodesEventNodes): Promise<void>;
-}
-export declare class ElementNode extends DataGrid.SortableDataGrid.SortableDataGridNode<ElementNode> {
-    #private;
-    constructor(data: PopulateNodesEventNodeTypes, frontendNode: SDK.DOMModel.DOMNode | null | undefined, linkifier: Components.Linkifier.Linkifier, cssModel: SDK.CSSModel.CSSModel);
-    createCell(columnId: string): HTMLElement;
+    constructor(domModel: SDK.DOMModel.DOMModel, cssModel: SDK.CSSModel.CSSModel, linkifier: Components.Linkifier.Linkifier, view?: ElementDetailsViewFunction);
+    set data(data: PopulateNodesEventNodes);
+    performUpdate(): Promise<void>;
 }
 export {};

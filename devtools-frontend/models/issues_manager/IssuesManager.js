@@ -1,4 +1,4 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -6,21 +6,29 @@ import * as SDK from '../../core/sdk/sdk.js';
 import { AttributionReportingIssue } from './AttributionReportingIssue.js';
 import { BounceTrackingIssue } from './BounceTrackingIssue.js';
 import { ClientHintIssue } from './ClientHintIssue.js';
+import { ConnectionAllowlistIssue } from './ConnectionAllowlistIssue.js';
 import { ContentSecurityPolicyIssue } from './ContentSecurityPolicyIssue.js';
+import { CookieDeprecationMetadataIssue } from './CookieDeprecationMetadataIssue.js';
+import { CookieIssue } from './CookieIssue.js';
 import { CorsIssue } from './CorsIssue.js';
 import { CrossOriginEmbedderPolicyIssue, isCrossOriginEmbedderPolicyIssue } from './CrossOriginEmbedderPolicyIssue.js';
 import { DeprecationIssue } from './DeprecationIssue.js';
+import { ElementAccessibilityIssue } from './ElementAccessibilityIssue.js';
 import { FederatedAuthRequestIssue } from './FederatedAuthRequestIssue.js';
-import { FederatedAuthUserInfoRequestIssue } from './FederatedAuthUserInfoRequestIssue.js';
 import { GenericIssue } from './GenericIssue.js';
 import { HeavyAdIssue } from './HeavyAdIssue.js';
-import { LowTextContrastIssue } from './LowTextContrastIssue.js';
 import { MixedContentIssue } from './MixedContentIssue.js';
+import { PartitioningBlobURLIssue } from './PartitioningBlobURLIssue.js';
+import { PermissionElementIssue } from './PermissionElementIssue.js';
+import { PropertyRuleIssue } from './PropertyRuleIssue.js';
 import { QuirksModeIssue } from './QuirksModeIssue.js';
-import { CookieIssue } from './CookieIssue.js';
+import { SelectivePermissionsInterventionIssue } from './SelectivePermissionsInterventionIssue.js';
 import { SharedArrayBufferIssue } from './SharedArrayBufferIssue.js';
+import { SharedDictionaryIssue } from './SharedDictionaryIssue.js';
 import { SourceFrameIssuesManager } from './SourceFrameIssuesManager.js';
+import { SRIMessageSignatureIssue } from './SRIMessageSignatureIssue.js';
 import { StylesheetLoadingIssue } from './StylesheetLoadingIssue.js';
+import { UnencodedDigestIssue } from './UnencodedDigestIssue.js';
 let issuesManagerInstance = null;
 function createIssuesForBlockedByResponseIssue(issuesModel, inspectorIssue) {
     const blockedByResponseIssueDetails = inspectorIssue.details.blockedByResponseIssueDetails;
@@ -56,8 +64,8 @@ const issueCodeHandlers = new Map([
         SharedArrayBufferIssue.fromInspectorIssue,
     ],
     [
-        "LowTextContrastIssue" /* Protocol.Audits.InspectorIssueCode.LowTextContrastIssue */,
-        LowTextContrastIssue.fromInspectorIssue,
+        "SharedDictionaryIssue" /* Protocol.Audits.InspectorIssueCode.SharedDictionaryIssue */,
+        SharedDictionaryIssue.fromInspectorIssue,
     ],
     [
         "CorsIssue" /* Protocol.Audits.InspectorIssueCode.CorsIssue */,
@@ -96,15 +104,47 @@ const issueCodeHandlers = new Map([
         StylesheetLoadingIssue.fromInspectorIssue,
     ],
     [
-        "FederatedAuthUserInfoRequestIssue" /* Protocol.Audits.InspectorIssueCode.FederatedAuthUserInfoRequestIssue */,
-        FederatedAuthUserInfoRequestIssue.fromInspectorIssue,
+        "PartitioningBlobURLIssue" /* Protocol.Audits.InspectorIssueCode.PartitioningBlobURLIssue */,
+        PartitioningBlobURLIssue.fromInspectorIssue,
+    ],
+    [
+        "PropertyRuleIssue" /* Protocol.Audits.InspectorIssueCode.PropertyRuleIssue */,
+        PropertyRuleIssue.fromInspectorIssue,
+    ],
+    [
+        "CookieDeprecationMetadataIssue" /* Protocol.Audits.InspectorIssueCode.CookieDeprecationMetadataIssue */,
+        CookieDeprecationMetadataIssue.fromInspectorIssue,
+    ],
+    [
+        "ElementAccessibilityIssue" /* Protocol.Audits.InspectorIssueCode.ElementAccessibilityIssue */,
+        ElementAccessibilityIssue.fromInspectorIssue,
+    ],
+    [
+        "SRIMessageSignatureIssue" /* Protocol.Audits.InspectorIssueCode.SRIMessageSignatureIssue */,
+        SRIMessageSignatureIssue.fromInspectorIssue,
+    ],
+    [
+        "UnencodedDigestIssue" /* Protocol.Audits.InspectorIssueCode.UnencodedDigestIssue */,
+        UnencodedDigestIssue.fromInspectorIssue,
+    ],
+    [
+        "ConnectionAllowlistIssue" /* Protocol.Audits.InspectorIssueCode.ConnectionAllowlistIssue */,
+        ConnectionAllowlistIssue.fromInspectorIssue,
+    ],
+    [
+        "PermissionElementIssue" /* Protocol.Audits.InspectorIssueCode.PermissionElementIssue */,
+        PermissionElementIssue.fromInspectorIssue,
+    ],
+    [
+        "SelectivePermissionsInterventionIssue" /* Protocol.Audits.InspectorIssueCode.SelectivePermissionsInterventionIssue */,
+        SelectivePermissionsInterventionIssue.fromInspectorIssue,
     ],
 ]);
 /**
  * Each issue reported by the backend can result in multiple `Issue` instances.
  * Handlers are simple functions hard-coded into a map.
  */
-function createIssuesFromProtocolIssue(issuesModel, inspectorIssue) {
+export function createIssuesFromProtocolIssue(issuesModel, inspectorIssue) {
     const handler = issueCodeHandlers.get(inspectorIssue.code);
     if (handler) {
         return handler(issuesModel, inspectorIssue);
@@ -117,7 +157,7 @@ export function defaultHideIssueByCodeSetting() {
     return setting;
 }
 export function getHideIssueByCodeSetting() {
-    return Common.Settings.Settings.instance().createSetting('HideIssueByCodeSetting-Experiment-2021', defaultHideIssueByCodeSetting());
+    return Common.Settings.Settings.instance().createSetting('hide-issue-by-code-setting-experiment-2021', defaultHideIssueByCodeSetting());
 }
 /**
  * The `IssuesManager` is the central storage for issues. It collects issues from all the
@@ -138,7 +178,7 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
     #filteredIssues = new Map();
     #issueCounts = new Map();
     #hiddenIssueCount = new Map();
-    #hasSeenPrimaryPageChanged = false;
+    #thirdPartyCookiePhaseoutIssueCount = new Map();
     #issuesById = new Map();
     #issuesByOutermostTarget = new Map();
     constructor(showThirdPartyIssuesSetting, hideIssueSetting) {
@@ -148,8 +188,8 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         new SourceFrameIssuesManager(this);
         SDK.TargetManager.TargetManager.instance().observeModels(SDK.IssuesModel.IssuesModel, this);
         SDK.TargetManager.TargetManager.instance().addModelListener(SDK.ResourceTreeModel.ResourceTreeModel, SDK.ResourceTreeModel.Events.PrimaryPageChanged, this.#onPrimaryPageChanged, this);
-        SDK.FrameManager.FrameManager.instance().addEventListener(SDK.FrameManager.Events.FrameAddedToTarget, this.#onFrameAddedToTarget, this);
-        // issueFilter uses the 'showThirdPartyIssues' setting. Clients of IssuesManager need
+        SDK.FrameManager.FrameManager.instance().addEventListener("FrameAddedToTarget" /* SDK.FrameManager.Events.FRAME_ADDED_TO_TARGET */, this.#onFrameAddedToTarget, this);
+        // issueFilter uses the 'show-third-party-issues' setting. Clients of IssuesManager need
         // a full update when the setting changes to get an up-to-date issues list.
         this.showThirdPartyIssuesSetting?.addChangeListener(() => this.#updateFilteredIssues());
         this.hideIssueSetting?.addChangeListener(() => this.#updateFilteredIssues());
@@ -177,33 +217,28 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
     static removeInstance() {
         issuesManagerInstance = null;
     }
-    /**
-     * Once we have seen at least one `PrimaryPageChanged` event, we can be reasonably sure
-     * that we also collected issues that were reported during the navigation to the current
-     * page. If we haven't seen a main frame navigated, we might have missed issues that arose
-     * during navigation.
-     */
-    reloadForAccurateInformationRequired() {
-        return !this.#hasSeenPrimaryPageChanged;
-    }
     #onPrimaryPageChanged(event) {
-        const { frame } = event.data;
+        const { frame, type } = event.data;
         const keptIssues = new Map();
         for (const [key, issue] of this.#allIssues.entries()) {
             if (issue.isAssociatedWithRequestId(frame.loaderId)) {
                 keptIssues.set(key, issue);
+                // Keep issues for prerendered target alive in case of prerender-activation.
             }
-            // Keep BounceTrackingIssues alive for non-user-initiated navigations.
-            if (issue.code() === "BounceTrackingIssue" /* Protocol.Audits.InspectorIssueCode.BounceTrackingIssue */) {
+            else if ((type === "Activation" /* SDK.ResourceTreeModel.PrimaryPageChangeType.ACTIVATION */) &&
+                (frame.resourceTreeModel().target() === issue.model()?.target())) {
+                keptIssues.set(key, issue);
+                // Keep BounceTrackingIssues alive for non-user-initiated navigations.
+            }
+            else if (issue.code() === "BounceTrackingIssue" /* Protocol.Audits.InspectorIssueCode.BounceTrackingIssue */ ||
+                issue.code() === "CookieIssue" /* Protocol.Audits.InspectorIssueCode.CookieIssue */) {
                 const networkManager = frame.resourceTreeModel().target().model(SDK.NetworkManager.NetworkManager);
-                if (networkManager?.requestForLoaderId(frame.loaderId)?.hasUserGesture() ===
-                    false) {
+                if (networkManager?.requestForLoaderId(frame.loaderId)?.hasUserGesture() === false) {
                     keptIssues.set(key, issue);
                 }
             }
         }
         this.#allIssues = keptIssues;
-        this.#hasSeenPrimaryPageChanged = true;
         this.#updateFilteredIssues();
     }
     #onFrameAddedToTarget(event) {
@@ -217,7 +252,7 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
     modelAdded(issuesModel) {
-        const listener = issuesModel.addEventListener("IssueAdded" /* SDK.IssuesModel.Events.IssueAdded */, this.#onIssueAddedEvent, this);
+        const listener = issuesModel.addEventListener("IssueAdded" /* SDK.IssuesModel.Events.ISSUE_ADDED */, this.#onIssueAddedEvent, this);
         this.#eventListeners.set(issuesModel, listener);
     }
     modelRemoved(issuesModel) {
@@ -231,6 +266,11 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         const issues = createIssuesFromProtocolIssue(issuesModel, inspectorIssue);
         for (const issue of issues) {
             this.addIssue(issuesModel, issue);
+            const message = issue.maybeCreateConsoleMessage();
+            if (!message) {
+                continue;
+            }
+            issuesModel.target().model(SDK.ConsoleModel.ConsoleModel)?.addMessage(message);
         }
     }
     addIssue(issuesModel, issue) {
@@ -261,23 +301,27 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
             }
             const values = this.hideIssueSetting?.get();
             this.#updateIssueHiddenStatus(issue, values);
-            if (issue.isHidden()) {
+            if (CookieIssue.isThirdPartyCookiePhaseoutRelatedIssue(issue)) {
+                this.#thirdPartyCookiePhaseoutIssueCount.set(issue.getKind(), 1 + (this.#thirdPartyCookiePhaseoutIssueCount.get(issue.getKind()) || 0));
+            }
+            else if (issue.isHidden()) {
                 this.#hiddenIssueCount.set(issue.getKind(), 1 + (this.#hiddenIssueCount.get(issue.getKind()) || 0));
             }
-            this.dispatchEventToListeners("IssueAdded" /* Events.IssueAdded */, { issuesModel, issue });
+            this.dispatchEventToListeners("IssueAdded" /* Events.ISSUE_ADDED */, { issuesModel, issue });
         }
         // Always fire the "count" event even if the issue was filtered out.
         // The result of `hasOnlyThirdPartyIssues` could still change.
-        this.dispatchEventToListeners("IssuesCountUpdated" /* Events.IssuesCountUpdated */);
+        this.dispatchEventToListeners("IssuesCountUpdated" /* Events.ISSUES_COUNT_UPDATED */);
     }
     issues() {
         return this.#filteredIssues.values();
     }
     numberOfIssues(kind) {
         if (kind) {
-            return (this.#issueCounts.get(kind) ?? 0) - this.numberOfHiddenIssues(kind);
+            return (this.#issueCounts.get(kind) ?? 0) - this.numberOfHiddenIssues(kind) -
+                this.numberOfThirdPartyCookiePhaseoutIssues(kind);
         }
-        return this.#filteredIssues.size - this.numberOfHiddenIssues();
+        return this.#filteredIssues.size - this.numberOfHiddenIssues() - this.numberOfThirdPartyCookiePhaseoutIssues();
     }
     numberOfHiddenIssues(kind) {
         if (kind) {
@@ -285,6 +329,16 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         }
         let count = 0;
         for (const num of this.#hiddenIssueCount.values()) {
+            count += num;
+        }
+        return count;
+    }
+    numberOfThirdPartyCookiePhaseoutIssues(kind) {
+        if (kind) {
+            return this.#thirdPartyCookiePhaseoutIssueCount.get(kind) ?? 0;
+        }
+        let count = 0;
+        for (const num of this.#thirdPartyCookiePhaseoutIssueCount.values()) {
             count += num;
         }
         return count;
@@ -310,8 +364,8 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         // IssueStatus is set in hidden issues menu.
         // In case a user wants to hide a specific issue, the issue code is added to "code" section
         // of our setting and its value is set to IssueStatus.Hidden. Then issue then gets hidden.
-        if (values && values[code]) {
-            if (values[code] === "Hidden" /* IssueStatus.Hidden */) {
+        if (values?.[code]) {
+            if (values[code] === "Hidden" /* IssueStatus.HIDDEN */) {
                 issue.setHidden(true);
                 return;
             }
@@ -324,6 +378,7 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         this.#issueCounts.clear();
         this.#issuesById.clear();
         this.#hiddenIssueCount.clear();
+        this.#thirdPartyCookiePhaseoutIssueCount.clear();
         const values = this.hideIssueSetting?.get();
         for (const [key, issue] of this.#allIssues) {
             if (this.#issueFilter(issue)) {
@@ -339,8 +394,8 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
                 }
             }
         }
-        this.dispatchEventToListeners("FullUpdateRequired" /* Events.FullUpdateRequired */);
-        this.dispatchEventToListeners("IssuesCountUpdated" /* Events.IssuesCountUpdated */);
+        this.dispatchEventToListeners("FullUpdateRequired" /* Events.FULL_UPDATE_REQUIRED */);
+        this.dispatchEventToListeners("IssuesCountUpdated" /* Events.ISSUES_COUNT_UPDATED */);
     }
     unhideAllIssues() {
         for (const issue of this.#allIssues.values()) {
@@ -352,7 +407,7 @@ export class IssuesManager extends Common.ObjectWrapper.ObjectWrapper {
         return this.#issuesById.get(id);
     }
 }
-// @ts-ignore
+// @ts-expect-error
 globalThis.addIssueForTest = (issue) => {
     const mainTarget = SDK.TargetManager.TargetManager.instance().primaryPageTarget();
     const issuesModel = mainTarget?.model(SDK.IssuesModel.IssuesModel);

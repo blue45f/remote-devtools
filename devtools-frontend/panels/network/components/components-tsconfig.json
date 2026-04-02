@@ -8,9 +8,13 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "lib": [
-      "esnext",
       "dom",
-      "dom.iterable"
+      "dom.iterable",
+      "ES2023",
+      "ES2024.Promise",
+      "ESNext.Iterator",
+      "ESNext.Collection",
+      "ESNext.Array"
     ],
     "module": "esnext",
     "noEmitOnError": true,
@@ -18,6 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "outDir": ".",
     "rootDir": "../../../../../../../front_end/panels/network/components",
     "skipLibCheck": true,
@@ -26,19 +31,18 @@
     "target": "esnext",
     "tsBuildInfoFile": "components-tsconfig.json.tsbuildinfo",
     "typeRoots": [],
+    "types": [],
     "useUnknownInCatchVariables": false
   },
   "files": [
+    "../../../../../../../front_end/panels/network/components/DirectSocketConnectionView.ts",
     "../../../../../../../front_end/panels/network/components/EditableSpan.ts",
     "../../../../../../../front_end/panels/network/components/HeaderSectionRow.ts",
     "../../../../../../../front_end/panels/network/components/RequestHeaderSection.ts",
-    "../../../../../../../front_end/panels/network/components/RequestHeadersView.ts",
     "../../../../../../../front_end/panels/network/components/RequestTrustTokensView.ts",
     "../../../../../../../front_end/panels/network/components/ResponseHeaderSection.ts",
-    "../../../../../../../front_end/panels/network/components/WebBundleInfoView.ts",
     "../../../../../../../front_end/legacy/legacy-defs.d.ts",
     "../../../../../../../front_end/global_typings/global_defs.d.ts",
-    "../../../../../../../front_end/global_typings/request_idle_callback.d.ts",
     "../../../../../../../node_modules/@types/filesystem/index.d.ts"
   ],
   "references": [
@@ -67,6 +71,12 @@
       "path": "../../../models/issues_manager/bundle-tsconfig.json"
     },
     {
+      "path": "../../../models/persistence/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../models/text_utils/bundle-tsconfig.json"
+    },
+    {
       "path": "../../../models/workspace/bundle-tsconfig.json"
     },
     {
@@ -82,13 +92,7 @@
       "path": "../../../ui/components/buttons/bundle-tsconfig.json"
     },
     {
-      "path": "../../../ui/components/data_grid/bundle-tsconfig.json"
-    },
-    {
       "path": "../../../ui/components/helpers/bundle-tsconfig.json"
-    },
-    {
-      "path": "../../../ui/components/icon_button/bundle-tsconfig.json"
     },
     {
       "path": "../../../ui/components/input/bundle-tsconfig.json"
@@ -97,13 +101,22 @@
       "path": "../../../ui/components/legacy_wrapper/bundle-tsconfig.json"
     },
     {
+      "path": "../../../ui/components/render_coordinator/bundle-tsconfig.json"
+    },
+    {
       "path": "../../../ui/components/report_view/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../ui/kit/bundle-tsconfig.json"
     },
     {
       "path": "../../../ui/legacy/bundle-tsconfig.json"
     },
     {
-      "path": "../../../ui/lit-html/bundle-tsconfig.json"
+      "path": "../../../ui/lit/bundle-tsconfig.json"
+    },
+    {
+      "path": "../../../ui/visual_logging/bundle-tsconfig.json"
     },
     {
       "path": "../forward/bundle-tsconfig.json"

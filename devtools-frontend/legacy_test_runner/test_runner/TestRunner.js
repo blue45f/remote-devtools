@@ -1,30 +1,21 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 // @ts-nocheck This file is not checked by TypeScript as it has a lot of legacy code.
 import * as Common from '../../core/common/common.js'; // eslint-disable-line no-unused-vars
-import * as Platform from '../../core/platform/platform.js';
-import * as ProtocolClientModule from '../../core/protocol_client/protocol_client.js';
+import * as ProtocolClient from '../../core/protocol_client/protocol_client.js';
 import * as Root from '../../core/root/root.js';
+import * as SDK from '../../core/sdk/sdk.js';
 import * as Bindings from '../../models/bindings/bindings.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as CodeHighlighter from '../../ui/components/code_highlighter/code_highlighter.js';
 import * as UI from '../../ui/legacy/legacy.js';
 /**
- * @fileoverview using private properties isn't a Closure violation in tests.
+ * @file using private properties isn't a Closure violation in tests.
  */
 /* eslint-disable no-console */
-self.Platform = self.Platform || {};
-self.Platform.StringUtilities = Platform.StringUtilities;
-self.Platform.MapUtilities = Platform.MapUtilities;
-self.Platform.ArrayUtilities = Platform.ArrayUtilities;
-self.Platform.DOMUtilities = Platform.DOMUtilities;
-self.createPlainTextSearchRegex = Platform.StringUtilities.createPlainTextSearchRegex;
-String.sprintf = Platform.StringUtilities.sprintf;
-String.regexSpecialCharacters = Platform.StringUtilities.regexSpecialCharacters;
-String.caseInsensetiveComparator = Platform.StringUtilities.caseInsensetiveComparator;
 /**
- * @return {boolean}
+ * @returns {boolean}
  */
 export function isDebugTest() {
     return !self.testRunner || Boolean(Root.Runtime.Runtime.queryParam('debugFrontend'));
@@ -59,7 +50,7 @@ self['onerror'] = (message, source, lineno, colno, error) => {
 };
 (() => {
     self.addEventListener('unhandledrejection', event => {
-        addResult(`PROMISE FAILURE: ${event.reason.stack}`);
+        addResult(`PROMISE FAILURE: ${event.reason.stack ?? event.reason}`);
         completeTest();
     });
 })();
@@ -181,7 +172,7 @@ export function addSniffer(receiver, methodName, override, opt_sticky) {
 /**
  * @param {!Object} receiver
  * @param {string} methodName
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function addSnifferPromise(receiver, methodName) {
     return new Promise(function (resolve, reject) {
@@ -215,7 +206,7 @@ export function addSnifferPromise(receiver, methodName) {
  * @param {Text} textNode
  * @param {number=} start
  * @param {number=} end
- * @return {Text}
+ * @returns {Text}
  */
 export function selectTextInTextNode(textNode, start, end) {
     start = start || 0;
@@ -231,52 +222,9 @@ export function selectTextInTextNode(textNode, start, end) {
     selection.addRange(range);
     return textNode;
 }
-const mappingForLayoutTests = new Map([
-    ['panels/animation', 'animation'],
-    ['panels/browser_debugger', 'browser_debugger'],
-    ['panels/changes', 'changes'],
-    ['panels/console', 'console'],
-    ['panels/elements', 'elements'],
-    ['panels/emulation', 'emulation'],
-    ['panels/mobile_throttling', 'mobile_throttling'],
-    ['panels/network', 'network'],
-    ['panels/profiler', 'profiler'],
-    ['panels/application', 'resources'],
-    ['panels/search', 'search'],
-    ['panels/sources', 'sources'],
-    ['panels/snippets', 'snippets'],
-    ['panels/settings', 'settings'],
-    ['panels/timeline', 'timeline'],
-    ['panels/web_audio', 'web_audio'],
-    ['models/persistence', 'persistence'],
-    ['models/workspace_diff', 'workspace_diff'],
-    ['entrypoints/main', 'main'],
-    ['third_party/diff', 'diff'],
-    ['ui/legacy/components/inline_editor', 'inline_editor'],
-    ['ui/legacy/components/data_grid', 'data_grid'],
-    ['ui/legacy/components/perf_ui', 'perf_ui'],
-    ['ui/legacy/components/source_frame', 'source_frame'],
-    ['ui/legacy/components/color_picker', 'color_picker'],
-    ['ui/legacy/components/cookie_table', 'cookie_table'],
-    ['ui/legacy/components/quick_open', 'quick_open'],
-    ['ui/legacy/components/utils', 'components'],
-]);
-/**
- * @param {string} module
- * @return {!Promise<void>}
- */
-export async function loadLegacyModule(module) {
-    let containingFolder = module;
-    for (const [remappedFolder, originalFolder] of mappingForLayoutTests.entries()) {
-        if (originalFolder === module) {
-            containingFolder = remappedFolder;
-        }
-    }
-    await import(`../../${containingFolder}/${containingFolder.split('/').reverse()[0]}-legacy.js`);
-}
 /**
  * @param {string} panel
- * @return {!Promise.<?UI.Panel.Panel>}
+ * @returns {!Promise.<?UI.Panel.Panel>}
  */
 export function showPanel(panel) {
     return UI.ViewManager.ViewManager.instance().showView(panel);
@@ -287,11 +235,11 @@ export function showPanel(panel) {
  * @param {boolean=} altKey
  * @param {boolean=} shiftKey
  * @param {boolean=} metaKey
- * @return {!KeyboardEvent}
+ * @returns {!KeyboardEvent}
  */
 export function createKeyEvent(key, ctrlKey, altKey, shiftKey, metaKey) {
     return new KeyboardEvent('keydown', {
-        key: key,
+        key,
         bubbles: true,
         cancelable: true,
         ctrlKey: Boolean(ctrlKey),
@@ -305,7 +253,7 @@ export function createKeyEvent(key, ctrlKey, altKey, shiftKey, metaKey) {
  * correctly for async functions; use safeAsyncWrap instead.
  * @param {!Function|undefined} func
  * @param {!Function=} onexception
- * @return {!Function}
+ * @returns {!Function}
  */
 export function safeWrap(func, onexception) {
     /**
@@ -336,7 +284,7 @@ export function safeWrap(func, onexception) {
  * filter. Does not work correctly for functions which don't return
  * a Promise; use safeWrap instead.
  * @param {function(...):Promise<*>} func
- * @return {function(...):Promise<*>}
+ * @returns {function(...):Promise<*>}
  */
 function safeAsyncWrap(func) {
     /**
@@ -359,7 +307,7 @@ function safeAsyncWrap(func) {
 }
 /**
  * @param {!Node} node
- * @return {string}
+ * @returns {string}
  */
 export function textContentWithLineBreaks(node) {
     function padding(currentNode) {
@@ -378,7 +326,8 @@ export function textContentWithLineBreaks(node) {
     let ignoreFirst = false;
     while (currentNode.traverseNextNode(node)) {
         currentNode = currentNode.traverseNextNode(node);
-        if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentNode?.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+        if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentNode?.nodeType !== Node.DOCUMENT_FRAGMENT_NODE &&
+            currentNode.parentNode?.nodeName !== 'STYLE') {
             buffer += currentNode.nodeValue;
         }
         else if (currentNode.nodeName === 'LI' || currentNode.nodeName === 'TR') {
@@ -401,7 +350,7 @@ export function textContentWithLineBreaks(node) {
 }
 /**
  * @param {!Node} node
- * @return {string}
+ * @returns {string}
  */
 export function textContentWithLineBreaksTrimmed(node) {
     // We want to allow single empty lines (2 white space characters), but
@@ -410,15 +359,23 @@ export function textContentWithLineBreaksTrimmed(node) {
 }
 /**
  * @param {!Node} node
- * @return {string}
+ * @returns {string}
  */
 export function textContentWithoutStyles(node) {
     let buffer = '';
     let currentNode = node;
-    while (currentNode.traverseNextNode(node)) {
+    while (true) {
         currentNode = currentNode.traverseNextNode(node, currentNode.tagName === 'DEVTOOLS-CSS-LENGTH' || currentNode.tagName === 'DEVTOOLS-ICON');
-        if (currentNode.nodeType === Node.TEXT_NODE) {
+        if (!currentNode) {
+            break;
+        }
+        if (currentNode.nodeType === Node.TEXT_NODE && currentNode.parentElement?.tagName !== 'STYLE') {
             buffer += currentNode.nodeValue;
+        }
+        else if (currentNode.tagName === 'DEVTOOLS-TOOLTIP') {
+            // <devtools-tooltip> holds popover contents in-line in a slot, so its contents appear in textContent. This is
+            // not what the tests expect, so step over its contents entirely.
+            currentNode = currentNode.lastChild?.traverseNextNode(node) ?? currentNode.traverseNextNode(node);
         }
         else if (currentNode.nodeName === 'STYLE') {
             currentNode = currentNode.traverseNextNode(node);
@@ -428,7 +385,7 @@ export function textContentWithoutStyles(node) {
 }
 /**
  * @param {string} code
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export async function evaluateInPageRemoteObject(code) {
     const response = await _evaluateInPage(code);
@@ -446,7 +403,7 @@ export async function evaluateInPage(code, callback) {
 let _evaluateInPageCounter = 0;
 /**
  * @param {string} code
- * @return {!Promise<undefined|{response: (!SDK.RemoteObject|undefined),
+ * @returns {!Promise<undefined|{response: (!SDK.RuntimeModel.RemoteObject|undefined),
  *   exceptionDetails: (!Protocol.Runtime.ExceptionDetails|undefined)}>}
  */
 export async function _evaluateInPage(code) {
@@ -464,7 +421,7 @@ export async function _evaluateInPage(code) {
         code += `//# sourceURL=${sourceURL}`;
     }
     const response = await TestRunner.RuntimeAgent.invoke_evaluate({ expression: code, objectGroup: 'console' });
-    const error = response[ProtocolClientModule.InspectorBackend.ProtocolError];
+    const error = response.getError();
     if (error) {
         addResult('Error: ' + error);
         completeTest();
@@ -472,42 +429,10 @@ export async function _evaluateInPage(code) {
     }
     return response;
 }
-/**
- * Doesn't append sourceURL to snippets evaluated in inspected page
- * to avoid churning test expectations
- * @param {string} code
- * @param {boolean=} userGesture
- * @return {!Promise<*>}
- */
-export async function evaluateInPageAnonymously(code, userGesture) {
-    const response = await TestRunner.RuntimeAgent.invoke_evaluate({ expression: code, objectGroup: 'console', userGesture });
-    if (!response[ProtocolClientModule.InspectorBackend.ProtocolError]) {
-        return response.result.value;
-    }
-    addResult('Error: ' +
-        (response.exceptionDetails && response.exceptionDetails.text || 'exception from evaluateInPageAnonymously.'));
-    completeTest();
-}
-/**
- * @param {string} code
- * @return {!Promise<*>}
- */
-export function evaluateInPagePromise(code) {
-    return new Promise(success => evaluateInPage(code, success));
-}
-/**
- * @param {string} code
- * @return {!Promise<*>}
- */
-export async function evaluateInPageAsync(code) {
-    const response = await TestRunner.RuntimeAgent.invoke_evaluate({ expression: code, objectGroup: 'console', includeCommandLineAPI: false, awaitPromise: true });
-    const error = response[ProtocolClientModule.InspectorBackend.ProtocolError];
-    if (!error && !response.exceptionDetails) {
-        return response.result.value;
-    }
+function logResponseError(response) {
     let errorMessage = 'Error: ';
-    if (error) {
-        errorMessage += error;
+    if (response.getError()) {
+        errorMessage += response.getError();
     }
     else if (response.exceptionDetails) {
         errorMessage += response.exceptionDetails.text;
@@ -516,12 +441,45 @@ export async function evaluateInPageAsync(code) {
         }
     }
     addResult(errorMessage);
+}
+/**
+ * Doesn't append sourceURL to snippets evaluated in inspected page
+ * to avoid churning test expectations
+ * @param {string} code
+ * @param {boolean=} userGesture
+ * @returns {!Promise<*>}
+ */
+export async function evaluateInPageAnonymously(code, userGesture) {
+    const response = await TestRunner.RuntimeAgent.invoke_evaluate({ expression: code, objectGroup: 'console', userGesture });
+    if (response && !response.exceptionDetails && !response.getError()) {
+        return response.result.value;
+    }
+    logResponseError(response);
+    completeTest();
+}
+/**
+ * @param {string} code
+ * @returns {!Promise<*>}
+ */
+export function evaluateInPagePromise(code) {
+    return new Promise(success => evaluateInPage(code, success));
+}
+/**
+ * @param {string} code
+ * @returns {!Promise<*>}
+ */
+export async function evaluateInPageAsync(code) {
+    const response = await TestRunner.RuntimeAgent.invoke_evaluate({ expression: code, objectGroup: 'console', includeCommandLineAPI: false, awaitPromise: true });
+    if (response && !response.exceptionDetails && !response.getError()) {
+        return response.result.value;
+    }
+    logResponseError(response);
     completeTest();
 }
 /**
  * @param {string} name
  * @param {!Array<*>} args
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function callFunctionInPageAsync(name, args) {
     args = args || [];
@@ -544,7 +502,7 @@ export function evaluateFunctionInOverlay(func, callback) {
     const mainContext = TestRunner.runtimeModel.executionContexts()[0];
     mainContext
         .evaluate({
-        expression: expression,
+        expression,
         objectGroup: '',
         includeCommandLineAPI: false,
         silent: false,
@@ -567,14 +525,14 @@ export function check(passCondition, failureText) {
  * @param {!Function} callback
  */
 export function deprecatedRunAfterPendingDispatches(callback) {
-    ProtocolClient.test.deprecatedRunAfterPendingDispatches(callback);
+    ProtocolClient.InspectorBackend.test.deprecatedRunAfterPendingDispatches(callback);
 }
 /**
  * This ensures a base tag is set so all DOM references
  * are relative to the test file and not the inspected page
  * (i.e. http/tests/devtools/resources/inspected-page.html).
  * @param {string} html
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function loadHTML(html) {
     if (!html.includes('<base')) {
@@ -593,7 +551,7 @@ export function loadHTML(html) {
 }
 /**
  * @param {string} path
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function addScriptTag(path) {
     return evaluateInPageAsync(`
@@ -607,7 +565,7 @@ export function addScriptTag(path) {
 }
 /**
  * @param {string} path
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function addStylesheetTag(path) {
     return evaluateInPageAsync(`
@@ -635,7 +593,7 @@ export function addStylesheetTag(path) {
  * in line with the standard (crbug 365457).
  * @param {string} path
  * @param {!Object|undefined} options
- * @return {!Promise<*>}
+ * @returns {!Promise<*>}
  */
 export function addIframe(path, options = {}) {
     options.id = options.id || '';
@@ -675,29 +633,35 @@ export function markStep(title) {
     addResult('\nRunning: ' + title);
 }
 export function startDumpingProtocolMessages() {
-    ProtocolClient.test.dumpProtocol = self.testRunner.logToStderr.bind(self.testRunner);
+    ProtocolClient.InspectorBackend.test.dumpProtocol = self.testRunner.logToStderr.bind(self.testRunner);
 }
 /**
  * @param {string} url
  * @param {string} content
- * @param {!SDK.ResourceTreeFrame} frame
+ * @param {!SDK.ResourceTreeModel.ResourceTreeFrame} frame
  */
 export function addScriptForFrame(url, content, frame) {
     content += '\n//# sourceURL=' + url;
     const executionContext = TestRunner.runtimeModel.executionContexts().find(context => context.frameId === frame.id);
-    TestRunner.RuntimeAgent.evaluate(content, 'console', false, false, executionContext.id);
+    TestRunner.RuntimeAgent.invoke_evaluate({
+        expression: content,
+        objectGroup: 'console',
+        includeCommandLineAPI: false,
+        silent: false,
+        contextId: executionContext.id
+    });
 }
 export const formatters = {
     /**
      * @param {*} value
-     * @return {string}
+     * @returns {string}
      */
     formatAsTypeName(value) {
         return '<' + typeof value + '>';
     },
     /**
      * @param {*} value
-     * @return {string}
+     * @returns {string}
      */
     formatAsTypeNameOrNull(value) {
         if (value === null) {
@@ -707,7 +671,7 @@ export const formatters = {
     },
     /**
      * @param {*} value
-     * @return {string|!Date}
+     * @returns {string|!Date}
      */
     formatAsRecentTime(value) {
         if (typeof value !== 'object' || !(value instanceof Date)) {
@@ -718,7 +682,7 @@ export const formatters = {
     },
     /**
      * @param {string} value
-     * @return {string}
+     * @returns {string}
      */
     formatAsURL(value) {
         if (!value) {
@@ -732,7 +696,7 @@ export const formatters = {
     },
     /**
      * @param {string} value
-     * @return {string}
+     * @returns {string}
      */
     formatAsDescription(value) {
         if (!value) {
@@ -823,7 +787,7 @@ export function dumpDeepInnerHTML(node) {
 }
 /**
  * @param {!Node} node
- * @return {string}
+ * @returns {string}
  */
 export function deepTextContent(node) {
     if (!node) {
@@ -874,7 +838,7 @@ export function dump(value, customFormatters, prefix, prefixWithName) {
  * @param {symbol} eventName
  * @param {!Common.ObjectWrapper.ObjectWrapper} obj
  * @param {function(?):boolean=} condition
- * @return {!Promise}
+ * @returns {!Promise}
  */
 export function waitForEvent(eventName, obj, condition) {
     condition = condition || function () {
@@ -895,12 +859,12 @@ export function waitForEvent(eventName, obj, condition) {
     });
 }
 /**
- * @param {function(!SDK.Target):boolean} filter
- * @return {!Promise<!SDK.Target>}
+ * @param {function(!SDK.Target.Target):boolean} filter
+ * @returns {!Promise<!SDK.Target.Target>}
  */
 export function waitForTarget(filter) {
     filter = filter || (target => true);
-    for (const target of self.SDK.targetManager.targets()) {
+    for (const target of SDK.TargetManager.TargetManager.instance().targets()) {
         if (filter(target)) {
             return Promise.resolve(target);
         }
@@ -909,36 +873,36 @@ export function waitForTarget(filter) {
         const observer = /** @type {!SDK.TargetManager.Observer} */ ({
             targetAdded: function (target) {
                 if (filter(target)) {
-                    self.SDK.targetManager.unobserveTargets(observer);
+                    SDK.TargetManager.TargetManager.instance().unobserveTargets(observer);
                     fulfill(target);
                 }
             },
             targetRemoved: function () { },
         });
-        self.SDK.targetManager.observeTargets(observer);
+        SDK.TargetManager.TargetManager.instance().observeTargets(observer);
     });
 }
 /**
- * @param {!SDK.Target} targetToRemove
- * @return {!Promise<!SDK.Target>}
+ * @param {!SDK.Target.Target} targetToRemove
+ * @returns {!Promise<!SDK.Target.Target>}
  */
 export function waitForTargetRemoved(targetToRemove) {
     return new Promise(fulfill => {
         const observer = /** @type {!SDK.TargetManager.Observer} */ ({
             targetRemoved: function (target) {
                 if (target === targetToRemove) {
-                    self.SDK.targetManager.unobserveTargets(observer);
+                    SDK.TargetManager.TargetManager.instance().unobserveTargets(observer);
                     fulfill(target);
                 }
             },
             targetAdded: function () { },
         });
-        self.SDK.targetManager.observeTargets(observer);
+        SDK.TargetManager.TargetManager.instance().observeTargets(observer);
     });
 }
 /**
- * @param {!SDK.RuntimeModel} runtimeModel
- * @return {!Promise}
+ * @param {!SDK.RuntimeModel.RuntimeModel} runtimeModel
+ * @returns {!Promise}
  */
 export function waitForExecutionContext(runtimeModel) {
     if (runtimeModel.executionContexts().length) {
@@ -947,8 +911,8 @@ export function waitForExecutionContext(runtimeModel) {
     return runtimeModel.once(SDK.RuntimeModel.Events.ExecutionContextCreated);
 }
 /**
- * @param {!SDK.ExecutionContext} context
- * @return {!Promise}
+ * @param {!SDK.RuntimeModel.ExecutionContext} context
+ * @returns {!Promise}
  */
 export function waitForExecutionContextDestroyed(context) {
     const runtimeModel = context.runtimeModel;
@@ -980,7 +944,7 @@ export function navigate(url, callback) {
     evaluateInPageAnonymously('window.location.replace(\'' + url + '\')');
 }
 /**
- * @return {!Promise}
+ * @returns {!Promise}
  */
 export function navigatePromise(url) {
     return new Promise(fulfill => navigate(url, fulfill));
@@ -1009,7 +973,7 @@ export function reloadPageWithInjectedScript(injectedScript, callback) {
     _innerReloadPage(false, injectedScript, callback);
 }
 /**
- * @return {!Promise}
+ * @returns {!Promise}
  */
 export function reloadPagePromise() {
     return new Promise(fulfill => reloadPage(fulfill));
@@ -1030,7 +994,7 @@ export function pageLoaded() {
     _handlePageLoaded();
 }
 export async function _handlePageLoaded() {
-    await waitForExecutionContext(/** @type {!SDK.RuntimeModel} */ (TestRunner.runtimeModel));
+    await waitForExecutionContext(/** @type {!SDK.RuntimeModel.RuntimeModel} */ (TestRunner.runtimeModel));
     if (_pageLoadedCallback) {
         const callback = _pageLoadedCallback;
         _pageLoadedCallback = undefined;
@@ -1120,7 +1084,7 @@ export function assertTrue(found, message) {
  * @param {string} methodName
  * @param {!Function} override
  * @param {boolean=} opt_sticky
- * @return {!Function}
+ * @returns {!Function}
  */
 export function override(receiver, methodName, override, opt_sticky) {
     override = safeWrap(override);
@@ -1145,7 +1109,7 @@ export function override(receiver, methodName, override, opt_sticky) {
 }
 /**
  * @param {string} text
- * @return {string}
+ * @returns {string}
  */
 export function clearSpecificInfoFromStackFrames(text) {
     let buffer = text.replace(/\(file:\/\/\/(?:[^)]+\)|[\w\/:-]+)/g, '(...)');
@@ -1159,7 +1123,7 @@ export function hideInspectorView() {
     UI.InspectorView.InspectorView.instance().element.setAttribute('style', 'display:none !important');
 }
 /**
- * @return {?SDK.ResourceTreeFrame}
+ * @returns {?SDK.ResourceTreeModel.ResourceTreeFrame}
  */
 export function mainFrame() {
     return TestRunner.resourceTreeModel.mainFrame;
@@ -1174,7 +1138,7 @@ export class StringOutputStream {
     }
     /**
      * @param {string} fileName
-     * @return {!Promise<boolean>}
+     * @returns {!Promise<boolean>}
      */
     async open(fileName) {
         return true;
@@ -1200,7 +1164,7 @@ export class MockSetting {
         this.value = value;
     }
     /**
-     * @return {V}
+     * @returns {V}
      */
     get() {
         return this.value;
@@ -1215,12 +1179,12 @@ export class MockSetting {
 /**
  * @param {string} urlSuffix
  * @param {!Workspace.Workspace.projectTypes=} projectType
- * @return {!Promise}
+ * @returns {!Promise}
  */
 export function waitForUISourceCode(urlSuffix, projectType) {
     /**
      * @param {!Workspace.UISourceCode.UISourceCode} uiSourceCode
-     * @return {boolean}
+     * @returns {boolean}
      */
     function matches(uiSourceCode) {
         if (projectType && uiSourceCode.project().type() !== projectType) {
@@ -1234,22 +1198,22 @@ export function waitForUISourceCode(urlSuffix, projectType) {
         }
         return true;
     }
-    for (const uiSourceCode of self.Workspace.workspace.uiSourceCodes()) {
+    for (const uiSourceCode of Workspace.Workspace.WorkspaceImpl.instance().uiSourceCodes()) {
         if (urlSuffix && matches(uiSourceCode)) {
             return Promise.resolve(uiSourceCode);
         }
     }
-    return waitForEvent(Workspace.Workspace.Events.UISourceCodeAdded, self.Workspace.workspace, matches);
+    return waitForEvent(Workspace.Workspace.Events.UISourceCodeAdded, Workspace.Workspace.WorkspaceImpl.instance(), matches);
 }
 /**
  * @param {!Function} callback
  */
 export function waitForUISourceCodeRemoved(callback) {
-    self.Workspace.workspace.once(Workspace.Workspace.Events.UISourceCodeRemoved).then(callback);
+    Workspace.Workspace.WorkspaceImpl.instance().once(Workspace.Workspace.Events.UISourceCodeRemoved).then(callback);
 }
 /**
  * @param {string=} url
- * @return {string}
+ * @returns {string}
  */
 export function url(url = '') {
     const testScriptURL = /** @type {string} */ (Root.Runtime.Runtime.queryParam('inspected_test') || Root.Runtime.Runtime.queryParam('test'));
@@ -1260,7 +1224,7 @@ export function url(url = '') {
 /**
  * @param {string} str
  * @param {string} mimeType
- * @return {!Promise.<undefined>}
+ * @returns {!Promise.<undefined>}
  */
 export function dumpSyntaxHighlight(str, mimeType) {
     const node = document.createElement('span');
@@ -1288,7 +1252,7 @@ export function dumpSyntaxHighlight(str, mimeType) {
  *
  * @param {string} inputString
  * @param {string} searchString
- * @return {!Array.<number>}
+ * @returns {!Array.<number>}
  */
 const findIndexesOfSubString = function (inputString, searchString) {
     const matches = [];
@@ -1302,7 +1266,7 @@ const findIndexesOfSubString = function (inputString, searchString) {
 /**
  *
  * @param {string} inputString
- * @return {!Array.<number>}
+ * @returns {!Array.<number>}
  */
 export const findLineEndingIndexes = function (inputString) {
     const endings = findIndexesOfSubString(inputString, '\n');
@@ -1328,6 +1292,7 @@ export async function dumpInspectedPageElementText(querySelector) {
 export async function waitForPendingLiveLocationUpdates() {
     await Bindings.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance().pendingLiveLocationChangesPromise();
     await Bindings.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().pendingLiveLocationChangesPromise();
+    await UI.Widget.Widget.allUpdatesComplete; // Let async Widgets finish rendering.
 }
 /** @type {!{logToStderr: function(), navigateSecondaryWindow: function(string), notifyDone: function()}|undefined} */
 self.testRunner;
@@ -1390,7 +1355,6 @@ TestRunner.waitForUISourceCode = waitForUISourceCode;
 TestRunner.waitForUISourceCodeRemoved = waitForUISourceCodeRemoved;
 TestRunner.url = url;
 TestRunner.dumpSyntaxHighlight = dumpSyntaxHighlight;
-TestRunner.loadLegacyModule = loadLegacyModule;
 TestRunner.evaluateInPageRemoteObject = evaluateInPageRemoteObject;
 TestRunner.evaluateInPage = evaluateInPage;
 TestRunner.evaluateInPageAnonymously = evaluateInPageAnonymously;

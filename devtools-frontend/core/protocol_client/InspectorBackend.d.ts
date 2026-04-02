@@ -1,16 +1,15 @@
-import type * as Platform from '../platform/platform.js';
+import * as InspectorBackendCommands from '../../generated/InspectorBackendCommands.js';
 import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
-export declare const DevToolsStubErrorCode = -32015;
-type MessageParams = {
-    [x: string]: any;
-};
+import type * as Platform from '../platform/platform.js';
+import { type CDPConnection, type CDPConnectionObserver, type CDPEvent, type Event } from './CDPConnection.js';
+type MessageParams = Record<string, any>;
 type ProtocolDomainName = ProtocolProxyApi.ProtocolDomainName;
 export interface MessageError {
     code: number;
     message: string;
     data?: string | null;
 }
-export type Message = {
+export interface Message {
     sessionId?: string;
     url?: Platform.DevToolsPath.UrlString;
     id?: number;
@@ -18,8 +17,8 @@ export type Message = {
     result?: Object | null;
     method?: QualifiedName;
     params?: MessageParams | null;
-};
-interface EventMessage extends Message {
+}
+export interface EventMessage extends Message {
     method: QualifiedName;
     params?: MessageParams | null;
 }
@@ -35,39 +34,23 @@ export declare const splitQualifiedName: (string: QualifiedName) => [string, Unq
 export declare const qualifyName: (domain: string, name: UnqualifiedName) => QualifiedName;
 type EventParameterNames = Map<QualifiedName, string[]>;
 type ReadonlyEventParameterNames = ReadonlyMap<QualifiedName, string[]>;
-interface CommandParameter {
-    name: string;
-    type: string;
-    optional: boolean;
-}
-type Callback = (error: MessageError | null, arg1: Object | null) => void;
-interface CallbackWithDebugInfo {
-    callback: Callback;
-    method: string;
-}
-export declare class InspectorBackend {
+type CommandParameter = InspectorBackendCommands.CommandParameter;
+export declare class InspectorBackend implements InspectorBackendCommands.InspectorBackendAPI {
     #private;
-    readonly agentPrototypes: Map<ProtocolDomainName, _AgentPrototype>;
+    readonly agentPrototypes: Map<keyof ProtocolProxyApi.ProtocolApi, AgentPrototype>;
+    readonly typeMap: Map<QualifiedName, InspectorBackendCommands.CommandParameter[]>;
+    readonly enumMap: Map<QualifiedName, Record<string, string>>;
+    constructor();
     private getOrCreateEventParameterNamesForDomain;
     getOrCreateEventParameterNamesForDomainForTesting(domain: ProtocolDomainName): EventParameterNames;
     getEventParameterNames(): ReadonlyMap<ProtocolDomainName, ReadonlyEventParameterNames>;
     static reportProtocolError(error: string, messageObject: Object): void;
     static reportProtocolWarning(error: string, messageObject: Object): void;
-    isInitialized(): boolean;
     private agentPrototype;
-    registerCommand(method: QualifiedName, parameters: CommandParameter[], replyArgs: string[]): void;
-    registerEnum(type: QualifiedName, values: Object): void;
+    registerCommand(method: QualifiedName, parameters: CommandParameter[], replyArgs: string[], description: string): void;
+    registerEnum(type: QualifiedName, values: Record<string, string>): void;
+    registerType(method: QualifiedName, parameters: CommandParameter[]): void;
     registerEvent(eventName: QualifiedName, params: string[]): void;
-}
-export declare class Connection {
-    onMessage: ((arg0: Object) => void) | null;
-    constructor();
-    setOnMessage(_onMessage: (arg0: (Object | string)) => void): void;
-    setOnDisconnect(_onDisconnect: (arg0: string) => void): void;
-    sendRawMessage(_message: string): void;
-    disconnect(): Promise<void>;
-    static setFactory(factory: () => Connection): void;
-    static getFactory(): () => Connection;
 }
 type SendRawMessageCallback = (...args: unknown[]) => void;
 export declare const test: {
@@ -99,39 +82,28 @@ export declare const test: {
         params: Object;
         id: number;
         sessionId?: string;
-    }, target: TargetBase | null) => void) | null;
+    }) => void) | null;
     /**
      * Set to get notified about any messages received over protocol.
      */
-    onMessageReceived: ((message: Object, target: TargetBase | null) => void) | null;
+    onMessageReceived: ((message: Object) => void) | null;
 };
-export declare class SessionRouter {
+export declare class SessionRouter implements CDPConnectionObserver {
     #private;
-    constructor(connection: Connection);
-    registerSession(target: TargetBase, sessionId: string, proxyConnection?: Connection | null): void;
+    constructor(connection: CDPConnection);
+    registerSession(target: TargetBase, sessionId: string): void;
     unregisterSession(sessionId: string): void;
-    private getTargetBySessionId;
-    private nextMessageId;
-    connection(): Connection;
-    sendMessage(sessionId: string, domain: string, method: QualifiedName, params: Object | null, callback: Callback): void;
-    private sendRawMessageForTesting;
-    private onMessage;
-    private hasOutstandingNonLongPollingRequests;
-    private deprecatedRunAfterPendingDispatches;
-    private executeAfterPendingDispatches;
-    static dispatchConnectionError(callback: Callback, method: string): void;
-    static dispatchUnregisterSessionError({ callback, method }: CallbackWithDebugInfo): void;
+    onDisconnect(reason: string): void;
+    onEvent<T extends Event>(event: CDPEvent<T>): void;
+    get connection(): CDPConnection;
 }
 export declare class TargetBase {
     #private;
-    needsNodeJSPatching: boolean;
     readonly sessionId: string;
-    routerInternal: SessionRouter | null;
-    constructor(needsNodeJSPatching: boolean, parentTarget: TargetBase | null, sessionId: string, connection: Connection | null);
+    constructor(parentTarget: TargetBase | null, sessionId: string, connection: CDPConnection | null);
     dispatch(eventMessage: EventMessage): void;
     dispose(_reason: string): void;
     isDisposed(): boolean;
-    markAsNodeJSForTest(): void;
     router(): SessionRouter | null;
     /**
      * Make sure that `Domain` is only ever instantiated with one protocol domain
@@ -141,11 +113,12 @@ export declare class TargetBase {
     accessibilityAgent(): ProtocolProxyApi.AccessibilityApi;
     animationAgent(): ProtocolProxyApi.AnimationApi;
     auditsAgent(): ProtocolProxyApi.AuditsApi;
+    autofillAgent(): ProtocolProxyApi.AutofillApi;
     browserAgent(): ProtocolProxyApi.BrowserApi;
     backgroundServiceAgent(): ProtocolProxyApi.BackgroundServiceApi;
     cacheStorageAgent(): ProtocolProxyApi.CacheStorageApi;
+    crashReportContextAgent(): ProtocolProxyApi.CrashReportContextApi;
     cssAgent(): ProtocolProxyApi.CSSApi;
-    databaseAgent(): ProtocolProxyApi.DatabaseApi;
     debuggerAgent(): ProtocolProxyApi.DebuggerApi;
     deviceOrientationAgent(): ProtocolProxyApi.DeviceOrientationApi;
     domAgent(): ProtocolProxyApi.DOMApi;
@@ -154,6 +127,7 @@ export declare class TargetBase {
     domstorageAgent(): ProtocolProxyApi.DOMStorageApi;
     emulationAgent(): ProtocolProxyApi.EmulationApi;
     eventBreakpointsAgent(): ProtocolProxyApi.EventBreakpointsApi;
+    extensionsAgent(): ProtocolProxyApi.ExtensionsApi;
     fetchAgent(): ProtocolProxyApi.FetchApi;
     heapProfilerAgent(): ProtocolProxyApi.HeapProfilerApi;
     indexedDBAgent(): ProtocolProxyApi.IndexedDBApi;
@@ -179,6 +153,7 @@ export declare class TargetBase {
     tracingAgent(): ProtocolProxyApi.TracingApi;
     webAudioAgent(): ProtocolProxyApi.WebAudioApi;
     webAuthnAgent(): ProtocolProxyApi.WebAuthnApi;
+    webMCPAgent(): ProtocolProxyApi.WebMCPApi;
     /**
      * Make sure that `Domain` is only ever instantiated with one protocol domain
      * name, because if `Domain` allows multiple domains, the type is unsound.
@@ -190,15 +165,16 @@ export declare class TargetBase {
      */
     private unregisterDispatcher;
     registerAccessibilityDispatcher(dispatcher: ProtocolProxyApi.AccessibilityDispatcher): void;
+    registerAutofillDispatcher(dispatcher: ProtocolProxyApi.AutofillDispatcher): void;
     registerAnimationDispatcher(dispatcher: ProtocolProxyApi.AnimationDispatcher): void;
     registerAuditsDispatcher(dispatcher: ProtocolProxyApi.AuditsDispatcher): void;
     registerCSSDispatcher(dispatcher: ProtocolProxyApi.CSSDispatcher): void;
-    registerDatabaseDispatcher(dispatcher: ProtocolProxyApi.DatabaseDispatcher): void;
     registerBackgroundServiceDispatcher(dispatcher: ProtocolProxyApi.BackgroundServiceDispatcher): void;
     registerDebuggerDispatcher(dispatcher: ProtocolProxyApi.DebuggerDispatcher): void;
     unregisterDebuggerDispatcher(dispatcher: ProtocolProxyApi.DebuggerDispatcher): void;
     registerDOMDispatcher(dispatcher: ProtocolProxyApi.DOMDispatcher): void;
     registerDOMStorageDispatcher(dispatcher: ProtocolProxyApi.DOMStorageDispatcher): void;
+    registerEmulationDispatcher(dispatcher: ProtocolProxyApi.EmulationDispatcher): void;
     registerFetchDispatcher(dispatcher: ProtocolProxyApi.FetchDispatcher): void;
     registerHeapProfilerDispatcher(dispatcher: ProtocolProxyApi.HeapProfilerDispatcher): void;
     registerInspectorDispatcher(dispatcher: ProtocolProxyApi.InspectorDispatcher): void;
@@ -218,7 +194,7 @@ export declare class TargetBase {
     registerTracingDispatcher(dispatcher: ProtocolProxyApi.TracingDispatcher): void;
     registerWebAudioDispatcher(dispatcher: ProtocolProxyApi.WebAudioDispatcher): void;
     registerWebAuthnDispatcher(dispatcher: ProtocolProxyApi.WebAuthnDispatcher): void;
-    getNeedsNodeJSPatching(): boolean;
+    registerWebMCPDispatcher(dispatcher: ProtocolProxyApi.WebMCPDispatcher): void;
 }
 /**
  * This is a class that serves as the prototype for a domains #agents (every target
@@ -229,19 +205,17 @@ export declare class TargetBase {
  * The reasons this is done is so that on the prototypes we can install the implementations
  * of the invoke_enable, etc. methods that the front-end uses.
  */
-declare class _AgentPrototype {
-    replyArgs: {
-        [x: string]: string[];
-    };
-    commandParameters: {
-        [x: string]: CommandParameter[];
-    };
+declare class AgentPrototype {
+    description: string;
+    metadata: Record<string, {
+        parameters: CommandParameter[];
+        description: string;
+        replyArgs: string[];
+    }>;
     readonly domain: string;
     target: TargetBase;
     constructor(domain: string);
-    registerCommand(methodName: UnqualifiedName, parameters: CommandParameter[], replyArgs: string[]): void;
-    private prepareParameters;
-    private sendMessageToBackendPromise;
+    registerCommand(methodName: UnqualifiedName, parameters: CommandParameter[], replyArgs: string[], description: string): void;
     private invoke;
 }
 export declare const inspectorBackend: InspectorBackend;

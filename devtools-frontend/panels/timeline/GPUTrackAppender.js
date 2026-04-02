@@ -1,12 +1,14 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import * as TraceEngine from '../../models/trace/trace.js';
-import { buildGroupStyle, buildTrackHeader, getFormattedTime } from './AppenderUtils.js';
+import * as Trace from '../../models/trace/trace.js';
+import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
+import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
+import { buildGroupStyle, buildTrackHeader } from './AppenderUtils.js';
 const UIStrings = {
     /**
-     *@description Text in Timeline Flame Chart Data Provider of the Performance panel
+     * @description Text in Timeline Flame Chart Data Provider of the Performance panel
      */
     gpu: 'GPU',
 };
@@ -15,22 +17,22 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class GPUTrackAppender {
     appenderName = 'GPU';
     #compatibilityBuilder;
-    #traceParsedData;
-    constructor(compatibilityBuilder, traceParsedData) {
+    #parsedTrace;
+    constructor(compatibilityBuilder, parsedTrace) {
         this.#compatibilityBuilder = compatibilityBuilder;
-        this.#traceParsedData = traceParsedData;
+        this.#parsedTrace = parsedTrace;
     }
     /**
      * Appends into the flame chart data the data corresponding to the
      * GPU track.
      * @param trackStartLevel the horizontal level of the flame chart events where
      * the track's events will start being appended.
-     * @param expanded wether the track should be rendered expanded.
+     * @param expanded whether the track should be rendered expanded.
      * @returns the first available level to append more data after having
      * appended the track's events.
      */
     appendTrackAtLevel(trackStartLevel, expanded) {
-        const gpuEvents = this.#traceParsedData.GPU.mainGPUThreadTasks;
+        const gpuEvents = this.#parsedTrace.data.GPU.mainGPUThreadTasks;
         if (gpuEvents.length === 0) {
             return trackStartLevel;
         }
@@ -45,11 +47,11 @@ export class GPUTrackAppender {
      * in the future).
      * @param currentLevel the flame chart level at which the header is
      * appended.
-     * @param expanded wether the track should be rendered expanded.
+     * @param expanded whether the track should be rendered expanded.
      */
     #appendTrackHeaderAtLevel(currentLevel, expanded) {
-        const style = buildGroupStyle({ shareHeaderLine: false });
-        const group = buildTrackHeader(currentLevel, i18nString(UIStrings.gpu), style, /* selectable= */ true, expanded);
+        const style = buildGroupStyle({ collapsible: 1 /* PerfUI.FlameChart.GroupCollapsibleState.NEVER */ });
+        const group = buildTrackHeader("gpu" /* VisualLoggingTrackName.GPU */, currentLevel, i18nString(UIStrings.gpu), style, /* selectable= */ true, expanded);
         this.#compatibilityBuilder.registerTrackForGroup(group, this);
     }
     /*
@@ -62,27 +64,10 @@ export class GPUTrackAppender {
      * Gets the color an event added by this appender should be rendered with.
      */
     colorForEvent(event) {
-        if (!TraceEngine.Types.TraceEvents.isTraceEventGPUTask(event)) {
+        if (!Trace.Types.Events.isGPUTask(event)) {
             throw new Error(`Unexpected GPU Task: The event's type is '${event.name}'`);
         }
-        return 'hsl(109, 33%, 55%)';
-    }
-    /**
-     * Gets the title an event added by this appender should be rendered with.
-     */
-    titleForEvent(event) {
-        if (TraceEngine.Types.TraceEvents.isTraceEventGPUTask(event)) {
-            return 'GPU';
-        }
-        return event.name;
-    }
-    /**
-     * Returns the info shown when an event added by this appender
-     * is hovered in the timeline.
-     */
-    highlightedEntryInfo(event) {
-        const title = this.titleForEvent(event);
-        return { title, formattedTime: getFormattedTime(event.dur) };
+        return ThemeSupport.ThemeSupport.instance().getComputedValue('--app-color-painting');
     }
 }
 //# sourceMappingURL=GPUTrackAppender.js.map

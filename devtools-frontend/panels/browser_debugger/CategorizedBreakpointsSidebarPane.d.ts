@@ -1,23 +1,25 @@
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import type * as Protocol from '../../generated/protocol.js';
+interface ViewInput {
+    onFilterChanged: (filterText: string | null) => void;
+    onBreakpointChange: (breakpoint: SDK.CategorizedBreakpoint.CategorizedBreakpoint, enabled: boolean) => void;
+    onItemSelected: (item: SDK.CategorizedBreakpoint.Category | SDK.CategorizedBreakpoint.CategorizedBreakpoint | null) => void;
+    onSpaceKeyDown: () => void;
+    filterText: string | null;
+    onExpandCollapse: () => void;
+    highlightedItem: SDK.CategorizedBreakpoint.CategorizedBreakpoint | null;
+    categories: Map<SDK.CategorizedBreakpoint.Category, SDK.CategorizedBreakpoint.CategorizedBreakpoint[]>;
+    sortedCategoryNames: SDK.CategorizedBreakpoint.Category[];
+}
+export type View = typeof DEFAULT_VIEW;
+export declare const DEFAULT_VIEW: (input: ViewInput, output: undefined, target: HTMLElement) => void;
 export declare abstract class CategorizedBreakpointsSidebarPane extends UI.Widget.VBox {
     #private;
-    constructor(categories: string[], breakpoints: SDK.CategorizedBreakpoint.CategorizedBreakpoint[], viewId: string, detailsPausedReason: Protocol.Debugger.PausedEventReason);
-    get categories(): Map<string, Item>;
-    get breakpoints(): Map<SDK.CategorizedBreakpoint.CategorizedBreakpoint, Item>;
-    focus(): void;
-    private handleSpaceKeyEventOnBreakpoint;
-    private createCategory;
-    protected createBreakpoint(breakpoint: SDK.CategorizedBreakpoint.CategorizedBreakpoint): void;
+    private readonly categories;
+    constructor(breakpoints: SDK.CategorizedBreakpoint.CategorizedBreakpoint[], jslog: string, viewId: string, view?: (input: ViewInput, output: undefined, target: HTMLElement) => void);
     protected getBreakpointFromPausedDetails(_details: SDK.DebuggerModel.DebuggerPausedDetails): SDK.CategorizedBreakpoint.CategorizedBreakpoint | null;
-    private update;
-    private categoryCheckboxClicked;
-    protected toggleBreakpoint(breakpoint: SDK.CategorizedBreakpoint.CategorizedBreakpoint, enabled: boolean): void;
-    private breakpointCheckboxClicked;
-    wasShown(): void;
+    update(): void;
+    protected onBreakpointChanged(breakpoint: SDK.CategorizedBreakpoint.CategorizedBreakpoint, enabled: boolean): void;
+    performUpdate(): void;
 }
-export interface Item {
-    element: UI.TreeOutline.TreeElement;
-    checkbox: HTMLInputElement;
-}
+export {};

@@ -8,16 +8,15 @@ export interface SuggestBoxDelegate {
      */
     acceptSuggestion(): void;
     /**
-     * Called to obtain the element whose aria-controls property should reference this SuggestBox.
+     * Called to obtain the owner element.
      */
-    ariaControlledBy(): Element;
+    ownerElement(): Element;
 }
 export declare class SuggestBox implements ListDelegate<Suggestion> {
     private readonly suggestBoxDelegate;
     private readonly maxItemsHeight;
     private rowHeight;
     private userEnteredText;
-    private readonly defaultSelectionIsDimmed;
     private onlyCompletion;
     private readonly items;
     private readonly list;
@@ -25,6 +24,7 @@ export declare class SuggestBox implements ListDelegate<Suggestion> {
     private readonly glassPane;
     constructor(suggestBoxDelegate: SuggestBoxDelegate, maxItemsHeight?: number);
     visible(): boolean;
+    completion(): Suggestion | null;
     setPosition(anchorBox: AnchorBox): void;
     setAnchorBehavior(behavior: AnchorBehavior): void;
     private updateMaxSize;
@@ -36,7 +36,7 @@ export declare class SuggestBox implements ListDelegate<Suggestion> {
     createElementForItem(item: Suggestion): Element;
     heightForItem(_item: Suggestion): number;
     isItemSelectable(_item: Suggestion): boolean;
-    selectedItemChanged(from: Suggestion | null, to: Suggestion | null, fromElement: Element | null, toElement: Element | null): void;
+    selectedItemChanged(_from: Suggestion | null, _to: Suggestion | null, fromElement: Element | null, toElement: Element | null): void;
     updateSelectedItemARIA(_fromElement: Element | null, _toElement: Element | null): boolean;
     private onClick;
     private canShowBox;

@@ -4,7 +4,3 @@ export declare enum FrontendMessageType {
     System = "system",
     QueryObjectResult = "queryObjectResult"
 }
-export declare enum FrontendMessageSource {
-    CSS = "css",
-    ConsoleAPI = "console-api"
-}

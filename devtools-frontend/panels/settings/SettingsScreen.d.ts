@@ -1,4 +1,7 @@
+import '../../ui/kit/kit.js';
 import * as Common from '../../core/common/common.js';
+import * as Root from '../../core/root/root.js';
+import * as GreenDev from '../../models/greendev/greendev.js';
 import * as UI from '../../ui/legacy/legacy.js';
 export declare class SettingsScreen extends UI.Widget.VBox implements UI.View.ViewLocationResolver {
     private readonly tabbedLocation;
@@ -9,62 +12,61 @@ export declare class SettingsScreen extends UI.Widget.VBox implements UI.View.Vi
         forceNew: boolean | null;
     }): SettingsScreen;
     private static revealSettingsScreen;
-    static showSettingsScreen(options?: ShowSettingsScreenOptions | undefined): Promise<void>;
+    static showSettingsScreen(options?: ShowSettingsScreenOptions): Promise<void>;
     resolveLocation(_locationName: string): UI.View.ViewLocation | null;
     private selectTab;
     private tabInvoked;
     private reportSettingsPanelShown;
     private onEscapeKeyPressed;
-    wasShown(): void;
 }
-declare abstract class SettingsTab extends UI.Widget.VBox {
-    containerElement: HTMLElement;
-    constructor(name: string, id?: string);
-    protected appendSection(name?: string): HTMLElement;
-    abstract highlightObject(_object: Object): void;
+interface SettingsTab {
+    highlightObject(object: Object): void;
 }
-export declare class GenericSettingsTab extends SettingsTab {
+export declare class GenericSettingsTab extends UI.Widget.VBox implements SettingsTab {
+    #private;
     private readonly syncSection;
     private readonly settingToControl;
+    private readonly containerElement;
     constructor();
-    static instance(opts?: {
-        forceNew: null;
-    }): GenericSettingsTab;
     static isSettingVisible(setting: Common.Settings.SettingRegistration): boolean;
     wasShown(): void;
+    willHide(): void;
     private updateSyncSection;
     private createExtensionSection;
     private createSectionElement;
     private createStandardSectionElement;
     highlightObject(setting: Object): void;
 }
-export declare class ExperimentsSettingsTab extends SettingsTab {
+export declare class ExperimentsSettingsTab extends UI.Widget.VBox implements SettingsTab {
     #private;
     private readonly experimentToControl;
+    private readonly containerElement;
     constructor();
     private renderExperiments;
-    static instance(opts?: {
-        forceNew: null;
-    }): ExperimentsSettingsTab;
     private createExperimentsWarningSubsection;
     private createExperimentCheckbox;
     highlightObject(experiment: Object): void;
-    setFilter(filterText: string): void;
+    wasShown(): void;
+    willHide(): void;
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
-    handleAction(context: UI.Context.Context, actionId: string): boolean;
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
 }
-export declare class Revealer implements Common.Revealer.Revealer {
-    static instance(opts?: {
-        forceNew: boolean;
-    }): Revealer;
-    reveal(object: Object): Promise<void>;
+export declare class Revealer implements Common.Revealer.Revealer<Root.Runtime.Experiment | Root.Runtime.HostExperiment | Common.Settings.Setting<unknown>> {
+    reveal(object: Root.Runtime.Experiment | Root.Runtime.HostExperiment | Common.Settings.Setting<unknown>): Promise<void>;
 }
 export interface ShowSettingsScreenOptions {
     name?: string;
     focusTabHeader?: boolean;
 }
+export declare class GreenDevSettingsTab extends UI.Widget.VBox implements SettingsTab {
+    #private;
+    constructor(view?: View);
+    highlightObject(_object: Object): void;
+    performUpdate(): Promise<void> | void;
+}
+interface GreenDevViewInput {
+    settings: GreenDev.GreenDevSettings;
+}
+type View = (input: GreenDevViewInput, output: object, target: HTMLElement) => void;
 export {};

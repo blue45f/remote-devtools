@@ -1,6 +1,12 @@
+import '../../ui/legacy/legacy.js';
+import type * as LighthouseModel from '../../models/lighthouse/lighthouse.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { Events, LighthouseController } from './LighthouseController.js';
 import { ProtocolService } from './LighthouseProtocolService.js';
+export declare class ActiveLighthouseReport {
+    report: LighthouseModel.ReporterTypes.ReportJSON;
+    constructor(report: LighthouseModel.ReporterTypes.ReportJSON);
+}
 export declare class LighthousePanel extends UI.Panel.Panel {
     private readonly controller;
     private readonly startView;
@@ -9,7 +15,6 @@ export declare class LighthousePanel extends UI.Panel.Panel {
     private warningText;
     private unauditableExplanation;
     private readonly cachedRenderedReports;
-    private readonly dropTarget;
     private readonly auditResultsElement;
     private clearButton;
     private newButton;
@@ -26,7 +31,9 @@ export declare class LighthousePanel extends UI.Panel.Panel {
     static getEvents(): typeof Events;
     handleTimespanStart(): Promise<void>;
     handleTimespanEnd(): Promise<void>;
-    handleCompleteRun(): Promise<void>;
+    handleCompleteRun(overrides?: LighthouseModel.RunTypes.RunOverrides): Promise<{
+        report: LighthouseModel.ReporterTypes.ReportJSON | null;
+    }>;
     handleRunCancel(): Promise<void>;
     private handleError;
     private refreshWarningsUI;
@@ -46,5 +53,6 @@ export declare class LighthousePanel extends UI.Panel.Panel {
     private handleDrop;
     private loadedFromFile;
     elementsToRestoreScrollPositionsFor(): Element[];
-    wasShown(): void;
+    private onKeyDown;
+    static executeLighthouseRecording(overrides?: LighthouseModel.RunTypes.RunOverrides): Promise<LighthouseModel.ReporterTypes.ReportJSON | null>;
 }

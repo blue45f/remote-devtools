@@ -1,20 +1,20 @@
-import * as LitHtml from '../../lit-html/lit-html.js';
-import { type TreeNodeId, type TreeNode } from './TreeOutlineUtils.js';
+import * as Lit from '../../lit/lit.js';
+import { type TreeNode, type TreeNodeId } from './TreeOutlineUtils.js';
 export interface TreeOutlineData<TreeNodeDataType> {
     defaultRenderer: (node: TreeNode<TreeNodeDataType>, state: {
         isExpanded: boolean;
-    }) => LitHtml.TemplateResult;
+    }) => Lit.TemplateResult;
     /**
      * Note: it is important that all the TreeNode objects are unique. They are
      * used internally to the TreeOutline as keys to track state (such as if a
      * node is expanded or not), and providing the same object multiple times will
      * cause issues in the TreeOutline.
      */
-    tree: readonly TreeNode<TreeNodeDataType>[];
+    tree: ReadonlyArray<TreeNode<TreeNodeDataType>>;
     filter?: (node: TreeNodeDataType) => FilterOption;
     compact?: boolean;
 }
-export declare function defaultRenderer(node: TreeNode<string>): LitHtml.TemplateResult;
+export declare function defaultRenderer(node: TreeNode<string>): Lit.TemplateResult;
 export declare class ItemSelectedEvent<TreeNodeDataType> extends Event {
     static readonly eventName = "itemselected";
     data: {
@@ -50,7 +50,6 @@ export declare const enum FilterOption {
 }
 export declare class TreeOutline<TreeNodeDataType> extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     static get observedAttributes(): string[];
     attributeChangedCallback(name: 'nowrap' | 'toplevelbordercolor', oldValue: string | null, newValue: string | null): void;
     connectedCallback(): void;

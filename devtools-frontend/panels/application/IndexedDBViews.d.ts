@@ -1,15 +1,17 @@
+import '../../ui/components/report_view/report_view.js';
+import '../../ui/legacy/legacy.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import * as LitHtml from '../../ui/lit-html/lit-html.js';
+import * as Lit from '../../ui/lit/lit.js';
 import * as ApplicationComponents from './components/components.js';
-import { type Database, type DatabaseId, type Index, type IndexedDBModel, type ObjectStore } from './IndexedDBModel.js';
+import type { Database, DatabaseId, Entry, Index, IndexedDBModel, ObjectStore } from './IndexedDBModel.js';
 export declare class IDBDatabaseView extends ApplicationComponents.StorageMetadataView.StorageMetadataView {
     private readonly model;
     private database;
     constructor(model: IndexedDBModel, database: Database | null);
     getTitle(): string | undefined;
-    renderReportContent(): Promise<LitHtml.LitTemplate>;
+    renderReportContent(): Promise<Lit.LitTemplate>;
     private refreshDatabaseButtonClicked;
     update(database: Database): void;
     private updatedForTests;
@@ -33,7 +35,7 @@ export declare class IDBDataView extends UI.View.SimpleView {
     private clearingObjectStore;
     private pageSize;
     private skipCount;
-    private entries;
+    protected entries: Entry[];
     private objectStore;
     private index;
     private keyInput;
@@ -53,7 +55,7 @@ export declare class IDBDataView extends UI.View.SimpleView {
     private pageForwardButtonClicked;
     private populateContextMenu;
     refreshData(): void;
-    update(objectStore: ObjectStore, index: Index | null): void;
+    update(objectStore?: ObjectStore | null, index?: Index | null): void;
     private parseKey;
     private updateData;
     private updateSummaryBar;
@@ -61,16 +63,14 @@ export declare class IDBDataView extends UI.View.SimpleView {
     private refreshButtonClicked;
     private clearButtonClicked;
     markNeedsRefresh(): void;
+    private resolveArrayKey;
     private deleteButtonClicked;
     clear(): void;
     private updateToolbarEnablement;
-    wasShown(): void;
 }
 export declare class IDBDataGridNode extends DataGrid.DataGrid.DataGridNode<unknown> {
     selectable: boolean;
     valueObjectPresentation: ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection | null;
-    constructor(data: {
-        [x: string]: any;
-    });
+    constructor(data: Record<string, any>);
     createCell(columnIdentifier: string): HTMLElement;
 }

@@ -1,41 +1,18 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
 import * as SDK from '../../../../core/sdk/sdk.js';
+import * as Highlighting from '../../../components/highlighting/highlighting.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 import * as ObjectUI from '../object_ui/object_ui.js';
-import jsonViewStyles from './jsonView.css.legacy.js';
+import jsonViewStyles from './jsonView.css.js';
 const UIStrings = {
     /**
-     *@description Text to find an item
+     * @description Text to find an item
      */
     find: 'Find',
 };
@@ -57,6 +34,7 @@ export class JSONView extends UI.Widget.VBox {
         this.parsedJSON = parsedJSON;
         this.startCollapsed = Boolean(startCollapsed);
         this.element.classList.add('json-view');
+        this.element.setAttribute('jslog', `${VisualLogging.section('json-view')}`);
         this.currentSearchFocusIndex = 0;
         this.currentSearchTreeElements = [];
         this.searchRegex = null;
@@ -74,14 +52,17 @@ export class JSONView extends UI.Widget.VBox {
         jsonView.show(searchableView.element);
         return searchableView;
     }
-    static createViewSync(obj) {
+    static createViewSync(obj, element) {
         const jsonView = new JSONView(new ParsedJSON(obj, '', ''));
-        const searchableView = new UI.SearchableView.SearchableView(jsonView, null);
+        const searchableView = new UI.SearchableView.SearchableView(jsonView, null, undefined, element);
         searchableView.setPlaceholder(i18nString(UIStrings.find));
         jsonView.searchableView = searchableView;
         jsonView.show(searchableView.element);
         jsonView.element.tabIndex = 0;
         return searchableView;
+    }
+    setSearchableView(searchableView) {
+        this.searchableView = searchableView;
     }
     static parseJSON(text) {
         let returnObj = null;
@@ -98,7 +79,7 @@ export class JSONView extends UI.Widget.VBox {
             }
             returnObj.data = json;
         }
-        catch (e) {
+        catch {
             returnObj = null;
         }
         return Promise.resolve(returnObj);
@@ -131,9 +112,10 @@ export class JSONView extends UI.Widget.VBox {
         if (start === -1 || end === -1 || end < start) {
             length = -1;
         }
-        return { start: start, end: end, length: length };
+        return { start, end, length };
     }
     wasShown() {
+        super.wasShown();
         this.initialize();
     }
     initialize() {
@@ -143,10 +125,8 @@ export class JSONView extends UI.Widget.VBox {
         this.initialized = true;
         const obj = SDK.RemoteObject.RemoteObject.fromLocalObject(this.parsedJSON.data);
         const title = this.parsedJSON.prefix + obj.description + this.parsedJSON.suffix;
-        this.treeOutline =
-            new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection(obj, title, undefined, true /* showOverflow */);
+        this.treeOutline = new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection(obj, title, undefined, true /* showOverflow */, false /* editable */);
         this.treeOutline.enableContextMenu();
-        this.treeOutline.setEditable(false);
         if (!this.startCollapsed) {
             this.treeOutline.expand();
         }
@@ -167,7 +147,7 @@ export class JSONView extends UI.Widget.VBox {
         const newFocusElement = this.currentSearchTreeElements[index];
         if (newFocusElement) {
             this.updateSearchIndex(index);
-            newFocusElement.setSearchRegex(this.searchRegex, UI.UIUtils.highlightedCurrentSearchResultClassName);
+            newFocusElement.setSearchRegex(this.searchRegex, Highlighting.highlightedCurrentSearchResultClassName);
             newFocusElement.reveal();
         }
         else {
@@ -200,7 +180,7 @@ export class JSONView extends UI.Widget.VBox {
         this.updateSearchCount(0);
         this.updateSearchIndex(0);
     }
-    performSearch(searchConfig, shouldJump, jumpBackwards) {
+    performSearch(searchConfig, _shouldJump, jumpBackwards) {
         let newIndex = this.currentSearchFocusIndex;
         const previousSearchFocusElement = this.currentSearchTreeElements[newIndex];
         this.onSearchCanceled();
@@ -249,22 +229,41 @@ export class JSONView extends UI.Widget.VBox {
     supportsCaseSensitiveSearch() {
         return true;
     }
+    supportsWholeWordSearch() {
+        return true;
+    }
     supportsRegexSearch() {
         return true;
     }
 }
 export class ParsedJSON {
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data;
     prefix;
     suffix;
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(data, prefix, suffix) {
         this.data = data;
         this.prefix = prefix;
         this.suffix = suffix;
+    }
+}
+export class SearchableJsonView extends UI.SearchableView.SearchableView {
+    #jsonView;
+    constructor(element) {
+        const jsonView = new JSONView(new ParsedJSON('', '', ''));
+        super(jsonView, null, undefined, element);
+        this.#jsonView = jsonView;
+        this.setPlaceholder(i18nString(UIStrings.find));
+        jsonView.setSearchableView(this);
+        jsonView.show(this.element);
+        jsonView.element.tabIndex = 0;
+    }
+    set jsonObject(obj) {
+        const jsonView = new JSONView(new ParsedJSON(obj, '', ''));
+        this.#jsonView.detach();
+        this.#jsonView = jsonView;
+        this.searchProvider = jsonView;
+        jsonView.show(this.element);
+        this.requestUpdate();
     }
 }
 //# sourceMappingURL=JSONView.js.map

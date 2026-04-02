@@ -1,9 +1,9 @@
+import '../../ui/legacy/legacy.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { NavigatorView, type NavigatorUISourceCodeTreeNode } from './NavigatorView.js';
+import { type NavigatorUISourceCodeTreeNode, NavigatorView } from './NavigatorView.js';
 export declare class NetworkNavigatorView extends NavigatorView {
     private constructor();
-    wasShown(): void;
     static instance(opts?: {
         forceNew: boolean | null;
     }): NetworkNavigatorView;
@@ -13,8 +13,10 @@ export declare class NetworkNavigatorView extends NavigatorView {
     uiSourceCodeAdded(uiSourceCode: Workspace.UISourceCode.UISourceCode): void;
 }
 export declare class FilesNavigatorView extends NavigatorView {
-    private constructor();
-    static instance(): FilesNavigatorView;
+    #private;
+    constructor();
+    wasShown(): void;
+    willHide(): void;
     sourceSelected(uiSourceCode: Workspace.UISourceCode.UISourceCode, focusSource: boolean): void;
     acceptProject(project: Workspace.Workspace.Project): boolean;
     handleContextMenu(event: Event): void;
@@ -33,15 +35,11 @@ export declare class OverridesNavigatorView extends NavigatorView {
     acceptProject(project: Workspace.Workspace.Project): boolean;
 }
 export declare class ContentScriptsNavigatorView extends NavigatorView {
-    private constructor();
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ContentScriptsNavigatorView;
+    constructor();
     acceptProject(project: Workspace.Workspace.Project): boolean;
 }
 export declare class SnippetsNavigatorView extends NavigatorView {
     constructor();
-    static instance(): SnippetsNavigatorView;
     acceptProject(project: Workspace.Workspace.Project): boolean;
     handleContextMenu(event: Event): void;
     handleFileContextMenu(event: Event, node: NavigatorUISourceCodeTreeNode): void;
@@ -49,8 +47,5 @@ export declare class SnippetsNavigatorView extends NavigatorView {
     private addJSExtension;
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
-    handleAction(context: UI.Context.Context, actionId: string): boolean;
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
 }

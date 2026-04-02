@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2019 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
@@ -10,23 +10,11 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
     #runtimeAgent;
     #cssAgent;
     #domSnapshotAgent;
-    #overlayAgent;
     constructor(target) {
         super(target);
         this.#runtimeAgent = target.runtimeAgent();
         this.#cssAgent = target.cssAgent();
         this.#domSnapshotAgent = target.domsnapshotAgent();
-        this.#overlayAgent = target.overlayAgent();
-    }
-    highlightNode(node) {
-        const highlightConfig = {
-            contentColor: Common.Color.PageHighlight.Content.toProtocolRGBA(),
-            showInfo: true,
-            contrastAlgorithm: Root.Runtime.experiments.isEnabled('APCA') ? "apca" /* Protocol.Overlay.ContrastAlgorithm.Apca */ :
-                "aa" /* Protocol.Overlay.ContrastAlgorithm.Aa */,
-        };
-        void this.#overlayAgent.invoke_hideHighlight();
-        void this.#overlayAgent.invoke_highlightNode({ backendNodeId: node, highlightConfig });
     }
     async getNodeStyleStats() {
         const backgroundColors = new Map();
@@ -209,7 +197,7 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
                     const formattedTextColor = formatColor(blendedTextColor);
                     const formattedBackgroundColor = formatColor(blendedBackgroundColor.asLegacyColor());
                     const key = `${formattedTextColor}_${formattedBackgroundColor}`;
-                    if (Root.Runtime.experiments.isEnabled('APCA')) {
+                    if (Root.Runtime.experiments.isEnabled(Root.ExperimentNames.ExperimentName.APCA)) {
                         const contrastRatio = contrastInfo.contrastRatioAPCA();
                         const threshold = contrastInfo.contrastRatioAPCAThreshold();
                         const passes = contrastRatio && threshold ? Math.abs(contrastRatio) >= threshold : false;
@@ -395,5 +383,5 @@ export class CSSOverviewModel extends SDK.SDKModel.SDKModel {
         return result.value;
     }
 }
-SDK.SDKModel.SDKModel.register(CSSOverviewModel, { capabilities: SDK.Target.Capability.DOM, autostart: false });
+SDK.SDKModel.SDKModel.register(CSSOverviewModel, { capabilities: 2 /* SDK.Target.Capability.DOM */, autostart: false });
 //# sourceMappingURL=CSSOverviewModel.js.map

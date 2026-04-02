@@ -1,48 +1,46 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import { Issue, IssueCategory, IssueKind } from './Issue.js';
+import { Issue } from './Issue.js';
 import { resolveLazyDescription, } from './MarkdownIssueDescription.js';
 const UIStrings = {
     /**
-     *@description Title for CSP url link
+     * @description Title for CSP url link
      */
     contentSecurityPolicySource: 'Content Security Policy - Source Allowlists',
     /**
-     *@description Title for CSP inline issue link
+     * @description Title for CSP inline issue link
      */
     contentSecurityPolicyInlineCode: 'Content Security Policy - Inline Code',
     /**
-     *@description Title for the CSP eval link
+     * @description Title for the CSP eval link
      */
     contentSecurityPolicyEval: 'Content Security Policy - Eval',
     /**
-     *@description Title for Trusted Types policy violation issue link. https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API
+     * @description Title for Trusted Types policy violation issue link. https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API
      */
     trustedTypesFixViolations: 'Trusted Types - Fix violations',
     /**
-     *@description Title for Trusted Types policy violation issue link. https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API
+     * @description Title for Trusted Types policy violation issue link. https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API
      */
     trustedTypesPolicyViolation: 'Trusted Types - Policy violation',
 };
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/ContentSecurityPolicyIssue.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class ContentSecurityPolicyIssue extends Issue {
-    #issueDetails;
     constructor(issueDetails, issuesModel, issueId) {
         const issueCode = [
             "ContentSecurityPolicyIssue" /* Protocol.Audits.InspectorIssueCode.ContentSecurityPolicyIssue */,
             issueDetails.contentSecurityPolicyViolationType,
         ].join('::');
-        super(issueCode, issuesModel, issueId);
-        this.#issueDetails = issueDetails;
+        super(issueCode, issueDetails, issuesModel, issueId);
     }
     getCategory() {
-        return IssueCategory.ContentSecurityPolicy;
+        return "ContentSecurityPolicy" /* IssueCategory.CONTENT_SECURITY_POLICY */;
     }
     primaryKey() {
-        return JSON.stringify(this.#issueDetails, [
+        return JSON.stringify(this.details(), [
             'blockedURL',
             'contentSecurityPolicyViolationType',
             'violatedDirective',
@@ -55,20 +53,17 @@ export class ContentSecurityPolicyIssue extends Issue {
         ]);
     }
     getDescription() {
-        const description = issueDescriptions.get(this.#issueDetails.contentSecurityPolicyViolationType);
+        const description = issueDescriptions.get(this.details().contentSecurityPolicyViolationType);
         if (!description) {
             return null;
         }
         return resolveLazyDescription(description);
     }
-    details() {
-        return this.#issueDetails;
-    }
     getKind() {
-        if (this.#issueDetails.isReportOnly) {
-            return IssueKind.Improvement;
+        if (this.details().isReportOnly) {
+            return "Improvement" /* IssueKind.IMPROVEMENT */;
         }
-        return IssueKind.PageError;
+        return "PageError" /* IssueKind.PAGE_ERROR */;
     }
     static fromInspectorIssue(issuesModel, inspectorIssue) {
         const cspDetails = inspectorIssue.details.contentSecurityPolicyIssueDetails;

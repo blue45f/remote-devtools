@@ -1,7 +1,7 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as Common from '../../core/common/common.js';
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
@@ -10,12 +10,12 @@ import * as UI from '../../ui/legacy/legacy.js';
 import outermostTargetSelectorStyles from './outermostTargetSelector.css.js';
 const UIStrings = {
     /**
-     *@description Title of toolbar item in outermost target selector in the main toolbar
+     * @description Title of toolbar item in outermost target selector in the main toolbar
      */
     targetNotSelected: 'Page: Not selected',
     /**
-     *@description Title of toolbar item in outermost target selector in the main toolbar
-     *@example {top} PH1
+     * @description Title of toolbar item in outermost target selector in the main toolbar
+     * @example {top} PH1
      */
     targetS: 'Page: {PH1}',
 };
@@ -23,19 +23,19 @@ const str_ = i18n.i18n.registerUIStrings('entrypoints/inspector_main/OutermostTa
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let outermostTargetSelectorInstance;
 export class OutermostTargetSelector {
-    listItems;
+    listItems = new UI.ListModel.ListModel();
     #dropDown;
     #toolbarItem;
     constructor() {
-        this.listItems = new UI.ListModel.ListModel();
         this.#dropDown = new UI.SoftDropDown.SoftDropDown(this.listItems, this);
         this.#dropDown.setRowHeight(36);
         this.#toolbarItem = new UI.Toolbar.ToolbarItem(this.#dropDown.element);
         this.#toolbarItem.setTitle(i18nString(UIStrings.targetNotSelected));
-        this.listItems.addEventListener(UI.ListModel.Events.ItemsReplaced, () => this.#toolbarItem.setEnabled(Boolean(this.listItems.length)));
+        this.listItems.addEventListener("ItemsReplaced" /* UI.ListModel.Events.ITEMS_REPLACED */, () => this.#toolbarItem.setEnabled(Boolean(this.listItems.length)));
         this.#toolbarItem.element.classList.add('toolbar-has-dropdown');
         const targetManager = SDK.TargetManager.TargetManager.instance();
-        targetManager.addModelListener(SDK.ChildTargetManager.ChildTargetManager, SDK.ChildTargetManager.Events.TargetInfoChanged, this.#onTargetInfoChanged, this);
+        targetManager.addModelListener(SDK.ChildTargetManager.ChildTargetManager, "TargetInfoChanged" /* SDK.ChildTargetManager.Events.TARGET_INFO_CHANGED */, this.#onTargetInfoChanged, this);
+        targetManager.addEventListener("NameChanged" /* SDK.TargetManager.Events.NAME_CHANGED */, this.#onInspectedURLChanged, this);
         targetManager.observeTargets(this);
         UI.Context.Context.instance().addFlavorChangeListener(SDK.Target.Target, this.#targetChanged, this);
     }
@@ -58,18 +58,7 @@ export class OutermostTargetSelector {
         }
     }
     titleFor(target) {
-        if (target === SDK.TargetManager.TargetManager.instance().primaryPageTarget()) {
-            return 'Main';
-        }
-        const url = target.targetInfo()?.url;
-        if (!url) {
-            return '<unknown>';
-        }
-        const parsedURL = Common.ParsedURL.ParsedURL.fromString(url);
-        if (!parsedURL) {
-            return '<unknown>';
-        }
-        return parsedURL.lastPathComponentWithFragment();
+        return target.name();
     }
     targetAdded(target) {
         if (target.outermostTarget() !== target) {
@@ -77,7 +66,8 @@ export class OutermostTargetSelector {
         }
         this.listItems.insertWithComparator(target, this.#targetComparator());
         this.#toolbarItem.setVisible(this.listItems.length > 1);
-        if (target === UI.Context.Context.instance().flavor(SDK.Target.Target)) {
+        const primaryTarget = SDK.TargetManager.TargetManager.instance().primaryPageTarget();
+        if (target === primaryTarget || target === UI.Context.Context.instance().flavor(SDK.Target.Target)) {
             this.#dropDown.selectItem(target);
         }
     }
@@ -114,13 +104,21 @@ export class OutermostTargetSelector {
         this.targetRemoved(target);
         this.targetAdded(target);
     }
+    #onInspectedURLChanged(event) {
+        const target = event.data;
+        if (!target || target.outermostTarget() !== target) {
+            return;
+        }
+        this.targetRemoved(target);
+        this.targetAdded(target);
+    }
     #targetChanged({ data: target, }) {
         this.#dropDown.selectItem(target?.outermostTarget() || null);
     }
     createElementForItem(item) {
         const element = document.createElement('div');
         element.classList.add('target');
-        const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(element, { cssFile: [outermostTargetSelectorStyles], delegatesFocus: undefined });
+        const shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(element, { cssFile: outermostTargetSelectorStyles });
         const title = shadowRoot.createChild('div', 'title');
         UI.UIUtils.createTextChild(title, Platform.StringUtilities.trimEndWithMaxLength(this.titleFor(item), 100));
         const subTitle = shadowRoot.createChild('div', 'subtitle');
@@ -129,18 +127,10 @@ export class OutermostTargetSelector {
     }
     #subtitleFor(target) {
         const targetInfo = target.targetInfo();
-        if (!targetInfo) {
-            return '';
+        if (target === SDK.TargetManager.TargetManager.instance().primaryPageTarget() && targetInfo) {
+            return Bindings.ResourceUtils.displayNameForURL(targetInfo.url);
         }
-        const components = [];
-        const url = Bindings.ResourceUtils.displayNameForURL(targetInfo.url);
-        if (url) {
-            components.push(url);
-        }
-        if (targetInfo.subtype) {
-            components.push(targetInfo.subtype);
-        }
-        return components.join(' ');
+        return target.targetInfo()?.subtype || '';
     }
     isItemSelectable(_item) {
         return true;

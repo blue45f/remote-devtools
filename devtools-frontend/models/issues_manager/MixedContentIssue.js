@@ -1,33 +1,29 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import { Issue, IssueCategory, IssueKind } from './Issue.js';
+import { Issue } from './Issue.js';
 const UIStrings = {
     /**
-     *@description Label for the link for Mixed Content Issues
+     * @description Label for the link for Mixed Content Issues
      */
     preventingMixedContent: 'Preventing mixed content',
 };
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/MixedContentIssue.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class MixedContentIssue extends Issue {
-    #issueDetails;
     constructor(issueDetails, issuesModel) {
-        super("MixedContentIssue" /* Protocol.Audits.InspectorIssueCode.MixedContentIssue */, issuesModel);
-        this.#issueDetails = issueDetails;
+        super("MixedContentIssue" /* Protocol.Audits.InspectorIssueCode.MixedContentIssue */, issueDetails, issuesModel);
     }
     requests() {
-        if (this.#issueDetails.request) {
-            return [this.#issueDetails.request];
+        const details = this.details();
+        if (details.request) {
+            return [details.request];
         }
         return [];
     }
-    getDetails() {
-        return this.#issueDetails;
-    }
     getCategory() {
-        return IssueCategory.MixedContent;
+        return "MixedContent" /* IssueCategory.MIXED_CONTENT */;
     }
     getDescription() {
         return {
@@ -36,16 +32,16 @@ export class MixedContentIssue extends Issue {
         };
     }
     primaryKey() {
-        return JSON.stringify(this.#issueDetails);
+        return JSON.stringify(this.details());
     }
     getKind() {
-        switch (this.#issueDetails.resolutionStatus) {
+        switch (this.details().resolutionStatus) {
             case "MixedContentAutomaticallyUpgraded" /* Protocol.Audits.MixedContentResolutionStatus.MixedContentAutomaticallyUpgraded */:
-                return IssueKind.Improvement;
+                return "Improvement" /* IssueKind.IMPROVEMENT */;
             case "MixedContentBlocked" /* Protocol.Audits.MixedContentResolutionStatus.MixedContentBlocked */:
-                return IssueKind.PageError;
+                return "PageError" /* IssueKind.PAGE_ERROR */;
             case "MixedContentWarning" /* Protocol.Audits.MixedContentResolutionStatus.MixedContentWarning */:
-                return IssueKind.Improvement;
+                return "Improvement" /* IssueKind.IMPROVEMENT */;
         }
     }
     static fromInspectorIssue(issuesModel, inspectorIssue) {

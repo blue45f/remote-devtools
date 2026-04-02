@@ -1,10 +1,62 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-import * as AudioContextContentBuilder from './AudioContextContentBuilder.js';
-import * as AudioContextSelector from './AudioContextSelector.js';
-import * as WebAudioModel from './WebAudioModel.js';
-import * as WebAudioView from './WebAudioView.js';
-export { EdgeView, GraphManager, GraphStyle, GraphView, NodeRendererUtility, NodeView, } from './graph_visualizer/graph_visualizer.js';
-export { AudioContextContentBuilder, AudioContextSelector, WebAudioModel, WebAudioView, };
+var L=Object.defineProperty;var y=(m,e)=>{for(var t in e)L(m,t,{get:e[t],enumerable:!0})};var w={};y(w,{WebAudioModel:()=>d});import*as c from"./../../core/sdk/sdk.js";var d=class extends c.SDKModel.SDKModel{enabled;agent;constructor(e){super(e),this.enabled=!1,this.agent=e.webAudioAgent(),e.registerWebAudioDispatcher(this),c.TargetManager.TargetManager.instance().addModelListener(c.ResourceTreeModel.ResourceTreeModel,c.ResourceTreeModel.Events.FrameNavigated,this.flushContexts,this)}flushContexts(){this.dispatchEventToListeners("ModelReset")}async suspendModel(){this.dispatchEventToListeners("ModelSuspend"),await this.agent.invoke_disable()}async resumeModel(){if(!this.enabled)return await Promise.resolve();await this.agent.invoke_enable()}ensureEnabled(){this.enabled||(this.agent.invoke_enable(),this.enabled=!0)}contextCreated({context:e}){this.dispatchEventToListeners("ContextCreated",e)}contextWillBeDestroyed({contextId:e}){this.dispatchEventToListeners("ContextDestroyed",e)}contextChanged({context:e}){this.dispatchEventToListeners("ContextChanged",e)}audioListenerCreated({listener:e}){this.dispatchEventToListeners("AudioListenerCreated",e)}audioListenerWillBeDestroyed({listenerId:e,contextId:t}){this.dispatchEventToListeners("AudioListenerWillBeDestroyed",{listenerId:e,contextId:t})}audioNodeCreated({node:e}){this.dispatchEventToListeners("AudioNodeCreated",e)}audioNodeWillBeDestroyed({contextId:e,nodeId:t}){this.dispatchEventToListeners("AudioNodeWillBeDestroyed",{contextId:e,nodeId:t})}audioParamCreated({param:e}){this.dispatchEventToListeners("AudioParamCreated",e)}audioParamWillBeDestroyed({contextId:e,nodeId:t,paramId:o}){this.dispatchEventToListeners("AudioParamWillBeDestroyed",{contextId:e,nodeId:t,paramId:o})}nodesConnected({contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n,destinationInputIndex:r}){this.dispatchEventToListeners("NodesConnected",{contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n,destinationInputIndex:r})}nodesDisconnected({contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n,destinationInputIndex:r}){this.dispatchEventToListeners("NodesDisconnected",{contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n,destinationInputIndex:r})}nodeParamConnected({contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n}){this.dispatchEventToListeners("NodeParamConnected",{contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n})}nodeParamDisconnected({contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n}){this.dispatchEventToListeners("NodeParamDisconnected",{contextId:e,sourceId:t,destinationId:o,sourceOutputIndex:n})}async requestRealtimeData(e){return(await this.agent.invoke_getRealtimeData({contextId:e})).realtimeData}};c.SDKModel.SDKModel.register(d,{capabilities:2,autostart:!1});var T={};y(T,{DEFAULT_VIEW:()=>D,WebAudioView:()=>C});import"./../../ui/legacy/legacy.js";import*as S from"./../../core/common/common.js";import*as p from"./../../core/i18n/i18n.js";import*as u from"./../../core/sdk/sdk.js";import*as l from"./../../ui/legacy/legacy.js";import{html as x,render as R}from"./../../ui/lit/lit.js";import*as g from"./../../ui/visual_logging/visual_logging.js";var I=`:host{overflow:hidden}.web-audio-toolbar-container{background-color:var(--sys-color-cdt-base-container);border-bottom:1px solid var(--sys-color-divider);min-height:fit-content}.web-audio-landing-page{position:absolute;background-color:var(--sys-color-cdt-base-container);justify-content:center;align-items:center;overflow:auto;font-size:13px;color:var(--sys-color-on-surface)}.web-audio-landing-page > div{max-width:500px;margin:10px}.web-audio-landing-page > div > p{flex:none;white-space:pre-line}.web-audio-content-container{overflow-y:auto}.web-audio-details-container{min-height:fit-content}.web-audio-summary-container{flex-shrink:0}.context-detail-container{flex:none;display:flex;background-color:var(--sys-color-cdt-base-container);flex-direction:column}.context-detail-header{border-bottom:1px solid var(--sys-color-divider);padding:var(--sys-size-7) var(--sys-size-9);margin-bottom:var(--sys-size-5)}.context-detail-title{font:var(--sys-typescale-headline4)}.context-detail-subtitle{font:var(--sys-typescale-body4-regular);user-select:text}.context-detail-row{grid-template-columns:min-content 1fr;display:grid;line-height:18px;margin:var(--sys-size-3) var(--sys-size-9) var(--sys-size-3) var(--sys-size-9);gap:var(--sys-size-6)}.context-detail-row-entry:not(:empty){color:var(--sys-color-on-surface-subtle);overflow:hidden;min-width:130px;font:var(--sys-typescale-body5-medium)}.context-detail-row-value{user-select:text;text-overflow:ellipsis;overflow:hidden;font:var(--sys-typescale-body4-regular)}.context-summary-container{flex:0 0 27px;line-height:27px;padding-left:5px;background-color:var(--sys-color-cdt-base-container);border-top:1px solid var(--sys-color-divider);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}.context-summary-container span{margin-right:6px}
+/*# sourceURL=${import.meta.resolve("./webAudio.css")} */`;var{widget:E}=l.Widget,{bindToAction:$}=l.UIUtils,s={noWebAudio:"No Web Audio API usage detected",openAPageThatUsesWebAudioApiTo:"Open a page that uses Web Audio API to start monitoring.",noRecordings:"(no recordings)",audioContextS:"Audio context: {PH1}",state:"State",sampleRate:"Sample Rate",callbackBufferSize:"Callback Buffer Size",maxOutputChannels:"Max Output Channels",currentTime:"Current Time",callbackInterval:"Callback Interval",renderCapacity:"Render Capacity"},k=p.i18n.registerUIStrings("panels/web_audio/WebAudioView.ts",s),a=p.i18n.getLocalizedString.bind(void 0,k),A="https://developer.chrome.com/docs/devtools/webaudio",D=(m,e,t)=>{let{contexts:o,selectedContextIndex:n,onContextSelectorSelectionChanged:r,contextRealtimeData:v}=m,i=n>-1?o[n]:null,b=h=>h.contextType+" ("+h.contextId.substr(-6)+")",f=a(s.audioContextS,{PH1:i?b(i):a(s.noRecordings)});R(x`
+    <style>${I}</style>
+    <div class="web-audio-toolbar-container vbox" role="toolbar">
+      <devtools-toolbar class="web-audio-toolbar" role="presentation"
+          jslog=${g.toolbar()}>
+        <devtools-button ${$("components.collect-garbage")}></devtools-button>
+        <div class="toolbar-divider"></div>
+        <select
+          title=${f}
+          aria-label=${f}
+          ?disabled=${o.length===0}
+          @change=${h=>r(h.target.value)}
+          .value=${i?i.contextId:""}>
+          ${o.length===0?x`<option value="" hidden>${a(s.noRecordings)}</option>`:o.map(h=>x`
+            <option value=${h.contextId}>${b(h)}</option>
+          `)}
+        </select>
+      </devtools-toolbar>
+    </div>
+    <div class="web-audio-content-container vbox flex-auto">
+      ${i?x`<div class="web-audio-details-container vbox flex-auto">
+          <div class="context-detail-container">
+            <div class="context-detail-header">
+              <div class="context-detail-title">
+                ${i.contextType==="realtime"?p.i18n.lockedString("AudioContext"):p.i18n.lockedString("OfflineAudioContext")}
+              </div>
+              <div class="context-detail-subtitle">${i.contextId}</div>
+            </div>
+            <div class="context-detail-row">
+              <div class="context-detail-row-entry">${a(s.state)}</div>
+              <div class="context-detail-row-value">${i.contextState}</div>
+            </div>
+            <div class="context-detail-row">
+              <div class="context-detail-row-entry">${a(s.sampleRate)}</div>
+              <div class="context-detail-row-value">${i.sampleRate} Hz</div>
+            </div>
+            ${i.contextType==="realtime"?x`
+              <div class="context-detail-row">
+                <div class="context-detail-row-entry">${a(s.callbackBufferSize)}</div>
+                <div class="context-detail-row-value">${i.callbackBufferSize} frames</div>
+              </div>`:""}
+            <div class="context-detail-row">
+              <div class="context-detail-row-entry">${a(s.maxOutputChannels)}</div>
+              <div class="context-detail-row-value">${i.maxOutputChannelCount} ch</div>
+            </div>
+          </div>
+        </div>`:x`
+        <div class="web-audio-details-container vbox flex-auto">
+          ${E(l.EmptyWidget.EmptyWidget,{header:a(s.noWebAudio),text:a(s.openAPageThatUsesWebAudioApiTo),link:A})}
+        </div>`}
+      <div class="web-audio-summary-container">
+        ${v?x`<div class="context-summary-container">
+            <span>${a(s.currentTime)}: ${v.currentTime.toFixed(3)} s</span>
+            <span>\u2758</span>
+            <span>${a(s.callbackInterval)}: μ = ${(v.callbackIntervalMean*1e3).toFixed(3)} ms, σ = ${(Math.sqrt(v.callbackIntervalVariance)*1e3).toFixed(3)} ms</span>
+            <span>\u2758</span>
+            <span>${a(s.renderCapacity)}: ${(v.renderCapacity*100).toFixed(3)} %</span>
+          </div>`:""}
+      </div>
+    </div>`,t)},C=class extends l.Widget.VBox{knownContexts=new Set;contextSelectorItems;contextRealtimeData=null;view;selectedContextIndex=-1;pollRealtimeDataThrottler;constructor(e,t=D){super({jslog:`${g.panel("web-audio").track({resize:!0})}`,useShadowDom:!0}),this.view=t,this.contextSelectorItems=new l.ListModel.ListModel,this.contextSelectorItems.addEventListener("ItemsReplaced",this.requestUpdate,this),u.TargetManager.TargetManager.instance().observeModels(d,this),this.pollRealtimeDataThrottler=new S.Throttler.Throttler(1e3),this.performUpdate()}wasShown(){super.wasShown();for(let e of u.TargetManager.TargetManager.instance().models(d))this.addEventListeners(e)}willHide(){super.willHide();for(let e of u.TargetManager.TargetManager.instance().models(d))this.removeEventListeners(e)}modelAdded(e){this.isShowing()&&this.addEventListeners(e)}modelRemoved(e){this.removeEventListeners(e)}performUpdate(){let e={contexts:[...this.contextSelectorItems],selectedContextIndex:this.selectedContextIndex,onContextSelectorSelectionChanged:this.onContextSelectorSelectionChanged.bind(this),contextRealtimeData:this.contextRealtimeData};this.view(e,{},this.contentElement)}addEventListeners(e){e.ensureEnabled(),e.addEventListener("ContextCreated",this.contextCreated,this),e.addEventListener("ContextDestroyed",this.contextDestroyed,this),e.addEventListener("ContextChanged",this.contextChanged,this),e.addEventListener("ModelReset",this.reset,this)}removeEventListeners(e){e.removeEventListener("ContextCreated",this.contextCreated,this),e.removeEventListener("ContextDestroyed",this.contextDestroyed,this),e.removeEventListener("ContextChanged",this.contextChanged,this),e.removeEventListener("ModelReset",this.reset,this)}onContextSelectorSelectionChanged(e){this.selectedContextIndex=this.contextSelectorItems.findIndex(t=>t.contextId===e),this.pollRealtimeDataThrottler.schedule(this.pollRealtimeData.bind(this)),this.requestUpdate()}contextCreated(e){let t=e.data;this.knownContexts.add(t.contextId),this.contextSelectorItems.insert(this.contextSelectorItems.length,t),this.selectedContextIndex===-1&&(this.selectedContextIndex=this.contextSelectorItems.length-1,this.pollRealtimeDataThrottler.schedule(this.pollRealtimeData.bind(this))),this.requestUpdate()}contextDestroyed(e){let t=e.data;this.knownContexts.delete(t);let o=this.contextSelectorItems.findIndex(n=>n.contextId===t);if(o>-1){let n=this.selectedContextIndex>-1?this.contextSelectorItems.at(this.selectedContextIndex):null;this.contextSelectorItems.remove(o);let r=n?this.contextSelectorItems.indexOf(n):-1;r>-1?this.selectedContextIndex=r:this.selectedContextIndex=Math.min(o,this.contextSelectorItems.length-1)}this.requestUpdate()}contextChanged(e){let t=e.data;if(!this.knownContexts.has(t.contextId))return;let o=e.data,n=this.contextSelectorItems.findIndex(r=>r.contextId===o.contextId);n>-1&&this.contextSelectorItems.replace(n,o),this.requestUpdate()}reset(){this.contextSelectorItems.replaceAll([]),this.selectedContextIndex=-1,this.knownContexts.clear(),this.requestUpdate()}setContextRealtimeData(e){this.contextRealtimeData=e,this.requestUpdate()}async pollRealtimeData(){if(this.selectedContextIndex<0){this.setContextRealtimeData(null);return}let e=this.contextSelectorItems.at(this.selectedContextIndex);if(!e){this.setContextRealtimeData(null);return}for(let t of u.TargetManager.TargetManager.instance().models(d))if(e.contextType==="realtime"){if(!this.knownContexts.has(e.contextId))continue;let o=await t.requestRealtimeData(e.contextId);o&&this.setContextRealtimeData(o),this.pollRealtimeDataThrottler.schedule(this.pollRealtimeData.bind(this))}else this.setContextRealtimeData(null)}};export{w as WebAudioModel,T as WebAudioView};
 //# sourceMappingURL=web_audio.js.map

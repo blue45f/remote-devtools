@@ -1,35 +1,48 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2015 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
+/* eslint-disable @devtools/no-lit-render-outside-of-view */
+import './Toolbar.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
+import * as Buttons from '../../ui/components/buttons/buttons.js';
+import { html, render } from '../lit/lit.js';
+import * as VisualLogging from '../visual_logging/visual_logging.js';
 import * as ARIAUtils from './ARIAUtils.js';
-import listWidgetStyles from './listWidget.css.legacy.js';
-import { Toolbar, ToolbarButton } from './Toolbar.js';
+import listWidgetStyles from './listWidget.css.js';
 import { Tooltip } from './Tooltip.js';
 import { createInput, createTextButton, ElementFocusRestorer } from './UIUtils.js';
 import { VBox } from './Widget.js';
 const UIStrings = {
     /**
-     *@description Text on a button to start editing text
+     * @description Text on a button to start editing text
      */
     editString: 'Edit',
     /**
-     *@description Label for an item to remove something
+     * @description Label for an item to remove something
      */
     removeString: 'Remove',
     /**
-     *@description Text to save something
+     * @description Text to save something
      */
     saveString: 'Save',
     /**
-     *@description Text to add something
+     * @description Text to add something
      */
     addString: 'Add',
     /**
-     *@description Text to cancel something
+     * @description Text to cancel something
      */
     cancelString: 'Cancel',
+    /**
+     * @description Text for screen reader to announce that an item has been saved.
+     */
+    changesSaved: 'Changes to item have been saved',
+    /**
+     * @description Text for screen reader to announce that an item has been removed.
+     */
+    removedItem: 'Item has been removed',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/ListWidget.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -38,31 +51,39 @@ export class ListWidget extends VBox {
     list;
     lastSeparator;
     focusRestorer;
-    items;
+    #items;
     editable;
     elements;
     editor;
     editItem;
     editElement;
     emptyPlaceholder;
-    constructor(delegate, delegatesFocus = true) {
-        super(true, delegatesFocus);
+    isTable;
+    constructor(delegate, delegatesFocus = true, isTable = false) {
+        super({ useShadowDom: true, delegatesFocus });
         this.registerRequiredCSS(listWidgetStyles);
         this.delegate = delegate;
         this.list = this.contentElement.createChild('div', 'list');
         this.lastSeparator = false;
         this.focusRestorer = null;
-        this.items = [];
+        this.#items = [];
         this.editable = [];
         this.elements = [];
         this.editor = null;
         this.editItem = null;
         this.editElement = null;
         this.emptyPlaceholder = null;
+        this.isTable = isTable;
+        if (isTable) {
+            this.list.role = 'table';
+        }
         this.updatePlaceholder();
     }
+    get items() {
+        return this.#items;
+    }
     clear() {
-        this.items = [];
+        this.#items = [];
         this.editable = [];
         this.elements = [];
         this.lastSeparator = false;
@@ -70,21 +91,54 @@ export class ListWidget extends VBox {
         this.updatePlaceholder();
         this.stopEditing();
     }
-    appendItem(item, editable) {
-        if (this.lastSeparator && this.items.length) {
+    updateItem(index, newItem, editable, focusable = true, controlLabels = {}) {
+        if (index < 0 || index >= this.#items.length) {
+            this.appendItem(newItem, editable, focusable, controlLabels);
+            return;
+        }
+        this.#items[index] = newItem;
+        this.editable[index] = editable;
+        const element = this.elements[index];
+        const [content, controls] = element.children;
+        if (controls) {
+            element.removeChild(controls);
+        }
+        this.delegate.updateItem?.(content, newItem, editable, index);
+        element.classList.toggle('editable', editable);
+        if (editable) {
+            if (focusable) {
+                element.tabIndex = 0;
+            }
+            element.appendChild(this.createControls(newItem, element, controlLabels));
+        }
+    }
+    appendItem(item, editable, focusable = true, controlLabels = {}) {
+        if (this.lastSeparator && this.#items.length) {
             const element = document.createElement('div');
             element.classList.add('list-separator');
+            if (this.isTable) {
+                element.role = 'rowgroup';
+            }
             this.list.appendChild(element);
         }
         this.lastSeparator = false;
-        this.items.push(item);
+        this.#items.push(item);
         this.editable.push(editable);
         const element = this.list.createChild('div', 'list-item');
-        element.appendChild(this.delegate.renderItem(item, editable));
+        if (this.isTable) {
+            element.role = 'rowgroup';
+        }
+        const content = this.delegate.renderItem(item, editable, this.#items.length - 1);
+        if (!content.hasAttribute('jslog')) {
+            element.setAttribute('jslog', `${VisualLogging.item().track({ resize: true })}`);
+        }
+        element.appendChild(content);
         if (editable) {
             element.classList.add('editable');
-            element.tabIndex = 0;
-            element.appendChild(this.createControls(item, element));
+            if (focusable) {
+                element.tabIndex = 0;
+            }
+            element.appendChild(this.createControls(item, element, controlLabels));
         }
         this.elements.push(element);
         this.updatePlaceholder();
@@ -93,23 +147,23 @@ export class ListWidget extends VBox {
         this.lastSeparator = true;
     }
     removeItem(index) {
-        if (this.editItem === this.items[index]) {
+        if (this.editItem === this.#items[index]) {
             this.stopEditing();
         }
         const element = this.elements[index];
         const previous = element.previousElementSibling;
-        const previousIsSeparator = previous && previous.classList.contains('list-separator');
+        const previousIsSeparator = previous?.classList.contains('list-separator');
         const next = element.nextElementSibling;
-        const nextIsSeparator = next && next.classList.contains('list-separator');
+        const nextIsSeparator = next?.classList.contains('list-separator');
         if (previousIsSeparator && (nextIsSeparator || !next)) {
-            previous.remove();
+            previous?.remove();
         }
         if (nextIsSeparator && !previous) {
-            next.remove();
+            next?.remove();
         }
         element.remove();
         this.elements.splice(index, 1);
-        this.items.splice(index, 1);
+        this.#items.splice(index, 1);
         this.editable.splice(index, 1);
         this.updatePlaceholder();
     }
@@ -120,19 +174,30 @@ export class ListWidget extends VBox {
         this.emptyPlaceholder = element;
         this.updatePlaceholder();
     }
-    createControls(item, element) {
+    createControls(item, element, controlLabels) {
         const controls = document.createElement('div');
         controls.classList.add('controls-container');
         controls.classList.add('fill');
-        controls.createChild('div', 'controls-gradient');
-        const buttons = controls.createChild('div', 'controls-buttons');
-        const toolbar = new Toolbar('', buttons);
-        const editButton = new ToolbarButton(i18nString(UIStrings.editString), 'edit');
-        editButton.addEventListener(ToolbarButton.Events.Click, onEditClicked.bind(this));
-        toolbar.appendToolbarItem(editButton);
-        const removeButton = new ToolbarButton(i18nString(UIStrings.removeString), 'bin');
-        removeButton.addEventListener(ToolbarButton.Events.Click, onRemoveClicked.bind(this));
-        toolbar.appendToolbarItem(removeButton);
+        // clang-format off
+        render(html `
+      <div class="controls-gradient"></div>
+      <div class="controls-buttons">
+        <devtools-toolbar>
+          <devtools-button class=toolbar-button
+                           .iconName=${'edit'}
+                           .jslogContext=${'edit-item'}
+                           .title=${controlLabels?.edit ?? i18nString(UIStrings.editString)}
+                           .variant=${"icon" /* Buttons.Button.Variant.ICON */}
+                           @click=${onEditClicked}></devtools-button>
+          <devtools-button class=toolbar-button
+                           .iconName=${'bin'}
+                           .jslogContext=${'remove-item'}
+                           .title=${controlLabels?.delete ?? i18nString(UIStrings.removeString)}
+                           .variant=${"icon" /* Buttons.Button.Variant.ICON */}
+                           @click=${onRemoveClicked}></devtools-button>
+        </devtools-toolbar>
+      </div>`, controls, { host: this });
+        // clang-format on
         return controls;
         function onEditClicked() {
             const index = this.elements.indexOf(element);
@@ -142,7 +207,12 @@ export class ListWidget extends VBox {
         function onRemoveClicked() {
             const index = this.elements.indexOf(element);
             this.element.focus();
-            this.delegate.removeItemRequested(this.items[index], index);
+            this.delegate.removeItemRequested(this.#items[index], index);
+            ARIAUtils.LiveAnnouncer.alert(i18nString(UIStrings.removedItem));
+            if (this.elements.length >= 1) {
+                // focus on the next item in the list, or the last item if we're removing the last item
+                this.elements[Math.min(index, this.elements.length - 1)].focus();
+            }
         }
     }
     wasShown() {
@@ -183,9 +253,15 @@ export class ListWidget extends VBox {
         const editItem = this.editItem;
         const isNew = !this.editElement;
         const editor = this.editor;
+        // Focus on the current item or the new item after committing
+        const focusElementIndex = this.editElement ? this.elements.indexOf(this.editElement) : this.elements.length - 1;
         this.stopEditing();
-        if (editItem) {
+        if (editItem !== null) {
             this.delegate.commitEdit(editItem, editor, isNew);
+            ARIAUtils.LiveAnnouncer.alert(i18nString(UIStrings.changesSaved));
+            if (this.elements[focusElementIndex]) {
+                this.elements[focusElementIndex].focus();
+            }
         }
     }
     stopEditing() {
@@ -197,7 +273,7 @@ export class ListWidget extends VBox {
         if (this.editElement) {
             this.editElement.classList.remove('hidden');
         }
-        if (this.editor && this.editor.element.parentElement) {
+        if (this.editor?.element.parentElement) {
             this.editor.element.remove();
         }
         this.editor = null;
@@ -208,29 +284,45 @@ export class ListWidget extends VBox {
 }
 export class Editor {
     element;
-    contentElementInternal;
+    #contentElement;
     commitButton;
     cancelButton;
     errorMessageContainer;
-    controls;
-    controlByName;
-    validators;
-    commit;
-    cancel;
-    item;
-    index;
+    controls = [];
+    controlByName = new Map();
+    validators = [];
+    commit = null;
+    cancel = null;
+    item = null;
+    index = -1;
     constructor() {
         this.element = document.createElement('div');
         this.element.classList.add('editor-container');
+        this.element.setAttribute('jslog', `${VisualLogging.pane('editor').track({ resize: true })}`);
         this.element.addEventListener('keydown', onKeyDown.bind(null, Platform.KeyboardUtilities.isEscKey, this.cancelClicked.bind(this)), false);
-        this.contentElementInternal = this.element.createChild('div', 'editor-content');
-        this.contentElementInternal.addEventListener('keydown', onKeyDown.bind(null, event => event.key === 'Enter', this.commitClicked.bind(this)), false);
+        this.#contentElement = this.element.createChild('div', 'editor-content');
+        this.#contentElement.addEventListener('keydown', onKeyDown.bind(null, event => {
+            if (event.key !== 'Enter') {
+                return false;
+            }
+            if (event.target instanceof HTMLSelectElement) {
+                // 'Enter' on <select> is supposed to open the drop down, so don't swallow that here.
+                return false;
+            }
+            return true;
+        }, this.commitClicked.bind(this)), false);
         const buttonsRow = this.element.createChild('div', 'editor-buttons');
-        this.commitButton = createTextButton('', this.commitClicked.bind(this), '', true /* primary */);
-        buttonsRow.appendChild(this.commitButton);
-        this.cancelButton =
-            createTextButton(i18nString(UIStrings.cancelString), this.cancelClicked.bind(this), '', true /* primary */);
+        this.cancelButton = createTextButton(i18nString(UIStrings.cancelString), this.cancelClicked.bind(this), {
+            jslogContext: 'cancel',
+            variant: "outlined" /* Buttons.Button.Variant.OUTLINED */,
+        });
+        this.cancelButton.setAttribute('jslog', `${VisualLogging.action('cancel').track({ click: true })}`);
         buttonsRow.appendChild(this.cancelButton);
+        this.commitButton = createTextButton('', this.commitClicked.bind(this), {
+            jslogContext: 'commit',
+            variant: "primary" /* Buttons.Button.Variant.PRIMARY */,
+        });
+        buttonsRow.appendChild(this.commitButton);
         this.errorMessageContainer = this.element.createChild('div', 'list-widget-input-validation-error');
         ARIAUtils.markAsAlert(this.errorMessageContainer);
         function onKeyDown(predicate, callback, event) {
@@ -239,22 +331,15 @@ export class Editor {
                 callback();
             }
         }
-        this.controls = [];
-        this.controlByName = new Map();
-        this.validators = [];
-        this.commit = null;
-        this.cancel = null;
-        this.item = null;
-        this.index = -1;
     }
     contentElement() {
-        return this.contentElementInternal;
+        return this.#contentElement;
     }
     createInput(name, type, title, validator) {
-        const input = createInput('', type);
+        const input = (createInput('', type));
         input.placeholder = title;
         input.addEventListener('input', this.validateControls.bind(this, false), false);
-        input.addEventListener('blur', this.validateControls.bind(this, false), false);
+        input.setAttribute('jslog', `${VisualLogging.textField().track({ change: true, keydown: 'Enter' }).context(name)}`);
         ARIAUtils.setLabel(input, title);
         this.controlByName.set(name, input);
         this.controls.push(input);
@@ -263,11 +348,12 @@ export class Editor {
     }
     createSelect(name, options, validator, title) {
         const select = document.createElement('select');
-        select.classList.add('chrome-select');
+        select.setAttribute('jslog', `${VisualLogging.dropDown().track({ change: true }).context(name)}`);
         for (let index = 0; index < options.length; ++index) {
             const option = select.createChild('option');
             option.value = options[index];
             option.textContent = options[index];
+            option.setAttribute('jslog', `${VisualLogging.item(Platform.StringUtilities.toKebabCase(options[index])).track({ click: true })}`);
         }
         if (title) {
             Tooltip.install(select, title);
@@ -307,8 +393,12 @@ export class Editor {
             else {
                 ARIAUtils.setInvalid(input, true);
             }
-            if (!forceValid && errorMessage && !this.errorMessageContainer.textContent) {
-                this.errorMessageContainer.textContent = errorMessage;
+            if (!forceValid && errorMessage) {
+                if (this.errorMessageContainer.textContent) {
+                    const br = document.createElement('br');
+                    this.errorMessageContainer.append(br);
+                }
+                this.errorMessageContainer.append(errorMessage);
             }
             allValid = allValid && valid;
         }

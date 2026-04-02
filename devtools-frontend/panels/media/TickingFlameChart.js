@@ -1,6 +1,7 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as PerfUI from '../../ui/legacy/components/perf_ui/perf_ui.js';
@@ -9,12 +10,12 @@ import * as ThemeSupport from '../../ui/legacy/theme_support/theme_support.js';
 import { Bounds, formatMillisecondsToSeconds } from './TickingFlameChartHelpers.js';
 const defaultFont = '11px ' + Host.Platform.fontFamily();
 function getGroupDefaultTextColor() {
-    return ThemeSupport.ThemeSupport.instance().getComputedValue('--color-text-primary');
+    return ThemeSupport.ThemeSupport.instance().getComputedValue('--sys-color-on-surface');
 }
 const DefaultStyle = () => ({
     height: 20,
     padding: 2,
-    collapsible: false,
+    collapsible: 1 /* PerfUI.FlameChart.GroupCollapsibleState.NEVER */,
     font: defaultFont,
     color: getGroupDefaultTextColor(),
     backgroundColor: 'rgba(100 0 0 / 10%)',
@@ -43,12 +44,11 @@ export class Event {
     setComplete;
     updateMaxTime;
     selfIndex;
-    liveInternal;
+    #live;
     title;
-    colorInternal;
-    fontColorInternal;
-    hoverData;
-    constructor(timelineData, eventHandlers, eventProperties = { color: undefined, duration: undefined, hoverData: {}, level: 0, name: '', startTime: 0 }) {
+    #color;
+    #fontColor;
+    constructor(timelineData, eventHandlers, eventProperties = { color: undefined, duration: undefined, level: 0, name: '', startTime: 0 }) {
         // These allow the event to privately change it's own data in the timeline.
         this.timelineData = timelineData;
         this.setLive = eventHandlers.setLive;
@@ -56,7 +56,7 @@ export class Event {
         this.updateMaxTime = eventHandlers.updateMaxTime;
         // This is the index in the timelineData arrays we should be writing to.
         this.selfIndex = this.timelineData.entryLevels.length;
-        this.liveInternal = false;
+        this.#live = false;
         // Can't use the dict||or||default syntax, since NaN is a valid expected duration.
         const duration = eventProperties['duration'] === undefined ? 0 : eventProperties['duration'];
         this.timelineData.entryLevels.push(eventProperties['level'] || 0);
@@ -67,9 +67,8 @@ export class Event {
             this.endTime = -1;
         }
         this.title = eventProperties['name'] || '';
-        this.colorInternal = eventProperties['color'] || HotColorScheme[0];
-        this.fontColorInternal = calculateFontColor(this.colorInternal);
-        this.hoverData = eventProperties['hoverData'] || {};
+        this.#color = eventProperties['color'] || HotColorScheme[0];
+        this.#fontColor = calculateFontColor(this.#color);
     }
     /**
      * Render hovertext into the |htmlElement|
@@ -78,7 +77,7 @@ export class Event {
         htmlElement.createChild('span').textContent = `Name: ${this.title}`;
         htmlElement.createChild('br');
         const startTimeReadable = formatMillisecondsToSeconds(this.startTime, 2);
-        if (this.liveInternal) {
+        if (this.#live) {
             htmlElement.createChild('span').textContent = `Duration: ${startTimeReadable} - LIVE!`;
         }
         else if (!isNaN(this.duration)) {
@@ -92,16 +91,16 @@ export class Event {
     /**
      * set an event to be "live" where it's ended time is always the chart maximum
      * or to be a fixed time.
-     * @param {number} time
+     * @param time
      */
     set endTime(time) {
         // Setting end time to -1 signals that an event becomes live
         if (time === -1) {
             this.timelineData.entryTotalTimes[this.selfIndex] = this.setLive(this.selfIndex);
-            this.liveInternal = true;
+            this.#live = true;
         }
         else {
-            this.liveInternal = false;
+            this.#live = false;
             const duration = time - this.timelineData.entryStartTimes[this.selfIndex];
             this.timelineData.entryTotalTimes[this.selfIndex] = duration;
             this.setComplete(this.selfIndex);
@@ -115,14 +114,14 @@ export class Event {
         this.timelineData.entryLevels[this.selfIndex] = level;
     }
     set color(color) {
-        this.colorInternal = color;
-        this.fontColorInternal = calculateFontColor(this.colorInternal);
+        this.#color = color;
+        this.#fontColor = calculateFontColor(this.#color);
     }
     get color() {
-        return this.colorInternal;
+        return this.#color;
     }
     get fontColor() {
-        return this.fontColorInternal;
+        return this.#fontColor;
     }
     get startTime() {
         // Round it
@@ -132,13 +131,13 @@ export class Event {
         return this.timelineData.entryTotalTimes[this.selfIndex];
     }
     get live() {
-        return this.liveInternal;
+        return this.#live;
     }
 }
 export class TickingFlameChart extends UI.Widget.VBox {
     intervalTimer;
     lastTimestamp;
-    canTickInternal;
+    #canTick;
     ticking;
     isShown;
     bounds;
@@ -152,7 +151,7 @@ export class TickingFlameChart extends UI.Widget.VBox {
         // set to update once per second _while the tab is active_
         this.intervalTimer = 0;
         this.lastTimestamp = 0;
-        this.canTickInternal = true;
+        this.#canTick = true;
         this.ticking = false;
         this.isShown = false;
         // The max bounds for scroll-out.
@@ -164,7 +163,7 @@ export class TickingFlameChart extends UI.Widget.VBox {
         this.delegate = new TickingFlameChartDelegate();
         // Chart settings.
         this.chartGroupExpansionSetting =
-            Common.Settings.Settings.instance().createSetting('mediaFlameChartGroupExpansion', {});
+            Common.Settings.Settings.instance().createSetting('media-flame-chart-group-expansion', {});
         // Create the chart.
         this.chart =
             // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
@@ -213,8 +212,8 @@ export class TickingFlameChart extends UI.Widget.VBox {
         }
     }
     onScroll(e) {
-        // TODO: is this a good divisor? does it account for high presicision scroll wheels?
-        // low precisision scroll wheels?
+        // TODO: is this a good divisor? does it account for high precision scroll wheels?
+        // low precision scroll wheels?
         const scrollTickCount = Math.round(e.deltaY / 50);
         const scrollPositionRatio = e.offsetX / e.srcElement.clientWidth;
         if (scrollTickCount > 0) {
@@ -226,19 +225,21 @@ export class TickingFlameChart extends UI.Widget.VBox {
         this.updateRender();
     }
     willHide() {
+        super.willHide();
         this.isShown = false;
         if (this.ticking) {
             this.stop();
         }
     }
     wasShown() {
+        super.wasShown();
         this.isShown = true;
-        if (this.canTickInternal && !this.ticking) {
+        if (this.#canTick && !this.ticking) {
             this.start();
         }
     }
     set canTick(allowed) {
-        this.canTickInternal = allowed;
+        this.#canTick = allowed;
         if (this.ticking && !allowed) {
             this.stop();
         }
@@ -281,8 +282,6 @@ export class TickingFlameChart extends UI.Widget.VBox {
  * Doesn't do much right now, but can be used in the future for selecting events.
  */
 class TickingFlameChartDelegate {
-    constructor() {
-    }
     windowChanged(_windowStartTime, _windowEndTime, _animate) {
     }
     updateRangeSelection(_startTime, _endTime) {
@@ -295,7 +294,7 @@ class TickingFlameChartDataProvider {
     bounds;
     liveEvents;
     eventMap;
-    timelineDataInternal;
+    #timelineData;
     maxLevel;
     constructor(initialBounds, updateMaxTime) {
         // do _not_ call this method from within this class - only for passing to events.
@@ -306,26 +305,29 @@ class TickingFlameChartDataProvider {
         // All events.
         // Map<Event>
         this.eventMap = new Map();
-        // Contains the numerical indicies. This is passed as a reference to the events
+        // Contains the numerical indices. This is passed as a reference to the events
         // so that they can update it when they change.
-        this.timelineDataInternal = PerfUI.FlameChart.FlameChartTimelineData.createEmpty();
+        this.#timelineData = PerfUI.FlameChart.FlameChartTimelineData.createEmpty();
         // The current sum of all group heights.
         this.maxLevel = 0;
+    }
+    hasTrackConfigurationMode() {
+        return false;
     }
     /**
      * Add a group with |name| that can contain |depth| different tracks.
      */
     addGroup(name, depth) {
-        if (this.timelineDataInternal.groups) {
+        if (this.#timelineData.groups) {
             const newGroup = {
-                name: name,
+                name,
                 startLevel: this.maxLevel,
                 expanded: true,
                 selectable: false,
                 style: DefaultStyle(),
                 track: null,
             };
-            this.timelineDataInternal.groups.push(newGroup);
+            this.#timelineData.groups.push(newGroup);
             ThemeSupport.ThemeSupport.instance().addEventListener(ThemeSupport.ThemeChangeEvent.eventName, () => {
                 newGroup.style.color = getGroupDefaultTextColor();
             });
@@ -338,9 +340,9 @@ class TickingFlameChartDataProvider {
     startEvent(properties) {
         properties['level'] = properties['level'] || 0;
         if (properties['level'] > this.maxLevel) {
-            throw `level ${properties['level']} is above the maximum allowed of ${this.maxLevel}`;
+            throw new Error(`level ${properties['level']} is above the maximum allowed of ${this.maxLevel}`);
         }
-        const event = new Event(this.timelineDataInternal, {
+        const event = new Event(this.#timelineData, {
             setLive: this.setLive.bind(this),
             setComplete: this.setComplete.bind(this),
             updateMaxTime: this.updateMaxTimeHandle,
@@ -366,9 +368,10 @@ class TickingFlameChartDataProvider {
         return this.maxLevel + 1;
     }
     timelineData() {
-        return this.timelineDataInternal;
+        return this.#timelineData;
     }
-    /** time in milliseconds
+    /**
+     * time in milliseconds
      */
     minimumBoundary() {
         return this.bounds.low;
@@ -394,7 +397,7 @@ class TickingFlameChartDataProvider {
     forceDecoration(_index) {
         return false;
     }
-    prepareHighlightedEntryInfo(index) {
+    preparePopoverElement(index) {
         const element = document.createElement('div');
         this.eventMap.get(index).decorate(element);
         return element;
@@ -416,9 +419,6 @@ class TickingFlameChartDataProvider {
     }
     canJumpToEntry(_entryIndex) {
         return false;
-    }
-    navStartTimes() {
-        return new Map();
     }
 }
 //# sourceMappingURL=TickingFlameChart.js.map

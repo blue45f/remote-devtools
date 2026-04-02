@@ -1,23 +1,14 @@
-/**
- * @param {!InspectorBackendAPI} inspectorBackend
- */
-export function registerCommands(inspectorBackend: InspectorBackendAPI): void;
-export type InspectorBackendAPI = {
-    registerCommand: (arg0: string & any, arg1: Array<{
-        name: string;
-        type: string;
-        optional: boolean;
-    }>, arg2: Array<string>) => void;
-    registerEnum: (arg0: string & any, arg1: {
-        [x: string]: string;
-    }) => void;
-    registerEvent: (arg0: string & any, arg1: Array<string>) => void;
-};
-/**
- * @typedef {{
- *  registerCommand: function(string&any, !Array.<!{name: string, type: string, optional: boolean}>, !Array.<string>):void,
- *  registerEnum: function(string&any, !Object<string, string>):void,
- *  registerEvent: function(string&any, !Array<string>):void,
- * }}
- */
-export let InspectorBackendAPI: any;
+export interface CommandParameter {
+    name: string;
+    type: string;
+    optional: boolean;
+    description: string;
+    typeRef: string | null;
+}
+export interface InspectorBackendAPI {
+    registerCommand(command: string, parameters: CommandParameter[], replayArgs: string[], description: string): void;
+    registerEnum(type: string, values: Record<string, string>): void;
+    registerEvent(event: string, params: string[]): void;
+    registerType(type: string, parameters: CommandParameter[]): void;
+}
+export declare function registerCommands(inspectorBackend: InspectorBackendAPI): void;

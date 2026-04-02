@@ -1,34 +1,9 @@
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
 import { ContentProviderBasedProject } from './ContentProviderBasedProject.js';
 import { NetworkProject } from './NetworkProject.js';
@@ -37,19 +12,21 @@ const uiSourceCodeToStyleMap = new WeakMap();
 export class StylesSourceMapping {
     #cssModel;
     #project;
-    #styleFiles;
+    #styleFiles = new Map();
     #eventListeners;
     constructor(cssModel, workspace) {
         this.#cssModel = cssModel;
         const target = this.#cssModel.target();
         this.#project = new ContentProviderBasedProject(workspace, 'css:' + target.id(), Workspace.Workspace.projectTypes.Network, '', false /* isServiceProject */);
         NetworkProject.setTargetForProject(this.#project, target);
-        this.#styleFiles = new Map();
         this.#eventListeners = [
             this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetAdded, this.styleSheetAdded, this),
             this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetRemoved, this.styleSheetRemoved, this),
             this.#cssModel.addEventListener(SDK.CSSModel.Events.StyleSheetChanged, this.styleSheetChanged, this),
         ];
+    }
+    addSourceMap(sourceUrl, sourceMapUrl) {
+        this.#styleFiles.get(sourceUrl)?.addSourceMap(sourceUrl, sourceMapUrl);
     }
     rawLocationToUILocation(rawLocation) {
         const header = rawLocation.header();
@@ -161,8 +138,8 @@ export class StyleFile {
     headers;
     uiSourceCode;
     #eventListeners;
-    #throttler;
-    #terminated;
+    #throttler = new Common.Throttler.Throttler(200);
+    #terminated = false;
     #isAddingRevision;
     #isUpdatingHeaders;
     constructor(cssModel, project, header) {
@@ -180,8 +157,6 @@ export class StyleFile {
             this.uiSourceCode.addEventListener(Workspace.UISourceCode.Events.WorkingCopyChanged, this.workingCopyChanged, this),
             this.uiSourceCode.addEventListener(Workspace.UISourceCode.Events.WorkingCopyCommitted, this.workingCopyCommitted, this),
         ];
-        this.#throttler = new Common.Throttler.Throttler(StyleFile.updateTimeout);
-        this.#terminated = false;
     }
     addHeader(header) {
         this.headers.add(header);
@@ -197,21 +172,21 @@ export class StyleFile {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, header, true /* majorChange */);
-        void this.#throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, "Default" /* Common.Throttler.Scheduling.DEFAULT */);
     }
     workingCopyCommitted() {
         if (this.#isAddingRevision) {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, this.uiSourceCode, true /* majorChange */);
-        void this.#throttler.schedule(mirrorContentBound, true /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, "AsSoonAsPossible" /* Common.Throttler.Scheduling.AS_SOON_AS_POSSIBLE */);
     }
     workingCopyChanged() {
         if (this.#isAddingRevision) {
             return;
         }
         const mirrorContentBound = this.mirrorContent.bind(this, this.uiSourceCode, false /* majorChange */);
-        void this.#throttler.schedule(mirrorContentBound, false /* asSoonAsPossible */);
+        void this.#throttler.schedule(mirrorContentBound, "Default" /* Common.Throttler.Scheduling.DEFAULT */);
     }
     async mirrorContent(fromProvider, majorChange) {
         if (this.#terminated) {
@@ -223,8 +198,7 @@ export class StyleFile {
             newContent = this.uiSourceCode.workingCopy();
         }
         else {
-            const deferredContent = await fromProvider.requestContent();
-            newContent = deferredContent.content;
+            newContent = TextUtils.ContentData.ContentData.textOr(await fromProvider.requestContentData(), null);
         }
         if (newContent === null || this.#terminated) {
             this.styleFileSyncedForTest();
@@ -232,7 +206,7 @@ export class StyleFile {
         }
         if (fromProvider !== this.uiSourceCode) {
             this.#isAddingRevision = true;
-            this.uiSourceCode.addRevision(newContent);
+            this.uiSourceCode.setWorkingCopy(newContent);
             this.#isAddingRevision = false;
         }
         this.#isUpdatingHeaders = true;
@@ -260,28 +234,36 @@ export class StyleFile {
     }
     contentURL() {
         console.assert(this.headers.size > 0);
-        return this.headers.values().next().value.originalContentProvider().contentURL();
+        return this.#firstHeader().originalContentProvider().contentURL();
     }
     contentType() {
         console.assert(this.headers.size > 0);
-        return this.headers.values().next().value.originalContentProvider().contentType();
+        return this.#firstHeader().originalContentProvider().contentType();
     }
-    requestContent() {
+    requestContentData() {
         console.assert(this.headers.size > 0);
-        return this.headers.values().next().value.originalContentProvider().requestContent();
+        return this.#firstHeader().originalContentProvider().requestContentData();
     }
     searchInContent(query, caseSensitive, isRegex) {
         console.assert(this.headers.size > 0);
-        return this.headers.values().next().value.originalContentProvider().searchInContent(query, caseSensitive, isRegex);
+        return this.#firstHeader().originalContentProvider().searchInContent(query, caseSensitive, isRegex);
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    static updateTimeout = 200;
+    #firstHeader() {
+        console.assert(this.headers.size > 0);
+        return this.headers.values().next().value;
+    }
     getHeaders() {
         return this.headers;
     }
     getUiSourceCode() {
         return this.uiSourceCode;
+    }
+    addSourceMap(sourceUrl, sourceMapUrl) {
+        const sourceMapManager = this.#cssModel.sourceMapManager();
+        this.headers.forEach(header => {
+            sourceMapManager.detachSourceMap(header);
+            sourceMapManager.attachSourceMap(header, sourceUrl, sourceMapUrl);
+        });
     }
 }
 //# sourceMappingURL=StylesSourceMapping.js.map

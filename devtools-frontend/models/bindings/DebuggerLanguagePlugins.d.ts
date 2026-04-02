@@ -1,16 +1,17 @@
-import { type Chrome } from '../../../extension-api/ExtensionAPI.js';
+import type { Chrome } from '../../../extension-api/ExtensionAPI.js';
 import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
+import type * as StackTraceImpl from '../stack_trace/stack_trace_impl.js';
 import * as TextUtils from '../text_utils/text_utils.js';
 import * as Workspace from '../workspace/workspace.js';
-import { type DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
+import type { DebuggerWorkspaceBinding } from './DebuggerWorkspaceBinding.js';
 declare class SourceScopeRemoteObject extends SDK.RemoteObject.RemoteObjectImpl {
     #private;
     variables: Chrome.DevTools.Variable[];
     stopId: StopId;
     constructor(callFrame: SDK.DebuggerModel.CallFrame, stopId: StopId, plugin: DebuggerLanguagePlugin);
-    doGetProperties(ownProperties: boolean, accessorPropertiesOnly: boolean, _generatePreview: boolean): Promise<SDK.RemoteObject.GetPropertiesResult>;
+    doGetProperties(_ownProperties: boolean, accessorPropertiesOnly: boolean, _generatePreview: boolean): Promise<SDK.RemoteObject.GetPropertiesResult>;
 }
 export declare class SourceScope implements SDK.DebuggerModel.ScopeChainEntry {
     #private;
@@ -20,11 +21,11 @@ export declare class SourceScope implements SDK.DebuggerModel.ScopeChainEntry {
     type(): string;
     typeName(): string;
     name(): string | undefined;
-    startLocation(): SDK.DebuggerModel.Location | null;
-    endLocation(): SDK.DebuggerModel.Location | null;
+    range(): null;
     object(): SourceScopeRemoteObject;
     description(): string;
     icon(): string | undefined;
+    extraProperties(): SDK.RemoteObject.RemoteObjectProperty[];
 }
 export declare class ExtensionRemoteObject extends SDK.RemoteObject.RemoteObject {
     private readonly extensionObject;
@@ -39,7 +40,7 @@ export declare class ExtensionRemoteObject extends SDK.RemoteObject.RemoteObject
     get value(): unknown;
     unserializableValue(): string | undefined;
     get description(): string | undefined;
-    set description(description: string | undefined);
+    set description(_description: string | undefined);
     get hasChildren(): boolean;
     get preview(): Protocol.Runtime.ObjectPreview | undefined;
     get className(): string | null;
@@ -50,6 +51,7 @@ export declare class ExtensionRemoteObject extends SDK.RemoteObject.RemoteObject
     release(): void;
     debuggerModel(): SDK.DebuggerModel.DebuggerModel;
     runtimeModel(): SDK.RuntimeModel.RuntimeModel;
+    isLinearMemoryInspectable(): boolean;
 }
 export type StopId = bigint;
 export declare class DebuggerLanguagePluginManager implements SDK.TargetManager.SDKModelObserver<SDK.DebuggerModel.DebuggerModel> {
@@ -61,7 +63,6 @@ export declare class DebuggerLanguagePluginManager implements SDK.TargetManager.
     private evaluateOnCallFrame;
     stopIdForCallFrame(callFrame: SDK.DebuggerModel.CallFrame): StopId;
     callFrameForStopId(stopId: StopId): SDK.DebuggerModel.CallFrame | undefined;
-    private expandCallFrames;
     modelAdded(debuggerModel: SDK.DebuggerModel.DebuggerModel): void;
     modelRemoved(debuggerModel: SDK.DebuggerModel.DebuggerModel): void;
     private globalObjectCleared;
@@ -79,37 +80,42 @@ export declare class DebuggerLanguagePluginManager implements SDK.TargetManager.
     private rawModuleIdAndPluginForScript;
     uiSourceCodeForURL(debuggerModel: SDK.DebuggerModel.DebuggerModel, url: Platform.DevToolsPath.UrlString): Workspace.UISourceCode.UISourceCode | null;
     rawLocationToUILocation(rawLocation: SDK.DebuggerModel.Location): Promise<Workspace.UISourceCode.UILocation | null>;
-    uiLocationToRawLocationRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber?: number | undefined): Promise<{
+    uiLocationToRawLocationRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber?: number | undefined): Promise<Array<{
         start: SDK.DebuggerModel.Location;
         end: SDK.DebuggerModel.Location;
-    }[] | null>;
+    }> | null>;
     uiLocationToRawLocations(uiSourceCode: Workspace.UISourceCode.UISourceCode, lineNumber: number, columnNumber?: number): Promise<SDK.DebuggerModel.Location[] | null>;
     uiLocationRangeToRawLocationRanges(uiSourceCode: Workspace.UISourceCode.UISourceCode, textRange: TextUtils.TextRange.TextRange): Promise<SDK.DebuggerModel.LocationRange[] | null>;
+    translateRawFramesStep(rawFrames: StackTraceImpl.Trie.RawFrame[], translatedFrames: Awaited<ReturnType<StackTraceImpl.StackTraceModel.TranslateRawFrames>>, target: SDK.Target.Target): Promise<boolean>;
     scriptsForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): SDK.Script.Script[];
     setDebugInfoURL(script: SDK.Script.Script, externalURL: Platform.DevToolsPath.UrlString): void;
     private parsedScriptSource;
     private debuggerResumed;
-    getSourcesForScript(script: SDK.Script.Script): Promise<Array<Platform.DevToolsPath.UrlString> | {
-        missingSymbolFiles: string[];
+    getSourcesForScript(script: SDK.Script.Script): Promise<Platform.DevToolsPath.UrlString[] | {
+        missingSymbolFiles: SDK.DebuggerModel.MissingDebugFiles[];
     } | undefined>;
     resolveScopeChain(callFrame: SDK.DebuggerModel.CallFrame): Promise<SourceScope[] | null>;
-    getFunctionInfo(script: SDK.Script.Script, location: SDK.DebuggerModel.Location): Promise<{
-        frames: Array<Chrome.DevTools.FunctionInfo>;
+    getFunctionInfo(script: SDK.Script.Script, location: Pick<SDK.DebuggerModel.Location, 'columnNumber'>): Promise<{
+        frames: Chrome.DevTools.FunctionInfo[];
+        missingSymbolFiles: SDK.DebuggerModel.MissingDebugFiles[];
     } | {
-        missingSymbolFiles: string[];
+        frames: Chrome.DevTools.FunctionInfo[];
+    } | {
+        missingSymbolFiles: SDK.DebuggerModel.MissingDebugFiles[];
     } | null>;
-    getInlinedFunctionRanges(rawLocation: SDK.DebuggerModel.Location): Promise<{
+    getInlinedFunctionRanges(rawLocation: SDK.DebuggerModel.Location): Promise<Array<{
         start: SDK.DebuggerModel.Location;
         end: SDK.DebuggerModel.Location;
-    }[]>;
-    getInlinedCalleesRanges(rawLocation: SDK.DebuggerModel.Location): Promise<{
+    }>>;
+    getInlinedCalleesRanges(rawLocation: SDK.DebuggerModel.Location): Promise<Array<{
         start: SDK.DebuggerModel.Location;
         end: SDK.DebuggerModel.Location;
-    }[]>;
+    }>>;
     getMappedLines(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<Set<number> | null>;
 }
 export interface DebuggerLanguagePlugin extends Chrome.DevTools.LanguageExtensionPlugin {
     name: string;
     handleScript(script: SDK.Script.Script): boolean;
+    createPageResourceLoadInitiator(): SDK.PageResourceLoader.PageResourceLoadInitiator;
 }
 export {};

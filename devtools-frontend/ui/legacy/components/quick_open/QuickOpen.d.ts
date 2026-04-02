@@ -12,8 +12,5 @@ export declare class QuickOpenImpl {
     private providerLoadedForTest;
 }
 export declare class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ShowActionDelegate;
-    handleAction(context: UI.Context.Context, actionId: string): boolean;
+    handleAction(_context: UI.Context.Context, actionId: string): boolean;
 }

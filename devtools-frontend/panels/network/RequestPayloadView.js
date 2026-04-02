@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /*
@@ -34,50 +34,57 @@ import * as Common from '../../core/common/common.js';
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as Buttons from '../../ui/components/buttons/buttons.js';
 import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
-// eslint-disable-next-line rulesdir/es_modules_import
+// eslint-disable-next-line @devtools/es-modules-import
 import objectPropertiesSectionStyles from '../../ui/legacy/components/object_ui/objectPropertiesSection.css.js';
-// eslint-disable-next-line rulesdir/es_modules_import
+// eslint-disable-next-line @devtools/es-modules-import
 import objectValueStyles from '../../ui/legacy/components/object_ui/objectValue.css.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import { Directives, html, render } from '../../ui/lit/lit.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 import requestPayloadTreeStyles from './requestPayloadTree.css.js';
 import requestPayloadViewStyles from './requestPayloadView.css.js';
+import { ShowMoreDetailsWidget } from './ShowMoreDetailsWidget.js';
+const { classMap } = Directives;
+const { widget } = UI.Widget;
+const { ifExpanded } = UI.TreeOutline;
 const UIStrings = {
     /**
-     *@description A context menu item in the Watch Expressions Sidebar Pane of the Sources panel and Network pane request.
+     * @description A context menu item Payload View of the Network panel to copy a parsed value.
      */
     copyValue: 'Copy value',
+    /**
+     * @description A context menu item Payload View of the Network panel to copy the payload.
+     */
+    copyPayload: 'Copy',
     /**
      * @description Text in Request Payload View of the Network panel. This is a noun-phrase meaning the
      * payload of a network request.
      */
     requestPayload: 'Request Payload',
     /**
-     *@description Text in Request Payload View of the Network panel
+     * @description Text in Request Payload View of the Network panel
      */
     unableToDecodeValue: '(unable to decode value)',
     /**
-     *@description Text in Request Payload View of the Network panel
+     * @description Text in Request Payload View of the Network panel
      */
     queryStringParameters: 'Query String Parameters',
     /**
-     *@description Text in Request Payload View of the Network panel
+     * @description Text in Request Payload View of the Network panel
      */
     formData: 'Form Data',
     /**
-     *@description Text to show more content
-     */
-    showMore: 'Show more',
-    /**
-     *@description Text for toggling the view of payload data (e.g. query string parameters) from source to parsed in the payload tab
+     * @description Text for toggling the view of payload data (e.g. query string parameters) from source to parsed in the payload tab
      */
     viewParsed: 'View parsed',
     /**
-     *@description Text to show an item is empty
+     * @description Text to show an item is empty
      */
     empty: '(empty)',
     /**
-     *@description Text for toggling the view of payload data (e.g. query string parameters) from parsed to source in the payload tab
+     * @description Text for toggling the view of payload data (e.g. query string parameters) from parsed to source in the payload tab
      */
     viewSource: 'View source',
     /**
@@ -87,78 +94,252 @@ const UIStrings = {
      */
     viewUrlEncoded: 'View URL-encoded',
     /**
-     *@description Text for toggling payload data (e.g. query string parameters) from encoded to decoded in the payload tab or in the cookies preview
+     * @description Text for toggling payload data (e.g. query string parameters) from encoded to decoded in the payload tab or in the cookies preview
      */
     viewDecoded: 'View decoded',
-    /**
-     *@description Text for toggling payload data (e.g. query string parameters) from decoded to
-     * encoded in the payload tab or in the cookies preview. URL-encoded is a different data format for
-     * the same data, which the user sees when they click this command.
-     */
-    viewUrlEncodedL: 'view URL-encoded',
-    /**
-     *@description Text in Request Payload View of the Network panel
-     */
-    viewDecodedL: 'view decoded',
-    /**
-     *@description Text in Request Payload View of the Network panel
-     */
-    viewParsedL: 'view parsed',
-    /**
-     *@description Text in Request Payload View of the Network panel
-     */
-    viewSourceL: 'view source',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/network/RequestPayloadView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+export const DEFAULT_VIEW = (input, output, target) => {
+    const createViewSourceToggle = (viewSource, callback) => html `<devtools-button
+      class="payload-toggle"
+      jslog=${VisualLogging.action().track({ click: true }).context('source-parse')}
+      .variant=${"outlined" /* Buttons.Button.Variant.OUTLINED */}
+      @click=${(e) => {
+        e.consume();
+        callback(!viewSource);
+    }}>
+      ${viewSource ? i18nString(UIStrings.viewParsed) : i18nString(UIStrings.viewSource)}
+    </devtools-button>`;
+    const copyValueContextmenu = (title, value, jslogContext) => (e) => {
+        e.consume(true);
+        const contextMenu = new UI.ContextMenu.ContextMenu(e);
+        const copyValueHandler = () => input.copyValue(value());
+        contextMenu.clipboardSection().appendItem(title, copyValueHandler, { jslogContext });
+        void contextMenu.show();
+    };
+    const createSourceText = (text) => html `<li role=treeitem
+      @contextmenu=${copyValueContextmenu(i18nString(UIStrings.copyPayload), () => text, 'copy-payload')}>
+        <devtools-widget class='payload-value source-code' ${widget(ShowMoreDetailsWidget, { text })}>
+        </devtools-widget>
+      </li>`;
+    const createParsedParams = (params) => params.map(param => html `<li role=treeitem @contextmenu=${copyValueContextmenu(i18nString(UIStrings.copyValue), () => decodeURIComponent(param.value), 'copy-value')}>${param.name !== '' ?
+        html `${RequestPayloadView.formatParameter(param.name, 'payload-name', input.decodeRequestParameters)}${RequestPayloadView.formatParameter(param.value, 'payload-value source-code', input.decodeRequestParameters)}` :
+        RequestPayloadView.formatParameter(i18nString(UIStrings.empty), 'empty-request-payload', input.decodeRequestParameters)}</li>`);
+    const parsedFormData = (() => {
+        if (input.formData && !input.formParameters) {
+            try {
+                return JSON.parse(input.formData);
+            }
+            catch {
+            }
+            return undefined;
+        }
+    })();
+    const createPayload = (parsedFormData) => {
+        const object = new SDK.RemoteObject.LocalJSONObject(parsedFormData);
+        const section = new ObjectUI.ObjectPropertiesSection.RootElement(new ObjectUI.ObjectPropertiesSection.ObjectTree(object, {
+            readOnly: true,
+            propertiesMode: 1 /* ObjectUI.ObjectPropertiesSection.ObjectPropertiesMode.OWN_AND_INTERNAL_AND_INHERITED */,
+        }));
+        section.title = document.createTextNode(object.description);
+        section.listItemElement.classList.add('source-code', 'object-properties-section');
+        section.childrenListElement.classList.add('source-code', 'object-properties-section');
+        section.expand();
+        return html `<devtools-tree-wrapper
+          .treeElement=${section}></devtools-tree-wrapper>`;
+    };
+    const queryStringExpandedSetting = Common.Settings.Settings.instance().createSetting('request-info-query-string-category-expanded', true);
+    const formDataExpandedSetting = Common.Settings.Settings.instance().createSetting('request-info-form-data-category-expanded', true);
+    const requestPayloadExpandedSetting = Common.Settings.Settings.instance().createSetting('request-info-request-payload-category-expanded', true);
+    const toggleURLDecoding = (e) => {
+        e.consume();
+        input.setURLDecoding(!input.decodeRequestParameters);
+    };
+    const onContextMenu = (viewSource, callback, includeURLDecodingOption = true) => (event) => {
+        const contextMenu = new UI.ContextMenu.ContextMenu(event);
+        const section = contextMenu.newSection();
+        if (viewSource) {
+            section.appendItem(i18nString(UIStrings.viewParsed), () => callback(!viewSource), { jslogContext: 'view-parsed' });
+        }
+        else {
+            section.appendItem(i18nString(UIStrings.viewSource), () => callback(!viewSource), { jslogContext: 'view-source' });
+            if (includeURLDecodingOption) {
+                const viewURLEncodedText = input.decodeRequestParameters ? i18nString(UIStrings.viewUrlEncoded) : i18nString(UIStrings.viewDecoded);
+                section.appendItem(viewURLEncodedText, toggleURLDecoding.bind(this, event), { jslogContext: 'toggle-url-decoding' });
+            }
+        }
+        void contextMenu.show();
+    };
+    // clang-format off
+    render(html `<style>${requestPayloadViewStyles}</style>
+   <devtools-tree dense class=request-payload-tree .template=${html `
+     <style>${objectValueStyles}</style>
+     <style>${objectPropertiesSectionStyles}</style>
+     <style>${requestPayloadTreeStyles}</style>
+     <ul role=tree>
+      <li
+          role=treeitem
+          ?hidden=${!input.queryParameters}
+          jslog=${VisualLogging.section().context('query-string')}
+          @contextmenu=${onContextMenu(input.viewQueryParamSource, input.setViewQueryParamSource)}
+          @expanded=${(e) => queryStringExpandedSetting.set(e.detail.expanded)}
+          ?open=${queryStringExpandedSetting.get()}
+        >
+        <div class="selection fill"></div>${i18nString(UIStrings.queryStringParameters)}<span
+          class=payload-count>${`\xA0(${input.queryParameters?.length ?? 0})`}</span>${createViewSourceToggle(input.viewQueryParamSource, input.setViewQueryParamSource)}
+        <devtools-button
+            class=payload-toggle
+            ?hidden=${input.viewQueryParamSource}
+            jslog=${VisualLogging.action().track({ click: true }).context('decode-encode')}
+            .variant=${"outlined" /* Buttons.Button.Variant.OUTLINED */}
+            @click=${toggleURLDecoding}>
+          ${input.decodeRequestParameters ? i18nString(UIStrings.viewUrlEncoded) : i18nString(UIStrings.viewDecoded)}
+        </devtools-button>
+        <ul role=group>
+          ${ifExpanded(input.viewQueryParamSource ? createSourceText(input.queryString ?? '')
+        : createParsedParams(input.queryParameters ?? []))}
+        </ul>
+      </li>
+      <li
+          role=treeitem
+          ?hidden=${!input.formData || !input.formParameters}
+          jslog=${VisualLogging.section().context('form-data')}
+          @contextmenu=${onContextMenu(input.viewFormParamSource, input.setViewFormParamSource)}
+          @expanded=${(e) => formDataExpandedSetting.set(e.detail.expanded)}
+          ?open=${formDataExpandedSetting.get()}
+        >
+        <div class="selection fill"></div>${i18nString(UIStrings.formData)}<span
+          class=payload-count>${`\xA0(${input.formParameters?.length ?? 0})`}</span>${createViewSourceToggle(input.viewFormParamSource, input.setViewFormParamSource)}
+        <devtools-button
+            class=payload-toggle
+            ?hidden=${input.viewFormParamSource}
+            jslog=${VisualLogging.action().track({ click: true }).context('decode-encode')}
+            .variant=${"outlined" /* Buttons.Button.Variant.OUTLINED */}
+            @click=${toggleURLDecoding}>
+          ${input.decodeRequestParameters ? i18nString(UIStrings.viewUrlEncoded) : i18nString(UIStrings.viewDecoded)}
+        </devtools-button>
+        <ul role=group>
+          ${ifExpanded(input.viewFormParamSource ? createSourceText(input.formData ?? '')
+        : createParsedParams(input.formParameters ?? []))}
+        </ul>
+      </li>
+      <li
+          role=treeitem
+          ?hidden=${!input.formData || Boolean(input.formParameters)}
+          jslog=${VisualLogging.section().context('request-payload')}
+          @contextmenu=${onContextMenu(input.viewJSONPayloadSource, input.setViewJSONPayloadSource, 
+    /* includeURLDecodingOption*/ false)}
+          @expanded=${(e) => requestPayloadExpandedSetting.set(e.detail.expanded)}
+          ?open=${requestPayloadExpandedSetting.get()}
+        >
+        <div class="selection fill"></div>${i18nString(UIStrings.requestPayload)}${createViewSourceToggle(input.viewJSONPayloadSource, input.setViewJSONPayloadSource)}
+        <ul role=group>
+          ${ifExpanded(!parsedFormData || input.viewJSONPayloadSource ? createSourceText(input.formData ?? '')
+        : createPayload(parsedFormData))}
+        </ul>
+      </li>
+     </ul>
+     `}></devtools-tree>
+   `, target);
+    // clang-format on
+};
 export class RequestPayloadView extends UI.Widget.VBox {
-    request;
-    decodeRequestParameters;
-    queryStringCategory;
-    formDataCategory;
-    requestPayloadCategory;
-    constructor(request) {
-        super();
-        this.element.classList.add('request-payload-view');
-        this.request = request;
-        this.decodeRequestParameters = true;
+    #request;
+    #decodeRequestParameters = true;
+    #formData;
+    #formParameters;
+    #view;
+    #viewJSONPayloadSource = false;
+    #viewFormParamSource = false;
+    #viewQueryParamSource = false;
+    constructor(target, view = DEFAULT_VIEW) {
+        super({ jslog: `${VisualLogging.pane('payload').track({ resize: true })}`, classes: ['request-payload-view'] });
+        this.#view = view;
+    }
+    set request(request) {
+        if (this.#request) {
+            this.#request.removeEventListener(SDK.NetworkRequest.Events.REQUEST_HEADERS_CHANGED, this.#refreshFormData, this);
+        }
+        this.#request = request;
         const contentType = request.requestContentType();
         if (contentType) {
-            this.decodeRequestParameters = Boolean(contentType.match(/^application\/x-www-form-urlencoded\s*(;.*)?$/i));
+            this.#decodeRequestParameters = Boolean(contentType.match(/^application\/x-www-form-urlencoded\s*(;.*)?$/i));
         }
-        const root = new UI.TreeOutline.TreeOutlineInShadow();
-        root.registerCSSFiles([objectValueStyles, objectPropertiesSectionStyles, requestPayloadTreeStyles]);
-        root.element.classList.add('request-payload-tree');
-        root.makeDense();
-        this.element.appendChild(root.element);
-        this.queryStringCategory = new Category(root, 'queryString', '');
-        this.formDataCategory = new Category(root, 'formData', '');
-        this.requestPayloadCategory = new Category(root, 'requestPayload', i18nString(UIStrings.requestPayload));
+        if (this.isShowing()) {
+            this.#request?.addEventListener(SDK.NetworkRequest.Events.REQUEST_HEADERS_CHANGED, this.#refreshFormData, this);
+        }
+        this.requestUpdate();
+        void this.#refreshFormData();
+    }
+    get request() {
+        return this.#request;
     }
     wasShown() {
-        this.registerCSSFiles([requestPayloadViewStyles]);
-        this.request.addEventListener(SDK.NetworkRequest.Events.RequestHeadersChanged, this.refreshFormData, this);
-        this.refreshQueryString();
-        void this.refreshFormData();
-        // this._root.select(/* omitFocus */ true, /* selectedByUser */ false);
+        super.wasShown();
+        this.request?.addEventListener(SDK.NetworkRequest.Events.REQUEST_HEADERS_CHANGED, this.#refreshFormData, this);
+        void this.#refreshFormData();
     }
     willHide() {
-        this.request.removeEventListener(SDK.NetworkRequest.Events.RequestHeadersChanged, this.refreshFormData, this);
+        super.willHide();
+        this.request?.removeEventListener(SDK.NetworkRequest.Events.REQUEST_HEADERS_CHANGED, this.#refreshFormData, this);
     }
-    addEntryContextMenuHandler(treeElement, value) {
+    addEntryContextMenuHandler(treeElement, menuItem, jslogContext, getValue) {
         treeElement.listItemElement.addEventListener('contextmenu', event => {
             event.consume(true);
             const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            const decodedValue = decodeURIComponent(value);
-            const copyDecodedValueHandler = () => {
+            const copyValueHandler = () => {
                 Host.userMetrics.actionTaken(Host.UserMetrics.Action.NetworkPanelCopyValue);
-                Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(decodedValue);
+                Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(getValue());
             };
-            contextMenu.clipboardSection().appendItem(i18nString(UIStrings.copyValue), copyDecodedValueHandler);
+            contextMenu.clipboardSection().appendItem(menuItem, copyValueHandler, { jslogContext });
             void contextMenu.show();
         });
     }
-    formatParameter(value, className, decodeParameters) {
+    performUpdate() {
+        if (!this.request) {
+            return;
+        }
+        const input = {
+            queryString: this.request.queryString(),
+            queryParameters: this.request.queryParameters,
+            formData: this.#formData,
+            formParameters: this.#formParameters,
+            decodeRequestParameters: this.#decodeRequestParameters,
+            setURLDecoding: (value) => {
+                this.#decodeRequestParameters = value;
+                this.requestUpdate();
+            },
+            viewQueryParamSource: this.#viewQueryParamSource,
+            setViewQueryParamSource: (value) => {
+                this.#viewQueryParamSource = value;
+                this.requestUpdate();
+            },
+            viewFormParamSource: this.#viewFormParamSource,
+            setViewFormParamSource: (value) => {
+                this.#viewFormParamSource = value;
+                this.requestUpdate();
+            },
+            viewJSONPayloadSource: this.#viewJSONPayloadSource,
+            setViewJSONPayloadSource: (value) => {
+                this.#viewJSONPayloadSource = value;
+                this.requestUpdate();
+            },
+            copyValue: (value) => {
+                Host.userMetrics.actionTaken(Host.UserMetrics.Action.NetworkPanelCopyValue);
+                Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(value);
+            }
+        };
+        this.#view(input, {}, this.element);
+    }
+    async #refreshFormData() {
+        this.#formData = await this.request?.requestFormData() ?? undefined;
+        if (this.#formData) {
+            this.#formParameters = await this.request?.formParameters() ?? undefined;
+        }
+        this.requestUpdate();
+    }
+    static formatParameter(value, className, decodeParameters) {
         let errorDecoding = false;
         if (decodeParameters) {
             value = value.replace(/\+/g, ' ');
@@ -166,296 +347,16 @@ export class RequestPayloadView extends UI.Widget.VBox {
                 try {
                     value = decodeURIComponent(value);
                 }
-                catch (e) {
+                catch {
                     errorDecoding = true;
                 }
             }
         }
-        const div = document.createElement('div');
-        if (className) {
-            div.className = className;
-        }
-        if (value === '') {
-            div.classList.add('empty-value');
-        }
-        if (errorDecoding) {
-            div.createChild('span', 'payload-decode-error').textContent = i18nString(UIStrings.unableToDecodeValue);
-        }
-        else {
-            div.textContent = value;
-        }
-        return div;
-    }
-    refreshQueryString() {
-        const queryString = this.request.queryString();
-        const queryParameters = this.request.queryParameters;
-        this.queryStringCategory.hidden = !queryParameters;
-        if (queryParameters) {
-            this.refreshParams(i18nString(UIStrings.queryStringParameters), queryParameters, queryString, this.queryStringCategory);
-        }
-    }
-    async refreshFormData() {
-        const formData = await this.request.requestFormData();
-        if (!formData) {
-            this.formDataCategory.hidden = true;
-            this.requestPayloadCategory.hidden = true;
-            return;
-        }
-        const formParameters = await this.request.formParameters();
-        if (formParameters) {
-            this.formDataCategory.hidden = false;
-            this.requestPayloadCategory.hidden = true;
-            this.refreshParams(i18nString(UIStrings.formData), formParameters, formData, this.formDataCategory);
-        }
-        else {
-            this.requestPayloadCategory.hidden = false;
-            this.formDataCategory.hidden = true;
-            try {
-                const json = JSON.parse(formData);
-                this.refreshRequestJSONPayload(json, formData);
-            }
-            catch (e) {
-                this.populateTreeElementWithSourceText(this.requestPayloadCategory, formData);
-            }
-        }
-    }
-    populateTreeElementWithSourceText(treeElement, sourceText) {
-        // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        const max_len = 3000;
-        const text = (sourceText || '').trim();
-        const trim = text.length > max_len;
-        const sourceTextElement = document.createElement('span');
-        sourceTextElement.classList.add('payload-value');
-        sourceTextElement.classList.add('source-code');
-        sourceTextElement.textContent = trim ? text.substr(0, max_len) : text;
-        const sourceTreeElement = new UI.TreeOutline.TreeElement(sourceTextElement);
-        treeElement.removeChildren();
-        treeElement.appendChild(sourceTreeElement);
-        if (!trim) {
-            return;
-        }
-        const showMoreButton = document.createElement('button');
-        showMoreButton.classList.add('request-payload-show-more-button');
-        showMoreButton.textContent = i18nString(UIStrings.showMore);
-        function showMore() {
-            showMoreButton.remove();
-            sourceTextElement.textContent = text;
-            sourceTreeElement.listItemElement.removeEventListener('contextmenu', onContextMenuShowMore);
-        }
-        showMoreButton.addEventListener('click', showMore);
-        function onContextMenuShowMore(event) {
-            const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            const section = contextMenu.newSection();
-            section.appendItem(i18nString(UIStrings.showMore), showMore);
-            void contextMenu.show();
-        }
-        sourceTreeElement.listItemElement.addEventListener('contextmenu', onContextMenuShowMore);
-        sourceTextElement.appendChild(showMoreButton);
-    }
-    refreshParams(title, params, sourceText, paramsTreeElement) {
-        paramsTreeElement.removeChildren();
-        paramsTreeElement.listItemElement.removeChildren();
-        paramsTreeElement.listItemElement.createChild('div', 'selection fill');
-        UI.UIUtils.createTextChild(paramsTreeElement.listItemElement, title);
-        const payloadCount = document.createElement('span');
-        payloadCount.classList.add('payload-count');
-        const numberOfParams = params ? params.length : 0;
-        payloadCount.textContent = `\xA0(${numberOfParams})`;
-        paramsTreeElement.listItemElement.appendChild(payloadCount);
-        const shouldViewSource = viewSourceForItems.has(paramsTreeElement);
-        if (shouldViewSource) {
-            this.appendParamsSource(title, params, sourceText, paramsTreeElement);
-        }
-        else {
-            this.appendParamsParsed(title, params, sourceText, paramsTreeElement);
-        }
-    }
-    appendParamsSource(title, params, sourceText, paramsTreeElement) {
-        this.populateTreeElementWithSourceText(paramsTreeElement, sourceText);
-        const listItemElement = paramsTreeElement.listItemElement;
-        const viewParsed = function (event) {
-            listItemElement.removeEventListener('contextmenu', viewParsedContextMenu);
-            viewSourceForItems.delete(paramsTreeElement);
-            this.refreshParams(title, params, sourceText, paramsTreeElement);
-            event.consume();
-        };
-        const viewParsedContextMenu = (event) => {
-            if (!paramsTreeElement.expanded) {
-                return;
-            }
-            const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            contextMenu.newSection().appendItem(i18nString(UIStrings.viewParsed), viewParsed.bind(this, event));
-            void contextMenu.show();
-        };
-        const viewParsedButton = this.createViewSourceToggle(/* viewSource */ true, viewParsed.bind(this));
-        listItemElement.appendChild(viewParsedButton);
-        listItemElement.addEventListener('contextmenu', viewParsedContextMenu);
-    }
-    appendParamsParsed(title, params, sourceText, paramsTreeElement) {
-        for (const param of params || []) {
-            const paramNameValue = document.createDocumentFragment();
-            if (param.name !== '') {
-                const name = this.formatParameter(param.name + ': ', 'payload-name', this.decodeRequestParameters);
-                const value = this.formatParameter(param.value, 'payload-value source-code', this.decodeRequestParameters);
-                paramNameValue.appendChild(name);
-                paramNameValue.createChild('span', 'payload-separator');
-                paramNameValue.appendChild(value);
-            }
-            else {
-                paramNameValue.appendChild(this.formatParameter(i18nString(UIStrings.empty), 'empty-request-payload', this.decodeRequestParameters));
-            }
-            const paramTreeElement = new UI.TreeOutline.TreeElement(paramNameValue);
-            this.addEntryContextMenuHandler(paramTreeElement, param.value);
-            paramsTreeElement.appendChild(paramTreeElement);
-        }
-        const listItemElement = paramsTreeElement.listItemElement;
-        const viewSource = function (event) {
-            listItemElement.removeEventListener('contextmenu', viewSourceContextMenu);
-            viewSourceForItems.add(paramsTreeElement);
-            this.refreshParams(title, params, sourceText, paramsTreeElement);
-            event.consume();
-        };
-        const toggleURLDecoding = function (event) {
-            listItemElement.removeEventListener('contextmenu', viewSourceContextMenu);
-            this.toggleURLDecoding(event);
-        };
-        const viewSourceContextMenu = (event) => {
-            if (!paramsTreeElement.expanded) {
-                return;
-            }
-            const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            const section = contextMenu.newSection();
-            section.appendItem(i18nString(UIStrings.viewSource), viewSource.bind(this, event));
-            const viewURLEncodedText = this.decodeRequestParameters ? i18nString(UIStrings.viewUrlEncoded) : i18nString(UIStrings.viewDecoded);
-            section.appendItem(viewURLEncodedText, toggleURLDecoding.bind(this, event));
-            void contextMenu.show();
-        };
-        const viewSourceButton = this.createViewSourceToggle(/* viewSource */ false, viewSource.bind(this));
-        listItemElement.appendChild(viewSourceButton);
-        const toggleTitle = this.decodeRequestParameters ? i18nString(UIStrings.viewUrlEncodedL) : i18nString(UIStrings.viewDecodedL);
-        const toggleButton = this.createToggleButton(toggleTitle);
-        toggleButton.addEventListener('click', toggleURLDecoding.bind(this), false);
-        listItemElement.appendChild(toggleButton);
-        listItemElement.addEventListener('contextmenu', viewSourceContextMenu);
-    }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    refreshRequestJSONPayload(parsedObject, sourceText) {
-        const rootListItem = this.requestPayloadCategory;
-        rootListItem.removeChildren();
-        const rootListItemElement = rootListItem.listItemElement;
-        rootListItemElement.removeChildren();
-        rootListItemElement.createChild('div', 'selection fill');
-        UI.UIUtils.createTextChild(rootListItemElement, this.requestPayloadCategory.title.toString());
-        if (viewSourceForItems.has(rootListItem)) {
-            this.appendJSONPayloadSource(rootListItem, parsedObject, sourceText);
-        }
-        else {
-            this.appendJSONPayloadParsed(rootListItem, parsedObject, sourceText);
-        }
-    }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appendJSONPayloadSource(rootListItem, parsedObject, sourceText) {
-        const rootListItemElement = rootListItem.listItemElement;
-        this.populateTreeElementWithSourceText(rootListItem, sourceText);
-        const viewParsed = function (event) {
-            rootListItemElement.removeEventListener('contextmenu', viewParsedContextMenu);
-            viewSourceForItems.delete(rootListItem);
-            this.refreshRequestJSONPayload(parsedObject, sourceText);
-            event.consume();
-        };
-        const viewParsedButton = this.createViewSourceToggle(/* viewSource */ true, viewParsed.bind(this));
-        rootListItemElement.appendChild(viewParsedButton);
-        const viewParsedContextMenu = (event) => {
-            if (!rootListItem.expanded) {
-                return;
-            }
-            const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            contextMenu.newSection().appendItem(i18nString(UIStrings.viewParsed), viewParsed.bind(this, event));
-            void contextMenu.show();
-        };
-        rootListItemElement.addEventListener('contextmenu', viewParsedContextMenu);
-    }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    appendJSONPayloadParsed(rootListItem, parsedObject, sourceText) {
-        const object = SDK.RemoteObject.RemoteObject.fromLocalObject(parsedObject);
-        const section = new ObjectUI.ObjectPropertiesSection.RootElement(object);
-        section.title = object.description;
-        section.expand();
-        // `editable` is not a valid property for `ObjectUI.ObjectPropertiesSection.RootElement`. Only for
-        // `ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection`. We do not know if this assignment is
-        // safe to delete.
-        // @ts-ignore
-        section.editable = false;
-        rootListItem.childrenListElement.classList.add('source-code', 'object-properties-section');
-        rootListItem.appendChild(section);
-        const rootListItemElement = rootListItem.listItemElement;
-        const viewSource = function (event) {
-            rootListItemElement.removeEventListener('contextmenu', viewSourceContextMenu);
-            viewSourceForItems.add(rootListItem);
-            this.refreshRequestJSONPayload(parsedObject, sourceText);
-            event.consume();
-        };
-        const viewSourceContextMenu = (event) => {
-            if (!rootListItem.expanded) {
-                return;
-            }
-            const contextMenu = new UI.ContextMenu.ContextMenu(event);
-            contextMenu.newSection().appendItem(i18nString(UIStrings.viewSource), viewSource.bind(this, event));
-            void contextMenu.show();
-        };
-        const viewSourceButton = this.createViewSourceToggle(/* viewSource */ false, viewSource.bind(this));
-        rootListItemElement.appendChild(viewSourceButton);
-        rootListItemElement.addEventListener('contextmenu', viewSourceContextMenu);
-    }
-    createViewSourceToggle(viewSource, handler) {
-        const viewSourceToggleTitle = viewSource ? i18nString(UIStrings.viewParsedL) : i18nString(UIStrings.viewSourceL);
-        const viewSourceToggleButton = this.createToggleButton(viewSourceToggleTitle);
-        viewSourceToggleButton.addEventListener('click', handler, false);
-        return viewSourceToggleButton;
-    }
-    toggleURLDecoding(event) {
-        this.decodeRequestParameters = !this.decodeRequestParameters;
-        this.refreshQueryString();
-        void this.refreshFormData();
-        event.consume();
-    }
-    createToggleButton(title) {
-        const button = document.createElement('span');
-        button.classList.add('payload-toggle');
-        button.tabIndex = 0;
-        button.setAttribute('role', 'button');
-        button.textContent = title;
-        return button;
-    }
-}
-const viewSourceForItems = new WeakSet();
-export class Category extends UI.TreeOutline.TreeElement {
-    toggleOnClick;
-    expandedSetting;
-    expanded;
-    constructor(root, name, title) {
-        super(title || '', true);
-        this.toggleOnClick = true;
-        this.hidden = true;
-        this.expandedSetting =
-            Common.Settings.Settings.instance().createSetting('request-info-' + name + '-category-expanded', true);
-        this.expanded = this.expandedSetting.get();
-        root.appendChild(this);
-    }
-    createLeaf() {
-        const leaf = new UI.TreeOutline.TreeElement();
-        this.appendChild(leaf);
-        return leaf;
-    }
-    onexpand() {
-        this.expandedSetting.set(true);
-    }
-    oncollapse() {
-        this.expandedSetting.set(false);
+        const classes = classMap({ [className]: !!className, 'empty-value': value === '' });
+        return html `<div class=${classes}>
+      ${errorDecoding ? html `<span class=payload-decode-error>${i18nString(UIStrings.unableToDecodeValue)}</span>` :
+            value}
+    </div>`;
     }
 }
 //# sourceMappingURL=RequestPayloadView.js.map

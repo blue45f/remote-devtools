@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../../../core/common/common.js';
@@ -16,7 +16,7 @@ export class ScreenshotStorage {
     #screenshots;
     #maxStorageSize;
     constructor(maxStorageSize = DEFAULT_MAX_STORAGE_SIZE) {
-        this.#screenshotSettings = Common.Settings.Settings.instance().createSetting('recorder_screenshots', []);
+        this.#screenshotSettings = Common.Settings.Settings.instance().createSetting('recorder-screenshots', []);
         this.#screenshots = this.#loadFromSettings();
         this.#maxStorageSize = maxStorageSize;
     }

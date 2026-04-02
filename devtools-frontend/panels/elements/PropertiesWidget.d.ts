@@ -1,21 +1,25 @@
+import '../../ui/legacy/legacy.js';
+import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export declare class PropertiesWidget extends UI.ThrottledWidget.ThrottledWidget {
-    private node;
+interface PropertiesWidgetInput {
+    onFilterChanged: (e: CustomEvent<string>) => void;
+    onRegexToggled: () => void;
+    isRegex: boolean;
+    objectTree: ObjectUI.ObjectPropertiesSection.ObjectTree | null;
+    allChildrenFiltered: boolean;
+}
+type View = (input: PropertiesWidgetInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class PropertiesWidget extends UI.Widget.VBox {
+    #private;
     private readonly showAllPropertiesSetting;
     private filterRegex;
-    private readonly noMatchesElement;
     private readonly treeOutline;
-    private readonly expandController;
-    private lastRequestedNode?;
-    constructor(throttlingTimeout?: number);
-    static instance(opts?: {
-        forceNew: boolean;
-        throttlingTimeout: number;
-    }): PropertiesWidget;
-    private filterProperties;
-    private filterList;
+    constructor(view?: View);
+    private onFilterChanged;
+    private onRegexToggled;
     private setNode;
-    doUpdate(): Promise<void>;
+    performUpdate(): Promise<void>;
     private onNodeChange;
-    wasShown(): void;
 }
+export {};

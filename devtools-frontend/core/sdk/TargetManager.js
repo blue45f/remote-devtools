@@ -1,67 +1,84 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
-import * as Platform from '../platform/platform.js';
-import { Type as TargetType } from './Target.js';
-import { Target } from './Target.js';
-import { SDKModel } from './SDKModel.js';
-import * as Root from '../root/root.js';
 import * as Host from '../host/host.js';
+import * as Platform from '../platform/platform.js';
 import { assertNotNullOrUndefined } from '../platform/platform.js';
-let targetManagerInstance;
+import * as Root from '../root/root.js';
+import { SDKModel } from './SDKModel.js';
+import { Target, Type as TargetType } from './Target.js';
 export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
-    #targetsInternal;
+    /**
+     * @deprecated
+     *
+     * Intended for {@link SDKModel} classes to be able to retrieve scoped singletons like
+     * the "PageResourceLoader" or the "FrameManager".
+     *
+     * This is only an intermediate step to migrate towards our "layering vision" where
+     * SDKModels don't require things from the next layer.
+     */
+    context;
+    #targets;
     #observers;
+    get settings() {
+        return this.context.get(Common.Settings.Settings);
+    }
     /* eslint-disable @typescript-eslint/no-explicit-any */
     #modelListeners;
     #modelObservers;
     #scopedObservers;
     /* eslint-enable @typescript-eslint/no-explicit-any */
     #isSuspended;
-    #browserTargetInternal;
+    #browserTarget;
     #scopeTarget;
     #defaultScopeSet;
     #scopeChangeListeners;
-    constructor() {
+    #overrideAutoStartModels;
+    /**
+     * @param overrideAutoStartModels If provided, then the `autostart` flag on {@link RegistrationInfo} will be ignored.
+     */
+    constructor(context, overrideAutoStartModels) {
         super();
-        this.#targetsInternal = new Set();
+        this.context = context;
+        this.#targets = new Set();
         this.#observers = new Set();
         this.#modelListeners = new Platform.MapUtilities.Multimap();
         this.#modelObservers = new Platform.MapUtilities.Multimap();
         this.#isSuspended = false;
-        this.#browserTargetInternal = null;
+        this.#browserTarget = null;
         this.#scopeTarget = null;
         this.#scopedObservers = new WeakSet();
         this.#defaultScopeSet = false;
         this.#scopeChangeListeners = new Set();
+        this.#overrideAutoStartModels = overrideAutoStartModels;
     }
     static instance({ forceNew } = { forceNew: false }) {
-        if (!targetManagerInstance || forceNew) {
-            targetManagerInstance = new TargetManager();
+        if (!Root.DevToolsContext.globalInstance().has(TargetManager) || forceNew) {
+            Root.DevToolsContext.globalInstance().set(TargetManager, new TargetManager(Root.DevToolsContext.globalInstance()));
         }
-        return targetManagerInstance;
+        return Root.DevToolsContext.globalInstance().get(TargetManager);
     }
     static removeInstance() {
-        targetManagerInstance = undefined;
+        Root.DevToolsContext.globalInstance().delete(TargetManager);
     }
     onInspectedURLChange(target) {
         if (target !== this.#scopeTarget) {
             return;
         }
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.inspectedURLChanged(target.inspectedURL() || Platform.DevToolsPath.EmptyUrlString);
-        this.dispatchEventToListeners(Events.InspectedURLChanged, target);
+        this.dispatchEventToListeners("InspectedURLChanged" /* Events.INSPECTED_URL_CHANGED */, target);
     }
     onNameChange(target) {
-        this.dispatchEventToListeners(Events.NameChanged, target);
+        this.dispatchEventToListeners("NameChanged" /* Events.NAME_CHANGED */, target);
     }
     async suspendAllTargets(reason) {
         if (this.#isSuspended) {
             return;
         }
         this.#isSuspended = true;
-        this.dispatchEventToListeners(Events.SuspendStateChanged);
-        const suspendPromises = Array.from(this.#targetsInternal.values(), target => target.suspend(reason));
+        this.dispatchEventToListeners("SuspendStateChanged" /* Events.SUSPEND_STATE_CHANGED */);
+        const suspendPromises = Array.from(this.#targets.values(), target => target.suspend(reason));
         await Promise.all(suspendPromises);
     }
     async resumeAllTargets() {
@@ -69,8 +86,8 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
             return;
         }
         this.#isSuspended = false;
-        this.dispatchEventToListeners(Events.SuspendStateChanged);
-        const resumePromises = Array.from(this.#targetsInternal.values(), target => target.resume());
+        this.dispatchEventToListeners("SuspendStateChanged" /* Events.SUSPEND_STATE_CHANGED */);
+        const resumePromises = Array.from(this.#targets.values(), target => target.resume());
         await Promise.all(resumePromises);
     }
     allTargetsSuspended() {
@@ -78,7 +95,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
     }
     models(modelClass, opts) {
         const result = [];
-        for (const target of this.#targetsInternal) {
+        for (const target of this.#targets) {
             if (opts?.scoped && !this.isInScope(target)) {
                 continue;
             }
@@ -108,14 +125,14 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
         this.#modelObservers.delete(modelClass, observer);
         this.#scopedObservers.delete(observer);
     }
-    modelAdded(target, modelClass, model, inScope) {
+    modelAdded(modelClass, model, inScope) {
         for (const observer of this.#modelObservers.get(modelClass).values()) {
             if (!this.#scopedObservers.has(observer) || inScope) {
                 observer.modelAdded(model);
             }
         }
     }
-    modelRemoved(target, modelClass, model, inScope) {
+    modelRemoved(modelClass, model, inScope) {
         for (const observer of this.#modelObservers.get(modelClass).values()) {
             if (!this.#scopedObservers.has(observer) || inScope) {
                 observer.modelRemoved(model);
@@ -157,7 +174,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
         if (opts?.scoped) {
             this.#scopedObservers.add(targetObserver);
         }
-        for (const target of this.#targetsInternal) {
+        for (const target of this.#targets) {
             if (!opts?.scoped || this.isInScope(target)) {
                 targetObserver.targetAdded(target);
             }
@@ -168,13 +185,28 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
         this.#observers.delete(targetObserver);
         this.#scopedObservers.delete(targetObserver);
     }
+    /** @returns The set of models we create unconditionally for new targets in the order in which they should be created */
+    #autoStartModels() {
+        const earlyModels = new Set();
+        const models = new Set();
+        const shouldAutostart = (model, info) => this.#overrideAutoStartModels ? this.#overrideAutoStartModels.has(model) : info.autostart;
+        for (const [model, info] of SDKModel.registeredModels) {
+            if (info.early) {
+                earlyModels.add(model);
+            }
+            else if (shouldAutostart(model, info) || this.#modelObservers.has(model)) {
+                models.add(model);
+            }
+        }
+        return [...earlyModels, ...models];
+    }
     createTarget(id, name, type, parentTarget, sessionId, waitForDebuggerInPage, connection, targetInfo) {
         const target = new Target(this, id, name, type, parentTarget, sessionId || '', this.#isSuspended, connection || null, targetInfo);
         if (waitForDebuggerInPage) {
             void target.pageAgent().invoke_waitForDebugger();
         }
-        target.createModels(new Set(this.#modelObservers.keysArray()));
-        this.#targetsInternal.add(target);
+        target.createModels(this.#autoStartModels());
+        this.#targets.add(target);
         const inScope = this.isInScope(target);
         // Iterate over a copy. #observers might be modified during iteration.
         for (const observer of [...this.#observers]) {
@@ -183,7 +215,7 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
             }
         }
         for (const [modelClass, model] of target.models().entries()) {
-            this.modelAdded(target, modelClass, model, inScope);
+            this.modelAdded(modelClass, model, inScope);
         }
         for (const key of this.#modelListeners.keysArray()) {
             for (const info of this.#modelListeners.get(key)) {
@@ -194,22 +226,22 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
             }
         }
         if ((target === target.outermostTarget() &&
-            (target.type() !== TargetType.Frame || target === this.primaryPageTarget())) &&
+            (target.type() !== TargetType.FRAME || target === this.primaryPageTarget())) &&
             !this.#defaultScopeSet) {
             this.setScopeTarget(target);
         }
         return target;
     }
     removeTarget(target) {
-        if (!this.#targetsInternal.has(target)) {
+        if (!this.#targets.has(target)) {
             return;
         }
         const inScope = this.isInScope(target);
-        this.#targetsInternal.delete(target);
+        this.#targets.delete(target);
         for (const modelClass of target.models().keys()) {
             const model = target.models().get(modelClass);
             assertNotNullOrUndefined(model);
-            this.modelRemoved(target, modelClass, model, inScope);
+            this.modelRemoved(modelClass, model, inScope);
         }
         // Iterate over a copy. #observers might be modified during iteration.
         for (const observer of [...this.#observers]) {
@@ -227,48 +259,51 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
     targets() {
-        return [...this.#targetsInternal];
+        return [...this.#targets];
     }
     targetById(id) {
         // TODO(dgozman): add a map #id -> #target.
         return this.targets().find(target => target.id() === id) || null;
     }
     rootTarget() {
-        return this.#targetsInternal.size ? this.#targetsInternal.values().next().value : null;
+        if (this.#targets.size === 0) {
+            return null;
+        }
+        return this.#targets.values().next().value ?? null;
     }
     primaryPageTarget() {
         let target = this.rootTarget();
-        if (target?.type() === TargetType.Tab) {
+        if (target?.type() === TargetType.TAB) {
             target =
-                this.targets().find(t => t.parentTarget() === target && t.type() === TargetType.Frame && !t.targetInfo()?.subtype?.length) ||
+                this.targets().find(t => t.parentTarget() === target && t.type() === TargetType.FRAME && !t.targetInfo()?.subtype?.length) ||
                     null;
         }
         return target;
     }
     browserTarget() {
-        return this.#browserTargetInternal;
+        return this.#browserTarget;
     }
     async maybeAttachInitialTarget() {
         if (!Boolean(Root.Runtime.Runtime.queryParam('browserConnection'))) {
             return false;
         }
-        if (!this.#browserTargetInternal) {
-            this.#browserTargetInternal = new Target(this, /* #id*/ 'main', /* #name*/ 'browser', TargetType.Browser, /* #parentTarget*/ null, 
+        if (!this.#browserTarget) {
+            this.#browserTarget = new Target(this, /* #id*/ 'main', /* #name*/ 'browser', TargetType.BROWSER, /* #parentTarget*/ null, 
             /* #sessionId */ '', /* suspended*/ false, /* #connection*/ null, /* targetInfo*/ undefined);
-            this.#browserTargetInternal.createModels(new Set(this.#modelObservers.keysArray()));
+            this.#browserTarget.createModels(this.#autoStartModels());
         }
         const targetId = await Host.InspectorFrontendHost.InspectorFrontendHostInstance.initialTargetId();
         // Do not await for Target.autoAttachRelated to return, as it goes throguh the renderer and we don't want to block early
         // at front-end initialization if a renderer is stuck. The rest of #target discovery and auto-attach process should happen
         // asynchronously upon Target.attachedToTarget.
-        void this.#browserTargetInternal.targetAgent().invoke_autoAttachRelated({
+        void this.#browserTarget.targetAgent().invoke_autoAttachRelated({
             targetId,
             waitForDebuggerOnStart: true,
         });
         return true;
     }
     clearAllTargetsForTest() {
-        this.#targetsInternal.clear();
+        this.#targets.clear();
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     isInScope(arg) {
@@ -334,29 +369,17 @@ export class TargetManager extends Common.ObjectWrapper.ObjectWrapper {
         for (const scopeChangeListener of this.#scopeChangeListeners) {
             scopeChangeListener();
         }
-        if (scopeTarget && scopeTarget.inspectedURL()) {
+        if (scopeTarget?.inspectedURL()) {
             this.onInspectedURLChange(scopeTarget);
         }
     }
     addScopeChangeListener(listener) {
         this.#scopeChangeListeners.add(listener);
     }
-    removeScopeChangeListener(listener) {
-        this.#scopeChangeListeners.delete(listener);
-    }
     scopeTarget() {
         return this.#scopeTarget;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["AvailableTargetsChanged"] = "AvailableTargetsChanged";
-    Events["InspectedURLChanged"] = "InspectedURLChanged";
-    Events["NameChanged"] = "NameChanged";
-    Events["SuspendStateChanged"] = "SuspendStateChanged";
-})(Events || (Events = {}));
 export class Observer {
     targetAdded(_target) {
     }

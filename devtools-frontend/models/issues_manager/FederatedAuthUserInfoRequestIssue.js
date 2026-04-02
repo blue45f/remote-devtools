@@ -1,19 +1,18 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as i18n from '../../core/i18n/i18n.js';
-import { Issue, IssueCategory, IssueKind } from './Issue.js';
+import { Issue } from './Issue.js';
 import { resolveLazyDescription, } from './MarkdownIssueDescription.js';
 const UIStrings = {
     /**
-     *@description Title for Client Hint specification url link
+     * @description Title for Client Hint specification url link
      */
     fedCmUserInfo: 'Federated Credential Management User Info API',
 };
 const str_ = i18n.i18n.registerUIStrings('models/issues_manager/FederatedAuthUserInfoRequestIssue.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
 export class FederatedAuthUserInfoRequestIssue extends Issue {
-    #issueDetails;
     constructor(issueDetails, issuesModel) {
         super({
             code: "FederatedAuthUserInfoRequestIssue" /* Protocol.Audits.InspectorIssueCode.FederatedAuthUserInfoRequestIssue */,
@@ -21,27 +20,23 @@ export class FederatedAuthUserInfoRequestIssue extends Issue {
                 "FederatedAuthUserInfoRequestIssue" /* Protocol.Audits.InspectorIssueCode.FederatedAuthUserInfoRequestIssue */,
                 issueDetails.federatedAuthUserInfoRequestIssueReason,
             ].join('::'),
-        }, issuesModel);
-        this.#issueDetails = issueDetails;
+        }, issueDetails, issuesModel);
     }
     getCategory() {
-        return IssueCategory.Other;
-    }
-    details() {
-        return this.#issueDetails;
+        return "Other" /* IssueCategory.OTHER */;
     }
     getDescription() {
-        const description = issueDescriptions.get(this.#issueDetails.federatedAuthUserInfoRequestIssueReason);
+        const description = issueDescriptions.get(this.details().federatedAuthUserInfoRequestIssueReason);
         if (!description) {
             return null;
         }
         return resolveLazyDescription(description);
     }
     primaryKey() {
-        return JSON.stringify(this.#issueDetails);
+        return JSON.stringify(this.details());
     }
     getKind() {
-        return IssueKind.PageError;
+        return "PageError" /* IssueKind.PAGE_ERROR */;
     }
     static fromInspectorIssue(issuesModel, inspectorIssue) {
         const details = inspectorIssue.details.federatedAuthUserInfoRequestIssueDetails;

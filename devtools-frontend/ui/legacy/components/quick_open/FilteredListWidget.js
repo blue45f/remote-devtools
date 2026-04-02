@@ -1,14 +1,16 @@
-// Copyright 2012 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+/* eslint-disable @devtools/no-imperative-dom-api, @devtools/no-lit-render-outside-of-view */
 import * as Common from '../../../../core/common/common.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Geometry from '../../../../models/geometry/geometry.js';
 import * as TextUtils from '../../../../models/text_utils/text_utils.js';
 import * as Diff from '../../../../third_party/diff/diff.js';
 import * as TextPrompt from '../../../../ui/components/text_prompt/text_prompt.js';
+import { nothing, render } from '../../../lit/lit.js';
+import * as VisualLogging from '../../../visual_logging/visual_logging.js';
 import * as UI from '../../legacy.js';
 import filteredListWidgetStyles from './filteredListWidget.css.js';
 const UIStrings = {
@@ -24,6 +26,17 @@ const UIStrings = {
      * @description Text to show no results have been found
      */
     noResultsFound: 'No results found',
+    /**
+     * @description Aria alert to read the item in list when navigating with screen readers
+     * @example {name} PH1
+     * @example {2} PH2
+     * @example {5} PH3
+     */
+    sItemSOfS: '{PH1}, item {PH2} of {PH3}',
+    /**
+     * @description Text that should be read out by screen readers when a new badge is available
+     */
+    newFeature: 'This is a new feature',
 };
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/quick_open/FilteredListWidget.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -48,19 +61,24 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     provider;
     queryChangedCallback;
     constructor(provider, promptHistory, queryChangedCallback) {
-        super(true);
+        super({ useShadowDom: true });
+        this.registerRequiredCSS(filteredListWidgetStyles);
         this.promptHistory = promptHistory || [];
         this.scoringTimer = 0;
         this.filterTimer = 0;
         this.loadTimeout = 0;
         this.contentElement.classList.add('filtered-list-widget');
         const listener = this.onKeyDown.bind(this);
-        this.contentElement.addEventListener('keydown', listener, true);
+        this.contentElement.addEventListener('keydown', listener);
         UI.ARIAUtils.markAsCombobox(this.contentElement);
         const hbox = this.contentElement.createChild('div', 'hbox');
         this.inputBoxElement = new TextPrompt.TextPrompt.TextPrompt();
         this.inputBoxElement.data = { ariaLabel: i18nString(UIStrings.quickOpenPrompt), prefix: '', suggestion: '' };
         this.inputBoxElement.addEventListener(TextPrompt.TextPrompt.PromptInputEvent.eventName, this.onInput.bind(this), false);
+        this.inputBoxElement.setAttribute('jslog', `${VisualLogging.textField().track({
+            change: true,
+            keydown: 'ArrowUp|ArrowDown|PageUp|PageDown|Enter|Tab|>|@|:|?|!',
+        })}`);
         hbox.appendChild(this.inputBoxElement);
         this.hintElement = hbox.createChild('span', 'filtered-list-widget-hint');
         this.bottomElementsContainer = this.contentElement.createChild('div', 'vbox');
@@ -75,16 +93,16 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.itemElementsContainer.addEventListener('mousemove', this.onMouseMove.bind(this), false);
         UI.ARIAUtils.markAsListBox(this.itemElementsContainer);
         UI.ARIAUtils.setControls(this.inputBoxElement, this.itemElementsContainer);
-        UI.ARIAUtils.setAutocomplete(this.inputBoxElement, UI.ARIAUtils.AutocompleteInteractionModel.list);
+        UI.ARIAUtils.setAutocomplete(this.inputBoxElement, "list" /* UI.ARIAUtils.AutocompleteInteractionModel.LIST */);
         this.notFoundElement = this.bottomElementsContainer.createChild('div', 'not-found-text');
         this.notFoundElement.classList.add('hidden');
         this.setDefaultFocusedElement(this.inputBoxElement);
         this.provider = provider;
         this.queryChangedCallback = queryChangedCallback;
     }
-    static highlightRanges(element, query, caseInsensitive) {
+    static getHighlightRanges(text, query, caseInsensitive) {
         if (!query) {
-            return false;
+            return '';
         }
         function rangesForMatch(text, query) {
             const opcodes = Diff.Diff.DiffWrapper.charDiff(query, text);
@@ -102,19 +120,11 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             }
             return ranges;
         }
-        if (element.textContent === null) {
-            return false;
-        }
-        const text = element.textContent;
         let ranges = rangesForMatch(text, query);
         if (!ranges || caseInsensitive) {
             ranges = rangesForMatch(text.toUpperCase(), query.toUpperCase());
         }
-        if (ranges) {
-            UI.UIUtils.highlightRangesWithStyleClass(element, ranges, 'highlight');
-            return true;
-        }
-        return false;
+        return ranges?.map(range => `${range.offset},${range.length}`).join(' ') || '';
     }
     setCommandPrefix(commandPrefix) {
         this.inputBoxElement.setPrefix(commandPrefix);
@@ -125,28 +135,22 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     setHintElement(hint) {
         this.hintElement.textContent = hint;
     }
-    /**
-     * Sets the text prompt's accessible title. By default, it is "Quick open prompt".
-     */
-    setPromptTitle(title) {
-        UI.ARIAUtils.setLabel(this.inputBoxElement, title);
-    }
     showAsDialog(dialogTitle) {
         if (!dialogTitle) {
             dialogTitle = i18nString(UIStrings.quickOpen);
         }
-        this.dialog = new UI.Dialog.Dialog();
+        this.dialog = new UI.Dialog.Dialog('quick-open');
         UI.ARIAUtils.setLabel(this.dialog.contentElement, dialogTitle);
-        this.dialog.setMaxContentSize(new UI.Geometry.Size(504, 340));
-        this.dialog.setSizeBehavior("SetExactWidthMaxHeight" /* UI.GlassPane.SizeBehavior.SetExactWidthMaxHeight */);
+        this.dialog.setMaxContentSize(new Geometry.Size(576, 320));
+        this.dialog.setSizeBehavior("SetExactWidthMaxHeight" /* UI.GlassPane.SizeBehavior.SET_EXACT_WIDTH_MAX_HEIGHT */);
         this.dialog.setContentPosition(null, 22);
-        this.dialog.contentElement.style.setProperty('border-radius', '4px');
+        this.dialog.contentElement.style.setProperty('border-radius', 'var(--sys-shape-corner-medium)');
+        this.dialog.contentElement.style.setProperty('box-shadow', 'var(--sys-elevation-level3)');
         this.show(this.dialog.contentElement);
         UI.ARIAUtils.setExpanded(this.contentElement, true);
-        void this.dialog.once("hidden" /* UI.Dialog.Events.Hidden */).then(() => {
-            this.dispatchEventToListeners("hidden" /* Events.Hidden */);
+        void this.dialog.once("hidden" /* UI.Dialog.Events.HIDDEN */).then(() => {
+            this.dispatchEventToListeners("hidden" /* Events.HIDDEN */);
         });
-        // @ts-ignore
         this.dialog.show();
     }
     setPrefix(prefix) {
@@ -181,10 +185,11 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         return this.query.substring(this.prefix.length).trim();
     }
     wasShown() {
-        this.registerCSSFiles([filteredListWidgetStyles]);
+        super.wasShown();
         this.attachProvider();
     }
     willHide() {
+        super.willHide();
         if (this.provider) {
             this.provider.detach();
         }
@@ -205,6 +210,14 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             return;
         }
         event.preventDefault();
+        const index = this.list.selectedIndex();
+        if (index < 0) {
+            return;
+        }
+        const element = this.list.elementAtIndex(index);
+        if (element) {
+            void VisualLogging.logClick(element, event);
+        }
         const selectedIndexInProvider = this.provider.itemCount() ? this.list.selectedItem() : null;
         this.selectItem(selectedIndexInProvider);
         if (this.dialog) {
@@ -223,17 +236,12 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
     }
     createElementForItem(item) {
         const wrapperElement = document.createElement('div');
-        wrapperElement.className = 'filtered-list-widget-item-wrapper';
-        const itemElement = wrapperElement.createChild('div');
-        const renderAsTwoRows = this.provider && this.provider.renderAsTwoRows();
-        itemElement.className = 'filtered-list-widget-item ' + (renderAsTwoRows ? 'two-rows' : 'one-row');
-        const titleElement = itemElement.createChild('div', 'filtered-list-widget-title');
-        const subtitleElement = itemElement.createChild('div', 'filtered-list-widget-subtitle');
-        subtitleElement.textContent = '\u200B';
+        wrapperElement.className = 'filtered-list-widget-item';
         if (this.provider) {
-            this.provider.renderItem(item, this.cleanValue(), titleElement, subtitleElement);
+            render(this.provider.renderItem(item, this.cleanValue()), wrapperElement);
+            wrapperElement.setAttribute('jslog', `${VisualLogging.item(this.provider.jslogContextAt(item)).track({ click: true, resize: true })}`);
         }
-        UI.ARIAUtils.markAsOption(itemElement);
+        UI.ARIAUtils.markAsOption(wrapperElement);
         return wrapperElement;
     }
     heightForItem(_item) {
@@ -269,6 +277,15 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             return;
         }
         this.list.selectItem(item);
+        const selectedElement = this.list.elementAtIndex(this.list.selectedIndex());
+        const children = selectedElement.querySelectorAll('*');
+        const text = Array.from(children)
+            .filter(e => !e.children.length)
+            .map(e => e.classList.contains('new-badge') ? i18nString(UIStrings.newFeature) : e.textContent)
+            .join();
+        if (text) {
+            UI.ARIAUtils.LiveAnnouncer.alert(i18nString(UIStrings.sItemSOfS, { PH1: text, PH2: this.list.selectedIndex() + 1, PH3: this.items.length }));
+        }
     }
     setQuery(query) {
         this.query = query;
@@ -296,6 +313,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             }
             this.inputBoxElement.focus();
             this.inputBoxElement.setText(completion);
+            this.inputBoxElement.setSuggestion('');
             this.setQuerySelectedRange(userEnteredText.length, completion.length);
             return true;
         }
@@ -413,7 +431,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         this.notFoundElement.classList.toggle('hidden', hasItems);
         if (!hasItems && this.provider) {
             this.notFoundElement.textContent = this.provider.notFoundText(this.cleanValue());
-            UI.ARIAUtils.alert(this.notFoundElement.textContent);
+            UI.ARIAUtils.LiveAnnouncer.alert(this.notFoundElement.textContent);
         }
     }
     onInput(event) {
@@ -437,7 +455,9 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         let handled = false;
         switch (keyboardEvent.key) {
             case Platform.KeyboardUtilities.ENTER_KEY:
-                this.onEnter(keyboardEvent);
+                if (!keyboardEvent.isComposing) { // Ignore ENTER to confirm selection in an IME
+                    this.onEnter(keyboardEvent);
+                }
                 return;
             case Platform.KeyboardUtilities.TAB_KEY:
                 if (keyboardEvent.shiftKey) {
@@ -461,6 +481,10 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         }
         if (handled) {
             keyboardEvent.consume(true);
+            const text = this.list.elementAtIndex(this.list.selectedIndex())?.textContent;
+            if (text) {
+                UI.ARIAUtils.LiveAnnouncer.alert(i18nString(UIStrings.sItemSOfS, { PH1: text, PH2: this.list.selectedIndex() + 1, PH3: this.items.length }));
+            }
         }
     }
     scheduleFilter() {
@@ -481,8 +505,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
 }
 export class Provider {
     refreshCallback;
-    constructor() {
-    }
+    jslogContext = '';
     setRefreshCallback(refreshCallback) {
         this.refreshCallback = refreshCallback;
     }
@@ -497,10 +520,11 @@ export class Provider {
     itemScoreAt(_itemIndex, _query) {
         return 1;
     }
-    renderItem(_itemIndex, _query, _titleElement, _subtitleElement) {
+    renderItem(_itemIndex, _query) {
+        return nothing;
     }
-    renderAsTwoRows() {
-        return false;
+    jslogContextAt(_itemIndex) {
+        return this.jslogContext;
     }
     selectItem(_itemIndex, _promptValue) {
     }

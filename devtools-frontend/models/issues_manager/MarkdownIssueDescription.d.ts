@@ -8,18 +8,18 @@ import * as Marked from '../../third_party/marked/marked.js';
 export interface MarkdownIssueDescription {
     file: string;
     substitutions?: Map<string, string>;
-    links: {
+    links: Array<{
         link: string;
         linkTitle: string;
-    }[];
+    }>;
 }
 export interface LazyMarkdownIssueDescription {
     file: string;
     substitutions?: Map<string, () => string>;
-    links: {
+    links: Array<{
         link: string;
         linkTitle: () => string;
-    }[];
+    }>;
 }
 /**
  * A lazy version of the description. Allows to specify a description as a
@@ -34,10 +34,10 @@ export declare function resolveLazyDescription(lazyDescription: LazyMarkdownIssu
 export interface IssueDescription {
     title: string;
     markdown: Marked.Marked.Token[];
-    links: {
+    links: Array<{
         link: string;
         linkTitle: string;
-    }[];
+    }>;
 }
 export declare function getFileContent(url: URL): Promise<string>;
 export declare function getMarkdownFileContent(filename: string): Promise<string>;
@@ -54,7 +54,7 @@ export declare function createIssueDescriptionFromRawMarkdown(markdown: string, 
  *
  * Example:
  *   const str = "This is markdown with `code` and two placeholders, namely {PLACEHOLDER_PH1} and {PLACEHOLDER_PH2}".
- *   const result = substitePlaceholders(str, new Map([['PLACEHOLDER_PH1', 'foo'], ['PLACEHOLDER_PH2', 'bar']]));
+ *   const result = substitutePlaceholders(str, new Map([['PLACEHOLDER_PH1', 'foo'], ['PLACEHOLDER_PH2', 'bar']]));
  *
  * Exported only for unit testing.
  */

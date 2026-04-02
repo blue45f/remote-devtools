@@ -1,4 +1,4 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 /**
@@ -16,12 +16,12 @@ export class ResolverBase {
     async waitFor(id) {
         const obj = this.getForId(id);
         if (!obj) {
-            return this.getOrCreatePromise(id);
+            return await this.getOrCreatePromise(id);
         }
         return obj;
     }
     /**
-     * Resolve the `id`. Returns the object immediatelly if it can be resolved,
+     * Resolve the `id`. Returns the object immediately if it can be resolved,
      * and otherwise waits for the object to appear and calls `callback` once
      * it is resolved.
      */
@@ -53,12 +53,7 @@ export class ResolverBase {
         if (promiseInfo) {
             return promiseInfo.promise;
         }
-        let resolve = () => { };
-        let reject = () => { };
-        const promise = new Promise((res, rej) => {
-            resolve = res;
-            reject = rej;
-        });
+        const { resolve, reject, promise } = Promise.withResolvers();
         this.#unresolvedIds.set(id, { promise, resolve, reject });
         this.startListening();
         return promise;

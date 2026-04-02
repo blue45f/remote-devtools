@@ -1,18 +1,21 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import * as LayerViewer from '../layer_viewer/layer_viewer.js';
+/* eslint-disable @devtools/no-imperative-dom-api */
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
+import * as LayerViewer from '../layer_viewer/layer_viewer.js';
 export class LayerPaintProfilerView extends UI.SplitWidget.SplitWidget {
     logTreeView;
     paintProfilerView;
     constructor(showImageCallback) {
         super(true, false);
+        this.element.setAttribute('jslog', `${VisualLogging.pane('layers.paint-profiler').track({ resize: true })}`);
         this.logTreeView = new LayerViewer.PaintProfilerView.PaintProfilerCommandLogView();
         this.setSidebarWidget(this.logTreeView);
         this.paintProfilerView = new LayerViewer.PaintProfilerView.PaintProfilerView(showImageCallback);
         this.setMainWidget(this.paintProfilerView);
-        this.paintProfilerView.addEventListener(LayerViewer.PaintProfilerView.Events.WindowChanged, this.onWindowChanged, this);
+        this.paintProfilerView.addEventListener("WindowChanged" /* LayerViewer.PaintProfilerView.Events.WINDOW_CHANGED */, this.onWindowChanged, this);
         this.logTreeView.focus();
     }
     reset() {

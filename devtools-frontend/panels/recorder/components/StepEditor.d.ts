@@ -1,7 +1,7 @@
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as Models from '../models/models.js';
 import { type DeepImmutable } from './util.js';
-declare const LitElement: typeof LitHtml.LitElement;
+declare const LitElement: typeof Lit.LitElement;
 declare const defaultValuesByAttribute: DeepImmutable<{
     selectors: string[][];
     offsetX: number;
@@ -47,7 +47,6 @@ declare const defaultValuesByAttribute: DeepImmutable<{
 declare global {
     interface HTMLElementTagNameMap {
         'devtools-recorder-step-editor': StepEditor;
-        'devtools-recorder-selector-picker-button': RecorderSelectorPickerButton;
     }
 }
 export declare class StepEditedEvent extends Event {
@@ -102,30 +101,17 @@ export declare class EditorState {
 }
 /**
  * @fires RequestSelectorAttributeEvent#requestselectorattribute
- * @fires SelectorPickedEvent#selectorpicked
- */
-declare class RecorderSelectorPickerButton extends LitElement {
-    #private;
-    static styles: CSSStyleSheet[];
-    disabled: boolean;
-    constructor();
-    disconnectedCallback(): void;
-    protected render(): LitHtml.TemplateResult | undefined;
-}
-/**
- * @fires RequestSelectorAttributeEvent#requestselectorattribute
  * @fires StepEditedEvent#stepedited
  */
 export declare class StepEditor extends LitElement {
     #private;
-    static styles: CSSStyleSheet[];
     private state;
     private error;
     isTypeEditable: boolean;
     disabled: boolean;
     constructor();
-    protected createRenderRoot(): Element | ShadowRoot;
+    protected createRenderRoot(): HTMLElement | DocumentFragment;
     set step(step: DeepImmutable<Models.Schema.Step>);
-    protected render(): LitHtml.TemplateResult;
+    protected render(): Lit.TemplateResult;
 }
 export {};

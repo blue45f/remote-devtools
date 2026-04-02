@@ -1,12 +1,8 @@
-import { TimelineCategory, TimelineRecordStyle } from './TimelineUIUtils.js';
+import * as Trace from '../../models/trace/trace.js';
 export declare class UIDevtoolsUtils {
     static isUiDevTools(): boolean;
-    static categorizeEvents(): {
-        [x: string]: TimelineRecordStyle;
-    };
-    static categories(): {
-        [x: string]: TimelineCategory;
-    };
+    static categorizeEvents(): Record<string, Trace.Styles.TimelineRecordStyle>;
+    static categories(): Trace.Styles.CategoryPalette;
     static getMainCategoriesList(): string[];
 }
 export declare enum RecordType {

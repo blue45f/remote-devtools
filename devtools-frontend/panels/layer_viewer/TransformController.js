@@ -1,21 +1,24 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
+import '../../ui/legacy/legacy.js';
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as UI from '../../ui/legacy/legacy.js';
+import * as VisualLogging from '../../ui/visual_logging/visual_logging.js';
 const UIStrings = {
     /**
-     *@description Tooltip text that appears when hovering over largeicon pan button in Transform Controller of the Layers panel
+     * @description Tooltip text that appears when hovering over largeicon pan button in Transform Controller of the Layers panel
      */
     panModeX: 'Pan mode (X)',
     /**
-     *@description Tooltip text that appears when hovering over largeicon rotate button in Transform Controller of the Layers panel
+     * @description Tooltip text that appears when hovering over largeicon rotate button in Transform Controller of the Layers panel
      */
     rotateModeV: 'Rotate mode (V)',
     /**
-     *@description Tooltip text that appears when hovering over the largeicon center button in the Transform Controller of the Layers panel
+     * @description Tooltip text that appears when hovering over the largeicon center button in the Transform Controller of the Layers panel
      */
     resetTransform: 'Reset transform (0)',
 };
@@ -23,11 +26,11 @@ const str_ = i18n.i18n.registerUIStrings('panels/layer_viewer/TransformControlle
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
     mode;
-    scaleInternal;
-    offsetXInternal;
-    offsetYInternal;
-    rotateXInternal;
-    rotateYInternal;
+    #scale;
+    #offsetX;
+    #offsetY;
+    #rotateX;
+    #rotateY;
     oldRotateX;
     oldRotateY;
     originX;
@@ -37,38 +40,45 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
     maxScale;
     controlPanelToolbar;
     modeButtons;
-    constructor(element, disableRotate) {
+    /**
+     * @param element The HTML element to apply transformations to.
+     * @param disableRotate Optional. If true, pan and rotate will be disabled. Defaults to false.
+     * @param preventDefaultOnMousedown Optional. If true, mousedown events will be prevented from their default behavior (including focus). Defaults to true.
+     */
+    constructor(element, disableRotate, preventDefaultOnMouseDown = true) {
         super();
-        this.scaleInternal = 1;
-        this.offsetXInternal = 0;
-        this.offsetYInternal = 0;
-        this.rotateXInternal = 0;
-        this.rotateYInternal = 0;
+        this.#scale = 1;
+        this.#offsetX = 0;
+        this.#offsetY = 0;
+        this.#rotateX = 0;
+        this.#rotateY = 0;
         this.oldRotateX = 0;
         this.oldRotateY = 0;
         this.originX = 0;
         this.originY = 0;
         this.element = element;
         this.registerShortcuts();
-        UI.UIUtils.installDragHandle(element, this.onDragStart.bind(this), this.onDrag.bind(this), this.onDragEnd.bind(this), 'move', null);
+        UI.UIUtils.installDragHandle(element, this.onDragStart.bind(this), this.onDrag.bind(this), this.onDragEnd.bind(this), 'move', null, 0, preventDefaultOnMouseDown);
         element.addEventListener('wheel', this.onMouseWheel.bind(this), false);
         this.minScale = 0;
         this.maxScale = Infinity;
-        this.controlPanelToolbar = new UI.Toolbar.Toolbar('transform-control-panel');
+        this.controlPanelToolbar = document.createElement('devtools-toolbar');
+        this.controlPanelToolbar.classList.add('transform-control-panel');
+        this.controlPanelToolbar.setAttribute('jslog', `${VisualLogging.toolbar()}`);
         this.modeButtons = {};
         if (!disableRotate) {
-            const panModeButton = new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.panModeX), '3d-pan');
-            panModeButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.setMode.bind(this, "Pan" /* Modes.Pan */));
-            this.modeButtons["Pan" /* Modes.Pan */] = panModeButton;
+            const panModeButton = new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.panModeX), '3d-pan', undefined, 'layers.3d-pan', /* toggleOnClick */ false);
+            panModeButton.addEventListener("Click" /* UI.Toolbar.ToolbarButton.Events.CLICK */, this.setMode.bind(this, "Pan" /* Modes.PAN */));
+            this.modeButtons["Pan" /* Modes.PAN */] = panModeButton;
             this.controlPanelToolbar.appendToolbarItem(panModeButton);
-            const rotateModeButton = new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.rotateModeV), '3d-rotate');
-            rotateModeButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.setMode.bind(this, "Rotate" /* Modes.Rotate */));
-            this.modeButtons["Rotate" /* Modes.Rotate */] = rotateModeButton;
+            const rotateModeButton = new UI.Toolbar.ToolbarToggle(i18nString(UIStrings.rotateModeV), '3d-rotate', undefined, 'layers.3d-rotate', /* toggleOnClick */ false);
+            rotateModeButton.addEventListener("Click" /* UI.Toolbar.ToolbarButton.Events.CLICK */, this.setMode.bind(this, "Rotate" /* Modes.ROTATE */));
+            this.modeButtons["Rotate" /* Modes.ROTATE */] = rotateModeButton;
             this.controlPanelToolbar.appendToolbarItem(rotateModeButton);
         }
-        this.setMode("Pan" /* Modes.Pan */);
-        const resetButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.resetTransform), '3d-center');
-        resetButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.resetAndNotify.bind(this, undefined));
+        this.setMode("Pan" /* Modes.PAN */);
+        const resetButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.resetTransform), '3d-center', undefined, 'layers.3d-center');
+        resetButton.addEventListener("Click" /* UI.Toolbar.ToolbarButton.Events.CLICK */, this.resetAndNotify.bind(this, undefined));
         this.controlPanelToolbar.appendToolbarItem(resetButton);
         this.reset();
     }
@@ -83,11 +93,11 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
                 return true;
             },
             'layers.pan-mode': async () => {
-                this.setMode("Pan" /* Modes.Pan */);
+                this.setMode("Pan" /* Modes.PAN */);
                 return true;
             },
             'layers.rotate-mode': async () => {
-                this.setMode("Rotate" /* Modes.Rotate */);
+                this.setMode("Rotate" /* Modes.ROTATE */);
                 return true;
             },
             'layers.zoom-in': this.onKeyboardZoom.bind(this, zoomFactor),
@@ -99,14 +109,14 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
         });
     }
     postChangeEvent() {
-        this.dispatchEventToListeners(Events.TransformChanged);
+        this.dispatchEventToListeners("TransformChanged" /* Events.TRANSFORM_CHANGED */);
     }
     reset() {
-        this.scaleInternal = 1;
-        this.offsetXInternal = 0;
-        this.offsetYInternal = 0;
-        this.rotateXInternal = 0;
-        this.rotateYInternal = 0;
+        this.#scale = 1;
+        this.#offsetX = 0;
+        this.#offsetY = 0;
+        this.#rotateX = 0;
+        this.#rotateY = 0;
     }
     setMode(mode) {
         if (this.mode === mode) {
@@ -131,43 +141,42 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
     setScaleConstraints(minScale, maxScale) {
         this.minScale = minScale;
         this.maxScale = maxScale;
-        this.scaleInternal = Platform.NumberUtilities.clamp(this.scaleInternal, minScale, maxScale);
+        this.#scale = Platform.NumberUtilities.clamp(this.#scale, minScale, maxScale);
     }
     clampOffsets(minX, maxX, minY, maxY) {
-        this.offsetXInternal = Platform.NumberUtilities.clamp(this.offsetXInternal, minX, maxX);
-        this.offsetYInternal = Platform.NumberUtilities.clamp(this.offsetYInternal, minY, maxY);
+        this.#offsetX = Platform.NumberUtilities.clamp(this.#offsetX, minX, maxX);
+        this.#offsetY = Platform.NumberUtilities.clamp(this.#offsetY, minY, maxY);
     }
     scale() {
-        return this.scaleInternal;
+        return this.#scale;
     }
     offsetX() {
-        return this.offsetXInternal;
+        return this.#offsetX;
     }
     offsetY() {
-        return this.offsetYInternal;
+        return this.#offsetY;
     }
     rotateX() {
-        return this.rotateXInternal;
+        return this.#rotateX;
     }
     rotateY() {
-        return this.rotateYInternal;
+        return this.#rotateY;
     }
     onScale(scaleFactor, x, y) {
-        scaleFactor = Platform.NumberUtilities.clamp(this.scaleInternal * scaleFactor, this.minScale, this.maxScale) /
-            this.scaleInternal;
-        this.scaleInternal *= scaleFactor;
-        this.offsetXInternal -= (x - this.offsetXInternal) * (scaleFactor - 1);
-        this.offsetYInternal -= (y - this.offsetYInternal) * (scaleFactor - 1);
+        scaleFactor = Platform.NumberUtilities.clamp(this.#scale * scaleFactor, this.minScale, this.maxScale) / this.#scale;
+        this.#scale *= scaleFactor;
+        this.#offsetX -= (x - this.#offsetX) * (scaleFactor - 1);
+        this.#offsetY -= (y - this.#offsetY) * (scaleFactor - 1);
         this.postChangeEvent();
     }
     onPan(offsetX, offsetY) {
-        this.offsetXInternal += offsetX;
-        this.offsetYInternal += offsetY;
+        this.#offsetX += offsetX;
+        this.#offsetY += offsetY;
         this.postChangeEvent();
     }
     onRotate(rotateX, rotateY) {
-        this.rotateXInternal = rotateX;
-        this.rotateYInternal = rotateY;
+        this.#rotateX = rotateX;
+        this.#rotateY = rotateY;
         this.postChangeEvent();
     }
     async onKeyboardZoom(zoomFactor) {
@@ -177,9 +186,9 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
     async onKeyboardPanOrRotate(xMultiplier, yMultiplier) {
         const panStepInPixels = 6;
         const rotateStepInDegrees = 5;
-        if (this.mode === "Rotate" /* Modes.Rotate */) {
-            // Sic! onRotate treats X and Y as "rotate around X" and "rotate around Y", so swap X/Y multiplers.
-            this.onRotate(this.rotateXInternal + yMultiplier * rotateStepInDegrees, this.rotateYInternal + xMultiplier * rotateStepInDegrees);
+        if (this.mode === "Rotate" /* Modes.ROTATE */) {
+            // Sic! onRotate treats X and Y as "rotate around X" and "rotate around Y", so swap X/Y multipliers.
+            this.onRotate(this.#rotateX + yMultiplier * rotateStepInDegrees, this.#rotateY + xMultiplier * rotateStepInDegrees);
         }
         else {
             this.onPan(xMultiplier * panStepInPixels, yMultiplier * panStepInPixels);
@@ -187,9 +196,9 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
         return true;
     }
     onMouseWheel(event) {
-        /** @const */
+        /** @constant */
         const zoomFactor = 1.1;
-        /** @const */
+        /** @constant */
         const wheelZoomSpeed = 1 / 53;
         const mouseEvent = event;
         const scaleFactor = Math.pow(zoomFactor, -mouseEvent.deltaY * wheelZoomSpeed);
@@ -197,7 +206,7 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
     }
     onDrag(event) {
         const { clientX, clientY } = event;
-        if (this.mode === "Rotate" /* Modes.Rotate */) {
+        if (this.mode === "Rotate" /* Modes.ROTATE */) {
             this.onRotate(this.oldRotateX + (this.originY - clientY) / this.element.clientHeight * 180, this.oldRotateY - (this.originX - clientX) / this.element.clientWidth * 180);
         }
         else {
@@ -210,8 +219,8 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
         this.element.focus();
         this.originX = event.clientX;
         this.originY = event.clientY;
-        this.oldRotateX = this.rotateXInternal;
-        this.oldRotateY = this.rotateYInternal;
+        this.oldRotateX = this.#rotateX;
+        this.oldRotateY = this.#rotateY;
         return true;
     }
     onDragEnd() {
@@ -221,10 +230,4 @@ export class TransformController extends Common.ObjectWrapper.ObjectWrapper {
         this.oldRotateY = 0;
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    Events["TransformChanged"] = "TransformChanged";
-})(Events || (Events = {}));
 //# sourceMappingURL=TransformController.js.map

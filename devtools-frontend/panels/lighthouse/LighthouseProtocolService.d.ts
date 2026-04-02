@@ -1,31 +1,42 @@
 import type * as Platform from '../../core/platform/platform.js';
-import type * as ReportRenderer from './LighthouseReporterTypes.js';
+import type * as ProtocolClient from '../../core/protocol_client/protocol_client.js';
+import type * as LighthouseModel from '../../models/lighthouse/lighthouse.js';
 export interface LighthouseRun {
     inspectedURL: Platform.DevToolsPath.UrlString;
     categoryIDs: string[];
-    flags: Record<string, Object | undefined>;
+    flags: {
+        formFactor: (string | undefined);
+        mode: string;
+    };
+    isAIControlled?: boolean;
+}
+export declare class CancelledError extends Error {
+    constructor();
 }
 /**
  * ProtocolService manages a connection between the frontend (Lighthouse panel) and the Lighthouse worker.
  */
-export declare class ProtocolService {
+export declare class ProtocolService implements ProtocolClient.CDPConnection.CDPConnectionObserver {
+    #private;
     private mainSessionId?;
-    private mainFrameId?;
-    private targetInfos?;
-    private parallelConnection?;
+    private rootTargetId?;
+    private rootTarget?;
     private lighthouseWorkerPromise?;
     private lighthouseMessageUpdateCallback?;
     private removeDialogHandler?;
     private configForTesting?;
+    private connection?;
     attach(): Promise<void>;
     getLocales(): readonly string[];
     startTimespan(currentLighthouseRun: LighthouseRun): Promise<void>;
-    collectLighthouseResults(currentLighthouseRun: LighthouseRun): Promise<ReportRenderer.RunnerResult>;
+    collectLighthouseResults(currentLighthouseRun: LighthouseRun): Promise<LighthouseModel.ReporterTypes.RunnerResult>;
     detach(): Promise<void>;
     registerStatusCallback(callback: (arg0: string) => void): void;
+    onEvent<T extends ProtocolClient.CDPConnection.Event>(event: ProtocolClient.CDPConnection.CDPEvent<T>): void;
     private dispatchProtocolMessage;
+    onDisconnect(): void;
     private initWorker;
-    private ensureWorkerExists;
+    ensureWorkerExists(): Promise<Worker>;
     private onWorkerMessage;
     private sendProtocolMessage;
     private send;

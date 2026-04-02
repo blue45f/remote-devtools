@@ -15,7 +15,7 @@ export declare class ClassesPaneWidget extends UI.Widget.Widget {
     private onDOMMutated;
     private onSelectedNodeChanged;
     wasShown(): void;
-    private update;
+    update(): void;
     private onClick;
     private nodeClasses;
     private toggleClass;
@@ -30,7 +30,7 @@ export declare class ButtonProvider implements UI.Toolbar.Provider {
         forceNew: boolean | null;
     }): ButtonProvider;
     private clicked;
-    item(): UI.Toolbar.ToolbarItem;
+    item(): UI.Toolbar.ToolbarToggle;
 }
 export declare class ClassNamePrompt extends UI.TextPrompt.TextPrompt {
     private readonly nodeClasses;

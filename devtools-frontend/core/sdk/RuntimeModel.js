@@ -1,66 +1,32 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-/*
- * Copyright (C) 2012 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the #name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 import * as Common from '../common/common.js';
 import * as Host from '../host/host.js';
 import { DebuggerModel } from './DebuggerModel.js';
 import { HeapProfilerModel } from './HeapProfilerModel.js';
 import { RemoteFunction, RemoteObject, RemoteObjectImpl, RemoteObjectProperty, ScopeRemoteObject, } from './RemoteObject.js';
-import { Capability, Type } from './Target.js';
 import { SDKModel } from './SDKModel.js';
+import { Type } from './Target.js';
 export class RuntimeModel extends SDKModel {
     agent;
-    #executionContextById;
-    #executionContextComparatorInternal;
-    #hasSideEffectSupportInternal;
+    #executionContextById = new Map();
+    #executionContextComparator = ExecutionContext.comparator;
     constructor(target) {
         super(target);
         this.agent = target.runtimeAgent();
         this.target().registerRuntimeDispatcher(new RuntimeDispatcher(this));
         void this.agent.invoke_enable();
-        this.#executionContextById = new Map();
-        this.#executionContextComparatorInternal = ExecutionContext.comparator;
-        this.#hasSideEffectSupportInternal = null;
-        if (Common.Settings.Settings.instance().moduleSetting('customFormatters').get()) {
+        const settings = this.target().targetManager().context.get(Common.Settings.Settings);
+        if (settings.moduleSetting('custom-formatters').get()) {
             void this.agent.invoke_setCustomObjectFormatterEnabled({ enabled: true });
         }
-        Common.Settings.Settings.instance()
-            .moduleSetting('customFormatters')
-            .addChangeListener(this.customFormattersStateChanged.bind(this));
+        settings.moduleSetting('custom-formatters').addChangeListener(this.customFormattersStateChanged.bind(this));
     }
     static isSideEffectFailure(response) {
         const exceptionDetails = 'exceptionDetails' in response && response.exceptionDetails;
-        return Boolean(exceptionDetails && exceptionDetails.exception && exceptionDetails.exception.description &&
-            exceptionDetails.exception.description.startsWith('EvalError: Possible side-effect in debug-evaluate'));
+        return Boolean(exceptionDetails &&
+            exceptionDetails.exception?.description?.startsWith('EvalError: Possible side-effect in debug-evaluate'));
     }
     debuggerModel() {
         return this.target().model(DebuggerModel);
@@ -72,12 +38,13 @@ export class RuntimeModel extends SDKModel {
         return [...this.#executionContextById.values()].sort(this.executionContextComparator());
     }
     setExecutionContextComparator(comparator) {
-        this.#executionContextComparatorInternal = comparator;
+        this.#executionContextComparator = comparator;
     }
-    /** comparator
+    /**
+     * comparator
      */
     executionContextComparator() {
-        return this.#executionContextComparatorInternal;
+        return this.#executionContextComparator;
     }
     defaultExecutionContext() {
         for (const context of this.executionContexts()) {
@@ -128,7 +95,7 @@ export class RuntimeModel extends SDKModel {
         let unserializableValue = undefined;
         const unserializableDescription = RemoteObject.unserializableDescription(value);
         if (unserializableDescription !== null) {
-            unserializableValue = unserializableDescription;
+            unserializableValue = (unserializableDescription);
         }
         if (typeof unserializableValue !== 'undefined') {
             value = undefined;
@@ -148,7 +115,7 @@ export class RuntimeModel extends SDKModel {
         if ('object' in result && result.object) {
             result.object.release();
         }
-        if ('exceptionDetails' in result && result.exceptionDetails && result.exceptionDetails.exception) {
+        if ('exceptionDetails' in result && result.exceptionDetails?.exception) {
             const exception = result.exceptionDetails.exception;
             const exceptionObject = this.createRemoteObject({ type: exception.type, objectId: exception.objectId });
             exceptionObject.release();
@@ -162,10 +129,10 @@ export class RuntimeModel extends SDKModel {
     }
     async compileScript(expression, sourceURL, persistScript, executionContextId) {
         const response = await this.agent.invoke_compileScript({
-            expression: expression,
-            sourceURL: sourceURL,
-            persistScript: persistScript,
-            executionContextId: executionContextId,
+            expression,
+            sourceURL,
+            persistScript,
+            executionContextId,
         });
         if (response.getError()) {
             console.error(response.getError());
@@ -187,7 +154,7 @@ export class RuntimeModel extends SDKModel {
         const error = response.getError();
         if (error) {
             console.error(error);
-            return { error: error };
+            return { error };
         }
         return { object: this.createRemoteObject(response.result), exceptionDetails: response.exceptionDetails };
     }
@@ -199,7 +166,7 @@ export class RuntimeModel extends SDKModel {
         const error = response.getError();
         if (error) {
             console.error(error);
-            return { error: error };
+            return { error };
         }
         return { objects: this.createRemoteObject(response.objects) };
     }
@@ -214,20 +181,21 @@ export class RuntimeModel extends SDKModel {
         const result = await this.agent.invoke_getHeapUsage();
         return result.getError() ? null : result;
     }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     inspectRequested(payload, hints, executionContextId) {
         const object = this.createRemoteObject(payload);
-        if (hints && 'copyToClipboard' in hints && Boolean(hints.copyToClipboard)) {
-            this.copyRequested(object);
-            return;
-        }
-        if (hints && 'queryObjects' in hints && hints.queryObjects) {
-            void this.queryObjectsRequested(object, executionContextId);
-            return;
+        if (hints !== null && typeof hints === 'object') {
+            if ('copyToClipboard' in hints && Boolean(hints.copyToClipboard)) {
+                this.copyRequested(object);
+                return;
+            }
+            if ('queryObjects' in hints && hints.queryObjects) {
+                void this.queryObjectsRequested(object, executionContextId);
+                return;
+            }
         }
         if (object.isNode()) {
-            void Common.Revealer.reveal(object).then(object.release.bind(object));
+            const omitFocus = hints !== null && typeof hints === 'object' && 'omitFocus' in hints && Boolean(hints.omitFocus);
+            void Common.Revealer.reveal(object, omitFocus).then(object.release.bind(object));
             return;
         }
         if (object.type === 'function') {
@@ -236,7 +204,7 @@ export class RuntimeModel extends SDKModel {
         }
         function didGetDetails(response) {
             object.release();
-            if (!response || !response.location) {
+            if (!response?.location) {
                 return;
             }
             void Common.Revealer.reveal(response.location);
@@ -246,6 +214,9 @@ export class RuntimeModel extends SDKModel {
     async addBinding(event) {
         return await this.agent.invoke_addBinding(event);
     }
+    async removeBinding(request) {
+        return await this.agent.invoke_removeBinding(request);
+    }
     bindingCalled(event) {
         this.dispatchEventToListeners(Events.BindingCalled, event);
     }
@@ -254,14 +225,12 @@ export class RuntimeModel extends SDKModel {
             Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(object.unserializableValue() || object.value);
             return;
         }
-        const indent = Common.Settings.Settings.instance().moduleSetting('textEditorIndent').get();
+        const indent = this.target().targetManager().context.get(Common.Settings.Settings).moduleSetting('text-editor-indent').get();
         void object
-            // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-            // @ts-expect-error
             .callFunctionJSON(toStringForClipboard, [{
                 value: {
                     subtype: object.subtype,
-                    indent: indent,
+                    indent,
                 },
             }])
             .then(Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText.bind(Host.InspectorFrontendHost.InspectorFrontendHostInstance));
@@ -277,7 +246,7 @@ export class RuntimeModel extends SDKModel {
             try {
                 return JSON.stringify(this, null, indent);
             }
-            catch (error) {
+            catch {
                 return String(this);
             }
         }
@@ -293,7 +262,7 @@ export class RuntimeModel extends SDKModel {
     }
     static simpleTextFromException(exceptionDetails) {
         let text = exceptionDetails.text;
-        if (exceptionDetails.exception && exceptionDetails.exception.description) {
+        if (exceptionDetails.exception?.description) {
             let description = exceptionDetails.exception.description;
             if (description.indexOf('\n') !== -1) {
                 description = description.substring(0, description.indexOf('\n'));
@@ -303,7 +272,7 @@ export class RuntimeModel extends SDKModel {
         return text;
     }
     exceptionThrown(timestamp, exceptionDetails) {
-        const exceptionWithTimestamp = { timestamp: timestamp, details: exceptionDetails };
+        const exceptionWithTimestamp = { timestamp, details: exceptionDetails };
         this.dispatchEventToListeners(Events.ExceptionThrown, exceptionWithTimestamp);
     }
     exceptionRevoked(exceptionId) {
@@ -311,12 +280,12 @@ export class RuntimeModel extends SDKModel {
     }
     consoleAPICalled(type, args, executionContextId, timestamp, stackTrace, context) {
         const consoleAPICall = {
-            type: type,
-            args: args,
-            executionContextId: executionContextId,
-            timestamp: timestamp,
-            stackTrace: stackTrace,
-            context: context,
+            type,
+            args,
+            executionContextId,
+            timestamp,
+            stackTrace,
+            context,
         };
         this.dispatchEventToListeners(Events.ConsoleAPICalled, consoleAPICall);
     }
@@ -329,31 +298,11 @@ export class RuntimeModel extends SDKModel {
         while (currentStackTrace && !currentStackTrace.callFrames.length) {
             currentStackTrace = currentStackTrace.parent || null;
         }
-        if (!currentStackTrace || !currentStackTrace.callFrames.length) {
+        if (!currentStackTrace?.callFrames.length) {
             return 0;
         }
         return this.executionContextIdForScriptId(currentStackTrace.callFrames[0].scriptId);
     }
-    hasSideEffectSupport() {
-        return this.#hasSideEffectSupportInternal;
-    }
-    async checkSideEffectSupport() {
-        const contexts = this.executionContexts();
-        const testContext = contexts[contexts.length - 1];
-        if (!testContext) {
-            return false;
-        }
-        // Check for a positive throwOnSideEffect response without triggering side effects.
-        const response = await this.agent.invoke_evaluate({
-            expression: _sideEffectTestExpression,
-            contextId: testContext.id,
-            throwOnSideEffect: true,
-        });
-        this.#hasSideEffectSupportInternal = response.getError() ? false : RuntimeModel.isSideEffectFailure(response);
-        return this.#hasSideEffectSupportInternal;
-    }
-    // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     terminateExecution() {
         return this.agent.invoke_terminateExecution();
     }
@@ -366,20 +315,9 @@ export class RuntimeModel extends SDKModel {
         return response.exceptionDetails;
     }
 }
-/**
- * This expression:
- * - IMPORTANT: must not actually cause user-visible or JS-visible side-effects.
- * - Must throw when evaluated with `throwOnSideEffect: true`.
- * - Must be valid when run from any ExecutionContext that supports `throwOnSideEffect`.
- * @const
- */
-// TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const _sideEffectTestExpression = '(async function(){ await 1; })()';
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Events;
 (function (Events) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     Events["BindingCalled"] = "BindingCalled";
     Events["ExecutionContextCreated"] = "ExecutionContextCreated";
     Events["ExecutionContextDestroyed"] = "ExecutionContextDestroyed";
@@ -389,6 +327,7 @@ export var Events;
     Events["ExceptionRevoked"] = "ExceptionRevoked";
     Events["ConsoleAPICalled"] = "ConsoleAPICalled";
     Events["QueryObjectRequested"] = "QueryObjectRequested";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Events || (Events = {}));
 class RuntimeDispatcher {
     #runtimeModel;
@@ -424,7 +363,7 @@ export class ExecutionContext {
     id;
     uniqueId;
     name;
-    #labelInternal;
+    #label;
     origin;
     isDefault;
     runtimeModel;
@@ -434,29 +373,29 @@ export class ExecutionContext {
         this.id = id;
         this.uniqueId = uniqueId;
         this.name = name;
-        this.#labelInternal = null;
+        this.#label = null;
         this.origin = origin;
         this.isDefault = isDefault;
         this.runtimeModel = runtimeModel;
         this.debuggerModel = runtimeModel.debuggerModel();
         this.frameId = frameId;
-        this.setLabelInternal('');
+        this.#setLabel('');
     }
     target() {
         return this.runtimeModel.target();
     }
     static comparator(a, b) {
         function targetWeight(target) {
-            if (target.parentTarget()?.type() !== Type.Frame) {
+            if (target.parentTarget()?.type() !== Type.FRAME) {
                 return 5;
             }
-            if (target.type() === Type.Frame) {
+            if (target.type() === Type.FRAME) {
                 return 4;
             }
             if (target.type() === Type.ServiceWorker) {
                 return 3;
             }
-            if (target.type() === Type.Worker || target.type() === Type.SharedWorker) {
+            if (target.type() === Type.Worker || target.type() === Type.SHARED_WORKER) {
                 return 2;
             }
             return 1;
@@ -506,31 +445,38 @@ export class ExecutionContext {
     async evaluate(options, userGesture, awaitPromise) {
         // FIXME: It will be moved to separate ExecutionContext.
         if (this.debuggerModel.selectedCallFrame()) {
-            return this.debuggerModel.evaluateOnSelectedCallFrame(options);
+            return await this.debuggerModel.evaluateOnSelectedCallFrame(options);
         }
-        // Assume backends either support both throwOnSideEffect and timeout options or neither.
-        const needsTerminationOptions = Boolean(options.throwOnSideEffect) || options.timeout !== undefined;
-        if (!needsTerminationOptions || this.runtimeModel.hasSideEffectSupport()) {
-            return this.evaluateGlobal(options, userGesture, awaitPromise);
-        }
-        if (this.runtimeModel.hasSideEffectSupport() !== false) {
-            await this.runtimeModel.checkSideEffectSupport();
-            if (this.runtimeModel.hasSideEffectSupport()) {
-                return this.evaluateGlobal(options, userGesture, awaitPromise);
-            }
-        }
-        return { error: 'Side-effect checks not supported by backend.' };
+        return await this.evaluateGlobal(options, userGesture, awaitPromise);
     }
     globalObject(objectGroup, generatePreview) {
         const evaluationOptions = {
             expression: 'this',
-            objectGroup: objectGroup,
+            objectGroup,
             includeCommandLineAPI: false,
             silent: true,
             returnByValue: false,
-            generatePreview: generatePreview,
+            generatePreview,
         };
         return this.evaluateGlobal(evaluationOptions, false, false);
+    }
+    async callFunctionOn(options) {
+        const response = await this.runtimeModel.agent.invoke_callFunctionOn({
+            functionDeclaration: options.functionDeclaration,
+            returnByValue: options.returnByValue,
+            userGesture: options.userGesture,
+            awaitPromise: options.awaitPromise,
+            throwOnSideEffect: options.throwOnSideEffect,
+            arguments: options.arguments,
+            // Old back-ends don't know about uniqueContextId (and also don't generate
+            // one), so fall back to contextId in that case (https://crbug.com/1192621).
+            ...(this.uniqueId ? { uniqueContextId: this.uniqueId } : { contextId: this.id }),
+        });
+        const error = response.getError();
+        if (error) {
+            return { error };
+        }
+        return { object: this.runtimeModel.createRemoteObject(response.result), exceptionDetails: response.exceptionDetails };
     }
     async evaluateGlobal(options, userGesture, awaitPromise) {
         if (!options.expression) {
@@ -544,8 +490,8 @@ export class ExecutionContext {
             silent: options.silent,
             returnByValue: options.returnByValue,
             generatePreview: options.generatePreview,
-            userGesture: userGesture,
-            awaitPromise: awaitPromise,
+            userGesture,
+            awaitPromise,
             throwOnSideEffect: options.throwOnSideEffect,
             timeout: options.timeout,
             disableBreaks: options.disableBreaks,
@@ -558,7 +504,7 @@ export class ExecutionContext {
         const error = response.getError();
         if (error) {
             console.error(error);
-            return { error: error };
+            return { error };
         }
         return { object: this.runtimeModel.createRemoteObject(response.result), exceptionDetails: response.exceptionDetails };
     }
@@ -567,24 +513,24 @@ export class ExecutionContext {
         return response.getError() ? [] : response.names;
     }
     label() {
-        return this.#labelInternal;
+        return this.#label;
     }
     setLabel(label) {
-        this.setLabelInternal(label);
+        this.#setLabel(label);
         this.runtimeModel.dispatchEventToListeners(Events.ExecutionContextChanged, this);
     }
-    setLabelInternal(label) {
+    #setLabel(label) {
         if (label) {
-            this.#labelInternal = label;
+            this.#label = label;
             return;
         }
         if (this.name) {
-            this.#labelInternal = this.name;
+            this.#label = this.name;
             return;
         }
         const parsedUrl = Common.ParsedURL.ParsedURL.fromString(this.origin);
-        this.#labelInternal = parsedUrl ? parsedUrl.lastPathComponentWithFragment() : '';
+        this.#label = parsedUrl ? parsedUrl.lastPathComponentWithFragment() : '';
     }
 }
-SDKModel.register(RuntimeModel, { capabilities: Capability.JS, autostart: true });
+SDKModel.register(RuntimeModel, { capabilities: 4 /* Capability.JS */, autostart: true });
 //# sourceMappingURL=RuntimeModel.js.map

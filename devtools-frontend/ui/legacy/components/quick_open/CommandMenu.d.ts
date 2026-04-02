@@ -1,9 +1,12 @@
+import '../../../kit/kit.js';
+import '../../../components/highlighting/highlighting.js';
 import * as Common from '../../../../core/common/common.js';
 import * as Platform from '../../../../core/platform/platform.js';
+import { type TemplateResult } from '../../../lit/lit.js';
 import * as UI from '../../legacy.js';
 import { Provider } from './FilteredListWidget.js';
 export declare class CommandMenu {
-    private readonly commandsInternal;
+    #private;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
@@ -25,19 +28,22 @@ export interface RevealViewCommandOptions {
     tags: string;
     category: UI.ViewManager.ViewLocationCategory;
     userActionCode?: number;
+    featurePromotionId?: string;
 }
 export interface CreateCommandOptions {
     category: Platform.UIString.LocalizedString;
     keys: string;
     title: Common.UIString.LocalizedString;
     shortcut: string;
+    jslogContext: string;
     executeHandler: () => void;
     availableHandler?: () => boolean;
     userActionCode?: number;
     deprecationWarning?: Platform.UIString.LocalizedString;
     isPanelOrDrawer?: PanelOrDrawer;
+    featurePromotionId?: string;
 }
-export declare enum PanelOrDrawer {
+export declare const enum PanelOrDrawer {
     PANEL = "PANEL",
     DRAWER = "DRAWER"
 }
@@ -49,26 +55,25 @@ export declare class CommandMenuProvider extends Provider {
     itemCount(): number;
     itemKeyAt(itemIndex: number): string;
     itemScoreAt(itemIndex: number, query: string): number;
-    renderItem(itemIndex: number, query: string, titleElement: Element, subtitleElement: Element): void;
+    renderItem(itemIndex: number, query: string): TemplateResult;
+    jslogContextAt(itemIndex: number): string;
     selectItem(itemIndex: number | null, _promptValue: string): void;
     notFoundText(): string;
 }
-export declare const MaterialPaletteColors: string[];
 export declare class Command {
     #private;
     readonly category: Common.UIString.LocalizedString;
     readonly title: Common.UIString.LocalizedString;
     readonly key: string;
     readonly shortcut: string;
+    readonly jslogContext: string;
     readonly deprecationWarning?: Platform.UIString.LocalizedString;
     readonly isPanelOrDrawer?: PanelOrDrawer;
-    constructor(category: Common.UIString.LocalizedString, title: Common.UIString.LocalizedString, key: string, shortcut: string, executeHandler: () => unknown, availableHandler?: () => boolean, deprecationWarning?: Platform.UIString.LocalizedString, isPanelOrDrawer?: PanelOrDrawer);
+    readonly featurePromotionId?: string;
+    constructor(category: Common.UIString.LocalizedString, title: Common.UIString.LocalizedString, key: string, shortcut: string, jslogContext: string, executeHandler: () => unknown, availableHandler?: () => boolean, deprecationWarning?: Platform.UIString.LocalizedString, isPanelOrDrawer?: PanelOrDrawer, featurePromotionId?: string);
     available(): boolean;
     execute(): unknown;
 }
 export declare class ShowActionDelegate implements UI.ActionRegistration.ActionDelegate {
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ShowActionDelegate;
     handleAction(_context: UI.Context.Context, _actionId: string): boolean;
 }

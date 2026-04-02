@@ -1,12 +1,13 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Platform from '../../../../core/platform/platform.js';
+import * as Geometry from '../../../../models/geometry/geometry.js';
 import * as UI from '../../legacy.js';
 export const CSSAngleRegex = /(?<value>[+-]?\d*\.?\d+)(?<unit>deg|grad|rad|turn)/;
 export const parseText = (text) => {
     const result = text.match(CSSAngleRegex);
-    if (!result || !result.groups) {
+    if (!result?.groups) {
         return null;
     }
     return {
@@ -17,14 +18,14 @@ export const parseText = (text) => {
 export const getAngleFromRadians = (rad, targetUnit) => {
     let value = rad;
     switch (targetUnit) {
-        case "grad" /* AngleUnit.Grad */:
-            value = UI.Geometry.radiansToGradians(rad);
+        case "grad" /* AngleUnit.GRAD */:
+            value = Geometry.radiansToGradians(rad);
             break;
-        case "deg" /* AngleUnit.Deg */:
-            value = UI.Geometry.radiansToDegrees(rad);
+        case "deg" /* AngleUnit.DEG */:
+            value = Geometry.radiansToDegrees(rad);
             break;
-        case "turn" /* AngleUnit.Turn */:
-            value = UI.Geometry.radiansToTurns(rad);
+        case "turn" /* AngleUnit.TURN */:
+            value = Geometry.radiansToTurns(rad);
             break;
     }
     return {
@@ -34,12 +35,12 @@ export const getAngleFromRadians = (rad, targetUnit) => {
 };
 export const getRadiansFromAngle = (angle) => {
     switch (angle.unit) {
-        case "deg" /* AngleUnit.Deg */:
-            return UI.Geometry.degreesToRadians(angle.value);
-        case "grad" /* AngleUnit.Grad */:
-            return UI.Geometry.gradiansToRadians(angle.value);
-        case "turn" /* AngleUnit.Turn */:
-            return UI.Geometry.turnsToRadians(angle.value);
+        case "deg" /* AngleUnit.DEG */:
+            return Geometry.degreesToRadians(angle.value);
+        case "grad" /* AngleUnit.GRAD */:
+            return Geometry.gradiansToRadians(angle.value);
+        case "turn" /* AngleUnit.TURN */:
+            return Geometry.turnsToRadians(angle.value);
     }
     return angle.value;
 };
@@ -53,16 +54,16 @@ export const get2DTranslationsForAngle = (angle, radius) => {
 export const roundAngleByUnit = (angle) => {
     let roundedValue = angle.value;
     switch (angle.unit) {
-        case "deg" /* AngleUnit.Deg */:
-        case "grad" /* AngleUnit.Grad */:
+        case "deg" /* AngleUnit.DEG */:
+        case "grad" /* AngleUnit.GRAD */:
             // Round to nearest whole unit.
             roundedValue = Math.round(angle.value);
             break;
-        case "rad" /* AngleUnit.Rad */:
+        case "rad" /* AngleUnit.RAD */:
             // Allow up to 4 decimals.
             roundedValue = Math.round(angle.value * 10000) / 10000;
             break;
-        case "turn" /* AngleUnit.Turn */:
+        case "turn" /* AngleUnit.TURN */:
             // Allow up to 2 decimals.
             roundedValue = Math.round(angle.value * 100) / 100;
             break;
@@ -76,14 +77,14 @@ export const roundAngleByUnit = (angle) => {
 };
 export const getNextUnit = (currentUnit) => {
     switch (currentUnit) {
-        case "deg" /* AngleUnit.Deg */:
-            return "grad" /* AngleUnit.Grad */;
-        case "grad" /* AngleUnit.Grad */:
-            return "rad" /* AngleUnit.Rad */;
-        case "rad" /* AngleUnit.Rad */:
-            return "turn" /* AngleUnit.Turn */;
+        case "deg" /* AngleUnit.DEG */:
+            return "grad" /* AngleUnit.GRAD */;
+        case "grad" /* AngleUnit.GRAD */:
+            return "rad" /* AngleUnit.RAD */;
+        case "rad" /* AngleUnit.RAD */:
+            return "turn" /* AngleUnit.TURN */;
         default:
-            return "deg" /* AngleUnit.Deg */;
+            return "deg" /* AngleUnit.DEG */;
     }
 };
 export const convertAngleUnit = (angle, newUnit) => {

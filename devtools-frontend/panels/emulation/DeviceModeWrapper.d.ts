@@ -1,6 +1,6 @@
-import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
-import { type InspectedPagePlaceholder } from './InspectedPagePlaceholder.js';
+import * as UI from '../../ui/legacy/legacy.js';
+import type { InspectedPagePlaceholder } from './InspectedPagePlaceholder.js';
 export declare class DeviceModeWrapper extends UI.Widget.VBox {
     private readonly inspectedPagePlaceholder;
     private deviceModeView;
@@ -15,11 +15,8 @@ export declare class DeviceModeWrapper extends UI.Widget.VBox {
     isDeviceModeOn(): boolean;
     captureScreenshot(fullSize?: boolean, clip?: Protocol.Page.Viewport): boolean;
     private screenshotRequestedFromOverlay;
-    private update;
+    update(force?: boolean): void;
 }
 export declare class ActionDelegate implements UI.ActionRegistration.ActionDelegate {
     handleAction(context: UI.Context.Context, actionId: string): boolean;
-    static instance(opts?: {
-        forceNew: boolean | null;
-    }): ActionDelegate;
 }

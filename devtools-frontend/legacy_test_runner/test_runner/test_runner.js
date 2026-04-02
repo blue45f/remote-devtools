@@ -1,105 +1,49 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-// @ts-nocheck This file is not checked by TypeScript as it has a lot of legacy code.
-import * as Platform from '../../core/platform/platform.js';
-import * as TestRunner from './TestRunner.js';
-self.Platform = self.Platform || {};
-self.Platform.StringUtilities = Platform.StringUtilities;
-/**
- * @param {!SDK.Target} target
- */
-function _setupTestHelpers(target) {
-    self.TestRunner.BrowserAgent = target.browserAgent();
-    self.TestRunner.CSSAgent = target.cssAgent();
-    self.TestRunner.DeviceOrientationAgent = target.deviceOrientationAgent();
-    self.TestRunner.DOMAgent = target.domAgent();
-    self.TestRunner.DOMDebuggerAgent = target.domdebuggerAgent();
-    self.TestRunner.DebuggerAgent = target.debuggerAgent();
-    self.TestRunner.EmulationAgent = target.emulationAgent();
-    self.TestRunner.HeapProfilerAgent = target.heapProfilerAgent();
-    self.TestRunner.InputAgent = target.inputAgent();
-    self.TestRunner.InspectorAgent = target.inspectorAgent();
-    self.TestRunner.NetworkAgent = target.networkAgent();
-    self.TestRunner.OverlayAgent = target.overlayAgent();
-    self.TestRunner.PageAgent = target.pageAgent();
-    self.TestRunner.ProfilerAgent = target.profilerAgent();
-    self.TestRunner.RuntimeAgent = target.runtimeAgent();
-    self.TestRunner.TargetAgent = target.targetAgent();
-    self.TestRunner.networkManager = target.model(SDK.NetworkManager);
-    self.TestRunner.securityOriginManager = target.model(SDK.SecurityOriginManager);
-    self.TestRunner.storageKeyManager = target.model(SDK.StorageKeyManager);
-    self.TestRunner.resourceTreeModel = target.model(SDK.ResourceTreeModel);
-    self.TestRunner.debuggerModel = target.model(SDK.DebuggerModel);
-    self.TestRunner.runtimeModel = target.model(SDK.RuntimeModel);
-    self.TestRunner.domModel = target.model(SDK.DOMModel);
-    self.TestRunner.domDebuggerModel = target.model(SDK.DOMDebuggerModel);
-    self.TestRunner.cssModel = target.model(SDK.CSSModel);
-    self.TestRunner.cpuProfilerModel = target.model(SDK.CPUProfilerModel);
-    self.TestRunner.overlayModel = target.model(SDK.OverlayModel);
-    self.TestRunner.serviceWorkerManager = target.model(SDK.ServiceWorkerManager);
-    self.TestRunner.tracingManager = target.model(SDK.TracingManager);
-    self.TestRunner.mainTarget = target;
-}
-export async function _executeTestScript() {
-    const testScriptURL = /** @type {string} */ (Root.Runtime.queryParam('test'));
-    if (TestRunner.isDebugTest()) {
-        /* eslint-disable no-console */
-        TestRunner.setInnerResult(console.log);
-        TestRunner.setInnerCompleteTest(() => console.log('Test completed'));
-        /* eslint-enable no-console */
-        // Auto-start unit tests
-        self.test = async function () {
-            await import(testScriptURL);
-        };
-        return;
-    }
-    try {
-        await import(testScriptURL);
-    }
-    catch (err) {
-        TestRunner.addResult('TEST ENDED EARLY DUE TO UNCAUGHT ERROR:');
-        TestRunner.addResult(err && err.stack || err);
-        TestRunner.addResult('=== DO NOT COMMIT THIS INTO -expected.txt ===');
-        TestRunner.completeTest();
-    }
-}
-/** @type {boolean} */
-let _startedTest = false;
-/**
- * @implements {SDK.TargetManager.Observer}
- */
-export class _TestObserver {
-    /**
-     * @param {!SDK.Target} target
-     * @override
-     */
-    targetAdded(target) {
-        if (target.id() === 'main' && target.type() === 'frame' ||
-            target.parentTarget()?.type() === 'tab' && target.type() === 'frame' && !target.targetInfo()?.subtype?.length) {
-            _setupTestHelpers(target);
-            if (_startedTest) {
-                return;
-            }
-            _startedTest = true;
-            TestRunner
-                .loadHTML(`
+import*as re from"./../../core/common/common.js";import*as oe from"./../../core/root/root.js";import*as u from"./../../core/sdk/sdk.js";import*as se from"./../../services/tracing/tracing.js";import"./../../core/common/common.js";import*as A from"./../../core/protocol_client/protocol_client.js";import*as x from"./../../core/root/root.js";import*as c from"./../../core/sdk/sdk.js";import*as v from"./../../models/bindings/bindings.js";import*as T from"./../../models/workspace/workspace.js";import*as W from"./../../ui/components/code_highlighter/code_highlighter.js";import*as p from"./../../ui/legacy/legacy.js";function b(){return!self.testRunner||!!x.Runtime.Runtime.queryParam("debugFrontend")}function ie(){b()||(console.log=(...e)=>{s(`log: ${e}`)},console.error=(...e)=>{s(`error: ${e}`)},console.info=(...e)=>{s(`info: ${e}`)},console.assert=(e,...n)=>{e||s(`ASSERTION FAILURE: ${n.join(" ")}`)})}self.onerror=(e,n,t,r,o)=>{s("TEST ENDED IN ERROR: "+o.stack),l()};self.addEventListener("unhandledrejection",e=>{s(`PROMISE FAILURE: ${e.reason.stack??e.reason}`),l()});ie();var E=[],_=e=>{E.push(String(e))};function B(e){_=e}function s(e){_(e)}var U=!1,j=()=>{U||(U=!0,ue(),self.testRunner.notifyDone())};function V(e){j=e}function l(){j()}self.TestRunner=self.TestRunner||{};function ue(){Array.prototype.forEach.call(document.documentElement.childNodes,n=>n.remove());let e=document.createElement("div");e.style&&(e.style.whiteSpace="pre",e.style.height="10px",e.style.overflow="hidden"),document.documentElement.appendChild(e);for(let n=0;n<E.length;n++)e.appendChild(document.createTextNode(E[n])),e.appendChild(document.createElement("br"));E=[]}function ce(e){if(e)for(let n=0,t=e.length;n<t;++n)s(e[n])}function le(e){n();function n(){let t=e.shift();if(!t){l();return}s(`
+test: `+t.name);let r=t();r instanceof Promise||(r=Promise.resolve()),r.then(n)}}function de(e,n,t,r){t=d(t);let o=e[n];if(typeof o!="function")throw new Error("Cannot find method to override: "+n);e[n]=function(a){let i;try{i=o.apply(this,arguments)}finally{r||(e[n]=o)}try{Array.prototype.push.call(arguments,i),t.apply(this,arguments)}catch(f){throw new Error("Exception in overriden method '"+n+"': "+f)}return i}}function fe(e,n){return new Promise(function(t,r){let o=e[n];if(typeof o!="function"){r("Cannot find method to override: "+n);return}e[n]=function(a){let i;try{i=o.apply(this,arguments)}finally{e[n]=o}try{Array.prototype.push.call(arguments,i),t.apply(this,arguments)}catch(f){r("Exception in overridden method '"+n+"': "+f),l()}return i}})}function pe(e,n,t){n=n||0,t=t||e.textContent.length,n<0&&(n=t+n);let r=e.getComponentSelection();r.removeAllRanges();let o=e.ownerDocument.createRange();return o.setStart(e,n),o.setEnd(e,t),r.addRange(o),e}function Te(e){return p.ViewManager.ViewManager.instance().showView(e)}function ge(e,n,t,r,o){return new KeyboardEvent("keydown",{key:e,bubbles:!0,cancelable:!0,ctrlKey:!!n,altKey:!!t,shiftKey:!!r,metaKey:!!o})}function d(e,n){function t(){if(!e)return;let r=this;try{return e.apply(r,arguments)}catch(o){s("Exception while running: "+e+`
+`+(o.stack||o)),n?d(n)():l()}}return t}function me(e){async function n(){if(!e)return;let t=this;try{return await e.apply(t,arguments)}catch(r){s("Exception while running: "+e+`
+`+(r.stack||r)),l()}}return n}function $(e){function n(a){let i=0;for(;a&&a!==e;)a.nodeName==="OL"&&!(a.classList&&a.classList.contains("object-properties-section"))&&++i,a=a.parentNode;return Array(i*4+1).join(" ")}let t="",r=e,o=!1;for(;r.traverseNextNode(e);)if(r=r.traverseNextNode(e),r.nodeType===Node.TEXT_NODE&&r.parentNode?.nodeType!==Node.DOCUMENT_FRAGMENT_NODE&&r.parentNode?.nodeName!=="STYLE")t+=r.nodeValue;else if(r.nodeName==="LI"||r.nodeName==="TR")o?o=!1:t+=`
+`+n(r);else if(r.nodeName==="STYLE"){r=r.traverseNextNode(e);continue}else r.classList&&r.classList.contains("object-properties-section")&&(o=!0);return t}function Re(e){return $(e).replace(/\s{3,}/g," ")}function xe(e){let n="",t=e;for(;t=t.traverseNextNode(e,t.tagName==="DEVTOOLS-CSS-LENGTH"||t.tagName==="DEVTOOLS-ICON"),!!t;)t.nodeType===Node.TEXT_NODE&&t.parentElement?.tagName!=="STYLE"?n+=t.nodeValue:t.tagName==="DEVTOOLS-TOOLTIP"?t=t.lastChild?.traverseNextNode(e)??t.traverseNextNode(e):t.nodeName==="STYLE"&&(t=t.traverseNextNode(e));return n}async function ye(e){let n=await G(e);return TestRunner.runtimeModel.createRemoteObject(n.result)}async function H(e,n){let t=await G(e);d(n)(t.result.value,t.exceptionDetails)}var he=0;async function G(e){let n=new Error().stack.split("at "),t=x.Runtime.Runtime.queryParam("test"),o=n.reduce((ae,K)=>K.includes(t)?K:ae,n[n.length-2]).trim().split("/"),a=o[o.length-1].slice(0,-1).split(":"),i=a[0],f=`test://evaluations/${he++}/`+i,y=parseInt(a[1],10);e=`
+`.repeat(y-1)+e,e.indexOf("sourceURL=")===-1&&(e+=`//# sourceURL=${f}`);let R=await TestRunner.RuntimeAgent.invoke_evaluate({expression:e,objectGroup:"console"}),h=R.getError();if(h){s("Error: "+h),l();return}return R}function q(e){let n="Error: ";e.getError()?n+=e.getError():e.exceptionDetails&&(n+=e.exceptionDetails.text,e.exceptionDetails.exception&&(n+=" "+e.exceptionDetails.exception.description)),s(n)}async function w(e,n){let t=await TestRunner.RuntimeAgent.invoke_evaluate({expression:e,objectGroup:"console",userGesture:n});if(t&&!t.exceptionDetails&&!t.getError())return t.result.value;q(t),l()}function Ee(e){return new Promise(n=>H(e,n))}async function m(e){let n=await TestRunner.RuntimeAgent.invoke_evaluate({expression:e,objectGroup:"console",includeCommandLineAPI:!1,awaitPromise:!0});if(n&&!n.exceptionDetails&&!n.getError())return n.result.value;q(n),l()}function Se(e,n){return n=n||[],m(e+"("+n.map(t=>JSON.stringify(t)).join(",")+")")}function ve(e,n){w("setTimeout(unescape('"+escape(e)+"'), 1)",n)}function we(e,n){let t='internals.evaluateInInspectorOverlay("(" + '+e+' + ")()")';TestRunner.runtimeModel.executionContexts()[0].evaluate({expression:t,objectGroup:"",includeCommandLineAPI:!1,silent:!1,returnByValue:!0,generatePreview:!1},!1,!1).then(o=>void n(o.object.value))}function Me(e,n){e||s("FAIL: "+n)}function Pe(e){A.InspectorBackend.test.deprecatedRunAfterPendingDispatches(e)}function C(e){if(!e.includes("<base")){let n=/(<!DOCTYPE.*?>)/i,t=`<base href="${M()}">`;e.match(n)?e=e.replace(n,"$1"+t):e=t+e}return e=e.replace(/'/g,"\\'").replace(/\n/g,"\\n"),w(`document.write(\`${e}\`);document.close();`)}function Ie(e){return m(`
+    (function(){
+      let script = document.createElement('script');
+      script.src = '${e}';
+      document.head.append(script);
+      return new Promise(f => script.onload = f);
+    })();
+  `)}function De(e){return m(`
+    (function(){
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '${e}';
+      link.onload = onload;
+      document.head.append(link);
+      let resolve;
+      const promise = new Promise(r => resolve = r);
+      function onload() {
+        // TODO(chenwilliam): It shouldn't be necessary to force
+        // style recalc here but some tests rely on it.
+        window.getComputedStyle(document.body).color;
+        resolve();
+      }
+      return promise;
+    })();
+  `)}function Ae(e,n={}){return n.id=n.id||"",n.name=n.name||"",m(`
+    (function(){
+      const iframe = document.createElement('iframe');
+      iframe.src = '${e}';
+      iframe.id = '${n.id}';
+      iframe.name = '${n.name}';
+      document.body.appendChild(iframe);
+      return new Promise(f => iframe.onload = f);
+    })();
+  `)}async function be(e){await TestRunner.RuntimeAgent.invoke_evaluate({expression:e,objectGroup:"console"})}function Ce(e){s(`
+Running: `+e)}function Le(){A.InspectorBackend.test.dumpProtocol=self.testRunner.logToStderr.bind(self.testRunner)}function ke(e,n,t){n+=`
+//# sourceURL=`+e;let r=TestRunner.runtimeModel.executionContexts().find(o=>o.frameId===t.id);TestRunner.RuntimeAgent.invoke_evaluate({expression:n,objectGroup:"console",includeCommandLineAPI:!1,silent:!1,contextId:r.id})}var S={formatAsTypeName(e){return"<"+typeof e+">"},formatAsTypeNameOrNull(e){return e===null?"null":S.formatAsTypeName(e)},formatAsRecentTime(e){if(typeof e!="object"||!(e instanceof Date))return S.formatAsTypeName(e);let n=Date.now()-e;return 0<=n&&n<30*60*1e3?"<plausible>":e},formatAsURL(e){if(!e)return e;let n=e.lastIndexOf("devtools/");return n<0?e:".../"+e.substr(n)},formatAsDescription(e){return e&&'"'+e.replace(/^function [gs]et /,"function ")+'"'}};function Y(e,n,t,r){t=t||"",r=r||t,s(r+"{");let o=Object.keys(e);o.sort();for(let a=0;a<o.length;++a){let i=o[a];if(!e.hasOwnProperty(i))continue;let f="    "+t+i+" : ",y=e[i];if(n&&n[i]){let R=n[i];if(R!=="skip"){let h=S[R];s(f+h(y))}}else L(y,n,"    "+t,f)}s(t+"}")}function X(e,n,t,r){t=t||"",r=r||t,s(r+"[");for(let o=0;o<e.length;++o)L(e[o],n,t+"    ");s(t+"]")}function Oe(e){function n(t,r){let o=[];if(r.nodeType===Node.TEXT_NODE){(!r.parentElement||r.parentElement.nodeName!=="STYLE")&&s(r.nodeValue);return}o.push("<"+r.nodeName);let a=r.attributes;for(let i=0;a&&i<a.length;++i)o.push(a[i].name+"="+a[i].value);o.push(">"),s(t+o.join(" "));for(let i=r.firstChild;i;i=i.nextSibling)n(t+"    ",i);r.shadowRoot&&n(t+"    ",r.shadowRoot),s(t+"</"+r.nodeName+">")}n("",e)}function P(e){if(!e)return"";if(e.nodeType===Node.TEXT_NODE&&e.nodeValue)return!e.parentElement||e.parentElement.nodeName!=="STYLE"?e.nodeValue:"";let n="",t=e.childNodes;for(let r=0;r<t.length;++r)n+=P(t[r]);return e.shadowRoot&&(n+=P(e.shadowRoot)),n}function L(e,n,t,r){if(r=r||t,r&&r.length>80){s(r+"was skipped due to prefix length limit");return}e===null?s(r+"null"):e&&e.constructor&&e.constructor.name==="Array"?X(e,n,t,r):typeof e=="object"?Y(e,n,t,r):s(typeof e=="string"?r+'"'+e+'"':r+e)}function k(e,n,t){return t=t||function(){return!0},new Promise(r=>{n.addEventListener(e,o);function o(a){t(a.data)&&(n.removeEventListener(e,o),r(a.data))}})}function Ne(e){e=e||(n=>!0);for(let n of c.TargetManager.TargetManager.instance().targets())if(e(n))return Promise.resolve(n);return new Promise(n=>{let t={targetAdded:function(r){e(r)&&(c.TargetManager.TargetManager.instance().unobserveTargets(t),n(r))},targetRemoved:function(){}};c.TargetManager.TargetManager.instance().observeTargets(t)})}function Fe(e){return new Promise(n=>{let t={targetRemoved:function(r){r===e&&(c.TargetManager.TargetManager.instance().unobserveTargets(t),n(r))},targetAdded:function(){}};c.TargetManager.TargetManager.instance().observeTargets(t)})}function z(e){return e.executionContexts().length?Promise.resolve(e.executionContexts()[0]):e.once(c.RuntimeModel.Events.ExecutionContextCreated)}function Ke(e){let n=e.runtimeModel;return n.executionContexts().indexOf(e)===-1?Promise.resolve():k(c.RuntimeModel.Events.ExecutionContextDestroyed,n,t=>t===e)}function Ue(e,n,t){e<n&&s("FAILED: "+(t?t+": ":"")+e+" < "+n)}var g;function J(e,n){g=d(n),TestRunner.resourceTreeModel.addEventListener(c.ResourceTreeModel.Events.Load,Q),w("window.location.replace('"+e+"')")}function We(e){return new Promise(n=>J(e,n))}function Q(){TestRunner.resourceTreeModel.removeEventListener(c.ResourceTreeModel.Events.Load,Q),ee()}function _e(e){O(!0,void 0,e)}function Z(e){O(!1,void 0,e)}function Be(e,n){O(!1,e,n)}function je(){return new Promise(e=>Z(e))}function O(e,n,t){g=d(t),TestRunner.resourceTreeModel.addEventListener(c.ResourceTreeModel.Events.Load,N),TestRunner.resourceTreeModel.reloadPage(e,n)}function N(){TestRunner.resourceTreeModel.removeEventListener(c.ResourceTreeModel.Events.Load,N),s("Page reloaded."),ee()}async function ee(){if(await z(TestRunner.runtimeModel),g){let e=g;g=void 0,e()}}function Ve(e){TestRunner.resourceTreeModel.addEventListener(c.ResourceTreeModel.Events.Load,n);function n(){TestRunner.resourceTreeModel.removeEventListener(c.ResourceTreeModel.Events.Load,n),e()}}function $e(e){let n=g;function t(){n&&n(),e()}g=d(t)}function He(e){let n=e.slice();function t(){if(!n.length){l();return}let r=n.shift();s(""),s("Running: "+/function\s([^(]*)/.exec(r)[1]),d(r)(t)}t()}async function Ge(e){for(let n of e)s(""),s("Running: "+/function\s([^(]*)/.exec(n)[1]),await me(n)();l()}function ne(e,n,t){if(e===n)return;let r;throw t?r="Failure ("+t+"):":r="Failure:",new Error(r+" expected <"+e+"> found <"+n+">")}function qe(e,n){ne(!0,!!e,n)}function Ye(e,n,t,r){t=d(t);let o=e[n];if(typeof o!="function")throw new Error("Cannot find method to override: "+n);return e[n]=function(a){try{return t.apply(this,arguments)}catch(i){throw new Error("Exception in overriden method '"+n+"': "+i)}finally{r||(e[n]=o)}},o}function Xe(e){let n=e.replace(/\(file:\/\/\/(?:[^)]+\)|[\w\/:-]+)/g,"(...)");return n=n.replace(/\(http:\/\/(?:[^)]+\)|[\w\/:-]+)/g,"(...)"),n=n.replace(/\(test:\/\/(?:[^)]+\)|[\w\/:-]+)/g,"(...)"),n=n.replace(/\(<anonymous>:[^)]+\)/g,"(...)"),n=n.replace(/VM\d+/g,"VM"),n.replace(/\s*at[^()]+\(native\)/g,"")}function ze(){p.InspectorView.InspectorView.instance().element.setAttribute("style","display:none !important")}function Je(){return TestRunner.resourceTreeModel.mainFrame}var I=class{constructor(n){this.callback=n,this.buffer=""}async open(n){return!0}async write(n){this.buffer+=n}async close(){this.callback(this.buffer)}},D=class{constructor(n){this.value=n}get(){return this.value}set(n){this.value=n}};function Qe(e,n){function t(r){return!(n&&r.project().type()!==n||!n&&r.project().type()===T.Workspace.projectTypes.Service||e&&!r.url().endsWith(e))}for(let r of T.Workspace.WorkspaceImpl.instance().uiSourceCodes())if(e&&t(r))return Promise.resolve(r);return k(T.Workspace.Events.UISourceCodeAdded,T.Workspace.WorkspaceImpl.instance(),t)}function Ze(e){T.Workspace.WorkspaceImpl.instance().once(T.Workspace.Events.UISourceCodeRemoved).then(e)}function M(e=""){let n=x.Runtime.Runtime.queryParam("inspected_test")||x.Runtime.Runtime.queryParam("test");return new URL(e,n+"/../").href}function en(e,n){let t=document.createElement("span");return t.textContent=e,W.CodeHighlighter.highlightNode(t,n).then(r);function r(){let o=[];for(let a=0;a<t.childNodes.length;a++)t.childNodes[a].getAttribute?o.push(t.childNodes[a].getAttribute("class")):o.push("*");s(e+": "+o.join(", "))}}var nn=function(e,n){let t=[],r=e.indexOf(n);for(;r!==-1;)t.push(r),r=e.indexOf(n,r+n.length);return t},tn=function(e){let n=nn(e,`
+`);return n.push(e.length),n};async function rn(e){let n=await m(`document.querySelector('${e}').innerText`);s(n)}async function on(){await v.DebuggerWorkspaceBinding.DebuggerWorkspaceBinding.instance().pendingLiveLocationChangesPromise(),await v.CSSWorkspaceBinding.CSSWorkspaceBinding.instance().pendingLiveLocationChangesPromise(),await p.Widget.Widget.allUpdatesComplete}self.testRunner;TestRunner.StringOutputStream=I;TestRunner.MockSetting=D;TestRunner.formatters=S;TestRunner.completeTest=l;TestRunner.addResult=s;TestRunner.addResults=ce;TestRunner.runTests=le;TestRunner.addSniffer=de;TestRunner.addSnifferPromise=fe;TestRunner.showPanel=Te;TestRunner.createKeyEvent=ge;TestRunner.safeWrap=d;TestRunner.textContentWithLineBreaks=$;TestRunner.textContentWithLineBreaksTrimmed=Re;TestRunner.textContentWithoutStyles=xe;TestRunner.evaluateInPagePromise=Ee;TestRunner.callFunctionInPageAsync=Se;TestRunner.evaluateInPageWithTimeout=ve;TestRunner.evaluateFunctionInOverlay=we;TestRunner.check=Me;TestRunner.deprecatedRunAfterPendingDispatches=Pe;TestRunner.loadHTML=C;TestRunner.addScriptTag=Ie;TestRunner.addStylesheetTag=De;TestRunner.addIframe=Ae;TestRunner.markStep=Ce;TestRunner.startDumpingProtocolMessages=Le;TestRunner.addScriptForFrame=ke;TestRunner.addObject=Y;TestRunner.addArray=X;TestRunner.dumpDeepInnerHTML=Oe;TestRunner.deepTextContent=P;TestRunner.dump=L;TestRunner.waitForEvent=k;TestRunner.waitForTarget=Ne;TestRunner.waitForTargetRemoved=Fe;TestRunner.waitForExecutionContext=z;TestRunner.waitForExecutionContextDestroyed=Ke;TestRunner.assertGreaterOrEqual=Ue;TestRunner.navigate=J;TestRunner.navigatePromise=We;TestRunner.hardReloadPage=_e;TestRunner.reloadPage=Z;TestRunner.reloadPageWithInjectedScript=Be;TestRunner.reloadPagePromise=je;TestRunner.pageLoaded=N;TestRunner.waitForPageLoad=Ve;TestRunner.runWhenPageLoads=$e;TestRunner.runTestSuite=He;TestRunner.assertEquals=ne;TestRunner.assertTrue=qe;TestRunner.override=Ye;TestRunner.clearSpecificInfoFromStackFrames=Xe;TestRunner.hideInspectorView=ze;TestRunner.mainFrame=Je;TestRunner.waitForUISourceCode=Qe;TestRunner.waitForUISourceCodeRemoved=Ze;TestRunner.url=M;TestRunner.dumpSyntaxHighlight=en;TestRunner.evaluateInPageRemoteObject=ye;TestRunner.evaluateInPage=H;TestRunner.evaluateInPageAnonymously=w;TestRunner.evaluateInPageAsync=m;TestRunner.deprecatedInitAsync=be;TestRunner.runAsyncTestSuite=Ge;TestRunner.dumpInspectedPageElementText=rn;TestRunner.waitForPendingLiveLocationUpdates=on;TestRunner.findLineEndingIndexes=tn;TestRunner.selectTextInTextNode=pe;TestRunner.isScrolledToBottom=p.UIUtils.isScrolledToBottom;function an(e){self.TestRunner.BrowserAgent=e.browserAgent(),self.TestRunner.CSSAgent=e.cssAgent(),self.TestRunner.DeviceOrientationAgent=e.deviceOrientationAgent(),self.TestRunner.DOMAgent=e.domAgent(),self.TestRunner.DOMDebuggerAgent=e.domdebuggerAgent(),self.TestRunner.DebuggerAgent=e.debuggerAgent(),self.TestRunner.EmulationAgent=e.emulationAgent(),self.TestRunner.HeapProfilerAgent=e.heapProfilerAgent(),self.TestRunner.InputAgent=e.inputAgent(),self.TestRunner.InspectorAgent=e.inspectorAgent(),self.TestRunner.NetworkAgent=e.networkAgent(),self.TestRunner.OverlayAgent=e.overlayAgent(),self.TestRunner.PageAgent=e.pageAgent(),self.TestRunner.ProfilerAgent=e.profilerAgent(),self.TestRunner.RuntimeAgent=e.runtimeAgent(),self.TestRunner.TargetAgent=e.targetAgent(),self.TestRunner.networkManager=e.model(u.NetworkManager.NetworkManager),self.TestRunner.securityOriginManager=e.model(u.SecurityOriginManager.SecurityOriginManager),self.TestRunner.storageKeyManager=e.model(u.StorageKeyManager.StorageKeyManager),self.TestRunner.resourceTreeModel=e.model(u.ResourceTreeModel.ResourceTreeModel),self.TestRunner.debuggerModel=e.model(u.DebuggerModel.DebuggerModel),self.TestRunner.runtimeModel=e.model(u.RuntimeModel.RuntimeModel),self.TestRunner.domModel=e.model(u.DOMModel.DOMModel),self.TestRunner.domDebuggerModel=e.model(u.DOMDebuggerModel.DOMDebuggerModel),self.TestRunner.cssModel=e.model(u.CSSModel.CSSModel),self.TestRunner.cpuProfilerModel=e.model(u.CPUProfilerModel.CPUProfilerModel),self.TestRunner.overlayModel=e.model(u.OverlayModel.OverlayModel),self.TestRunner.serviceWorkerManager=e.model(u.ServiceWorkerManager.ServiceWorkerManager),self.TestRunner.tracingManager=e.model(se.TracingManager.TracingManager),self.TestRunner.mainTarget=e}async function un(){let e=oe.Runtime.Runtime.queryParam("test");if(b()){B(console.log),V(()=>console.log("Test completed")),self.test=async function(){await import(e)};return}try{await import(e)}catch(n){s("TEST ENDED EARLY DUE TO UNCAUGHT ERROR:"),s(n&&n.stack||n),s("=== DO NOT COMMIT THIS INTO -expected.txt ==="),l()}}var te=!1,F=class{targetAdded(n){if(n.id()==="main"&&n.type()==="frame"||n.parentTarget()?.type()==="tab"&&n.type()==="frame"&&!n.targetInfo()?.subtype?.length){if(an(n),te)return;te=!0,C(`
         <head>
-          <base href="${TestRunner.url()}">
+          <base href="${M()}">
         </head>
         <body>
         </body>
-      `).then(() => _executeTestScript());
-        }
-    }
-    /**
-     * @param {!SDK.Target} target
-     * @override
-     */
-    targetRemoved(target) {
-    }
-}
-SDK.targetManager.observeTargets(new _TestObserver());
-const globalTestRunner = self.TestRunner;
-export { globalTestRunner as TestRunner };
+      `).then(()=>un())}}targetRemoved(n){}};re.Runnable.registerEarlyInitializationRunnable(()=>({run(){u.TargetManager.TargetManager.instance().observeTargets(new F)}}));var ln=self.TestRunner;export{ln as TestRunner,F as _TestObserver,un as _executeTestScript};
 //# sourceMappingURL=test_runner.js.map

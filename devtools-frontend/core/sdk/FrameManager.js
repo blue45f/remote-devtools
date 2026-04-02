@@ -1,10 +1,10 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as Common from '../common/common.js';
+import * as Root from '../root/root.js';
 import { Events as ResourceTreeModelEvents, ResourceTreeModel } from './ResourceTreeModel.js';
 import { TargetManager } from './TargetManager.js';
-let frameManagerInstance = null;
 /**
  * The FrameManager is a central storage for all #frames. It collects #frames from all
  * ResourceTreeModel-instances (one per target), so that #frames can be found by id
@@ -20,15 +20,18 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
     #outermostFrame = null;
     #transferringFramesDataCache = new Map();
     #awaitedFrames = new Map();
-    constructor() {
+    constructor(targetManager) {
         super();
-        TargetManager.instance().observeModels(ResourceTreeModel, this);
+        targetManager.observeModels(ResourceTreeModel, this);
     }
     static instance({ forceNew } = { forceNew: false }) {
-        if (!frameManagerInstance || forceNew) {
-            frameManagerInstance = new FrameManager();
+        if (!Root.DevToolsContext.globalInstance().has(FrameManager) || forceNew) {
+            Root.DevToolsContext.globalInstance().set(FrameManager, new FrameManager(TargetManager.instance()));
         }
-        return frameManagerInstance;
+        return Root.DevToolsContext.globalInstance().get(FrameManager);
+    }
+    static removeInstance() {
+        Root.DevToolsContext.globalInstance().delete(FrameManager);
     }
     modelAdded(resourceTreeModel) {
         const addListener = resourceTreeModel.addEventListener(ResourceTreeModelEvents.FrameAdded, this.frameAdded, this);
@@ -83,7 +86,7 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
         if (frameSet) {
             frameSet.add(frame.id);
         }
-        this.dispatchEventToListeners(Events.FrameAddedToTarget, { frame });
+        this.dispatchEventToListeners("FrameAddedToTarget" /* Events.FRAME_ADDED_TO_TARGET */, { frame });
         this.resolveAwaitedFrame(frame);
     }
     frameDetached(event) {
@@ -109,13 +112,13 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
     }
     frameNavigated(event) {
         const frame = event.data;
-        this.dispatchEventToListeners(Events.FrameNavigated, { frame });
+        this.dispatchEventToListeners("FrameNavigated" /* Events.FRAME_NAVIGATED */, { frame });
         if (frame.isOutermostFrame()) {
-            this.dispatchEventToListeners(Events.OutermostFrameNavigated, { frame });
+            this.dispatchEventToListeners("OutermostFrameNavigated" /* Events.OUTERMOST_FRAME_NAVIGATED */, { frame });
         }
     }
     resourceAdded(event) {
-        this.dispatchEventToListeners(Events.ResourceAdded, { resource: event.data });
+        this.dispatchEventToListeners("ResourceAdded" /* Events.RESOURCE_ADDED */, { resource: event.data });
     }
     decreaseOrRemoveFrame(frameId) {
         const frameData = this.#frames.get(frameId);
@@ -123,7 +126,7 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
             if (frameData.count === 1) {
                 this.#frames.delete(frameId);
                 this.resetOutermostFrame();
-                this.dispatchEventToListeners(Events.FrameRemoved, { frameId });
+                this.dispatchEventToListeners("FrameRemoved" /* Events.FRAME_REMOVED */, { frameId });
             }
             else {
                 frameData.count--;
@@ -164,7 +167,7 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
         if (frame && (!notInTarget || notInTarget !== frame.resourceTreeModel().target())) {
             return frame;
         }
-        return new Promise(resolve => {
+        return await new Promise(resolve => {
             const waiting = this.#awaitedFrames.get(frameId);
             if (waiting) {
                 waiting.push({ notInTarget, resolve });
@@ -194,19 +197,4 @@ export class FrameManager extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
 }
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
-export var Events;
-(function (Events) {
-    // The FrameAddedToTarget event is sent whenever a frame is added to a target.
-    // This means that for OOPIFs it is sent twice: once when it's added to a
-    // parent target and a second time when it's added to its own target.
-    Events["FrameAddedToTarget"] = "FrameAddedToTarget";
-    Events["FrameNavigated"] = "FrameNavigated";
-    // The FrameRemoved event is only sent when a frame has been detached from
-    // all targets.
-    Events["FrameRemoved"] = "FrameRemoved";
-    Events["ResourceAdded"] = "ResourceAdded";
-    Events["OutermostFrameNavigated"] = "OutermostFrameNavigated";
-})(Events || (Events = {}));
 //# sourceMappingURL=FrameManager.js.map

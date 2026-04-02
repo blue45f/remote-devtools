@@ -3,7 +3,7 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Breakpoints from '../../models/breakpoints/breakpoints.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 import * as CodeMirror from '../../third_party/codemirror.next/codemirror.next.js';
-import type * as TextEditor from '../../ui/components/text_editor/text_editor.js';
+import * as TextEditor from '../../ui/components/text_editor/text_editor.js';
 import * as SourceFrame from '../../ui/legacy/components/source_frame/source_frame.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import { Plugin } from './Plugin.js';
@@ -21,13 +21,13 @@ export declare class DebuggerPlugin extends Plugin {
     private scriptFileForDebuggerModel;
     private breakpoints;
     private continueToLocations;
-    private readonly liveLocationPool;
     private muted;
     private initializedMuted;
     private ignoreListInfobar;
-    private refreshBreakpointsTimeout;
+    private refreshBreakpointsTimeout?;
     private activeBreakpointDialog;
     private missingDebugInfoBar;
+    private readonly loader;
     private readonly ignoreListCallback;
     constructor(uiSourceCode: Workspace.UISourceCode.UISourceCode, transformer: SourceFrame.SourceFrame.Transformer);
     editorExtension(): CodeMirror.Extension;
@@ -48,7 +48,6 @@ export declare class DebuggerPlugin extends Plugin {
     private didDivergeFromVM;
     private setMuted;
     private consistentScripts;
-    private isVariableIdentifier;
     private isIdentifier;
     private getPopoverRequest;
     private onEditorUpdate;
@@ -60,7 +59,6 @@ export declare class DebuggerPlugin extends Plugin {
     private onKeyUp;
     private setControlDown;
     private editBreakpointCondition;
-    private computeExecutionDecorations;
     private updateValueDecorations;
     private computeValueDecorations;
     private showContinueToLocations;
@@ -68,6 +66,7 @@ export declare class DebuggerPlugin extends Plugin {
     private asyncStepIn;
     private fetchBreakpoints;
     private lineBreakpoints;
+    private linePossibleBreakpoints;
     private computeBreakpointDecoration;
     private restoreBreakpointsAfterEditing;
     private refreshBreakpoints;
@@ -77,9 +76,12 @@ export declare class DebuggerPlugin extends Plugin {
     private updateScriptFiles;
     private updateScriptFile;
     private updateMissingDebugInfoInfobar;
-    private showSourceMapInfobar;
+    private scriptHasSourceMap;
+    private getSourceMapResource;
+    private showSourceMapInfobarIfNeeded;
     private handleGutterClick;
     private toggleBreakpoint;
+    private defaultBreakpointLocation;
     private createNewBreakpoint;
     private setBreakpoint;
     private breakpointWasSetForTest;
@@ -87,32 +89,30 @@ export declare class DebuggerPlugin extends Plugin {
     private setExecutionLocation;
     dispose(): void;
 }
-export declare class BreakpointLocationRevealer implements Common.Revealer.Revealer {
-    static instance({ forceNew }?: {
-        forceNew: boolean;
-    }): BreakpointLocationRevealer;
-    reveal(breakpointLocation: Object, omitFocus?: boolean | undefined): Promise<void>;
+export declare class BreakpointLocationRevealer implements Common.Revealer.Revealer<Breakpoints.BreakpointManager.BreakpointLocation> {
+    reveal(breakpointLocation: Breakpoints.BreakpointManager.BreakpointLocation, omitFocus?: boolean | undefined): Promise<void>;
 }
-export declare function getVariableNamesByLine(editorState: CodeMirror.EditorState, fromPos: number, toPos: number, currentPos: number): {
+export declare function getVariableNamesByLine(editorState: CodeMirror.EditorState, fromPos: number, toPos: number, currentPos: number): Array<{
     line: number;
     from: number;
     id: string;
-}[];
-export declare function computeScopeMappings(callFrame: SDK.DebuggerModel.CallFrame, rawLocationToEditorOffset: (l: SDK.DebuggerModel.Location | null) => Promise<number | null>): Promise<{
+}>;
+export declare function computeScopeMappings(callFrame: SDK.DebuggerModel.CallFrame, rawLocationToEditorOffset: (l: SDK.DebuggerModel.Location | null) => Promise<number | null>): Promise<Array<{
     scopeStart: number;
     scopeEnd: number;
     variableMap: Map<string, SDK.RemoteObject.RemoteObject>;
-}[]>;
-export declare function getVariableValuesByLine(scopeMappings: {
+}>>;
+export declare function getVariableValuesByLine(scopeMappings: Array<{
     scopeStart: number;
     scopeEnd: number;
     variableMap: Map<string, SDK.RemoteObject.RemoteObject>;
-}[], variableNames: {
+}>, variableNames: Array<{
     line: number;
     from: number;
     id: string;
-}[]): Map<number, Map<string, SDK.RemoteObject.RemoteObject>> | null;
+}>): Map<number, Map<string, SDK.RemoteObject.RemoteObject>> | null;
 export declare function computePopoverHighlightRange(state: CodeMirror.EditorState, mimeType: string, cursorPos: number): {
     from: number;
     to: number;
+    containsSideEffects: boolean;
 } | null;

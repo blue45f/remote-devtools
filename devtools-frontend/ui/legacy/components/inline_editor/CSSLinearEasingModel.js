@@ -1,4 +1,4 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 import * as CodeMirror from '../../../../third_party/codemirror.next/codemirror.next.js';
@@ -74,7 +74,7 @@ function consumeLinearFunction(text) {
     return stops;
 }
 const KeywordToValue = {
-    'linear': 'linear(0 0%, 1 100%)',
+    linear: 'linear(0 0%, 1 100%)',
 };
 export class CSSLinearEasingModel {
     #points;

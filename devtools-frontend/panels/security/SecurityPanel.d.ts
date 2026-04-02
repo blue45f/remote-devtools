@@ -1,62 +1,58 @@
 import type * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as Protocol from '../../generated/protocol.js';
+import { type Icon } from '../../ui/kit/kit.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { SecurityModel, type PageVisibleSecurityState } from './SecurityModel.js';
-export declare class SecurityPanel extends UI.Panel.PanelWithSidebar implements SDK.TargetManager.SDKModelObserver<SecurityModel> {
+import { type PageVisibleSecurityState, SecurityModel } from './SecurityModel.js';
+import { SecurityPanelSidebar } from './SecurityPanelSidebar.js';
+export declare function getSecurityStateIconForDetailedView(securityState: Protocol.Security.SecurityState, className: string): Icon;
+export declare function getSecurityStateIconForOverview(securityState: Protocol.Security.SecurityState, className: string): Icon;
+export declare function createHighlightedUrl(url: Platform.DevToolsPath.UrlString, securityState: string): Element;
+export interface ViewInput {
+    panel: SecurityPanel;
+}
+export interface ViewOutput {
+    setVisibleView: (view: UI.Widget.VBox) => void;
+    splitWidget: UI.SplitWidget.SplitWidget;
+    mainView: SecurityMainView;
+    visibleView: UI.Widget.VBox | null;
+    sidebar: SecurityPanelSidebar;
+}
+export type View = (input: ViewInput, output: ViewOutput, target: HTMLElement) => void;
+export declare class SecurityPanel extends UI.Panel.Panel implements SDK.TargetManager.SDKModelObserver<SecurityModel> {
+    private view;
     readonly mainView: SecurityMainView;
-    private readonly sidebarMainViewElement;
-    readonly sidebarTree: SecurityPanelSidebarTree;
+    readonly sidebar: SecurityPanelSidebar;
     private readonly lastResponseReceivedForLoaderId;
     private readonly origins;
     private readonly filterRequestCounts;
-    private visibleView;
+    visibleView: UI.Widget.VBox | null;
     private eventListeners;
     private securityModel;
-    private constructor();
+    readonly splitWidget: UI.SplitWidget.SplitWidget;
+    constructor(view?: View);
     static instance(opts?: {
         forceNew: boolean | null;
     }): SecurityPanel;
     static createCertificateViewerButtonForOrigin(text: string, origin: string): Element;
     static createCertificateViewerButtonForCert(text: string, names: string[]): Element;
-    static createHighlightedUrl(url: Platform.DevToolsPath.UrlString, securityState: string): Element;
+    update(): void;
     private updateVisibleSecurityState;
     private onVisibleSecurityStateChanged;
-    selectAndSwitchToMainView(): void;
     showOrigin(origin: Platform.DevToolsPath.UrlString): void;
     wasShown(): void;
     focus(): void;
-    private setVisibleView;
+    setVisibleView(view: UI.Widget.VBox): void;
     private onResponseReceived;
     private processRequest;
     private onRequestFinished;
     private updateFilterRequestCounts;
     filterRequestCount(filterKey: string): number;
-    private securityStateMin;
     modelAdded(securityModel: SecurityModel): void;
     modelRemoved(securityModel: SecurityModel): void;
     private onPrimaryPageChanged;
     private onInterstitialShown;
     private onInterstitialHidden;
-}
-export declare class SecurityPanelSidebarTree extends UI.TreeOutline.TreeOutlineInShadow {
-    private readonly showOriginInPanel;
-    private mainOrigin;
-    private readonly originGroupTitles;
-    private originGroups;
-    private readonly elementsByOrigin;
-    private readonly mainViewReloadMessage;
-    constructor(mainViewElement: SecurityPanelSidebarTreeElement, showOriginInPanel: (arg0: Origin) => void);
-    private originGroupTitle;
-    private originGroupElement;
-    private createOriginGroupElement;
-    toggleOriginsList(hidden: boolean): void;
-    addOrigin(origin: Platform.DevToolsPath.UrlString, securityState: Protocol.Security.SecurityState): void;
-    setMainOrigin(origin: string): void;
-    updateOrigin(origin: string, securityState: Protocol.Security.SecurityState): void;
-    private clearOriginGroups;
-    clearOrigins(): void;
-    wasShown(): void;
 }
 export declare enum OriginGroup {
     MainOrigin = "MainOrigin",
@@ -64,18 +60,8 @@ export declare enum OriginGroup {
     Secure = "Secure",
     Unknown = "Unknown"
 }
-export declare class SecurityPanelSidebarTreeElement extends UI.TreeOutline.TreeElement {
-    private readonly selectCallback;
-    private readonly cssPrefix;
-    private readonly iconElement;
-    private securityStateInternal;
-    constructor(textElement: Element, selectCallback: () => void, className: string, cssPrefix: string);
-    setSecurityState(newSecurityState: Protocol.Security.SecurityState): void;
-    securityState(): Protocol.Security.SecurityState | null;
-    onselect(): boolean;
-}
 export declare class SecurityMainView extends UI.Widget.VBox {
-    private readonly panel;
+    panel: SecurityPanel;
     private readonly summarySection;
     private readonly securityExplanationsMain;
     private readonly securityExplanationsExtra;
@@ -83,7 +69,7 @@ export declare class SecurityMainView extends UI.Widget.VBox {
     private summaryText;
     private explanations;
     private securityState;
-    constructor(panel: SecurityPanel);
+    constructor(element?: HTMLElement);
     getLockSpectrumDiv(securityState: Protocol.Security.SecurityState): HTMLElement;
     private addExplanation;
     updateVisibleSecurityState(visibleSecurityState: PageVisibleSecurityState): void;
@@ -96,18 +82,15 @@ export declare class SecurityMainView extends UI.Widget.VBox {
     refreshExplanations(): void;
     private addMixedContentExplanation;
     showNetworkFilter(filterKey: string, e: Event): void;
-    wasShown(): void;
 }
 export declare class SecurityOriginView extends UI.Widget.VBox {
-    private readonly panel;
     private readonly originLockIcon;
-    constructor(panel: SecurityPanel, origin: Platform.DevToolsPath.UrlString, originState: OriginState);
+    constructor(origin: Platform.DevToolsPath.UrlString, originState: OriginState);
     private createSanDiv;
     setSecurityState(newSecurityState: Protocol.Security.SecurityState): void;
-    wasShown(): void;
 }
 export declare class SecurityDetailsTable {
-    private readonly elementInternal;
+    #private;
     constructor();
     element(): HTMLTableElement;
     addRow(key: string, value: string | Node): void;

@@ -1,8 +1,8 @@
-import * as Platform from '../../core/platform/platform.js';
+import type * as Platform from '../../core/platform/platform.js';
 import * as Root from '../../core/root/root.js';
-import { type ViewLocationResolver } from './View.js';
-import { PreRegisteredView } from './ViewManager.js';
-import { type Widget } from './Widget.js';
+import type * as Foundation from '../../foundation/foundation.js';
+import type { ViewLocationResolver } from './View.js';
+import type { Widget } from './Widget.js';
 export declare const enum ViewPersistence {
     CLOSEABLE = "closeable",
     PERMANENT = "permanent",
@@ -25,14 +25,14 @@ export interface ViewRegistration {
      * The name of the experiment a view is associated with. Enabling and disabling the declared
      * experiment will enable and disable the view respectively.
      */
-    experiment?: Root.Runtime.ExperimentName;
+    experiment?: Root.ExperimentNames.ExperimentName;
     /**
-     * A condition represented as a string the view's availability depends on. Conditions come
-     * from the queryParamsObject defined in Runtime and just as the experiment field, they determine the availability
-     * of the view. A condition can be negated by prepending a ‘!’ to the value of the condition
-     * property and in that case the behaviour of the view's availability will be inverted.
+     * A condition is a function that will make the view available if it
+     * returns true, and not available, otherwise. Make sure that objects you
+     * access from inside the condition function are ready at the time when the
+     * setting conditions are checked.
      */
-    condition?: Root.Runtime.ConditionName;
+    condition?: Root.Runtime.Condition;
     /**
      * The command added to the command menu used to show the view. It usually follows the shape Show <title> as it must
      * not be localized at declaration since it is localized internally when appending the commands to the command menu.
@@ -55,7 +55,7 @@ export interface ViewRegistration {
     /**
      * Unique identifier of the view.
      */
-    id: string;
+    id: Lowercase<string>;
     /**
      * An identifier for the location of the view. The location is resolved by
      * an extension of type '@UI.ViewLocationResolver'.
@@ -68,7 +68,11 @@ export interface ViewRegistration {
     /**
      * Returns an instance of the class that wraps the view.
      * The common pattern for implementing this function is loading the module with the wrapping 'Widget'
-     * lazily loaded. As an example:
+     * lazily loaded.
+     * The DevTools universe is passed along, allowing `loadView` to retrieve necessary dependencies.
+     * Prefer passing individual dependencies one by one instead of forwarding the full universe. This
+     * makes testing easier.
+     * As an example:
      *
      * ```js
      * let loadedElementsModule;
@@ -82,15 +86,16 @@ export interface ViewRegistration {
      * }
      * UI.ViewManager.registerViewExtension({
      *   <...>
-     *   async loadView() {
+     *   async loadView(universe) {
      *      const Elements = await loadElementsModule();
-     *      return Elements.ElementsPanel.ElementsPanel.instance();
+     *      const pageResourceLoader = universe.context.get(SDK.PageResourceLoader.PageResourceLoader);
+     *      return new Elements.ElementsPanel.ElementsPanel(pageResourceLoader);
      *   },
      *   <...>
      * });
      * ```
      */
-    loadView: () => Promise<Widget>;
+    loadView: (universe: Foundation.Universe.Universe) => Promise<Widget>;
     /**
      * Used to sort the views that appear in a shared location.
      */
@@ -98,20 +103,28 @@ export interface ViewRegistration {
     /**
      * The names of the settings the registered view performs as UI for.
      */
-    settings?: Array<string>;
+    settings?: string[];
     /**
      * Words used to find the view in the Command Menu.
      */
     tags?: Array<() => Platform.UIString.LocalizedString>;
+    /**
+     * Icon to be used next to view's title.
+     */
+    iconName?: string;
+    /**
+     * Whether a view needs to be promoted. A new badge is shown next to the menu items then.
+     */
+    featurePromotionId?: string;
 }
 export declare function registerViewExtension(registration: ViewRegistration): void;
-export declare function getRegisteredViewExtensions(): Array<PreRegisteredView>;
+export declare function getRegisteredViewExtensions(): ViewRegistration[];
 export declare function maybeRemoveViewExtension(viewId: string): boolean;
 export declare function registerLocationResolver(registration: LocationResolverRegistration): void;
-export declare function getRegisteredLocationResolvers(): Array<LocationResolverRegistration>;
+export declare function getRegisteredLocationResolvers(): LocationResolverRegistration[];
 export declare function resetViewRegistration(): void;
-export declare enum ViewLocationCategory {
-    NONE = "",
+export declare const enum ViewLocationCategory {
+    NONE = "",// `NONE` must be a falsy value. Legacy code uses if-checks for the category.
     ELEMENTS = "ELEMENTS",
     DRAWER = "DRAWER",
     DRAWER_SIDEBAR = "DRAWER_SIDEBAR",

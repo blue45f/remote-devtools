@@ -1,6 +1,6 @@
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as Lit from '../../../ui/lit/lit.js';
 import * as Dialogs from '../dialogs/dialogs.js';
-import { type MenuItemValue, MenuGroup } from './Menu.js';
+import { MenuGroup, type MenuItemValue } from './Menu.js';
 export interface SelectMenuData {
     /**
      * Determines where the dialog with the menu will show relative to
@@ -16,15 +16,14 @@ export interface SelectMenuData {
     horizontalAlignment: Dialogs.Dialog.DialogHorizontalAlignment;
     /**
      * The title of the menu button. Can be either a string or a function
-     * that returns a LitHTML template.
+     * that returns a Lit template.
      * If not set, the title of the button will default to the selected
      * item's text.
      */
     buttonTitle: string | TitleCallback;
     /**
      * Determines if an arrow, pointing to the opposite side of
-     * the dialog, is shown at the end of the button. If
-     * showconnector is set to true the arrow is always shown.
+     * the dialog, is shown at the end of the button.
      * Defaults to false.
      */
     showArrow: boolean;
@@ -36,12 +35,6 @@ export interface SelectMenuData {
      * Defaults to false.
      */
     sideButton: boolean;
-    /**
-     * Determines if a connector from the dialog to the button
-     * is shown.
-     * Defaults to false.
-     */
-    showConnector: boolean;
     /**
      * Whether the menu button is disabled.
      * Defaults to false.
@@ -57,19 +50,23 @@ export interface SelectMenuData {
      * Defaults to true.
      */
     showSelectedItem: boolean;
+    /**
+     * Specifies a context for the visual element.
+     */
+    jslogContext: string;
 }
-type TitleCallback = () => LitHtml.TemplateResult;
+type TitleCallback = () => Lit.TemplateResult;
+/**
+ * @deprecated use `<select>` instead.
+ */
 export declare class SelectMenu extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     get buttonTitle(): string | TitleCallback;
     set buttonTitle(buttonTitle: string | TitleCallback);
     get position(): Dialogs.Dialog.DialogVerticalPosition;
     set position(position: Dialogs.Dialog.DialogVerticalPosition);
     get horizontalAlignment(): Dialogs.Dialog.DialogHorizontalAlignment;
     set horizontalAlignment(horizontalAlignment: Dialogs.Dialog.DialogHorizontalAlignment);
-    get showConnector(): boolean;
-    set showConnector(showConnector: boolean);
     get showArrow(): boolean;
     set showArrow(showArrow: boolean);
     get sideButton(): boolean;
@@ -80,7 +77,8 @@ export declare class SelectMenu extends HTMLElement {
     set showDivider(showDivider: boolean);
     get showSelectedItem(): boolean;
     set showSelectedItem(showSelectedItem: boolean);
-    connectedCallback(): void;
+    get jslogContext(): string;
+    set jslogContext(jslogContext: string);
     click(): void;
 }
 export interface SelectMenuButtonData {
@@ -88,10 +86,10 @@ export interface SelectMenuButtonData {
     arrowDirection: Dialogs.Dialog.DialogVerticalPosition;
     disabled: boolean;
     singleArrow: boolean;
+    jslogContext: string;
 }
 export declare class SelectMenuButton extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../lit-html/static.js").Static;
     connectedCallback(): void;
     get showArrow(): boolean;
     set showArrow(showArrow: boolean);
@@ -101,6 +99,8 @@ export declare class SelectMenuButton extends HTMLElement {
     set disabled(disabled: boolean);
     set open(open: boolean);
     set singleArrow(singleArrow: boolean);
+    get jslogContext(): string;
+    set jslogContext(jslogContext: string);
     click(): void;
 }
 declare global {
@@ -125,5 +125,11 @@ export declare class SelectMenuButtonTriggerEvent extends Event {
     static readonly eventName = "selectmenubuttontrigger";
     constructor();
 }
+/**
+ * Exported artifacts used in this component and that belong to the Menu are
+ * renamed to only make reference to the SelectMenu. This way, the Menu API
+ * doesn't have to be used in SelectMenu usages and the SelectMenu implementation
+ * can remain transparent to its users.
+ **/
 export type SelectMenuItemValue = MenuItemValue;
 export { MenuGroup as SelectMenuGroup };

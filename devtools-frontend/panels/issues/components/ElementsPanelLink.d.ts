@@ -5,9 +5,7 @@ export interface ElementsPanelLinkData {
 }
 export declare class ElementsPanelLink extends HTMLElement {
     #private;
-    static readonly litTagName: import("../../../ui/lit-html/static.js").Static;
     set data(data: ElementsPanelLinkData);
-    connectedCallback(): void;
 }
 declare global {
     interface HTMLElementTagNameMap {

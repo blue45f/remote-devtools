@@ -7,19 +7,19 @@ export interface PlayerEvent extends Protocol.Media.PlayerEvent {
     event: string;
 }
 export declare const enum Events {
-    PlayerPropertiesChanged = "PlayerPropertiesChanged",
-    PlayerEventsAdded = "PlayerEventsAdded",
-    PlayerMessagesLogged = "PlayerMessagesLogged",
-    PlayerErrorsRaised = "PlayerErrorsRaised",
-    PlayersCreated = "PlayersCreated"
+    PLAYER_PROPERTIES_CHANGED = "PlayerPropertiesChanged",
+    PLAYER_EVENTS_ADDED = "PlayerEventsAdded",
+    PLAYER_MESSAGES_LOGGED = "PlayerMessagesLogged",
+    PLAYER_ERRORS_RAISED = "PlayerErrorsRaised",
+    PLAYER_CREATED = "PlayerCreated"
 }
-export type EventTypes = {
-    [Events.PlayerPropertiesChanged]: Protocol.Media.PlayerPropertiesChangedEvent;
-    [Events.PlayerEventsAdded]: Protocol.Media.PlayerEventsAddedEvent;
-    [Events.PlayerMessagesLogged]: Protocol.Media.PlayerMessagesLoggedEvent;
-    [Events.PlayerErrorsRaised]: Protocol.Media.PlayerErrorsRaisedEvent;
-    [Events.PlayersCreated]: Protocol.Media.PlayerId[];
-};
+export interface EventTypes {
+    [Events.PLAYER_PROPERTIES_CHANGED]: Protocol.Media.PlayerPropertiesChangedEvent;
+    [Events.PLAYER_EVENTS_ADDED]: Protocol.Media.PlayerEventsAddedEvent;
+    [Events.PLAYER_MESSAGES_LOGGED]: Protocol.Media.PlayerMessagesLoggedEvent;
+    [Events.PLAYER_ERRORS_RAISED]: Protocol.Media.PlayerErrorsRaisedEvent;
+    [Events.PLAYER_CREATED]: Protocol.Media.Player;
+}
 export declare class MediaModel extends SDK.SDKModel.SDKModel<EventTypes> implements ProtocolProxyApi.MediaDispatcher {
     private enabled;
     private readonly agent;
@@ -30,5 +30,5 @@ export declare class MediaModel extends SDK.SDKModel.SDKModel<EventTypes> implem
     playerEventsAdded(event: Protocol.Media.PlayerEventsAddedEvent): void;
     playerMessagesLogged(event: Protocol.Media.PlayerMessagesLoggedEvent): void;
     playerErrorsRaised(event: Protocol.Media.PlayerErrorsRaisedEvent): void;
-    playersCreated({ players }: Protocol.Media.PlayersCreatedEvent): void;
+    playerCreated({ player }: Protocol.Media.PlayerCreatedEvent): void;
 }

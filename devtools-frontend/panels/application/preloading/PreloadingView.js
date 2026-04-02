@@ -1,146 +1,147 @@
-// Copyright 2022 The Chromium Authors. All rights reserved.
+// Copyright 2022 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-import { assertNotNullOrUndefined } from '../../../core/platform/platform.js';
-import * as Platform from '../../../core/platform/platform.js';
+/* eslint-disable @devtools/no-imperative-dom-api */
+/* eslint-disable @devtools/no-lit-render-outside-of-view */
+import '../../../ui/kit/kit.js';
+import '../../../ui/legacy/legacy.js';
 import * as Common from '../../../core/common/common.js';
-import * as ChromeLink from '../../../ui/components/chrome_link/chrome_link.js';
 import * as i18n from '../../../core/i18n/i18n.js';
-import * as UI from '../../../ui/legacy/legacy.js';
+import * as Platform from '../../../core/platform/platform.js';
+import { assertNotNullOrUndefined } from '../../../core/platform/platform.js';
 import * as SDK from '../../../core/sdk/sdk.js';
-import * as LegacyWrapper from '../../../ui/components/legacy_wrapper/legacy_wrapper.js';
-import * as PreloadingComponents from './components/components.js';
-// eslint-disable-next-line rulesdir/es_modules_import
+import * as TextUtils from '../../../models/text_utils/text_utils.js';
+import * as Buttons from '../../../ui/components/buttons/buttons.js';
+// eslint-disable-next-line @devtools/es-modules-import
 import emptyWidgetStyles from '../../../ui/legacy/emptyWidget.css.js';
+import * as UI from '../../../ui/legacy/legacy.js';
+import { Directives, html, render } from '../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
+import * as PreloadingComponents from './components/components.js';
+import { capitalizedAction, ruleSetTagOrLocationShort } from './components/PreloadingString.js';
+import * as PreloadingHelper from './helper/helper.js';
 import preloadingViewStyles from './preloadingView.css.js';
+import preloadingViewDropDownStyles from './preloadingViewDropDown.css.js';
+const { createRef, ref } = Directives;
+const { widget } = UI.Widget;
 const UIStrings = {
     /**
-     *@description DropDown title for filtering preloading attempts by rule set
+     * @description DropDown title for filtering preloading attempts by rule set
      */
     filterFilterByRuleSet: 'Filter by rule set',
     /**
-     *@description DropDown text for filtering preloading attempts by rule set: No filter
+     * @description DropDown text for filtering preloading attempts by rule set: No filter
      */
-    filterAllRuleSets: 'All rule sets',
+    filterAllPreloads: 'All speculative loads',
     /**
-     *@description DropDown text for filtering preloading attempts by rule set: By rule set
-     *@example {0} PH1
+     * @description Dropdown subtitle for filtering preloading attempts by rule set
+     *             when there are no rule sets in the page.
      */
-    filterRuleSet: 'Rule set: {PH1}',
+    noRuleSets: 'no rule sets',
     /**
-     *@description Text in grid: Rule set is valid
+     * @description Text in grid: Rule set is valid
      */
     validityValid: 'Valid',
     /**
-     *@description Text in grid: Rule set must be a valid JSON object
+     * @description Text in grid: Rule set must be a valid JSON object
      */
     validityInvalid: 'Invalid',
     /**
-     *@description Text in grid: Rule set contains invalid rules and they are ignored
+     * @description Text in grid: Rule set contains invalid rules and they are ignored
      */
     validitySomeRulesInvalid: 'Some rules invalid',
     /**
-     *@description Text in grid and details: Preloading attempt is not yet triggered.
+     * @description Text in grid and details: Preloading attempt is not yet triggered.
      */
     statusNotTriggered: 'Not triggered',
     /**
-     *@description Text in grid and details: Preloading attempt is eligible but pending.
+     * @description Text in grid and details: Preloading attempt is eligible but pending.
      */
     statusPending: 'Pending',
     /**
-     *@description Text in grid and details: Preloading is running.
+     * @description Text in grid and details: Preloading is running.
      */
     statusRunning: 'Running',
     /**
-     *@description Text in grid and details: Preloading finished and the result is ready for the next navigation.
+     * @description Text in grid and details: Preloading finished and the result is ready for the next navigation.
      */
     statusReady: 'Ready',
     /**
-     *@description Text in grid and details: Ready, then used.
+     * @description Text in grid and details: Ready, then used.
      */
     statusSuccess: 'Success',
     /**
-     *@description Text in grid and details: Preloading failed.
+     * @description Text in grid and details: Preloading failed.
      */
     statusFailure: 'Failure',
     /**
-     *@description Title in infobar
+     * @description Text to pretty print a file
      */
-    warningTitlePreloadingDisabledByFeatureFlag: 'Preloading was disabled, but is force-enabled now',
+    prettyPrint: 'Pretty print',
     /**
-     *@description Detail in infobar
+     * @description Placeholder text if there are no rules to show. https://developer.chrome.com/docs/devtools/application/debugging-speculation-rules
      */
-    warningDetailPreloadingDisabledByFeatureFlag: 'Preloading is forced-enabled because DevTools is open. When DevTools is closed, prerendering will be disabled because this browser session is part of a holdback group used for performance comparisons.',
+    noRulesDetected: 'No rules detected',
     /**
-     *@description Title in infobar
+     * @description Placeholder text if there are no rules to show. https://developer.chrome.com/docs/devtools/application/debugging-speculation-rules
      */
-    warningTitlePrerenderingDisabledByFeatureFlag: 'Prerendering was disabled, but is force-enabled now',
+    rulesDescription: 'On this page you will see the speculation rules used to prefetch and prerender page navigations.',
     /**
-     *@description Detail in infobar
+     * @description Placeholder text if there are no speculation attempts for prefetching or prerendering urls. https://developer.chrome.com/docs/devtools/application/debugging-speculation-rules
      */
-    warningDetailPrerenderingDisabledByFeatureFlag: 'Prerendering is forced-enabled because DevTools is open. When DevTools is closed, prerendering will be disabled because this browser session is part of a holdback group used for performance comparisons.',
+    noPrefetchAttempts: 'No speculation detected',
     /**
-     *@description Title of preloading state disabled warning in infobar
+     * @description Placeholder text if there are no speculation attempts for prefetching or prerendering urls. https://developer.chrome.com/docs/devtools/application/debugging-speculation-rules
      */
-    warningTitlePreloadingStateDisabled: 'Preloading is disabled',
+    prefetchDescription: 'On this page you will see details on speculative loads.',
     /**
-     *@description Detail of preloading state disabled warning in infobar
-     *@example {chrome://settings/preloading} PH1
-     *@example {chrome://extensions} PH2
+     * @description Text for a learn more link
      */
-    warningDetailPreloadingStateDisabled: 'Preloading is disabled because of user settings or an extension. Go to {PH1} to learn more, or go to {PH2} to disable the extension.',
-    /**
-     *@description Detail in infobar when preloading is disabled by data saver.
-     */
-    warningDetailPreloadingDisabledByDatasaver: 'Preloading is disabled because of the operating system\'s Data Saver mode.',
-    /**
-     *@description Detail in infobar when preloading is disabled by data saver.
-     */
-    warningDetailPreloadingDisabledByBatterysaver: 'Preloading is disabled because of the operating system\'s Battery Saver mode.',
-    /**
-     *@description Text of Preload pages settings
-     */
-    preloadingPageSettings: 'Preload pages settings',
-    /**
-     *@description Text of Extension settings
-     */
-    extensionSettings: 'Extensions settings',
+    learnMore: 'Learn more',
 };
 const str_ = i18n.i18n.registerUIStrings('panels/application/preloading/PreloadingView.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+const SPECULATION_EXPLANATION_URL = 'https://developer.chrome.com/docs/devtools/application/debugging-speculation-rules';
+// Used for selector, indicating no filter is specified.
+const AllRuleSetRootId = Symbol('AllRuleSetRootId');
 class PreloadingUIUtils {
-    static action({ key }) {
-        // Use "prefetch"/"prerender" as is in SpeculationRules.
-        switch (key.action) {
-            case "Prefetch" /* Protocol.Preload.SpeculationAction.Prefetch */:
-                return i18n.i18n.lockedString('prefetch');
-            case "Prerender" /* Protocol.Preload.SpeculationAction.Prerender */:
-                return i18n.i18n.lockedString('prerender');
-        }
-    }
-    static status({ status }) {
+    static status(status) {
         // See content/public/browser/preloading.h PreloadingAttemptOutcome.
         switch (status) {
-            case "NotTriggered" /* SDK.PreloadingModel.PreloadingStatus.NotTriggered */:
+            case "NotTriggered" /* SDK.PreloadingModel.PreloadingStatus.NOT_TRIGGERED */:
                 return i18nString(UIStrings.statusNotTriggered);
-            case "Pending" /* SDK.PreloadingModel.PreloadingStatus.Pending */:
+            case "Pending" /* SDK.PreloadingModel.PreloadingStatus.PENDING */:
                 return i18nString(UIStrings.statusPending);
-            case "Running" /* SDK.PreloadingModel.PreloadingStatus.Running */:
+            case "Running" /* SDK.PreloadingModel.PreloadingStatus.RUNNING */:
                 return i18nString(UIStrings.statusRunning);
-            case "Ready" /* SDK.PreloadingModel.PreloadingStatus.Ready */:
+            case "Ready" /* SDK.PreloadingModel.PreloadingStatus.READY */:
                 return i18nString(UIStrings.statusReady);
-            case "Success" /* SDK.PreloadingModel.PreloadingStatus.Success */:
+            case "Success" /* SDK.PreloadingModel.PreloadingStatus.SUCCESS */:
                 return i18nString(UIStrings.statusSuccess);
-            case "Failure" /* SDK.PreloadingModel.PreloadingStatus.Failure */:
+            case "Failure" /* SDK.PreloadingModel.PreloadingStatus.FAILURE */:
                 return i18nString(UIStrings.statusFailure);
             // NotSupported is used to handle unreachable case. For example,
             // there is no code path for
             // PreloadingTriggeringOutcome::kTriggeredButPending in prefetch,
             // which is mapped to NotSupported. So, we regard it as an
             // internal error.
-            case "NotSupported" /* SDK.PreloadingModel.PreloadingStatus.NotSupported */:
+            case "NotSupported" /* SDK.PreloadingModel.PreloadingStatus.NOT_SUPPORTED */:
                 return i18n.i18n.lockedString('Internal error');
         }
+    }
+    static preloadsStatusSummary(countsByStatus) {
+        const LIST = [
+            "NotTriggered" /* SDK.PreloadingModel.PreloadingStatus.NOT_TRIGGERED */,
+            "Pending" /* SDK.PreloadingModel.PreloadingStatus.PENDING */,
+            "Running" /* SDK.PreloadingModel.PreloadingStatus.RUNNING */,
+            "Ready" /* SDK.PreloadingModel.PreloadingStatus.READY */,
+            "Success" /* SDK.PreloadingModel.PreloadingStatus.SUCCESS */,
+            "Failure" /* SDK.PreloadingModel.PreloadingStatus.FAILURE */,
+        ];
+        return LIST.filter(status => (countsByStatus?.get(status) || 0) > 0)
+            .map(status => (countsByStatus?.get(status) || 0) + ' ' + this.status(status))
+            .join(', ')
+            .toLocaleLowerCase();
     }
     // Summary of error of rule set shown in grid.
     static validity({ errorType }) {
@@ -148,6 +149,7 @@ class PreloadingUIUtils {
             case undefined:
                 return i18nString(UIStrings.validityValid);
             case "SourceIsNotJsonObject" /* Protocol.Preload.RuleSetErrorType.SourceIsNotJsonObject */:
+            case "InvalidRulesetLevelTag" /* Protocol.Preload.RuleSetErrorType.InvalidRulesetLevelTag */:
                 return i18nString(UIStrings.validityInvalid);
             case "InvalidRulesSkipped" /* Protocol.Preload.RuleSetErrorType.InvalidRulesSkipped */:
                 return i18nString(UIStrings.validitySomeRulesInvalid);
@@ -161,42 +163,37 @@ class PreloadingUIUtils {
         if (ruleSet.url !== undefined) {
             return ruleSet.url;
         }
-        throw Error('unreachable');
+        throw new Error('unreachable');
+    }
+    static processLocalId(id) {
+        // RuleSetId is form of '<processId>.<processLocalId>'
+        const index = id.indexOf('.');
+        return index === -1 ? id : id.slice(index + 1);
     }
 }
-function makeHsplit(left, right) {
-    const leftContainer = LegacyWrapper.LegacyWrapper.legacyWrapper(UI.Widget.VBox, left);
-    leftContainer.setMinimumSize(0, 40);
-    leftContainer.contentElement.classList.add('overflow-auto');
-    const rightContainer = LegacyWrapper.LegacyWrapper.legacyWrapper(UI.Widget.VBox, right);
-    rightContainer.setMinimumSize(0, 80);
-    rightContainer.contentElement.classList.add('overflow-auto');
-    const hsplit = new UI.SplitWidget.SplitWidget(
-    /* isVertical */ false, 
-    /* secondIsSidebar */ true, 
-    /* settingName */ undefined, 
-    /* defaultSidebarWidth */ 400, 
-    /* defaultSidebarHeight */ undefined, 
-    /* constraintsInDip */ undefined);
-    hsplit.setMainWidget(leftContainer);
-    hsplit.setSidebarWidget(rightContainer);
-    return hsplit;
+function pageURL() {
+    return SDK.TargetManager.TargetManager.instance().scopeTarget()?.inspectedURL() ||
+        '';
 }
 export class PreloadingRuleSetView extends UI.Widget.VBox {
     model;
     focusedRuleSetId = null;
-    focusedPreloadingAttemptId = null;
     warningsContainer;
-    warningsView = new PreloadingWarningsView();
+    warningsView = new PreloadingComponents.PreloadingDisabledInfobar.PreloadingDisabledInfobar();
     hsplit;
     ruleSetGrid = new PreloadingComponents.RuleSetGrid.RuleSetGrid();
-    ruleSetDetails = new PreloadingComponents.RuleSetDetailsReportView.RuleSetDetailsReportView();
+    ruleSetGridContainerRef = createRef();
+    ruleSetDetailsRef;
+    shouldPrettyPrint = Common.Settings.Settings.instance().moduleSetting('auto-pretty-print-minified').get();
     constructor(model) {
-        super(/* isWebComponent */ true, /* delegatesFocus */ false);
+        super({ useShadowDom: true });
+        this.registerRequiredCSS(emptyWidgetStyles, preloadingViewStyles);
         this.model = model;
         SDK.TargetManager.TargetManager.instance().addScopeChangeListener(this.onScopeChange.bind(this));
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.ModelUpdated, this.render, this, { scoped: true });
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.WarningsUpdated, this.warningsView.onWarningsUpdated, this.warningsView, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "ModelUpdated" /* SDK.PreloadingModel.Events.MODEL_UPDATED */, this.render, this, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "WarningsUpdated" /* SDK.PreloadingModel.Events.WARNINGS_UPDATED */, e => {
+            Object.assign(this.warningsView, e.data);
+        }, this, { scoped: true });
         // this (VBox)
         //   +- warningsContainer
         //        +- PreloadingWarningsView
@@ -204,21 +201,62 @@ export class PreloadingRuleSetView extends UI.Widget.VBox {
         //        +- leftContainer
         //             +- RuleSetGrid
         //        +- rightContainer
-        //             +- RuleSetDetailsReportView
+        //             +- RuleSetDetailsView
         //
-        // - If an row of RuleSetGrid selected, RuleSetDetailsReportView shows details of it.
-        // - If not, RuleSetDetailsReportView hides.
+        // - If an row of RuleSetGrid selected, RuleSetDetailsView shows details of it.
+        // - If not, RuleSetDetailsView hides.
         this.warningsContainer = document.createElement('div');
         this.warningsContainer.classList.add('flex-none');
         this.contentElement.insertBefore(this.warningsContainer, this.contentElement.firstChild);
         this.warningsView.show(this.warningsContainer);
-        this.ruleSetGrid.addEventListener('cellfocused', this.onRuleSetsGridCellFocused.bind(this));
-        this.hsplit = makeHsplit(this.ruleSetGrid, this.ruleSetDetails);
-        this.hsplit.show(this.contentElement);
+        this.ruleSetGrid.addEventListener("select" /* PreloadingComponents.RuleSetGrid.Events.SELECT */, this.onRuleSetsGridCellFocused, this);
+        this.ruleSetDetailsRef =
+            createRef();
+        const onPrettyPrintToggle = () => {
+            this.shouldPrettyPrint = !this.shouldPrettyPrint;
+            this.updateRuleSetDetails();
+        };
+        // clang-format off
+        render(html `
+        <div class="empty-state">
+          <span class="empty-state-header">${i18nString(UIStrings.noRulesDetected)}</span>
+          <div class="empty-state-description">
+            <span>${i18nString(UIStrings.rulesDescription)}</span>
+            <devtools-link
+              class="devtools-link"
+              href=${SPECULATION_EXPLANATION_URL}
+              jslogcontext="learn-more"
+            >${i18nString(UIStrings.learnMore)}</devtools-link>
+          </div>
+        </div>
+        <devtools-split-view sidebar-position="second">
+          <div slot="main" ${ref(this.ruleSetGridContainerRef)}>
+          </div>
+          <div slot="sidebar" jslog=${VisualLogging.section('rule-set-details')}>
+            <devtools-widget ${widget(PreloadingComponents.RuleSetDetailsView.RuleSetDetailsView, {
+            ruleSet: this.getRuleSet(),
+            shouldPrettyPrint: this.shouldPrettyPrint,
+        })} ${ref(this.ruleSetDetailsRef)}></devtools-widget>
+          </div>
+        </devtools-split-view>
+        <div class="pretty-print-button" style="border-top: 1px solid var(--sys-color-divider)">
+        <devtools-button
+          .iconName=${'brackets'}
+          .toggledIconName=${'brackets'}
+          .toggled=${this.shouldPrettyPrint}
+          .toggleType=${"primary-toggle" /* Buttons.Button.ToggleType.PRIMARY */}
+          .title=${i18nString(UIStrings.prettyPrint)}
+          .variant=${"icon_toggle" /* Buttons.Button.Variant.ICON_TOGGLE */}
+          .size=${"REGULAR" /* Buttons.Button.Size.REGULAR */}
+          @click=${onPrettyPrintToggle}
+          jslog=${VisualLogging.action().track({ click: true }).context('preloading-status-panel-pretty-print')}></devtools-button>
+        </div>`, this.contentElement, { host: this });
+        // clang-format on
+        this.hsplit = this.contentElement.querySelector('devtools-split-view');
     }
     wasShown() {
         super.wasShown();
-        this.registerCSSFiles([emptyWidgetStyles, preloadingViewStyles]);
+        this.warningsView.wasShown();
         this.render();
     }
     onScopeChange() {
@@ -227,34 +265,48 @@ export class PreloadingRuleSetView extends UI.Widget.VBox {
         this.model = model;
         this.render();
     }
+    revealRuleSet(revealInfo) {
+        this.focusedRuleSetId = revealInfo.ruleSetId;
+        this.render();
+    }
     updateRuleSetDetails() {
-        const id = this.focusedRuleSetId;
-        const ruleSet = id === null ? null : this.model.getRuleSetById(id);
-        this.ruleSetDetails.data = ruleSet;
+        const ruleSet = this.getRuleSet();
+        const widget = this.ruleSetDetailsRef.value?.getWidget();
+        if (widget) {
+            widget.shouldPrettyPrint = this.shouldPrettyPrint;
+            widget.ruleSet = ruleSet;
+        }
         if (ruleSet === null) {
-            this.hsplit.hideSidebar();
+            this.hsplit.setAttribute('sidebar-visibility', 'hidden');
         }
         else {
-            this.hsplit.showBoth();
+            this.hsplit.removeAttribute('sidebar-visibility');
         }
+    }
+    getRuleSet() {
+        const id = this.focusedRuleSetId;
+        return id === null ? null : this.model.getRuleSetById(id);
     }
     render() {
         // Update rule sets grid
-        //
-        // Currently, all rule sets that appear in DevTools are valid.
-        // TODO(https://crbug.com/1384419): Add property `validity` to the CDP.
-        const ruleSetRows = this.model.getAllRuleSets().map(({ id, value }) => ({
-            id,
-            validity: PreloadingUIUtils.validity(value),
-            location: PreloadingUIUtils.location(value),
-        }));
-        this.ruleSetGrid.update(ruleSetRows);
+        const countsByRuleSetId = this.model.getPreloadCountsByRuleSetId();
+        const ruleSetRows = this.model.getAllRuleSets().map(({ id, value }) => {
+            const countsByStatus = countsByRuleSetId.get(id) || new Map();
+            return {
+                ruleSet: value,
+                preloadsStatusSummary: PreloadingUIUtils.preloadsStatusSummary(countsByStatus),
+            };
+        });
+        this.ruleSetGrid.data = { rows: ruleSetRows, pageURL: pageURL() };
+        this.contentElement.classList.toggle('empty', ruleSetRows.length === 0);
         this.updateRuleSetDetails();
+        const container = this.ruleSetGridContainerRef.value;
+        if (container && this.ruleSetGrid.element.parentElement !== container) {
+            this.ruleSetGrid.show(container);
+        }
     }
     onRuleSetsGridCellFocused(event) {
-        const focusedEvent = event;
-        this.focusedRuleSetId =
-            focusedEvent.data.row.cells.find(cell => cell.columnId === 'id')?.value;
+        this.focusedRuleSetId = event.data;
         this.render();
     }
     getInfobarContainerForTest() {
@@ -263,24 +315,93 @@ export class PreloadingRuleSetView extends UI.Widget.VBox {
     getRuleSetGridForTest() {
         return this.ruleSetGrid;
     }
-    getRuleSetDetailsForTest() {
-        return this.ruleSetDetails;
+}
+/**
+ * Pure filtering function for preloading grid rows.
+ * Exported for testability.
+ */
+export function applyFilterText(filterText, rows) {
+    const trimmedFilter = filterText.trim();
+    if (trimmedFilter === '') {
+        return rows;
     }
+    const FILTER_KEYS = ['url', 'action', 'status'];
+    const parser = new TextUtils.TextUtils.FilterParser([...FILTER_KEYS]);
+    // The match is case-insensitive. We handle the matching with everything lower cased,
+    // both keywords and values.
+    const query = parser.parse(filterText.toLowerCase());
+    // Drop the last term if it is an incomplete filter key (e.g., "action:" with no value).
+    // FilterParser parses "action:" as plain text since KEY_VALUE_FILTER_REGEXP requires a value.
+    // This lets users type "url:foo action:" and still see results for "url:foo".
+    const lastTerm = query.at(-1);
+    // If the parse result is empty, the query only contains spaces.
+    if (!lastTerm) {
+        return rows;
+    }
+    const isKeyWithNoValue = (lastTerm.key === undefined || lastTerm.key === null) && FILTER_KEYS.some(key => lastTerm.text === `${key}:`);
+    if (isKeyWithNoValue) {
+        query.pop();
+    }
+    if (query.length === 0) {
+        return rows;
+    }
+    return rows.filter(row => {
+        const attempt = row.pipeline.getOriginallyTriggered();
+        const url = attempt.key.url.toLowerCase();
+        const action = capitalizedAction(attempt.action).toLowerCase();
+        const status = PreloadingUIUtils.status(attempt.status).toLowerCase();
+        // Each term must match (AND logic between terms)
+        return query.every(term => {
+            if (term.text === undefined || term.text === null || term.text === '') {
+                return true;
+            }
+            const searchText = term.text.toLowerCase();
+            // The query is lowercased before parsing, so keys are already normalized.
+            const key = term.key;
+            switch (key) {
+                case 'url':
+                    return url.includes(searchText);
+                case 'action':
+                    return action.includes(searchText);
+                case 'status': {
+                    // Support multiple status values separated by comma (e.g., "status:ready,success")
+                    const statusValues = searchText.split(',');
+                    return statusValues.some(v => status.includes(v));
+                }
+                case undefined:
+                    // No key specified: search across all columns (URL, action, status)
+                    return url.includes(searchText) || action.includes(searchText) || status.includes(searchText);
+                default:
+                    return false;
+            }
+        });
+    });
 }
 export class PreloadingAttemptView extends UI.Widget.VBox {
     model;
+    // Note that we use id of (representative) preloading attempt while we show pipelines in grid.
+    // This is because `NOT_TRIGGERED` preloading attempts don't have pipeline id and we can use it.
     focusedPreloadingAttemptId = null;
     warningsContainer;
-    warningsView = new PreloadingWarningsView();
+    warningsView = new PreloadingComponents.PreloadingDisabledInfobar.PreloadingDisabledInfobar();
     preloadingGrid = new PreloadingComponents.PreloadingGrid.PreloadingGrid();
     preloadingDetails = new PreloadingComponents.PreloadingDetailsReportView.PreloadingDetailsReportView();
     ruleSetSelector;
+    textFilterUI;
+    hsplit;
+    clearButton;
     constructor(model) {
-        super(/* isWebComponent */ true, /* delegatesFocus */ false);
+        super({
+            jslog: `${VisualLogging.pane('preloading-speculations')}`,
+            useShadowDom: true,
+        });
+        this.registerRequiredCSS(emptyWidgetStyles, preloadingViewStyles);
         this.model = model;
         SDK.TargetManager.TargetManager.instance().addScopeChangeListener(this.onScopeChange.bind(this));
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.ModelUpdated, this.render, this, { scoped: true });
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.WarningsUpdated, this.warningsView.onWarningsUpdated, this.warningsView, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "ModelUpdated" /* SDK.PreloadingModel.Events.MODEL_UPDATED */, this.render, this, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "WarningsUpdated" /* SDK.PreloadingModel.Events.WARNINGS_UPDATED */, e => {
+            Object.assign(this.warningsView, e.data);
+        }, this, { scoped: true });
         // this (VBox)
         //   +- warningsContainer
         //        +- PreloadingWarningsView
@@ -299,23 +420,83 @@ export class PreloadingAttemptView extends UI.Widget.VBox {
         this.contentElement.insertBefore(this.warningsContainer, this.contentElement.firstChild);
         this.warningsView.show(this.warningsContainer);
         const vbox = new UI.Widget.VBox();
-        const toolbar = new UI.Toolbar.Toolbar('preloading-toolbar', vbox.contentElement);
+        const toolbar = vbox.contentElement.createChild('devtools-toolbar', 'preloading-toolbar');
+        toolbar.setAttribute('jslog', `${VisualLogging.toolbar()}`);
+        // Rule set dropdown first
         this.ruleSetSelector = new PreloadingRuleSetSelector(() => this.render());
         toolbar.appendToolbarItem(this.ruleSetSelector.item());
-        this.preloadingGrid.addEventListener('cellfocused', this.onPreloadingGridCellFocused.bind(this));
-        const hsplit = makeHsplit(this.preloadingGrid, this.preloadingDetails);
-        hsplit.show(vbox.contentElement);
+        // Text filter second
+        this.textFilterUI = new UI.Toolbar.ToolbarFilter(undefined, 1, 1);
+        this.textFilterUI.addEventListener("TextChanged" /* UI.Toolbar.ToolbarInput.Event.TEXT_CHANGED */, this.onTextFilterChanged, this);
+        toolbar.appendToolbarItem(this.textFilterUI);
+        // Separator between text filter and clear button
+        toolbar.appendToolbarItem(new UI.Toolbar.ToolbarSeparator());
+        // Clear button last (rightmost)
+        this.clearButton =
+            new UI.Toolbar.ToolbarButton('Clear speculative loads', 'clear', undefined, 'clear-speculative-loads');
+        this.clearButton.addEventListener("Click" /* UI.Toolbar.ToolbarButton.Events.CLICK */, () => {
+            const model = SDK.TargetManager.TargetManager.instance().scopeTarget()?.model(SDK.PreloadingModel.PreloadingModel);
+            if (!model) {
+                return;
+            }
+            model.reset();
+            // Reset UI state
+            this.textFilterUI.setValue('');
+            this.ruleSetSelector.select(null);
+            this.render();
+        });
+        toolbar.appendToolbarItem(this.clearButton);
+        this.preloadingGrid.onSelect = this.onPreloadingGridCellFocused.bind(this);
+        const preloadingGridContainer = document.createElement('div');
+        preloadingGridContainer.className = 'preloading-grid-widget-container';
+        preloadingGridContainer.style = 'height: 100%';
+        this.preloadingGrid.show(preloadingGridContainer, null, true);
+        render(html `
+        <div class="empty-state">
+          <span class="empty-state-header">${i18nString(UIStrings.noPrefetchAttempts)}</span>
+          <div class="empty-state-description">
+            <span>${i18nString(UIStrings.prefetchDescription)}</span>
+            <devtools-link
+              class="devtools-link"
+              href=${SPECULATION_EXPLANATION_URL}
+              jslogcontext="learn-more"
+            >${i18nString(UIStrings.learnMore)}</devtools-link>
+          </div>
+        </div>
+        <devtools-split-view sidebar-position="second" ${UI.Widget.widgetRef(UI.SplitWidget.SplitWidget, w => {
+            this.hsplit = w;
+        })}>
+          <div slot="main" class="overflow-auto" style="height: 100%">
+            ${preloadingGridContainer}
+          </div>
+          <div slot="sidebar" class="overflow-auto" style="height: 100%">
+            ${this.preloadingDetails}
+          </div>
+        </devtools-split-view>`, vbox.contentElement, { host: this });
         vbox.show(this.contentElement);
     }
     wasShown() {
         super.wasShown();
-        this.registerCSSFiles([emptyWidgetStyles, preloadingViewStyles]);
+        this.warningsView.wasShown();
         this.render();
     }
     onScopeChange() {
         const model = SDK.TargetManager.TargetManager.instance().scopeTarget()?.model(SDK.PreloadingModel.PreloadingModel);
         assertNotNullOrUndefined(model);
         this.model = model;
+        this.render();
+    }
+    setFilter(filter) {
+        let id = filter.ruleSetId;
+        if (id !== null && this.model.getRuleSetById(id) === undefined) {
+            id = null;
+        }
+        this.ruleSetSelector.select(id);
+        // Reset text filter when navigating from Rules view to clear any existing filter
+        this.textFilterUI.setValue('');
+        this.render();
+    }
+    onTextFilterChanged() {
         this.render();
     }
     updatePreloadingDetails() {
@@ -325,35 +506,51 @@ export class PreloadingAttemptView extends UI.Widget.VBox {
             this.preloadingDetails.data = null;
         }
         else {
+            const pipeline = this.model.getPipeline(preloadingAttempt);
             const ruleSets = preloadingAttempt.ruleSetIds.map(id => this.model.getRuleSetById(id)).filter(x => x !== null);
             this.preloadingDetails.data = {
-                preloadingAttempt,
+                pipeline,
                 ruleSets,
+                pageURL: pageURL(),
             };
         }
     }
     render() {
-        // Update preloaidng grid
+        // Update preloading grid
         const filteringRuleSetId = this.ruleSetSelector.getSelected();
-        const url = SDK.TargetManager.TargetManager.instance().inspectedURL();
-        const securityOrigin = url ? (new Common.ParsedURL.ParsedURL(url)).securityOrigin() : null;
-        const preloadingAttemptRows = this.model.getPreloadingAttempts(filteringRuleSetId).map(({ id, value }) => {
-            // Shorten URL if a preloading attempt is same-origin.
-            const orig = value.key.url;
-            const url = securityOrigin && orig.startsWith(securityOrigin) ? orig.slice(securityOrigin.length) : orig;
+        const rows = this.model.getRepresentativePreloadingAttempts(filteringRuleSetId).map(({ id, value }) => {
+            const attempt = value;
+            const pipeline = this.model.getPipeline(attempt);
+            const ruleSets = attempt.ruleSetIds.flatMap(id => {
+                const ruleSet = this.model.getRuleSetById(id);
+                return ruleSet === null ? [] : [ruleSet];
+            });
+            // Lookup status code from the network log for display in the grid.
+            const statusCode = PreloadingHelper.PreloadingForward.preloadStatusCode(attempt);
             return {
                 id,
-                url,
-                action: PreloadingUIUtils.action(value),
-                status: PreloadingUIUtils.status(value),
+                pipeline,
+                ruleSets,
+                statusCode,
             };
         });
-        this.preloadingGrid.update(preloadingAttemptRows);
+        // Apply text filter
+        const filteredRows = applyFilterText(this.textFilterUI.valueWithoutSuggestion(), rows);
+        this.preloadingGrid.rows = filteredRows;
+        this.preloadingGrid.pageURL = pageURL();
+        // Only show empty state when there are truly no speculations (not when filter has no matches)
+        const wasEmpty = this.contentElement.classList.contains('empty');
+        const isEmpty = rows.length === 0;
+        this.contentElement.classList.toggle('empty', isEmpty);
+        // When this view starts empty, the split view gets laid out while hidden and collapses
+        // its sidebar to 0. Re-layout once it becomes visible.
+        if (wasEmpty && !isEmpty) {
+            this.hsplit?.doLayout();
+        }
         this.updatePreloadingDetails();
     }
-    onPreloadingGridCellFocused(event) {
-        const focusedEvent = event;
-        this.focusedPreloadingAttemptId = focusedEvent.data.row.cells.find(cell => cell.columnId === 'id')?.value;
+    onPreloadingGridCellFocused({ rowId }) {
+        this.focusedPreloadingAttemptId = rowId;
         this.render();
     }
     getRuleSetSelectorToolbarItemForTest() {
@@ -369,28 +566,32 @@ export class PreloadingAttemptView extends UI.Widget.VBox {
         this.ruleSetSelector.select(id);
     }
 }
-export class PreloadingResultView extends UI.Widget.VBox {
+export class PreloadingSummaryView extends UI.Widget.VBox {
     model;
     warningsContainer;
-    warningsView = new PreloadingWarningsView();
+    warningsView = new PreloadingComponents.PreloadingDisabledInfobar.PreloadingDisabledInfobar();
     usedPreloading = new PreloadingComponents.UsedPreloadingView.UsedPreloadingView();
     constructor(model) {
-        super(/* isWebComponent */ true, /* delegatesFocus */ false);
+        super({
+            jslog: `${VisualLogging.pane('speculative-loads')}`,
+            useShadowDom: true,
+        });
+        this.registerRequiredCSS(emptyWidgetStyles, preloadingViewStyles);
         this.model = model;
         SDK.TargetManager.TargetManager.instance().addScopeChangeListener(this.onScopeChange.bind(this));
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.ModelUpdated, this.render, this, { scoped: true });
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.WarningsUpdated, this.warningsView.onWarningsUpdated, this.warningsView, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "ModelUpdated" /* SDK.PreloadingModel.Events.MODEL_UPDATED */, this.render, this, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "WarningsUpdated" /* SDK.PreloadingModel.Events.WARNINGS_UPDATED */, e => {
+            Object.assign(this.warningsView, e.data);
+        }, this, { scoped: true });
         this.warningsContainer = document.createElement('div');
         this.warningsContainer.classList.add('flex-none');
         this.contentElement.insertBefore(this.warningsContainer, this.contentElement.firstChild);
         this.warningsView.show(this.warningsContainer);
-        const usedPreloadingContainer = new UI.Widget.VBox();
-        usedPreloadingContainer.contentElement.appendChild(this.usedPreloading);
-        usedPreloadingContainer.show(this.contentElement);
+        this.usedPreloading.show(this.contentElement);
     }
     wasShown() {
         super.wasShown();
-        this.registerCSSFiles([emptyWidgetStyles, preloadingViewStyles]);
+        this.warningsView.wasShown();
         this.render();
     }
     onScopeChange() {
@@ -400,7 +601,12 @@ export class PreloadingResultView extends UI.Widget.VBox {
         this.render();
     }
     render() {
-        this.usedPreloading.data = this.model.getPreloadingAttemptsOfPreviousPage().map(({ value }) => value);
+        this.usedPreloading.data = {
+            pageURL: SDK.TargetManager.TargetManager.instance().scopeTarget()?.inspectedURL() ||
+                '',
+            previousAttempts: this.model.getRepresentativePreloadingAttemptsOfPreviousPage().map(({ value }) => value),
+            currentAttempts: this.model.getRepresentativePreloadingAttempts(null).map(({ value }) => value),
+        };
     }
     getUsedPreloadingForTest() {
         return this.usedPreloading;
@@ -417,14 +623,15 @@ class PreloadingRuleSetSelector {
         assertNotNullOrUndefined(model);
         this.model = model;
         SDK.TargetManager.TargetManager.instance().addScopeChangeListener(this.onScopeChange.bind(this));
-        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, SDK.PreloadingModel.Events.ModelUpdated, this.onModelUpdated, this, { scoped: true });
+        SDK.TargetManager.TargetManager.instance().addModelListener(SDK.PreloadingModel.PreloadingModel, "ModelUpdated" /* SDK.PreloadingModel.Events.MODEL_UPDATED */, this.onModelUpdated, this, { scoped: true });
         this.listModel = new UI.ListModel.ListModel();
         this.dropDown = new UI.SoftDropDown.SoftDropDown(this.listModel, this);
         this.dropDown.setRowHeight(36);
-        this.dropDown.setPlaceholderText(i18nString(UIStrings.filterAllRuleSets));
+        this.dropDown.setPlaceholderText(i18nString(UIStrings.filterAllPreloads));
         this.toolbarItem = new UI.Toolbar.ToolbarItem(this.dropDown.element);
         this.toolbarItem.setTitle(i18nString(UIStrings.filterFilterByRuleSet));
         this.toolbarItem.element.classList.add('toolbar-has-dropdown');
+        this.toolbarItem.element.setAttribute('jslog', `${VisualLogging.action('filter-by-rule-set').track({ click: true })}`);
         // Initializes `listModel` and `dropDown` using data of the model.
         this.onModelUpdated();
         // Prevents emitting onSelectionChanged on the first call of `this.onModelUpdated()` for initialization.
@@ -438,14 +645,37 @@ class PreloadingRuleSetSelector {
     }
     onModelUpdated() {
         const ids = this.model.getAllRuleSets().map(({ id }) => id);
-        const items = [null, ...ids];
+        const items = [AllRuleSetRootId, ...ids];
         const selected = this.dropDown.getSelectedItem();
-        const newSelected = items.indexOf(selected) === -1 ? null : selected;
+        // Use `AllRuleSetRootId` by default. For example, `selected` is null or has gone.
+        const newSelected = (selected === null || !items.includes(selected)) ? AllRuleSetRootId : selected;
         this.listModel.replaceAll(items);
         this.dropDown.selectItem(newSelected);
+        this.updateWidth(items);
+    }
+    // Updates the width for the DropDown element.
+    updateWidth(items) {
+        // Width set by `UI.SoftDropDown`.
+        const DEFAULT_WIDTH = 315;
+        const urlLengths = items.map(x => this.titleFor(x).length);
+        const maxLength = Math.max(...urlLengths);
+        const width = Math.min(maxLength * 6 + 16, DEFAULT_WIDTH);
+        this.dropDown.setWidth(width);
+    }
+    // AllRuleSetRootId is used within the selector to indicate the root item. When interacting with PreloadingModel,
+    // it should be translated to null.
+    translateItemIdToRuleSetId(id) {
+        if (id === AllRuleSetRootId) {
+            return null;
+        }
+        return id;
     }
     getSelected() {
-        return this.dropDown.getSelectedItem();
+        const selectItem = this.dropDown.getSelectedItem();
+        if (selectItem === null) {
+            return null;
+        }
+        return this.translateItemIdToRuleSetId(selectItem);
     }
     select(id) {
         this.dropDown.selectItem(id);
@@ -454,102 +684,44 @@ class PreloadingRuleSetSelector {
     item() {
         return this.toolbarItem;
     }
-    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|null>
+    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|typeof AllRuleSetRootId>
     titleFor(id) {
-        if (id === null) {
-            return i18nString(UIStrings.filterAllRuleSets);
+        const convertedId = this.translateItemIdToRuleSetId(id);
+        if (convertedId === null) {
+            return i18nString(UIStrings.filterAllPreloads);
         }
-        // RuleSetId is form of '<processId>.<processLocalId>'
-        const index = id.indexOf('.');
-        const processLocalId = index === -1 ? id : id.slice(index + 1);
-        return i18nString(UIStrings.filterRuleSet, { PH1: processLocalId });
+        const ruleSet = this.model.getRuleSetById(convertedId);
+        if (ruleSet === null) {
+            return i18n.i18n.lockedString('Internal error');
+        }
+        return ruleSetTagOrLocationShort(ruleSet, pageURL());
     }
     subtitleFor(id) {
-        const ruleSet = id === null ? null : this.model.getRuleSetById(id);
-        if (ruleSet === null) {
-            return '';
-        }
-        if (ruleSet.url !== undefined) {
-            return ruleSet.url;
-        }
-        return '<script>';
+        const convertedId = this.translateItemIdToRuleSetId(id);
+        const countsByStatus = this.model.getPreloadCountsByRuleSetId().get(convertedId) ||
+            new Map();
+        return PreloadingUIUtils.preloadsStatusSummary(countsByStatus) || `(${i18nString(UIStrings.noRuleSets)})`;
     }
-    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|null>
+    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|typeof AllRuleSetRootId>
     createElementForItem(id) {
         const element = document.createElement('div');
-        const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(element, { cssFile: undefined, delegatesFocus: undefined });
+        const shadowRoot = UI.UIUtils.createShadowRootWithCoreStyles(element, { cssFile: preloadingViewDropDownStyles });
         const title = shadowRoot.createChild('div', 'title');
         UI.UIUtils.createTextChild(title, Platform.StringUtilities.trimEndWithMaxLength(this.titleFor(id), 100));
         const subTitle = shadowRoot.createChild('div', 'subtitle');
         UI.UIUtils.createTextChild(subTitle, this.subtitleFor(id));
         return element;
     }
-    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|null>
+    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|typeof AllRuleSetRootId>
     isItemSelectable(_id) {
         return true;
     }
-    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|null>
+    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|typeof AllRuleSetRootId>
     itemSelected(_id) {
         this.onSelectionChanged();
     }
-    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|null>
+    // Method for UI.SoftDropDown.Delegate<Protocol.Preload.RuleSetId|typeof AllRuleSetRootId>
     highlightedItemChanged(_from, _to, _fromElement, _toElement) {
-    }
-}
-export class PreloadingWarningsView extends UI.Widget.VBox {
-    constructor() {
-        super(/* isWebComponent */ false, /* delegatesFocus */ false);
-    }
-    onWarningsUpdated(event) {
-        // TODO(crbug.com/1384419): Add more information in PreloadEnabledState from
-        // backend to distinguish the details of the reasons why preloading is
-        // disabled.
-        function createDisabledMessages(warnings) {
-            const detailsMessage = document.createElement('div');
-            let shouldShowWarning = false;
-            if (warnings.disabledByPreference) {
-                const preloadingSettingLink = new ChromeLink.ChromeLink.ChromeLink();
-                preloadingSettingLink.href = 'chrome://settings/cookies';
-                preloadingSettingLink.textContent = i18nString(UIStrings.preloadingPageSettings);
-                const extensionSettingLink = new ChromeLink.ChromeLink.ChromeLink();
-                extensionSettingLink.href = 'chrome://extensions';
-                extensionSettingLink.textContent = i18nString(UIStrings.extensionSettings);
-                detailsMessage.appendChild(i18n.i18n.getFormatLocalizedString(str_, UIStrings.warningDetailPreloadingStateDisabled, { PH1: preloadingSettingLink, PH2: extensionSettingLink }));
-                shouldShowWarning = true;
-            }
-            if (warnings.disabledByDataSaver) {
-                const element = document.createElement('div');
-                element.append(i18nString(UIStrings.warningDetailPreloadingDisabledByDatasaver));
-                detailsMessage.appendChild(element);
-                shouldShowWarning = true;
-            }
-            if (warnings.disabledByBatterySaver) {
-                const element = document.createElement('div');
-                element.append(i18nString(UIStrings.warningDetailPreloadingDisabledByBatterysaver));
-                detailsMessage.appendChild(element);
-                shouldShowWarning = true;
-            }
-            return shouldShowWarning ? detailsMessage : null;
-        }
-        const warnings = event.data;
-        const detailsMessage = createDisabledMessages(warnings);
-        if (detailsMessage !== null) {
-            this.showInfobar(i18nString(UIStrings.warningTitlePreloadingStateDisabled), detailsMessage);
-        }
-        else {
-            if (warnings.featureFlagPreloadingHoldback) {
-                this.showInfobar(i18nString(UIStrings.warningTitlePreloadingDisabledByFeatureFlag), i18nString(UIStrings.warningDetailPreloadingDisabledByFeatureFlag));
-            }
-            if (warnings.featureFlagPrerender2Holdback) {
-                this.showInfobar(i18nString(UIStrings.warningTitlePrerenderingDisabledByFeatureFlag), i18nString(UIStrings.warningDetailPrerenderingDisabledByFeatureFlag));
-            }
-        }
-    }
-    showInfobar(titleText, detailsMessage) {
-        const infobar = new UI.Infobar.Infobar(UI.Infobar.Type.Warning, /* text */ titleText, /* actions? */ undefined, /* disableSetting? */ undefined);
-        infobar.setParentView(this);
-        infobar.createDetailsRowMessage(detailsMessage);
-        this.contentElement.appendChild(infobar.element);
     }
 }
 //# sourceMappingURL=PreloadingView.js.map

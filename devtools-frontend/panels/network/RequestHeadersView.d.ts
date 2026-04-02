@@ -1,51 +1,42 @@
+import '../../ui/kit/kit.js';
+import * as Common from '../../core/common/common.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as NetworkForward from '../../panels/network/forward/forward.js';
 import * as UI from '../../ui/legacy/legacy.js';
-export declare class RequestHeadersView extends UI.Widget.VBox {
+import * as Lit from '../../ui/lit/lit.js';
+interface ViewInput {
+    showRequestHeadersText: boolean;
+    showResponseHeadersText: boolean;
+    request: SDK.NetworkRequest.NetworkRequest;
+    toggleShowRawResponseHeaders: () => void;
+    toggleShowRawRequestHeaders: () => void;
+    revealHeadersFile?: () => void;
+    toReveal?: {
+        section: NetworkForward.UIRequestLocation.UIHeaderSection;
+        header?: string;
+    };
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
+export declare class RequestHeadersView extends UI.Widget.Widget {
     #private;
-    private request;
-    private showRequestHeadersText;
-    private showResponseHeadersText;
-    private highlightedElement;
-    private readonly root;
-    private urlItem;
-    private readonly requestMethodItem;
-    private readonly statusCodeItem;
-    private readonly remoteAddressItem;
-    private readonly referrerPolicyItem;
-    readonly responseHeadersCategory: Category;
-    private readonly requestHeadersCategory;
-    constructor(request: SDK.NetworkRequest.NetworkRequest);
+    get request(): SDK.NetworkRequest.NetworkRequest | undefined;
+    set request(val: SDK.NetworkRequest.NetworkRequest | undefined);
+    constructor(target?: HTMLElement, view?: View);
     wasShown(): void;
     willHide(): void;
-    private addEntryContextMenuHandler;
-    private formatHeader;
-    private formatHeaderObject;
-    private refreshURL;
-    private populateTreeElementWithSourceText;
-    private refreshRequestHeaders;
-    private refreshResponseHeaders;
-    private refreshHTTPInformation;
-    private refreshHeadersTitle;
-    private refreshHeaders;
-    private refreshHeadersText;
-    private refreshRemoteAddress;
-    private refreshReferrerPolicy;
-    private toggleRequestHeadersText;
-    private toggleResponseHeadersText;
-    private createToggleButton;
-    private createHeadersToggleButton;
-    private clearHighlight;
-    private revealAndHighlight;
-    private getCategoryForSection;
     revealHeader(section: NetworkForward.UIRequestLocation.UIHeaderSection, header?: string): void;
+    performUpdate(): void;
 }
-export declare class Category extends UI.TreeOutline.TreeElement {
-    toggleOnClick: boolean;
-    private readonly expandedSetting;
-    expanded: boolean;
-    constructor(root: UI.TreeOutline.TreeOutline, name: string, title?: string);
-    createLeaf(): UI.TreeOutline.TreeElement;
-    onexpand(): void;
-    oncollapse(): void;
-}
+export declare function renderCategory(data: {
+    name: string;
+    title: Common.UIString.LocalizedString;
+    contents: Lit.LitTemplate;
+    loggingContext: string;
+    headerCount?: number;
+    checked?: boolean;
+    additionalContent?: Lit.LitTemplate;
+    forceOpen?: boolean;
+    onToggleRawHeaders?: () => void;
+}): Lit.LitTemplate;
+export {};

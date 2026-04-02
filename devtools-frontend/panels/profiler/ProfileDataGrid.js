@@ -1,6 +1,7 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
+// Copyright 2020 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-imperative-dom-api */
 /*
  * Copyright (C) 2009 280 North Inc. All Rights Reserved.
  *
@@ -27,7 +28,7 @@
  */
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as IconButton from '../../ui/components/icon_button/icon_button.js';
+import { Icon } from '../../ui/kit/kit.js';
 import * as DataGrid from '../../ui/legacy/components/data_grid/data_grid.js';
 import * as UI from '../../ui/legacy/legacy.js';
 const UIStrings = {
@@ -40,9 +41,9 @@ const UIStrings = {
      */
     notOptimizedS: 'Not optimized: {PH1}',
     /**
-     *@description Generic text with two placeholders separated by a comma
-     *@example {1 613 680} PH1
-     *@example {44 %} PH2
+     * @description Generic text with two placeholders separated by a comma
+     * @example {1 613 680} PH1
+     * @example {44 %} PH2
      */
     genericTextTwoPlaceholders: '{PH1}, {PH2}',
 };
@@ -133,7 +134,7 @@ export class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode {
             const orphanedChild = children[index];
             const existingChild = container.childrenByCallUID.get(orphanedChild.callUID);
             if (existingChild) {
-                existingChild.merge(orphanedChild, false);
+                existingChild.merge((orphanedChild), false);
             }
             else {
                 container.appendChild(orphanedChild);
@@ -168,9 +169,9 @@ export class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode {
                 cell.classList.toggle('highlight', this.searchMatchedFunctionColumn);
                 if (this.deoptReason) {
                     cell.classList.add('not-optimized');
-                    const warningIcon = new IconButton.Icon.Icon();
-                    warningIcon.data = { iconName: 'warning-filled', color: 'var(--icon-warning)', width: '14px', height: '14px' };
-                    warningIcon.classList.add('profile-warn-marker');
+                    const warningIcon = new Icon();
+                    warningIcon.name = 'warning-filled';
+                    warningIcon.classList.add('profile-warn-marker', 'small');
                     UI.Tooltip.Tooltip.install(warningIcon, i18nString(UIStrings.notOptimizedS, { PH1: this.deoptReason }));
                     cell.appendChild(warningIcon);
                 }
@@ -211,7 +212,7 @@ export class ProfileDataGridNode extends DataGrid.DataGrid.DataGridNode {
     insertChild(child, index) {
         const profileDataGridNode = child;
         super.insertChild(profileDataGridNode, index);
-        this.childrenByCallUID.set(profileDataGridNode.callUID, profileDataGridNode);
+        this.childrenByCallUID.set(profileDataGridNode.callUID, (profileDataGridNode));
     }
     removeChild(profileDataGridNode) {
         super.removeChild(profileDataGridNode);
@@ -301,9 +302,10 @@ export class ProfileDataGridTree {
         this.populated = false;
     }
     static propertyComparator(property, isAscending) {
-        let comparator = ProfileDataGridTree.propertyComparators[(isAscending ? 1 : 0)][property];
+        let comparator = propertyComparators[(isAscending ? 1 : 0)][property];
         if (!comparator) {
             if (isAscending) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 comparator = function (lhs, rhs) {
                     if (lhs[property] < rhs[property]) {
                         return -1;
@@ -315,7 +317,10 @@ export class ProfileDataGridTree {
                 };
             }
             else {
-                comparator = function (lhs, rhs) {
+                comparator = function (
+                // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                lhs, rhs) {
                     if (lhs[property] > rhs[property]) {
                         return -1;
                     }
@@ -325,7 +330,7 @@ export class ProfileDataGridTree {
                     return 0;
                 };
             }
-            ProfileDataGridTree.propertyComparators[(isAscending ? 1 : 0)][property] = comparator;
+            propertyComparators[(isAscending ? 1 : 0)][property] = comparator;
         }
         return comparator;
     }
@@ -340,7 +345,7 @@ export class ProfileDataGridTree {
     exclude(_profileDataGridNode) {
     }
     insertChild(child, index) {
-        const childToInsert = child;
+        const childToInsert = (child);
         this.children.splice(index, 0, childToInsert);
         this.childrenByCallUID.set(childToInsert.callUID, child);
     }
@@ -380,7 +385,7 @@ export class ProfileDataGridTree {
         const children = this.children;
         const count = children.length;
         for (let index = 0; index < count; ++index) {
-            children[index].restore();
+            (children[index]).restore();
         }
         this.savedChildren = null;
     }
@@ -479,7 +484,7 @@ export class ProfileDataGridTree {
         }
         return matchesQuery;
     }
-    performSearch(searchConfig, shouldJump, jumpBackwards) {
+    performSearch(searchConfig, _shouldJump, jumpBackwards) {
         this.onSearchCanceled();
         const matchesQuery = this.matchFunction(searchConfig);
         if (!matchesQuery) {
@@ -515,14 +520,14 @@ export class ProfileDataGridTree {
         this.searchResultIndex = -1;
     }
     jumpToNextSearchResult() {
-        if (!this.searchResults || !this.searchResults.length) {
+        if (!this.searchResults?.length) {
             return;
         }
         this.searchResultIndex = (this.searchResultIndex + 1) % this.searchResults.length;
         this.jumpToSearchResult(this.searchResultIndex);
     }
     jumpToPreviousSearchResult() {
-        if (!this.searchResults || !this.searchResults.length) {
+        if (!this.searchResults?.length) {
             return;
         }
         this.searchResultIndex = (this.searchResultIndex - 1 + this.searchResults.length) % this.searchResults.length;
@@ -530,6 +535,9 @@ export class ProfileDataGridTree {
     }
     supportsCaseSensitiveSearch() {
         return true;
+    }
+    supportsWholeWordSearch() {
+        return false;
     }
     supportsRegexSearch() {
         return false;
@@ -543,7 +551,6 @@ export class ProfileDataGridTree {
         profileNode.revealAndSelect();
         this.searchableView.updateCurrentMatchIndex(index);
     }
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    static propertyComparators = [{}, {}];
 }
+const propertyComparators = [{}, {}];
 //# sourceMappingURL=ProfileDataGrid.js.map

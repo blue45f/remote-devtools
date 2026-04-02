@@ -1,44 +1,32 @@
+import '../../ui/kit/kit.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as NetworkTimeCalculator from '../../models/network_time_calculator/network_time_calculator.js';
 import * as UI from '../../ui/legacy/legacy.js';
-import { type NetworkTimeCalculator } from './NetworkTimeCalculator.js';
+interface ViewInput {
+    requestUnfinished: boolean;
+    requestStartTime: number;
+    requestIssueTime: number;
+    totalDuration: number;
+    startTime: number;
+    endTime: number;
+    timeRanges: NetworkTimeCalculator.RequestTimeRange[];
+    calculator: NetworkTimeCalculator.NetworkTimeCalculator;
+    serverTimings: SDK.ServerTiming.ServerTiming[];
+    fetchDetails?: UI.TreeOutline.TreeOutlineInShadow;
+    routerDetails?: UI.TreeOutline.TreeOutlineInShadow;
+    wasThrottled?: SDK.NetworkManager.AppliedNetworkConditions;
+}
+type View = (input: ViewInput, output: object, target: HTMLElement) => void;
+export declare const DEFAULT_VIEW: View;
 export declare class RequestTimingView extends UI.Widget.VBox {
-    private request;
-    private calculator;
-    private lastMinimumBoundary;
-    private tableElement?;
-    constructor(request: SDK.NetworkRequest.NetworkRequest, calculator: NetworkTimeCalculator);
-    private static timeRangeTitle;
-    static calculateRequestTimeRanges(request: SDK.NetworkRequest.NetworkRequest, navigationStart: number): RequestTimeRange[];
-    static createTimingTable(request: SDK.NetworkRequest.NetworkRequest, calculator: NetworkTimeCalculator): Element;
-    private constructFetchDetailsView;
-    private getLocalizedResponseSourceForCode;
-    private onToggleFetchDetails;
+    #private;
+    constructor(target?: HTMLElement, view?: View);
+    static create(request: SDK.NetworkRequest.NetworkRequest, calculator: NetworkTimeCalculator.NetworkTimeCalculator): RequestTimingView;
+    performUpdate(): void;
+    set request(request: SDK.NetworkRequest.NetworkRequest);
+    set calculator(calculator: NetworkTimeCalculator.NetworkTimeCalculator);
     wasShown(): void;
     willHide(): void;
-    private refresh;
     private boundaryChanged;
 }
-export declare enum RequestTimeRangeNames {
-    Push = "push",
-    Queueing = "queueing",
-    Blocking = "blocking",
-    Connecting = "connecting",
-    DNS = "dns",
-    Proxy = "proxy",
-    Receiving = "receiving",
-    ReceivingPush = "receiving-push",
-    Sending = "sending",
-    ServiceWorker = "serviceworker",
-    ServiceWorkerPreparation = "serviceworker-preparation",
-    ServiceWorkerRespondWith = "serviceworker-respondwith",
-    SSL = "ssl",
-    Total = "total",
-    Waiting = "waiting"
-}
-export declare const ServiceWorkerRangeNames: Set<RequestTimeRangeNames>;
-export declare const ConnectionSetupRangeNames: Set<RequestTimeRangeNames>;
-export interface RequestTimeRange {
-    name: RequestTimeRangeNames;
-    start: number;
-    end: number;
-}
+export {};

@@ -1,14 +1,15 @@
 import type * as Platform from '../platform/platform.js';
 import * as Root from '../root/root.js';
-import { type SettingStorageType } from './Settings.js';
+import type { SettingStorageType } from './Settings.js';
 export declare function registerSettingExtension(registration: SettingRegistration): void;
-export declare function getRegisteredSettings(): Array<SettingRegistration>;
-export declare function registerSettingsForTest(settings: Array<SettingRegistration>, forceReset?: boolean): void;
+export declare function getRegisteredSettings(): SettingRegistration[];
+export declare function registerSettingsForTest(settings: SettingRegistration[], forceReset?: boolean): void;
 export declare function resetSettings(): void;
 export declare function maybeRemoveSettingExtension(settingName: string): boolean;
-export declare enum SettingCategory {
-    NONE = "",
+export declare const enum SettingCategory {
+    NONE = "",// `NONE` must be a falsy value. Legacy code uses if-checks for the category.
     ELEMENTS = "ELEMENTS",
+    AI = "AI",
     APPEARANCE = "APPEARANCE",
     SOURCES = "SOURCES",
     NETWORK = "NETWORK",
@@ -24,10 +25,11 @@ export declare enum SettingCategory {
     MEMORY = "MEMORY",
     EXTENSIONS = "EXTENSIONS",
     ADORNER = "ADORNER",
-    SYNC = "SYNC"
+    ACCOUNT = "ACCOUNT",
+    PRIVACY = "PRIVACY"
 }
 export declare function getLocalizedSettingsCategory(category: SettingCategory): Platform.UIString.LocalizedString;
-export declare enum SettingType {
+export declare const enum SettingType {
     ARRAY = "array",
     REGEX = "regex",
     ENUM = "enum",
@@ -64,11 +66,6 @@ export interface SettingRegistration {
      */
     title?: () => Platform.UIString.LocalizedString;
     /**
-     * The title with which the setting is shown on screen, if the platform running DevTools is 'mac'.
-     * If not set, the 'title' field will be used instead.
-     */
-    titleMac?: () => Platform.UIString.LocalizedString;
-    /**
      * The identifier of the setting.
      */
     settingName: string;
@@ -92,7 +89,7 @@ export interface SettingRegistration {
     /**
      * The possible values the setting can have, each with a description composed of a title and an optional text.
      */
-    options?: Array<SettingExtensionOption>;
+    options?: SettingExtensionOption[];
     /**
      * Whether DevTools must be reloaded for a change in the setting to take effect.
      */
@@ -110,16 +107,21 @@ export interface SettingRegistration {
      * The name of the experiment a setting is associated with. Enabling and disabling the declared
      * experiment will enable and disable the setting respectively.
      */
-    experiment?: Root.Runtime.ExperimentName;
+    experiment?: Root.ExperimentNames.ExperimentName;
     /**
-     * A condition represented as a string the setting's availability depends on. Conditions come
-     * from the queryParamsObject defined in Runtime and just as the experiment field, they determine the availability
-     * of the setting. A condition can be negated by prepending a ‘!’ to the value of the condition
-     * property and in that case the behaviour of the setting's availability will be inverted.
+     * A condition is a function that will make the setting available if it
+     * returns true, and not available, otherwise. Make sure that objects you
+     * access from inside the condition function are ready at the time when the
+     * setting conditions are checked.
      */
-    condition?: Root.Runtime.ConditionName;
+    condition?: Root.Runtime.Condition;
     /**
-     * If a setting is deprecated, define this notice to show an appropriate warning according to the `warning` propertiy.
+     * A function that returns true if the setting should be disabled, along with
+     * the reason why.
+     */
+    disabledCondition?: (config?: Root.Runtime.HostConfig) => DisabledConditionResult;
+    /**
+     * If a setting is deprecated, define this notice to show an appropriate warning according to the `warning` property.
      * If `disabled` is set, the setting will be disabled in the settings UI. In that case, `experiment` optionally can be
      * set to link to an experiment (by experiment name). The information icon in the settings UI can then be clicked to
      * jump to the experiment. If a setting is not disabled, the experiment entry will be ignored.
@@ -129,6 +131,24 @@ export interface SettingRegistration {
         warning: () => Platform.UIString.LocalizedString;
         experiment?: string;
     };
+    /**
+     * See {@link LearnMore} for more info.
+     */
+    learnMore?: LearnMore;
+}
+/**
+ * Optional information to learn more about the setting.
+ *
+ * If tooltip is provided creates a (i) icon with rich tooltip with said tooltip
+ *
+ * If url is provided creates a (?) icon with a link to said url
+ *
+ * If both tooltip is provided creates a (i) icon with rich tooltip
+ * and a link inside the rich tool tip with text `Learn more`
+ */
+export interface LearnMore {
+    tooltip?: () => Platform.UIString.LocalizedString;
+    url?: Platform.DevToolsPath.UrlString;
 }
 interface LocalizedSettingExtensionOption {
     value: boolean | string;
@@ -146,4 +166,10 @@ interface RawSettingExtensionOption {
     raw: true;
 }
 export type SettingExtensionOption = LocalizedSettingExtensionOption | RawSettingExtensionOption;
+export type DisabledConditionResult = {
+    disabled: true;
+    reasons: Platform.UIString.LocalizedString[];
+} | {
+    disabled: false;
+};
 export {};

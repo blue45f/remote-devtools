@@ -1,9 +1,26 @@
 import { type Color3D, type Color4D, type Color4DOr3D } from './ColorUtils.js';
+/** Returns the `Format` equivalent from the format text **/
 export declare function getFormat(formatText: string): Format | null;
 type ColorSpace = Format.SRGB | Format.SRGB_LINEAR | Format.DISPLAY_P3 | Format.A98_RGB | Format.PROPHOTO_RGB | Format.REC_2020 | Format.XYZ | Format.XYZ_D50 | Format.XYZ_D65;
+export declare const enum ColorChannel {
+    A = "a",
+    ALPHA = "alpha",
+    B = "b",
+    C = "c",
+    G = "g",
+    H = "h",
+    L = "l",
+    R = "r",
+    S = "s",
+    W = "w",
+    X = "x",
+    Y = "y",
+    Z = "z"
+}
 export declare function parse(text: string): Color | null;
-export declare function hsl2rgb(hsl: Color4D, out_rgb: Color4D): void;
-export declare function hsva2rgba(hsva: Color4D, out_rgba: Color4D): void;
+export declare function parseHueNumeric(value: string): number | null;
+export declare function hsl2rgb(hsl: Color4D): Color4D;
+export declare function hsva2rgba(hsva: Color4D): Color4D;
 export declare function rgb2hsv(rgba: Color3D): Color3D;
 /**
  * Compute a desired luminance given a given luminance and a desired contrast
@@ -14,16 +31,13 @@ export declare function desiredLuminance(luminance: number, contrast: number, li
  * Approach a value of the given component of `candidateHSVA` such that the
  * calculated luminance of `candidateHSVA` approximates `desiredLuminance`.
  */
-export declare function approachColorValue(candidateHSVA: Color4D, bgRGBA: Color4D, index: number, desiredLuminance: number, candidateLuminance: (arg0: Color4D) => number): number | null;
+export declare function approachColorValue(candidateHSVA: Color4D, index: number, desiredLuminance: number, candidateLuminance: (arg0: Color4D) => number): number | null;
 export declare function findFgColorForContrast(fgColor: Legacy, bgColor: Legacy, requiredContrast: number): Legacy | null;
 export declare function findFgColorForContrastAPCA(fgColor: Legacy, bgColor: Legacy, requiredContrast: number): Legacy | null;
 type ColorParameterSpec = [string, string, string, string | undefined];
 interface ColorConversions<T = void> {
-    [Format.Nickname](self: T): Legacy;
     [Format.HEX](self: T): Legacy;
-    [Format.ShortHEX](self: T): Legacy;
     [Format.HEXA](self: T): Legacy;
-    [Format.ShortHEXA](self: T): Legacy;
     [Format.RGB](self: T): Legacy;
     [Format.RGBA](self: T): Legacy;
     [Format.HSL](self: T): HSL;
@@ -46,23 +60,22 @@ interface ColorConversions<T = void> {
 }
 export interface Color {
     readonly alpha: number | null;
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
     equal(color: Color): boolean;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     setAlpha(alpha: number): Color;
     format(): Format;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     asLegacyColor(): Legacy;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
 }
 export declare const enum Format {
-    Nickname = "nickname",
     HEX = "hex",
-    ShortHEX = "shorthex",
     HEXA = "hexa",
-    ShortHEXA = "shorthexa",
     RGB = "rgb",
     RGBA = "rgba",
     HSL = "hsl",
@@ -89,16 +102,18 @@ export declare class Lab implements Color {
     readonly a: number;
     readonly b: number;
     readonly alpha: number | null;
-    constructor(l: number, a: number, b: number, alpha: number | null, authoredText?: string | undefined);
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(l: number, a: number, b: number, alpha: number | null, authoredText?: string);
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     asLegacyColor(): Legacy;
     equal(color: Color): boolean;
     format(): Format;
     setAlpha(alpha: number): Lab;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): Lab | null;
 }
@@ -108,16 +123,18 @@ export declare class LCH implements Color {
     readonly c: number;
     readonly h: number;
     readonly alpha: number | null;
-    constructor(l: number, c: number, h: number, alpha: number | null, authoredText?: string | undefined);
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(l: number, c: number, h: number, alpha: number | null, authoredText?: string);
     asLegacyColor(): Legacy;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     equal(color: Color): boolean;
     format(): Format;
     setAlpha(alpha: number): Color;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     isHuePowerless(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): LCH | null;
@@ -128,16 +145,18 @@ export declare class Oklab implements Color {
     readonly a: number;
     readonly b: number;
     readonly alpha: number | null;
-    constructor(l: number, a: number, b: number, alpha: number | null, authoredText?: string | undefined);
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(l: number, a: number, b: number, alpha: number | null, authoredText?: string);
     asLegacyColor(): Legacy;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     equal(color: Color): boolean;
     format(): Format;
     setAlpha(alpha: number): Color;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): Oklab | null;
 }
@@ -147,16 +166,18 @@ export declare class Oklch implements Color {
     readonly c: number;
     readonly h: number;
     readonly alpha: number | null;
-    constructor(l: number, c: number, h: number, alpha: number | null, authoredText?: string | undefined);
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(l: number, c: number, h: number, alpha: number | null, authoredText?: string);
     asLegacyColor(): Legacy;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     equal(color: Color): boolean;
     format(): Format;
     setAlpha(alpha: number): Color;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): Oklch | null;
 }
@@ -167,17 +188,20 @@ export declare class ColorFunction implements Color {
     readonly p2: number;
     readonly alpha: number | null;
     readonly colorSpace: ColorSpace;
-    constructor(colorSpace: ColorSpace, p0: number, p1: number, p2: number, alpha: number | null, authoredText?: string | undefined);
+    get channels(): [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(colorSpace: ColorSpace, p0: number, p1: number, p2: number, alpha: number | null, authoredText?: string);
     asLegacyColor(): Legacy;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     equal(color: Color): boolean;
     format(): Format;
     setAlpha(alpha: number): Color;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
+    isXYZ(): boolean;
     /**
      * Parses given `color()` function definition and returns the `Color` object.
      * We want to special case its parsing here because it's a bit different
@@ -198,16 +222,18 @@ export declare class HSL implements Color {
     readonly s: number;
     readonly l: number;
     readonly alpha: number | null;
-    constructor(h: number, s: number, l: number, alpha: number | null | undefined, authoredText?: string);
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(h: number, s: number, l: number, alpha?: number | null, authoredText?: string);
     equal(color: Color): boolean;
-    asString(format?: Format | undefined): string | null;
+    asString(format?: Format): string;
     setAlpha(alpha: number): HSL;
     format(): Format;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     asLegacyColor(): Legacy;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): HSL | null;
     hsva(): Color4D;
@@ -219,52 +245,90 @@ export declare class HWB implements Color {
     readonly w: number;
     readonly b: number;
     readonly alpha: number | null;
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
     constructor(h: number, w: number, b: number, alpha: number | null, authoredText?: string);
     equal(color: Color): boolean;
-    asString(format?: Format | undefined): string | null;
+    asString(format?: Format): string;
     setAlpha(alpha: number): HWB;
     format(): Format;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     asLegacyColor(): Legacy;
     getAuthoredText(): string | null;
     canonicalHWBA(): number[];
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     static fromSpec(spec: ColorParameterSpec, text: string): HWB | null;
 }
-type LegacyColor = Format.Nickname | Format.HEX | Format.ShortHEX | Format.HEXA | Format.ShortHEXA | Format.RGB | Format.RGBA;
+type LegacyColor = Format.HEX | Format.HEXA | Format.RGB | Format.RGBA;
+declare abstract class ShortFormatColorBase implements Color {
+    protected readonly color: Legacy;
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
+    constructor(color: Legacy);
+    get alpha(): number | null;
+    rgba(): Color4D;
+    equal(color: Color): boolean;
+    setAlpha(alpha: number): Color;
+    format(): Format;
+    as<T extends Format>(format: T): ReturnType<ColorConversions<void>[T]>;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions<void>[T]>;
+    asLegacyColor(): Legacy;
+    getAuthoredText(): string | null;
+    getRawParameters(): Color3D;
+    isGamutClipped(): boolean;
+    asString(format?: Format): string;
+    getAsRawString(format?: Format): string;
+    protected abstract stringify(r: number, g: number, b: number): string;
+}
+export declare class ShortHex extends ShortFormatColorBase {
+    setAlpha(alpha: number): Color;
+    asString(format?: Format): string;
+    protected stringify(r: number, g: number, b: number): string;
+}
+export declare class Nickname extends ShortFormatColorBase {
+    readonly nickname: string;
+    constructor(nickname: string, color: Legacy);
+    static fromName(name: string, text: string): Nickname | null;
+    protected stringify(): string;
+    getAsRawString(format?: Format): string;
+}
 export declare class Legacy implements Color {
     #private;
+    readonly channels: [ColorChannel, ColorChannel, ColorChannel, ColorChannel];
     get alpha(): number | null;
     asLegacyColor(): Legacy;
+    nickname(): Nickname | null;
+    shortHex(): ShortHex | null;
     constructor(rgba: Color3D | Color4DOr3D, format: LegacyColor, authoredText?: string);
-    static fromHex(hex: string, text: string): Legacy;
-    static fromName(name: string, text: string): Legacy | null;
-    static fromRGBAFunction(r: string, g: string, b: string, alpha: string | undefined, text: string): Legacy | null;
+    static fromHex(hex: string, text: string): Legacy | ShortHex;
+    static fromRGBAFunction(r: string, g: string, b: string, alpha: string, text: string): Legacy | null;
     static fromRGBA(rgba: number[], authoredText?: string): Legacy;
     static fromHSVA(hsva: Color4D): Legacy;
+    is<T extends Format>(format: T): this is ReturnType<ColorConversions[T]>;
     as<T extends Format>(format: T): ReturnType<ColorConversions[T]>;
     format(): LegacyColor;
     hasAlpha(): boolean;
     detectHEXFormat(): Format;
-    asString(format?: Format): string | null;
+    asString(format?: Format): string;
     getAuthoredText(): string | null;
     getRawParameters(): Color3D;
-    getAsRawString(format?: Format): string | null;
+    getAsRawString(format?: Format): string;
     isGamutClipped(): boolean;
     rgba(): Color4D;
     canonicalRGBA(): Color4D;
-    /** nickname
-     */
-    nickname(): string | null;
     toProtocolRGBA(): {
         r: number;
         g: number;
         b: number;
-        a: (number | undefined);
+        a?: number;
     };
     invert(): Legacy;
+    /**
+     * Returns a new color using the NTSC formula for making a RGB color grayscale.
+     * Note: We override with an alpha of 50% to enhance the dimming effect.
+     */
+    grayscale(): Legacy;
     setAlpha(alpha: number): Legacy;
     blendWith(fgColor: Legacy): Legacy;
     blendWithAlpha(alpha: number): Legacy;
@@ -303,25 +367,14 @@ export declare const IsolationModeHighlight: {
     ResizerHandle: Legacy;
     Mask: Legacy;
 };
+type Space = number | {
+    min: number;
+    max: number;
+    count?: number;
+};
 export declare class Generator {
     #private;
-    constructor(hueSpace?: number | {
-        min: number;
-        max: number;
-        count: (number | undefined);
-    }, satSpace?: number | {
-        min: number;
-        max: number;
-        count: (number | undefined);
-    }, lightnessSpace?: number | {
-        min: number;
-        max: number;
-        count: (number | undefined);
-    }, alphaSpace?: number | {
-        min: number;
-        max: number;
-        count: (number | undefined);
-    });
+    constructor(hueSpace?: Space, satSpace?: Space, lightnessSpace?: Space, alphaSpace?: Space);
     setColorForID(id: string, color: string): void;
     colorForID(id: string): string;
     private generateColorForID;

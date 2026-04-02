@@ -1,20 +1,23 @@
-// Copyright 2023 The Chromium Authors. All rights reserved.
+// Copyright 2023 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view, @devtools/enforce-custom-element-definitions-location */
 import * as Platform from '../../../core/platform/platform.js';
 import * as ComponentHelpers from '../../../ui/components/helpers/helpers.js';
-import * as Coordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
-import * as LitHtml from '../../../ui/lit-html/lit-html.js';
+import * as RenderCoordinator from '../../../ui/components/render_coordinator/render_coordinator.js';
+import * as Lit from '../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../ui/visual_logging/visual_logging.js';
 import * as Dialogs from '../dialogs/dialogs.js';
-import { Menu, MenuGroup, } from './Menu.js';
+import { MenuGroup, } from './Menu.js';
 import selectMenuStyles from './selectMenu.css.js';
 import selectMenuButtonStyles from './selectMenuButton.css.js';
-const coordinator = Coordinator.RenderCoordinator.RenderCoordinator.instance();
+const { html } = Lit;
 const deployMenuArrow = new URL('../../../Images/triangle-down.svg', import.meta.url).toString();
+/**
+ * @deprecated use `<select>` instead.
+ */
 export class SelectMenu extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-select-menu`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #renderBound = this.#render.bind(this);
     #button = null;
     #open = false;
     #props = {
@@ -22,80 +25,74 @@ export class SelectMenu extends HTMLElement {
         position: "bottom" /* Dialogs.Dialog.DialogVerticalPosition.BOTTOM */,
         horizontalAlignment: "auto" /* Dialogs.Dialog.DialogHorizontalAlignment.AUTO */,
         showArrow: false,
-        showConnector: false,
         sideButton: false,
         showDivider: false,
         disabled: false,
         showSelectedItem: true,
+        jslogContext: '',
     };
     get buttonTitle() {
         return this.#props.buttonTitle;
     }
     set buttonTitle(buttonTitle) {
         this.#props.buttonTitle = buttonTitle;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get position() {
         return this.#props.position;
     }
     set position(position) {
         this.#props.position = position;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get horizontalAlignment() {
         return this.#props.horizontalAlignment;
     }
     set horizontalAlignment(horizontalAlignment) {
         this.#props.horizontalAlignment = horizontalAlignment;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
-    }
-    get showConnector() {
-        return this.#props.showConnector;
-    }
-    set showConnector(showConnector) {
-        if (!this.#props.showArrow) {
-            this.#props.showArrow = showConnector;
-        }
-        this.#props.showConnector = showConnector;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get showArrow() {
         return this.#props.showArrow;
     }
     set showArrow(showArrow) {
         this.#props.showArrow = showArrow;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get sideButton() {
         return this.#props.sideButton;
     }
     set sideButton(sideButton) {
         this.#props.sideButton = sideButton;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get disabled() {
         return this.#props.disabled;
     }
     set disabled(disabled) {
         this.#props.disabled = disabled;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get showDivider() {
         return this.#props.showDivider;
     }
     set showDivider(showDivider) {
         this.#props.showDivider = showDivider;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get showSelectedItem() {
         return this.#props.showSelectedItem;
     }
     set showSelectedItem(showSelectedItem) {
         this.#props.showSelectedItem = showSelectedItem;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [selectMenuStyles];
+    get jslogContext() {
+        return this.#props.jslogContext;
+    }
+    set jslogContext(jslogContext) {
+        this.#props.jslogContext = jslogContext;
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     #getButton() {
         if (!this.#button) {
@@ -109,21 +106,13 @@ export class SelectMenu extends HTMLElement {
     #showMenu() {
         this.#open = true;
         this.setAttribute('has-open-dialog', 'has-open-dialog');
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     click() {
         this.#getButton().click();
     }
     #sideButtonClicked() {
         this.dispatchEvent(new SelectMenuSideButtonClickEvent());
-    }
-    #maybeGetArrowXPosition() {
-        if (this.showConnector) {
-            // This block is not wrapped in a `coordinator.read` because this function's
-            // only invocation is already wrapped in one (in Dialog.showDialog).
-            const arrowBounds = this.#getButton().getBoundingClientRect();
-            return (arrowBounds.left + arrowBounds.right) / 2;
-        }
     }
     #getButtonText() {
         return this.buttonTitle instanceof Function ? this.buttonTitle() : this.buttonTitle;
@@ -132,23 +121,27 @@ export class SelectMenu extends HTMLElement {
         const buttonLabel = this.#getButtonText();
         if (!this.sideButton) {
             // clang-format off
-            return LitHtml.html `
-          <${SelectMenuButton.litTagName}
+            /* eslint-disable @devtools/no-deprecated-component-usages */
+            return html `
+          <devtools-select-menu-button
             @selectmenubuttontrigger=${this.#showMenu}
             .open=${this.#open} .showArrow=${this.showArrow}
             .arrowDirection=${this.position}
-            .disabled=${this.disabled}>
+            .disabled=${this.disabled}
+            .jslogContext=${this.jslogContext}>
               ${buttonLabel}
-            </${SelectMenuButton.litTagName}>
+            </devtools-select-menu-button>
         `;
+            /* eslint-enable @devtools/no-deprecated-component-usages */
             // clang-format on
         }
         // clang-format off
-        return LitHtml.html `
+        /* eslint-disable @devtools/no-deprecated-component-usages */
+        return html `
       <button id="side-button" @click=${this.#sideButtonClicked} ?disabled=${this.disabled}>
         ${buttonLabel}
       </button>
-      <${SelectMenuButton.litTagName}
+      <devtools-select-menu-button
         @click=${this.#showMenu}
         @selectmenubuttontrigger=${this.#showMenu}
         .singleArrow=${true}
@@ -156,19 +149,20 @@ export class SelectMenu extends HTMLElement {
         .showArrow=${true}
         .arrowDirection=${this.position}
         .disabled=${this.disabled}>
-      </${SelectMenuButton.litTagName}>
+      </devtools-select-menu-button>
     `;
+        /* eslint-enable @devtools/no-deprecated-component-usages */
         // clang-format on
     }
     #onMenuClose(evt) {
         if (evt) {
             evt.stopImmediatePropagation();
         }
-        void coordinator.write(() => {
+        void RenderCoordinator.write(() => {
             this.removeAttribute('has-open-dialog');
         });
         this.#open = false;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     #onItemSelected(evt) {
         this.dispatchEvent(new SelectMenuItemSelectedEvent(evt.itemValue));
@@ -177,43 +171,38 @@ export class SelectMenu extends HTMLElement {
         if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
             throw new Error('SelectMenu render was not scheduled');
         }
-        LitHtml.render(LitHtml.html `
-      <${Menu.litTagName}
-        @menucloserequest=${this.#onMenuClose}
-        @menuitemselected=${this.#onItemSelected}
-        .position=${this.position}
-        .origin=${this}
-        .showConnector=${this.showConnector}
-        .showDivider=${this.showDivider}
-        .showSelectedItem=${this.showSelectedItem}
-        .open=${this.#open}
-        .getConnectorCustomXPosition=${this.#maybeGetArrowXPosition.bind(this)}
-      >
-      <slot>
-      </slot>
-      </${Menu.litTagName}>
-      ${this.#renderButton()}
-    `, this.#shadow, { host: this });
+        // clang-format off
+        Lit.render(html `
+        <style>${selectMenuStyles}</style>
+        <devtools-menu
+            @menucloserequest=${this.#onMenuClose}
+            @menuitemselected=${this.#onItemSelected}
+            .position=${this.position}
+            .origin=${this}
+            .showDivider=${this.showDivider}
+            .showSelectedItem=${this.showSelectedItem}
+            .open=${this.#open}
+            .getConnectorCustomXPosition=${null}>
+          <slot></slot>
+        </devtools-menu>
+        ${this.#renderButton()}`, this.#shadow, { host: this });
         // clang-format on
     }
 }
 export class SelectMenuButton extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-select-menu-button`;
     #shadow = this.attachShadow({ mode: 'open' });
-    #renderBound = this.#render.bind(this);
     #showButton = null;
     connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [selectMenuButtonStyles];
-        ComponentHelpers.SetCSSProperty.set(this, '--deploy-menu-arrow', `url(${deployMenuArrow})`);
-        void coordinator.write(() => {
+        this.style.setProperty('--deploy-menu-arrow', `url(${deployMenuArrow})`);
+        void RenderCoordinator.write(() => {
             switch (this.arrowDirection) {
                 case "auto" /* Dialogs.Dialog.DialogVerticalPosition.AUTO */:
                 case "top" /* Dialogs.Dialog.DialogVerticalPosition.TOP */: {
-                    ComponentHelpers.SetCSSProperty.set(this, '--arrow-angle', '180deg');
+                    this.style.setProperty('--arrow-angle', '180deg');
                     break;
                 }
                 case "bottom" /* Dialogs.Dialog.DialogVerticalPosition.BOTTOM */: {
-                    ComponentHelpers.SetCSSProperty.set(this, '--arrow-angle', '0deg');
+                    this.style.setProperty('--arrow-angle', '0deg');
                     break;
                 }
                 default:
@@ -226,36 +215,44 @@ export class SelectMenuButton extends HTMLElement {
         arrowDirection: "bottom" /* Dialogs.Dialog.DialogVerticalPosition.BOTTOM */,
         disabled: false,
         singleArrow: false,
+        jslogContext: '',
     };
     get showArrow() {
         return this.#props.showArrow;
     }
     set showArrow(showArrow) {
         this.#props.showArrow = showArrow;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get arrowDirection() {
         return this.#props.arrowDirection;
     }
     set arrowDirection(arrowDirection) {
         this.#props.arrowDirection = arrowDirection;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     get disabled() {
         return this.#props.disabled;
     }
     set disabled(disabled) {
         this.#props.disabled = disabled;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     set open(open) {
-        void coordinator.write(() => {
+        void RenderCoordinator.write(() => {
             this.#getShowButton()?.setAttribute('aria-expanded', String(open));
         });
     }
     set singleArrow(singleArrow) {
         this.#props.singleArrow = singleArrow;
-        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#renderBound);
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
+    }
+    get jslogContext() {
+        return this.#props.jslogContext;
+    }
+    set jslogContext(jslogContext) {
+        this.#props.jslogContext = jslogContext;
+        void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     click() {
         this.#getShowButton()?.click();
@@ -286,24 +283,31 @@ export class SelectMenuButton extends HTMLElement {
         if (!ComponentHelpers.ScheduledRender.isScheduledRender(this)) {
             throw new Error('SelectMenuItem render was not scheduled');
         }
-        const arrow = this.#props.showArrow ? LitHtml.html `<span id="arrow"></span>` : LitHtml.nothing;
+        const arrow = this.#props.showArrow ? html `<span id="arrow"></span>` : Lit.nothing;
         const classMap = { 'single-arrow': this.#props.singleArrow };
         // clang-format off
-        const buttonTitle = LitHtml.html `
+        const buttonTitle = html `
       <span id="button-label-wrapper">
-        <span id="label" ?witharrow=${this.showArrow} class=${LitHtml.Directives.classMap(classMap)}><slot></slot></span>
+        <span id="label" ?witharrow=${this.showArrow} class=${Lit.Directives.classMap(classMap)}>
+          <slot></slot>
+        </span>
         ${arrow}
-      </span>
-      `;
+      </span>`;
         // clang-format off
-        LitHtml.render(LitHtml.html `
-      <button aria-haspopup="true" aria-expanded="false" class="show" @keydown=${this.#handleButtonKeyDown} @click=${this.#handleClick} ?disabled=${this.disabled}>${buttonTitle}</button>
-    `, this.#shadow, { host: this });
+        Lit.render(html `
+        <style>${selectMenuButtonStyles}</style>
+        <button
+            aria-haspopup="true" aria-expanded="false" class="show"
+            @keydown=${this.#handleButtonKeyDown} @click=${this.#handleClick}
+            ?disabled=${this.disabled}
+            jslog=${VisualLogging.dropDown(this.jslogContext)}>
+          ${buttonTitle}
+        </button>`, this.#shadow, { host: this });
         // clang-format on
     }
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-select-menu', SelectMenu);
-ComponentHelpers.CustomElements.defineComponent('devtools-select-menu-button', SelectMenuButton);
+customElements.define('devtools-select-menu', SelectMenu);
+customElements.define('devtools-select-menu-button', SelectMenuButton);
 export class SelectMenuItemSelectedEvent extends Event {
     itemValue;
     static eventName = 'selectmenuselected';

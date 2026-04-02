@@ -1,14 +1,18 @@
-// Copyright 2021 The Chromium Authors. All rights reserved.
+// Copyright 2021 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+/* eslint-disable @devtools/no-lit-render-outside-of-view*/
+import '../../../../ui/kit/kit.js';
+import '../../../../ui/legacy/legacy.js';
 import * as i18n from '../../../../core/i18n/i18n.js';
+import * as Platform from '../../../../core/platform/platform.js';
 import * as Buttons from '../../../../ui/components/buttons/buttons.js';
-import * as ComponentHelpers from '../../../../ui/components/helpers/helpers.js';
-import * as LitHtml from '../../../../ui/lit-html/lit-html.js';
-import userAgentClientHintsFormStyles from './userAgentClientHintsForm.css.js';
 import * as Input from '../../../../ui/components/input/input.js';
-import * as IconButton from '../../../../ui/components/icon_button/icon_button.js';
+import * as Lit from '../../../../ui/lit/lit.js';
+import * as VisualLogging from '../../../../ui/visual_logging/visual_logging.js';
 import * as EmulationUtils from '../utils/utils.js';
+import userAgentClientHintsFormStyles from './userAgentClientHintsForm.css.js';
+const { html } = Lit;
 const UIStrings = {
     /**
      * @description Title for user agent client hints form
@@ -71,9 +75,45 @@ const UIStrings = {
      */
     brandFullVersionListDelete: 'Delete brand from full version list',
     /**
+     * @description Heading for the form factors section.
+     */
+    formFactorsTitle: 'Form Factors (Sec-CH-UA-Form-Factors)',
+    /**
+     * @description ARIA label for the group of form factor checkboxes.
+     */
+    formFactorsGroupAriaLabel: 'Available Form Factors',
+    /**
+     * @description Form factor option: Desktop.
+     */
+    formFactorDesktop: 'Desktop',
+    /**
+     * @description Form factor option: Automotive.
+     */
+    formFactorAutomotive: 'Automotive',
+    /**
+     * @description Form factor option: Mobile.
+     */
+    formFactorMobile: 'Mobile',
+    /**
+     * @description Form factor option: Tablet.
+     */
+    formFactorTablet: 'Tablet',
+    /**
+     * @description Form factor option: XR.
+     */
+    formFactorXR: 'XR',
+    /**
+     * @description Form factor option: EInk.
+     */
+    formFactorEInk: 'EInk',
+    /**
+     * @description Form factor option: Watch.
+     */
+    formFactorWatch: 'Watch',
+    /**
      * @description Label for full browser version input field.
      */
-    fullBrowserVersion: 'Full browser version (Sec-CH-UA-Full-Browser-Version)',
+    fullBrowserVersion: 'Full browser version (Sec-CH-UA-Full-Version)',
     /**
      * @description Placeholder for full browser version input field.
      */
@@ -119,7 +159,7 @@ const UIStrings = {
      */
     update: 'Update',
     /**
-     *@description Field Error message in the Device settings pane that shows that the entered value has characters that can't be represented in the corresponding User Agent Client Hints
+     * @description Field Error message in the Device settings pane that shows that the entered value has characters that can't be represented in the corresponding User Agent Client Hints
      */
     notRepresentable: 'Not representable as structured headers string.',
     /**
@@ -137,7 +177,7 @@ const UIStrings = {
      */
     deletedBrand: 'Deleted brand row',
     /**
-     *@description Text that is usually a hyperlink to more documentation
+     * @description Text that is usually a hyperlink to more documentation
      */
     learnMore: 'Learn more',
 };
@@ -176,14 +216,22 @@ const DEFAULT_METADATA = {
     architecture: '',
     model: '',
     mobile: false,
+    formFactors: []
 };
+export const ALL_PROTOCOL_FORM_FACTORS = [
+    UIStrings.formFactorDesktop,
+    UIStrings.formFactorAutomotive,
+    UIStrings.formFactorMobile,
+    UIStrings.formFactorTablet,
+    UIStrings.formFactorXR,
+    UIStrings.formFactorEInk,
+    UIStrings.formFactorWatch,
+];
 /**
  * Component for user agent client hints form, it is used in device settings panel
  * and network conditions panel. It is customizable through showMobileCheckbox and showSubmitButton.
  */
-// eslint-disable-next-line rulesdir/custom_element_definitions_location
 export class UserAgentClientHintsForm extends HTMLElement {
-    static litTagName = LitHtml.literal `devtools-user-agent-client-hints-form`;
     #shadow = this.attachShadow({ mode: 'open' });
     #isFormOpened = false;
     #isFormDisabled = false;
@@ -191,9 +239,6 @@ export class UserAgentClientHintsForm extends HTMLElement {
     #showMobileCheckbox = false;
     #showSubmitButton = false;
     #useragentModifiedAriaMessage = '';
-    connectedCallback() {
-        this.#shadow.adoptedStyleSheets = [Input.checkboxStyles, userAgentClientHintsFormStyles];
-    }
     set value(data) {
         const { metaData = DEFAULT_METADATA, showMobileCheckbox = false, showSubmitButton = false } = data;
         this.#metaData = {
@@ -219,7 +264,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
     }
     #handleTreeExpand = (event) => {
         if (event.code === 'Space' || event.code === 'Enter' || event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
-            event.stopPropagation();
+            event.consume(true);
             this.#handleTreeClick(event.code);
         }
     };
@@ -375,6 +420,23 @@ export class UserAgentClientHintsForm extends HTMLElement {
             this.#handleAddFullVersionListBrandClick();
         }
     };
+    #handleFormFactorCheckboxChange = (formFactorValue, isChecked) => {
+        let currentFormFactors = [...(this.#metaData.formFactors || [])];
+        if (isChecked) {
+            if (!currentFormFactors.includes(formFactorValue)) {
+                currentFormFactors.push(formFactorValue);
+            }
+        }
+        else {
+            currentFormFactors = currentFormFactors.filter(ff => ff !== formFactorValue);
+        }
+        this.#metaData = {
+            ...this.#metaData,
+            formFactors: currentFormFactors,
+        };
+        this.dispatchEvent(new ClientHintsChangeEvent());
+        this.#render();
+    };
     #handleInputChange = (stateKey, value) => {
         if (stateKey in this.#metaData) {
             this.#metaData = {
@@ -384,12 +446,6 @@ export class UserAgentClientHintsForm extends HTMLElement {
             this.#render();
         }
         this.dispatchEvent(new ClientHintsChangeEvent());
-    };
-    #handleLinkPress = (event) => {
-        if (event.code === 'Space' || event.code === 'Enter') {
-            event.preventDefault();
-            event.target.click();
-        }
     };
     #handleSubmit = (event) => {
         event.preventDefault();
@@ -403,7 +459,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
             const value = event.target.value;
             this.#handleInputChange(stateKey, value);
         };
-        return LitHtml.html `
+        return html `
       <label class="full-row label input-field-label-container">
         ${label}
         <input
@@ -412,7 +468,8 @@ export class UserAgentClientHintsForm extends HTMLElement {
           @input=${handleInputChange}
           .value=${value}
           placeholder=${placeholder}
-        />
+          jslog=${VisualLogging.textField().track({ change: true }).context(Platform.StringUtilities.toKebabCase(stateKey))}
+          />
       </label>
     `;
     }
@@ -426,7 +483,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
             const value = event.target.value;
             this.#handleInputChange('platformVersion', value);
         };
-        return LitHtml.html `
+        return html `
       <span class="full-row label">${i18nString(UIStrings.platformLabel)}</span>
       <div class="full-row brand-row" aria-label=${i18nString(UIStrings.platformProperties)} role="group">
         <input
@@ -436,6 +493,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
           .value=${platform}
           placeholder=${i18nString(UIStrings.platformPlaceholder)}
           aria-label=${i18nString(UIStrings.platformLabel)}
+          jslog=${VisualLogging.textField('platform').track({
+            change: true,
+        })}
         />
         <input
           class="input-field half-row"
@@ -444,6 +504,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
           .value=${platformVersion}
           placeholder=${i18nString(UIStrings.platformVersion)}
           aria-label=${i18nString(UIStrings.platformVersion)}
+          jslog=${VisualLogging.textField('platform-version').track({
+            change: true,
+        })}
         />
       </div>
     `;
@@ -458,14 +521,18 @@ export class UserAgentClientHintsForm extends HTMLElement {
             const value = event.target.checked;
             this.#handleInputChange('mobile', value);
         };
-        const mobileCheckboxInput = this.#showMobileCheckbox ? LitHtml.html `
+        const mobileCheckboxInput = this.#showMobileCheckbox ? html `
       <label class="mobile-checkbox-container">
-        <input type="checkbox" @input=${handleMobileChange} .checked=${mobile} />
+        <input type="checkbox" @input=${handleMobileChange} .checked=${mobile}
+          jslog=${VisualLogging.toggle('mobile').track({
+            click: true,
+        })}
+        />
         ${i18nString(UIStrings.mobileCheckboxLabel)}
       </label>
     ` :
-            LitHtml.html ``;
-        return LitHtml.html `
+            Lit.nothing;
+        return html `
       <span class="full-row label">${i18nString(UIStrings.deviceModel)}</span>
       <div class="full-row brand-row" aria-label=${i18nString(UIStrings.deviceProperties)} role="group">
         <input
@@ -474,6 +541,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
           @input=${handleDeviceModelChange}
           .value=${model}
           placeholder=${i18nString(UIStrings.deviceModel)}
+          jslog=${VisualLogging.textField('model').track({
+            change: true,
+        })}
         />
         ${mobileCheckboxInput}
       </div>
@@ -505,7 +575,7 @@ export class UserAgentClientHintsForm extends HTMLElement {
                 const value = event.target.value;
                 this.#handleUseragentInputChange(value, index, 'brandVersion');
             };
-            return LitHtml.html `
+            return html `
         <div class="full-row brand-row" aria-label=${i18nString(UIStrings.brandProperties)} role="group">
           <input
             class="input-field ua-brand-name-input"
@@ -517,6 +587,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
             aria-label=${i18nString(UIStrings.brandNameAriaLabel, {
                 PH1: index + 1,
             })}
+            jslog=${VisualLogging.textField('brand-name').track({
+                change: true,
+            })}
           />
           <input
             class="input-field"
@@ -527,22 +600,24 @@ export class UserAgentClientHintsForm extends HTMLElement {
             aria-label=${i18nString(UIStrings.brandVersionAriaLabel, {
                 PH1: index + 1,
             })}
+            jslog=${VisualLogging.textField('brand-version').track({
+                change: true,
+            })}
           />
-          <${IconButton.Icon.Icon.litTagName}
-            .data=${{ color: 'var(--icon-default)', iconName: 'bin', width: '16px', height: '16px' }}
+          <devtools-icon name="bin"
             title=${i18nString(UIStrings.brandUserAgentDelete)}
-            class="delete-icon"
+            class="medium delete-icon"
             tabindex="0"
             role="button"
             @click=${handleDeleteClick}
             @keypress=${handleKeyPress}
             aria-label=${i18nString(UIStrings.brandUserAgentDelete)}
           >
-          </${IconButton.Icon.Icon.litTagName}>
+          </devtools-icon>
         </div>
       `;
         });
-        return LitHtml.html `
+        return html `
       <span class="full-row label">${i18nString(UIStrings.useragent)}</span>
       ${brandElements}
       <div
@@ -554,11 +629,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
         @click=${this.#handleAddUseragentBrandClick}
         @keypress=${this.#handleAddUseragentBrandKeyPress}
       >
-        <${IconButton.Icon.Icon.litTagName}
-          aria-hidden="true"
-          .data=${{ color: 'var(--icon-default)', iconName: 'plus', width: '16px' }}
-        >
-        </${IconButton.Icon.Icon.litTagName}>
+        <devtools-icon
+          aria-hidden="true" name="plus" class="medium">
+        </devtools-icon>
         ${i18nString(UIStrings.addBrand)}
       </div>
     `;
@@ -589,8 +662,12 @@ export class UserAgentClientHintsForm extends HTMLElement {
                 const value = event.target.value;
                 this.#handleFullVersionListInputChange(value, index, 'brandVersion');
             };
-            return LitHtml.html `
-        <div class="full-row brand-row" aria-label=${i18nString(UIStrings.brandProperties)} role="group">
+            return html `
+        <div
+          class="full-row brand-row"
+          aria-label=${i18nString(UIStrings.brandProperties)}
+          jslog=${VisualLogging.section('full-version')}
+          role="group">
           <input
             class="input-field fvl-brand-name-input"
             type="text"
@@ -600,6 +677,9 @@ export class UserAgentClientHintsForm extends HTMLElement {
             placeholder=${i18nString(UIStrings.brandName)}
             aria-label=${i18nString(UIStrings.brandNameAriaLabel, {
                 PH1: index + 1,
+            })}
+            jslog=${VisualLogging.textField('brand-name').track({
+                change: true,
             })}
           />
           <input
@@ -611,22 +691,24 @@ export class UserAgentClientHintsForm extends HTMLElement {
             aria-label=${i18nString(UIStrings.brandVersionAriaLabel, {
                 PH1: index + 1,
             })}
+            jslog=${VisualLogging.textField('brand-version').track({
+                change: true,
+            })}
           />
-          <${IconButton.Icon.Icon.litTagName}
-            .data=${{ color: 'var(--icon-default)', iconName: 'bin', width: '16px', height: '16px' }}
+          <devtools-icon name="bin" 
             title=${i18nString(UIStrings.brandFullVersionListDelete)}
-            class="delete-icon"
+            class="medium delete-icon"
             tabindex="0"
             role="button"
             @click=${handleDeleteClick}
             @keypress=${handleKeyPress}
             aria-label=${i18nString(UIStrings.brandFullVersionListDelete)}
           >
-          </${IconButton.Icon.Icon.litTagName}>
+          </devtools-icon>
         </div>
       `;
         });
-        return LitHtml.html `
+        return html `
       <span class="full-row label">${i18nString(UIStrings.fullVersionList)}</span>
       ${elements}
       <div
@@ -638,12 +720,39 @@ export class UserAgentClientHintsForm extends HTMLElement {
         @click=${this.#handleAddFullVersionListBrandClick}
         @keypress=${this.#handleAddFullVersionListBrandKeyPress}
       >
-        <${IconButton.Icon.Icon.litTagName}
-          aria-hidden="true"
-          .data=${{ color: 'var(--icon-default)', iconName: 'plus', width: '16px' }}
-        >
-        </${IconButton.Icon.Icon.litTagName}>
+        <devtools-icon name="plus" class="medium"
+          aria-hidden="true">
+        </devtools-icon>
         ${i18nString(UIStrings.addBrand)}
+      </div>
+    `;
+    }
+    #renderFormFactorsSection() {
+        const checkboxElements = ALL_PROTOCOL_FORM_FACTORS.map(ffValue => {
+            const isChecked = this.#metaData.formFactors?.includes(ffValue) || false;
+            const labelStringId = `formFactor${ffValue}`;
+            const label = i18nString(UIStrings[labelStringId]);
+            return html `
+        <label class="form-factor-checkbox-label">
+          <input
+            type="checkbox"
+            .checked=${isChecked}
+            value=${ffValue}
+            jslog=${VisualLogging.toggle(Platform.StringUtilities.toKebabCase(ffValue)).track({
+                click: true
+            })}
+            @change=${(e) => this.#handleFormFactorCheckboxChange(ffValue, e.target.checked)}
+          />
+          ${label}
+        </label>
+      `;
+        });
+        return html `
+      <span class="full-row label" jslog=${VisualLogging.sectionHeader('form-factors')}>
+        ${i18nString(UIStrings.formFactorsTitle)}
+      </span>
+      <div class="full-row form-factors-checkbox-group" role="group" aria-label=${i18nString(UIStrings.formFactorsGroupAriaLabel)}>
+        ${checkboxElements}
       </div>
     `;
     }
@@ -652,62 +761,50 @@ export class UserAgentClientHintsForm extends HTMLElement {
         const useragentSection = this.#renderUseragent();
         const fullVersionListSection = this.#renderFullVersionList();
         const fullBrowserInput = this.#renderInputWithLabel(i18nString(UIStrings.fullBrowserVersion), i18nString(UIStrings.fullBrowserVersionPlaceholder), fullVersion || '', 'fullVersion');
+        const formFactorsSection = this.#renderFormFactorsSection();
         const platformSection = this.#renderPlatformSection();
         const architectureInput = this.#renderInputWithLabel(i18nString(UIStrings.architecture), i18nString(UIStrings.architecturePlaceholder), architecture, 'architecture');
         const deviceModelSection = this.#renderDeviceModelSection();
         // clang-format off
-        const submitButton = this.#showSubmitButton ? LitHtml.html `
-      <${Buttons.Button.Button.litTagName}
-        .variant=${"secondary" /* Buttons.Button.Variant.SECONDARY */}
+        const submitButton = this.#showSubmitButton ? html `
+      <devtools-button
+        .variant=${"outlined" /* Buttons.Button.Variant.OUTLINED */}
         .type=${'submit'}
       >
         ${i18nString(UIStrings.update)}
-      </${Buttons.Button.Button.litTagName}>
-    ` : LitHtml.nothing;
+      </devtools-button>
+    ` : Lit.nothing;
         // clang-format on
         // clang-format off
-        const output = LitHtml.html `
+        const output = html `
+      <style>${Input.checkboxStyles}</style>
+      <style>${userAgentClientHintsFormStyles}</style>
       <section class="root">
-        <div
-          class="tree-title"
-          role="button"
-          @click=${this.#handleTreeClick}
-          tabindex="0"
-          @keydown=${this.#handleTreeExpand}
-          aria-expanded=${this.#isFormOpened}
-          aria-controls="form-container"
-          @disabled=${this.#isFormDisabled}
-          aria-disabled=${this.#isFormDisabled}
-          aria-label=${i18nString(UIStrings.title)}
-        >
-          <${IconButton.Icon.Icon.litTagName}
-            class=${this.#isFormOpened ? 'rotate-icon' : ''}
-            .data=${{
-            color: 'var(--icon-default)',
-            iconName: 'triangle-right',
-            width: '14px',
-        }}
-          ></${IconButton.Icon.Icon.litTagName}>
-          ${i18nString(UIStrings.title)}
-          <${IconButton.Icon.Icon.litTagName}
-            .data=${{
-            color: 'var(--icon-default)',
-            iconName: 'info',
-            width: '16px',
-        }}
-            title=${i18nString(UIStrings.userAgentClientHintsInfo)}
-            class='info-icon',
-          ></${IconButton.Icon.Icon.litTagName}>
-          <x-link
-           tabindex="0"
+        <div class="tree-title">
+          <div
+            role=button
+            @click=${this.#handleTreeClick}
+            tabindex=${this.#isFormDisabled ? '-1' : '0'}
+            @keydown=${this.#handleTreeExpand}
+            aria-expanded=${this.#isFormOpened}
+            aria-controls=form-container
+            aria-disabled=${this.#isFormDisabled}
+            aria-label=${i18nString(UIStrings.title)}
+            jslog=${VisualLogging.toggleSubpane().track({ click: true })}>
+            <devtools-icon name=triangle-right></devtools-icon>
+            <devtools-icon name=triangle-down></devtools-icon>
+            ${i18nString(UIStrings.title)}
+          </div>
+          <devtools-icon tabindex=${this.#isFormDisabled ? '-1' : '0'} class=info-icon name=info aria-label=${i18nString(UIStrings.userAgentClientHintsInfo)} title=${i18nString(UIStrings.userAgentClientHintsInfo)}></devtools-icon>
+          <devtools-link
+           tabindex=${this.#isFormDisabled ? '-1' : '0'}
            href="https://web.dev/user-agent-client-hints/"
-           target="_blank"
            class="link"
-           @keypress=${this.#handleLinkPress}
-           aria-label=${i18nString(UIStrings.userAgentClientHintsInfo)}
+           aria-label=${i18nString(UIStrings.learnMore)}
+           jslogcontext="learn-more"
           >
             ${i18nString(UIStrings.learnMore)}
-          </x-link>
+          </devtools-link>
         </div>
         <form
           id="form-container"
@@ -715,10 +812,17 @@ export class UserAgentClientHintsForm extends HTMLElement {
           @submit=${this.#handleSubmit}
         >
           ${useragentSection}
+          <hr class="section-separator">
           ${fullVersionListSection}
+          <hr class="section-separator">
           ${fullBrowserInput}
+          <hr class="section-separator">
+          ${formFactorsSection}
+          <hr class="section-separator">
           ${platformSection}
+          <hr class="section-separator">
           ${architectureInput}
+          <hr class="section-separator">
           ${deviceModelSection}
           ${submitButton}
         </form>
@@ -726,12 +830,12 @@ export class UserAgentClientHintsForm extends HTMLElement {
       </section>
     `;
         // clang-format on
-        LitHtml.render(output, this.#shadow, { host: this });
+        Lit.render(output, this.#shadow, { host: this });
     }
     validate = () => {
         for (const [metaDataKey, metaDataValue] of Object.entries(this.#metaData)) {
             if (metaDataKey === 'brands' || metaDataKey === 'fullVersionList') {
-                // for sturctured fields, check each individual brand/version
+                // for structured fields, check each individual brand/version
                 const isBrandValid = this.#metaData.brands?.every(({ brand, version }) => {
                     const brandNameResult = EmulationUtils.UserAgentMetadata.validateAsStructuredHeadersString(brand, i18nString(UIStrings.notRepresentable));
                     const brandVersionResult = EmulationUtils.UserAgentMetadata.validateAsStructuredHeadersString(version, i18nString(UIStrings.notRepresentable));
@@ -739,6 +843,23 @@ export class UserAgentClientHintsForm extends HTMLElement {
                 });
                 if (!isBrandValid) {
                     return { valid: false, errorMessage: i18nString(UIStrings.notRepresentable) };
+                }
+            }
+            else if (metaDataKey === 'formFactors') {
+                const formFactors = metaDataValue;
+                if (formFactors) {
+                    for (const ff of formFactors) {
+                        if (!ALL_PROTOCOL_FORM_FACTORS.includes(ff)) {
+                            return {
+                                valid: false,
+                                errorMessage: i18nString(UIStrings.notRepresentable) + ` (Invalid form factor: ${ff})`,
+                            };
+                        }
+                        const ffError = EmulationUtils.UserAgentMetadata.validateAsStructuredHeadersString(ff, i18nString(UIStrings.notRepresentable));
+                        if (!ffError.valid) {
+                            return ffError;
+                        }
+                    }
                 }
             }
             else {
@@ -752,5 +873,5 @@ export class UserAgentClientHintsForm extends HTMLElement {
         return { valid: true };
     };
 }
-ComponentHelpers.CustomElements.defineComponent('devtools-user-agent-client-hints-form', UserAgentClientHintsForm);
+customElements.define('devtools-user-agent-client-hints-form', UserAgentClientHintsForm);
 //# sourceMappingURL=UserAgentClientHintsForm.js.map

@@ -1,32 +1,6 @@
-/*
- * Copyright (C) 2011 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2011 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
@@ -42,37 +16,27 @@ const str_ = i18n.i18n.registerUIStrings('models/logs/NetworkLog.ts', UIStrings)
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let networkLogInstance;
 export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
-    requestsInternal;
-    sentNetworkRequests;
-    receivedNetworkResponses;
-    requestsSet;
-    requestsMap;
-    pageLoadForManager;
-    isRecording;
-    modelListeners;
-    initiatorData;
-    unresolvedPreflightRequests;
+    #requests = [];
+    #sentNetworkRequests = [];
+    #receivedNetworkResponses = [];
+    #requestsSet = new Set();
+    #requestsMap = new Map();
+    #pageLoadForManager = new Map();
+    #unresolvedPreflightRequests = new Map();
+    #modelListeners = new WeakMap();
+    #initiatorData = new WeakMap();
+    #isRecording = true;
     constructor() {
         super();
-        this.requestsInternal = [];
-        this.sentNetworkRequests = [];
-        this.receivedNetworkResponses = [];
-        this.requestsSet = new Set();
-        this.requestsMap = new Map();
-        this.pageLoadForManager = new Map();
-        this.isRecording = true;
-        this.modelListeners = new WeakMap();
-        this.initiatorData = new WeakMap();
         SDK.TargetManager.TargetManager.instance().observeModels(SDK.NetworkManager.NetworkManager, this);
-        const recordLogSetting = Common.Settings.Settings.instance().moduleSetting('network_log.record-log');
+        const recordLogSetting = Common.Settings.Settings.instance().moduleSetting('network-log.record-log');
         recordLogSetting.addChangeListener(() => {
-            const preserveLogSetting = Common.Settings.Settings.instance().moduleSetting('network_log.preserve-log');
+            const preserveLogSetting = Common.Settings.Settings.instance().moduleSetting('network-log.preserve-log');
             if (!preserveLogSetting.get() && recordLogSetting.get()) {
                 this.reset(true);
             }
-            this.setIsRecording(recordLogSetting.get());
+            this.setIsRecording((recordLogSetting.get()));
         }, this);
-        this.unresolvedPreflightRequests = new Map();
     }
     static instance() {
         if (!networkLogInstance) {
@@ -98,19 +62,19 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
             eventListeners.push(resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.Load, this.onLoad, this));
             eventListeners.push(resourceTreeModel.addEventListener(SDK.ResourceTreeModel.Events.DOMContentLoaded, this.onDOMContentLoaded.bind(this, resourceTreeModel)));
         }
-        this.modelListeners.set(networkManager, eventListeners);
+        this.#modelListeners.set(networkManager, eventListeners);
     }
     modelRemoved(networkManager) {
         this.removeNetworkManagerListeners(networkManager);
     }
     removeNetworkManagerListeners(networkManager) {
-        Common.EventTarget.removeEventListeners(this.modelListeners.get(networkManager) || []);
+        Common.EventTarget.removeEventListeners(this.#modelListeners.get(networkManager) || []);
     }
     setIsRecording(enabled) {
-        if (this.isRecording === enabled) {
+        if (this.#isRecording === enabled) {
             return;
         }
-        this.isRecording = enabled;
+        this.#isRecording = enabled;
         if (enabled) {
             SDK.TargetManager.TargetManager.instance().observeModels(SDK.NetworkManager.NetworkManager, this);
         }
@@ -122,21 +86,21 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         }
     }
     requestForURL(url) {
-        return this.requestsInternal.find(request => request.url() === url) || null;
+        return this.#requests.find(request => request.url() === url) || null;
     }
     originalRequestForURL(url) {
-        return this.sentNetworkRequests.find(request => request.url === url) || null;
+        return this.#sentNetworkRequests.find(request => request.url === url) || null;
     }
     originalResponseForURL(url) {
-        return this.receivedNetworkResponses.find(response => response.url === url) || null;
+        return this.#receivedNetworkResponses.find(response => response.url === url) || null;
     }
     requests() {
-        return this.requestsInternal;
+        return this.#requests;
     }
     requestByManagerAndId(networkManager, requestId) {
         // We iterate backwards because the last item will likely be the one needed for console network request lookups.
-        for (let i = this.requestsInternal.length - 1; i >= 0; i--) {
-            const request = this.requestsInternal[i];
+        for (let i = this.#requests.length - 1; i >= 0; i--) {
+            const request = this.#requests[i];
             if (requestId === request.requestId() &&
                 networkManager === SDK.NetworkManager.NetworkManager.forRequest(request)) {
                 return request;
@@ -145,7 +109,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         return null;
     }
     requestByManagerAndURL(networkManager, url) {
-        for (const request of this.requestsInternal) {
+        for (const request of this.#requests) {
             if (url === request.url() && networkManager === SDK.NetworkManager.NetworkManager.forRequest(request)) {
                 return request;
             }
@@ -153,25 +117,23 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         return null;
     }
     initializeInitiatorSymbolIfNeeded(request) {
-        let initiatorInfo = this.initiatorData.get(request);
+        let initiatorInfo = this.#initiatorData.get(request);
         if (initiatorInfo) {
             return initiatorInfo;
         }
         initiatorInfo = {
             info: null,
             chain: null,
-            request: undefined,
         };
-        this.initiatorData.set(request, initiatorInfo);
+        this.#initiatorData.set(request, initiatorInfo);
         return initiatorInfo;
     }
     static initiatorInfoForRequest(request, existingInitiatorData) {
         const initiatorInfo = existingInitiatorData || {
             info: null,
             chain: null,
-            request: undefined,
         };
-        let type = SDK.NetworkRequest.InitiatorType.Other;
+        let type = "other" /* SDK.NetworkRequest.InitiatorType.OTHER */;
         let url = Platform.DevToolsPath.EmptyUrlString;
         let lineNumber = undefined;
         let columnNumber = undefined;
@@ -181,12 +143,12 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         const initiator = request.initiator();
         const redirectSource = request.redirectSource();
         if (redirectSource) {
-            type = SDK.NetworkRequest.InitiatorType.Redirect;
+            type = "redirect" /* SDK.NetworkRequest.InitiatorType.REDIRECT */;
             url = redirectSource.url();
         }
         else if (initiator) {
             if (initiator.type === "parser" /* Protocol.Network.InitiatorType.Parser */) {
-                type = SDK.NetworkRequest.InitiatorType.Parser;
+                type = "parser" /* SDK.NetworkRequest.InitiatorType.PARSER */;
                 url = initiator.url ? initiator.url : url;
                 lineNumber = initiator.lineNumber;
                 columnNumber = initiator.columnNumber;
@@ -198,7 +160,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
                         stack = stack.parent;
                         continue;
                     }
-                    type = SDK.NetworkRequest.InitiatorType.Script;
+                    type = "script" /* SDK.NetworkRequest.InitiatorType.SCRIPT */;
                     url = (topFrame.url || i18nString(UIStrings.anonymous));
                     lineNumber = topFrame.lineNumber;
                     columnNumber = topFrame.columnNumber;
@@ -206,7 +168,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
                     break;
                 }
                 if (!initiator.stack && initiator.url) {
-                    type = SDK.NetworkRequest.InitiatorType.Script;
+                    type = "script" /* SDK.NetworkRequest.InitiatorType.SCRIPT */;
                     url = initiator.url;
                     lineNumber = initiator.lineNumber;
                 }
@@ -215,14 +177,14 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
                 }
             }
             else if (initiator.type === "preload" /* Protocol.Network.InitiatorType.Preload */) {
-                type = SDK.NetworkRequest.InitiatorType.Preload;
+                type = "preload" /* SDK.NetworkRequest.InitiatorType.PRELOAD */;
             }
             else if (initiator.type === "preflight" /* Protocol.Network.InitiatorType.Preflight */) {
-                type = SDK.NetworkRequest.InitiatorType.Preflight;
+                type = "preflight" /* SDK.NetworkRequest.InitiatorType.PREFLIGHT */;
                 initiatorRequest = request.preflightInitiatorRequest();
             }
             else if (initiator.type === "SignedExchange" /* Protocol.Network.InitiatorType.SignedExchange */) {
-                type = SDK.NetworkRequest.InitiatorType.SignedExchange;
+                type = "signedExchange" /* SDK.NetworkRequest.InitiatorType.SIGNED_EXCHANGE */;
                 url = initiator.url || Platform.DevToolsPath.EmptyUrlString;
             }
         }
@@ -239,7 +201,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
     initiatorGraphForRequest(request) {
         const initiated = new Map();
         const networkManager = SDK.NetworkManager.NetworkManager.forRequest(request);
-        for (const otherRequest of this.requestsInternal) {
+        for (const otherRequest of this.#requests) {
             const otherRequestManager = SDK.NetworkManager.NetworkManager.forRequest(otherRequest);
             if (networkManager === otherRequestManager && this.initiatorChain(otherRequest).has(request)) {
                 // save parent request of otherRequst in order to build the initiator chain table later
@@ -249,7 +211,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
                 }
             }
         }
-        return { initiators: this.initiatorChain(request), initiated: initiated };
+        return { initiators: this.initiatorChain(request), initiated };
     }
     initiatorChain(request) {
         const initiatorDataForRequest = this.initializeInitiatorSymbolIfNeeded(request);
@@ -262,7 +224,7 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         while (checkRequest) {
             const initiatorData = this.initializeInitiatorSymbolIfNeeded(checkRequest);
             if (initiatorData.chain) {
-                Platform.SetUtilities.addAll(initiatorChainCache, initiatorData.chain);
+                initiatorChainCache = initiatorChainCache.union(initiatorData.chain);
                 break;
             }
             if (initiatorChainCache.has(checkRequest)) {
@@ -285,38 +247,39 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         return initiatorData.request;
     }
     willReloadPage() {
-        if (!Common.Settings.Settings.instance().moduleSetting('network_log.preserve-log').get()) {
+        if (!Common.Settings.Settings.instance().moduleSetting('network-log.preserve-log').get()) {
             this.reset(true);
         }
     }
     onPrimaryPageChanged(event) {
         const mainFrame = event.data.frame;
         const manager = mainFrame.resourceTreeModel().target().model(SDK.NetworkManager.NetworkManager);
-        if (!manager || mainFrame.resourceTreeModel().target().parentTarget()?.type() === SDK.Target.Type.Frame) {
+        if (!manager || mainFrame.resourceTreeModel().target().parentTarget()?.type() === SDK.Target.Type.FRAME) {
             return;
         }
         // If a page resulted in an error, the browser will navigate to an internal error page
         // hosted at 'chrome-error://...'. In this case, skip the frame navigated event to preserve
         // the network log.
-        if (mainFrame.url !== mainFrame.unreachableUrl() && mainFrame.url.startsWith('chrome-error://')) {
+        if (mainFrame.url !== mainFrame.unreachableUrl() && Common.ParsedURL.schemeIs(mainFrame.url, 'chrome-error:')) {
             return;
         }
-        const preserveLog = Common.Settings.Settings.instance().moduleSetting('network_log.preserve-log').get();
-        const oldRequests = this.requestsInternal;
-        const oldManagerRequests = this.requestsInternal.filter(request => SDK.NetworkManager.NetworkManager.forRequest(request) === manager);
-        const oldRequestsSet = this.requestsSet;
-        this.requestsInternal = [];
-        this.sentNetworkRequests = [];
-        this.receivedNetworkResponses = [];
-        this.requestsSet = new Set();
-        this.requestsMap.clear();
-        this.unresolvedPreflightRequests.clear();
+        const preserveLog = Common.Settings.Settings.instance().moduleSetting('network-log.preserve-log').get();
+        const oldRequests = this.#requests;
+        const oldManagerRequests = this.#requests.filter(request => SDK.NetworkManager.NetworkManager.forRequest(request) === manager);
+        const oldRequestsSet = this.#requestsSet;
+        this.#requests = [];
+        this.#sentNetworkRequests = [];
+        this.#receivedNetworkResponses = [];
+        this.#requestsSet = new Set();
+        this.#requestsMap.clear();
+        this.#unresolvedPreflightRequests.clear();
         this.dispatchEventToListeners(Events.Reset, { clearIfPreserved: !preserveLog });
         // Preserve requests from the new session.
         let currentPageLoad = null;
         const requestsToAdd = [];
         for (const request of oldManagerRequests) {
-            if (request.loaderId !== mainFrame.loaderId) {
+            if (event.data.type !== "Activation" /* SDK.ResourceTreeModel.PrimaryPageChangeType.ACTIVATION */ &&
+                request.loaderId !== mainFrame.loaderId) {
                 continue;
             }
             if (!currentPageLoad) {
@@ -349,64 +312,73 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         }
         if (preserveLog) {
             for (const request of oldRequestsSet) {
-                this.addRequest(request);
+                this.addRequest(request, true);
                 request.preserved = true;
             }
         }
         if (currentPageLoad) {
-            this.pageLoadForManager.set(manager, currentPageLoad);
+            this.#pageLoadForManager.set(manager, currentPageLoad);
         }
     }
-    addRequest(request) {
-        this.requestsInternal.push(request);
-        this.requestsSet.add(request);
-        const requestList = this.requestsMap.get(request.requestId());
+    addRequest(request, preserveLog) {
+        this.#requests.push(request);
+        this.#requestsSet.add(request);
+        const requestList = this.#requestsMap.get(request.requestId());
         if (!requestList) {
-            this.requestsMap.set(request.requestId(), [request]);
+            this.#requestsMap.set(request.requestId(), [request]);
         }
         else {
             requestList.push(request);
         }
         this.tryResolvePreflightRequests(request);
-        this.dispatchEventToListeners(Events.RequestAdded, request);
+        this.dispatchEventToListeners(Events.RequestAdded, { request, preserveLog });
+    }
+    removeRequest(request) {
+        const index = this.#requests.indexOf(request);
+        if (index > -1) {
+            this.#requests.splice(index, 1);
+        }
+        this.#requestsSet.delete(request);
+        this.#requestsMap.delete(request.requestId());
+        this.dispatchEventToListeners(Events.RequestRemoved, { request });
     }
     tryResolvePreflightRequests(request) {
         if (request.isPreflightRequest()) {
             const initiator = request.initiator();
-            if (initiator && initiator.requestId) {
+            if (initiator?.requestId) {
                 const [initiatorRequest] = this.requestsForId(initiator.requestId);
                 if (initiatorRequest) {
                     request.setPreflightInitiatorRequest(initiatorRequest);
                     initiatorRequest.setPreflightRequest(request);
                 }
                 else {
-                    this.unresolvedPreflightRequests.set(initiator.requestId, request);
+                    this.#unresolvedPreflightRequests.set(initiator.requestId, request);
                 }
             }
         }
         else {
-            const preflightRequest = this.unresolvedPreflightRequests.get(request.requestId());
+            const preflightRequest = this.#unresolvedPreflightRequests.get(request.requestId());
             if (preflightRequest) {
-                this.unresolvedPreflightRequests.delete(request.requestId());
+                this.#unresolvedPreflightRequests.delete(request.requestId());
                 request.setPreflightRequest(preflightRequest);
                 preflightRequest.setPreflightInitiatorRequest(request);
                 // Force recomputation of initiator info, if it already exists.
-                const data = this.initiatorData.get(preflightRequest);
+                const data = this.#initiatorData.get(preflightRequest);
                 if (data) {
                     data.info = null;
                 }
-                this.dispatchEventToListeners(Events.RequestUpdated, preflightRequest);
+                this.dispatchEventToListeners(Events.RequestUpdated, { request: preflightRequest });
             }
         }
     }
     importRequests(requests) {
         this.reset(true);
-        this.requestsInternal = [];
-        this.sentNetworkRequests = [];
-        this.receivedNetworkResponses = [];
-        this.requestsSet.clear();
-        this.requestsMap.clear();
-        this.unresolvedPreflightRequests.clear();
+        this.#requests = [];
+        this.#sentNetworkRequests = [];
+        this.#receivedNetworkResponses = [];
+        this.#requestsSet.clear();
+        this.#requestsMap.clear();
+        this.#unresolvedPreflightRequests.clear();
         for (const request of requests) {
             this.addRequest(request);
         }
@@ -414,11 +386,11 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
     onRequestStarted(event) {
         const { request, originalRequest } = event.data;
         if (originalRequest) {
-            this.sentNetworkRequests.push(originalRequest);
+            this.#sentNetworkRequests.push(originalRequest);
         }
-        this.requestsSet.add(request);
+        this.#requestsSet.add(request);
         const manager = SDK.NetworkManager.NetworkManager.forRequest(request);
-        const pageLoad = manager ? this.pageLoadForManager.get(manager) : null;
+        const pageLoad = manager ? this.#pageLoadForManager.get(manager) : null;
         if (pageLoad) {
             pageLoad.bindRequest(request);
         }
@@ -426,43 +398,43 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
     }
     onResponseReceived(event) {
         const response = event.data.response;
-        this.receivedNetworkResponses.push(response);
+        this.#receivedNetworkResponses.push(response);
     }
     onRequestUpdated(event) {
         const request = event.data;
-        if (!this.requestsSet.has(request)) {
+        if (!this.#requestsSet.has(request)) {
             return;
         }
-        this.dispatchEventToListeners(Events.RequestUpdated, request);
+        this.dispatchEventToListeners(Events.RequestUpdated, { request });
     }
     onRequestRedirect(event) {
-        this.initiatorData.delete(event.data);
+        this.#initiatorData.delete(event.data);
     }
     onDOMContentLoaded(resourceTreeModel, event) {
         const networkManager = resourceTreeModel.target().model(SDK.NetworkManager.NetworkManager);
-        const pageLoad = networkManager ? this.pageLoadForManager.get(networkManager) : null;
+        const pageLoad = networkManager ? this.#pageLoadForManager.get(networkManager) : null;
         if (pageLoad) {
             pageLoad.contentLoadTime = event.data;
         }
     }
     onLoad(event) {
         const networkManager = event.data.resourceTreeModel.target().model(SDK.NetworkManager.NetworkManager);
-        const pageLoad = networkManager ? this.pageLoadForManager.get(networkManager) : null;
+        const pageLoad = networkManager ? this.#pageLoadForManager.get(networkManager) : null;
         if (pageLoad) {
             pageLoad.loadTime = event.data.loadTime;
         }
     }
     reset(clearIfPreserved) {
-        this.requestsInternal = [];
-        this.sentNetworkRequests = [];
-        this.receivedNetworkResponses = [];
-        this.requestsSet.clear();
-        this.requestsMap.clear();
-        this.unresolvedPreflightRequests.clear();
+        this.#requests = [];
+        this.#sentNetworkRequests = [];
+        this.#receivedNetworkResponses = [];
+        this.#requestsSet.clear();
+        this.#requestsMap.clear();
+        this.#unresolvedPreflightRequests.clear();
         const managers = new Set(SDK.TargetManager.TargetManager.instance().models(SDK.NetworkManager.NetworkManager));
-        for (const manager of this.pageLoadForManager.keys()) {
+        for (const manager of this.#pageLoadForManager.keys()) {
             if (!managers.has(manager)) {
-                this.pageLoadForManager.delete(manager);
+                this.#pageLoadForManager.delete(manager);
             }
         }
         this.dispatchEventToListeners(Events.Reset, { clearIfPreserved });
@@ -497,16 +469,17 @@ export class NetworkLog extends Common.ObjectWrapper.ObjectWrapper {
         return consoleMessageToRequest.get(consoleMessage) || null;
     }
     requestsForId(requestId) {
-        return this.requestsMap.get(requestId) || [];
+        return this.#requestsMap.get(requestId) || [];
     }
 }
 const consoleMessageToRequest = new WeakMap();
-// TODO(crbug.com/1167717): Make this a const enum again
-// eslint-disable-next-line rulesdir/const_enum
 export var Events;
 (function (Events) {
+    /* eslint-disable @typescript-eslint/naming-convention -- Used by web_tests. */
     Events["Reset"] = "Reset";
     Events["RequestAdded"] = "RequestAdded";
     Events["RequestUpdated"] = "RequestUpdated";
+    Events["RequestRemoved"] = "RequestRemoved";
+    /* eslint-enable @typescript-eslint/naming-convention */
 })(Events || (Events = {}));
 //# sourceMappingURL=NetworkLog.js.map

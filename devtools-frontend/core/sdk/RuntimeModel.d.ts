@@ -4,8 +4,8 @@ import type * as Platform from '../platform/platform.js';
 import { DebuggerModel } from './DebuggerModel.js';
 import { HeapProfilerModel } from './HeapProfilerModel.js';
 import { RemoteObject, RemoteObjectProperty, type ScopeRef } from './RemoteObject.js';
-import { type Target } from './Target.js';
 import { SDKModel } from './SDKModel.js';
+import { type Target } from './Target.js';
 export declare class RuntimeModel extends SDKModel<EventTypes> {
     #private;
     readonly agent: ProtocolProxyApi.RuntimeApi;
@@ -15,7 +15,8 @@ export declare class RuntimeModel extends SDKModel<EventTypes> {
     heapProfilerModel(): HeapProfilerModel;
     executionContexts(): ExecutionContext[];
     setExecutionContextComparator(comparator: (arg0: ExecutionContext, arg1: ExecutionContext) => number): void;
-    /** comparator
+    /**
+     * comparator
      */
     executionContextComparator(): (arg0: ExecutionContext, arg1: ExecutionContext) => number;
     defaultExecutionContext(): ExecutionContext | null;
@@ -40,9 +41,12 @@ export declare class RuntimeModel extends SDKModel<EventTypes> {
     heapUsage(): Promise<{
         usedSize: number;
         totalSize: number;
+        embedderHeapUsedSize?: number;
+        backingStorageSize?: number;
     } | null>;
-    inspectRequested(payload: Protocol.Runtime.RemoteObject, hints?: any, executionContextId?: number): void;
+    inspectRequested(payload: Protocol.Runtime.RemoteObject, hints: unknown, executionContextId?: number): void;
     addBinding(event: Protocol.Runtime.AddBindingRequest): Promise<Protocol.ProtocolResponseWithError>;
+    removeBinding(request: Protocol.Runtime.RemoveBindingRequest): Promise<Protocol.ProtocolResponseWithError>;
     bindingCalled(event: Protocol.Runtime.BindingCalledEvent): void;
     private copyRequested;
     private queryObjectsRequested;
@@ -52,9 +56,7 @@ export declare class RuntimeModel extends SDKModel<EventTypes> {
     consoleAPICalled(type: Protocol.Runtime.ConsoleAPICalledEventType, args: Protocol.Runtime.RemoteObject[], executionContextId: number, timestamp: number, stackTrace?: Protocol.Runtime.StackTrace, context?: string): void;
     executionContextIdForScriptId(scriptId: string): number;
     executionContextForStackTrace(stackTrace: Protocol.Runtime.StackTrace): number;
-    hasSideEffectSupport(): boolean | null;
-    checkSideEffectSupport(): Promise<boolean>;
-    terminateExecution(): Promise<any>;
+    terminateExecution(): Promise<Protocol.ProtocolResponseWithError>;
     getExceptionDetails(errorObjectId: Protocol.Runtime.RemoteObjectId): Promise<Protocol.Runtime.ExceptionDetails | undefined>;
 }
 export declare enum Events {
@@ -84,7 +86,7 @@ export interface QueryObjectRequestedEvent {
     objects: RemoteObject;
     executionContextId?: number;
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.BindingCalled]: Protocol.Runtime.BindingCalledEvent;
     [Events.ExecutionContextCreated]: ExecutionContext;
     [Events.ExecutionContextDestroyed]: ExecutionContext;
@@ -94,7 +96,7 @@ export type EventTypes = {
     [Events.ExceptionRevoked]: number;
     [Events.ConsoleAPICalled]: ConsoleAPICall;
     [Events.QueryObjectRequested]: QueryObjectRequestedEvent;
-};
+}
 export declare class ExecutionContext {
     #private;
     id: Protocol.Runtime.ExecutionContextId;
@@ -110,11 +112,11 @@ export declare class ExecutionContext {
     static comparator(a: ExecutionContext, b: ExecutionContext): number;
     evaluate(options: EvaluationOptions, userGesture: boolean, awaitPromise: boolean): Promise<EvaluationResult>;
     globalObject(objectGroup: string, generatePreview: boolean): Promise<EvaluationResult>;
+    callFunctionOn(options: CallFunctionOptions): Promise<EvaluationResult>;
     private evaluateGlobal;
     globalLexicalScopeNames(): Promise<string[] | null>;
     label(): string | null;
     setLabel(label: string): void;
-    private setLabelInternal;
 }
 export type EvaluationResult = {
     object: RemoteObject;
@@ -139,6 +141,15 @@ export interface EvaluationOptions {
     replMode?: boolean;
     allowUnsafeEvalBlockedByCSP?: boolean;
     contextId?: number;
+}
+export interface CallFunctionOptions {
+    functionDeclaration: string;
+    returnByValue?: boolean;
+    throwOnSideEffect?: boolean;
+    allowUnsafeEvalBlockedByCSP?: boolean;
+    arguments: Protocol.Runtime.CallArgument[];
+    userGesture: boolean;
+    awaitPromise: boolean;
 }
 export type QueryObjectResult = {
     objects: RemoteObject;

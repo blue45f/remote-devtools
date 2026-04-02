@@ -1,19 +1,28 @@
+import './Toolbar.js';
 import * as Common from '../../core/common/common.js';
+import type * as Root from '../../core/root/root.js';
+import type * as Foundation from '../../foundation/foundation.js';
+import { TabbedPane } from './TabbedPane.js';
 import { type ToolbarItem } from './Toolbar.js';
-import { type TabbedViewLocation, type View, type ViewLocation } from './View.js';
-import { getRegisteredLocationResolvers, getRegisteredViewExtensions, getLocalizedViewLocationCategory, maybeRemoveViewExtension, registerLocationResolver, registerViewExtension, ViewLocationCategory, ViewLocationValues, ViewPersistence, type ViewRegistration, resetViewRegistration } from './ViewRegistration.js';
+import type { TabbedViewLocation, View, ViewLocation } from './View.js';
+import { getLocalizedViewLocationCategory, getRegisteredLocationResolvers, maybeRemoveViewExtension, registerLocationResolver, registerViewExtension, resetViewRegistration, ViewLocationCategory, ViewLocationValues, ViewPersistence, type ViewRegistration } from './ViewRegistration.js';
 import { VBox, type Widget } from './Widget.js';
 export declare const defaultOptionsForTabs: {
     security: boolean;
+    freestyler: boolean;
 };
+type TabbedPaneFactory = () => TabbedPane;
 export declare class PreRegisteredView implements View {
     private readonly viewRegistration;
-    private widgetRequested;
-    constructor(viewRegistration: ViewRegistration);
+    private readonly universe?;
+    private widgetPromise;
+    constructor(viewRegistration: ViewRegistration, universe?: Foundation.Universe.Universe);
     title(): Common.UIString.LocalizedString;
     commandPrompt(): Common.UIString.LocalizedString;
     isCloseable(): boolean;
     isPreviewFeature(): boolean;
+    featurePromotionId(): string | undefined;
+    iconName(): string | undefined;
     isTransient(): boolean;
     viewId(): string;
     location(): ViewLocationValues | undefined;
@@ -25,18 +34,32 @@ export declare class PreRegisteredView implements View {
     widget(): Promise<Widget>;
     disposeView(): Promise<void>;
     experiment(): string | undefined;
-    condition(): string | undefined;
+    condition(): Root.Runtime.Condition | undefined;
 }
-export declare class ViewManager {
+export declare const enum Events {
+    VIEW_VISIBILITY_CHANGED = "ViewVisibilityChanged"
+}
+export interface ViewVisibilityEventData {
+    location: string;
+    revealedViewId: string | undefined;
+    hiddenViewId: string | undefined;
+}
+export interface EventTypes {
+    [Events.VIEW_VISIBILITY_CHANGED]: ViewVisibilityEventData;
+}
+export declare class ViewManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
     readonly views: Map<string, View>;
     private readonly locationNameByViewId;
     private readonly locationOverrideSetting;
+    private readonly preRegisteredViews;
     private constructor();
     static instance(opts?: {
         forceNew: boolean | null;
+        universe?: Foundation.Universe.Universe;
     }): ViewManager;
     static removeInstance(): void;
     static createToolbar(toolbarItems: ToolbarItem[]): Element | null;
+    getRegisteredViewExtensions(): PreRegisteredView[];
     locationNameForViewId(viewId: string): string;
     /**
      * Moves a view to a new location
@@ -52,10 +75,12 @@ export declare class ViewManager {
     showViewInLocation(viewId: string, locationName: string, shouldSelectTab?: boolean | undefined): void;
     view(viewId: string): View;
     materializedWidget(viewId: string): Widget | null;
+    hasView(viewId: string): boolean;
     showView(viewId: string, userGesture?: boolean, omitFocus?: boolean): Promise<void>;
+    isViewVisible(viewId: string): boolean;
     resolveLocation(location?: string): Promise<Location | null>;
-    createTabbedLocation(revealCallback?: (() => void), location?: string, restoreSelection?: boolean, allowReorder?: boolean, defaultTab?: string | null): TabbedViewLocation;
-    createStackLocation(revealCallback?: (() => void), location?: string): ViewLocation;
+    createTabbedLocation(revealCallback: (() => void), location: string, restoreSelection?: boolean, allowReorder?: boolean, defaultTab?: string | null, isLocationVisible?: (() => boolean), tabbedPaneFactory?: TabbedPaneFactory): TabbedViewLocation;
+    createStackLocation(revealCallback?: (() => void), location?: string, jslogContext?: string): ViewLocation;
     hasViewsForLocation(location: string): boolean;
     viewsForLocation(location: string): View[];
 }
@@ -68,13 +93,14 @@ export declare class ContainerWidget extends VBox {
     private wasShownForTest;
 }
 declare class Location {
+    #private;
     protected readonly manager: ViewManager;
     private readonly revealCallback;
-    private readonly widgetInternal;
     constructor(manager: ViewManager, widget: Widget, revealCallback?: (() => void));
     widget(): Widget;
     reveal(): void;
     showView(_view: View, _insertBefore?: View | null, _userGesture?: boolean, _omitFocus?: boolean, _shouldSelectTab?: boolean): Promise<void>;
     removeView(_view: View): void;
+    isViewVisible(_view: View): boolean;
 }
-export { ViewRegistration, ViewPersistence, getRegisteredViewExtensions, maybeRemoveViewExtension, registerViewExtension, ViewLocationValues, getRegisteredLocationResolvers, registerLocationResolver, ViewLocationCategory, getLocalizedViewLocationCategory, resetViewRegistration, };
+export { getLocalizedViewLocationCategory, getRegisteredLocationResolvers, maybeRemoveViewExtension, registerLocationResolver, registerViewExtension, resetViewRegistration, ViewLocationCategory, ViewLocationValues, ViewPersistence, ViewRegistration, };

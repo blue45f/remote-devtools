@@ -1,26 +1,36 @@
 import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
-import * as IconButton from '../components/icon_button/icon_button.js';
+import * as Geometry from '../../models/geometry/geometry.js';
+import { type LitTemplate } from '../../ui/lit/lit.js';
+import { Icon } from '../kit/kit.js';
 import { ContextMenu } from './ContextMenu.js';
-import { Constraints } from './Geometry.js';
-import { Icon } from './Icon.js';
-import { Toolbar } from './Toolbar.js';
-import { VBox, type Widget } from './Widget.js';
+import type { Toolbar } from './Toolbar.js';
+import { VBox, Widget, WidgetElement } from './Widget.js';
+export interface TabInfo {
+    id: string;
+    title: string;
+    view: Widget;
+    tabTooltip?: string;
+    isCloseable?: boolean;
+    previewFeature?: boolean;
+    index?: number;
+    jslogContext?: string;
+    enabled?: boolean;
+    selected?: boolean;
+}
 declare const TabbedPane_base: (new (...args: any[]) => {
-    "__#13@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
-    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object | undefined): Common.EventTarget.EventDescriptor<EventTypes, T>;
-    once<T_1 extends keyof EventTypes>(eventType: T_1): Promise<EventTypes[T_1]>;
-    removeEventListener<T_2 extends keyof EventTypes>(eventType: T_2, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T_2], any>) => void, thisObject?: Object | undefined): void;
+    "__#private@#events": Common.ObjectWrapper.ObjectWrapper<EventTypes>;
+    addEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): Common.EventTarget.EventDescriptor<EventTypes, T>;
+    once<T extends keyof EventTypes>(eventType: T): Promise<EventTypes[T]>;
+    removeEventListener<T extends keyof EventTypes>(eventType: T, listener: (arg0: Common.EventTarget.EventTargetEvent<EventTypes[T], any>) => void, thisObject?: Object): void;
     hasEventListeners(eventType: keyof EventTypes): boolean;
-    dispatchEventToListeners<T_3 extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T_3>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T_3>): void;
+    dispatchEventToListeners<T extends keyof EventTypes>(eventType: Platform.TypeScriptUtilities.NoUnion<T>, ...eventData: Common.EventTarget.EventPayloadToRestParameters<EventTypes, T>): void;
 }) & typeof VBox;
 export declare class TabbedPane extends TabbedPane_base {
-    private readonly headerElementInternal;
+    #private;
     private readonly headerContentsElement;
     tabSlider: HTMLDivElement;
     readonly tabsElement: HTMLElement;
-    private readonly contentElementInternal;
-    private tabs;
     private readonly tabsHistory;
     tabsById: Map<string, TabbedPaneTab>;
     private currentTabLocked;
@@ -38,13 +48,10 @@ export declare class TabbedPane extends TabbedPane_base {
     private focusedPlaceholderElement?;
     private placeholderContainerElement?;
     private lastSelectedOverflowTab?;
-    private overflowDisabled?;
     private measuredDropDownButtonWidth?;
-    private leftToolbarInternal?;
-    private rightToolbarInternal?;
     allowTabReorder?: boolean;
     private automaticReorder?;
-    constructor();
+    constructor(element?: HTMLElement);
     setAccessibleName(name: string): void;
     setCurrentTabLocked(locked: boolean): void;
     setAutoSelectFirstItemOnShow(autoSelect: boolean): void;
@@ -61,12 +68,10 @@ export declare class TabbedPane extends TabbedPane_base {
     focusSelectedTabHeader(): void;
     headerElement(): Element;
     tabbedPaneContentElement(): Element;
-    isTabCloseable(id: string): boolean;
     setTabDelegate(delegate: TabbedPaneTabDelegate): void;
-    appendTab(id: string, tabTitle: string, view: Widget, tabTooltip?: string, userGesture?: boolean, isCloseable?: boolean, isPreviewFeature?: boolean, index?: number): void;
+    appendTab(id: string, tabTitle: string, view: Widget, tabTooltip?: string, userGesture?: boolean, isCloseable?: boolean, isPreviewFeature?: boolean, index?: number, jslogContext?: string): void;
     closeTab(id: string, userGesture?: boolean): void;
     closeTabs(ids: string[], userGesture?: boolean): void;
-    private innerCloseTab;
     hasTab(tabId: string): boolean;
     otherTabs(id: string): string[];
     tabsToTheRight(id: string): string[];
@@ -74,24 +79,34 @@ export declare class TabbedPane extends TabbedPane_base {
     selectTab(id: string, userGesture?: boolean, forceFocus?: boolean): boolean;
     selectNextTab(): void;
     selectPrevTab(): void;
+    getTabIndex(id: string): number;
+    moveTabBackward(id: string, index: number): void;
+    moveTabForward(id: string, index: number): void;
     lastOpenedTabIds(tabsCount: number): string[];
-    setTabIcon(id: string, icon: Icon | IconButton.Icon.Icon | null): void;
+    setTabIcon(id: string, icon: Icon | null): void;
+    setTrailingTabIcon(id: string, icon: Icon | LitTemplate | null): void;
+    setSuffixElement(id: string, suffixElement: HTMLElement | LitTemplate | null): void;
+    setBadge(id: string, content: string | null): void;
     setTabEnabled(id: string, enabled: boolean): void;
-    toggleTabClass(id: string, className: string, force?: boolean): void;
+    tabIsDisabled(id: string): boolean;
+    tabIsEnabled(id: string): boolean;
     private zoomChanged;
     private clearMeasuredWidths;
     changeTabTitle(id: string, tabTitle: string, tabTooltip?: string): void;
     changeTabView(id: string, view: Widget): void;
+    get tabs(): TabInfo[];
+    set tabs(tabs: TabInfo[]);
     onResize(): void;
     headerResized(): void;
     wasShown(): void;
+    wasHidden(): void;
     makeTabSlider(): void;
     private setTabSlider;
-    calculateConstraints(): Constraints;
-    private updateTabElements;
+    calculateConstraints(): Geometry.Constraints;
     setPlaceholderElement(element: Element, focusedElement?: Element): void;
     waitForTabElementUpdate(): Promise<void>;
-    private innerUpdateTabElements;
+    updateTabAnnotationIcons(): void;
+    performUpdate(): void;
     private adjustToolbarWidth;
     private showTabElement;
     private hideTabElement;
@@ -101,7 +116,6 @@ export declare class TabbedPane extends TabbedPane_base {
     private dropDownMenuItemSelected;
     private totalWidth;
     private numberOfTabsShown;
-    disableOverflowMenu(): void;
     private updateTabsDropDown;
     private maybeShowDropDown;
     private measureDropDownButton;
@@ -118,6 +132,7 @@ export declare class TabbedPane extends TabbedPane_base {
     leftToolbar(): Toolbar;
     rightToolbar(): Toolbar;
     setAllowTabReorder(allow: boolean, automatic?: boolean): void;
+    setTabAnnotationIcon(id: string, iconVisible: boolean): void;
     private keyDown;
 }
 export interface EventData {
@@ -130,37 +145,41 @@ export declare enum Events {
     TabInvoked = "TabInvoked",
     TabSelected = "TabSelected",
     TabClosed = "TabClosed",
-    TabOrderChanged = "TabOrderChanged"
+    TabOrderChanged = "TabOrderChanged",
+    PaneVisibilityChanged = "PaneVisibilityChanged"
 }
-export type EventTypes = {
+export interface EventTypes {
     [Events.TabInvoked]: EventData;
     [Events.TabSelected]: EventData;
     [Events.TabClosed]: EventData;
     [Events.TabOrderChanged]: EventData;
-};
+    [Events.PaneVisibilityChanged]: {
+        isVisible: boolean;
+    };
+}
 export declare class TabbedPaneTab {
+    #private;
     closeable: boolean;
     previewFeature: boolean;
     private readonly tabbedPane;
-    idInternal: string;
-    private titleInternal;
-    private tooltipInternal;
-    private viewInternal;
     shown: boolean;
     measuredWidth: number | undefined;
-    private tabElementInternal;
-    private readonly iconContainer;
-    private icon?;
-    private widthInternal?;
+    private icon;
+    private suffixElement;
     private delegate?;
     private titleElement?;
     private dragStartX?;
-    constructor(tabbedPane: TabbedPane, id: string, title: string, closeable: boolean, previewFeature: boolean, view: Widget, tooltip?: string);
+    constructor(tabbedPane: TabbedPane, id: string, title: string, closeable: boolean, previewFeature: boolean, view: Widget, tooltip?: string, jslogContext?: string);
     get id(): string;
     get title(): string;
     set title(title: string);
+    get jslogContext(): string;
+    set jslogContext(jslogContext: string | undefined);
+    get tabAnnotationIcon(): boolean;
+    set tabAnnotationIcon(iconVisible: boolean);
     isCloseable(): boolean;
-    setIcon(icon: Icon | IconButton.Icon.Icon | null): void;
+    setIcon(icon: Icon | null): void;
+    setSuffixElement(suffixElement: HTMLElement | LitTemplate | null): void;
     toggleClass(className: string, force?: boolean): boolean;
     get view(): Widget;
     set view(view: Widget);
@@ -171,10 +190,14 @@ export declare class TabbedPaneTab {
     setWidth(width: number): void;
     setDelegate(delegate: TabbedPaneTabDelegate): void;
     private createIconElement;
+    private createSuffixElement;
+    private createMeasureClone;
     createTabElement(measuring: boolean): HTMLElement;
+    private createTabAnnotationIcon;
     private createCloseIconButton;
     private createPreviewIcon;
     private isCloseIconClicked;
+    private tabKeyDown;
     private tabClicked;
     private tabMouseDown;
     private tabMouseUp;
@@ -187,5 +210,10 @@ export declare class TabbedPaneTab {
 export interface TabbedPaneTabDelegate {
     closeTabs(tabbedPane: TabbedPane, ids: string[]): void;
     onContextMenu(tabId: string, contextMenu: ContextMenu): void;
+}
+export declare class TabbedPaneElement extends WidgetElement<TabbedPane> {
+    #private;
+    constructor();
+    disconnectedCallback(): void;
 }
 export {};
