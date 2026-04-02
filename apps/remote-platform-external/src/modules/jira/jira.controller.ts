@@ -12,12 +12,14 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
+import { ApiTags } from "@nestjs/swagger";
 import { JiraService } from "./jira.service";
 
 /**
  * Jira integration controller.
  * Routes: Figma plugin -> External (here) -> Internal -> Workflow
  */
+@ApiTags("Jira")
 @Controller("jira")
 export class JiraController {
   private readonly logger = new Logger(JiraController.name);

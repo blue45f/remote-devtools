@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Logger, Put, Query } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
@@ -33,6 +34,7 @@ interface UserTemplatesResponse {
   readonly lastSelectedTemplate?: TicketTemplate;
 }
 
+@ApiTags("Ticket Form")
 @Controller("api")
 export class TicketFormController {
   private readonly logger = new Logger(TicketFormController.name);

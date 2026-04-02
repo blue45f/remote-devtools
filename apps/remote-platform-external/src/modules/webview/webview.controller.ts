@@ -21,8 +21,10 @@ import {
 // HTML을 실제 브라우저로 렌더링
 import { renderHTMLToImage } from "../../utils/html-to-image";
 import { RecordService } from "@remote-platform/core";
+import { ApiTags } from "@nestjs/swagger";
 import { S3Service } from "../s3/s3.service";
 
+@ApiTags("Sessions")
 @Controller("sessions")
 export class WebviewController {
   private readonly logger = new Logger(WebviewController.name);

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Logger, Post } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
@@ -49,6 +50,7 @@ interface HealthCheckResponse {
   readonly timestamp: string;
 }
 
+@ApiTags("Figma")
 @Controller("api/figma")
 export class FigmaController {
   private readonly logger = new Logger(FigmaController.name);
