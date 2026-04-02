@@ -42,6 +42,33 @@ Remote DevTools의 REST API 및 WebSocket API 레퍼런스.
 
 ---
 
+## 공통 엔드포인트
+
+양쪽 서버 모두 제공:
+
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `GET /api/docs` | Swagger OpenAPI 문서 (자동 생성) |
+| `GET /` | 헬스 체크 (단순 "ok" 반환) |
+| `GET /health` | 헬스 체크 (단순 "ok" 반환) |
+
+Internal 서버 전용:
+
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `GET /api/health` | Terminus 헬스 체크 (DB 연결 상태 포함) |
+
+Terminus 헬스 체크 응답 예시:
+```json
+{
+  "status": "ok",
+  "info": { "database": { "status": "up" } },
+  "details": { "database": { "status": "up" } }
+}
+```
+
+---
+
 ## 서버 구성
 
 | 서버       | 포트   | 역할                                                       |
