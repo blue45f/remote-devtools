@@ -34,7 +34,7 @@ async function handleRoomClick(roomName: string): Promise<void> {
     }
 
     // 녹화 세션 상세 정보 가져오기 (roomName으로 조회)
-    const roomDetail = (await appState.apiClient.getRoomDetail(roomName)) as RoomDetailResponse
+    const roomDetail = (await appState.apiClient.getSessionDetail(roomName)) as RoomDetailResponse
 
     if (roomDetail.screenPreviewUrl) {
       // screenPreviewUrl이 API 엔드포인트인 경우 ApiClient를 통해 dataURL 가져오기
