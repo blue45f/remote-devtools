@@ -151,4 +151,27 @@ describe("WebviewController (External)", () => {
       expect(result).toBeDefined();
     });
   });
+
+  describe("getTicketsByEpic", () => {
+    it("should throw when parentEpic is missing", async () => {
+      await expect(
+        controller.getTicketsByEpic(undefined as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("getTicketsByUrl", () => {
+    it("should throw when url is missing", async () => {
+      await expect(
+        controller.getTicketsByUrl(undefined as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("getSessionDailyStats", () => {
+    it("should return session daily statistics", async () => {
+      const result = await controller.getSessionDailyStats();
+      expect(result).toBeDefined();
+    });
+  });
 });
