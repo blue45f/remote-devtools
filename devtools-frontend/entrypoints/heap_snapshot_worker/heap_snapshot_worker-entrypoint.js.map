@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["heap_snapshot_worker-entrypoint.prebundle.ts"],
-  "sourcesContent": ["// Copyright 2020 The Chromium Authors\n// Use of this source code is governed by a BSD-style license that can be\n// found in the LICENSE file.\nimport * as Platform from '../../core/platform/platform.js';\n\nimport * as HeapSnapshotWorker from './heap_snapshot_worker.js';\n\nconst dispatcher = new HeapSnapshotWorker.HeapSnapshotWorkerDispatcher.HeapSnapshotWorkerDispatcher(\n    Platform.HostRuntime.HOST_RUNTIME.workerScope.postMessage.bind(Platform.HostRuntime.HOST_RUNTIME.workerScope));\nPlatform.HostRuntime.HOST_RUNTIME.workerScope.onmessage = dispatcher.dispatchMessage.bind(dispatcher);\nPlatform.HostRuntime.HOST_RUNTIME.workerScope.postMessage('workerReady');\n"],
-  "mappings": "AAGA,UAAYA,MAAc,oCAE1B,UAAYC,MAAwB,4BAEpC,IAAMC,EAAa,IAAuB,+BAA6B,6BAC1D,cAAY,aAAa,YAAY,YAAY,KAAc,cAAY,aAAa,WAAW,CAAC,EACxG,cAAY,aAAa,YAAY,UAAYA,EAAW,gBAAgB,KAAKA,CAAU,EAC3F,cAAY,aAAa,YAAY,YAAY,aAAa",
-  "names": ["Platform", "HeapSnapshotWorker", "dispatcher"]
-}
