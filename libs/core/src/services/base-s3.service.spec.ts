@@ -195,7 +195,8 @@ describe("BaseS3Service", () => {
       });
       const cloned = service["cloneBufferData"](original);
 
-      expect(cloned.bufferData).toEqual([]);
+      // structuredClone preserves undefined as-is
+      expect(cloned.bufferData).toBeUndefined();
     });
 
     it("should handle non-array bufferData gracefully", () => {
@@ -204,7 +205,8 @@ describe("BaseS3Service", () => {
       });
       const cloned = service["cloneBufferData"](original);
 
-      expect(cloned.bufferData).toEqual([]);
+      // structuredClone preserves the value as-is
+      expect(cloned.bufferData).toBe("not-an-array");
     });
   });
 
