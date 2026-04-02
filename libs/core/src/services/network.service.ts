@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import pRetry from "p-retry";
 import { Repository } from "typeorm";
 
 import { BusinessException } from "@remote-platform/common";
@@ -9,7 +10,6 @@ import { RecordService } from "./record.service";
 
 /**
  * Maximum number of retry attempts when looking up network entries.
- * Network response bodies may arrive before the network entry is persisted.
  */
 const MAX_RETRY_ATTEMPTS = 5;
 
@@ -183,17 +183,25 @@ export class NetworkService {
   private async findNetworkWithRetry(
     record: { id: number },
     requestId: number,
-    retries = MAX_RETRY_ATTEMPTS,
-    delay = RETRY_DELAY_MS,
   ): Promise<NetworkEntity | null> {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      const network = await this.networkRepository.findOne({
-        where: { record: { id: record.id }, requestId },
-      });
-      if (network) return network;
-
-      await new Promise((resolve) => setTimeout(resolve, delay));
+    try {
+      return await pRetry(
+        async () => {
+          const network = await this.networkRepository.findOne({
+            where: { record: { id: record.id }, requestId },
+          });
+          if (!network) throw new Error("Not found yet");
+          return network;
+        },
+        {
+          retries: MAX_RETRY_ATTEMPTS,
+          minTimeout: RETRY_DELAY_MS,
+          maxTimeout: RETRY_DELAY_MS,
+          factor: 1,
+        },
+      );
+    } catch {
+      return null;
     }
-    return null;
   }
 }
