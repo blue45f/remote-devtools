@@ -8,6 +8,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import type { Logger } from "@nestjs/common";
+import { getLocalDate, getLocalDateString } from "@remote-platform/constants";
 import { LRUCache } from "lru-cache";
 
 // ---------------------------------------------------------------------------
@@ -266,9 +267,7 @@ export abstract class BaseS3Service {
   protected async uploadToS3(data: BufferUploadData): Promise<string> {
     try {
       const { deviceId, timestamp, date } = data;
-      const targetDate =
-        date ||
-        new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const targetDate = date || getLocalDateString();
       const fileName = `session_${timestamp}.json`;
       const s3Key = `backups/${targetDate}/${deviceId || "unknown-device"}/${fileName}`;
 
@@ -406,8 +405,7 @@ export abstract class BaseS3Service {
     const sessionStartTime =
       data.sessionStartTime || data.timestamp || Date.now();
 
-    const koreanTime = new Date(sessionStartTime + 9 * 60 * 60 * 1000);
-    const recordDate = koreanTime.toISOString().split("T")[0];
+    const recordDate = getLocalDateString(sessionStartTime);
 
     const fileName = `session_${sessionStartTime}.json`;
     const deviceDir = path.join(this.backupDir, recordDate, deviceId);
@@ -459,13 +457,10 @@ export abstract class BaseS3Service {
       return dates;
     }
 
-    const dates: string[] = [];
-    for (let i = 0; i < 2; i++) {
-      const date = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      date.setDate(date.getDate() - i);
-      dates.push(date.toISOString().split("T")[0]);
-    }
-    return dates;
+    const today = getLocalDate();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return [getLocalDateString(today.getTime()), getLocalDateString(yesterday.getTime())];
   }
 
   /**
@@ -484,11 +479,7 @@ export abstract class BaseS3Service {
     if (Number.isFinite(timestamp)) {
       const utcDate = new Date(timestamp).toISOString().split("T")[0];
       candidates.add(utcDate);
-
-      const kstDate = new Date(timestamp + 9 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-      candidates.add(kstDate);
+      candidates.add(getLocalDateString(timestamp));
     }
 
     return Array.from(candidates);
