@@ -1,18 +1,15 @@
-import * as CryptoJS from "crypto-js";
+import { createDecipheriv } from "node:crypto";
+
 import { UAParser } from "ua-parser-js";
 
 import type { UserData } from "../modules/webview/webview.gateway";
 
-const ENCRYPTION_KEY = CryptoJS.lib.WordArray.create(
-  [1935828585, 1734898793, 1852243968],
-  32,
+// AES-256-CBC key/IV (byte-identical to the original CryptoJS WordArray)
+const ENCRYPTION_KEY = Buffer.from(
+  "73626669676874696e6700000000000000000000000000000000000000000000",
+  "hex",
 );
-
-const ENCRYPTION_OPTIONS = {
-  mode: CryptoJS.mode.CBC,
-  padding: CryptoJS.pad.Pkcs7,
-  iv: CryptoJS.lib.WordArray.create([0, 0, 0, 0, 0, 0, 0, 0], 16),
-};
+const ENCRYPTION_IV = Buffer.alloc(16, 0);
 
 /** Decrypted user app information with labeled fields. */
 interface UserAppInfo {
@@ -47,11 +44,9 @@ export const decryptUserAppData = (userAppData: string): UserAppInfo => {
   }
 
   try {
-    const decoded = CryptoJS.AES.decrypt(
-      userAppData,
-      ENCRYPTION_KEY,
-      ENCRYPTION_OPTIONS,
-    ).toString(CryptoJS.enc.Utf8);
+    const encrypted = Buffer.from(userAppData, "base64");
+    const decipher = createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, ENCRYPTION_IV);
+    const decoded = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 
     if (!decoded) {
       return EMPTY_USER_APP_INFO;
