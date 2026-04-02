@@ -146,20 +146,15 @@ export abstract class BaseS3Service {
   }
 
   // -------------------------------------------------------------------------
-  // Data cloning (defensive copies)
+  // Data cloning (defensive copies via structuredClone)
   // -------------------------------------------------------------------------
 
   protected cloneBufferData(data: BufferUploadData): BufferUploadData {
-    return {
-      ...data,
-      bufferData: Array.isArray(data.bufferData)
-        ? data.bufferData.map((event) => ({ ...event }))
-        : [],
-    };
+    return structuredClone(data);
   }
 
   protected cloneBufferDataArray(list: BufferUploadData[]): BufferUploadData[] {
-    return list.map((item) => this.cloneBufferData(item));
+    return structuredClone(list);
   }
 
   // -------------------------------------------------------------------------
