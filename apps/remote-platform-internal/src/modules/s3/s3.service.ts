@@ -122,7 +122,8 @@ export class S3Service extends BaseS3Service {
         }
       } else {
         for (let i = 0; i < 2; i++) {
-          const date = new Date(Date.now() + 9 * 60 * 60 * 1000);
+          const { getLocalDate } = require("@remote-platform/constants");
+          const date = getLocalDate();
           date.setDate(date.getDate() - i);
           searchDates.push(date.toISOString().split("T")[0]);
         }
@@ -1234,9 +1235,9 @@ export class S3Service extends BaseS3Service {
     try {
       const results: BufferUploadData[] = [];
 
-      // Extract date from current recording session (KST; search only within the same date folder)
-      const currentDate = new Date(currentTimestamp + 9 * 60 * 60 * 1000); // UTC+9 (KST)
-      const targetDateDir = currentDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      // Extract date from current recording session (local timezone)
+      const { getLocalDateString } = require("@remote-platform/constants");
+      const targetDateDir = getLocalDateString(currentTimestamp);
 
       this.logger.log(`[S3_CURRENT_RECORD] 🎯 Analyzing current record:`);
       this.logger.log(`  ⏰ Input timestamp: ${currentTimestamp}`);

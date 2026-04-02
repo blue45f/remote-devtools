@@ -184,12 +184,8 @@ const SessionsPage = () => {
       {!loading && !error && filteredSessions.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" role="tabpanel">
           {filteredSessions.map((session) => (
-            <a
+            <div
               key={session.id}
-              href={convertLink(
-                session.name,
-                selectedTab === "record" ? session.id : undefined,
-              )}
               className="group flex flex-col gap-2 p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
               {/* Header */}
@@ -249,7 +245,28 @@ const SessionsPage = () => {
                   <span className="ml-auto">{formatTimeAgo(session.timestamp)}</span>
                 )}
               </div>
-            </a>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 mt-1">
+                {selectedTab === "record" && (
+                  <a
+                    href={`/sessions/${session.id}`}
+                    className="px-3 py-1.5 text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors"
+                  >
+                    Detail
+                  </a>
+                )}
+                <a
+                  href={convertLink(
+                    session.name,
+                    selectedTab === "record" ? session.id : undefined,
+                  )}
+                  className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                >
+                  Open DevTools
+                </a>
+              </div>
+            </div>
           ))}
         </div>
       )}
