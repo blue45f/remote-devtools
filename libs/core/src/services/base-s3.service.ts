@@ -8,6 +8,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Logger } from "@nestjs/common";
+import { LRUCache } from "lru-cache";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -72,17 +73,17 @@ export abstract class BaseS3Service {
   );
 
   // -------------------------------------------------------------------------
-  // Cache infrastructure
+  // Cache infrastructure (LRU with TTL)
   // -------------------------------------------------------------------------
 
-  protected readonly listCache = new Map<
-    string,
-    { data: BufferUploadData[]; expiresAt: number }
-  >();
-  protected readonly objectCache = new Map<
-    string,
-    { data: BufferUploadData; expiresAt: number }
-  >();
+  protected readonly listCache = new LRUCache<string, BufferUploadData[]>({
+    max: MAX_LIST_CACHE_SIZE,
+    ttl: CACHE_TTL_MS,
+  });
+  protected readonly objectCache = new LRUCache<string, BufferUploadData>({
+    max: MAX_OBJECT_CACHE_SIZE,
+    ttl: CACHE_TTL_MS,
+  });
   protected readonly listInFlight = new Map<
     string,
     Promise<BufferUploadData[]>
@@ -162,67 +163,29 @@ export abstract class BaseS3Service {
   }
 
   // -------------------------------------------------------------------------
-  // List cache
+  // List cache (delegates to LRU)
   // -------------------------------------------------------------------------
 
   protected getCachedList(key: string): BufferUploadData[] | null {
-    const entry = this.listCache.get(key);
-    if (!entry) return null;
-
-    if (entry.expiresAt < Date.now()) {
-      this.listCache.delete(key);
-      return null;
-    }
-
-    return this.cloneBufferDataArray(entry.data);
+    const data = this.listCache.get(key);
+    return data ? this.cloneBufferDataArray(data) : null;
   }
 
   protected setCachedList(key: string, data: BufferUploadData[]): void {
-    if (MAX_LIST_CACHE_SIZE <= 0) return;
-    if (
-      !this.listCache.has(key) &&
-      this.listCache.size >= MAX_LIST_CACHE_SIZE
-    ) {
-      const oldestKey = this.listCache.keys().next().value;
-      this.listCache.delete(oldestKey);
-    }
-
-    this.listCache.set(key, {
-      data: this.cloneBufferDataArray(data),
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    });
+    this.listCache.set(key, this.cloneBufferDataArray(data));
   }
 
   // -------------------------------------------------------------------------
-  // Object cache
+  // Object cache (delegates to LRU)
   // -------------------------------------------------------------------------
 
   protected getCachedObject(key: string): BufferUploadData | null {
-    const entry = this.objectCache.get(key);
-    if (!entry) return null;
-
-    if (entry.expiresAt < Date.now()) {
-      this.objectCache.delete(key);
-      return null;
-    }
-
-    return this.cloneBufferData(entry.data);
+    const data = this.objectCache.get(key);
+    return data ? this.cloneBufferData(data) : null;
   }
 
   protected setCachedObject(key: string, data: BufferUploadData): void {
-    if (MAX_OBJECT_CACHE_SIZE <= 0) return;
-    if (
-      !this.objectCache.has(key) &&
-      this.objectCache.size >= MAX_OBJECT_CACHE_SIZE
-    ) {
-      const oldestKey = this.objectCache.keys().next().value;
-      this.objectCache.delete(oldestKey);
-    }
-
-    this.objectCache.set(key, {
-      data: this.cloneBufferData(data),
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    });
+    this.objectCache.set(key, this.cloneBufferData(data));
   }
 
   // -------------------------------------------------------------------------
