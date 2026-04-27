@@ -134,7 +134,7 @@ export default function SignInPage() {
         New here?{" "}
         <Link
           to="/sign-up"
-          className="text-fg hover:underline underline-offset-2"
+          className="text-fg underline underline-offset-2"
         >
           Create an account
         </Link>

@@ -96,7 +96,7 @@ export default function SignUpPage() {
         Already have an account?{" "}
         <Link
           to="/sign-in"
-          className="text-fg hover:underline underline-offset-2"
+          className="text-fg underline underline-offset-2"
         >
           Sign in
         </Link>

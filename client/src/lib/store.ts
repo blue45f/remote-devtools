@@ -48,6 +48,9 @@ interface AppState {
 
 function readDemoMode() {
   if (typeof window === "undefined") return false;
+  // Public Vercel demo build flips demo mode on for everyone — there is no
+  // backend, so the badge should always show, irrespective of localStorage.
+  if (import.meta.env.VITE_FORCE_DEMO === "true") return true;
   return localStorage.getItem("demo-mode") === "1";
 }
 

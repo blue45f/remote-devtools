@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom/vitest";
 
+// Side-effect: initialise i18n synchronously before any component test mounts.
+// Components under test use `useTranslation`, which would fall through to the
+// raw key string ("topbar.openCommandPalette") if i18n hadn't booted yet.
+import "@/lib/i18n";
+
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 

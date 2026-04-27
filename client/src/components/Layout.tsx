@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { SkipLink } from "@/components/a11y/SkipLink";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGlobalShortcuts } from "@/lib/keyboard";
@@ -19,6 +20,7 @@ export default function Layout() {
 
   return (
     <TooltipProvider delayDuration={250} skipDelayDuration={400}>
+      <SkipLink />
       <div className="flex h-screen overflow-hidden bg-bg text-fg">
         {/* Mobile overlay */}
         <AnimatePresence>
@@ -54,7 +56,11 @@ export default function Layout() {
         {/* Main */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Topbar />
-          <main className="flex-1 overflow-y-auto">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 overflow-y-auto focus:outline-none"
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
