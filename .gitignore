@@ -60,3 +60,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /deployed/
 /backups
 .vercel
+
+# Claude Code session-local state (session-specific, never commit)
+.claude/
