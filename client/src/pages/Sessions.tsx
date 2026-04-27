@@ -216,7 +216,7 @@ export default function SessionsPage() {
             </TabsList>
           </Tabs>
 
-          <div className="flex-1 min-w-[220px]">
+          <div className="order-3 sm:order-none w-full sm:flex-1 sm:min-w-[220px]">
             <Input
               placeholder="Search by name, URL, or device…"
               value={search}
@@ -240,7 +240,7 @@ export default function SessionsPage() {
           </div>
 
           <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-            <SelectTrigger className="w-auto min-w-[160px]">
+            <SelectTrigger className="w-auto sm:min-w-[160px]">
               <span className="flex items-center gap-2">
                 <SortIcon className="size-3.5 text-fg-subtle" />
                 <SelectValue />

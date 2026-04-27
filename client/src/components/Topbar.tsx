@@ -1,5 +1,6 @@
 import { ChevronRight, Menu, Search, Sparkles } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,7 @@ export function Topbar() {
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const toggleCommand = useAppStore((s) => s.toggleCommand);
   const demoMode = useAppStore((s) => s.demoMode);
+  const { t } = useTranslation();
 
   const crumbs = useMemo(() => buildCrumbs(location.pathname), [location.pathname]);
 
@@ -70,13 +72,13 @@ export function Topbar() {
         "border-b border-border bg-bg/80 backdrop-blur-xl",
       )}
     >
-      {/* Mobile sidebar trigger */}
+      {/* Mobile sidebar trigger — bumped to 36px to meet touch-target guidelines */}
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="icon"
         className="lg:hidden"
         onClick={() => setSidebarOpen(true)}
-        aria-label="Open sidebar"
+        aria-label={t("sidebar.expand")}
       >
         <Menu />
       </Button>
@@ -126,11 +128,11 @@ export function Topbar() {
               data-testid="demo-mode-badge"
             >
               <Sparkles className="size-3" />
-              Demo
+              {t("topbar.demoMode")}
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Showing seed data — backend network requests are bypassed.
+            {t("topbar.demoModeTooltip")}
           </TooltipContent>
         </Tooltip>
       )}
@@ -145,10 +147,10 @@ export function Topbar() {
           "hover:border-border-strong hover:text-fg-subtle transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         )}
-        aria-label="Open command palette"
+        aria-label={t("topbar.openCommandPalette")}
       >
         <Search className="size-3.5" />
-        <span className="hidden sm:inline pr-3">Search…</span>
+        <span className="hidden sm:inline pr-3">{t("topbar.search")}</span>
         <Kbd className="hidden sm:inline-flex">
           {isMac ? "⌘" : "Ctrl"}
         </Kbd>

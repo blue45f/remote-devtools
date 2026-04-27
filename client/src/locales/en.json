@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "home": "Home",
+    "pricing": "Pricing",
+    "github": "GitHub",
+    "openDemo": "Open demo",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  },
+  "landing": {
+    "heroBadge": "v1.0 — Open beta",
+    "heroTitle": "Debug any web page,",
+    "heroTitleAccent": "remotely.",
+    "heroDescription": "Capture, replay, and inspect customer sessions with the real Chrome DevTools. Open source. MIT licensed. Self-hostable.",
+    "tryDemo": "Try the demo",
+    "viewOnGitHub": "View on GitHub",
+    "featuresTitle": "Built for the way you actually debug",
+    "featuresSubtitle": "Every primitive a senior engineer reaches for, in one place.",
+    "quickStartTitle": "Get started in 60 seconds",
+    "quickStartSubtitle": "Drop the SDK in, point your dev console at the dashboard. Done.",
+    "ctaTitle": "Stop guessing. Start replaying.",
+    "ctaSubtitle": "Self-host today, or grab the hosted plan when it lands."
+  },
+  "pricing": {
+    "badge": "Pricing",
+    "title": "Self-host free,",
+    "titleAccent": "or let us run it.",
+    "subtitle": "Use the open-source release on your own infrastructure forever, or join the hosted waiting list.",
+    "mostPopular": "Most popular",
+    "comingSoon": "Coming soon",
+    "getStarted": "Get started",
+    "readDocs": "Read the docs",
+    "faqTitle": "Frequently asked questions"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Sign in to your team workspace.",
+    "createAccount": "Create your account",
+    "signUpSubtitle": "Start capturing sessions in under a minute.",
+    "email": "Email",
+    "emailPlaceholder": "you@team.com",
+    "continueWithEmail": "Continue with email",
+    "signingIn": "Signing in…",
+    "creatingAccount": "Creating account…",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google · soon",
+    "continueWithSso": "Continue with SSO · soon",
+    "newHere": "New here?",
+    "alreadyHaveAccount": "Already have an account?",
+    "createAccountLink": "Create an account",
+    "signInLink": "Sign in"
+  },
+  "topbar": {
+    "search": "Search…",
+    "demoMode": "Demo",
+    "demoModeTooltip": "Showing seed data — backend network requests are bypassed.",
+    "openCommandPalette": "Open command palette"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "sessions": "Sessions",
+    "sandbox": "Sandbox",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "switchTheme": "Switch theme",
+    "theme": "Theme"
+  },
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "korean": "한국어",
+    "loading": "Loading…",
+    "skipToMain": "Skip to main content"
+  }
+}

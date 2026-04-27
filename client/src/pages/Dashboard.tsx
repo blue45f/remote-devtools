@@ -11,17 +11,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { AreaChart, Sparkline } from "@/components/charts";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -309,35 +301,10 @@ function HeroMetricCard({
       {/* sparkline */}
       <div className="-mx-5 -mb-5 mt-3 h-14">
         {spark.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={spark}
-              margin={{ top: 4, right: 0, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id={`spark-${accent}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor="hsl(var(--fg))"
-                    stopOpacity={accent === "fg" ? 0.18 : 0.08}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="hsl(var(--fg))"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <Area
-                type="monotone"
-                dataKey="created"
-                stroke="hsl(var(--fg))"
-                strokeWidth={1.5}
-                fill={`url(#spark-${accent})`}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Sparkline
+            data={spark.map((d) => d.created ?? 0)}
+            intensity={accent === "fg" ? "fg" : "muted"}
+          />
         ) : null}
       </div>
     </Card>
@@ -463,46 +430,15 @@ function ChartEmpty() {
 /* ───────── Sessions Area Chart ───────── */
 
 function SessionsAreaChart({ data }: { data: TrendItem[] }) {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-        <defs>
-          <linearGradient id="sessions-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--fg))" stopOpacity={0.16} />
-            <stop offset="100%" stopColor="hsl(var(--fg))" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="hsl(var(--border))"
-          vertical={false}
-        />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 10, fill: "hsl(var(--fg-faint))" }}
-          axisLine={{ stroke: "hsl(var(--border))" }}
-          tickLine={false}
-        />
-        <YAxis
-          allowDecimals={false}
-          tick={{ fontSize: 10, fill: "hsl(var(--fg-faint))" }}
-          axisLine={false}
-          tickLine={false}
-          width={32}
-        />
-        <Tooltip content={<ChartTooltip />} cursor={{ stroke: "hsl(var(--border-strong))" }} />
-        <Area
-          type="monotone"
-          dataKey="created"
-          stroke="hsl(var(--fg))"
-          strokeWidth={1.5}
-          fill="url(#sessions-grad)"
-          dot={false}
-          activeDot={{ r: 4, fill: "hsl(var(--fg))" }}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+  const chartData = useMemo(
+    () =>
+      data.map((d) => ({
+        label: d.date ?? "",
+        value: d.created ?? 0,
+      })),
+    [data],
   );
+  return <AreaChart data={chartData} valueLabel="Sessions" />;
 }
 
 /* ───────── Tickets by Role (horizontal stacked bar) ───────── */
@@ -562,44 +498,6 @@ function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
           {totals.reduce((s, t) => s + t.value, 0).toLocaleString()}
         </span>
       </div>
-    </div>
-  );
-}
-
-/* ───────── Tooltip ───────── */
-
-interface TooltipPayload {
-  name?: string;
-  value?: number;
-  color?: string;
-  payload?: TrendItem;
-}
-
-function ChartTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-md border border-border bg-surface-overlay px-3 py-2 shadow-md text-xs">
-      <div className="text-fg-faint mb-1">{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <span
-            className="size-2 rounded-full"
-            style={{ background: p.color ?? "hsl(var(--fg))" }}
-          />
-          <span className="text-fg-subtle">{p.name ?? "value"}</span>
-          <span className="font-mono ml-2 text-fg tabular-nums">
-            {p.value?.toLocaleString()}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }

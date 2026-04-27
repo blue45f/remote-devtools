@@ -35,11 +35,15 @@
   --accent-soft-fg: 217 91% 40%;
 
   /* Status (used sparingly) */
-  --success: 142 71% 36%;
+  /* Bumped 36 → 28 so small `text-success` numerals on `bg-bg-subtle` (#fafafa)
+     meet WCAG 2 AA contrast (4.5:1 for normal text). */
+  --success: 142 71% 28%;
   --success-soft: 142 71% 95%;
   --warning: 38 92% 42%;
   --warning-soft: 38 92% 95%;
-  --danger: 0 72% 51%;
+  /* Bumped lightness 51 → 42 so small `text-danger` on `bg-danger-soft`
+     meets WCAG 2 AA contrast (4.5:1 for normal text). */
+  --danger: 0 72% 42%;
   --danger-soft: 0 72% 96%;
   --info: 217 91% 60%;
   --info-soft: 217 91% 96%;

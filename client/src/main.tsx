@@ -9,6 +9,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { Spinner } from "@/components/ui/spinner";
 import { queryClient } from "@/lib/api";
 import { AuthProvider } from "@/lib/auth";
+import "@/lib/i18n"; // side-effect import — initialises react-i18next
 import { initSentry } from "@/lib/sentry";
 
 import "./index.css";

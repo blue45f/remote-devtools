@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { Brand } from "@/components/Brand";
+import { SkipLink } from "@/components/a11y/SkipLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -85,6 +87,7 @@ const PLANS: Plan[] = [
 ];
 
 export default function PricingPage() {
+  const { t } = useTranslation();
   // Probe the backend so we can adapt CTAs / show a status pill. The query
   // never throws — a missing/disabled backend just resolves to enabled:false.
   const { data: billing } = useQuery({
@@ -100,6 +103,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col">
+      <SkipLink />
       <header className="border-b border-border bg-bg/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-6xl mx-auto h-14 flex items-center px-4 lg:px-6">
           <Link to="/" className="flex items-center gap-2 select-none">
@@ -129,20 +133,23 @@ export default function PricingPage() {
         </div>
       </header>
 
-      <main className="flex-1 py-20 lg:py-28">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 py-20 lg:py-28 focus:outline-none"
+      >
         <div className="max-w-6xl mx-auto px-4 lg:px-6">
           <div className="text-center mb-12 lg:mb-16">
             <Badge variant="accent" size="md" className="mb-4">
-              Pricing
+              {t("pricing.badge")}
             </Badge>
             <h1 className="text-4xl lg:text-5xl font-semibold tracking-[-0.02em] mb-4">
-              Self-host free,
+              {t("pricing.title")}
               <br />
-              <span className="text-fg-subtle">or let us run it.</span>
+              <span className="text-fg-subtle">{t("pricing.titleAccent")}</span>
             </h1>
             <p className="text-fg-subtle max-w-xl mx-auto">
-              Use the open-source release on your own infrastructure forever,
-              or join the hosted waiting list.
+              {t("pricing.subtitle")}
             </p>
           </div>
 
@@ -169,7 +176,7 @@ export default function PricingPage() {
                 >
                   {plan.highlight && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-fg text-bg text-[10px] font-semibold uppercase tracking-wider">
-                      Most popular
+                      {t("pricing.mostPopular")}
                     </span>
                   )}
                   <div>

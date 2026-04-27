@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 /** GitHub mark — kept as inline SVG since lucide-react v1+ dropped brand icons. */
 function Github({ className }: { className?: string }) {
@@ -29,6 +30,7 @@ function Github({ className }: { className?: string }) {
 import { Link, useNavigate } from "react-router-dom";
 
 import { BrandMark } from "@/components/Brand";
+import { SkipLink } from "@/components/a11y/SkipLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,9 +59,10 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col">
+      <SkipLink />
       <TopNav onTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         <Hero onEnterDemo={enterDemo} />
         <DashboardMockup />
         <StatsStrip />
@@ -131,6 +134,7 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
 /* ───────── Hero ───────── */
 
 function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden">
       <BackgroundGrid />
@@ -147,7 +151,7 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
             className="mb-5 gap-1.5 inline-flex"
           >
             <Sparkles className="size-3" />
-            v0.1 · Open source
+            {t("landing.heroBadge")}
           </Badge>
         </motion.div>
 
@@ -157,9 +161,11 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           transition={{ duration: 0.55, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
           className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.025em] leading-[1.05] mb-5 text-balance"
         >
-          Debug any web page,
+          {t("landing.heroTitle")}
           <br />
-          <span className="text-fg-subtle">remotely.</span>
+          <span className="text-fg-subtle">
+            {t("landing.heroTitleAccent")}
+          </span>
         </motion.h1>
 
         <motion.p
@@ -168,9 +174,7 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-base sm:text-lg text-fg-subtle max-w-2xl mx-auto mb-8 text-balance"
         >
-          Capture, replay, and inspect customer sessions with the real Chrome
-          DevTools — across teams, devices, and environments. Open-source and
-          self-hostable.
+          {t("landing.heroDescription")}
         </motion.p>
 
         <motion.div
@@ -181,13 +185,13 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
         >
           <Button variant="primary" size="lg" onClick={onEnterDemo}>
             <PlayCircle />
-            Try the live demo
+            {t("landing.tryDemo")}
             <ArrowRight />
           </Button>
           <Button asChild variant="outline" size="lg">
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               <Github />
-              View on GitHub
+              {t("landing.viewOnGitHub")}
             </a>
           </Button>
         </motion.div>

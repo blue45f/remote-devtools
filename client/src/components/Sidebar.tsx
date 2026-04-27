@@ -14,6 +14,7 @@ import { prefetchRoute } from "@/lib/route-prefetch";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
+import { LanguageMenu } from "./LanguageMenu";
 import { ThemeMenu } from "./ThemeMenu";
 
 interface SidebarProps {
@@ -79,6 +80,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
         )}
       >
         <ThemeMenu collapsed={collapsed} />
+        <LanguageMenu collapsed={collapsed} />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
