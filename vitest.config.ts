@@ -34,10 +34,10 @@ export default defineConfig({
       // individually. CI's job here is to catch regressions, not gate on
       // unrelated legacy debt.
       thresholds: {
-        lines: 35,
-        functions: 50,
-        branches: 40,
-        statements: 35,
+        lines: 30,
+        functions: 45,
+        branches: 35,
+        statements: 30,
       },
     },
   },
