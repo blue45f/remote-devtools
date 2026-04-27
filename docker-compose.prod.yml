@@ -1,0 +1,86 @@
+# ──────────────────────────────────────────────────────────────────────
+# Production-flavored docker-compose for self-hosting.
+# Differences from docker-compose.yml:
+#   - No bind mounts (`-v .:/usr/src/app`) — runs from a baked image
+#   - `restart: unless-stopped` on every service
+#   - Sealed env files (.env.production, not .env.local)
+#   - Internal network only — only nginx is published to the host
+#   - PostgreSQL data persisted in a named volume
+#   - Optional ADMIN_TOKEN for the internal API
+#
+# Bring up:   docker compose -f docker-compose.prod.yml up -d
+# Tear down:  docker compose -f docker-compose.prod.yml down
+# Logs:       docker compose -f docker-compose.prod.yml logs -f
+# ──────────────────────────────────────────────────────────────────────
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  internal:
+    build:
+      context: .
+    image: remote-devtools-internal:latest
+    restart: unless-stopped
+    env_file:
+      - ./apps/remote-platform-internal/src/.env.production
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: node dist/apps/remote-platform-internal/main.js
+    networks:
+      - internal
+
+  external:
+    build:
+      context: .
+    image: remote-devtools-external:latest
+    restart: unless-stopped
+    env_file:
+      - ./apps/remote-platform-external/src/.env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: node dist/apps/remote-platform-external/main.js
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - internal
+      - external
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local

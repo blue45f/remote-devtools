@@ -1,6 +1,11 @@
 # Remote DevTools
 
 [![CI](https://github.com/blue45f/remote-devtools/actions/workflows/ci.yml/badge.svg)](https://github.com/blue45f/remote-devtools/actions/workflows/ci.yml)
+[![Vercel demo](https://img.shields.io/badge/demo-live-22c55e?logo=vercel&logoColor=white)](https://remote-devtools.vercel.app/)
+[![License](https://img.shields.io/badge/license-MIT-171717.svg)](#라이선스)
+
+> **🌐 Live demo: [remote-devtools.vercel.app](https://remote-devtools.vercel.app/)**
+> 시드 데이터로 동작하는 데모 — 클릭 한 번으로 대시보드·세션·리플레이까지 둘러볼 수 있다.
 
 웹 애플리케이션을 위한 원격 디버깅 플랫폼. Chrome DevTools Protocol(CDP) 기반으로 실시간 모니터링, 세션 녹화/재생, 이슈 트래킹 연동을 지원한다.
 
@@ -12,7 +17,10 @@
 | 클라이언트 | React 19, Vite, Tailwind CSS |
 | SDK | TypeScript, Vite (UMD/ESM 빌드) |
 | DevTools UI | Chrome DevTools Protocol 기반 커스텀 프론트엔드 |
-| 테스트 | Vitest |
+| 클라이언트 디자인 시스템 | Radix UI 프리미티브, framer-motion, lucide-react, sonner, cmdk |
+| 차트 | Recharts |
+| 세션 재생 | rrweb-player |
+| 테스트 | Vitest (백엔드+프론트), Testing Library + jsdom (프론트) |
 | 린트 | ESLint flat config (`eslint.config.mjs`) |
 | 패키지 매니저 | pnpm 9+ |
 | 런타임 | Node.js 20+ |
@@ -40,6 +48,17 @@
 
 자세한 내용은 [docs/SECURITY.md](docs/SECURITY.md)를 참고한다.
 
+## 문서
+
+| 문서 | 내용 |
+|------|------|
+| [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) | 자가호스트 가이드 (Docker / 베어메탈) |
+| [docs/DEPLOY_DEMO.md](docs/DEPLOY_DEMO.md) | Vercel에 공개 데모 한 줄로 띄우기 |
+| [docs/LAUNCH.md](docs/LAUNCH.md) | SaaS 런치 로드맵 (테넌시 → 결제 → 호스팅) |
+| [docs/CICD.md](docs/CICD.md) | GitHub Actions 자동 배포 |
+| [docs/SECURITY.md](docs/SECURITY.md) | 보안 정책 |
+| [CLAUDE.md](CLAUDE.md) | 코드베이스 가이드 (개발자) |
+
 ## 테스트
 
 ```bash
@@ -48,7 +67,18 @@ pnpm test:watch    # watch 모드
 pnpm test:cov      # 커버리지 리포트
 ```
 
-Vitest 기반, 현재 20+ 테스트 파일 / 230+ 테스트 케이스.
+Vitest 기반.
+
+| 영역 | 파일 | 케이스 |
+|------|------|--------|
+| 백엔드 | 44 | 350+ |
+| 클라이언트 (`client/`) | 45+ | 158+ |
+| **합계** | **89+** | **510+** |
+
+```bash
+cd client && pnpm test       # 프론트 단위/통합 테스트
+cd client && pnpm test:cov   # 프론트 커버리지
+```
 
 ## 아키텍처
 
@@ -122,14 +152,30 @@ pnpm compose
 
 시작되면 다음 서비스에 접근할 수 있다:
 
-- `http://localhost:3000` -- Internal 서버 (DevTools UI, API)
-- `http://localhost:3001` -- External 서버 (SDK 서빙, WebSocket)
+- `http://localhost:3000` -- Internal 서버 (DevTools UI, API, 정적 자원)
+- `http://localhost:3001` -- External 서버 (SDK 서빙, CDP WebSocket 게이트웨이)
 - `http://localhost:8080` -- Client (별도 실행: `cd client && pnpm dev`)
-  - `/` -- SDK 데모 페이지 (NPM 모듈 로드)
-  - `/test` -- SDK 테스트 페이지 (스크립트 태그 로드)
-  - `/sessions` -- 녹화/라이브 세션 목록
-  - `/dashboard` -- 대시보드 (통계 및 트렌드 차트)
+  - `/dashboard` -- 메트릭, 차트, 실시간 활동 피드
+  - `/sessions` -- 녹화/라이브 세션 목록 + 필터/검색
+  - `/sessions/:id` -- 세션 상세 (Overview / Replay / Timeline / Raw JSON)
+  - `/sandbox/module` -- SDK 데모 (ESM dynamic import)
+  - `/sandbox/script` -- SDK 데모 (UMD 스크립트 태그)
+  - `/` -- 자동으로 `/dashboard`로 리다이렉트
 - `http://localhost:5050` -- PgAdmin (DB 관리)
+
+### 데모 모드 (백엔드 없이 UI 시연)
+
+Cmd/Ctrl+K → "Enable demo mode" 또는 `localStorage["demo-mode"] = "1"`로 토글하면 `apiFetch`가 시드 데이터로 단락(short-circuit)된다. 디자인 시연·스크린샷·PR 리뷰에 유용하다.
+
+### Docker 없이 로컬 부팅 (E2E·테스트용)
+
+```bash
+node scripts/start-pg.mjs    # embedded-postgres가 ~/.cache/remote-devtools-pg에 portable PG 18을 띄운다
+pnpm start:internal:dev      # port 3000
+pnpm start:external:dev      # port 3001
+cd sdk && pnpm build         # SDK 번들 생성 (외부 서버가 /sdk로 서빙)
+cd client && pnpm dev        # port 8080 (Vite proxy로 /sdk, /api, /sessions, /buffer를 백엔드로 포워딩)
+```
 
 상세 설치 방법은 [docs/INSTALLATION.md](docs/INSTALLATION.md) 참조.
 

@@ -1,9 +1,12 @@
+import { join } from "path";
+
 import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import * as dotenv from "dotenv";
 
 import {
   DomEntity,
   NetworkEntity,
+  OrganizationEntity,
   RecordEntity,
   RuntimeEntity,
   ScreenEntity,
@@ -37,6 +40,7 @@ export const ALL_ENTITIES = [
   UserEntity,
   DeviceInfoEntity,
   UserTicketTemplateEntity,
+  OrganizationEntity,
 ] as const;
 
 /** Environments where schema synchronization is allowed. */
@@ -69,5 +73,9 @@ export function createDatabaseConfig(
     synchronize: options.synchronize ?? isDevelopment,
     dropSchema: options.dropSchema ?? false,
     logging: options.logging ?? false,
+    migrations: [
+      join(__dirname, "..", "..", "..", "..", "migrations", "*.{ts,js}"),
+    ],
+    migrationsRun: process.env.RUN_MIGRATIONS === "true",
   };
 }

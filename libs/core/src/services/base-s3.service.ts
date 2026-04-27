@@ -460,7 +460,10 @@ export abstract class BaseS3Service {
     const today = getLocalDate();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    return [getLocalDateString(today.getTime()), getLocalDateString(yesterday.getTime())];
+    return [
+      getLocalDateString(today.getTime()),
+      getLocalDateString(yesterday.getTime()),
+    ];
   }
 
   /**

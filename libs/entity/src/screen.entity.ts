@@ -14,10 +14,15 @@ import { RecordEntity } from "./record.entity";
 @Entity("screen")
 @Unique(["record", "type"])
 @Index(["record", "timestamp"])
+@Index(["orgId", "timestamp"])
 export class ScreenEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   public id: number;
+
+  /** 멀티테넌트 격리용 조직 ID (RecordEntity와 동일). NULL은 self-host 단일 테넌트. */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  public orgId?: string | null;
 
   /** 화면 캡처 유형 ('screenPreview': 미리보기용 스냅샷). */
   @Column({ type: "text", nullable: true, default: null })

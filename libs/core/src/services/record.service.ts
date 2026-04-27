@@ -47,6 +47,61 @@ export class RecordService {
   }
 
   /**
+   * 검색·필터·페이지네이션 가능한 레코드 조회.
+   *
+   * @param opts.q          name 또는 url에 포함된 부분 문자열 (대소문자 무시)
+   * @param opts.deviceId   정확 일치하는 deviceId 필터
+   * @param opts.recordMode true=녹화만, false=라이브만, undefined=양쪽
+   * @param opts.orgId      멀티테넌트 스코프 (NULL/undefined는 전역 범위)
+   * @param opts.limit      한 페이지 크기 (기본 50, 최대 200)
+   * @param opts.cursor     이전 응답의 nextCursor (timestamp ISO 문자열)
+   * @returns rows + nextCursor (다음 페이지 있을 때만)
+   */
+  public async findPaginated(opts: {
+    q?: string;
+    deviceId?: string;
+    recordMode?: boolean;
+    orgId?: string | null;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ rows: RecordEntity[]; nextCursor: string | null }> {
+    const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+    const qb = this.recordRepository
+      .createQueryBuilder("r")
+      .orderBy("r.timestamp", "DESC")
+      .limit(limit + 1); // peek one extra to know if there's another page
+
+    if (opts.q?.trim()) {
+      const term = `%${opts.q.trim().toLowerCase()}%`;
+      qb.andWhere("(LOWER(r.name) LIKE :q OR LOWER(r.url) LIKE :q)", {
+        q: term,
+      });
+    }
+    if (opts.deviceId?.trim()) {
+      qb.andWhere("r.deviceId = :did", { did: opts.deviceId.trim() });
+    }
+    if (typeof opts.recordMode === "boolean") {
+      qb.andWhere("r.record_mode = :rm", { rm: opts.recordMode });
+    }
+    if (opts.orgId) {
+      qb.andWhere("r.org_id = :oid", { oid: opts.orgId });
+    }
+    if (opts.cursor) {
+      // Cursor = ISO timestamp from the last row of the previous page.
+      // Strict less-than for stable pagination.
+      qb.andWhere("r.timestamp < :cur", { cur: new Date(opts.cursor) });
+    }
+
+    const peek = await qb.getMany();
+    const hasMore = peek.length > limit;
+    const rows = hasMore ? peek.slice(0, limit) : peek;
+    const nextCursor = hasMore
+      ? rows[rows.length - 1].timestamp.toISOString()
+      : null;
+    return { rows, nextCursor };
+  }
+
+  /**
    * 특정 디바이스에서 현재 레코드 이전에 생성된 모든 녹화 레코드를 조회한다.
    * 최신순으로 정렬하여 반환한다.
    * @param deviceId - 대상 디바이스 ID

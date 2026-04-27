@@ -12,10 +12,15 @@ import { RecordEntity } from "./record.entity";
 /** 녹화 세션에서 캡처된 네트워크 요청/응답 항목. */
 @Entity("network")
 @Index(["record", "timestamp"])
+@Index(["orgId", "timestamp"])
 export class NetworkEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   public id: number;
+
+  /** 멀티테넌트 격리용 조직 ID (RecordEntity와 동일). NULL은 self-host 단일 테넌트. */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  public orgId?: string | null;
 
   /** 네트워크 요청의 고유 식별자. */
   @Column({ type: "int" })

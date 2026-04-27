@@ -16,10 +16,20 @@ import { ScreenEntity } from "./screen.entity";
 @Entity("record")
 @Index(["deviceId", "timestamp"])
 @Index(["timestamp"])
+@Index(["orgId", "timestamp"])
 export class RecordEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   public id: number;
+
+  /**
+   * 멀티테넌트 격리용 조직 ID. NULL은 self-host 단일 테넌트.
+   *
+   * SaaS launch path (docs/LAUNCH.md Phase 1)에서는 모든 행에 NOT NULL로
+   * 백필 후 NOT NULL 제약 추가. 현재는 nullable이라 기존 데이터 호환.
+   */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  public orgId?: string | null;
 
   /** 세션 이름 (짧은 라벨). */
   @Column({ type: "varchar" })
