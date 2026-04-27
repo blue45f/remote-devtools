@@ -1,10 +1,14 @@
+import { Heart, Search } from "lucide-react";
 import { useState } from "react";
 
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
 const destinations = [
-  { id: 1, name: "Santorini, Greece", image: "https://picsum.photos/seed/santorini/400/260", rating: 4.9, reviews: 2847, price: "$1,240", tag: "Popular" },
-  { id: 2, name: "Kyoto, Japan", image: "https://picsum.photos/seed/kyoto/400/260", rating: 4.8, reviews: 3156, price: "$890", tag: "Trending" },
-  { id: 3, name: "Hallstatt, Austria", image: "https://picsum.photos/seed/hallstatt/400/260", rating: 4.7, reviews: 1923, price: "$720", tag: "Hidden Gem" },
-  { id: 4, name: "Bali, Indonesia", image: "https://picsum.photos/seed/bali/400/260", rating: 4.6, reviews: 4201, price: "$650", tag: "Best Value" },
+  { id: 1, name: "Santorini, Greece", image: "https://picsum.photos/seed/santorini/640/360", rating: 4.9, reviews: 2847, price: "$1,240", tag: "Popular" },
+  { id: 2, name: "Kyoto, Japan", image: "https://picsum.photos/seed/kyoto/640/360", rating: 4.8, reviews: 3156, price: "$890", tag: "Trending" },
+  { id: 3, name: "Hallstatt, Austria", image: "https://picsum.photos/seed/hallstatt/640/360", rating: 4.7, reviews: 1923, price: "$720", tag: "Hidden Gem" },
+  { id: 4, name: "Bali, Indonesia", image: "https://picsum.photos/seed/bali/640/360", rating: 4.6, reviews: 4201, price: "$650", tag: "Best Value" },
 ];
 
 const categories = [
@@ -24,100 +28,127 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <main className="max-w-5xl mx-auto px-4 pb-32">
-      {/* Hero */}
-      <section className="pt-8 pb-6">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+    <div className="space-y-6">
+      <section>
+        <h1 className="text-3xl font-semibold tracking-tight text-fg">
           Discover your next
           <br />
-          <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-            adventure
-          </span>
+          <span className="text-fg-subtle">adventure.</span>
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">
-          Curated destinations for unforgettable experiences
+        <p className="text-fg-subtle text-sm mt-2">
+          Curated destinations for unforgettable experiences.
         </p>
       </section>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-        </div>
-        <input
-          type="text"
-          placeholder="Search destinations, experiences..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Search destinations"
-          className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-        />
-      </div>
+      <Input
+        type="text"
+        placeholder="Search destinations, experiences…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        aria-label="Search destinations"
+        leadingIcon={<Search />}
+        className="h-11"
+      />
 
-      {/* Categories */}
-      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {categories.map((cat) => (
           <button
             key={cat.label}
-            className="flex flex-col items-center gap-1.5 min-w-[72px] px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-violet-300 hover:shadow-sm transition-all group"
+            type="button"
+            className="group flex flex-col items-center gap-1 min-w-[78px] px-3 py-2.5 rounded-lg bg-bg-subtle border border-border hover:border-border-strong transition-colors"
           >
-            <span className="text-xl group-hover:scale-110 transition-transform">{cat.icon}</span>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">{cat.label}</span>
+            <span className="text-xl group-hover:scale-110 transition-transform duration-200">
+              {cat.icon}
+            </span>
+            <span className="text-[11px] font-medium text-fg-subtle">
+              {cat.label}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Destinations Grid */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Top Destinations</h2>
-          <button className="text-sm text-violet-600 dark:text-violet-400 font-medium hover:text-violet-700">View all</button>
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-fg">Top destinations</h2>
+          <button
+            type="button"
+            className="text-xs font-medium text-fg-subtle hover:text-fg"
+          >
+            View all
+          </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {destinations.map((dest) => (
-            <div key={dest.id} className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-200/60 dark:border-slate-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
+            <Card
+              key={dest.id}
+              className="group overflow-hidden p-0 cursor-pointer transition-all hover:border-border-strong hover:-translate-y-0.5 hover:shadow-md"
+            >
               <div className="relative overflow-hidden">
-                <img src={dest.image} alt={dest.name} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-slate-700">{dest.tag}</span>
-                </div>
-                <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors" aria-label={`Save ${dest.name}`}>
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-slate-600">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
+                <img
+                  src={dest.image}
+                  alt={dest.name}
+                  className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-bg/90 backdrop-blur-sm text-[11px] font-semibold text-fg">
+                  {dest.tag}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Save ${dest.name}`}
+                  className="absolute top-3 right-3 size-7 rounded-full bg-bg/90 backdrop-blur-sm flex items-center justify-center hover:bg-bg transition-colors"
+                >
+                  <Heart className="size-3.5 text-fg-subtle" />
                 </button>
               </div>
               <div className="p-4">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{dest.name}</h3>
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="text-amber-400 text-sm">★</span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{dest.rating}</span>
-                  <span className="text-xs text-slate-400">({dest.reviews.toLocaleString()} reviews)</span>
+                <h3 className="font-medium text-sm text-fg mb-1">
+                  {dest.name}
+                </h3>
+                <div className="flex items-center gap-1 mb-2 text-xs">
+                  <span className="text-warning">★</span>
+                  <span className="font-medium text-fg">{dest.rating}</span>
+                  <span className="text-fg-faint">
+                    ({dest.reviews.toLocaleString()})
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{dest.price}</span>
-                    <span className="text-xs text-slate-400 ml-1">/ person</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-base font-semibold text-fg">
+                      {dest.price}
+                    </span>
+                    <span className="text-[11px] text-fg-faint">/ person</span>
                   </div>
-                  <button className="px-3 py-1.5 bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-lg text-xs font-semibold hover:bg-violet-100 transition-colors">Book Now</button>
+                  <button
+                    type="button"
+                    className="px-2.5 py-1 rounded-md bg-fg text-bg text-[11px] font-medium hover:bg-fg/90 transition-colors"
+                  >
+                    Book Now
+                  </button>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
 
-      {/* DOM Nodes */}
       {domNodes.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-6 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          {domNodes.map((char, index) => (
-            <span key={index} className="px-2 py-1 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 rounded-md text-sm font-mono">{char}</span>
-          ))}
-        </div>
+        <Card className="p-3">
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-fg-faint mb-2">
+            Captured DOM nodes ({domNodes.length})
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {domNodes.map((char, index) => (
+              <span
+                key={index}
+                className="px-2 py-0.5 rounded bg-bg-muted text-xs font-mono text-fg"
+              >
+                {char}
+              </span>
+            ))}
+          </div>
+        </Card>
       )}
-    </main>
+    </div>
   );
 }

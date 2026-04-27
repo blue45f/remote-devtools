@@ -17,6 +17,21 @@ export interface ReplayEvent {
   readonly relativeTime?: number;
   readonly sequence?: number;
   readonly isRRWeb?: boolean;
+
+  // Flat rrweb fields, set when isRRWeb=true. The frontend (rrweb-player,
+  // Timeline, RawJSON) consumes these directly without needing an adapter.
+  readonly type?: number;
+  readonly data?: unknown;
+}
+
+export interface SessionPreview {
+  readonly head: string;
+  readonly body: string;
+  readonly bodyClass?: string;
+  readonly width?: number;
+  readonly height?: number;
+  readonly baseHref?: string;
+  readonly capturedAt: string;
 }
 
 export interface SessionMetadata {
@@ -27,6 +42,10 @@ export interface SessionMetadata {
   readonly endTime: number;
   readonly eventCount: number;
   readonly hasFullSnapshot: boolean;
+  readonly deviceId?: string;
+  readonly url?: string;
+  readonly recordMode?: boolean;
+  readonly createdAt?: string;
 }
 
 interface ParsedS3SessionDevice {
@@ -186,18 +205,30 @@ export class SessionReplayService {
         );
       }
 
-      // Return rrweb events directly
+      // rrweb event — flatten so the frontend can read type/data/timestamp
+      // without an adapter. `protocol` keeps the unwrapped rrweb event for
+      // back-compat with older consumers.
       const protocol = event.protocol as Record<string, unknown>;
       if (protocol?.method === "SessionReplay.rrwebEvent") {
-        const rrwebEvent = (protocol.params as Record<string, unknown>)?.event;
+        const rrwebEvent = (protocol.params as Record<string, unknown>)
+          ?.event as Record<string, unknown> | undefined;
+        const type =
+          typeof rrwebEvent?.type === "number" ? rrwebEvent.type : undefined;
+        const data = rrwebEvent?.data;
+        const rrwebTimestamp =
+          typeof rrwebEvent?.timestamp === "number"
+            ? rrwebEvent.timestamp
+            : Number(event.timestamp);
         return {
           id: event.id,
           eventType: event.eventType || "unknown",
-          protocol: rrwebEvent || event.protocol,
-          timestamp: event.timestamp.toString(),
+          protocol: rrwebEvent ?? event.protocol,
+          timestamp: rrwebTimestamp,
           relativeTime: relativeTimeMs,
           sequence: event.sequence ?? 0,
           isRRWeb: true,
+          type,
+          data,
         };
       }
 
@@ -303,6 +334,15 @@ export class SessionReplayService {
       endTime: Number(eventStats?.endTime || 0),
       eventCount: Number(eventStats?.count || 0),
       hasFullSnapshot: Number(eventStats?.fullSnapshots || 0) > 0,
+      deviceId: record.deviceId ?? undefined,
+      url: record.url ?? undefined,
+      recordMode: record.recordMode,
+      createdAt:
+        record.timestamp instanceof Date
+          ? record.timestamp.toISOString()
+          : record.timestamp
+            ? new Date(record.timestamp).toISOString()
+            : undefined,
     };
   }
 
@@ -723,6 +763,47 @@ export class SessionReplayService {
       endTime: endTimeNs,
       eventCount,
       hasFullSnapshot,
+    };
+  }
+
+  /**
+   * Returns the most recent screenPreview row for a session — captured by
+   * the SDK as `{head, body, bodyClass, width, height, baseHref}` snapshots
+   * suitable for rendering into a sandboxed iframe thumbnail.
+   *
+   * Returns `null` when no preview was ever captured.
+   */
+  public async getSessionPreview(
+    recordId: number,
+  ): Promise<SessionPreview | null> {
+    const row = await this.screenRepository
+      .createQueryBuilder("screen")
+      .where("screen.recordId = :recordId", { recordId })
+      .andWhere("screen.type = :type", { type: "screenPreview" })
+      .orderBy("screen.timestamp", "DESC")
+      .limit(1)
+      .getOne();
+
+    if (!row) return null;
+
+    const protocol = row.protocol as Record<string, unknown> | undefined;
+    const params =
+      (protocol?.params as Record<string, unknown> | undefined) ?? {};
+
+    const body = typeof params.body === "string" ? params.body : "";
+    const head = typeof params.head === "string" ? params.head : "";
+    if (!body && !head) return null;
+
+    return {
+      head,
+      body,
+      bodyClass:
+        typeof params.bodyClass === "string" ? params.bodyClass : undefined,
+      width: typeof params.width === "number" ? params.width : undefined,
+      height: typeof params.height === "number" ? params.height : undefined,
+      baseHref:
+        typeof params.baseHref === "string" ? params.baseHref : undefined,
+      capturedAt: new Date(Number(row.timestamp) / 1_000_000).toISOString(),
     };
   }
 }

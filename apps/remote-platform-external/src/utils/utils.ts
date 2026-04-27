@@ -45,8 +45,15 @@ export const decryptUserAppData = (userAppData: string): UserAppInfo => {
 
   try {
     const encrypted = Buffer.from(userAppData, "base64");
-    const decipher = createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, ENCRYPTION_IV);
-    const decoded = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+    const decipher = createDecipheriv(
+      "aes-256-cbc",
+      ENCRYPTION_KEY,
+      ENCRYPTION_IV,
+    );
+    const decoded = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]).toString("utf8");
 
     if (!decoded) {
       return EMPTY_USER_APP_INFO;

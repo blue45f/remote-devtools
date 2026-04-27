@@ -159,4 +159,117 @@ describe("RecordService", () => {
       expect(repository.delete).toHaveBeenCalledWith(1);
     });
   });
+
+  describe("findPaginated", () => {
+    function makeQB(rows: Partial<RecordEntity>[]) {
+      const calls: Record<string, unknown[]> = {};
+      const qb: Partial<SelectQueryBuilder<RecordEntity>> & {
+        calls: Record<string, unknown[]>;
+      } = {
+        calls,
+        orderBy: vi.fn().mockImplementation(function (this: typeof qb, k, d) {
+          calls.orderBy = [k, d];
+          return this;
+        }) as unknown as SelectQueryBuilder<RecordEntity>["orderBy"],
+        limit: vi.fn().mockImplementation(function (this: typeof qb, n) {
+          calls.limit = [n];
+          return this;
+        }) as unknown as SelectQueryBuilder<RecordEntity>["limit"],
+        andWhere: vi.fn().mockImplementation(function (
+          this: typeof qb,
+          sql: string,
+          params: Record<string, unknown>,
+        ) {
+          (calls.andWhere ??= [] as unknown[]).push({ sql, params });
+          return this;
+        }) as unknown as SelectQueryBuilder<RecordEntity>["andWhere"],
+        getMany: vi.fn().mockResolvedValue(rows),
+      };
+      return qb;
+    }
+
+    it("returns rows + null cursor when fewer than limit results", async () => {
+      const qb = makeQB([
+        { id: 1, timestamp: new Date("2026-04-27T10:00:00Z") },
+      ]);
+      vi.spyOn(repository, "createQueryBuilder").mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      const out = await service.findPaginated({ limit: 50 });
+      expect(out.rows).toHaveLength(1);
+      expect(out.nextCursor).toBeNull();
+      expect(qb.calls.limit).toEqual([51]); // peek one extra
+    });
+
+    it("returns nextCursor (timestamp ISO) when there's a next page", async () => {
+      // Service slices to `limit` and uses last row for cursor.
+      const rows = Array.from({ length: 6 }, (_, i) => ({
+        id: i + 1,
+        timestamp: new Date(`2026-04-27T10:0${5 - i}:00Z`),
+      }));
+      const qb = makeQB(rows);
+      vi.spyOn(repository, "createQueryBuilder").mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      const out = await service.findPaginated({ limit: 5 });
+      expect(out.rows).toHaveLength(5);
+      expect(out.nextCursor).toBe(rows[4].timestamp!.toISOString());
+    });
+
+    it("clamps limit between 1 and 200", async () => {
+      const qb = makeQB([]);
+      vi.spyOn(repository, "createQueryBuilder").mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      await service.findPaginated({ limit: 9999 });
+      expect(qb.calls.limit).toEqual([201]); // 200 + 1 peek
+
+      await service.findPaginated({ limit: 0 });
+      expect(qb.calls.limit).toEqual([2]); // 1 + 1 peek
+    });
+
+    it("applies q / deviceId / recordMode / orgId / cursor filters", async () => {
+      const qb = makeQB([]);
+      vi.spyOn(repository, "createQueryBuilder").mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      await service.findPaginated({
+        q: "  Checkout  ",
+        deviceId: "device-1",
+        recordMode: true,
+        orgId: "org-uuid",
+        cursor: "2026-04-27T00:00:00.000Z",
+      });
+
+      const where = qb.calls.andWhere as { sql: string; params: unknown }[];
+      expect(where).toHaveLength(5);
+      expect(where[0].params).toEqual({ q: "%checkout%" });
+      expect(where[1].params).toEqual({ did: "device-1" });
+      expect(where[2].params).toEqual({ rm: true });
+      expect(where[3].params).toEqual({ oid: "org-uuid" });
+      const cursorParam = where[4].params as { cur: Date };
+      expect(cursorParam.cur).toBeInstanceOf(Date);
+      expect(cursorParam.cur.toISOString()).toBe("2026-04-27T00:00:00.000Z");
+    });
+
+    it("skips empty filters", async () => {
+      const qb = makeQB([]);
+      vi.spyOn(repository, "createQueryBuilder").mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      await service.findPaginated({
+        q: "   ", // whitespace only
+        deviceId: "",
+        recordMode: undefined,
+        orgId: null,
+      });
+
+      expect(qb.calls.andWhere).toBeUndefined();
+    });
+  });
 });

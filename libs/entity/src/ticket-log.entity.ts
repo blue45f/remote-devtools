@@ -14,10 +14,15 @@ import { TicketLabelEntity } from "./ticket-label.entity";
 @Entity("ticket_logs")
 @Index(["deviceId", "createdAt"]) // 디바이스별 티켓 이력 조회 최적화
 @Index(["createdAt"]) // 기간별 조회 최적화
+@Index(["orgId", "createdAt"]) // 멀티테넌트 격리 + 시간순 조회
 export class TicketLogEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   public id: number;
+
+  /** 멀티테넌트 격리용 조직 ID. NULL은 self-host 단일 테넌트. */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  public orgId?: string | null;
 
   /** 티켓을 생성한 디바이스의 고유 식별자. */
   @Column({ name: "device_id", length: 255 })

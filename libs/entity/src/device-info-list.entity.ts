@@ -23,10 +23,15 @@ export interface DeviceInfo {
 @Entity("device_info_list")
 @Index(["deviceId"], { unique: true })
 @Index(["userId"])
+@Index(["orgId"])
 export class DeviceInfoEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   id: number;
+
+  /** 멀티테넌트 격리용 조직 ID. NULL은 self-host 단일 테넌트. */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  orgId?: string | null;
 
   /** 디바이스를 소유한 사용자의 ID (외래 키). */
   @Column({ name: "user_id" })

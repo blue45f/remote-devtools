@@ -10,6 +10,9 @@ import { DatabaseModule, ServicesModule } from "@remote-platform/core";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { ActivityModule } from "./modules/activity/activity.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { BillingModule } from "./modules/billing/billing.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { GoogleSheetsModule } from "./modules/google-sheets/google-sheets.module";
 import { ImageBase64Module } from "./modules/image-base64/image-base64.module";
@@ -61,6 +64,9 @@ const staticModule = ServeStaticModule.forRoot(
     ScheduleModule.forRoot(),
     WorkflowModule,
     DashboardModule,
+    ActivityModule,
+    AuthModule,
+    BillingModule,
     HealthModule,
   ],
   controllers: [AppController],

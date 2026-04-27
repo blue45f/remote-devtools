@@ -29,10 +29,15 @@ export enum JobType {
 @Entity("users")
 @Index(["slackId"], { unique: true })
 @Index(["empNo"], { unique: true })
+@Index(["orgId"])
 export class UserEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
   id: number;
+
+  /** 멀티테넌트 격리용 조직 ID. NULL은 self-host 단일 테넌트. */
+  @Column({ name: "org_id", type: "uuid", nullable: true })
+  orgId?: string | null;
 
   /** 사용자 표시 이름. */
   @Column({ length: 100 })

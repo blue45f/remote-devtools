@@ -14,6 +14,7 @@ import {
   SessionReplayService,
   ReplayEvent,
   SessionMetadata,
+  SessionPreview,
 } from "./session-replay.service";
 
 @ApiTags("Session Replay")
@@ -63,6 +64,18 @@ export class SessionReplayController {
     @Param("id", ParseIntPipe) id: number,
   ): Promise<SessionMetadata> {
     return this.sessionReplayService.getSessionMetadata(id);
+  }
+
+  /**
+   * GET /api/session-replay/sessions/:id/preview
+   * Returns the most recent screenPreview snapshot (head + body HTML) so
+   * the frontend can render a thumbnail iframe of the captured page.
+   */
+  @Get("sessions/:id/preview")
+  public async getSessionPreview(
+    @Param("id", ParseIntPipe) id: number,
+  ): Promise<SessionPreview | null> {
+    return this.sessionReplayService.getSessionPreview(id);
   }
 
   /**

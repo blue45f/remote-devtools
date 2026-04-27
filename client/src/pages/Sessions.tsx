@@ -1,7 +1,49 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Clock,
+  ExternalLink,
+  Filter,
+  LayoutGrid,
+  Monitor,
+  PlaySquare,
+  RadioTower,
+  RefreshCw,
+  Search,
+  Smartphone,
+  Table as TableIcon,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { apiFetch } from "../lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Kbd } from "@/components/ui/kbd";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { apiFetch } from "@/lib/api";
+import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
+import { formatDurationFromNanos, formatTimeAgo, shortHash } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface SessionRecord {
   id: number;
@@ -13,32 +55,87 @@ interface SessionRecord {
   timestamp?: string;
 }
 
-const SessionsPage = () => {
-  const [selectedTab, setSelectedTab] = useState<"record" | "live">("record");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
+type SessionTab = "record" | "live";
+type SortKey = "newest" | "oldest" | "name";
+type ViewMode = "table" | "grid";
+
+type DurationFilter = "all" | "short" | "medium" | "long";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  name: "Name A → Z",
+};
+
+const SORT_ICONS: Record<SortKey, typeof ArrowDown> = {
+  newest: ArrowDown,
+  oldest: ArrowUp,
+  name: ArrowUpDown,
+};
+
+type PaginatedRecordResponse =
+  | SessionRecord[]
+  | { rows: SessionRecord[]; nextCursor: string | null };
+
+const PAGE_SIZE = 50;
+
+export default function SessionsPage() {
+  const [tab, setTab] = useState<SessionTab>("record");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [view, setView] = useState<ViewMode>("table");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
+
+  // Debounce the search term that gets sent to the server. The local input
+  // updates instantly so the field stays responsive.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const {
-    data: sessions = [],
-    isLoading: loading,
-    error: queryError,
+    data,
+    isLoading,
+    error,
     refetch,
-  } = useQuery({
-    queryKey: ["sessions", selectedTab],
-    queryFn: () =>
-      apiFetch<SessionRecord[]>(
-        selectedTab === "record" ? "/sessions/record" : "/sessions",
-      ),
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["sessions", tab, debouncedSearch],
+    queryFn: async ({ pageParam }) => {
+      if (tab === "live") {
+        const live = await apiFetch<SessionRecord[]>("/sessions");
+        return { rows: live, nextCursor: null as string | null };
+      }
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.set("q", debouncedSearch);
+      if (debouncedSearch || pageParam) params.set("limit", String(PAGE_SIZE));
+      if (pageParam) params.set("cursor", pageParam);
+      const qs = params.toString();
+      const path = qs ? `/sessions/record?${qs}` : "/sessions/record";
+      const res = await apiFetch<PaginatedRecordResponse>(path);
+      if (Array.isArray(res)) return { rows: res, nextCursor: null };
+      return res;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    refetchInterval: tab === "live" ? 5000 : false,
   });
 
-  const error = queryError ? "Failed to load session list." : null;
-  const retry = () => void refetch();
+  const sessions = useMemo<SessionRecord[]>(
+    () => data?.pages.flatMap((p) => p.rows) ?? [],
+    [data],
+  );
 
-  const filteredSessions = useMemo(() => {
+  const filtered = useMemo(() => {
     let result = sessions;
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    if (search.trim()) {
+      const q = search.toLowerCase();
       result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
@@ -47,293 +144,695 @@ const SessionsPage = () => {
       );
     }
 
-    if (sortBy === "newest") {
-      result = [...result].sort(
-        (a, b) =>
-          new Date(b.timestamp || 0).getTime() -
-          new Date(a.timestamp || 0).getTime(),
-      );
-    } else if (sortBy === "oldest") {
-      result = [...result].sort(
-        (a, b) =>
-          new Date(a.timestamp || 0).getTime() -
-          new Date(b.timestamp || 0).getTime(),
-      );
-    } else {
-      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    if (durationFilter !== "all") {
+      result = result.filter((s) => {
+        const ms = Number(s.duration || 0) / 1_000_000;
+        if (durationFilter === "short") return ms > 0 && ms < 30_000;
+        if (durationFilter === "medium") return ms >= 30_000 && ms < 300_000;
+        return ms >= 300_000;
+      });
     }
 
-    return result;
-  }, [sessions, searchQuery, sortBy]);
+    return [...result].sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name);
+      const ta = new Date(a.timestamp ?? 0).getTime();
+      const tb = new Date(b.timestamp ?? 0).getTime();
+      return sort === "newest" ? tb - ta : ta - tb;
+    });
+  }, [sessions, search, sort, durationFilter]);
+
+  const filtersActive = search.trim() !== "" || durationFilter !== "all";
+  const SortIcon = SORT_ICONS[sort];
 
   return (
-    <div className="p-6 lg:p-10 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-          Sessions
-        </h1>
-        <span className="text-sm text-slate-400 dark:text-slate-500">
-          {filteredSessions.length} session{filteredSessions.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* Tabs + Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div
-          className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit"
-          role="tablist"
-        >
-          <TabButton
-            selected={selectedTab === "record"}
-            onClick={() => setSelectedTab("record")}
-          >
-            Record Sessions
-          </TabButton>
-          <TabButton
-            selected={selectedTab === "live"}
-            onClick={() => setSelectedTab("live")}
-          >
-            Live Sessions
-          </TabButton>
+    <div className="px-4 lg:px-8 py-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Sessions
+          </h1>
+          <p className="mt-1 text-sm text-fg-subtle">
+            Recorded and live debugging sessions across all devices.
+          </p>
         </div>
 
-        <div className="flex gap-2 flex-1">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by name, URL, device..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search sessions"
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => void refetch()}
+                disabled={isFetching}
+                aria-label="Refresh"
+              >
+                <RefreshCw className={cn(isFetching && "animate-spin")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
+
+          <ViewModeToggle value={view} onChange={setView} />
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as SessionTab)}>
+            <TabsList>
+              <TabsTrigger value="record" className="gap-1.5">
+                <PlaySquare className="size-3.5" />
+                Recorded
+              </TabsTrigger>
+              <TabsTrigger value="live" className="gap-1.5">
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
+                  <span className="relative inline-flex size-2 rounded-full bg-live" />
+                </span>
+                Live
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex-1 min-w-[220px]">
+            <Input
+              placeholder="Search by name, URL, or device…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              leadingIcon={<Search />}
+              trailingIcon={
+                search ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="text-fg-faint hover:text-fg pointer-events-auto"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : (
+                  <Kbd>/</Kbd>
+                )
+              }
             />
           </div>
 
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            aria-label="Sort sessions"
-            className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="name">Name A-Z</option>
-          </select>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+            <SelectTrigger className="w-auto min-w-[160px]">
+              <span className="flex items-center gap-2">
+                <SortIcon className="size-3.5 text-fg-subtle" />
+                <SelectValue />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {SORT_LABELS[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <FilterChips
+          duration={durationFilter}
+          onDurationChange={setDurationFilter}
+          onClear={() => {
+            setSearch("");
+            setDurationFilter("all");
+          }}
+          showClear={filtersActive}
+        />
+      </div>
+
+      {/* Result meta */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs text-fg-subtle">
+          {isLoading ? (
+            <Skeleton className="h-4 w-24" />
+          ) : (
+            <>
+              <span className="font-medium text-fg">{filtered.length}</span>{" "}
+              session{filtered.length !== 1 && "s"}
+              {filtersActive && (
+                <>
+                  {" "}
+                  matching filters{" "}
+                  <span className="text-fg-faint">
+                    (of {sessions.length})
+                  </span>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-slate-400 dark:text-slate-500">
-            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <span className="text-sm" aria-live="polite">Loading sessions...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && !loading && (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          <button
-            type="button"
-            onClick={retry}
-            className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Empty */}
-      {!loading && !error && filteredSessions.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400">
-            {searchQuery ? "No sessions match your search" : "No sessions found"}
-          </p>
-        </div>
-      )}
-
-      {/* Session grid */}
-      {!loading && !error && filteredSessions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" role="tabpanel">
-          {filteredSessions.map((session) => (
-            <div
-              key={session.id}
-              className="group flex flex-col gap-2 p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-lg hover:-translate-y-0.5 transition-all"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      selectedTab === "live"
-                        ? "bg-green-500 animate-pulse"
-                        : "bg-violet-400"
-                    }`}
-                  />
-                  <h2 className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-violet-700 dark:group-hover:text-violet-400 transition-colors truncate text-sm">
-                    {session.name}
-                  </h2>
-                </div>
-                {session.recordMode !== undefined && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      session.recordMode
-                        ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
-                        : "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400"
-                    }`}
-                  >
-                    {session.recordMode ? "REC" : "LIVE"}
-                  </span>
+      {/* Body */}
+      {error ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : isLoading ? (
+        view === "table" ? (
+          <SessionTableSkeleton />
+        ) : (
+          <SessionGridSkeleton />
+        )
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Activity}
+          title={filtersActive ? "No matches" : "No sessions yet"}
+          description={
+            filtersActive
+              ? "Try clearing some filters or expanding the date range."
+              : "Sessions will appear here as your SDK starts capturing traffic."
+          }
+          action={
+            filtersActive ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch("");
+                  setDurationFilter("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            ) : null
+          }
+        />
+      ) : (
+        <>
+          {view === "table" ? (
+            <SessionTable sessions={filtered} tab={tab} />
+          ) : (
+            <SessionGrid sessions={filtered} tab={tab} />
+          )}
+          {tab === "record" && hasNextPage && (
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={() => void fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <>
+                    <RefreshCw className="animate-spin" />
+                    Loading…
+                  </>
+                ) : (
+                  "Load more"
                 )}
-              </div>
-
-              {/* URL */}
-              {session.url && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                  {session.url}
-                </p>
-              )}
-
-              {/* Metadata row */}
-              <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 dark:text-slate-500">
-                {session.duration && Number(session.duration) > 0 && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" />
-                    </svg>
-                    {formatDuration(Number(session.duration))}
-                  </span>
-                )}
-                {session.deviceId && (
-                  <span className="flex items-center gap-1 truncate max-w-[120px]">
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    {session.deviceId.slice(0, 12)}...
-                  </span>
-                )}
-                {session.timestamp && (
-                  <span className="ml-auto">{formatTimeAgo(session.timestamp)}</span>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2 mt-1">
-                {selectedTab === "record" && (
-                  <a
-                    href={`/sessions/${session.id}`}
-                    className="px-3 py-1.5 text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors"
-                  >
-                    Detail
-                  </a>
-                )}
-                <a
-                  href={convertLink(
-                    session.name,
-                    selectedTab === "record" ? session.id : undefined,
-                  )}
-                  className="px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                >
-                  Open DevTools
-                </a>
-              </div>
+              </Button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
-};
+}
 
-function TabButton({
-  selected,
-  onClick,
-  children,
+/* ───────── Toolbar ───────── */
+
+function ViewModeToggle({
+  value,
+  onChange,
 }: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  value: ViewMode;
+  onChange: (v: ViewMode) => void;
 }) {
   return (
-    <button
-      role="tab"
-      type="button"
-      aria-selected={selected}
-      className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-        selected
-          ? "bg-white dark:bg-slate-700 text-violet-700 dark:text-violet-400 shadow-sm"
-          : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-      }`}
-      onClick={onClick}
+    <div
+      role="radiogroup"
+      aria-label="View mode"
+      className="inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-bg-muted p-0.5"
     >
-      {children}
-    </button>
+      <ViewToggleButton
+        active={value === "table"}
+        onClick={() => onChange("table")}
+        label="Table view"
+      >
+        <TableIcon className="size-3.5" />
+      </ViewToggleButton>
+      <ViewToggleButton
+        active={value === "grid"}
+        onClick={() => onChange("grid")}
+        label="Grid view"
+      >
+        <LayoutGrid className="size-3.5" />
+      </ViewToggleButton>
+    </div>
   );
 }
 
-function formatDuration(nanos: number): string {
-  const ms = nanos / 1_000_000;
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  if (minutes < 60)
-    return `${minutes}m ${remainingSeconds > 0 ? `${remainingSeconds}s` : ""}`.trim();
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return `${hours}h ${remainingMinutes}m`;
+function ViewToggleButton({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={active}
+          aria-label={label}
+          onClick={onClick}
+          className={cn(
+            "size-7 rounded-sm flex items-center justify-center transition-colors",
+            active
+              ? "bg-surface text-fg shadow-xs"
+              : "text-fg-subtle hover:text-fg",
+          )}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
-function formatTimeAgo(timestamp: string): string {
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString();
+function FilterChips({
+  duration,
+  onDurationChange,
+  onClear,
+  showClear,
+}: {
+  duration: DurationFilter;
+  onDurationChange: (v: DurationFilter) => void;
+  onClear: () => void;
+  showClear: boolean;
+}) {
+  const options: { value: DurationFilter; label: string }[] = [
+    { value: "all", label: "Any duration" },
+    { value: "short", label: "< 30s" },
+    { value: "medium", label: "30s – 5m" },
+    { value: "long", label: "> 5m" },
+  ];
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1">
+        <Filter className="size-3" />
+        Duration
+      </span>
+      {options.map((opt) => {
+        const active = duration === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onDurationChange(opt.value)}
+            className={cn(
+              "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors",
+              active
+                ? "bg-fg text-bg border-fg"
+                : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+            )}
+            aria-pressed={active}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+      {showClear && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          className="ml-1 h-6 px-2 text-[11px]"
+        >
+          <X className="size-3" />
+          Clear
+        </Button>
+      )}
+    </div>
+  );
 }
 
-const convertLink = (room: string, recordId?: number) => {
-  const host = import.meta.env.VITE_HOST || "http://localhost:3000";
-  const wsHost = host.replace(/^https?:\/\/(.+)$/, "$1");
-  const record = recordId ? `&recordMode=true&recordId=${recordId}` : "";
-  const wsUrl = encodeURIComponent(`${wsHost}?room=${room}${record}`);
-  const protocol = host.startsWith("https") ? "wss" : "ws";
-  return `${host}/tabbed-debug/?${protocol}=${wsUrl}`;
-};
+/* ───────── Table ───────── */
 
-export default SessionsPage;
+function SessionTable({
+  sessions,
+  tab,
+}: {
+  sessions: SessionRecord[];
+  tab: SessionTab;
+}) {
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
+              <Th className="w-[28px]" />
+              <Th>Session</Th>
+              <Th>URL</Th>
+              <Th>Device</Th>
+              <Th className="text-right">Duration</Th>
+              <Th className="text-right">When</Th>
+              <Th className="w-[100px] text-right" />
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((session) => (
+              <SessionRow key={session.id} session={session} tab={tab} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+function Th({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <th
+      scope="col"
+      className={cn(
+        "h-9 px-3 text-left font-semibold first:pl-4 last:pr-4",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+function SessionRow({
+  session,
+  tab,
+}: {
+  session: SessionRecord;
+  tab: SessionTab;
+}) {
+  const isLive = tab === "live";
+  const isRecording = session.recordMode ?? !isLive;
+
+  return (
+    <tr className="group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors">
+      <td className="pl-4 pr-2 py-3 align-middle">
+        <StatusDot isLive={isLive} isRecording={isRecording} />
+      </td>
+      <td className="px-3 py-3 align-middle">
+        <div className="flex flex-col min-w-0">
+          <span className="font-medium text-fg truncate max-w-[280px]">
+            {session.name || `Session #${session.id}`}
+          </span>
+          <span className="text-[11px] text-fg-faint">
+            ID {shortHash(String(session.id), 10)}
+          </span>
+        </div>
+      </td>
+      <td className="px-3 py-3 align-middle">
+        {session.url ? (
+          <span className="font-mono text-xs text-fg-subtle truncate block max-w-[260px]">
+            {session.url}
+          </span>
+        ) : (
+          <span className="text-fg-faint">—</span>
+        )}
+      </td>
+      <td className="px-3 py-3 align-middle">
+        {session.deviceId ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
+            <Smartphone className="size-3.5" />
+            <span className="font-mono">{shortHash(session.deviceId, 12)}</span>
+          </span>
+        ) : (
+          <span className="text-fg-faint">—</span>
+        )}
+      </td>
+      <td className="px-3 py-3 align-middle text-right">
+        <span className="font-mono text-xs text-fg-subtle">
+          {formatDurationFromNanos(session.duration)}
+        </span>
+      </td>
+      <td className="px-3 py-3 align-middle text-right">
+        <span className="text-xs text-fg-subtle">
+          {formatTimeAgo(session.timestamp)}
+        </span>
+      </td>
+      <td className="pl-3 pr-4 py-3 align-middle text-right">
+        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {tab === "record" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="ghost" size="icon-sm">
+                  <Link
+                    to={`/sessions/${session.id}`}
+                    aria-label="View session details"
+                  >
+                    <Activity className="size-3.5" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Detail</TooltipContent>
+            </Tooltip>
+          )}
+          <DevToolsLinkButton
+            variant="ghost"
+            size="icon-sm"
+            room={session.name}
+            recordId={tab === "record" ? session.id : undefined}
+            label="Open in DevTools"
+            title="Open DevTools"
+          >
+            <ExternalLink className="size-3.5" />
+          </DevToolsLinkButton>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function StatusDot({
+  isLive,
+  isRecording,
+}: {
+  isLive: boolean;
+  isRecording: boolean;
+}) {
+  if (isLive) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-50 animate-ping" />
+            <span className="relative inline-flex size-2 rounded-full bg-live" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Live now</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-block size-2 rounded-full",
+            isRecording ? "bg-fg-faint" : "bg-success",
+          )}
+        />
+      </TooltipTrigger>
+      <TooltipContent>
+        {isRecording ? "Recorded" : "Completed"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/* ───────── Grid ───────── */
+
+function SessionGrid({
+  sessions,
+  tab,
+}: {
+  sessions: SessionRecord[];
+  tab: SessionTab;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {sessions.map((session) => (
+        <SessionCard key={session.id} session={session} tab={tab} />
+      ))}
+    </div>
+  );
+}
+
+function SessionCard({
+  session,
+  tab,
+}: {
+  session: SessionRecord;
+  tab: SessionTab;
+}) {
+  const isLive = tab === "live";
+  return (
+    <Card className="group p-4 transition-all hover:border-border-strong hover:shadow-sm">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <StatusDot
+            isLive={isLive}
+            isRecording={session.recordMode ?? !isLive}
+          />
+          <span className="font-medium text-sm text-fg truncate">
+            {session.name || `Session #${session.id}`}
+          </span>
+        </div>
+        {isLive ? (
+          <Badge variant="live" size="sm" className="gap-1">
+            <RadioTower className="size-2.5" />
+            LIVE
+          </Badge>
+        ) : (
+          <Badge variant="neutral" size="sm">
+            REC
+          </Badge>
+        )}
+      </div>
+
+      {session.url && (
+        <p className="font-mono text-[11px] text-fg-faint truncate mb-3">
+          {session.url}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-subtle">
+        <span className="inline-flex items-center gap-1">
+          <Clock className="size-3" />
+          {formatDurationFromNanos(session.duration)}
+        </span>
+        {session.deviceId && (
+          <span className="inline-flex items-center gap-1">
+            <Monitor className="size-3" />
+            <span className="font-mono">{shortHash(session.deviceId, 10)}</span>
+          </span>
+        )}
+        {session.timestamp && (
+          <span className="ml-auto text-fg-faint">
+            {formatTimeAgo(session.timestamp)}
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
+        {tab === "record" && (
+          <Button asChild variant="secondary" size="sm" className="flex-1">
+            <Link to={`/sessions/${session.id}`}>
+              <Activity />
+              Details
+            </Link>
+          </Button>
+        )}
+        <DevToolsLinkButton
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          room={session.name}
+          recordId={tab === "record" ? session.id : undefined}
+        >
+          <ExternalLink />
+          DevTools
+        </DevToolsLinkButton>
+      </div>
+    </Card>
+  );
+}
+
+/* ───────── Skeletons / Error ───────── */
+
+function SessionTableSkeleton() {
+  return (
+    <Card className="overflow-hidden p-0">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border bg-bg-subtle">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <th key={i} className="h-9 px-3" />
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <tr key={i} className="border-b border-border last:border-0">
+              <td className="pl-4 pr-2 py-3.5">
+                <Skeleton className="size-2 rounded-full" />
+              </td>
+              <td className="px-3 py-3.5">
+                <Skeleton className="h-3.5 w-40 mb-1.5" />
+                <Skeleton className="h-2.5 w-20" />
+              </td>
+              <td className="px-3 py-3.5">
+                <Skeleton className="h-3 w-48" />
+              </td>
+              <td className="px-3 py-3.5">
+                <Skeleton className="h-3 w-24" />
+              </td>
+              <td className="px-3 py-3.5 text-right">
+                <Skeleton className="h-3 w-12 ml-auto" />
+              </td>
+              <td className="pl-3 pr-4 py-3.5 text-right">
+                <Skeleton className="h-3 w-16 ml-auto" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  );
+}
+
+function SessionGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <Skeleton className="h-4 w-32 mb-2" />
+          <Skeleton className="h-3 w-48 mb-4" />
+          <Skeleton className="h-3 w-24 mb-2" />
+          <Skeleton className="h-8 w-full mt-3" />
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Card className="border-danger/20 bg-danger-soft/20">
+      <div className="flex flex-col items-center text-center py-12 px-6">
+        <div className="size-10 rounded-full bg-danger-soft flex items-center justify-center mb-3">
+          <X className="size-5 text-danger" />
+        </div>
+        <h3 className="text-sm font-semibold text-fg mb-1">
+          Failed to load sessions
+        </h3>
+        <p className="text-sm text-fg-subtle max-w-sm mb-4">
+          The server didn't respond. Check your connection or try again.
+        </p>
+        <Button variant="outline" onClick={onRetry}>
+          <RefreshCw />
+          Try again
+        </Button>
+      </div>
+    </Card>
+  );
+}
+

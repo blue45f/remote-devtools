@@ -14,3 +14,9 @@ export {
   UserTicketTemplateEntity,
   AssigneeInfo,
 } from "./ticket-template-list.entity";
+
+// SaaS scaffolding (see docs/LAUNCH.md, currently inactive in the data path)
+export {
+  OrganizationEntity,
+  type OrganizationPlan,
+} from "./organization.entity";

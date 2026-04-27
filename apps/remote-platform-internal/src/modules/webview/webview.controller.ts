@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
 
@@ -16,9 +17,14 @@ import { getLocalDateString } from "@remote-platform/constants";
 import { RecordService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
+import { Auth } from "../auth/auth.decorator";
+import { AuthGuard } from "../auth/auth.guard";
+import type { AuthClaims } from "../auth/auth.service";
+
 import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve session list
 
 @Controller("sessions")
+@UseGuards(AuthGuard)
 export class WebviewController {
   private readonly logger = new Logger(WebviewController.name);
   constructor(
@@ -33,19 +39,60 @@ export class WebviewController {
     return this.webviewGateway.getLiveRoomList();
   }
 
+  /**
+   * GET /sessions/record
+   *
+   * Optional query params:
+   *   q          partial match on name + url (case-insensitive)
+   *   deviceId   exact deviceId filter
+   *   recordMode "true" / "false" — defaults to both
+   *   orgId      tenant scope (multi-tenant deployments)
+   *   limit      page size (1–200, default 50)
+   *   cursor     opaque ISO timestamp from a prior response
+   *
+   * Response:
+   *   { rows: [...], nextCursor: string | null }
+   *
+   * For backwards compatibility, if no query params are present the response
+   * is wrapped as a bare array so existing clients keep working.
+   */
   @Get("record")
-  public async getRecordSessionList(): Promise<
-    {
-      id: number;
-      name: string;
-      url?: string;
-      deviceId?: string;
-      duration?: string | number;
-      recordMode?: boolean;
-      timestamp?: Date;
-    }[]
-  > {
-    return (await this.recordService.findAll()).map((record) => ({
+  public async getRecordSessionList(
+    @Auth() auth: AuthClaims | null,
+    @Query("q") q?: string,
+    @Query("deviceId") deviceId?: string,
+    @Query("recordMode") recordMode?: string,
+    @Query("orgId") orgIdParam?: string,
+    @Query("limit") limit?: string,
+    @Query("cursor") cursor?: string,
+  ) {
+    const noFilters =
+      !q && !deviceId && !recordMode && !orgIdParam && !limit && !cursor;
+
+    const parsedRecordMode =
+      recordMode === "true" ? true : recordMode === "false" ? false : undefined;
+
+    const limitNum = limit ? Number(limit) : undefined;
+    if (limit && (Number.isNaN(limitNum) || (limitNum ?? 0) < 1)) {
+      throw new BadRequestException("Invalid limit");
+    }
+
+    // Multi-tenant scoping: when the caller is authenticated, force-filter by
+    // their org claim — even if they passed `?orgId=` explicitly. When auth is
+    // disabled (self-host) the explicit param still works and NULL passes
+    // through, which keeps the existing single-tenant behaviour.
+    const orgId = auth?.org ?? orgIdParam;
+
+    const { rows, nextCursor } = await this.recordService.findPaginated({
+      q,
+      deviceId,
+      recordMode: parsedRecordMode,
+      orgId,
+      limit: limitNum,
+      cursor,
+    });
+
+    const items = rows.map((record) => ({
       id: record.id,
       name: record.name,
       url: record.url || undefined,
@@ -54,6 +101,9 @@ export class WebviewController {
       recordMode: record.recordMode,
       timestamp: record.timestamp,
     }));
+
+    if (noFilters) return items; // back-compat
+    return { rows: items, nextCursor };
   }
 
   // GET /sessions/backups - List S3 backups (includes file content - slower)
