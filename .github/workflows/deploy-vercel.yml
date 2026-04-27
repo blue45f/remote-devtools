@@ -1,18 +1,30 @@
 name: Deploy demo to Vercel
 
-# Triggers when changes land on `main` that touch the client / SDK or any
-# top-level config Vercel reads. Manual dispatch is also supported.
+# Manual-only trigger.
+#
+# Required GitHub secrets (set under Settings → Environments → production):
+#   VERCEL_TOKEN       — https://vercel.com/account/tokens (full account scope)
+#   VERCEL_ORG_ID      — from .vercel/project.json after `vercel link`
+#   VERCEL_PROJECT_ID  — same file
+#
+# Until those are set this workflow always fails on the "Pull Vercel project
+# metadata" step, which is why we run it on demand only. For day-to-day
+# deploys, `vercel --prod` from a developer machine works fine — the Vercel
+# CLI uses your interactive login and bypasses GitHub Secrets entirely.
+#
+# To re-enable push-triggered auto-deploys: add the three secrets above and
+# uncomment the `push:` block below.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "client/**"
-      - "sdk/**"
-      - "vercel.json"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/deploy-vercel.yml"
   workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "client/**"
+  #     - "sdk/**"
+  #     - "vercel.json"
+  #     - "pnpm-lock.yaml"
+  #     - "package.json"
+  #     - ".github/workflows/deploy-vercel.yml"
 
 concurrency:
   group: vercel-prod
