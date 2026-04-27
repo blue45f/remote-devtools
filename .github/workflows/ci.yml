@@ -36,8 +36,12 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Run tests without --coverage first to surface any actual test failure
+      # in the CI log. If this passes we know the failure is coverage-related.
+      - name: Run backend tests (no coverage)
+        run: pnpm test
       - name: Run backend tests with coverage
-        run: pnpm test:cov --reporter=verbose
+        run: pnpm test:cov
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
