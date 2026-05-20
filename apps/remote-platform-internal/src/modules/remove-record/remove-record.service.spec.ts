@@ -44,6 +44,7 @@ describe("RemoveRecordService", () => {
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
         expect.stringContaining("DELETE FROM record"),
+        expect.any(Array),
       );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
@@ -58,34 +59,30 @@ describe("RemoveRecordService", () => {
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
-    it("should exclude protected record ID 3462", async () => {
+    it("should pass retention days, protected id, and batch size as parameters", async () => {
       mockQueryRunner.query.mockResolvedValue([{ count: "0" }]);
 
       await service.removeRecordOldRecords();
 
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("id <> 3462"),
+        expect.any(String),
+        [14, 3462, 1000],
       );
     });
 
-    it("should use batch size of 1000", async () => {
+    it("should parameterize the SQL (no string interpolation of constants)", async () => {
       mockQueryRunner.query.mockResolvedValue([{ count: "0" }]);
 
       await service.removeRecordOldRecords();
 
-      expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("LIMIT 1000"),
-      );
-    });
-
-    it("should use 14-day retention period", async () => {
-      mockQueryRunner.query.mockResolvedValue([{ count: "0" }]);
-
-      await service.removeRecordOldRecords();
-
-      expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("INTERVAL '14 days'"),
-      );
+      const [sql] = mockQueryRunner.query.mock.calls[0];
+      expect(sql).toContain("$1");
+      expect(sql).toContain("$2");
+      expect(sql).toContain("$3");
+      // Constants must not appear literally in the SQL anymore.
+      expect(sql).not.toContain("3462");
+      expect(sql).not.toContain("1000");
+      expect(sql).not.toContain("'14 days'");
     });
   });
 });

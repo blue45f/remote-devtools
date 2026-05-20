@@ -83,8 +83,8 @@ async function convertFixedElementsToAbsolute(page: Page): Promise<void> {
       const bottom = style.bottom;
 
       const isBottomFixed =
-        bottom && bottom !== "auto" && parseInt(bottom) < 150;
-      const hasHighZIndex = style.zIndex && parseInt(style.zIndex) >= 999;
+        bottom && bottom !== "auto" && parseInt(bottom, 10) < 150;
+      const hasHighZIndex = style.zIndex && parseInt(style.zIndex, 10) >= 999;
       const textContent = element.textContent || "";
       const isCTAContent =
         textContent.includes("\uc8fc\ubb38") ||
@@ -109,7 +109,7 @@ async function convertFixedElementsToAbsolute(page: Page): Promise<void> {
 
         element.style.position = "absolute";
         const elementHeight = rect.height;
-        element.style.top = `${pageHeight - elementHeight - parseInt(bottom)}px`;
+        element.style.top = `${pageHeight - elementHeight - parseInt(bottom, 10)}px`;
         element.style.bottom = "auto";
 
         if (

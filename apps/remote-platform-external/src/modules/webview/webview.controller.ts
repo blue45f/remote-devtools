@@ -188,7 +188,7 @@ export class WebviewController {
     );
 
     // Record 정보 가져오기
-    const parsedRecordId = parseInt(recordId);
+    const parsedRecordId = parseInt(recordId, 10);
     if (isNaN(parsedRecordId)) {
       throw new BadRequestException("recordId must be a valid number");
     }
@@ -375,9 +375,9 @@ export class WebviewController {
     return {
       componentStats: componentStats.map((stat) => ({
         component: stat.component,
-        count: parseInt(stat.count),
+        count: parseInt(stat.count, 10),
       })),
-      totalUniqueComponents: parseInt(totalUniqueComponents.count),
+      totalUniqueComponents: parseInt(totalUniqueComponents.count, 10),
     };
   }
 
@@ -403,9 +403,9 @@ export class WebviewController {
     return {
       labelStats: labelStats.map((stat) => ({
         label: stat.label,
-        count: parseInt(stat.count),
+        count: parseInt(stat.count, 10),
       })),
-      totalUniqueLabels: parseInt(totalUniqueLabels.count),
+      totalUniqueLabels: parseInt(totalUniqueLabels.count, 10),
     };
   }
 
@@ -531,15 +531,15 @@ export class WebviewController {
       todaySessions,
       recordModeStats: recordModeStats.map((stat) => ({
         recordMode: stat.recordMode,
-        count: parseInt(stat.count),
+        count: parseInt(stat.count, 10),
       })),
       deviceStats: deviceStats.map((stat) => ({
         deviceId: stat.deviceId,
-        count: parseInt(stat.count),
+        count: parseInt(stat.count, 10),
       })),
       referrerStats: referrerStats.map((stat) => ({
         referrer: stat.referrer,
-        count: parseInt(stat.count),
+        count: parseInt(stat.count, 10),
       })),
     };
   }
@@ -603,9 +603,9 @@ export class WebviewController {
       period: "최근 30일",
       dailyStats: dailyStats.map((stat) => ({
         date: stat.date,
-        totalCount: parseInt(stat.totalCount),
-        recordModeCount: parseInt(stat.recordModeCount),
-        liveModeCount: parseInt(stat.liveModeCount),
+        totalCount: parseInt(stat.totalCount, 10),
+        recordModeCount: parseInt(stat.recordModeCount, 10),
+        liveModeCount: parseInt(stat.liveModeCount, 10),
       })),
     };
   }

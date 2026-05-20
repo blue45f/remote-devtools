@@ -1,7 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
@@ -275,8 +280,19 @@ export class SessionReplayService {
         sessionData = backupData[0];
       } else {
         // Development environment: read from local file
-        const backupDir = path.join(process.cwd(), "backups");
-        const fullPath = path.join(backupDir, s3FilePath);
+        const backupDir = path.resolve(process.cwd(), "backups");
+        const fullPath = path.resolve(backupDir, s3FilePath);
+
+        // Guard against path traversal: the resolved path must stay within
+        // the backup directory tree.
+        const backupDirWithSep = backupDir.endsWith(path.sep)
+          ? backupDir
+          : backupDir + path.sep;
+        if (fullPath !== backupDir && !fullPath.startsWith(backupDirWithSep)) {
+          throw new BadRequestException(
+            `Invalid s3FilePath (escapes backup dir): ${s3FilePath}`,
+          );
+        }
 
         if (!fs.existsSync(fullPath)) {
           return [];
@@ -297,7 +313,8 @@ export class SessionReplayService {
       }
 
       return this.convertToReplayEvents(sessionReplayEvents);
-    } catch {
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
       throw new NotFoundException(`Failed to load S3 file: ${s3FilePath}`);
     }
   }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 
 export interface BufferEvent {
   readonly method: string;
@@ -36,7 +36,7 @@ const MAX_CONCURRENT_SESSIONS = 100;
 const MEMORY_WARNING_THRESHOLD = 1_000_000;
 
 @Injectable()
-export class BufferService {
+export class BufferService implements OnModuleDestroy {
   private readonly logger = new Logger(BufferService.name);
 
   /** In-memory buffer storage keyed by "room_recordId". */
@@ -48,13 +48,27 @@ export class BufferService {
   /** Event count threshold for auto-flush (disabled: uses periodic flush only). */
   private readonly flushThreshold = Infinity;
 
+  /** Handle for the periodic cleanup interval; cleared on module destroy. */
+  private readonly cleanupIntervalHandle: ReturnType<typeof setInterval>;
+
   constructor() {
     // Periodically clean up stale buffers every 5 minutes
-    setInterval(() => this.cleanupOldBuffers(), CLEANUP_INTERVAL_MS);
+    this.cleanupIntervalHandle = setInterval(
+      () => this.cleanupOldBuffers(),
+      CLEANUP_INTERVAL_MS,
+    );
 
     this.logger.log(
       "[BUFFER_SERVICE] Periodic auto-save disabled - only save on disconnect",
     );
+  }
+
+  /**
+   * Clears the periodic cleanup interval so the Node.js event loop can exit
+   * cleanly when the host module shuts down (tests, graceful restart, etc.).
+   */
+  public onModuleDestroy(): void {
+    clearInterval(this.cleanupIntervalHandle);
   }
 
   /**

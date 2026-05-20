@@ -1227,10 +1227,19 @@ export class WebviewGateway
     }
 
     if (roomData?.recordMode) {
-      const protocol =
-        typeof data.message === "string"
-          ? JSON.parse(data.message)
-          : data.message;
+      let protocol: any;
+      if (typeof data.message === "string") {
+        try {
+          protocol = JSON.parse(data.message);
+        } catch (err) {
+          this.logger.warn(
+            `[MESSAGE_TO_DEVTOOLS] Failed to parse message JSON: ${(err as Error).message}`,
+          );
+          return;
+        }
+      } else {
+        protocol = data.message;
+      }
       if (this.domService.isEnableDomResponseMessage(protocol.id)) {
         // DOM is enabled -- request DOM data
         this.sendMessage(client, {

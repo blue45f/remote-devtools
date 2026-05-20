@@ -19,6 +19,14 @@ const MAX_RETRY_ATTEMPTS = 5;
 const RETRY_DELAY_MS = 500;
 
 /**
+ * Maximum size of a response body persisted to the database (64 KiB).
+ * Larger bodies are truncated to keep row sizes bounded.
+ */
+const MAX_RESPONSE_BODY_BYTES = 65536;
+
+const TRUNCATION_MARKER = "…[truncated]";
+
+/**
  * 기존 네트워크 항목에 응답 본문을 삽입하기 위한 페이로드.
  */
 export interface UpdateResponseBodyData {
@@ -160,6 +168,11 @@ export class NetworkService {
       } catch {
         // Not valid JSON; keep the original body as-is
       }
+    }
+
+    if (bodyToSave && bodyToSave.length > MAX_RESPONSE_BODY_BYTES) {
+      bodyToSave =
+        bodyToSave.slice(0, MAX_RESPONSE_BODY_BYTES) + TRUNCATION_MARKER;
     }
 
     network.responseBody = bodyToSave;

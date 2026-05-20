@@ -1,3 +1,5 @@
+import { createHash, timingSafeEqual } from "crypto";
+
 import {
   CanActivate,
   ExecutionContext,
@@ -29,11 +31,24 @@ export class AdminTokenGuard implements CanActivate {
       extractBearer(req.headers.authorization) ??
       (typeof req.query.admin_token === "string" ? req.query.admin_token : "");
 
-    if (provided !== expected) {
+    if (!safeCompareTokens(provided, expected)) {
       throw new UnauthorizedException("Invalid admin token");
     }
     return true;
   }
+}
+
+/**
+ * Constant-time token comparison.
+ *
+ * The raw tokens may differ in length, so we hash both inputs to a fixed-size
+ * digest before passing them to `timingSafeEqual`. This avoids leaking timing
+ * information about the expected token's length or shared prefix.
+ */
+function safeCompareTokens(provided: string, expected: string): boolean {
+  const providedHash = createHash("sha256").update(provided).digest();
+  const expectedHash = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(providedHash, expectedHash);
 }
 
 function extractBearer(header: string | undefined): string | undefined {
