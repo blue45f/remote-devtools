@@ -35,6 +35,7 @@ interface AppState {
   toggleSidebarCollapsed: () => void;
 
   theme: Theme;
+  resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
 
   commandOpen: boolean;
@@ -78,12 +79,13 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   theme: readInitialTheme(),
+  resolvedTheme: resolveTheme(readInitialTheme()),
   setTheme: (theme) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("theme", theme);
     }
     applyTheme(theme);
-    set({ theme });
+    set({ theme, resolvedTheme: resolveTheme(theme) });
   },
 
   commandOpen: false,
@@ -110,6 +112,12 @@ if (typeof window !== "undefined") {
     .matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", () => {
       const theme = useAppStore.getState().theme;
-      if (theme === "system") applyTheme("system");
+      if (theme === "system") {
+        applyTheme("system");
+        // Keep the store's `resolvedTheme` in sync with the OS so subscribers
+        // (e.g. charts that pull canvas colours from getComputedStyle) re-render
+        // when the user switches the system colour-scheme at the OS level.
+        useAppStore.setState({ resolvedTheme: resolveTheme("system") });
+      }
     });
 }

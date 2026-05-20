@@ -10,6 +10,7 @@ function reset() {
     sidebarOpen: false,
     sidebarCollapsed: false,
     theme: "system",
+    resolvedTheme: "light",
     commandOpen: false,
     demoMode: false,
   });
@@ -41,6 +42,14 @@ describe("useAppStore", () => {
     useAppStore.getState().setTheme("light");
     expect(localStorage.getItem("theme")).toBe("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("updates resolvedTheme when setTheme runs", () => {
+    useAppStore.getState().setTheme("dark");
+    expect(useAppStore.getState().resolvedTheme).toBe("dark");
+
+    useAppStore.getState().setTheme("light");
+    expect(useAppStore.getState().resolvedTheme).toBe("light");
   });
 
   it("toggles command palette open state", () => {
