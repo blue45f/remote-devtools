@@ -7,6 +7,11 @@ export default defineConfig({
     globals: true,
     root: "./",
     include: ["apps/**/*.spec.ts", "libs/**/*.spec.ts"],
+    // e2e suites live under `apps/** /test/` and end in `.e2e-spec.ts`. They
+    // boot a Nest HTTP app via supertest and are run by `pnpm test:e2e`
+    // (see `vitest.e2e.config.ts`). Exclude them here so the unit suite stays
+    // fast and does not double-load them.
+    exclude: ["**/node_modules/**", "**/dist/**", "**/*.e2e-spec.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
@@ -28,16 +33,16 @@ export default defineConfig({
         "**/*.decorator.ts",
       ],
       // Thresholds tuned to the actual current coverage of tested surfaces.
-      // The numbers look modest because chunks of the legacy external app
-      // and internal app are not unit-tested yet; the modules WE care
-      // about (auth, billing, activity, record, etc.) sit between 80–100%
-      // individually. CI's job here is to catch regressions, not gate on
-      // unrelated legacy debt.
+      // Branches are high (~81%) because most tested modules cover every
+      // conditional; lines/functions lag because the webview gateways,
+      // session-replay service, and a few external integrations are still
+      // partially tested. CI's job here is to catch regressions, not gate
+      // on the in-flight gap.
       thresholds: {
-        lines: 30,
-        functions: 45,
-        branches: 35,
-        statements: 30,
+        lines: 40,
+        functions: 55,
+        branches: 75,
+        statements: 40,
       },
     },
   },
