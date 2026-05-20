@@ -237,9 +237,8 @@ export class S3Service extends BaseS3Service {
       });
       return results;
     } catch (error) {
-      this.logger.error(
-        `[S3_ERROR] Failed to query S3: ${error?.message || error}`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`[S3_ERROR] Failed to query S3: ${message}`);
       return [];
     }
   }

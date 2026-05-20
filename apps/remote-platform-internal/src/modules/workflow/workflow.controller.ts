@@ -13,7 +13,7 @@ import {
 import { ApiTags } from "@nestjs/swagger";
 import { FileInterceptor } from "@nestjs/platform-express";
 import axios from "axios";
-import * as FormData from "form-data";
+import FormData from "form-data";
 
 /**
  * Workflow API proxy controller.
