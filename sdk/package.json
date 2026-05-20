@@ -23,17 +23,17 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "error-stack-parser": "^2.1.4",
-    "js-cookie": "^3.0.5",
+    "js-cookie": "^3.0.7",
     "rrweb": "2.0.0-alpha.4",
     "specificity": "0.4.1",
-    "ua-parser-js": "^2.0.6"
+    "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
     "@rrweb/types": "2.0.0-alpha.18",
     "@types/crypto-js": "^4.2.2",
     "@types/js-cookie": "^3.0.6",
     "@vitest/coverage-v8": "^3.2.4",
-    "jsdom": "^29.0.2",
+    "jsdom": "^29.1.1",
     "vite": "^5.4.21",
     "vitest": "^3.2.4"
   }
