@@ -348,7 +348,9 @@ export async function renderHTMLToImage(
     const message =
       error instanceof Error ? error.message : "Unknown rendering error";
     logger.error(`HTML rendering failed: ${message}`);
-    throw new Error(`Failed to convert HTML to image: ${message}`);
+    throw new Error(`Failed to convert HTML to image: ${message}`, {
+      cause: error,
+    });
   } finally {
     if (page) await page.close();
     if (context) await context.close();
