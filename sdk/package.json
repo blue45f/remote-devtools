@@ -11,7 +11,9 @@
     }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "build": "vite build"
   },
@@ -30,6 +32,9 @@
     "@rrweb/types": "2.0.0-alpha.18",
     "@types/crypto-js": "^4.2.2",
     "@types/js-cookie": "^3.0.6",
-    "vite": "^5.4.21"
+    "@vitest/coverage-v8": "^3.2.4",
+    "jsdom": "^29.0.2",
+    "vite": "^5.4.21",
+    "vitest": "^3.2.4"
   }
 }
