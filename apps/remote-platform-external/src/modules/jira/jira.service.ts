@@ -296,7 +296,9 @@ export class JiraService {
 
       this.logger.error(`[JIRA_API_ERROR] ${JSON.stringify(errorData)}`);
 
-      throw new Error(`Jira ticket creation failed: ${errorMessage}`);
+      throw new Error(`Jira ticket creation failed: ${errorMessage}`, {
+        cause: error,
+      });
     }
   }
 
