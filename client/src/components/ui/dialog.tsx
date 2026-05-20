@@ -20,7 +20,7 @@ export const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+      "fixed inset-0 z-50 bg-fg/40 backdrop-blur-sm",
       "data-[state=open]:animate-fade-in",
       className,
     )}
@@ -49,7 +49,7 @@ export const DialogContent = forwardRef<
       <DialogPrimitive.Close
         className={cn(
           "absolute right-4 top-4 rounded-sm text-fg-subtle opacity-70",
-          "transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring",
+          "transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         )}
       >
         <X className="size-4" />

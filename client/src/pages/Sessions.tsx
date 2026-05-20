@@ -589,7 +589,7 @@ function SessionRow({
         </span>
       </td>
       <td className="pl-3 pr-4 py-3 align-middle text-right">
-        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           {tab === "record" && (
             <Tooltip>
               <TooltipTrigger asChild>

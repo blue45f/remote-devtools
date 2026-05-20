@@ -1,4 +1,3 @@
-import axios from "axios";
 import { CircuitBoard, ExternalLink, Terminal, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -76,10 +75,11 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
 
   const handleAxiosRequest = async () => {
     try {
-      const response = await axios.get(
+      const response = await fetch(
         "https://jsonplaceholder.typicode.com/todos/3",
       );
-      console.log("Axios Response:", response.data);
+      const data = await response.json();
+      console.log("Axios Response:", data);
     } catch (error) {
       console.error("Axios error:", error);
     }

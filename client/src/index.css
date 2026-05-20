@@ -39,14 +39,18 @@
      meet WCAG 2 AA contrast (4.5:1 for normal text). */
   --success: 142 71% 28%;
   --success-soft: 142 71% 95%;
+  --success-fg: 0 0% 100%;
   --warning: 38 92% 42%;
   --warning-soft: 38 92% 95%;
+  --warning-fg: 0 0% 100%;
   /* Bumped lightness 51 → 42 so small `text-danger` on `bg-danger-soft`
      meets WCAG 2 AA contrast (4.5:1 for normal text). */
   --danger: 0 72% 42%;
   --danger-soft: 0 72% 96%;
+  --danger-fg: 0 0% 100%;
   --info: 217 91% 60%;
   --info-soft: 217 91% 96%;
+  --info-fg: 0 0% 100%;
 
   /* Live indicator (record dot) */
   --live: 0 84% 60%;
@@ -84,12 +88,16 @@
 
   --success: 142 71% 45%;
   --success-soft: 142 71% 12%;
+  --success-fg: 0 0% 4%;
   --warning: 38 92% 50%;
   --warning-soft: 38 92% 12%;
+  --warning-fg: 0 0% 4%;
   --danger: 0 84% 60%;
   --danger-soft: 0 84% 12%;
+  --danger-fg: 0 0% 100%;
   --info: 217 91% 60%;
   --info-soft: 217 91% 14%;
+  --info-fg: 0 0% 100%;
 
   --live: 0 84% 60%;
 
@@ -126,12 +134,16 @@
 
   --color-success: hsl(var(--success));
   --color-success-soft: hsl(var(--success-soft));
+  --color-success-fg: hsl(var(--success-fg));
   --color-warning: hsl(var(--warning));
   --color-warning-soft: hsl(var(--warning-soft));
+  --color-warning-fg: hsl(var(--warning-fg));
   --color-danger: hsl(var(--danger));
   --color-danger-soft: hsl(var(--danger-soft));
+  --color-danger-fg: hsl(var(--danger-fg));
   --color-info: hsl(var(--info));
   --color-info-soft: hsl(var(--info-soft));
+  --color-info-fg: hsl(var(--info-fg));
 
   --color-live: hsl(var(--live));
 
@@ -148,6 +160,7 @@
   --radius-lg: 0.625rem;
   --radius-xl: 0.875rem;
   --radius-2xl: 1.125rem;
+  --radius-3xl: 1.75rem;
 
   /* Motion */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
