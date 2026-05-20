@@ -776,7 +776,9 @@ export class S3Service extends BaseS3Service {
       }
 
       // Sort by timestamp descending (newest first)
-      backupFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
+      backupFiles.sort(
+        (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10),
+      );
 
       // Apply limit
       if (effectiveLimit) {
@@ -1042,7 +1044,9 @@ export class S3Service extends BaseS3Service {
       }
 
       // Sort by timestamp descending (newest first)
-      backupFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
+      backupFiles.sort(
+        (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10),
+      );
 
       // Apply limit
       if (effectiveLimit) {
@@ -1191,7 +1195,7 @@ export class S3Service extends BaseS3Service {
         /(?:Record|Live|Buffer)-(?:\w+-)?(\d+)/,
       );
       if (roomTimestampMatch) {
-        currentTimestamp = parseInt(roomTimestampMatch[1]);
+        currentTimestamp = parseInt(roomTimestampMatch[1], 10);
         this.logger.log(
           `[S3_TIMESTAMP_EXTRACTED] Room: ${room} → Current timestamp: ${currentTimestamp}`,
         );
@@ -1265,7 +1269,7 @@ export class S3Service extends BaseS3Service {
           const fileMatch = file.match(/session_(\d+)\.json/);
           if (!fileMatch) continue;
 
-          const fileTimestamp = parseInt(fileMatch[1]);
+          const fileTimestamp = parseInt(fileMatch[1], 10);
 
           // Filter to records before the current timestamp only
           const timeDiff = currentTimestamp - fileTimestamp;

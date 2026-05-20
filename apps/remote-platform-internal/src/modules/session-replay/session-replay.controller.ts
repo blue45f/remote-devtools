@@ -110,7 +110,7 @@ export class SessionReplayController {
     }
 
     // Standard DB record ID
-    const recordId = parseInt(id);
+    const recordId = parseInt(id, 10);
     if (isNaN(recordId)) {
       throw new BadRequestException(`Invalid session ID: ${id}`);
     }

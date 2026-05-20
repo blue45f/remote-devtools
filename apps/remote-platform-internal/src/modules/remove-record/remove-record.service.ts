@@ -38,19 +38,22 @@ export class RemoveRecordService {
     await queryRunner.startTransaction();
 
     try {
-      const result = await queryRunner.query(`
+      const result = await queryRunner.query(
+        `
         WITH deleted AS (
           DELETE FROM record
           WHERE id IN (
             SELECT id FROM record
-            WHERE timestamp < NOW() - INTERVAL '${RECORD_RETENTION_DAYS} days'
-            AND id <> ${PROTECTED_RECORD_ID}
-            LIMIT ${DELETION_BATCH_SIZE}
+            WHERE timestamp < NOW() - ($1::int * INTERVAL '1 day')
+            AND id <> $2
+            LIMIT $3
           )
           RETURNING id
         )
         SELECT COUNT(*) FROM deleted;
-      `);
+      `,
+        [RECORD_RETENTION_DAYS, PROTECTED_RECORD_ID, DELETION_BATCH_SIZE],
+      );
 
       const deletedCount = parseInt(result[0].count, 10);
       this.logger.log(

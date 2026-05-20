@@ -651,7 +651,9 @@ export class S3Service extends BaseS3Service {
         }
       }
 
-      backupFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
+      backupFiles.sort(
+        (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10),
+      );
 
       if (effectiveLimit) {
         return backupFiles.slice(0, effectiveLimit);
