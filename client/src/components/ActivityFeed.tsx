@@ -143,7 +143,11 @@ export function ActivityFeed({
         />
       ) : (
         <>
-          <ol className="relative space-y-0">
+          <ol
+            className="relative space-y-0"
+            aria-live="polite"
+            aria-relevant="additions"
+          >
             {/* spine */}
             <span
               aria-hidden

@@ -18,7 +18,7 @@ export const SelectTrigger = forwardRef<
       "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-fg",
       "placeholder:text-fg-faint outline-none",
       "transition-[border-color,box-shadow] duration-150",
-      "focus:border-accent focus:ring-2 focus:ring-accent/20",
+      "focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[placeholder]:text-fg-faint",
       "[&>span]:line-clamp-1",

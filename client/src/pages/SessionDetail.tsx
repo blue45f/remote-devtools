@@ -104,21 +104,20 @@ function normaliseEvent(raw: RawEvent): ReplayEvent {
 
 const EVENT_META: Record<
   number,
-  { name: string; tone: "neutral" | "accent" | "success" | "warning"; icon: typeof Activity }
+  { name: string; icon: typeof Activity }
 > = {
-  0: { name: "DomLoaded", tone: "accent", icon: Globe },
-  1: { name: "PageLoaded", tone: "accent", icon: Eye },
-  2: { name: "FullSnapshot", tone: "warning", icon: Layers },
-  3: { name: "Incremental", tone: "neutral", icon: Activity },
-  4: { name: "Meta", tone: "success", icon: FileJson },
-  5: { name: "Custom", tone: "warning", icon: Zap },
+  0: { name: "DomLoaded", icon: Globe },
+  1: { name: "PageLoaded", icon: Eye },
+  2: { name: "FullSnapshot", icon: Layers },
+  3: { name: "Incremental", icon: Activity },
+  4: { name: "Meta", icon: FileJson },
+  5: { name: "Custom", icon: Zap },
 };
 
 function getEventMeta(type: number) {
   return (
     EVENT_META[type] ?? {
       name: `Type-${type}`,
-      tone: "neutral" as const,
       icon: Activity,
     }
   );

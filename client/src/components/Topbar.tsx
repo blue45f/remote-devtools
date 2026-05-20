@@ -104,6 +104,7 @@ export function Topbar() {
                 </Link>
               ) : (
                 <span
+                  aria-current={isLast ? "page" : undefined}
                   className={cn(
                     "truncate",
                     isLast ? "text-fg font-medium" : "text-fg-subtle",

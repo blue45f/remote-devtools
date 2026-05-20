@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             "group relative flex items-center h-9 rounded-md border border-border bg-surface text-sm",
             "transition-[border-color,box-shadow] duration-150",
-            "focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20",
+            "has-[:focus-visible]:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/20",
             className,
           )}
         >
@@ -52,7 +52,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           "h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg",
           "placeholder:text-fg-faint outline-none",
           "transition-[border-color,box-shadow] duration-150",
-          "focus:border-accent focus:ring-2 focus:ring-accent/20",
+          "focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className,
         )}
