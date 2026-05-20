@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import axios, { AxiosInstance } from "axios";
-import * as FormData from "form-data";
+import FormData from "form-data";
 
 import { convertRecordLink, createUserDataText } from "../../utils/utils";
 import { UserInfoService } from "../user-info/user-info.service";

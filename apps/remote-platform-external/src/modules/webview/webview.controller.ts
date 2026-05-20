@@ -283,7 +283,8 @@ export class WebviewController {
       }
 
       // 다른 에러는 500 에러로 처리
-      throw new Error(`스크린샷 생성 실패: ${error.message}`, { cause: error });
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`스크린샷 생성 실패: ${message}`, { cause: error });
     }
 
     this.logger.log(

@@ -413,9 +413,10 @@ export class UserProfileService {
         `Slack user lookup succeeded - slackId: ${slackUserData.slackId}`,
       );
     } catch (error) {
-      this.logger.error(`Slack user lookup failed:`, error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Slack user lookup failed:`, message);
       throw new BadRequestException(
-        `Slack user lookup failed: ${updateUserProfileDto.email} - ${error.message}`,
+        `Slack user lookup failed: ${updateUserProfileDto.email} - ${message}`,
       );
     }
 
