@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 10
+    labels: ['dependencies']
+
+  - package-ecosystem: npm
+    directory: '/client'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: ['client', 'dependencies']
+
+  - package-ecosystem: npm
+    directory: '/sdk'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: ['sdk', 'dependencies']
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    labels: ['ci']
