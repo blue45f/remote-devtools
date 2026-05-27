@@ -104,11 +104,11 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col">
       <SkipLink />
-      <header className="border-b border-border bg-bg/80 backdrop-blur-xl sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto h-14 flex items-center px-4 lg:px-6">
-          <Link to="/" className="flex items-center gap-2 select-none">
+      <header className="border-b border-border bg-bg/80 backdrop-blur-xl sticky top-0 z-30 safe-pt">
+        <div className="max-w-6xl mx-auto h-14 flex items-center px-3 sm:px-4 lg:px-6 gap-2">
+          <Link to="/" className="flex items-center gap-2 select-none min-w-0">
             <Brand collapsed />
-            <span className="text-[15px] font-semibold tracking-tight">
+            <span className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
               Remote DevTools
             </span>
           </Link>
@@ -126,7 +126,8 @@ export default function PricingPage() {
           </nav>
           <Button asChild variant="primary" size="sm">
             <Link to="/dashboard">
-              Open demo
+              <span className="hidden xs:inline sm:inline">Open demo</span>
+              <span className="xs:hidden sm:hidden">Demo</span>
               <ArrowRight />
             </Link>
           </Button>
@@ -136,24 +137,24 @@ export default function PricingPage() {
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex-1 py-20 lg:py-28 focus:outline-none"
+        className="flex-1 py-12 sm:py-20 lg:py-28 focus:outline-none"
       >
-        <div className="max-w-6xl mx-auto px-4 lg:px-6">
-          <div className="text-center mb-12 lg:mb-16">
+        <div className="max-w-6xl mx-auto safe-px">
+          <div className="text-center mb-10 sm:mb-12 lg:mb-16">
             <Badge variant="accent" size="md" className="mb-4">
               {t("pricing.badge")}
             </Badge>
-            <h1 className="text-4xl lg:text-5xl font-semibold tracking-[-0.02em] mb-4">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.02em] mb-3 sm:mb-4 text-balance">
               {t("pricing.title")}
               <br />
               <span className="text-fg-subtle">{t("pricing.titleAccent")}</span>
             </h1>
-            <p className="text-fg-subtle max-w-xl mx-auto">
+            <p className="text-sm sm:text-base text-fg-subtle max-w-xl mx-auto text-balance">
               {t("pricing.subtitle")}
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
             {PLANS.map((rawPlan, i) => {
               // When billing is wired up, flip "Coming soon" to a real CTA.
               const plan =
@@ -170,7 +171,7 @@ export default function PricingPage() {
                 >
                   <Card
                     className={cn(
-                      "p-6 h-full flex flex-col gap-5 relative",
+                      "p-5 sm:p-6 h-full flex flex-col gap-4 sm:gap-5 relative",
                       plan.highlight && "border-fg shadow-md",
                     )}
                   >
@@ -198,7 +199,7 @@ export default function PricingPage() {
                     <Button
                       asChild
                       variant={plan.highlight ? "primary" : "outline"}
-                      className="w-full"
+                      className="w-full touch-target"
                     >
                       {plan.href.startsWith("/") ? (
                         <Link to={plan.href}>{plan.cta}</Link>
@@ -263,8 +264,8 @@ export default function PricingPage() {
         </div>
       </main>
 
-      <footer className="border-t border-border py-6">
-        <div className="max-w-6xl mx-auto px-4 lg:px-6 flex flex-wrap items-center gap-4 text-xs text-fg-faint">
+      <footer className="border-t border-border py-6 safe-pb">
+        <div className="max-w-6xl mx-auto safe-px flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-fg-faint">
           <Link to="/" className="hover:text-fg-subtle">
             Home
           </Link>

@@ -172,6 +172,12 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Breakpoints — Tailwind v4 defaults plus `xs` (480px) for the gap
+     between common phone widths (≤360 / ≤390) and small tablets (640).
+     With xs we can scale CTAs from full-width on small phones to inline
+     on larger phones/phablets before the standard `sm` kicks in. */
+  --breakpoint-xs: 30rem;
 }
 
 * {
@@ -200,7 +206,8 @@ body {
   color: hsl(var(--fg));
 }
 
-/* Scrollbar — slim, unobtrusive */
+/* Scrollbar — slim, unobtrusive. Hidden on touch devices so users don't see
+   a half-rendered track while scrolling momentum lists. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -218,6 +225,87 @@ body {
   background: hsl(var(--fg-faint));
   background-clip: padding-box;
   border: 2px solid transparent;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Horizontal-scroll container — used for tab rails / chip strips that
+   overflow on narrow viewports. Adds momentum scrolling on iOS, hides
+   scrollbar, and reserves enough bottom padding so the last item isn't
+   cut by the scroll shadow. */
+.scroll-rail {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.scroll-rail::-webkit-scrollbar {
+  display: none;
+}
+.scroll-rail > * {
+  scroll-snap-align: start;
+}
+
+/* Edge-fade mask for scroll rails: visually cues that content extends
+   beyond the viewport. Pair with `.scroll-rail`. */
+.scroll-rail-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 16px,
+    black calc(100% - 16px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 16px,
+    black calc(100% - 16px),
+    transparent 100%
+  );
+}
+
+/* Safe-area helpers for iOS / Android notch and home-indicator. */
+.safe-px {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 1024px) {
+  .safe-px {
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+  }
+}
+.safe-pb {
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+.safe-pt {
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
+/* Touch-target floor: lift interactive elements to at least 44×44 on
+   coarse pointers so they comply with WCAG 2.5.5 target size. Apply
+   via the .touch-target utility on small icon buttons inside the
+   topbar / mobile drawer. */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent iOS double-tap zoom on tappable controls */
+button,
+[role="button"],
+[role="tab"],
+a {
+  touch-action: manipulation;
 }
 
 /* Focus ring — visible only via keyboard */

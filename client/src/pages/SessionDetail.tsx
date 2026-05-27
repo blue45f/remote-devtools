@@ -163,13 +163,13 @@ export default function SessionDetailPage() {
   const totalEvents = events?.length ?? 0;
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-7xl mx-auto">
+    <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
       {/* Back link */}
       <Button
         asChild
         variant="ghost"
         size="sm"
-        className="-ml-2 mb-4 text-fg-subtle hover:text-fg"
+        className="-ml-2 mb-3 sm:mb-4 text-fg-subtle hover:text-fg touch-target"
       >
         <Link to="/sessions">
           <ArrowLeft />
@@ -180,17 +180,19 @@ export default function SessionDetailPage() {
       {/* Header */}
       <SessionHeader id={id ?? ""} metadata={metadata} loading={metaLoading} />
 
-      <Separator className="my-6" />
+      <Separator className="my-5 sm:my-6" />
 
-      {/* Preview thumbnail + metric tiles side-by-side on wide screens */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_1fr] mb-6">
+      {/* Preview thumbnail + metric tiles side-by-side on wide screens.
+          On phones the preview gets full width above the metric grid; metric
+          tiles compress to a 2-col grid that handles 320px viewports. */}
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,260px)_1fr] mb-5 sm:mb-6">
         {id && (
           <SessionPreviewCard
             sessionId={id}
             className="lg:max-w-[260px] w-full"
           />
         )}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 self-start">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 self-start">
           <MetricTile
             icon={Layers}
             label="Total events"
@@ -228,35 +230,38 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — horizontally scrollable on narrow screens with fading edges
+          to hint at off-screen options without taking layout space. */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          <TabsTrigger value="overview" className="gap-1.5">
-            <Activity className="size-3.5" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="replay" className="gap-1.5">
-            <PlayCircle className="size-3.5" />
-            Replay
-          </TabsTrigger>
-          <TabsTrigger value="timeline" className="gap-1.5">
-            <ListTree className="size-3.5" />
-            Timeline
-            {totalEvents > 0 && (
-              <Badge
-                variant="neutral"
-                size="sm"
-                className="ml-1 h-4 px-1 text-[10px]"
-              >
-                {totalEvents}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="raw" className="gap-1.5">
-            <FileJson className="size-3.5" />
-            Raw JSON
-          </TabsTrigger>
-        </TabsList>
+        <div className="scroll-rail scroll-rail-fade -mx-1 px-1">
+          <TabsList className="w-max">
+            <TabsTrigger value="overview" className="gap-1.5">
+              <Activity className="size-3.5" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="replay" className="gap-1.5">
+              <PlayCircle className="size-3.5" />
+              Replay
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="gap-1.5">
+              <ListTree className="size-3.5" />
+              Timeline
+              {totalEvents > 0 && (
+                <Badge
+                  variant="neutral"
+                  size="sm"
+                  className="ml-1 h-4 px-1 text-[10px]"
+                >
+                  {totalEvents}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="raw" className="gap-1.5">
+              <FileJson className="size-3.5" />
+              Raw JSON
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="mt-5">
           <OverviewTab
@@ -309,30 +314,30 @@ function SessionHeader({
 }) {
   const isRecording = metadata?.recordMode;
   return (
-    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs text-fg-faint mb-2">
+        <div className="flex items-center gap-2 text-[11px] sm:text-xs text-fg-faint mb-1.5 sm:mb-2">
           <Hash className="size-3" />
           Session {shortHash(id, 12)}
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg break-words">
           {loading ? (
-            <Skeleton className="h-7 w-72" />
+            <Skeleton className="h-7 w-48 sm:w-72" />
           ) : (
             (metadata?.name ?? metadata?.room ?? `Session #${id}`)
           )}
         </h1>
         {(loading || metadata?.url) && (
-          <div className="flex items-center gap-2 mt-2 max-w-2xl">
+          <div className="flex items-center gap-2 mt-2 max-w-2xl min-w-0">
             <Globe className="size-3.5 text-fg-faint shrink-0" />
             {loading ? (
-              <Skeleton className="h-3.5 w-96" />
+              <Skeleton className="h-3.5 w-48 sm:w-96" />
             ) : (
               <a
                 href={metadata?.url}
                 target="_blank"
                 rel="noreferrer"
-                className="font-mono text-xs text-fg-subtle hover:text-accent truncate"
+                className="font-mono text-[11px] sm:text-xs text-fg-subtle hover:text-accent truncate min-w-0"
               >
                 {metadata?.url}
               </a>
@@ -341,7 +346,8 @@ function SessionHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Action cluster — wraps on tablet, stacks-then-grid on phone */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         {loading ? (
           <Skeleton className="h-6 w-20" />
         ) : isRecording !== undefined ? (
@@ -358,10 +364,10 @@ function SessionHeader({
         {metadata?.url && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="touch-target">
                 <a href={metadata.url} target="_blank" rel="noreferrer">
                   <ExternalLink />
-                  Open URL
+                  <span className="hidden xs:inline sm:inline">Open URL</span>
                 </a>
               </Button>
             </TooltipTrigger>
@@ -373,13 +379,15 @@ function SessionHeader({
           <DevToolsLinkButton
             variant="primary"
             size="sm"
+            className="touch-target"
             room={metadata?.name ?? metadata?.room ?? ""}
             recordId={metadata?.recordMode ? metadata.id : undefined}
             label="Open in DevTools"
             title="Inspect this session in the Chrome DevTools UI"
           >
             <Bug />
-            Open DevTools
+            <span className="hidden xs:inline sm:inline">Open DevTools</span>
+            <span className="xs:hidden sm:hidden">DevTools</span>
           </DevToolsLinkButton>
         )}
       </div>
@@ -554,9 +562,11 @@ function TimelineTab({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-      {/* Sidebar filter */}
-      <aside className="space-y-3">
+    <div className="grid gap-3 sm:gap-4 lg:grid-cols-[220px_1fr]">
+      {/* Filter region.
+          On desktop: full sidebar with type list.
+          On mobile/tablet: search bar + horizontal chip rail. */}
+      <aside className="space-y-3 min-w-0">
         <Input
           placeholder="Filter events…"
           value={search}
@@ -574,7 +584,8 @@ function TimelineTab({
             ) : undefined
           }
         />
-        <div>
+        {/* Desktop list */}
+        <div className="hidden lg:block">
           <div className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-1.5 px-1">
             Type
           </div>
@@ -605,10 +616,37 @@ function TimelineTab({
             })}
           </ul>
         </div>
+
+        {/* Mobile chip rail */}
+        <div className="lg:hidden -mx-1 px-1 scroll-rail scroll-rail-fade">
+          <div className="flex items-center gap-1.5 pb-0.5">
+            <FilterChip
+              active={activeType === null}
+              onClick={() => setActiveType(null)}
+              label="All"
+              count={events.length}
+            />
+            {types.map((t) => {
+              const meta = getEventMeta(t);
+              const count = events.filter((e) => e.type === t).length;
+              const Icon = meta.icon;
+              return (
+                <FilterChip
+                  key={t}
+                  active={activeType === t}
+                  onClick={() => setActiveType(t)}
+                  label={meta.name}
+                  count={count}
+                  icon={<Icon className="size-3" />}
+                />
+              );
+            })}
+          </div>
+        </div>
       </aside>
 
       {/* Timeline */}
-      <Card className="p-0 overflow-hidden">
+      <Card className="p-0 overflow-hidden min-w-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
             <span className="font-medium text-fg-subtle">
@@ -623,6 +661,46 @@ function TimelineTab({
         <VirtualEventList events={filtered} />
       </Card>
     </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  label,
+  count,
+  icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-7 px-2.5 rounded-full border text-[12px] font-medium shrink-0",
+        "inline-flex items-center gap-1.5 transition-colors",
+        active
+          ? "bg-fg text-bg border-fg"
+          : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+      )}
+      aria-pressed={active}
+    >
+      {icon}
+      <span>{label}</span>
+      <span
+        className={cn(
+          "font-mono tabular-nums text-[10px]",
+          active ? "text-bg/80" : "text-fg-faint",
+        )}
+      >
+        {count}
+      </span>
+    </button>
   );
 }
 
@@ -642,7 +720,7 @@ function VirtualEventList({ events }: { events: ReplayEvent[] }) {
 
   if (events.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[360px] text-xs text-fg-subtle">
+      <div className="flex items-center justify-center h-[280px] sm:h-[360px] text-xs text-fg-subtle">
         No events match the current filters.
       </div>
     );
@@ -651,7 +729,7 @@ function VirtualEventList({ events }: { events: ReplayEvent[] }) {
   return (
     <div
       ref={parentRef}
-      className="h-[480px] overflow-auto"
+      className="h-[min(60vh,480px)] sm:h-[min(65vh,520px)] overflow-auto"
       data-testid="timeline-virtual-scroll"
     >
       <ol
@@ -781,8 +859,8 @@ function RawTab({
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-      <ScrollArea className="h-[520px]">
-        <pre className="p-4 font-mono text-[11px] leading-relaxed text-fg-subtle whitespace-pre-wrap break-all">
+      <ScrollArea className="h-[min(65vh,520px)]">
+        <pre className="p-3 sm:p-4 font-mono text-[11px] leading-relaxed text-fg-subtle whitespace-pre-wrap break-all">
           {json}
         </pre>
       </ScrollArea>
