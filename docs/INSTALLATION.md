@@ -49,6 +49,7 @@ pnpm workspace 기반으로 다음이 한번에 설치된다:
 - `apps/remote-platform-external` -- External 백엔드
 - `apps/remote-platform-internal` -- Internal 백엔드
 - `client` -- React 19 + Vite 클라이언트
+- `debug-recorder-admin` -- Debug Recorder 관리자 대시보드
 - `sdk` -- 프론트엔드 SDK
 - `figma-plugin` -- Figma 플러그인
 - `libs/*` -- 공유 라이브러리 (core, entity, common, constants, interfaces)
@@ -58,6 +59,7 @@ pnpm workspace 기반으로 다음이 한번에 설치된다:
 ```bash
 cp .env.example apps/remote-platform-external/src/.env.local
 cp .env.example apps/remote-platform-internal/src/.env.local
+cp debug-recorder-admin/.env.example debug-recorder-admin/.env
 ```
 
 기본값으로 로컬 개발이 가능하다. 외부 서비스 연동(Jira, Slack, S3 등)이 필요한 경우에만 수정한다.
@@ -129,6 +131,9 @@ pnpm start:internal:dev
 
 # 터미널 4 -- 클라이언트 (선택)
 cd client && pnpm dev
+
+# 터미널 5 -- 관리자 대시보드 (선택)
+pnpm dev:admin
 ```
 
 ### 5. 설치 확인

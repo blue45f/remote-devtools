@@ -11,6 +11,7 @@
     "ecosystem.config.js",
     "assets",
     "devtools-frontend",
+    "debug-recorder-admin/dist",
     "client/dist",
     "sdk/dist",
     ".dockerignore"
@@ -26,6 +27,10 @@
     "start:internal:dev": "nest start remote-platform-internal --watch",
     "start:external": "nest start remote-platform-external",
     "start:external:dev": "nest start remote-platform-external --watch",
+    "dev:admin": "pnpm --filter debug-recorder-admin dev",
+    "build:admin": "pnpm --filter debug-recorder-admin build",
+    "typecheck:admin": "pnpm --filter debug-recorder-admin typecheck",
+    "lint:admin": "pnpm --filter debug-recorder-admin lint",
     "compose": "docker-compose up",
     "migration:generate": "node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' --no-warnings ./node_modules/typeorm/cli.js migration:generate -d libs/core/src/datasource.ts",
     "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run -d libs/core/src/datasource.ts",
