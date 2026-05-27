@@ -23,10 +23,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the Timeline tab flips to the Replay tab with `?t=<offset>` set, and
   the player re-seeks live (not just on mount). The Sentry / OpenReplay
   debugger workflow: errors and incidents become navigable.
-- **Sessions hostname quick-filter** — current commit — A chip strip
+- **Sessions hostname quick-filter** — `df20e599` — A chip strip
   above the result list shows the top hosts currently on screen with
   hit counts. Clicking one narrows the result to that origin. Clarity /
   Datadog parity.
+- **Replay timeline minimap** — current commit — A 96-bucket density
+  bar sits above the rrweb player on the Replay tab. Each column is a
+  slice of session time; opacity scales with event count. Click anywhere
+  to seek. OpenReplay / FullStory parity for "where's the action in a
+  long session?".
 
 ## Next obvious candidates
 
@@ -40,8 +45,6 @@ Listed in rough order of value × ease:
   captures these.
 - **Rage-click detection** — scan IncrementalSnapshot events for rapid
   same-target clicks; add a chip to the timeline summary.
-- **Replay timeline minimap** — event-type density bar above the rrweb
-  player; clicking jumps to that offset.
 - **Session tags** — needs DB column + endpoint; defer until backend cycle.
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
