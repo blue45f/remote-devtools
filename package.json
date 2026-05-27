@@ -41,6 +41,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "lint": "eslint apps/ libs/ --fix",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "format:check": "pnpm -r --if-present run format:check",
     "validate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify"
   },
