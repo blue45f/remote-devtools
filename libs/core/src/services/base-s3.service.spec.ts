@@ -446,19 +446,18 @@ describe("BaseS3Service", () => {
     });
 
     it("should return KST today and yesterday when no targetDate is given", () => {
-      const now = Date.now();
-      const kstNow = new Date(now + 9 * 60 * 60 * 1000);
-      const kstToday = kstNow.toISOString().split("T")[0];
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-27T07:34:00.000Z"));
 
-      const kstYesterday = new Date(kstNow);
-      kstYesterday.setDate(kstNow.getDate() - 1);
-      const kstYesterdayStr = kstYesterday.toISOString().split("T")[0];
+      try {
+        const result = service["buildSearchDates"]();
 
-      const result = service["buildSearchDates"]();
-
-      expect(result).toHaveLength(2);
-      expect(result[0]).toBe(kstToday);
-      expect(result[1]).toBe(kstYesterdayStr);
+        expect(result).toHaveLength(2);
+        expect(result[0]).toBe("2026-05-27");
+        expect(result[1]).toBe("2026-05-26");
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
