@@ -42,6 +42,7 @@
     "lint": "eslint apps/ libs/ --fix",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "format:check": "pnpm -r --if-present run format:check",
+    "ci": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "validate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify"
   },
