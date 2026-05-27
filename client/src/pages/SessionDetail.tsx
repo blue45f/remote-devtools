@@ -13,6 +13,7 @@ import {
   Globe,
   Hash,
   Layers,
+  Link2,
   ListTree,
   PlayCircle,
   RadioTower,
@@ -22,7 +23,7 @@ import {
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { SessionPreviewCard } from "@/components/replay/SessionPreviewCard";
 
@@ -129,9 +130,27 @@ function formatTimestampWithMillis(ts: number) {
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+
+  // Deep link to a specific moment in the replay: `?t=12345` (ms from
+  // session start). Parity with PostHog / Sentry / Highlight.io share
+  // links — pasting a URL with `?t=` should land the viewer right on
+  // the moment that mattered.
+  const initialReplayOffset = useMemo(() => {
+    const raw = searchParams.get("t");
+    if (!raw) return 0;
+    const ms = Number.parseInt(raw, 10);
+    return Number.isFinite(ms) && ms > 0 ? ms : 0;
+  }, [searchParams]);
+
   const [tab, setTab] = useState<"overview" | "replay" | "timeline" | "raw">(
-    "overview",
+    initialReplayOffset > 0 ? "replay" : "overview",
   );
+
+  // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
+  // it in a ref so the share button reads the latest value without making
+  // every playhead tick re-render the page.
+  const playheadMsRef = useRef<number>(initialReplayOffset);
 
   const { data: metadata, isLoading: metaLoading } = useQuery({
     queryKey: ["session-metadata", id],
@@ -277,15 +296,26 @@ export default function SessionDetailPage() {
               <Skeleton className="h-[420px] w-full" />
             </Card>
           ) : (
-            <Suspense
-              fallback={
-                <Card className="p-6">
-                  <Skeleton className="h-[420px] w-full" />
-                </Card>
-              }
-            >
-              <ReplayPlayer events={(events ?? []) as unknown[]} />
-            </Suspense>
+            <div className="space-y-3">
+              <div className="flex items-center justify-end">
+                <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
+              </div>
+              <Suspense
+                fallback={
+                  <Card className="p-6">
+                    <Skeleton className="h-[420px] w-full" />
+                  </Card>
+                }
+              >
+                <ReplayPlayer
+                  events={(events ?? []) as unknown[]}
+                  startTime={initialReplayOffset}
+                  onTimeUpdate={(ms) => {
+                    playheadMsRef.current = ms;
+                  }}
+                />
+              </Suspense>
+            </div>
           )}
         </TabsContent>
 
@@ -393,6 +423,58 @@ function SessionHeader({
       </div>
     </div>
   );
+}
+
+/* ───────── Share replay deep link ───────── */
+
+function ShareReplayLinkButton({
+  playheadMsRef,
+}: {
+  playheadMsRef: React.MutableRefObject<number>;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    const playhead = Math.max(0, Math.round(playheadMsRef.current));
+    const base =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}`
+        : "";
+    const url = playhead > 0 ? `${base}?t=${playhead}` : base;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+      toast.success("Share link copied", {
+        description:
+          playhead > 0
+            ? `Opens the replay at ${formatPlayhead(playhead)}.`
+            : "Opens the replay from the beginning.",
+      });
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => void copy()}
+      data-testid="share-replay-link"
+    >
+      <Link2 />
+      {copied ? "Copied" : "Share link to current time"}
+    </Button>
+  );
+}
+
+function formatPlayhead(ms: number) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 /* ───────── Metric tile ───────── */
