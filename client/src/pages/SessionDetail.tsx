@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Bug,
   Calendar,
-  ChevronRight,
   Clock,
   Copy,
   Download,
@@ -131,7 +130,7 @@ function formatTimestampWithMillis(ts: number) {
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Deep link to a specific moment in the replay: `?t=12345` (ms from
   // session start). Parity with PostHog / Sentry / Highlight.io share
@@ -181,6 +180,30 @@ export default function SessionDetailPage() {
   }, [events]);
 
   const totalEvents = events?.length ?? 0;
+
+  // First event's wall-clock timestamp anchors offset math for the
+  // "Timeline → Jump to replay" flow. rrweb-player expects ms from
+  // session start, not absolute epoch ms.
+  const sessionStartMs = useMemo(
+    () => events?.[0]?.timestamp ?? 0,
+    [events],
+  );
+
+  const jumpToReplay = (offsetMs: number) => {
+    const clamped = Math.max(0, Math.round(offsetMs));
+    setTab("replay");
+    // Replace, not push — we don't want every event click building up an
+    // entry on the history stack.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("t", String(clamped));
+        return next;
+      },
+      { replace: true },
+    );
+    playheadMsRef.current = clamped;
+  };
 
   return (
     <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
@@ -321,7 +344,12 @@ export default function SessionDetailPage() {
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-5">
-          <TimelineTab events={events ?? []} loading={eventsLoading} />
+          <TimelineTab
+            events={events ?? []}
+            loading={eventsLoading}
+            sessionStartMs={sessionStartMs}
+            onJumpToReplay={jumpToReplay}
+          />
         </TabsContent>
 
         <TabsContent value="raw" className="mt-5">
@@ -591,9 +619,13 @@ function OverviewTab({
 function TimelineTab({
   events,
   loading,
+  sessionStartMs,
+  onJumpToReplay,
 }: {
   events: ReplayEvent[];
   loading: boolean;
+  sessionStartMs: number;
+  onJumpToReplay: (offsetMs: number) => void;
 }) {
   const [search, setSearch] = useState("");
   const [activeType, setActiveType] = useState<number | null>(null);
@@ -741,7 +773,11 @@ function TimelineTab({
             )}
           </span>
         </div>
-        <VirtualEventList events={filtered} />
+        <VirtualEventList
+          events={filtered}
+          sessionStartMs={sessionStartMs}
+          onJumpToReplay={onJumpToReplay}
+        />
       </Card>
     </div>
   );
@@ -791,7 +827,15 @@ function FilterChip({
  * Virtual scroller for the event list. Renders only the rows currently in view
  * so a session with thousands of events stays smooth and bounded in memory.
  */
-function VirtualEventList({ events }: { events: ReplayEvent[] }) {
+function VirtualEventList({
+  events,
+  sessionStartMs,
+  onJumpToReplay,
+}: {
+  events: ReplayEvent[];
+  sessionStartMs: number;
+  onJumpToReplay: (offsetMs: number) => void;
+}) {
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
@@ -823,34 +867,42 @@ function VirtualEventList({ events }: { events: ReplayEvent[] }) {
           const event = events[virtualRow.index];
           const meta = getEventMeta(event.type);
           const Icon = meta.icon;
+          const offsetMs = Math.max(0, event.timestamp - sessionStartMs);
           return (
             <li
               key={virtualRow.key}
-              className="group absolute left-0 right-0 flex items-center gap-3 px-3 py-2 border-b border-border hover:bg-bg-muted/50 transition-colors"
+              className="absolute left-0 right-0 border-b border-border"
               style={{
                 top: 0,
                 height: virtualRow.size,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <span className="w-10 shrink-0 text-right text-[10px] text-fg-faint font-mono tabular-nums">
-                {virtualRow.index + 1}
-              </span>
-              <span
-                className={cn(
-                  "size-6 shrink-0 rounded-md border flex items-center justify-center",
-                  "border-border bg-bg-muted text-fg-subtle",
-                )}
+              <button
+                type="button"
+                onClick={() => onJumpToReplay(offsetMs)}
+                className="group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors"
+                title="Jump to this point in the replay"
               >
-                <Icon className="size-3" />
-              </span>
-              <span className="text-xs font-medium text-fg min-w-[110px]">
-                {meta.name}
-              </span>
-              <span className="font-mono text-[11px] text-fg-faint flex-1 truncate">
-                {formatTimestampWithMillis(event.timestamp)}
-              </span>
-              <ChevronRight className="size-3.5 text-fg-faint opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="w-10 shrink-0 text-right text-[10px] text-fg-faint font-mono tabular-nums">
+                  {virtualRow.index + 1}
+                </span>
+                <span
+                  className={cn(
+                    "size-6 shrink-0 rounded-md border flex items-center justify-center",
+                    "border-border bg-bg-muted text-fg-subtle",
+                  )}
+                >
+                  <Icon className="size-3" />
+                </span>
+                <span className="text-xs font-medium text-fg min-w-[110px]">
+                  {meta.name}
+                </span>
+                <span className="font-mono text-[11px] text-fg-faint flex-1 truncate">
+                  {formatTimestampWithMillis(event.timestamp)}
+                </span>
+                <PlayCircle className="size-3.5 text-fg-faint opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
+              </button>
             </li>
           );
         })}

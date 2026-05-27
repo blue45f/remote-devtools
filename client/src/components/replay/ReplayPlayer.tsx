@@ -65,6 +65,7 @@ export function ReplayPlayer({
   onTimeUpdate,
 }: ReplayPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const instanceRef = useRef<RrwebPlayerInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validationError = useMemo(() => getReplayProblem(events), [events]);
@@ -77,7 +78,6 @@ export function ReplayPlayer({
   useEffect(() => {
     if (validationError) return;
     let disposed = false;
-    let instance: RrwebPlayerInstance | null = null;
 
     setError(null);
 
@@ -87,7 +87,7 @@ export function ReplayPlayer({
         // Clear any previous mount before re-rendering
         containerRef.current.innerHTML = "";
         try {
-          instance = new (rrwebPlayer as unknown as RrwebPlayerCtor)({
+          const instance = new (rrwebPlayer as unknown as RrwebPlayerCtor)({
             target: containerRef.current,
             props: {
               events,
@@ -98,6 +98,7 @@ export function ReplayPlayer({
               mouseTail: { strokeStyle: "#3b82f6", duration: 600 },
             },
           });
+          instanceRef.current = instance;
 
           // Seek to a starting offset (e.g. shared deep link `?t=12345`).
           // `goto` is a noop before the player is initialized, so defer with
@@ -113,7 +114,7 @@ export function ReplayPlayer({
           }
 
           // Track playhead so callers can build "share link to current time".
-          if (onTimeUpdateRef.current && instance?.addEventListener) {
+          if (instance?.addEventListener) {
             instance.addEventListener("ui-update-current-time", (e) => {
               const payload = e?.payload;
               if (typeof payload === "number") onTimeUpdateRef.current?.(payload);
@@ -130,15 +131,32 @@ export function ReplayPlayer({
     return () => {
       disposed = true;
       try {
-        instance?.$destroy?.();
+        instanceRef.current?.$destroy?.();
       } catch {
         /* the player throws on double-destroy in some versions */
       }
+      instanceRef.current = null;
     };
-    // `startTime` intentionally NOT in deps — we don't want re-seeking to
-    // tear down the whole player; deep links are an initial-state concern.
+    // `startTime` intentionally NOT in deps — initial seek only here.
+    // A second effect (below) handles live re-seeking when the parent
+    // changes `startTime` (e.g. Timeline → Jump to replay).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, validationError]);
+
+  // Re-seek when `startTime` changes after mount. This drives the
+  // Timeline → Replay jump flow: clicking an event updates `?t=` which
+  // updates the prop which lands the playhead at the right offset.
+  useEffect(() => {
+    if (validationError) return;
+    if (startTime === undefined || startTime < 0) return;
+    const instance = instanceRef.current;
+    if (!instance?.goto) return;
+    try {
+      instance.goto(startTime, false);
+    } catch {
+      /* ignore — out-of-range offsets are a noop */
+    }
+  }, [startTime, validationError]);
 
   if (validationError) {
     return (
