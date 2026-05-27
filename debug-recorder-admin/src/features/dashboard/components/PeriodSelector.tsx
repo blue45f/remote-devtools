@@ -1,5 +1,6 @@
-import { Radio, Space } from 'antd'
-import type { RadioChangeEvent } from 'antd'
+import Radio from 'antd/es/radio'
+import type { RadioChangeEvent } from 'antd/es/radio'
+import Space from 'antd/es/space'
 import type { PeriodType, ViewMode } from '../types'
 
 interface PeriodSelectorProps {

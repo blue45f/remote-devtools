@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { message } from "antd";
+import message from "antd/es/message";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   buildRemoteDevToolsWsUrl,

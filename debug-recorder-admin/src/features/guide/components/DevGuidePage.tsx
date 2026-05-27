@@ -1,10 +1,24 @@
-import { Tabs, Card, Typography, Alert, Button, message } from 'antd'
-import { CopyOutlined } from '@ant-design/icons'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import message from 'antd/es/message'
+import Tabs from 'antd/es/tabs'
+import Typography from 'antd/es/typography'
+import CopyOutlined from '@ant-design/icons/es/icons/CopyOutlined'
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light'
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash'
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup'
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx'
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript'
+import vscDarkPlus from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus'
 import { PageContainer } from '@/shared/components'
 import { copyToClipboard } from '@/shared/utils'
 import { CONFIG, UX_TERMS } from '@/shared/constants'
+
+SyntaxHighlighter.registerLanguage('bash', bash)
+SyntaxHighlighter.registerLanguage('html', markup)
+SyntaxHighlighter.registerLanguage('tsx', tsx)
+SyntaxHighlighter.registerLanguage('typescript', typescript)
 
 const { Title, Paragraph } = Typography
 

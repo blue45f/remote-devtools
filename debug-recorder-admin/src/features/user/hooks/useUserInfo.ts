@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { message } from 'antd'
+import message from 'antd/es/message'
 import { getUserInfo, updateUserInfo } from '../api'
 import type { UpdateUserInfoRequest } from '../types'
 

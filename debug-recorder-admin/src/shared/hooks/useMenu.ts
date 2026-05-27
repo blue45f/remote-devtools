@@ -1,12 +1,10 @@
 import { type ComponentType, useMemo } from 'react'
-import {
-  HomeOutlined,
-  UserOutlined,
-  BookOutlined,
-  CodeOutlined,
-  DashboardOutlined,
-  NodeIndexOutlined,
-} from '@ant-design/icons'
+import BookOutlined from '@ant-design/icons/es/icons/BookOutlined'
+import CodeOutlined from '@ant-design/icons/es/icons/CodeOutlined'
+import DashboardOutlined from '@ant-design/icons/es/icons/DashboardOutlined'
+import HomeOutlined from '@ant-design/icons/es/icons/HomeOutlined'
+import NodeIndexOutlined from '@ant-design/icons/es/icons/NodeIndexOutlined'
+import UserOutlined from '@ant-design/icons/es/icons/UserOutlined'
 import { CONFIG, ROUTES } from '@/shared/constants'
 
 export interface MenuItem {
