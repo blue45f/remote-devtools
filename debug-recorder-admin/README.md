@@ -246,6 +246,7 @@ debug-recorder-admin/
 │   │   ├── types/               # 공통 타입
 │   │   └── utils/               # 클립보드, 날짜, 문자열, 스토리지
 │   │
+│   ├── assets/                  # 기능 소개 이미지 등 정적 자산
 │   ├── styles/                  # 전역 스타일
 │   └── main.tsx                 # React 앱 부트스트랩
 │

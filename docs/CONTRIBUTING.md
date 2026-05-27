@@ -125,14 +125,17 @@ pnpm test:cov
 
 ## CI/CD 파이프라인
 
-GitHub Actions가 모든 push/PR에서 자동 실행된다 (`.github/workflows/ci.yml`):
+GitHub Actions가 저장소의 모든 push/PR에서 자동 실행된다 (`.github/workflows/ci.yml`):
 
 | 단계 | 명령어 | 설명 |
 |------|--------|------|
 | Lint | `pnpm lint` | ESLint + Prettier 검사 |
 | Type Check | `pnpm typecheck` | TypeScript 타입 검사 |
 | Test | `pnpm test:cov` | Vitest 테스트 + 커버리지 리포트 |
-| Build | `pnpm build:all` | NestJS 프로덕션 빌드 (모든 검사 통과 후) |
+| SDK checks | `cd sdk && pnpm test:cov && pnpm typecheck` | SDK 타입/테스트 검증 |
+| Admin checks | `pnpm --filter debug-recorder-admin lint && pnpm --filter debug-recorder-admin typecheck` | Admin 대시보드 정적 검사 |
+| Figma plugin checks | `pnpm --filter figma-plugin lint && pnpm --filter figma-plugin type-check && pnpm --filter figma-plugin build` | Figma 플러그인 정적 검사 + 빌드 |
+| Build | `pnpm build:all` + `pnpm --filter debug-recorder-admin build` + 각 앱 빌드 | NestJS/SDK/Client/Admin 빌드 패스 |
 
 ### Docker 로컬 테스트
 
@@ -169,7 +172,16 @@ docker-compose up
 - [ ] 린트 통과: `pnpm lint`
 - [ ] 빌드 성공: `pnpm build:all`
 - [ ] 테스트 통과: `pnpm test`
+- [ ] CI 필수 체크(`CI pass gate`) 통과: GitHub Actions 요약에서 확인
+- [ ] `CI pass gate` 결과에 `skipped` 항목이 없는지 확인 (`backend`, `client`, `SDK`, `admin`, `plugin`, `build` 모두 성공)
 - [ ] 파일명이 kebab-case를 따르는지 확인
+- [ ] same-repo PR인 경우 `pr-checklist-enforcer` 워크플로우가 통과(체크리스트 완전 체크)하는지 확인 (`failed` 또는 중복 코멘트가 없어야 함)
+- [ ] fork PR은 `pr-checklist-enforcer`가 실행되지 않으므로, PR 템플릿 체크리스트와 수동 검토를 함께 수행한다.
+
+### AI 리뷰(CodeRabbit) 체크
+
+- `.coderabbit.yaml`은 모든 PR에서 공통 리뷰 규칙을 적용합니다.
+- PR 작성 후 CodeRabbit 앱이 설치되어 있으면 리뷰/요약 코멘트를 자동으로 받습니다.
 
 ### 리뷰 프로세스
 

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  review_details: true
+  tone_instructions: "Concise, actionable, and implementation-oriented. Focus on risks that impact correctness, security, observability, and maintainability."
+  path_instructions:
+    - path: "apps/**/*.ts"
+      instructions: "Review for NestJS patterns, service boundaries, transactional behavior, and backward compatibility of API contracts."
+    - path: "apps/**/*.tsx"
+      instructions: "Review for runtime safety, async flow correctness, and API contract consistency across shared module boundaries."
+    - path: "client/**/*.ts"
+      instructions: "Check React component lifecycle, state updates, and network error handling; prefer practical fixes over stylistic changes."
+    - path: "client/**/*.tsx"
+      instructions: "Review React rendering logic, accessibility behavior, state transitions, and internationalization consistency."
+    - path: "libs/**/*.ts"
+      instructions: "Review shared-layer contracts, utility APIs, and long-term maintainability risks in common modules."
+    - path: "libs/**/*.tsx"
+      instructions: "Check shared UI helpers and examples for type safety, predictable rendering, and runtime regressions."
+    - path: "sdk/**/*.ts"
+      instructions: "Validate public API shape consistency, backward compatibility, and runtime safety of SDK-facing code."
+    - path: "sdk/**/*.tsx"
+      instructions: "Check TypeScript React-facing demos/examples for runtime safety and minimal surface-area API leakage."
+    - path: "debug-recorder-admin/**/*.ts"
+      instructions: "Ensure UI/UX changes preserve accessibility and localization consistency."
+    - path: "debug-recorder-admin/**/*.tsx"
+      instructions: "Check data-fetching, form state, and validation logic for correctness and user-visible regressions."
+    - path: "figma-plugin/**/*.ts"
+      instructions: "Validate plugin build assumptions, script API usage, and isolation boundaries for Figma runtime constraints."
+    - path: "figma-plugin/**/*.tsx"
+      instructions: "Review plugin UI logic for TypeScript correctness, event wiring, and message-passing safety."
+    - path: "devtools-frontend/**/*.ts"
+      instructions: "Review frontend instrumentation, runtime timing assumptions, and selector/API compatibility for injected scripts."
+    - path: "devtools-frontend/**/*.tsx"
+      instructions: "Review shared UI behaviors, accessibility, and memory-sensitive rendering paths in devtools frontend."
+    - path: ".github/workflows/**/*.yml"
+      instructions: "Validate CI/CD correctness, minimal blast radius for changes, and secure-by-default job configuration."
+  auto_review:
+    enabled: true
+    drafts: false
+chat:
+  auto_reply: true

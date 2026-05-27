@@ -4,6 +4,15 @@
 [![Vercel demo](https://img.shields.io/badge/demo-live-22c55e?logo=vercel&logoColor=white)](https://remote-devtools.vercel.app/)
 [![License](https://img.shields.io/badge/license-MIT-171717.svg)](#라이선스)
 
+CI는 저장소의 모든 브랜치 `push`/`PR`에서 동작하며, 병합 전 필수 체크는 `CI pass gate`로 집계됩니다.
+`CI pass gate`는 백엔드, 클라이언트, SDK, Debug Recorder Admin, Figma Plugin의 검사/테스트/빌드를 모두 검증합니다.
+CodeRabbit은 루트의 `.coderabbit.yaml`을 기준으로 PR 리뷰를 자동 보조합니다.
+필요 시 GitHub Actions에서 `workflow_dispatch`로 CI를 수동 실행할 수 있으며, `main` 브랜치 푸시의 CI 통과 후에는 Vercel 배포 워크플로가 자동 이어집니다.
+PR 제출 시에는 `.github/PULL_REQUEST_TEMPLATE.md`의 체크리스트를 통해 `CI pass gate` 결과(특히 `skipped` 실패 여부)를 사전 확인합니다.
+same-repo PR은 `pr-checklist-enforcer` 워크플로가 필수 체크 미완료 시 상태 체크를 실패로 만들므로, 체크리스트를 완전히 채운 뒤 제출해 주세요.
+`push`로 원격 반영된 커밋에서도 동일 커밋에 `ci-pass-gate` 결과가 `ci-pass-gate-push-summary` 코멘트로 남아(`성공/실패`) 즉시 확인 가능합니다.
+같은 PR에는 `CI pass gate` 상태 코멘트(`ci-pass-gate-pr-summary`)도 자동 갱신되어, 실패 잡과 실행 링크를 바로 확인할 수 있습니다.
+
 > **🌐 Live demo: [remote-devtools.vercel.app](https://remote-devtools.vercel.app/)**
 > 시드 데이터로 동작하는 데모 — 클릭 한 번으로 대시보드·세션·리플레이까지 둘러볼 수 있다.
 
