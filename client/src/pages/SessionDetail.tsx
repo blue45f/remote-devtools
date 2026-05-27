@@ -181,6 +181,8 @@ export default function SessionDetailPage() {
 
   const totalEvents = events?.length ?? 0;
 
+  const rageClicks = useMemo(() => detectRageClicks(events), [events]);
+
   // First event's wall-clock timestamp anchors offset math for the
   // "Timeline → Jump to replay" flow. rrweb-player expects ms from
   // session start, not absolute epoch ms.
@@ -306,7 +308,14 @@ export default function SessionDetailPage() {
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="mt-5">
+        <TabsContent value="overview" className="mt-5 space-y-4">
+          {!eventsLoading && rageClicks.length > 0 && (
+            <RageClickCard
+              clicks={rageClicks}
+              sessionStartMs={sessionStartMs}
+              onJump={jumpToReplay}
+            />
+          )}
           <OverviewTab
             loading={eventsLoading}
             counts={eventTypeCounts}
@@ -456,6 +465,144 @@ function SessionHeader({
         )}
       </div>
     </div>
+  );
+}
+
+/* ───────── Frustration signals ───────── */
+
+interface RageClickGroup {
+  startMs: number;
+  endMs: number;
+  count: number;
+  x: number;
+  y: number;
+}
+
+interface IncrementalClick {
+  timestamp: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * Detects rage-clicks per FullStory's / Microsoft Clarity's definition:
+ * three or more clicks landed within a small spatial radius and a tight
+ * time window, indicating a user repeatedly hammering on something that
+ * isn't responding.
+ *
+ * rrweb encodes mouse interactions as IncrementalSnapshot (type 3) with
+ * `data.source === 2` and `data.type === 2` (Click). We pull those out,
+ * then walk the list with a sliding window.
+ */
+export function detectRageClicks(
+  events: ReplayEvent[],
+  {
+    windowMs = 1500,
+    radiusPx = 50,
+    minCount = 3,
+  }: { windowMs?: number; radiusPx?: number; minCount?: number } = {},
+): RageClickGroup[] {
+  const clicks: IncrementalClick[] = [];
+  for (const e of events) {
+    if (e.type !== 3) continue;
+    const data = e.data as
+      | { source?: number; type?: number; x?: number; y?: number }
+      | undefined;
+    if (data?.source !== 2 || data?.type !== 2) continue;
+    if (typeof data.x !== "number" || typeof data.y !== "number") continue;
+    clicks.push({ timestamp: e.timestamp, x: data.x, y: data.y });
+  }
+  if (clicks.length < minCount) return [];
+
+  const groups: RageClickGroup[] = [];
+  for (let i = 0; i < clicks.length; i++) {
+    const anchor = clicks[i];
+    let count = 1;
+    let last = i;
+    for (let j = i + 1; j < clicks.length; j++) {
+      const c = clicks[j];
+      if (c.timestamp - anchor.timestamp > windowMs) break;
+      const dx = c.x - anchor.x;
+      const dy = c.y - anchor.y;
+      if (Math.hypot(dx, dy) > radiusPx) continue;
+      count += 1;
+      last = j;
+    }
+    if (count >= minCount) {
+      groups.push({
+        startMs: anchor.timestamp,
+        endMs: clicks[last].timestamp,
+        count,
+        x: anchor.x,
+        y: anchor.y,
+      });
+      // Skip past the clicks we just consumed so a single rage burst
+      // doesn't surface as N overlapping groups.
+      i = last;
+    }
+  }
+
+  return groups;
+}
+
+function RageClickCard({
+  clicks,
+  sessionStartMs,
+  onJump,
+}: {
+  clicks: RageClickGroup[];
+  sessionStartMs: number;
+  onJump: (offsetMs: number) => void;
+}) {
+  return (
+    <Card
+      className="p-4 border-warning/40 bg-warning-soft/30"
+      data-testid="rage-click-card"
+    >
+      <div className="flex items-start gap-3">
+        <div className="size-9 rounded-md bg-warning-soft text-warning flex items-center justify-center shrink-0">
+          <Zap className="size-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-fg">
+            {clicks.length === 1
+              ? "1 rage-click moment detected"
+              : `${clicks.length} rage-click moments detected`}
+          </h3>
+          <p className="text-xs text-fg-subtle mt-0.5">
+            User clicked rapidly in the same spot — often a sign of an
+            unresponsive button.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {clicks.slice(0, 5).map((c, idx) => {
+              const offsetMs = Math.max(0, c.startMs - sessionStartMs);
+              return (
+                <li key={`${c.startMs}-${idx}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onJump(offsetMs)}
+                    className="h-7 px-2.5 text-xs"
+                    data-testid="rage-click-jump"
+                  >
+                    <PlayCircle className="size-3" />
+                    {formatPlayhead(offsetMs)}
+                    <span className="ml-1 text-[10px] text-fg-faint font-mono">
+                      ×{c.count}
+                    </span>
+                  </Button>
+                </li>
+              );
+            })}
+            {clicks.length > 5 && (
+              <li className="text-[11px] text-fg-faint self-center">
+                +{clicks.length - 5} more
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </Card>
   );
 }
 
