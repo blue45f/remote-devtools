@@ -13,10 +13,7 @@ import type { BillingProvider } from "./billing.provider";
 import { BillingService } from "./billing.service";
 import type { BillingSubscriptionSyncService } from "./billing-subscription-sync.service";
 
-function makeQueryFailedError(
-  code: string,
-  detail?: string,
-): QueryFailedError {
+function makeQueryFailedError(code: string, detail?: string): QueryFailedError {
   const driverError = Object.assign(new Error(code), { code, detail });
   return new QueryFailedError("", [], driverError);
 }

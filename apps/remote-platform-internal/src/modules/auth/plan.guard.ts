@@ -12,7 +12,10 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import type { Repository } from "typeorm";
 
 import type { AuthClaims } from "./auth.service";
-import { OrganizationEntity, type OrganizationPlan } from "@remote-platform/entity";
+import {
+  OrganizationEntity,
+  type OrganizationPlan,
+} from "@remote-platform/entity";
 
 export type Plan = "free" | "starter" | "pro";
 
@@ -29,11 +32,7 @@ const PLAN_RANK: Record<Plan, number> = {
 const PLAN_META_KEY = "rd:requiredPlan";
 
 function toPlan(value: unknown): OrganizationPlan | null {
-  if (
-    value === "free" ||
-    value === "starter" ||
-    value === "pro"
-  ) {
+  if (value === "free" || value === "starter" || value === "pro") {
     return value;
   }
   return null;
@@ -102,16 +101,17 @@ export class PlanGuard implements CanActivate {
     return true;
   }
 
-  private async getPlanByOrganization(orgId?: string): Promise<OrganizationPlan | null> {
+  private async getPlanByOrganization(
+    orgId?: string,
+  ): Promise<OrganizationPlan | null> {
     const normalizedOrgId = orgId?.trim();
     if (!normalizedOrgId) {
       return null;
     }
 
-    const repository = this.moduleRef.get<Repository<OrganizationEntity> | undefined>(
-      getRepositoryToken(OrganizationEntity),
-      { strict: false },
-    );
+    const repository = this.moduleRef.get<
+      Repository<OrganizationEntity> | undefined
+    >(getRepositoryToken(OrganizationEntity), { strict: false });
     if (!repository) {
       return null;
     }
