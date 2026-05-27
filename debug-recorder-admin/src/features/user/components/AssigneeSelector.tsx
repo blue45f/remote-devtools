@@ -1,4 +1,6 @@
-import { Select, Space, Tag } from 'antd'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Tag from 'antd/es/tag'
 import { RemoteIcon } from '@/shared/components'
 import { useWorkflowMembers } from '../hooks'
 import type { AssigneeInfo } from '../types'

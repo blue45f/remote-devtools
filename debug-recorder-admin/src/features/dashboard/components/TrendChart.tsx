@@ -1,4 +1,5 @@
-import { Card, Empty } from 'antd'
+import Card from 'antd/es/card'
+import Empty from 'antd/es/empty'
 import {
   LineChart,
   Line,

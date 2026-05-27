@@ -1,44 +1,40 @@
 import { useMemo, useState } from "react";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Collapse,
-  Input,
-  List,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Timeline,
-  Tabs,
-  Tag,
-  Typography,
-} from "antd";
+import Alert from "antd/es/alert";
+import Badge from "antd/es/badge";
+import Button from "antd/es/button";
+import Card from "antd/es/card";
+import Col from "antd/es/col";
+import Collapse from "antd/es/collapse";
+import Input from "antd/es/input";
+import List from "antd/es/list";
+import Row from "antd/es/row";
+import Select from "antd/es/select";
+import Space from "antd/es/space";
+import Spin from "antd/es/spin";
+import Switch from "antd/es/switch";
+import Table from "antd/es/table";
+import Timeline from "antd/es/timeline";
+import Tabs from "antd/es/tabs";
+import Tag from "antd/es/tag";
+import Typography from "antd/es/typography";
 import type { ColumnsType } from "antd/es/table";
-import {
-  BulbOutlined,
-  CaretRightOutlined,
-  CheckCircleOutlined,
-  CloudServerOutlined,
-  ClearOutlined,
-  DisconnectOutlined,
-  FileSearchOutlined,
-  HistoryOutlined,
-  LinkOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
-  DownloadOutlined,
-  PlusCircleOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  SyncOutlined,
-  ThunderboltOutlined,
-} from "@ant-design/icons";
+import BulbOutlined from "@ant-design/icons/es/icons/BulbOutlined";
+import CaretRightOutlined from "@ant-design/icons/es/icons/CaretRightOutlined";
+import CheckCircleOutlined from "@ant-design/icons/es/icons/CheckCircleOutlined";
+import ClearOutlined from "@ant-design/icons/es/icons/ClearOutlined";
+import CloudServerOutlined from "@ant-design/icons/es/icons/CloudServerOutlined";
+import DisconnectOutlined from "@ant-design/icons/es/icons/DisconnectOutlined";
+import DownloadOutlined from "@ant-design/icons/es/icons/DownloadOutlined";
+import FileSearchOutlined from "@ant-design/icons/es/icons/FileSearchOutlined";
+import HistoryOutlined from "@ant-design/icons/es/icons/HistoryOutlined";
+import LinkOutlined from "@ant-design/icons/es/icons/LinkOutlined";
+import PauseCircleOutlined from "@ant-design/icons/es/icons/PauseCircleOutlined";
+import PlayCircleOutlined from "@ant-design/icons/es/icons/PlayCircleOutlined";
+import PlusCircleOutlined from "@ant-design/icons/es/icons/PlusCircleOutlined";
+import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
+import SearchOutlined from "@ant-design/icons/es/icons/SearchOutlined";
+import SyncOutlined from "@ant-design/icons/es/icons/SyncOutlined";
+import ThunderboltOutlined from "@ant-design/icons/es/icons/ThunderboltOutlined";
 import type { ReactNode } from "react";
 import { useRemoteDevTools } from "../hooks";
 import {

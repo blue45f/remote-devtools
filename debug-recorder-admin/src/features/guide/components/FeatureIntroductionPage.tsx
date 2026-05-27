@@ -1,14 +1,16 @@
-import { Card, Row, Col, Typography, Button } from 'antd'
-import {
-  VideoCameraOutlined,
-  FileTextOutlined,
-  ApiOutlined,
-  MessageOutlined,
-  AppstoreOutlined,
-  CloudUploadOutlined,
-  EyeOutlined,
-  NodeIndexOutlined,
-} from '@ant-design/icons'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import Typography from 'antd/es/typography'
+import ApiOutlined from '@ant-design/icons/es/icons/ApiOutlined'
+import AppstoreOutlined from '@ant-design/icons/es/icons/AppstoreOutlined'
+import CloudUploadOutlined from '@ant-design/icons/es/icons/CloudUploadOutlined'
+import EyeOutlined from '@ant-design/icons/es/icons/EyeOutlined'
+import FileTextOutlined from '@ant-design/icons/es/icons/FileTextOutlined'
+import MessageOutlined from '@ant-design/icons/es/icons/MessageOutlined'
+import NodeIndexOutlined from '@ant-design/icons/es/icons/NodeIndexOutlined'
+import VideoCameraOutlined from '@ant-design/icons/es/icons/VideoCameraOutlined'
 import { type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageContainer } from '@/shared/components'

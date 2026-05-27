@@ -1,5 +1,10 @@
-import { Card, Form, Select, Button, Space } from 'antd'
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Form from 'antd/es/form'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import MinusCircleOutlined from '@ant-design/icons/es/icons/MinusCircleOutlined'
+import PlusOutlined from '@ant-design/icons/es/icons/PlusOutlined'
 import type { JobType, DeviceInfo } from '../types'
 
 const JOB_TYPE_OPTIONS: { label: string; value: JobType }[] = [

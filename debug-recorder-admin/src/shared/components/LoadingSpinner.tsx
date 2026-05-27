@@ -1,5 +1,5 @@
-import { Spin } from 'antd'
-import { LoadingOutlined } from '@ant-design/icons'
+import Spin from 'antd/es/spin'
+import LoadingOutlined from '@ant-design/icons/es/icons/LoadingOutlined'
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'default' | 'large'

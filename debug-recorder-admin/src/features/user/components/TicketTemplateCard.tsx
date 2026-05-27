@@ -1,20 +1,16 @@
 import { useState } from 'react'
-import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Space,
-  Collapse,
-  Popconfirm,
-  message,
-  Select,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  ImportOutlined,
-} from '@ant-design/icons'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Collapse from 'antd/es/collapse'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import message from 'antd/es/message'
+import Popconfirm from 'antd/es/popconfirm'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import DeleteOutlined from '@ant-design/icons/es/icons/DeleteOutlined'
+import ImportOutlined from '@ant-design/icons/es/icons/ImportOutlined'
+import PlusOutlined from '@ant-design/icons/es/icons/PlusOutlined'
 import { sanitizeIssueProjectKey } from '@/shared/utils'
 import { UX_TERMS } from '@/shared/constants'
 import { getTcSheetData } from '../api'

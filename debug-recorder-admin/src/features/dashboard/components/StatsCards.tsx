@@ -1,10 +1,11 @@
-import { Row, Col, Card, Statistic } from 'antd'
-import {
-  FileTextOutlined,
-  VideoCameraOutlined,
-  RiseOutlined,
-  CheckCircleOutlined,
-} from '@ant-design/icons'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import Statistic from 'antd/es/statistic'
+import CheckCircleOutlined from '@ant-design/icons/es/icons/CheckCircleOutlined'
+import FileTextOutlined from '@ant-design/icons/es/icons/FileTextOutlined'
+import RiseOutlined from '@ant-design/icons/es/icons/RiseOutlined'
+import VideoCameraOutlined from '@ant-design/icons/es/icons/VideoCameraOutlined'
 import type { DashboardStats, ViewMode } from '../types'
 
 interface StatsCardsProps {

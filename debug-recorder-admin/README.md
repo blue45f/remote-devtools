@@ -226,48 +226,30 @@ pnpm build
 ```
 debug-recorder-admin/
 ├── src/
-│   ├── apis/                    # API 클라이언트 및 엔드포인트 정의
-│   │   ├── client.ts            # Axios 인스턴스 설정
-│   │   ├── dashboard/           # 대시보드 통계 API
-│   │   ├── googleSheet/         # 스프레드시트 연동
-│   │   ├── userInfo/            # 사용자 프로필 API
-│   │   └── workflow/            # 팀원 검색 API
-│   │
-│   ├── assets/                  # 정적 자산
-│   │   └── images/              # 스크린샷 및 일러스트
-│   │
-│   ├── components/              # 재사용 가능한 React 컴포넌트
-│   │   ├── AssigneeSelector/    # 팀원 선택기
-│   │   ├── BasicInfoCard/       # 사용자 프로필 폼
-│   │   ├── Dashboard/           # 대시보드 위젯
+│   ├── app/                     # 앱 진입점, 라우팅, 전역 Provider
 │   │   ├── Layout.tsx           # 사이드바가 있는 메인 레이아웃
-│   │   ├── TicketTemplateCard/  # 템플릿 설정
-│   │   └── UserInfo/            # 사용자 정보 관리
+│   │   ├── providers/           # Query/Theme Provider
+│   │   └── routes/              # lazy route 구성
 │   │
-│   ├── constants/               # 애플리케이션 상수
-│   │   └── routes.ts            # 라우트 정의
+│   ├── features/                # 기능 단위 모듈
+│   │   ├── auth/                # 인증/세션
+│   │   ├── dashboard/           # 분석 대시보드
+│   │   ├── guide/               # 기능 소개, 사용자/개발 가이드
+│   │   ├── remoteDevtools/      # 원격 DevTools 세션 관리
+│   │   └── user/                # 사용자 정보 및 템플릿 설정
 │   │
-│   ├── hooks/                   # 커스텀 React 훅
-│   │   ├── internal-admin-bff/  # 인증 훅
-│   │   └── useMenus.ts          # 네비게이션 메뉴 훅
+│   ├── shared/                  # 공통 API, 컴포넌트, 상수, 훅, 유틸
+│   │   ├── api/                 # Axios 클라이언트
+│   │   ├── components/          # ErrorBoundary, PageContainer 등
+│   │   ├── constants/           # 환경 설정, 라우트, UX 용어
+│   │   ├── hooks/               # 공통 React 훅
+│   │   ├── types/               # 공통 타입
+│   │   └── utils/               # 클립보드, 날짜, 문자열, 스토리지
 │   │
-│   ├── pages/                   # 페이지 컴포넌트
-│   │   ├── DashboardPage.tsx    # 분석 대시보드
-│   │   ├── DevGuidePage.tsx     # SDK 연동 가이드
-│   │   ├── FeatureIntroductionPage.tsx
-│   │   ├── UserGuidePage.tsx    # 사용자 문서
-│   │   └── UserInfoPage.tsx     # 프로필 설정
-│   │
-│   ├── types/                   # TypeScript 타입 정의
-│   │   ├── api.ts               # API 응답 타입
-│   │   ├── dashboard.ts         # 대시보드 데이터 타입
-│   │   └── form.ts              # 폼 데이터 타입
-│   │
-│   └── utils/                   # 유틸리티 함수
-│       ├── clipboard.ts         # 클립보드 작업
-│       ├── dashboard/           # 대시보드 헬퍼
-│       └── string.ts            # 문자열 조작
+│   ├── styles/                  # 전역 스타일
+│   └── main.tsx                 # React 앱 부트스트랩
 │
+├── scripts/                     # 빌드 검증 스크립트
 ├── dist/                        # 프로덕션 빌드 출력
 ├── .env.example                 # 환경 템플릿
 ├── eslint.config.js             # ESLint 설정
@@ -278,14 +260,18 @@ debug-recorder-admin/
 
 ### 빌드 출력
 
-프로덕션 빌드는 최적의 로딩을 위해 코드 스플리팅을 사용합니다:
+프로덕션 빌드는 라우트 단위 lazy import와 vendor chunk 분리를 사용합니다.
+`pnpm build`는 Vite 빌드 후 600 KiB JS chunk 예산을 함께 검증합니다.
 
-| 청크 | 내용 | 크기 (gzip) |
-|-----|------|------------|
-| `vendor` | React, React DOM, React Router | ~16 KB |
-| `antd` | Ant Design, Icons | ~255 KB |
-| `charts` | Recharts | ~102 KB |
-| `index` | 애플리케이션 코드 | ~274 KB |
+현재 주요 JS chunk 기준:
+
+| 청크 | 내용 | 크기 |
+|-----|------|------|
+| `index` | 공통 UI/Ant Design 기반 코드 | ~389 KiB |
+| `DashboardPage` | 대시보드와 Recharts | ~379 KiB |
+| `vendor-react` | React, React DOM, React Router | ~233 KiB |
+| `UserInfoPage` | 사용자 정보/템플릿 폼 | ~142 KiB |
+| `DevGuidePage` | 개발 가이드와 경량 syntax highlighter | ~72 KiB |
 
 ---
 
@@ -294,7 +280,8 @@ debug-recorder-admin/
 | 명령어 | 설명 |
 |-------|------|
 | `pnpm dev` | 핫 리로드로 개발 서버 시작 |
-| `pnpm build` | 프로덕션 빌드 생성 |
+| `pnpm build` | 프로덕션 빌드 생성 및 JS chunk 예산 검증 |
+| `pnpm build:budget` | 생성된 `dist`의 JS chunk 크기 검증 |
 | `pnpm preview` | 프로덕션 빌드 로컬 미리보기 |
 | `pnpm typecheck` | TypeScript 타입 검사 실행 |
 | `pnpm lint` | ESLint 실행 |
