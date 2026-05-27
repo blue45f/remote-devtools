@@ -19,6 +19,7 @@
   "scripts": {
     "clean": "sh ./scripts/cleaner.sh",
     "typecheck": "tsc --noEmit && cd figma-plugin && npx tsc --noEmit",
+    "build": "pnpm run build:all",
     "build:internal": "nest build remote-platform-internal",
     "build:external": "nest build remote-platform-external",
     "build:all": "pnpm run build:internal && pnpm run build:external",
