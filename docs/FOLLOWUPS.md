@@ -19,10 +19,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   RawTab gets a Download button next to Copy. Sessions search has a regex
   toggle with inline error UI for invalid patterns. Parity with PostHog /
   Sentry export + Datadog / Clarity regex search.
-- **Timeline → Jump to replay** — current commit — Clicking any event in
+- **Timeline → Jump to replay** — `216bc9a4` — Clicking any event in
   the Timeline tab flips to the Replay tab with `?t=<offset>` set, and
   the player re-seeks live (not just on mount). The Sentry / OpenReplay
   debugger workflow: errors and incidents become navigable.
+- **Sessions hostname quick-filter** — current commit — A chip strip
+  above the result list shows the top hosts currently on screen with
+  hit counts. Clicking one narrows the result to that origin. Clarity /
+  Datadog parity.
 
 ## Next obvious candidates
 
@@ -36,8 +40,6 @@ Listed in rough order of value × ease:
   captures these.
 - **Rage-click detection** — scan IncrementalSnapshot events for rapid
   same-target clicks; add a chip to the timeline summary.
-- **Session URL hostname quick-filter** — chip strip generated from
-  hostnames present in the current page of sessions.
 - **Replay timeline minimap** — event-type density bar above the rrweb
   player; clicking jumps to that offset.
 - **Session tags** — needs DB column + endpoint; defer until backend cycle.
