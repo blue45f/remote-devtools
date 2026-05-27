@@ -11,6 +11,7 @@ import {
   Monitor,
   PlaySquare,
   RadioTower,
+  Regex,
   RefreshCw,
   Search,
   Smartphone,
@@ -98,9 +99,39 @@ function pickDefaultView(): ViewMode {
 export default function SessionsPage() {
   const [tab, setTab] = useState<SessionTab>("record");
   const [search, setSearch] = useState("");
+  const [regexMode, setRegexMode] = useState(false);
   const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>(pickDefaultView);
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
+
+  // Compile the search query into a matcher once per change. Invalid regex
+  // patterns fall back to plain-substring matching so the user never gets
+  // an empty result list just from a half-typed `(foo`.
+  const matcher = useMemo<((value: string) => boolean) | null>(() => {
+    const trimmed = search.trim();
+    if (!trimmed) return null;
+
+    if (regexMode) {
+      try {
+        const re = new RegExp(trimmed, "i");
+        return (v) => re.test(v);
+      } catch {
+        return null;
+      }
+    }
+    const lower = trimmed.toLowerCase();
+    return (v) => v.toLowerCase().includes(lower);
+  }, [search, regexMode]);
+
+  const regexError = useMemo(() => {
+    if (!regexMode || !search.trim()) return null;
+    try {
+      new RegExp(search.trim());
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err.message : "Invalid pattern";
+    }
+  }, [regexMode, search]);
 
   // Debounce the search term that gets sent to the server. The local input
   // updates instantly so the field stays responsive.
@@ -150,13 +181,12 @@ export default function SessionsPage() {
   const filtered = useMemo(() => {
     let result = sessions;
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (matcher) {
       result = result.filter(
         (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.url?.toLowerCase().includes(q) ||
-          s.deviceId?.toLowerCase().includes(q),
+          matcher(s.name) ||
+          (s.url ? matcher(s.url) : false) ||
+          (s.deviceId ? matcher(s.deviceId) : false),
       );
     }
 
@@ -175,7 +205,7 @@ export default function SessionsPage() {
       const tb = new Date(b.timestamp ?? 0).getTime();
       return sort === "newest" ? tb - ta : ta - tb;
     });
-  }, [sessions, search, sort, durationFilter]);
+  }, [sessions, matcher, sort, durationFilter]);
 
   const filtersActive = search.trim() !== "" || durationFilter !== "all";
   const SortIcon = SORT_ICONS[sort];
@@ -239,26 +269,63 @@ export default function SessionsPage() {
           </Tabs>
 
           <div className="order-3 sm:order-none w-full sm:flex-1 sm:min-w-[220px]">
-            <Input
-              placeholder="Search by name, URL, or device…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              leadingIcon={<Search />}
-              trailingIcon={
-                search ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    aria-label="Clear search"
-                    className="text-fg-faint hover:text-fg pointer-events-auto"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                ) : (
-                  <Kbd className="hidden sm:inline-flex">/</Kbd>
-                )
-              }
-            />
+            <div className="relative">
+              <Input
+                placeholder={
+                  regexMode
+                    ? "/regex/ — match name, URL, or device"
+                    : "Search by name, URL, or device…"
+                }
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                leadingIcon={<Search />}
+                aria-invalid={regexError ? "true" : undefined}
+                trailingIcon={
+                  <div className="flex items-center gap-0.5 pointer-events-auto">
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() => setSearch("")}
+                        aria-label="Clear search"
+                        className="text-fg-faint hover:text-fg"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setRegexMode((v) => !v)}
+                          aria-pressed={regexMode}
+                          aria-label="Toggle regular-expression search"
+                          className={cn(
+                            "inline-flex items-center justify-center size-5 rounded transition-colors",
+                            regexMode
+                              ? "bg-fg text-bg"
+                              : "text-fg-faint hover:text-fg hover:bg-bg-muted",
+                          )}
+                          data-testid="sessions-regex-toggle"
+                        >
+                          <Regex className="size-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {regexMode ? "Regex on" : "Regex off"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                }
+              />
+              {regexError && (
+                <p
+                  className="mt-1 text-[11px] text-danger"
+                  data-testid="sessions-regex-error"
+                >
+                  Regex error: {regexError}
+                </p>
+              )}
+            </div>
           </div>
 
           <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>

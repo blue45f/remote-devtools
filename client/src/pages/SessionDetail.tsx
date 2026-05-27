@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Download,
   ExternalLink,
   Eye,
   FileJson,
@@ -898,6 +899,7 @@ function RawTab({
   events: ReplayEvent[];
   loading: boolean;
 }) {
+  const { id } = useParams<{ id: string }>();
   const [copied, setCopied] = useState(false);
   const json = useMemo(() => JSON.stringify(events, null, 2), [events]);
 
@@ -911,6 +913,29 @@ function RawTab({
       });
     } catch {
       toast.error("Failed to copy");
+    }
+  };
+
+  const download = () => {
+    try {
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `session-${id ?? "events"}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Defer revocation by a tick so Safari has the URL when it queues the
+      // download request.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast.success("Download started", {
+        description: `${events.length} events · ${(json.length / 1024).toFixed(
+          1,
+        )} kB`,
+      });
+    } catch {
+      toast.error("Failed to download");
     }
   };
 
@@ -932,14 +957,25 @@ function RawTab({
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-bg-subtle">
-        <span className="text-[11px] uppercase tracking-wider text-fg-faint font-semibold">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-bg-subtle">
+        <span className="text-[11px] uppercase tracking-wider text-fg-faint font-semibold truncate">
           {events.length} events · {(json.length / 1024).toFixed(1)} kB
         </span>
-        <Button variant="ghost" size="sm" onClick={() => void copy()}>
-          <Copy />
-          {copied ? "Copied" : "Copy"}
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={download}
+            data-testid="raw-download"
+          >
+            <Download />
+            <span className="hidden xs:inline sm:inline">Download</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void copy()}>
+            <Copy />
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
       </div>
       <ScrollArea className="h-[min(65vh,520px)]">
         <pre className="p-3 sm:p-4 font-mono text-[11px] leading-relaxed text-fg-subtle whitespace-pre-wrap break-all">
