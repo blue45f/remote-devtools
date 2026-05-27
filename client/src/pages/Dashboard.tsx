@@ -97,31 +97,34 @@ export default function DashboardPage() {
   const liveCount = Array.isArray(liveQuery.data) ? liveQuery.data.length : 0;
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+    <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
+      {/* Header. On phones the period tabs drop below the title so the
+          eyebrow can breathe. */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between flex-wrap gap-3 sm:gap-4 mb-5 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
             Dashboard
           </h1>
-          <p className="mt-1 text-sm text-fg-subtle">
+          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
             Activity overview across all your debug sessions and tickets.
           </p>
         </div>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <TabsList>
-            {PERIODS.map((p) => (
-              <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
-                <CalendarDays className="size-3.5" />
-                {p.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <TabsList className="w-max">
+              {PERIODS.map((p) => (
+                <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
+                  <CalendarDays className="size-3.5" />
+                  {p.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
-      {/* Hero row: live + today's headline metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+      {/* Hero row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 mb-2.5 sm:mb-3">
         <HeroLiveCard live={liveCount} loading={liveQuery.isLoading} />
         <HeroMetricCard
           label="Sessions today"
@@ -144,7 +147,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Secondary stat row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-6 sm:mb-8">
         <StatTile
           label="Total sessions"
           value={stats?.totalRecordSessions}
@@ -172,8 +175,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts + activity */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
+        <div className="xl:col-span-2 space-y-3 sm:space-y-4 min-w-0">
           <ChartPanel
             title="Sessions over time"
             description="New record sessions captured per period."
@@ -204,7 +207,7 @@ function HeroLiveCard({ live, loading }: { live: number; loading: boolean }) {
   return (
     <Card
       className={cn(
-        "p-5 relative overflow-hidden",
+        "p-4 sm:p-5 relative overflow-hidden",
         isActive && "border-danger/30",
       )}
     >
@@ -275,7 +278,7 @@ function HeroMetricCard({
   const delta = avg > 0 ? ((v - avg) / avg) * 100 : 0;
 
   return (
-    <Card className="p-5 relative overflow-hidden">
+    <Card className="p-4 sm:p-5 relative overflow-hidden">
       <div className="flex items-center gap-2 text-fg-subtle text-xs uppercase tracking-wider font-semibold mb-2">
         <Icon className="size-3.5" />
         {label}
@@ -297,8 +300,8 @@ function HeroMetricCard({
         <span className="font-mono text-fg-subtle">{formatNumber(avg)}</span>
       </div>
 
-      {/* sparkline */}
-      <div className="-mx-5 -mb-5 mt-3 h-14">
+      {/* sparkline — pulls margin to bleed into the card edge */}
+      <div className="-mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-3 h-12 sm:h-14">
         {spark.length > 0 ? (
           <Sparkline
             data={spark.map((d) => d.created ?? 0)}
@@ -347,10 +350,10 @@ interface StatTileProps {
 
 function StatTile({ label, value, icon: Icon, loading }: StatTileProps) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center gap-2 text-fg-faint text-[11px] uppercase tracking-wider font-semibold mb-1.5">
+    <Card className="p-3 sm:p-4">
+      <div className="flex items-center gap-1.5 sm:gap-2 text-fg-faint text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold mb-1 sm:mb-1.5">
         <Icon className="size-3" />
-        {label}
+        <span className="truncate">{label}</span>
       </div>
       {loading ? (
         <Skeleton className="h-7 w-16" />
@@ -358,7 +361,7 @@ function StatTile({ label, value, icon: Icon, loading }: StatTileProps) {
         <AnimatedNumber
           value={value ?? 0}
           format={(n) => formatNumber(Math.round(n))}
-          className="text-xl font-semibold text-fg block"
+          className="text-lg sm:text-xl font-semibold text-fg block"
         />
       )}
     </Card>
@@ -383,14 +386,15 @@ function ChartPanel({
   children,
 }: ChartPanelProps) {
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-1">
         <h2 className="text-sm font-semibold text-fg">{title}</h2>
       </div>
       {description && (
-        <p className="text-xs text-fg-subtle mb-4">{description}</p>
+        <p className="text-xs text-fg-subtle mb-3 sm:mb-4">{description}</p>
       )}
-      <div className="h-[260px]">
+      {/* Chart bodies size down on tablet to keep two charts above the fold */}
+      <div className="h-[200px] sm:h-[240px] lg:h-[260px]">
         {loading ? <ChartSkeleton /> : empty ? <ChartEmpty /> : children}
       </div>
     </Card>

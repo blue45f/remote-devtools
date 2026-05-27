@@ -71,32 +71,43 @@ export function Topbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 h-14 flex items-center gap-2 px-3 lg:px-5",
+        "sticky top-0 z-30 flex items-center gap-1.5 sm:gap-2",
+        "h-14 px-2 sm:px-3 lg:px-5 safe-pt",
         "border-b border-border bg-bg/80 backdrop-blur-xl",
       )}
     >
-      {/* Mobile sidebar trigger — bumped to 36px to meet touch-target guidelines */}
+      {/* Mobile sidebar trigger — full 44×44 touch target on phones */}
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="lg:hidden touch-target"
         onClick={() => setSidebarOpen(true)}
         aria-label={t("sidebar.expand")}
       >
         <Menu />
       </Button>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — non-leaf crumbs collapse on phones so only the
+          current page is shown; the trail re-expands at `sm`. The crumbs
+          themselves stay in the DOM so a11y traversal & tests still see
+          them. */}
       <nav
-        className="flex items-center gap-1 text-sm min-w-0"
+        className="flex items-center gap-1 text-sm min-w-0 flex-1 sm:flex-initial"
         aria-label="Breadcrumb"
       >
         {crumbs.map((crumb, idx) => {
           const isLast = idx === crumbs.length - 1;
+          const isLeaf = isLast;
           return (
-            <div key={idx} className="flex items-center gap-1 min-w-0">
+            <div
+              key={idx}
+              className={cn(
+                "flex items-center gap-1 min-w-0",
+                !isLeaf && "hidden sm:flex",
+              )}
+            >
               {idx > 0 && (
-                <ChevronRight className="size-3.5 text-fg-faint shrink-0" />
+                <ChevronRight className="size-3.5 text-fg-faint shrink-0 hidden sm:block" />
               )}
               {crumb.to && !isLast ? (
                 <Link
@@ -121,18 +132,19 @@ export function Topbar() {
         })}
       </nav>
 
-      <div className="flex-1" />
+      <div className="hidden sm:block flex-1" />
 
       {demoMode && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Badge
               variant="accent"
-              className="gap-1 cursor-help"
+              className="gap-1 cursor-help shrink-0 hidden xs:inline-flex sm:inline-flex"
               data-testid="demo-mode-badge"
             >
               <Sparkles className="size-3" />
-              {t("topbar.demoMode")}
+              <span className="hidden sm:inline">{t("topbar.demoMode")}</span>
+              <span className="sm:hidden">Demo</span>
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -141,19 +153,20 @@ export function Topbar() {
         </Tooltip>
       )}
 
-      {/* Search trigger */}
+      {/* Search trigger — full pill on tablet+, icon-only on phone */}
       <button
         type="button"
         onClick={toggleCommand}
         className={cn(
-          "group flex items-center gap-2 h-8 pl-2.5 pr-2 rounded-md",
+          "group flex items-center justify-center gap-2 rounded-md shrink-0",
+          "h-9 w-9 sm:h-8 sm:w-auto sm:pl-2.5 sm:pr-2 touch-target",
           "border border-border bg-surface text-sm text-fg-faint",
           "hover:border-border-strong hover:text-fg-subtle transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         )}
         aria-label={t("topbar.openCommandPalette")}
       >
-        <Search className="size-3.5" />
+        <Search className="size-4 sm:size-3.5" />
         <span className="hidden sm:inline pr-3">{t("topbar.search")}</span>
         <Kbd className="hidden sm:inline-flex">{isMac ? "⌘" : "Ctrl"}</Kbd>
         <Kbd className="hidden sm:inline-flex">K</Kbd>

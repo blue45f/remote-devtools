@@ -83,11 +83,23 @@ type PaginatedRecordResponse =
 
 const PAGE_SIZE = 50;
 
+/**
+ * Pick the default view for the user's viewport. Below `lg` the table needs
+ * horizontal scroll on a phone, while the grid is purpose-built for that
+ * width. Users can still flip back via the toggle — we just don't drop
+ * them into the worse default. `window` is safe to reach in a Vite SPA;
+ * during SSR / first paint we fall back to the desktop default.
+ */
+function pickDefaultView(): ViewMode {
+  if (typeof window === "undefined") return "table";
+  return window.innerWidth >= 1024 ? "table" : "grid";
+}
+
 export default function SessionsPage() {
   const [tab, setTab] = useState<SessionTab>("record");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
-  const [view, setView] = useState<ViewMode>("table");
+  const [view, setView] = useState<ViewMode>(pickDefaultView);
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
 
   // Debounce the search term that gets sent to the server. The local input
@@ -167,21 +179,26 @@ export default function SessionsPage() {
 
   const filtersActive = search.trim() !== "" || durationFilter !== "all";
   const SortIcon = SORT_ICONS[sort];
+  // On phones / small tablets the row-based table is illegible — force the
+  // card grid below `lg`. Users who explicitly opt into a table on a small
+  // screen would just be fighting horizontal scroll; the grid carries the
+  // same fields in a denser-on-tap form.
+  const effectiveView: ViewMode = view;
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-7xl mx-auto">
+    <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+      <div className="flex items-end justify-between mb-4 sm:mb-5 gap-3 sm:gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
             Sessions
           </h1>
-          <p className="mt-1 text-sm text-fg-subtle">
+          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
             Recorded and live debugging sessions across all devices.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -190,6 +207,7 @@ export default function SessionsPage() {
                 onClick={() => void refetch()}
                 disabled={isFetching}
                 aria-label="Refresh"
+                className="touch-target"
               >
                 <RefreshCw className={cn(isFetching && "animate-spin")} />
               </Button>
@@ -201,7 +219,7 @@ export default function SessionsPage() {
         </div>
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar — vertical on phone, single row on tablet+ */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <Tabs value={tab} onValueChange={(v) => setTab(v as SessionTab)}>
@@ -237,7 +255,7 @@ export default function SessionsPage() {
                     <X className="size-3.5" />
                   </button>
                 ) : (
-                  <Kbd>/</Kbd>
+                  <Kbd className="hidden sm:inline-flex">/</Kbd>
                 )
               }
             />
@@ -247,7 +265,12 @@ export default function SessionsPage() {
             <SelectTrigger className="w-auto sm:min-w-[160px]">
               <span className="flex items-center gap-2">
                 <SortIcon className="size-3.5 text-fg-subtle" />
-                <SelectValue />
+                {/* Hide the long label on small screens; the icon already
+                    communicates direction */}
+                <span className="hidden sm:inline">
+                  <SelectValue />
+                </span>
+                <span className="sm:hidden text-xs">Sort</span>
               </span>
             </SelectTrigger>
             <SelectContent>
@@ -292,11 +315,14 @@ export default function SessionsPage() {
         </div>
       </div>
 
-      {/* Body */}
+      {/* Body — render exactly one of table/grid based on the toggle. The
+          table itself ships with `overflow-x-auto` plus a sticky session
+          column (see `SessionTable`) so it stays usable on phones, while
+          phones may still prefer the grid via the toggle. */}
       {error ? (
         <ErrorState onRetry={() => void refetch()} />
       ) : isLoading ? (
-        view === "table" ? (
+        effectiveView === "table" ? (
           <SessionTableSkeleton />
         ) : (
           <SessionGridSkeleton />
@@ -326,7 +352,7 @@ export default function SessionsPage() {
         />
       ) : (
         <>
-          {view === "table" ? (
+          {effectiveView === "table" ? (
             <SessionTable sessions={filtered} tab={tab} />
           ) : (
             <SessionGrid sessions={filtered} tab={tab} />
@@ -337,6 +363,7 @@ export default function SessionsPage() {
                 variant="outline"
                 onClick={() => void fetchNextPage()}
                 disabled={isFetchingNextPage}
+                className="w-full sm:w-auto touch-target"
               >
                 {isFetchingNextPage ? (
                   <>
@@ -442,41 +469,43 @@ function FilterChips({
   ];
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1">
-        <Filter className="size-3" />
-        Duration
-      </span>
-      {options.map((opt) => {
-        const active = duration === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onDurationChange(opt.value)}
-            className={cn(
-              "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors",
-              active
-                ? "bg-fg text-bg border-fg"
-                : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
-            )}
-            aria-pressed={active}
+    <div className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible">
+      <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
+        <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
+          <Filter className="size-3" />
+          Duration
+        </span>
+        {options.map((opt) => {
+          const active = duration === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onDurationChange(opt.value)}
+              className={cn(
+                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+                active
+                  ? "bg-fg text-bg border-fg"
+                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+              )}
+              aria-pressed={active}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+        {showClear && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            className="ml-1 h-7 sm:h-6 px-2 text-[11px] shrink-0"
           >
-            {opt.label}
-          </button>
-        );
-      })}
-      {showClear && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClear}
-          className="ml-1 h-6 px-2 text-[11px]"
-        >
-          <X className="size-3" />
-          Clear
-        </Button>
-      )}
+            <X className="size-3" />
+            Clear
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -668,7 +697,7 @@ function SessionGrid({
   tab: SessionTab;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
       {sessions.map((session) => (
         <SessionCard key={session.id} session={session} tab={tab} />
       ))}
@@ -685,24 +714,24 @@ function SessionCard({
 }) {
   const isLive = tab === "live";
   return (
-    <Card className="group p-4 transition-all hover:border-border-strong hover:shadow-sm">
-      <div className="flex items-start justify-between mb-2">
+    <Card className="group p-3.5 sm:p-4 transition-all hover:border-border-strong hover:shadow-sm">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <StatusDot
             isLive={isLive}
             isRecording={session.recordMode ?? !isLive}
           />
-          <span className="font-medium text-sm text-fg truncate">
+          <span className="font-medium text-[15px] sm:text-sm text-fg truncate">
             {session.name || `Session #${session.id}`}
           </span>
         </div>
         {isLive ? (
-          <Badge variant="live" size="sm" className="gap-1">
+          <Badge variant="live" size="sm" className="gap-1 shrink-0">
             <RadioTower className="size-2.5" />
             LIVE
           </Badge>
         ) : (
-          <Badge variant="neutral" size="sm">
+          <Badge variant="neutral" size="sm" className="shrink-0">
             REC
           </Badge>
         )}
@@ -714,7 +743,7 @@ function SessionCard({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-subtle">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-xs text-fg-subtle">
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3" />
           {formatDurationFromNanos(session.duration)}
@@ -732,9 +761,10 @@ function SessionCard({
         )}
       </div>
 
+      {/* Action row — full-width on mobile so thumbs hit easy targets */}
       <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
         {tab === "record" && (
-          <Button asChild variant="secondary" size="sm" className="flex-1">
+          <Button asChild variant="secondary" size="sm" className="flex-1 touch-target">
             <Link to={`/sessions/${session.id}`}>
               <Activity />
               Details
@@ -744,7 +774,7 @@ function SessionCard({
         <DevToolsLinkButton
           variant="outline"
           size="sm"
-          className="flex-1"
+          className="flex-1 touch-target"
           room={session.name}
           recordId={tab === "record" ? session.id : undefined}
         >

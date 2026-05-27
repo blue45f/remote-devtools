@@ -42,15 +42,23 @@ export default function Layout() {
           <Sidebar />
         </aside>
 
-        {/* Sidebar (mobile drawer) */}
+        {/* Sidebar (mobile drawer) — picks up safe-area top inset and is
+            slightly wider than the desktop rail for thumb-friendly nav. */}
         <aside
           className={cn(
             "fixed inset-y-0 left-0 z-50 lg:hidden",
+            "w-[280px] max-w-[85vw] safe-pt",
             "transform transition-transform duration-200 ease-out",
+            "shadow-lg",
             sidebarOpen ? "translate-x-0" : "-translate-x-full",
           )}
+          aria-hidden={!sidebarOpen}
         >
-          <Sidebar onItemClick={() => setSidebarOpen(false)} />
+          <Sidebar
+            onItemClick={() => setSidebarOpen(false)}
+            onClose={() => setSidebarOpen(false)}
+            mobile
+          />
         </aside>
 
         {/* Main */}

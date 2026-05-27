@@ -84,11 +84,11 @@ export default function LandingPage() {
 
 function TopNav({ onTheme }: { onTheme: () => void }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto h-14 flex items-center gap-4 px-4 lg:px-6">
-        <Link to="/" className="flex items-center gap-2.5 select-none">
-          <BrandMark className="size-7" />
-          <span className="text-[15px] font-semibold tracking-tight">
+    <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl safe-pt">
+      <div className="max-w-6xl mx-auto h-14 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
+        <Link to="/" className="flex items-center gap-2 sm:gap-2.5 select-none min-w-0">
+          <BrandMark className="size-7 shrink-0" />
+          <span className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
             Remote DevTools
           </span>
         </Link>
@@ -118,15 +118,18 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
           Theme
         </button>
 
-        <Button asChild variant="ghost" size="sm">
+        {/* GitHub button collapses to an icon on phones to keep the
+            primary CTA visible at 320px viewports */}
+        <Button asChild variant="ghost" size="sm" aria-label="GitHub repository">
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">
             <Github />
-            GitHub
+            <span className="hidden sm:inline">GitHub</span>
           </a>
         </Button>
         <Button asChild variant="primary" size="sm">
           <Link to="/dashboard">
-            Open app
+            <span className="hidden xs:inline sm:inline">Open app</span>
+            <span className="xs:hidden sm:hidden">Open</span>
             <ArrowRight />
           </Link>
         </Button>
@@ -183,14 +186,19 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="flex flex-wrap items-center justify-center gap-3"
+          className="flex flex-col xs:flex-row sm:flex-row flex-wrap items-stretch xs:items-center sm:items-center justify-center gap-3 max-w-md xs:max-w-none sm:max-w-none mx-auto"
         >
-          <Button variant="primary" size="lg" onClick={onEnterDemo}>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={onEnterDemo}
+            className="w-full xs:w-auto sm:w-auto touch-target"
+          >
             <PlayCircle />
             {t("landing.tryDemo")}
             <ArrowRight />
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" size="lg" className="w-full xs:w-auto sm:w-auto touch-target">
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               <Github />
               {t("landing.viewOnGitHub")}
@@ -276,8 +284,10 @@ function DashboardMockup() {
             <span className="ml-auto text-[10px] text-fg-faint">demo mode</span>
           </div>
 
-          {/* Mock UI body */}
-          <div className="grid grid-cols-[148px_1fr] min-h-[360px]">
+          {/* Mock UI body — on phones we drop the sidebar entirely so the
+              content gets the full mockup width (the page is small enough
+              that a faux sidebar adds noise, not signal). */}
+          <div className="grid grid-cols-1 sm:grid-cols-[148px_1fr] min-h-[280px] sm:min-h-[360px]">
             {/* Mini sidebar */}
             <aside className="border-r border-border bg-bg-subtle p-3 hidden sm:block">
               <div className="flex items-center gap-2 mb-4">
@@ -301,7 +311,7 @@ function DashboardMockup() {
             </aside>
 
             {/* Mini main content */}
-            <div className="p-4 sm:p-5">
+            <div className="p-3.5 sm:p-5">
               <h3 className="text-base sm:text-lg font-semibold mb-3">
                 Dashboard
               </h3>
@@ -595,15 +605,15 @@ function QuickStart() {
         </div>
 
         <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-border bg-surface-raised px-2 py-1.5">
-            <div className="flex">
+          <div className="flex items-center justify-between border-b border-border bg-surface-raised px-2 py-1.5 gap-2">
+            <div className="scroll-rail flex flex-1 min-w-0">
               {Object.keys(SNIPPETS).map((key) => (
                 <button
                   type="button"
                   key={key}
                   onClick={() => setActive(key as keyof typeof SNIPPETS)}
                   className={cn(
-                    "px-3 h-7 rounded-sm text-xs font-medium transition-colors",
+                    "px-3 h-7 rounded-sm text-xs font-medium transition-colors shrink-0",
                     key === active
                       ? "bg-bg text-fg shadow-xs"
                       : "text-fg-subtle hover:text-fg",
@@ -616,12 +626,12 @@ function QuickStart() {
             <button
               type="button"
               onClick={copy}
-              className="text-xs text-fg-subtle hover:text-fg px-2 py-1 rounded"
+              className="text-xs text-fg-subtle hover:text-fg px-2 py-1 rounded shrink-0"
             >
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
-          <pre className="font-mono text-[12.5px] leading-relaxed p-5 text-fg-subtle overflow-x-auto">
+          <pre className="font-mono text-[12px] sm:text-[12.5px] leading-relaxed p-4 sm:p-5 text-fg-subtle overflow-x-auto">
             {SNIPPETS[active]}
           </pre>
         </Card>
@@ -664,12 +674,17 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
           The demo is one click away. Or clone the repo and ship it on your own
           infrastructure today.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button variant="primary" size="lg" onClick={onEnterDemo}>
+        <div className="flex flex-col xs:flex-row sm:flex-row flex-wrap items-stretch xs:items-center sm:items-center justify-center gap-3 max-w-md xs:max-w-none sm:max-w-none mx-auto">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={onEnterDemo}
+            className="w-full xs:w-auto sm:w-auto touch-target"
+          >
             <PlayCircle />
             Open the demo
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" size="lg" className="w-full xs:w-auto sm:w-auto touch-target">
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               <Github />
               GitHub
