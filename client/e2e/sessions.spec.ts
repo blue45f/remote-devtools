@@ -43,8 +43,8 @@ test.describe("Sessions list and detail", () => {
     await row.hover();
     await row.getByLabel(/Open in DevTools/).click();
     // sonner toast — selector is region with role status
-    await expect(
-      page.getByText(/DevTools requires a backend/i),
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/DevTools requires a backend/i)).toBeVisible({
+      timeout: 3000,
+    });
   });
 });

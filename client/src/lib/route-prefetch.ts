@@ -23,9 +23,10 @@ const STARTED = new Set<string>();
 
 export function prefetchRoute(path: string) {
   // Match exact or prefix (e.g. /sessions/42 → /sessions chunk)
-  const key = path in PREFETCHERS
-    ? path
-    : Object.keys(PREFETCHERS).find((p) => path.startsWith(p + "/"));
+  const key =
+    path in PREFETCHERS
+      ? path
+      : Object.keys(PREFETCHERS).find((p) => path.startsWith(p + "/"));
   if (!key || STARTED.has(key)) return;
   STARTED.add(key);
   void PREFETCHERS[key]().catch(() => {

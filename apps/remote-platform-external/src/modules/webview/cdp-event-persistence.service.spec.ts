@@ -79,7 +79,7 @@ describe("CdpEventPersistenceService", () => {
         expect.objectContaining({
           recordId: 100,
           protocol,
-          requestId: "1",
+          requestId: 1,
         }),
       );
     });
@@ -187,7 +187,7 @@ describe("CdpEventPersistenceService", () => {
       expect(mockNetworkService.updateResponseBody).toHaveBeenCalledWith(
         expect.objectContaining({
           recordId: 100,
-          requestId: "1",
+          requestId: 1,
           body: "test",
           base64Encoded: false,
         }),

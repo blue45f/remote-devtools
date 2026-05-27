@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { DEVTOOL_OVERLAY } from "../common/constant";
 import nodes from "../common/nodes";
 import { isElement } from "../common/utils";
@@ -157,17 +156,22 @@ export class Overlay extends BaseDomain {
   }
 
   private nodeHighlightRequested() {
-    const highlight = (e: any) => {
+    const highlight = (e: MouseEvent | TouchEvent) => {
       if (window.$$inspectMode !== "searchForNode") return;
       e.stopPropagation();
       e.preventDefault();
 
-      let { target } = e;
+      let target = e.target instanceof HTMLElement ? e.target : null;
 
-      if (e.touches) {
+      if ("touches" in e) {
         const touch = e.touches[0];
-        target = document.elementFromPoint(touch.clientX, touch.clientY);
+        target = document.elementFromPoint(
+          touch.clientX,
+          touch.clientY,
+        ) as HTMLElement | null;
       }
+
+      if (!target) return;
 
       this.highlightNode({
         nodeElement: target,
@@ -243,7 +247,7 @@ export class Overlay extends BaseDomain {
     const width = Overlay.getStylePropertyValue("width", styles);
     const height = Overlay.getStylePropertyValue("height", styles);
     const isBorderBox =
-      window.getComputedStyle(node)["box-sizing" as any] === "border-box";
+      window.getComputedStyle(node).boxSizing === "border-box";
     const { left, top } = node.getBoundingClientRect();
 
     const contentWidth = isBorderBox

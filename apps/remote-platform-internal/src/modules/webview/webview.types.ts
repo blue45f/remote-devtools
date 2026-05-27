@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type * as WebSocket from "ws";
 
 // ---------------------------------------------------------------------------
@@ -22,16 +20,16 @@ export type DevtoolsData = {
 export type ProtocolMessage = {
   id?: number;
   method?: string;
-  params?: Record<string, any>;
-  result?: Record<string, any>;
+  params?: Record<string, unknown>;
+  result?: Record<string, unknown>;
   error?: { code?: number; message: string };
   event?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 /** A single item produced when converting S3 backup data into a sendable protocol entry. */
 export type ProtocolEntry = {
-  protocol: { method: string; params: Record<string, any> };
+  protocol: { method: string; params: Record<string, unknown> };
   timestamp: number;
   domain: string;
   requestId?: number;

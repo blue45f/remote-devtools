@@ -18,25 +18,11 @@ import { AuthGuard } from "../auth/auth.guard";
 import type { AuthClaims } from "../auth/auth.service";
 import { PlanGuard, RequirePlan } from "../auth/plan.guard";
 
+import { CheckoutDto, PortalDto } from "./billing.dto";
 import { BillingService } from "./billing.service";
 
-interface CheckoutBody {
-  /** Stripe price id (e.g. price_1ABC...). */
-  priceId: string;
-  /** Where to send the customer after success. */
-  successUrl: string;
-  /** Where to send the customer after cancel. */
-  cancelUrl: string;
-}
-
-interface PortalBody {
-  /** Stripe customer id, looked up server-side from the org row. */
-  customerId: string;
-  returnUrl: string;
-}
-
 /**
- * Stripe billing scaffold — `/api/billing/{checkout,portal,webhook}`.
+ * Billing routes — `/api/billing/{checkout,portal,webhook}`.
  *
  * All routes return `503 Service Unavailable` until `STRIPE_SECRET_KEY` is set.
  * The frontend can probe `enabled` indirectly by hitting `/api/billing/status`.
@@ -55,17 +41,17 @@ export class BillingController {
    */
   @Get("status")
   public status() {
-    if (!this.billing.enabled) {
-      return { enabled: false };
+    return this.billing.getStatus();
+  }
+
+  @Get("subscription")
+  @UseGuards(AuthGuard)
+  public async subscription(@Auth() auth: AuthClaims | null) {
+    const orgId = auth?.org?.trim();
+    if (!orgId) {
+      throw new BadRequestException("Authenticated org is required.");
     }
-    return {
-      enabled: true,
-      plans: [
-        { id: "free", name: "Free", monthly: 0 },
-        { id: "starter", name: "Starter", monthly: 19 },
-        { id: "pro", name: "Pro", monthly: 49 },
-      ],
-    };
+    return this.billing.getSubscriptionState(orgId);
   }
 
   @Post("checkout")
@@ -73,14 +59,9 @@ export class BillingController {
   @HttpCode(200)
   public async checkout(
     @Auth() auth: AuthClaims | null,
-    @Body() body: CheckoutBody,
+    @Body() body: CheckoutDto,
   ) {
-    if (!body.priceId || !body.successUrl || !body.cancelUrl) {
-      throw new BadRequestException(
-        "priceId, successUrl, and cancelUrl are required",
-      );
-    }
-    const orgId = auth?.org ?? "anonymous";
+    const orgId = (auth?.org ?? "anonymous").trim();
     return this.billing.createCheckoutSession({
       priceId: body.priceId,
       orgId,
@@ -93,12 +74,16 @@ export class BillingController {
   @UseGuards(AuthGuard, PlanGuard)
   @RequirePlan("starter")
   @HttpCode(200)
-  public async portal(@Body() body: PortalBody) {
-    if (!body.customerId || !body.returnUrl) {
-      throw new BadRequestException("customerId and returnUrl are required");
+  public async portal(
+    @Auth() auth: AuthClaims | null,
+    @Body() body: PortalDto,
+  ) {
+    const orgId = auth?.org?.trim();
+    if (!orgId) {
+      throw new BadRequestException("Authenticated org is required.");
     }
     return this.billing.createPortalSession({
-      customerId: body.customerId,
+      orgId,
       returnUrl: body.returnUrl,
     });
   }
@@ -127,11 +112,10 @@ export class BillingController {
         "Webhook requires raw body — enable rawBody in main.ts",
       );
     }
-    const event = await this.billing.verifyWebhook({
+    const result = await this.billing.handleWebhook({
       rawBody: raw,
       signature,
     });
-    // Future event handling: subscription.updated → update org plan, etc.
-    return { received: true, type: event.type };
+    return { received: true, type: result.event.type, sync: result.sync };
   }
 }

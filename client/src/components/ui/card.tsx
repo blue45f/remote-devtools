@@ -47,11 +47,7 @@ export const CardDescription = forwardRef<
   HTMLParagraphElement,
   HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-xs text-fg-subtle", className)}
-    {...props}
-  />
+  <p ref={ref} className={cn("text-xs text-fg-subtle", className)} {...props} />
 ));
 CardDescription.displayName = "CardDescription";
 

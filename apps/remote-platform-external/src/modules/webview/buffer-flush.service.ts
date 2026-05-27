@@ -12,6 +12,12 @@ import type { BufferRoomInfo, LastBufferInfo } from "./webview.types";
 /** 최소 의미 있는 이벤트 수 */
 const MIN_MEANINGFUL_EVENTS = 5;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isFullSnapshotEvent = (value: unknown): boolean =>
+  isRecord(value) && value.type === 2;
+
 /**
  * 버퍼 데이터를 S3에 플러시하고, 버퍼 → 레코드 이전을 오케스트레이션하는 서비스.
  *
@@ -509,19 +515,14 @@ export class BufferFlushService {
     );
 
     const hasFullSnapshot = rrwebEvents.some((event) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const params = event.params as any;
+      const params = isRecord(event.params) ? event.params : {};
 
       if (Array.isArray(params?.events)) {
-        return params.events.some(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (rrEvent: any) =>
-            typeof rrEvent?.type === "number" && rrEvent.type === 2,
-        );
+        return params.events.some(isFullSnapshotEvent);
       }
 
       const rrEvent = params?.event;
-      return typeof rrEvent?.type === "number" && rrEvent.type === 2;
+      return isFullSnapshotEvent(rrEvent);
     });
 
     if (hasFullSnapshot) return true;

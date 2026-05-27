@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { BaseDomain, Option } from "./base";
 import { CSS } from "./css";
 import { Dom } from "./dom";
@@ -11,6 +8,9 @@ import protocol from "./protocol";
 import { Runtime } from "./runtime";
 import { ScreenPreview } from "./screen-preview";
 import { SessionReplay } from "./session-replay";
+
+type ProtocolCommand = (params?: unknown) => unknown;
+type ProtocolCommandHost = BaseDomain & Record<string, unknown>;
 
 export class ChromeDomain {
   private recordMode: boolean = false;
@@ -39,10 +39,13 @@ export class ChromeDomain {
       // SessionReplay 같은 커스텀 도메인은 protocol에 없을 수 있음
       if (commands && Array.isArray(commands)) {
         commands.forEach((cmd) => {
-          this.protocol.set(
-            `${name}.${cmd}`,
-            (domain as any)[cmd].bind(domain),
-          );
+          const command = (domain as ProtocolCommandHost)[cmd];
+          if (typeof command === "function") {
+            this.protocol.set(
+              `${name}.${cmd}`,
+              command.bind(domain) as ProtocolCommand,
+            );
+          }
         });
       }
     });
@@ -54,13 +57,18 @@ export class ChromeDomain {
    * @param {Object} message socket data
    */
   public execute(
-    message: { id?: number | null; method?: string | null; params?: any } = {
+    message: {
+      id?: number | null;
+      method?: string | null;
+      params?: unknown;
+    } = {
       id: null,
       method: null,
       params: null,
     },
-  ): { id: number | null; result?: any } {
+  ): { id: number | null; result?: unknown } {
     const { id, method, params } = message;
+    if (!method) return { id: id || null };
     const methodCall = this.protocol.get(method);
     if (typeof methodCall !== "function") return { id: id || null };
 
@@ -152,12 +160,12 @@ export class ChromeDomain {
   public stopAllDomains(): void {
     this.domains.forEach((domain) => {
       // ScreenPreview의 stopPreview 호출
-      if (domain.namespace === "ScreenPreview" && "stopPreview" in domain) {
-        (domain as any).stopPreview();
+      if (domain instanceof ScreenPreview) {
+        domain.stopPreview();
       }
       // SessionReplay의 stopRecording 호출
-      if (domain.namespace === "SessionReplay" && "stopRecording" in domain) {
-        (domain as any).stopRecording();
+      if (domain instanceof SessionReplay) {
+        domain.stopRecording();
       }
       // 모든 도메인의 socket을 null로 설정
       domain.socket = null;
@@ -234,6 +242,6 @@ export class ChromeDomain {
     });
   }
 
-  private protocol = new Map();
+  private protocol = new Map<string, ProtocolCommand>();
   private domains: BaseDomain[] = [];
 }

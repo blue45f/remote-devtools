@@ -24,6 +24,9 @@ import { RecordService } from "@remote-platform/core";
 import { ApiTags } from "@nestjs/swagger";
 import { S3Service } from "../s3/s3.service";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
 @ApiTags("Sessions")
 @Controller("sessions")
 export class WebviewController {
@@ -217,29 +220,36 @@ export class WebviewController {
         this.logger.debug("[Screenshot] Found ScreenPreview data");
 
         // ScreenPreview protocol의 구조 확인
-        const protocol = screenData.protocol as any;
+        const protocol = screenData.protocol as Record<string, unknown>;
         this.logger.debug(
           `[Screenshot] Protocol keys: ${Object.keys(protocol).join(", ")}`,
         );
 
         // protocol이 ScreenPreview.captured 형식인지 확인
         if (protocol.method === "ScreenPreview.captured" && protocol.params) {
-          const params = protocol.params;
+          const params = isRecord(protocol.params) ? protocol.params : null;
+          if (!params) {
+            throw new Error("Invalid ScreenPreview params");
+          }
           this.logger.debug(
             "[Screenshot] Found ScreenPreview.captured data, rendering HTML",
           );
 
-          if (params.body) {
+          if (typeof params.body === "string" && params.body) {
             // head는 배열 형태로 저장되어 있으므로 join
             const headHtml = Array.isArray(params.head)
               ? params.head.join("\n")
-              : params.head || "";
+              : typeof params.head === "string"
+                ? params.head
+                : "";
             const baseHref =
               typeof params.baseHref === "string" ? params.baseHref : undefined;
             const bodyHtml = params.body;
-            const width = params.width || 800;
-            const height = params.height || 600;
-            const bodyClass = params.bodyClass || "";
+            const width = typeof params.width === "number" ? params.width : 800;
+            const height =
+              typeof params.height === "number" ? params.height : 600;
+            const bodyClass =
+              typeof params.bodyClass === "string" ? params.bodyClass : "";
 
             this.logger.debug(
               `[Screenshot] Rendering ${width}x${height}, fullPage: ${fullPage === "true"}`,
@@ -310,7 +320,7 @@ export class WebviewController {
       where: { deviceId },
       order: { createdAt: "DESC" },
       take: 50, // 최근 50개만
-      relations: ["components", "labels"], // 컴포넌트 및 라벨 정보 포함
+      relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
     return {
@@ -422,7 +432,7 @@ export class WebviewController {
     const tickets = await this.ticketLogRepository.find({
       where: { parentEpic },
       order: { createdAt: "DESC" },
-      relations: ["components", "labels"], // 컴포넌트 및 라벨 정보 포함
+      relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
     return {
@@ -457,7 +467,7 @@ export class WebviewController {
     const tickets = await this.ticketLogRepository.find({
       where: { url: Like(`%${escapedUrl}%`) },
       order: { createdAt: "DESC" },
-      relations: ["components", "labels"], // 컴포넌트 및 라벨 정보 포함
+      relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
     return {

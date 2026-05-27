@@ -143,7 +143,7 @@ The following are pre-wired so the SaaS path doesn't start from scratch:
 | Activity feed + dashboard + replay player | ✅ shipped |
 | Multi-tenant `orgId` scoping | ❌ stub: see Phase 1 |
 | Auth integration | ❌ stub: see Phase 2 |
-| Stripe billing | ❌ stub: see Phase 3 |
+| Stripe billing | ✅ shipped: product/checkout/webhook-driven sync in place |
 | Migration runner | ❌ TypeORM `synchronize: true` only |
 
 ## Estimated runway to first customer

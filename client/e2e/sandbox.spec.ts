@@ -30,15 +30,20 @@ function collectFatalConsoleErrors(messages: ConsoleMessage[]) {
     .filter((m) => m.type() === "error")
     .map((m) => m.text())
     .filter(
-      (text) =>
-        !ALLOWED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text)),
+      (text) => !ALLOWED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text)),
     );
 }
 
 test.describe("SDK sandbox pages", () => {
   test("/sandbox/script renders the playground shell", async ({ page }) => {
     const consoleMessages: ConsoleMessage[] = [];
+    const sdkRequests: string[] = [];
     page.on("console", (msg) => consoleMessages.push(msg));
+    page.on("request", (request) => {
+      if (request.url().includes("/sdk/index.umd.js")) {
+        sdkRequests.push(request.url());
+      }
+    });
 
     await page.goto("/sandbox/script");
 
@@ -58,6 +63,7 @@ test.describe("SDK sandbox pages", () => {
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
     expect(fatal, fatal.join("\n")).toEqual([]);
+    expect(sdkRequests).toEqual([]);
   });
 
   test("/sandbox/module renders the playground shell", async ({ page }) => {

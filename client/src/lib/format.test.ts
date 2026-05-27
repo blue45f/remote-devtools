@@ -35,7 +35,9 @@ describe("formatDurationFromNanos", () => {
 
   it("formats hours and minutes", () => {
     expect(formatDurationFromNanos(3_600_000 * MS)).toBe("1h");
-    expect(formatDurationFromNanos((3_600_000 + 7 * 60_000) * MS)).toBe("1h 7m");
+    expect(formatDurationFromNanos((3_600_000 + 7 * 60_000) * MS)).toBe(
+      "1h 7m",
+    );
   });
 
   it("accepts numeric strings (gateway returns BigInt as string)", () => {

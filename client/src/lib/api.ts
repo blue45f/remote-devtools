@@ -26,9 +26,7 @@ function isDemoMode() {
   return localStorage.getItem("demo-mode") === "1";
 }
 
-let seedRouterPromise:
-  | Promise<typeof import("./seed-router")>
-  | undefined;
+let seedRouterPromise: Promise<typeof import("./seed-router")> | undefined;
 
 function loadSeedRouter() {
   if (!seedRouterPromise) {
@@ -50,9 +48,7 @@ export async function apiFetch<T>(path: string): Promise<T> {
   // Forward the auth token if one is present. Production swaps the
   // localStorage source for Clerk / Supabase / Auth0 — see auth.tsx.
   const token =
-    typeof window === "undefined"
-      ? null
-      : localStorage.getItem("auth-token");
+    typeof window === "undefined" ? null : localStorage.getItem("auth-token");
   const headers: HeadersInit = token
     ? { Authorization: `Bearer ${token}` }
     : {};

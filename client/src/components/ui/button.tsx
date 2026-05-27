@@ -16,18 +16,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary:
-          "bg-fg text-bg hover:bg-fg/90 dark:bg-fg dark:text-bg",
-        accent:
-          "bg-accent text-accent-fg hover:bg-accent/90 shadow-xs",
-        secondary:
-          "bg-bg-muted text-fg hover:bg-border border border-border",
+        primary: "bg-fg text-bg hover:bg-fg/90 dark:bg-fg dark:text-bg",
+        accent: "bg-accent text-accent-fg hover:bg-accent/90 shadow-xs",
+        secondary: "bg-bg-muted text-fg hover:bg-border border border-border",
         outline:
           "bg-transparent text-fg border border-border-strong hover:bg-bg-muted",
         ghost: "bg-transparent text-fg-muted hover:bg-bg-muted hover:text-fg",
         soft: "bg-accent-soft text-accent-soft-fg hover:bg-accent-soft/80",
-        danger:
-          "bg-danger text-danger-fg hover:bg-danger/90 shadow-xs",
+        danger: "bg-danger text-danger-fg hover:bg-danger/90 shadow-xs",
         link: "bg-transparent text-accent hover:underline underline-offset-2 px-0 h-auto",
       },
       size: {
@@ -46,7 +42,8 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }

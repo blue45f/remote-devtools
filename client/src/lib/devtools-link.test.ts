@@ -33,9 +33,9 @@ describe("buildDevToolsLink", () => {
       undefined,
       "https://devtools.example.com",
     );
-    expect(url.startsWith("https://devtools.example.com/tabbed-debug/?wss=")).toBe(
-      true,
-    );
+    expect(
+      url.startsWith("https://devtools.example.com/tabbed-debug/?wss="),
+    ).toBe(true);
   });
 
   it("strips the protocol from the embedded host", () => {

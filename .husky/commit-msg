@@ -4,8 +4,8 @@ BRANCH_NAME=$(git symbolic-ref --short HEAD)
 # 커밋 타입 정의
 PREFIXES="(feat|fix|refactor|docs|chore|test|ci)"
 
-# 브랜치 이름에서 이슈 번호 추출 (예: feat/COMMFEPLAT-315 -> [COMMFEPLAT-315])
-if [[ $BRANCH_NAME =~ (WOOWAQA-[0-9]+|COMMFEPLAT-[0-9]+|DESIGNQA-[0-9]+) ]]; then
+# 브랜치 이름에서 이슈 번호 추출 (예: feat/PROJ-315 -> [PROJ-315])
+if [[ $BRANCH_NAME =~ ([A-Z]{2,}-[0-9]+) ]]; then
     ISSUE_TAG="[${BASH_REMATCH[1]}]"
 else
     ISSUE_TAG=""
@@ -24,9 +24,7 @@ APP_DIRS=""
 
 
 for FILE in $FILES; do
-    if [[ $FILE =~ apps/bmart/.*/baemin-store ]]; then
-        NAME="baemin-store"
-    elif [[ $FILE =~ (apps|packages)/([^/]+)/ ]]; then
+    if [[ $FILE =~ (apps|packages)/([^/]+)/ ]]; then
         # 일반적인 경우에 두 번째 디렉토리 이름 추출
         NAME="${BASH_REMATCH[2]}"
     else
@@ -51,7 +49,7 @@ APP_DIRS=$(echo "$APP_DIRS" | sed 's/^ *//;s/ *$//;s/ *, */, /g')
 ORIGINAL_MSG=$(cat "$COMMIT_MSG_FILE")
 
 # 이미 이슈 번호가 있는지 확인
-if [[ $ORIGINAL_MSG =~ \[(WOOWAQA-[0-9]+|COMMFEPLAT-[0-9]+|DESIGNQA-[0-9]+)\] ]]; then
+if [[ $ORIGINAL_MSG =~ \[[A-Z]{2,}-[0-9]+\] ]]; then
     ISSUE_TAG=""  # 이미 이슈 번호가 있으면 추가하지 않음
 fi
 
@@ -63,13 +61,13 @@ if echo "$ORIGINAL_MSG" | grep -qE "^${PREFIXES}: "; then
     ORIGINAL_MSG=$(echo "$ORIGINAL_MSG" | sed -E "s/^${PREFIXES}: //")
     PREFIX="$TYPE($APP_DIRS): "
 
-# 이미 타입과 스코프가 있으면 추가하지 않음 (ex. feat(bmart): 메시지)
+# 이미 타입과 스코프가 있으면 추가하지 않음 (ex. feat(scope): 메시지)
 elif echo "$ORIGINAL_MSG" | grep -qE "^${PREFIXES}\([^)]*\): "; then
     PREFIX=""
 
-# 스코프만 있고 타입이 없는 경우, 브랜치 타입을 추가 (ex. (bmart): 메시지)
+# 스코프만 있고 타입이 없는 경우, 브랜치 타입을 추가 (ex. (scope): 메시지)
 elif echo "$ORIGINAL_MSG" | grep -qE '^\([^)]*\):'; then
-    # 사용자가 입력한 스코프 추출 (예: (bmart))
+    # 사용자가 입력한 스코프 추출 (예: (scope))
     USER_SCOPE=$(echo "$ORIGINAL_MSG" | grep -oE '^\([^)]*\)' | sed 's/[()]//g')
 
     # USER_SCOPE를 제외한 나머지 ORIGINAL_MSG 출력

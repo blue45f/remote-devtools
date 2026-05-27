@@ -251,7 +251,7 @@ export class DashboardService {
       where: {
         createdAt: Between(startDate, endDate),
       },
-      select: ["username"],
+      select: { username: true },
     });
 
     const jobCounts: JobCounts = {
@@ -307,7 +307,7 @@ export class DashboardService {
       where: {
         timestamp: Between(startDate, endDate),
       },
-      select: ["deviceId"],
+      select: { deviceId: true },
     });
 
     const jobCounts: JobCounts = {
@@ -329,7 +329,7 @@ export class DashboardService {
       uniqueDeviceIds.length > 0
         ? await this.deviceInfoRepository.find({
             where: uniqueDeviceIds.map((deviceId) => ({ deviceId })),
-            relations: ["user"],
+            relations: { user: true },
           })
         : [];
 

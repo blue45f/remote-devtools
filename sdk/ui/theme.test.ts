@@ -99,9 +99,7 @@ describe("applyInputStyles", () => {
     document.body.appendChild(el);
 
     el.dispatchEvent(new FocusEvent("focus"));
-    expect(el.style.borderColor).toBe(
-      hexToRgb(tokens.color.accent.violet),
-    );
+    expect(el.style.borderColor).toBe(hexToRgb(tokens.color.accent.violet));
     expect(el.style.boxShadow).not.toBe("none");
 
     el.dispatchEvent(new FocusEvent("blur"));

@@ -1,4 +1,5 @@
 import { RemoteDebugger } from "./common/remoteDebugger";
+import { Network } from "./domain/network";
 import { CommonInfo } from "./types/common";
 import {
   createDebuggerButtons,
@@ -114,7 +115,7 @@ export const createDebugger = (
     try {
       commonInfo = JSON.parse(r);
       logger.commonInfo.info("", commonInfo);
-    } catch (e) {
+    } catch {
       //
     }
   };
@@ -160,13 +161,10 @@ export const createDebugger = (
       // 메뉴 닫을 때 Rewrite 상태면 툴팁 다시 표시
       const existingTooltip = root.querySelector("#rewrite-tooltip");
       if (!existingTooltip) {
-        (async () => {
-          const { Network } = await import("./domain/network");
-          if (Network.Rewrite.isEnabled()) {
-            const tooltip = createRewriteTooltip();
-            root.appendChild(tooltip);
-          }
-        })();
+        if (Network.Rewrite.isEnabled()) {
+          const tooltip = createRewriteTooltip();
+          root.appendChild(tooltip);
+        }
       }
     } else {
       floatingButton.style.transform = "rotate(45deg)";
@@ -210,7 +208,6 @@ export const createDebugger = (
       remoteDebugger.pauseScreenPreview();
 
       // 전역 네트워크 데이터 가져오기
-      const { Network } = await import("./domain/network");
       const globalNetworkData = Network.getGlobalResponseData();
 
       // 모달 표시 - Network 클래스의 정적 메서드 사용
@@ -355,7 +352,6 @@ export const createDebugger = (
   // 페이지 로드 시 Rewrite 상태 확인하고 버튼 색상 및 툴팁 복원
   (async () => {
     try {
-      const { Network } = await import("./domain/network");
       if (Network.Rewrite.isEnabled()) {
         // Rewrite이 활성화되어 있으면 플로팅 버튼을 주황색으로
         addRewriteAnimationStyles(); // 애니메이션 스타일 추가
@@ -369,7 +365,7 @@ export const createDebugger = (
           "Rewrite state restored - floating button color and tooltip displayed",
         );
       }
-    } catch (e) {
+    } catch {
       //
     }
   })();
@@ -427,7 +423,7 @@ export const createTicketDirect = (
         remoteDebugger.createTicket({
           commonInfo,
           userAgent: navigator.userAgent,
-          formData: formData as any,
+          formData,
           URL,
         });
       },
@@ -437,7 +433,7 @@ export const createTicketDirect = (
     remoteDebugger.createTicket({
       commonInfo,
       userAgent: navigator.userAgent,
-      formData: formData as any,
+      formData,
       URL,
     });
   }

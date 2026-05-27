@@ -2,8 +2,17 @@ import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import type { BufferEvent } from "./buffer.service";
+import type { BufferEvent, SessionBuffer } from "./buffer.service";
 import { BufferService } from "./buffer.service";
+
+function expectPresent<T>(value: T | null | undefined): T {
+  expect(value).not.toBeNull();
+  expect(value).not.toBeUndefined();
+  if (value === null || value === undefined) {
+    throw new Error("Expected value to be present");
+  }
+  return value;
+}
 
 describe("BufferService", () => {
   let service: BufferService;
@@ -248,7 +257,10 @@ describe("BufferService", () => {
       );
 
       // Access internal buffers to pre-fill to near capacity
-      const buffersMap = (service as any).buffers as Map<string, any>;
+      const buffersMap = Reflect.get(service, "buffers") as Map<
+        string,
+        SessionBuffer
+      >;
       const key = `${room}_${recordId}`;
       const buffer = buffersMap.get(key);
 
@@ -338,12 +350,12 @@ describe("BufferService", () => {
 
       const flushed = service.flushBuffer("Session-room1", 1, "device-1");
 
-      expect(flushed).not.toBeNull();
-      expect(flushed!.room).toBe("Session-room1");
-      expect(flushed!.recordId).toBe(1);
-      expect(flushed!.events).toHaveLength(2);
-      expect(flushed!.events[0]).toEqual(event1);
-      expect(flushed!.events[1]).toEqual(event2);
+      const flushedData = expectPresent(flushed);
+      expect(flushedData.room).toBe("Session-room1");
+      expect(flushedData.recordId).toBe(1);
+      expect(flushedData.events).toHaveLength(2);
+      expect(flushedData.events[0]).toEqual(event1);
+      expect(flushedData.events[1]).toEqual(event2);
 
       // Buffer should be removed from active buffers
       const buffers = service.getSessionBuffers("Session-room1", 1);
@@ -364,8 +376,7 @@ describe("BufferService", () => {
 
       const flushed = service.flushBuffer("Session-room1", 1, "device-2");
 
-      expect(flushed).not.toBeNull();
-      expect(flushed!.deviceId).toBe("device-2");
+      expect(expectPresent(flushed).deviceId).toBe("device-2");
     });
   });
 
@@ -409,9 +420,9 @@ describe("BufferService", () => {
 
       const flushed = service.flushBufferForce("Session-room1", 1, "device-1");
 
-      expect(flushed).not.toBeNull();
-      expect(flushed!.events).toHaveLength(1);
-      expect(flushed!.events[0]).toEqual(event);
+      const flushedData = expectPresent(flushed);
+      expect(flushedData.events).toHaveLength(1);
+      expect(flushedData.events[0]).toEqual(event);
 
       const buffers = service.getSessionBuffers("Session-room1", 1);
       expect(buffers).toHaveLength(0);
@@ -431,8 +442,7 @@ describe("BufferService", () => {
 
       const flushed = service.flushBufferForce("Session-room1", 1, "device-2");
 
-      expect(flushed).not.toBeNull();
-      expect(flushed!.deviceId).toBe("device-2");
+      expect(expectPresent(flushed).deviceId).toBe("device-2");
     });
   });
 

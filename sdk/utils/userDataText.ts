@@ -15,7 +15,7 @@ const pref = {
 };
 
 // 사용자 정보 타입 정의
-interface UserBaedalInfo {
+interface UserAppInfo {
   appVersion: { label: string; value: string };
   osVersion: { label: string; value: string };
   platform: { label: string; value: string };
@@ -26,8 +26,8 @@ interface UserBaedalInfo {
   address: { label: string; value: string };
 }
 
-const decryptUserBaedal = (userBaedal: string): UserBaedalInfo => {
-  const decoded = CryptoJS.AES.decrypt(userBaedal, key, pref).toString(
+const decryptUserAppData = (userAppData: string): UserAppInfo => {
+  const decoded = CryptoJS.AES.decrypt(userAppData, key, pref).toString(
     CryptoJS.enc.Utf8,
   );
 
@@ -115,8 +115,8 @@ export type UserData = {
 export const createUserDataText = (userData: UserData): string => {
   const { commonInfo, userAgent, URL, webTitle } = userData;
 
-  // commonInfo가 없거나 userBaedal이 없으면 기본 정보만 반환
-  if (!commonInfo || !commonInfo.user?.userBaedal) {
+  // commonInfo가 없거나 userAppData가 없으면 기본 정보만 반환
+  if (!commonInfo || !commonInfo.user?.userAppData) {
     const { os, browser } = parseUserAgent(userAgent);
     return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ""}${URL} \nOS: ${os} \n브라우저: ${browser}`;
   }
@@ -129,7 +129,7 @@ export const createUserDataText = (userData: UserData): string => {
     latitude,
     longitude,
     address,
-  } = decryptUserBaedal(commonInfo.user.userBaedal);
+  } = decryptUserAppData(commonInfo.user.userAppData);
   const { os, browser } = parseUserAgent(userAgent);
 
   return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ""}${decodeURIComponent(URL)} \n앱 버전: ${appVersion.value.split("_")[1]} \n디바이스 모델: ${platform.value} \nOS: ${os} \n브라우저: ${browser} \n디바이스 ID: ${deviceId.value} \n멤버 번호: ${memberNo.value} \n위도: ${latitude.value} \n경도: ${longitude.value} \n앱 설정 주소: ${address.value}`;

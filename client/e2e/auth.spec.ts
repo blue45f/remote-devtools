@@ -35,9 +35,7 @@ test.describe("Pricing", () => {
     await expect(
       page.getByRole("heading", { name: "Self-hosted" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Starter" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Starter" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
   });
 });

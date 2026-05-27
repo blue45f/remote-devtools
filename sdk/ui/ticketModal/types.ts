@@ -56,7 +56,7 @@ export interface UserTemplatesResponse {
 /**
  * API 응답 타입 정의
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;

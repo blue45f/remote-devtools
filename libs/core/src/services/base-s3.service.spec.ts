@@ -4,6 +4,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { BufferUploadData } from "./base-s3.service";
 import { BaseS3Service } from "./base-s3.service";
 
+function expectPresent<T>(value: T | null | undefined): T {
+  expect(value).not.toBeNull();
+  expect(value).not.toBeUndefined();
+  if (value === null || value === undefined) {
+    throw new Error("Expected value to be present");
+  }
+  return value;
+}
+
 // ---------------------------------------------------------------------------
 // Module mocks -- must be declared before imports are resolved
 // ---------------------------------------------------------------------------
@@ -19,14 +28,30 @@ vi.mock("fs", () => ({
   },
 }));
 
-vi.mock("@aws-sdk/client-s3", () => ({
-  S3Client: vi.fn().mockImplementation(() => ({
-    send: vi.fn(),
-  })),
-  PutObjectCommand: vi.fn(),
-  ListObjectsV2Command: vi.fn(),
-  GetObjectCommand: vi.fn(),
-}));
+vi.mock("@aws-sdk/client-s3", () => {
+  class S3Client {
+    public readonly send = vi.fn();
+  }
+
+  class PutObjectCommand {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  class ListObjectsV2Command {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  class GetObjectCommand {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  return {
+    S3Client,
+    PutObjectCommand,
+    ListObjectsV2Command,
+    GetObjectCommand,
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Concrete subclass for testing the abstract BaseS3Service
@@ -256,10 +281,10 @@ describe("BaseS3Service", () => {
       const data = [createSampleData()];
       service["setCachedList"]("my-key", data);
 
-      const result = service["getCachedList"]("my-key")!;
+      const result = expectPresent(service["getCachedList"]("my-key"));
       result[0].room = "MUTATED";
 
-      const secondResult = service["getCachedList"]("my-key")!;
+      const secondResult = expectPresent(service["getCachedList"]("my-key"));
       expect(secondResult[0].room).toBe("test-room");
     });
 
@@ -337,10 +362,10 @@ describe("BaseS3Service", () => {
       const data = createSampleData();
       service["setCachedObject"]("my-key", data);
 
-      const result = service["getCachedObject"]("my-key")!;
+      const result = expectPresent(service["getCachedObject"]("my-key"));
       result.room = "MUTATED";
 
-      const secondResult = service["getCachedObject"]("my-key")!;
+      const secondResult = expectPresent(service["getCachedObject"]("my-key"));
       expect(secondResult.room).toBe("test-room");
     });
 

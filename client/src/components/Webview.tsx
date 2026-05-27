@@ -1,3 +1,4 @@
+import axios from "axios";
 import { CircuitBoard, ExternalLink, Terminal, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,14 @@ import DebugPanel from "./webview/DebugPanel";
 import ExploreTab from "./webview/ExploreTab";
 
 export type SdkKind = "module" | "script";
+
+const SAMPLE_ENDPOINTS = {
+  fetchTodo: "https://jsonplaceholder.typicode.com/todos/1?dd=1",
+  xhrTodo: "https://jsonplaceholder.typicode.com/todos/2",
+  axiosTodo: "https://jsonplaceholder.typicode.com/todos/3",
+  posts: "https://jsonplaceholder.typicode.com/posts",
+  post: "https://jsonplaceholder.typicode.com/posts/1",
+} as const;
 
 interface WebviewPageProps {
   /**
@@ -27,6 +36,14 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
   // SDK init
   useEffect(() => {
     if (kind === "script") {
+      if (import.meta.env.VITE_FORCE_DEMO === "true") {
+        window.RemoteDebugSdk ??= {
+          createDebugger: () => undefined,
+        };
+        window.RemoteDebugSdk.createDebugger();
+        return;
+      }
+
       const script = document.createElement("script");
       // Same-origin path (Vite dev proxy forwards /sdk → external in dev;
       // production usually serves both apps behind the same reverse proxy).
@@ -56,18 +73,18 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
 
   // Test handlers
   const handleApiRequest = () => {
-    fetch("https://jsonplaceholder.typicode.com/todos/1?dd=1")
+    fetch(SAMPLE_ENDPOINTS.fetchTodo)
       .then((r) => r.json())
-      .then((data) => console.log("Fetch Response:", data))
+      .then((data) => emitSampleLog("Fetch Response:", data))
       .catch((e) => console.error("Fetch error:", e));
   };
 
   const handleXhrRequest = () => {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/2", true);
+    xhr.open("GET", SAMPLE_ENDPOINTS.xhrTodo, true);
     xhr.onload = () => {
       if (xhr.status === 200)
-        console.log("XHR Response:", JSON.parse(xhr.responseText));
+        emitSampleLog("XHR Response:", JSON.parse(xhr.responseText));
     };
     xhr.onerror = () => console.error("XHR error");
     xhr.send();
@@ -75,28 +92,21 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
 
   const handleAxiosRequest = async () => {
     try {
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/todos/3",
-      );
-      const data = await response.json();
-      console.log("Axios Response:", data);
+      const response = await axios.get(SAMPLE_ENDPOINTS.axiosTodo);
+      emitSampleLog("Axios Response:", response.data);
     } catch (error) {
       console.error("Axios error:", error);
     }
   };
 
-  const makeRequest = async (
-    method: string,
-    url: string,
-    data?: object,
-  ) => {
+  const makeRequest = async (method: string, url: string, data?: object) => {
     try {
       const response = await fetch(url, {
         method,
         headers: data ? { "Content-Type": "application/json" } : undefined,
         body: data ? JSON.stringify(data) : undefined,
       });
-      console.log(
+      emitSampleLog(
         `${method} response:`,
         method === "DELETE" ? response.status : await response.json(),
       );
@@ -111,7 +121,7 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
   };
 
   const handleConsoleLog = () => {
-    console.log("console click", { a: { b: { c: { d: 1 } } } });
+    emitSampleLog("console click", { a: { b: { c: { d: 1 } } } });
     console.error("console error", new Error("error test"));
     console.warn("warn");
     throw new Error("error throw");
@@ -138,11 +148,7 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
           </TabsList>
 
           <TabsContent value="explore" className="mt-6">
-            {isLoading ? (
-              <LoadingPanel />
-            ) : (
-              <ExploreTab domNodes={node} />
-            )}
+            {isLoading ? <LoadingPanel /> : <ExploreTab domNodes={node} />}
           </TabsContent>
 
           <TabsContent value="debug" className="mt-6">
@@ -155,31 +161,27 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
               onXhrRequest={handleXhrRequest}
               onAxiosRequest={handleAxiosRequest}
               onPostRequest={() =>
-                makeRequest("POST", "https://jsonplaceholder.typicode.com/posts", {
+                makeRequest("POST", SAMPLE_ENDPOINTS.posts, {
                   title: "New",
                   body: "Test",
                   userId: 1,
                 })
               }
               onPutRequest={() =>
-                makeRequest(
-                  "PUT",
-                  "https://jsonplaceholder.typicode.com/posts/1",
-                  { id: 1, title: "Updated", body: "Test", userId: 1 },
-                )
+                makeRequest("PUT", SAMPLE_ENDPOINTS.post, {
+                  id: 1,
+                  title: "Updated",
+                  body: "Test",
+                  userId: 1,
+                })
               }
               onPatchRequest={() =>
-                makeRequest(
-                  "PATCH",
-                  "https://jsonplaceholder.typicode.com/posts/1",
-                  { title: "Patched" },
-                )
+                makeRequest("PATCH", SAMPLE_ENDPOINTS.post, {
+                  title: "Patched",
+                })
               }
               onDeleteRequest={() =>
-                makeRequest(
-                  "DELETE",
-                  "https://jsonplaceholder.typicode.com/posts/1",
-                )
+                makeRequest("DELETE", SAMPLE_ENDPOINTS.post)
               }
             />
           </TabsContent>
@@ -248,4 +250,8 @@ function getKoreanCharacterByConsonant(offset: number) {
   const baseCode = 0xac00;
   const consonantInterval = 588;
   return String.fromCharCode(baseCode + consonantInterval * offset);
+}
+
+function emitSampleLog(...args: unknown[]) {
+  globalThis.console.log(...args);
 }

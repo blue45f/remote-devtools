@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-this-alias */
 import jsCookie from "js-cookie";
 import mime from "mime";
@@ -8,11 +5,44 @@ import mime from "mime";
 import { getAbsolutePath, key2UpperCase } from "../common/utils";
 import { logger } from "../utils/logger";
 
-import { BaseDomain, Option } from "./base";
+import { BaseDomain, Option, ProtocolMessage } from "./base";
 import { NetworkRewrite } from "./network-rewrite";
 import { Events } from "./protocol";
 
 const getTimestamp = () => Date.now() / 1000;
+
+type XhrBody = Parameters<XMLHttpRequest["send"]>[0];
+
+type CapturedRequest = {
+  method: string;
+  url: string;
+  requestId: number;
+  headers: Record<string, string>;
+  postData?: XhrBody | BodyInit | null;
+  hasPostData?: boolean;
+};
+
+type TrackedXMLHttpRequest = XMLHttpRequest & {
+  $$request?: CapturedRequest;
+  $$absoluteUrl?: string;
+  $$method?: string;
+  $$listenersAdded?: boolean;
+};
+
+type NetworkEventParams = {
+  requestId: number;
+  headers?: Record<string, string>;
+  headersText?: string;
+  type: string;
+  url: string;
+  status?: number;
+  statusText?: string;
+  encodedDataLength?: number;
+  blockedCookies?: unknown[];
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 // 원본 fetch 함수 저장 (전역)
 let originalFetch: typeof fetch | null = null;
@@ -104,7 +134,7 @@ const getResourceType = (
 };
 
 // 전역 responseData 저장소
-const globalResponseData = new Map();
+const globalResponseData = new Map<number, unknown>();
 
 // 인터셉터 초기화 플래그
 let interceptorsInitialized = false;
@@ -150,7 +180,7 @@ export class Network extends BaseDomain {
    * Get global response data map
    * @static
    */
-  public static getGlobalResponseData(): Map<number, any> {
+  public static getGlobalResponseData(): Map<number, unknown> {
     return globalResponseData;
   }
 
@@ -210,7 +240,7 @@ export class Network extends BaseDomain {
     return this.requestId;
   }
 
-  public socketSend = (data: unknown): void => {
+  public socketSend = (data: ProtocolMessage): void => {
     this.cacheRequest.push(data);
     if (this.enabled) {
       this.sendProtocol(data);
@@ -298,13 +328,13 @@ export class Network extends BaseDomain {
 
     if (typeof response === "string") {
       body = response;
-    } else if (response) {
+    } else if (isRecord(response)) {
       // XHR/Fetch 응답 처리 (responseBody 필드)
-      if (response.responseBody !== undefined) {
+      if (typeof response.responseBody === "string") {
         body = response.responseBody;
       }
       // Image 응답 처리 (data 필드)
-      else if (response.data !== undefined) {
+      else if (typeof response.data === "string") {
         body = response.data;
         base64Encoded = true;
       }
@@ -335,7 +365,8 @@ export class Network extends BaseDomain {
       username?: string | null,
       password?: string | null,
     ) {
-      (this as any).$$request = {
+      const trackedXhr = this as TrackedXMLHttpRequest;
+      trackedXhr.$$request = {
         method: method.toUpperCase(),
         url: getAbsolutePath(url),
         requestId: instance.getRequestId(),
@@ -343,14 +374,14 @@ export class Network extends BaseDomain {
       };
 
       // Rewrite 처리를 위해 절대 URL 저장
-      (this as any).$$absoluteUrl = getAbsolutePath(url);
-      (this as any).$$method = method.toUpperCase();
+      trackedXhr.$$absoluteUrl = getAbsolutePath(url);
+      trackedXhr.$$method = method.toUpperCase();
 
       xhrOpen.apply(this, [method, url, async, username, password]);
     };
 
     XMLHttpRequest.prototype.send = function (data) {
-      const xhr = this as any;
+      const xhr = this as TrackedXMLHttpRequest;
       const absoluteUrl = xhr.$$absoluteUrl;
       const method = xhr.$$method;
 
@@ -423,14 +454,17 @@ export class Network extends BaseDomain {
             if (modifiedUrl !== absoluteUrl) {
               xhrOpen.call(this, method, modifiedUrl, true);
               xhr.$$absoluteUrl = modifiedUrl;
-              xhr.$$request.url = modifiedUrl;
+              if (xhr.$$request) {
+                xhr.$$request.url = modifiedUrl;
+              }
             }
 
             // 변경된 데이터로 요청 전송
             xhrSend.call(this, modifiedData);
 
             // 나머지 인터셉터 로직 실행
-            const request = (this as any).$$request;
+            const request = xhr.$$request;
+            if (!request) return;
             const { requestId } = request;
             const reqMethod = request.method;
             if (reqMethod.toLowerCase() === "post") {
@@ -469,7 +503,8 @@ export class Network extends BaseDomain {
       // Rewrite이 아닌 경우 기존 로직 실행
       xhrSend.call(this, data);
 
-      const request = (this as any).$$request;
+      const request = xhr.$$request;
+      if (!request) return;
       const { requestId, url } = request;
       const reqMethod = request.method;
       if (reqMethod.toLowerCase() === "post") {
@@ -490,8 +525,8 @@ export class Network extends BaseDomain {
       });
 
       // 이벤트 리스너 중복 방지
-      if (!(this as any).$$listenersAdded) {
-        (this as any).$$listenersAdded = true;
+      if (!xhr.$$listenersAdded) {
+        xhr.$$listenersAdded = true;
 
         this.addEventListener("readystatechange", () => {
           if (this.readyState === 4) {
@@ -532,7 +567,8 @@ export class Network extends BaseDomain {
 
         this.addEventListener("load", () => {
           if (this.responseType === "" || this.responseType === "text") {
-            const request = (this as any).$$request;
+            const request = xhr.$$request;
+            if (!request) return;
 
             // Response가 JSON인지 확인하고 Content-Type 설정
             let isJson = false;
@@ -595,7 +631,7 @@ export class Network extends BaseDomain {
     };
 
     XMLHttpRequest.prototype.setRequestHeader = function (key, value) {
-      const request = (this as any).$$request;
+      const request = (this as TrackedXMLHttpRequest).$$request;
       if (request) {
         request.headers[key] = String(value);
       }
@@ -625,7 +661,7 @@ export class Network extends BaseDomain {
     window.fetch = function (request, initConfig = {}) {
       let url;
       let method;
-      let data: any;
+      let data: BodyInit | null | undefined;
       let finalInitConfig = initConfig; // 최종적으로 사용할 config
 
       // When request is a string, it is the requested url
@@ -703,7 +739,7 @@ export class Network extends BaseDomain {
         }
       }
       const requestId = instance.getRequestId();
-      const sendRequest = new Map<string, any>();
+      const sendRequest = new Map<string, unknown>();
 
       sendRequest.set("url", url);
       sendRequest.set("method", method);
@@ -760,7 +796,6 @@ export class Network extends BaseDomain {
             blockedCookies: [],
             headers: Object.fromEntries(responseHeaders),
             encodedDataLength: Number(headers.get("Content-Length")),
-            response,
           });
 
           const contentType = headers.get("Content-Type");
@@ -838,7 +873,7 @@ export class Network extends BaseDomain {
     };
   }
 
-  private sendNetworkEvent(params: any) {
+  private sendNetworkEvent(params: NetworkEventParams): void {
     const {
       requestId,
       headers,
@@ -937,7 +972,8 @@ export class Network extends BaseDomain {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           const host = `${import.meta.env?.VITE_EXTERNAL_HOST || "http://localhost:3001"}`;
-          const { base64 } = await originalFetch!(
+          if (!originalFetch) return;
+          const { base64 } = await originalFetch(
             `${host}/image/image_base64?url=${encodeURIComponent(url)}`,
           ).then((res) => res.json());
           this.handleResponseData(requestId, {
@@ -1003,7 +1039,7 @@ export class Network extends BaseDomain {
     observerBodyMutation();
   }
 
-  private sendResponseData = (requestId: number, data: any) => {
+  private sendResponseData = (requestId: number, data: unknown) => {
     // 웹소켓 연결 상태 확인 (OPEN 상태일 때만 전송)
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return;
@@ -1031,7 +1067,7 @@ export class Network extends BaseDomain {
             method: "updateResponseBody",
             params: {
               requestId,
-              ...data,
+              ...(isRecord(data) ? data : {}),
             },
             timestamp: Date.now(),
           },
@@ -1050,7 +1086,7 @@ export class Network extends BaseDomain {
       // 일반 모드일 때는 기존 방식 사용
       const payload = JSON.stringify({
         event: "updateResponseBody",
-        data: { requestId, room: this.room, ...data },
+        data: { requestId, room: this.room, ...(isRecord(data) ? data : {}) },
       });
 
       try {
@@ -1069,6 +1105,6 @@ export class Network extends BaseDomain {
   public responseData = globalResponseData; // 전역 데이터 참조
 
   private enabled = false;
-  private cacheRequest: any[] = [];
+  private cacheRequest: ProtocolMessage[] = [];
   private requestId = 0;
 }

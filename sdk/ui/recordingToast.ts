@@ -60,9 +60,7 @@ export const createRecordingToast = (onClickDisconnect: () => void) => {
       getRecordId: () => number | null;
     }) => {
       title.textContent =
-        type === "record"
-          ? "Recording session active"
-          : "Live session active";
+        type === "record" ? "Recording session active" : "Live session active";
       copyButton.textContent = "Copy Link";
       copyButton.onclick = async () => {
         const recordId = getRecordId();

@@ -30,14 +30,7 @@ export class ScreenEntity {
 
   /** 화면 이벤트 유형 (전체 스냅샷, 증분 스냅샷, 사용자 상호작용 등). */
   @Column({ name: "event_type", type: "varchar", length: 50, nullable: true })
-  public eventType:
-    | "full_snapshot"
-    | "incremental_snapshot"
-    | "user_interaction"
-    | "viewport_change"
-    | "session_start"
-    | "session_end"
-    | null;
+  public eventType: string | null;
 
   /** CDP(Chrome DevTools Protocol) 화면 이벤트 데이터 (JSON). */
   @Column({ type: "jsonb" })
@@ -50,7 +43,7 @@ export class ScreenEntity {
   @Column({
     type: "bigint",
     transformer: {
-      to: (value: any) => value,
+      to: (value: unknown) => value,
       from: (value: string) => value,
     },
   })

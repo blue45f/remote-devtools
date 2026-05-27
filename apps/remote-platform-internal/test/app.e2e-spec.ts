@@ -13,7 +13,12 @@ import {
   vi,
 } from "vitest";
 
-import { RecordEntity, TicketLogEntity } from "@remote-platform/entity";
+import {
+  BillingWebhookEventEntity,
+  OrganizationEntity,
+  RecordEntity,
+  TicketLogEntity,
+} from "@remote-platform/entity";
 
 import { ActivityModule } from "../src/modules/activity/activity.module";
 import { ActivityService } from "../src/modules/activity/activity.service";
@@ -267,11 +272,21 @@ describe("ActivityModule (e2e)", () => {
 
 describe("BillingModule (e2e)", () => {
   const originalStripe = process.env.STRIPE_SECRET_KEY;
-  let app: INestApplication;
+  let app: INestApplication | undefined;
 
-  beforeAll(() => {
+  beforeEach(async () => {
     // BillingService checks STRIPE_SECRET_KEY at call time; ensure unset.
     delete process.env.STRIPE_SECRET_KEY;
+    const moduleRef = await Test.createTestingModule({
+      imports: [BillingModule],
+    })
+      .overrideProvider(getRepositoryToken(OrganizationEntity))
+      .useValue({ update: vi.fn() })
+      .overrideProvider(getRepositoryToken(BillingWebhookEventEntity))
+      .useValue({ insert: vi.fn(), findOne: vi.fn(), delete: vi.fn() })
+      .compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
   });
 
   afterAll(() => {
@@ -279,21 +294,40 @@ describe("BillingModule (e2e)", () => {
     else process.env.STRIPE_SECRET_KEY = originalStripe;
   });
 
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [BillingModule],
-    }).compile();
-    app = moduleRef.createNestApplication();
-    await app.init();
-  });
-
   afterEach(async () => {
-    await app.close();
+    await app?.close();
+    app = undefined;
   });
 
   it("GET /api/billing/status returns { enabled: false } when STRIPE_SECRET_KEY is unset", async () => {
-    const res = await request(app.getHttpServer()).get("/api/billing/status");
+    const res = await request(app!.getHttpServer()).get("/api/billing/status");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ enabled: false });
+  });
+
+  it("GET /api/billing/subscription requires authenticated org context and returns 400 in self-host mode", async () => {
+    const res = await request(app!.getHttpServer()).get(
+      "/api/billing/subscription",
+    );
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Authenticated org is required.");
+  });
+
+  it("POST /api/billing/portal requires authenticated org context and returns 400 in self-host mode", async () => {
+    const res = await request(app!.getHttpServer())
+      .post("/api/billing/portal")
+      .send({ returnUrl: "https://example.com/account" });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Authenticated org is required.");
+  });
+
+  it("POST /api/billing/webhook returns 400 when stripe-signature header is missing", async () => {
+    process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    const res = await request(app!.getHttpServer())
+      .post("/api/billing/webhook")
+      .send({ hello: "world" })
+      .set("Content-Type", "application/json");
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Missing stripe-signature header");
   });
 });

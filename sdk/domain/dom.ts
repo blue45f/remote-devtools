@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { DEVTOOL_OVERLAY, IGNORE_NODE } from "../common/constant";
 import nodes from "../common/nodes";
 import { getObjectById } from "../common/remoteObject";
@@ -146,7 +145,7 @@ export class Dom extends BaseDomain {
 
   public requestNode({ objectId }: { objectId: string }) {
     const node = getObjectById(objectId);
-    if (!node) throw new Error("Node not found");
+    if (!(node instanceof Node)) throw new Error("Node not found");
     const nodeId = nodes.getIdByNode(node);
     return { nodeId };
   }
@@ -199,7 +198,7 @@ export class Dom extends BaseDomain {
       });
 
       this.searchRet.delete(this.searchId);
-      // eslint-disable-next-line no-plusplus
+
       this.searchRet.set(++this.searchId, ret);
     }
 
@@ -448,7 +447,9 @@ export class Dom extends BaseDomain {
             break;
           case "attributes":
             // eslint-disable-next-line
-            const value = isElement(target) ? target.getAttribute(attributeName ?? '') : ''
+            const value = isElement(target)
+              ? target.getAttribute(attributeName ?? "")
+              : "";
             this.sendProtocol({
               method: value
                 ? Events.attributeModified
@@ -500,7 +501,7 @@ export class Dom extends BaseDomain {
   }
 }
 
-function debounce<T extends (...args: any[]) => void>(
+function debounce<T extends (...args: unknown[]) => void>(
   func: T,
   delay: number,
 ): (...args: Parameters<T>) => void {

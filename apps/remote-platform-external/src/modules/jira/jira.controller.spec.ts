@@ -39,7 +39,7 @@ describe("JiraController", () => {
 
     it("should throw BadRequestException when no file", async () => {
       await expect(
-        controller.uploadImageToJira("PROJ-123", undefined as any),
+        controller.uploadImageToJira("PROJ-123", undefined as never),
       ).rejects.toThrow(BadRequestException);
     });
 

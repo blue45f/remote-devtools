@@ -94,7 +94,7 @@ describe("WebviewController (External)", () => {
   describe("getSessionDetail", () => {
     it("should throw when sessionName is missing", async () => {
       await expect(
-        controller.getSessionDetail(undefined as any),
+        controller.getSessionDetail(undefined as never),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -102,7 +102,7 @@ describe("WebviewController (External)", () => {
   describe("generateScreenshot", () => {
     it("should throw when recordId is missing", async () => {
       await expect(
-        controller.generateScreenshot(undefined as any),
+        controller.generateScreenshot(undefined as never),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -115,9 +115,9 @@ describe("WebviewController (External)", () => {
 
   describe("getUserTickets", () => {
     it("should throw when deviceId is missing", async () => {
-      await expect(controller.getUserTickets(undefined as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.getUserTickets(undefined as never),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -133,7 +133,7 @@ describe("WebviewController (External)", () => {
   describe("getUserSessions", () => {
     it("should throw when deviceId is missing", async () => {
       await expect(
-        controller.getUserSessions(undefined as any),
+        controller.getUserSessions(undefined as never),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -162,7 +162,7 @@ describe("WebviewController (External)", () => {
   describe("getTicketsByEpic", () => {
     it("should throw when parentEpic is missing", async () => {
       await expect(
-        controller.getTicketsByEpic(undefined as any),
+        controller.getTicketsByEpic(undefined as never),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -170,7 +170,7 @@ describe("WebviewController (External)", () => {
   describe("getTicketsByUrl", () => {
     it("should throw when url is missing", async () => {
       await expect(
-        controller.getTicketsByUrl(undefined as any),
+        controller.getTicketsByUrl(undefined as never),
       ).rejects.toThrow(BadRequestException);
     });
   });

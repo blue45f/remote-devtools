@@ -48,7 +48,6 @@ export type LastBufferInfo = BufferRoomInfo & { room: string };
 export type CommonInfo = {
   user: {
     userAppData?: string;
-    userBaedal?: string;
     authorization: string;
     memberId: string;
     memberNumber: string;
@@ -59,7 +58,7 @@ export type CommonInfo = {
     adid: string;
     att?: number;
     appsflyerId: string;
-    deviceBaedal?: string;
+    deviceAppData?: string;
     deviceId: string;
     sessionId: string;
     actionTrackingKey?: string;

@@ -3,7 +3,7 @@
  */
 export type CommonInfo = {
   user: {
-    userBaedal: string;
+    userAppData: string;
     authorization: string;
     memberId: string;
     memberNumber: string;
@@ -12,7 +12,7 @@ export type CommonInfo = {
     adid: string;
     att: number; // ATT 상태 값. iOS 14이상에서만 사용 됨.
     appsflyerId: string;
-    deviceBaedal: string; // 에뮬레이터/루팅 여부, AOS 에서만 제공됨.
+    deviceAppData: string; // 에뮬레이터/루팅 여부, AOS 에서만 제공됨.
     deviceId: string;
     sessionId: string;
     /** 12.20.0 이상 */

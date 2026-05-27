@@ -72,14 +72,14 @@ describe("AuthController", () => {
     it("passes through body overrides to the service", () => {
       const result = controller.issueDevToken({
         sub: "user-42",
-        org: "acme",
+        org: "example-org",
         plan: "pro",
         email: "alice@example.com",
       });
       expect(result).toEqual({ token: "signed.jwt.token", type: "Bearer" });
       expect(mockAuth.issueDevToken).toHaveBeenCalledWith({
         sub: "user-42",
-        org: "acme",
+        org: "example-org",
         plan: "pro",
         email: "alice@example.com",
       });

@@ -97,15 +97,12 @@ function normaliseEvent(raw: RawEvent): ReplayEvent {
   const timestamp =
     typeof raw.timestamp === "number"
       ? raw.timestamp
-      : raw.protocol?.timestamp ?? Number(raw.timestamp ?? 0);
+      : (raw.protocol?.timestamp ?? Number(raw.timestamp ?? 0));
   const data = raw.data ?? raw.protocol?.data;
   return { type, timestamp, data };
 }
 
-const EVENT_META: Record<
-  number,
-  { name: string; icon: typeof Activity }
-> = {
+const EVENT_META: Record<number, { name: string; icon: typeof Activity }> = {
   0: { name: "DomLoaded", icon: Globe },
   1: { name: "PageLoaded", icon: Eye },
   2: { name: "FullSnapshot", icon: Layers },
@@ -181,11 +178,7 @@ export default function SessionDetailPage() {
       </Button>
 
       {/* Header */}
-      <SessionHeader
-        id={id ?? ""}
-        metadata={metadata}
-        loading={metaLoading}
-      />
+      <SessionHeader id={id ?? ""} metadata={metadata} loading={metaLoading} />
 
       <Separator className="my-6" />
 
@@ -209,9 +202,7 @@ export default function SessionDetailPage() {
             icon={Clock}
             label="Duration"
             value={
-              metaLoading
-                ? null
-                : formatDurationFromNanos(metadata?.duration)
+              metaLoading ? null : formatDurationFromNanos(metadata?.duration)
             }
           />
           <MetricTile
@@ -252,7 +243,11 @@ export default function SessionDetailPage() {
             <ListTree className="size-3.5" />
             Timeline
             {totalEvents > 0 && (
-              <Badge variant="neutral" size="sm" className="ml-1 h-4 px-1 text-[10px]">
+              <Badge
+                variant="neutral"
+                size="sm"
+                className="ml-1 h-4 px-1 text-[10px]"
+              >
                 {totalEvents}
               </Badge>
             )}
@@ -324,7 +319,7 @@ function SessionHeader({
           {loading ? (
             <Skeleton className="h-7 w-72" />
           ) : (
-            metadata?.name ?? metadata?.room ?? `Session #${id}`
+            (metadata?.name ?? metadata?.room ?? `Session #${id}`)
           )}
         </h1>
         {(loading || metadata?.url) && (

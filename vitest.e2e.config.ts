@@ -1,5 +1,4 @@
 import swc from "unplugin-swc";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
 /**
@@ -16,11 +15,15 @@ import { defineConfig } from "vitest/config";
  *   pnpm test:e2e   → this config
  */
 export default defineConfig({
+  oxc: false,
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     globals: true,
     root: "./",
     include: ["apps/**/test/**/*.e2e-spec.ts"],
     environment: "node",
   },
-  plugins: [tsconfigPaths(), swc.vite({ module: { type: "es6" } })],
+  plugins: [swc.vite({ module: { type: "es6" } })],
 });

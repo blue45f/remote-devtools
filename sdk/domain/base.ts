@@ -2,7 +2,7 @@ import { logger } from "../utils/logger";
 
 export type Option = {
   socket: WebSocket | null;
-  interceptor?: (data: { method: string; params?: unknown }) => void;
+  interceptor?: (data: ProtocolMessage) => void;
   recordMode?: boolean;
   room?: string;
   deviceId?: string;
@@ -11,8 +11,13 @@ export type Option = {
   title?: string;
 };
 
+export type ProtocolMessage = {
+  method: string;
+  params?: unknown;
+};
+
 export abstract class BaseDomain {
-  protected interceptor?: (data: { method: string; params?: unknown }) => void;
+  protected interceptor?: (data: ProtocolMessage) => void;
   protected onBufferEvent?: () => void;
 
   constructor(option: Option) {
@@ -38,7 +43,7 @@ export abstract class BaseDomain {
   // namespace 반드시 명시 (ex. "Network")
   abstract namespace: string;
 
-  public sendProtocol(data: any): void {
+  public sendProtocol(data: ProtocolMessage): void {
     // interceptor가 있고 method가 있는 경우 호출
     if (this.interceptor && data.method) {
       this.interceptor(data);
@@ -106,7 +111,7 @@ export abstract class BaseDomain {
       this.socket.send(payload);
     } catch (error) {
       logger.remote.error("Failed to send message:", error);
-      logger.remote.debug("Message was:", (data as any).method);
+      logger.remote.debug("Message was:", data.method);
     }
   }
 

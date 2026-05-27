@@ -9,7 +9,8 @@ export function formatDurationFromNanos(nanos?: number | string): string {
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   const remSec = seconds % 60;
-  if (minutes < 60) return remSec > 0 ? `${minutes}m ${remSec}s` : `${minutes}m`;
+  if (minutes < 60)
+    return remSec > 0 ? `${minutes}m ${remSec}s` : `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const remMin = minutes % 60;
   return remMin > 0 ? `${hours}h ${remMin}m` : `${hours}h`;

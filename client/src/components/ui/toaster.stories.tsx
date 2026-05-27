@@ -26,7 +26,9 @@ export const Triggers: Story = {
     <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
-        onClick={() => toast("Saved", { description: "Changes synced to the server." })}
+        onClick={() =>
+          toast("Saved", { description: "Changes synced to the server." })
+        }
       >
         Default
       </Button>

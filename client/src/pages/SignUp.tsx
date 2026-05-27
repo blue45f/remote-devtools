@@ -48,8 +48,8 @@ export default function SignUpPage() {
           Create your workspace
         </h1>
         <p className="text-sm text-fg-subtle">
-          Sign-ups are gated to the waitlist for now — drop your email and
-          we'll let you in.
+          Sign-ups are gated to the waitlist for now — drop your email and we'll
+          let you in.
         </p>
       </div>
 
@@ -94,10 +94,7 @@ export default function SignUpPage() {
 
       <p className="mt-7 text-center text-xs text-fg-subtle">
         Already have an account?{" "}
-        <Link
-          to="/sign-in"
-          className="text-fg underline underline-offset-2"
-        >
+        <Link to="/sign-in" className="text-fg underline underline-offset-2">
           Sign in
         </Link>
       </p>

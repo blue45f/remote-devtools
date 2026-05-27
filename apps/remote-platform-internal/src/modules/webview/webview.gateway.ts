@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
@@ -21,7 +19,9 @@ import {
   RecordService,
   RuntimeService,
   ScreenService,
+  type BufferUploadData,
 } from "@remote-platform/core";
+import type { IncomingMessage } from "node:http";
 
 import { S3Service } from "../s3/s3.service";
 
@@ -44,6 +44,36 @@ export type {
 
 import escapeHtml from "escape-html";
 
+type BufferPlaybackEvent = BufferUploadData["bufferData"][number];
+type PropertySnapshotsMap = Parameters<
+  ObjectReconstructionService["reconstructObjectAsJson"]
+>[1];
+type ReconstructArguments = Parameters<
+  ObjectReconstructionService["reconstructObjectAsJson"]
+>[2];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const toParams = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
+
+const parseProtocolMessage = (
+  message: string | object,
+): ProtocolMessage | null => {
+  try {
+    const parsed = typeof message === "string" ? JSON.parse(message) : message;
+    return isRecord(parsed) ? (parsed as ProtocolMessage) : null;
+  } catch {
+    return null;
+  }
+};
+
+const hasProtocolMethod = (
+  protocol: ProtocolMessage,
+): protocol is ProtocolMessage & { method: string } =>
+  typeof protocol.method === "string";
+
 // ---------------------------------------------------------------------------
 // Gateway
 // ---------------------------------------------------------------------------
@@ -59,7 +89,8 @@ export class WebviewGateway
   private readonly devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
 
   /** Per-device buffer data storage (used during live streaming). */
-  private readonly bufferStorage: Map<string, any[]> = new Map();
+  private readonly bufferStorage: Map<string, BufferPlaybackEvent[]> =
+    new Map();
 
   @WebSocketServer() public server: Server;
 
@@ -82,11 +113,20 @@ export class WebviewGateway
    * Safely serialises and sends data over a WebSocket.
    * Only logs initialisation / error-related messages to reduce noise.
    */
-  private sendMessage(socket: WebSocket, data: ProtocolMessage): void {
+  private sendMessage(socket: WebSocket, data: unknown): void {
     try {
+      const method =
+        isRecord(data) && typeof data.method === "string"
+          ? data.method
+          : undefined;
+      const event =
+        isRecord(data) && typeof data.event === "string"
+          ? data.event
+          : undefined;
+
       if (socket.readyState !== WebSocket.OPEN) {
         this.logger.warn(
-          `[SOCKET_NOT_READY] WebSocket closed, skipping: ${data.method || data.event}`,
+          `[SOCKET_NOT_READY] WebSocket closed, skipping: ${method || event}`,
         );
         return;
       }
@@ -95,17 +135,11 @@ export class WebviewGateway
       socket.send(message);
 
       // Only log initialisation and error-related messages
-      if (
-        data.event ||
-        data.method?.includes("enable") ||
-        data.method?.includes("Error")
-      ) {
-        this.logger.log(`[SOCKET] ${data.method || data.event}`);
+      if (event || method?.includes("enable") || method?.includes("Error")) {
+        this.logger.log(`[SOCKET] ${method || event}`);
       }
     } catch (error) {
-      this.logger.error(
-        `[SOCKET_ERROR] ${data.method || data.event}: ${(error as Error).message}`,
-      );
+      this.logger.error(`[SOCKET_ERROR] ${(error as Error).message}`);
     }
   }
 
@@ -119,11 +153,15 @@ export class WebviewGateway
    */
   private handleGetPropertiesRequest(
     client: WebSocket,
-    protocol: any,
-    propertySnapshotsMap: Map<string, any[]>,
+    protocol: ProtocolMessage,
+    propertySnapshotsMap: PropertySnapshotsMap,
   ): void {
-    const objectId = protocol.params?.objectId;
-    const properties = propertySnapshotsMap.get(objectId);
+    const params = toParams(protocol.params);
+    const objectId =
+      typeof params.objectId === "string" ? params.objectId : undefined;
+    const properties = objectId
+      ? propertySnapshotsMap.get(objectId)
+      : undefined;
 
     if (properties) {
       this.logger.debug(`Found properties for objectId: ${objectId}`);
@@ -147,13 +185,20 @@ export class WebviewGateway
    */
   private handleCallFunctionOnRequest(
     client: WebSocket,
-    protocol: any,
-    propertySnapshotsMap: Map<string, any[]>,
+    protocol: ProtocolMessage,
+    propertySnapshotsMap: PropertySnapshotsMap,
     modeLabel: string,
   ): void {
-    const objectId = protocol.params?.objectId;
-    const functionDeclaration = protocol.params?.functionDeclaration || "";
-    const args = protocol.params?.arguments || [];
+    const params = toParams(protocol.params);
+    const objectId =
+      typeof params.objectId === "string" ? params.objectId : undefined;
+    const functionDeclaration =
+      typeof params.functionDeclaration === "string"
+        ? params.functionDeclaration
+        : "";
+    const args: ReconstructArguments = Array.isArray(params.arguments)
+      ? (params.arguments as ReconstructArguments)
+      : [];
 
     this.logger.debug(
       `Runtime.callFunctionOn called for objectId: ${objectId}`,
@@ -316,7 +361,7 @@ export class WebviewGateway
       timestamp,
       type: null,
       eventType: "session_start",
-    } as any);
+    });
   }
 
   @SubscribeMessage("createRoom")
@@ -342,7 +387,7 @@ export class WebviewGateway
       deviceId: string;
       url: string;
       userAgent: string;
-      event: any;
+      event: BufferPlaybackEvent;
     },
   ): Promise<void> {
     try {
@@ -383,7 +428,10 @@ export class WebviewGateway
   // Connection handling
   // -------------------------------------------------------------------------
 
-  public async handleConnection(client: WebSocket, req: any): Promise<void> {
+  public async handleConnection(
+    client: WebSocket,
+    req: IncomingMessage,
+  ): Promise<void> {
     this.logger.log(`[WS_CONNECTION] New connection attempt (url=${req?.url})`);
 
     const devtoolsId = randomUUID();
@@ -442,13 +490,9 @@ export class WebviewGateway
       }, 100);
 
       client.on("message", async (message: string) => {
-        let protocol: any;
-        try {
-          protocol = JSON.parse(message);
-        } catch (error) {
-          this.logger.error(
-            `[RECORD_MODE_RECONNECT] Failed to parse message: ${(error as Error).message}`,
-          );
+        const protocol = parseProtocolMessage(message);
+        if (!protocol) {
+          this.logger.error("[RECORD_MODE_RECONNECT] Failed to parse message");
           return;
         }
         if (protocol.method === "Page.getResourceTree") {
@@ -501,13 +545,9 @@ export class WebviewGateway
       roomData.devtools.set(devtoolsId, client);
       this.devtoolsMap.set(client, { room, devtoolsId });
       client.on("message", (message: string) => {
-        let parsed: any;
-        try {
-          parsed = JSON.parse(message);
-        } catch (error) {
-          this.logger.error(
-            `[DEVTOOLS_MESSAGE] Failed to parse message: ${(error as Error).message}`,
-          );
+        const parsed = parseProtocolMessage(message);
+        if (!parsed) {
+          this.logger.error("[DEVTOOLS_MESSAGE] Failed to parse message");
           return;
         }
         this.handleDevtoolsMessage(room, parsed);
@@ -549,7 +589,7 @@ export class WebviewGateway
     this.logger.log(`Found ${runtimes.length} runtime records`);
 
     const runtimeEntries = runtimes.map((runtime) => {
-      const protocol = runtime.protocol as any;
+      const protocol = runtime.protocol as ProtocolMessage;
       this.sendMessage(client, protocol);
       return { protocol };
     });
@@ -559,21 +599,18 @@ export class WebviewGateway
 
     // Handle subsequent DevTools requests
     client.on("message", (message: string) => {
-      let protocol: any;
-      try {
-        protocol = JSON.parse(message);
-      } catch (error) {
-        this.logger.error(
-          `[RECORD_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
-        );
+      const protocol = parseProtocolMessage(message);
+      if (!protocol) {
+        this.logger.error("[RECORD_PLAYBACK] Failed to parse message");
         return;
       }
 
       // Network.getResponseBody
       if (protocol.method === "Network.getResponseBody") {
+        const params = toParams(protocol.params);
         const data = networks.find(
           (network) =>
-            network.requestId === protocol.params.requestId &&
+            network.requestId === params.requestId &&
             network.base64Encoded !== null,
         );
 
@@ -718,7 +755,7 @@ export class WebviewGateway
       for (const backup of deviceData) {
         for (const event of backup.bufferData) {
           allProtocols.push({
-            protocol: { method: event.method, params: event.params },
+            protocol: { method: event.method, params: toParams(event.params) },
             timestamp: event.timestamp,
             domain: event.method.split(".")[0],
           });
@@ -738,13 +775,9 @@ export class WebviewGateway
 
       // Handle subsequent DevTools requests
       client.on("message", (message: string) => {
-        let protocol: any;
-        try {
-          protocol = JSON.parse(message);
-        } catch (error) {
-          this.logger.error(
-            `[BACKUP_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
-          );
+        const protocol = parseProtocolMessage(message);
+        if (!protocol) {
+          this.logger.error("[BACKUP_PLAYBACK] Failed to parse message");
           return;
         }
 
@@ -822,7 +855,7 @@ export class WebviewGateway
   private async processS3BackupData(
     client: WebSocket,
     deviceId: string,
-    backupData: any[],
+    backupData: BufferUploadData[],
   ): Promise<void> {
     // Extract session start time from the oldest backup
     const sessionStartTime =
@@ -960,18 +993,14 @@ export class WebviewGateway
    */
   private registerS3PlaybackMessageHandler(
     client: WebSocket,
-    backupData: any[],
+    backupData: BufferUploadData[],
     deviceId: string,
-    propertySnapshotsMap: Map<string, any[]>,
+    propertySnapshotsMap: PropertySnapshotsMap,
   ): void {
     client.on("message", async (message: string) => {
-      let protocol: any;
-      try {
-        protocol = JSON.parse(message);
-      } catch (error) {
-        this.logger.error(
-          `[S3_PLAYBACK] Failed to parse message: ${(error as Error).message}`,
-        );
+      const protocol = parseProtocolMessage(message);
+      if (!protocol) {
+        this.logger.error("[S3_PLAYBACK] Failed to parse message");
         return;
       }
 
@@ -1025,8 +1054,8 @@ export class WebviewGateway
   /** Responds to Page.getResourceTree with a realistic page structure. */
   private handlePageGetResourceTree(
     client: WebSocket,
-    protocol: any,
-    backupData: any[],
+    protocol: ProtocolMessage,
+    backupData: BufferUploadData[],
   ): void {
     const mainUrl = backupData[0]?.url || "https://buffered-session.local";
 
@@ -1086,7 +1115,7 @@ export class WebviewGateway
   /** Responds to DOM.getDocument with cached DOM or a default structure. */
   private handleDomGetDocument(
     client: WebSocket,
-    protocol: any,
+    protocol: ProtocolMessage,
     deviceId: string,
   ): void {
     const domData = this.s3PlaybackService.findDomDataInS3Cache(client);
@@ -1174,13 +1203,16 @@ export class WebviewGateway
   /** Responds to Network.getResponseBody with cached data or a fallback HTML page. */
   private handleNetworkGetResponseBody(
     client: WebSocket,
-    protocol: any,
-    backupData: any[],
+    protocol: ProtocolMessage,
+    backupData: BufferUploadData[],
     deviceId: string,
   ): void {
+    const params = toParams(protocol.params);
+    const requestId =
+      typeof params.requestId === "number" ? params.requestId : NaN;
     const responseData = this.s3PlaybackService.findResponseBodyInS3Cache(
       client,
-      protocol.params?.requestId,
+      requestId,
     );
 
     const finalResponse = responseData || {
@@ -1227,27 +1259,21 @@ export class WebviewGateway
     }
 
     if (roomData?.recordMode) {
-      let protocol: any;
-      if (typeof data.message === "string") {
-        try {
-          protocol = JSON.parse(data.message);
-        } catch (err) {
-          this.logger.warn(
-            `[MESSAGE_TO_DEVTOOLS] Failed to parse message JSON: ${(err as Error).message}`,
-          );
-          return;
-        }
-      } else {
-        protocol = data.message;
+      const protocol = parseProtocolMessage(data.message);
+      if (!protocol) {
+        this.logger.warn("[MESSAGE_TO_DEVTOOLS] Failed to parse message JSON");
+        return;
       }
-      if (this.domService.isEnableDomResponseMessage(protocol.id)) {
+      const protocolId =
+        typeof protocol.id === "number" ? protocol.id : undefined;
+      if (this.domService.isEnableDomResponseMessage(protocolId)) {
         // DOM is enabled -- request DOM data
         this.sendMessage(client, {
           id: MSG_ID.DOM.GET_DOCUMENT,
           method: "DOM.getDocument",
           params: {},
         });
-      } else if (this.domService.isGetDomResponseMessage(protocol.id)) {
+      } else if (this.domService.isGetDomResponseMessage(protocolId)) {
         // DOM data received -- persist to DB (milliseconds -> nanoseconds)
         const timestamp = Date.now() * 1_000_000;
         void this.domService.upsert({
@@ -1265,13 +1291,9 @@ export class WebviewGateway
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
-    let protocol: any;
-    try {
-      protocol = JSON.parse(data.message);
-    } catch (error) {
-      this.logger.error(
-        `[PROTOCOL_TO_ALL] Failed to parse message: ${(error as Error).message}`,
-      );
+    const protocol = parseProtocolMessage(data.message);
+    if (!protocol || !hasProtocolMethod(protocol)) {
+      this.logger.error("[PROTOCOL_TO_ALL] Failed to parse message");
       return;
     }
     const roomData = this.rooms.get(data.room);
@@ -1280,13 +1302,18 @@ export class WebviewGateway
 
       if (roomData.recordMode) {
         const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
+        const params = toParams(protocol.params);
 
         // TODO: Improve domain-based message routing
-        if (protocol.params.requestId) {
+        if (params.requestId) {
+          const requestId =
+            typeof params.requestId === "number"
+              ? params.requestId
+              : Number(params.requestId);
           await this.networkService.create({
             recordId: roomData.recordId,
             protocol,
-            requestId: protocol.params?.requestId || null,
+            requestId,
             timestamp,
           });
         }
@@ -1310,8 +1337,9 @@ export class WebviewGateway
 
         if (protocol.method.startsWith("ScreenPreview.captured")) {
           // Determine event type
-          let eventType = "incremental_snapshot";
-          if (protocol.params?.isFirstSnapshot) {
+          let eventType: "full_snapshot" | "incremental_snapshot" =
+            "incremental_snapshot";
+          if (params.isFirstSnapshot) {
             eventType = "full_snapshot";
           }
 
@@ -1321,7 +1349,7 @@ export class WebviewGateway
             timestamp,
             type: "screenPreview",
             eventType: eventType,
-          } as any);
+          });
         }
       }
     } else {
@@ -1341,6 +1369,12 @@ export class WebviewGateway
   ): Promise<void> {
     const roomData = this.rooms.get(data.room);
     const recordId = roomData?.recordId;
+    if (!recordId) {
+      this.logger.warn(
+        `[UPDATE_RESPONSE_BODY] Missing recordId for room=${data.room}`,
+      );
+      return;
+    }
     await this.networkService.updateResponseBody({ recordId, ...data });
   }
 
@@ -1363,7 +1397,7 @@ export class WebviewGateway
           timestamp: endTime,
           type: null,
           eventType: "session_end",
-        } as any);
+        });
 
         // Calculate and update session duration
         const startEvent = await this.screenService.findScreens(

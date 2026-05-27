@@ -46,10 +46,7 @@ export const TabsContent = forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    className={cn(
-      "mt-3 focus-visible:outline-none animate-fade-in",
-      className,
-    )}
+    className={cn("mt-3 focus-visible:outline-none animate-fade-in", className)}
     {...props}
   />
 ));

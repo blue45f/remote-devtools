@@ -12,6 +12,14 @@ import { BaseS3Service, BufferUploadData } from "@remote-platform/core";
 
 export { BufferUploadData };
 
+type BufferChunk = {
+  events?: BufferUploadData["bufferData"];
+};
+
+type RecordLookupService = {
+  findOne: (recordId: number) => Promise<{ createdAt?: Date } | null>;
+};
+
 @Injectable()
 export class S3Service extends BaseS3Service {
   protected readonly logger = new Logger(S3Service.name);
@@ -1119,7 +1127,7 @@ export class S3Service extends BaseS3Service {
 
               if (rawData.bufferChunks && Array.isArray(rawData.bufferChunks)) {
                 const allEvents = rawData.bufferChunks.flatMap(
-                  (chunk: any) => chunk.events || [],
+                  (chunk: BufferChunk) => chunk.events || [],
                 );
 
                 convertedData = {
@@ -1185,7 +1193,7 @@ export class S3Service extends BaseS3Service {
     deviceId: string,
     date: string,
     currentTimestamp?: number, // current recording session timestamp (ms)
-    recordService?: any, // Record service for looking up creation time from DB
+    recordService?: RecordLookupService, // Record service for looking up creation time from DB
   ): Promise<BufferUploadData[]> {
     // Look up the actual creation time of the current recording session
     if (!currentTimestamp) {
@@ -1307,7 +1315,7 @@ export class S3Service extends BaseS3Service {
             if (rawData.bufferChunks && Array.isArray(rawData.bufferChunks)) {
               // New structure: merge all chunk events into a single array
               const allEvents = rawData.bufferChunks.flatMap(
-                (chunk: any) => chunk.events || [],
+                (chunk: BufferChunk) => chunk.events || [],
               );
 
               convertedData = {

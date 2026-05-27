@@ -9,6 +9,7 @@ describe("SlackService", () => {
   const mockFetch = vi.fn();
 
   beforeEach(async () => {
+    mockFetch.mockClear();
     vi.stubGlobal("fetch", mockFetch);
     process.env.SLACK_BOT_TOKEN = "xoxb-test-token";
 

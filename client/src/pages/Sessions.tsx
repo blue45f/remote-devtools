@@ -42,7 +42,11 @@ import {
 } from "@/components/ui/tooltip";
 import { apiFetch } from "@/lib/api";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
-import { formatDurationFromNanos, formatTimeAgo, shortHash } from "@/lib/format";
+import {
+  formatDurationFromNanos,
+  formatTimeAgo,
+  shortHash,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface SessionRecord {
@@ -280,9 +284,7 @@ export default function SessionsPage() {
                 <>
                   {" "}
                   matching filters{" "}
-                  <span className="text-fg-faint">
-                    (of {sessions.length})
-                  </span>
+                  <span className="text-fg-faint">(of {sessions.length})</span>
                 </>
               )}
             </>
@@ -651,9 +653,7 @@ function StatusDot({
           )}
         />
       </TooltipTrigger>
-      <TooltipContent>
-        {isRecording ? "Recorded" : "Completed"}
-      </TooltipContent>
+      <TooltipContent>{isRecording ? "Recorded" : "Completed"}</TooltipContent>
     </Tooltip>
   );
 }
@@ -835,4 +835,3 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
     </Card>
   );
 }
-

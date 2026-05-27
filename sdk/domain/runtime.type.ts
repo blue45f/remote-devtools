@@ -1,5 +1,5 @@
 export type CallArgument = {
-  value?: any; // Primitive or serializable JS object.
+  value?: unknown; // Primitive or serializable JS object.
   unserializableValue?: UnserializableValue; // Value that can't be JSON-stringified.
   objectId?: RemoteObjectId; // Remote object handle.
 };
@@ -38,7 +38,7 @@ export type DeepSerializedValue = {
     | "node"
     | "window"
     | "generator";
-  value: any;
+  value: unknown;
   objectId?: string;
   weakLocalObjectReference?: number; // Set if encountered more than once.
 };
@@ -53,7 +53,7 @@ export type ExceptionDetails = {
   stackTrace?: StackTrace;
   exception?: RemoteObject;
   executionContextId?: ExecutionContextId;
-  exceptionMetaData?: Record<string, any>; // Associated metadata, experimental.
+  exceptionMetaData?: Record<string, unknown>; // Associated metadata, experimental.
 };
 
 export type ExecutionContextDescription = {
@@ -98,7 +98,7 @@ export type RemoteObject = {
     | "bigint";
   subtype?: Subtype;
   className?: string;
-  value?: any;
+  value?: unknown;
   unserializableValue?: UnserializableValue;
   description?: string;
   deepSerializedValue?: DeepSerializedValue;

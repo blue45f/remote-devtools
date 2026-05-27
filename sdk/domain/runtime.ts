@@ -19,7 +19,7 @@ import {
 declare global {
   interface Window {
     $: typeof document.querySelector;
-    $_: any;
+    $_: unknown;
     $$: typeof document.querySelectorAll;
     $x<K extends keyof HTMLElementTagNameMap>(selector: K): (Node | null)[];
     $0: Node;
@@ -31,19 +31,27 @@ declare global {
     keys: typeof Object.keys;
     values: typeof Object.values;
     table: typeof console.table;
+    __REMOTE_DEBUG_RUNTIME_INSTANCE__?: Runtime;
+    __REMOTE_DEBUG_CONSOLE_HOOKED__?: boolean;
+    __REMOTE_DEBUG_ERROR_LISTENER_ADDED__?: boolean;
   }
 }
 
+type RuntimeProtocolEvent = {
+  method: (typeof Events)[keyof typeof Events];
+  params: Record<string, unknown>;
+};
+
 export class Runtime extends BaseDomain {
   public readonly namespace = "Runtime";
-  private cacheConsole: any[] = [];
-  private cacheError: any[] = [];
+  private cacheConsole: RuntimeProtocolEvent[] = [];
+  private cacheError: RuntimeProtocolEvent[] = [];
   private isEnable = false;
   // 녹화 세션 전환 시 재전송을 위한 백업 캐시
-  private sentConsoleCache: any[] = [];
-  private sentErrorCache: any[] = [];
+  private sentConsoleCache: RuntimeProtocolEvent[] = [];
+  private sentErrorCache: RuntimeProtocolEvent[] = [];
 
-  private socketSend = (type: string, data: unknown) => {
+  private socketSend = (type: string, data: RuntimeProtocolEvent) => {
     if (type === "console") {
       this.cacheConsole.push(data);
     } else if (type === "error") {
@@ -65,7 +73,7 @@ export class Runtime extends BaseDomain {
    * ```
    * @static
    */
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/explicit-member-accessibility
+
   private static setCommandLineApi() {
     if (typeof window.$ !== "function") {
       window.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
@@ -74,7 +82,7 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof window.clear !== "function") {
-      window.clear = () => console.clear();
+      window.clear = () => window.console.clear();
     }
 
     if (typeof window.copy !== "function") {
@@ -120,11 +128,11 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof window.dir !== "function") {
-      window.dir = (object) => console.dir(object);
+      window.dir = (object) => window.console.dir(object);
     }
 
     if (typeof window.dirxml !== "function") {
-      window.dirxml = (object) => console.dirxml(object);
+      window.dirxml = (object) => window.console.dirxml(object);
     }
 
     if (typeof window.keys !== "function") {
@@ -132,11 +140,11 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof window.values !== "function") {
-      window.values = (object: any) => Object.values(object);
+      window.values = (object: object) => Object.values(object);
     }
 
     if (typeof window.table !== "function") {
-      window.table = (object) => console.table(object);
+      window.table = (object) => window.console.table(object);
     }
   }
 
@@ -144,7 +152,7 @@ export class Runtime extends BaseDomain {
     super(option);
     // 최신 Runtime 인스턴스를 window에 저장 (클로저 문제 해결)
     // Runtime이 여러 번 생성되어도 항상 최신 인스턴스의 캐시로 로그가 저장됨
-    (window as any).__REMOTE_DEBUG_RUNTIME_INSTANCE__ = this;
+    window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ = this;
 
     // enable() 전에 발생하는 로그도 캐시하기 위해 미리 후킹
     // 중복 방지 로직이 있으므로 enable()에서 다시 호출해도 안전
@@ -157,29 +165,28 @@ export class Runtime extends BaseDomain {
    * @static
    * @param {Error} error
    */
-  public static getCallFrames(error?: Error): any {
-    let callFrames = [];
+  public static getCallFrames(error?: Error): unknown[] {
     if (error) {
-      callFrames = ErrorStackParser.parse(error).map((frame) => ({
+      return ErrorStackParser.parse(error).map((frame) => ({
         ...frame,
         url: frame.fileName,
       }));
       // Safari does not support captureStackTrace
-    } else if (Error.captureStackTrace !== undefined) {
-      callFrames = callsites().map((val) => ({
+    }
+
+    if (Error.captureStackTrace !== undefined) {
+      return callsites().map((val) => ({
         functionName: val.getFunctionName(),
         lineNumber: val.getLineNumber(),
         columnNumber: val.getColumnNumber(),
         url: val.getFileName(),
       }));
-    } else {
-      callFrames = ErrorStackParser.parse(new Error()).map((frame) => ({
-        ...frame,
-        url: frame.fileName,
-      }));
     }
 
-    return callFrames;
+    return ErrorStackParser.parse(new Error()).map((frame) => ({
+      ...frame,
+      url: frame.fileName,
+    }));
   }
 
   /**
@@ -188,15 +195,15 @@ export class Runtime extends BaseDomain {
    */
   private hookConsole() {
     // HMR 환경에서도 유지되는 중복 후킹 방지 (window 객체에 저장)
-    if ((window as any).__REMOTE_DEBUG_CONSOLE_HOOKED__) {
+    if (window.__REMOTE_DEBUG_CONSOLE_HOOKED__) {
       return;
     }
-    (window as any).__REMOTE_DEBUG_CONSOLE_HOOKED__ = true;
+    window.__REMOTE_DEBUG_CONSOLE_HOOKED__ = true;
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
     // Runtime이 여러 번 생성되어도 항상 최신 인스턴스로 전달됨
     const getRuntimeInstance = (): Runtime =>
-      (window as any).__REMOTE_DEBUG_RUNTIME_INSTANCE__;
+      window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
     const methods: Record<ConsoleKeys, string> = {
       info: "info",
@@ -268,7 +275,7 @@ export class Runtime extends BaseDomain {
             }
           });
 
-          const data = {
+          const data: RuntimeProtocolEvent = {
             method: Events.consoleAPICalled,
             params: {
               type: methods[key],
@@ -300,17 +307,24 @@ export class Runtime extends BaseDomain {
    */
   private listenError(): void {
     // HMR 환경에서도 유지되는 중복 리스너 방지 (window 객체에 저장)
-    if ((window as any).__REMOTE_DEBUG_ERROR_LISTENER_ADDED__) {
+    if (window.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__) {
       return;
     }
-    (window as any).__REMOTE_DEBUG_ERROR_LISTENER_ADDED__ = true;
+    window.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__ = true;
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
     const getRuntimeInstance = (): Runtime =>
-      (window as any).__REMOTE_DEBUG_RUNTIME_INSTANCE__;
+      window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
-    const exceptionThrown = (error: any) => {
-      const data = {
+    const exceptionThrown = (error: unknown) => {
+      const exception =
+        error instanceof Error
+          ? {
+              name: error.name,
+              stack: error.stack,
+            }
+          : null;
+      const data: RuntimeProtocolEvent = {
         method: Events.exceptionThrown,
         params: {
           timestamp: Date.now(),
@@ -319,11 +333,12 @@ export class Runtime extends BaseDomain {
             exception: {
               type: "object",
               subtype: "error",
-              className: error ? error.name : "Error",
-              description: error ? error.stack : "Script error.",
+              className: exception?.name ?? "Error",
+              description: exception?.stack ?? "Script error.",
             },
             stackTrace: {
-              callFrames: Runtime.getCallFrames(error),
+              callFrames:
+                error instanceof Error ? Runtime.getCallFrames(error) : [],
             },
           },
         },
@@ -417,8 +432,8 @@ export class Runtime extends BaseDomain {
   } {
     // Modifying the scope to the global scope enables variables defined
     // with var to be accessible globally.
-    // eslint-disable-next-line
-    const res = window.eval(expression)
+
+    const res = window.eval(expression);
     // chrome-api
     window.$_ = res;
     return {
@@ -458,36 +473,31 @@ export class Runtime extends BaseDomain {
     functionDeclaration: string;
     objectId: string;
     arguments: {
-      value: any;
+      value: unknown;
       unserializableValue: string;
       objectId: string;
     }[];
     silent: boolean;
-  }):
-    | {
-        result: any;
-        exceptionDetails: any;
-      }
-    | undefined {
-    /** @type {Function} */
-    // eslint-disable-next-line no-eval
-    const fun = eval(`(() => ${functionDeclaration})()`);
-    if (Array.isArray(args)) {
-      args = args.map((v) => {
-        if (v.value) return v.value;
-        if (v.objectId) return getObjectById(v.objectId);
+  }): unknown | undefined {
+    const fun = Function(
+      `"use strict"; return (${functionDeclaration});`,
+    )() as (...args: unknown[]) => unknown;
+    const callArgs = Array.isArray(args)
+      ? args.map((v) => {
+          if (Object.prototype.hasOwnProperty.call(v, "value")) return v.value;
+          if (v.objectId) return getObjectById(v.objectId);
 
-        return undefined;
-      });
-    }
+          return undefined;
+        })
+      : args;
     if (silent === true) {
       try {
-        return fun.apply(objectId ? getObjectById(objectId) : null, args);
-      } catch (error) {
+        return fun.apply(objectId ? getObjectById(objectId) : null, callArgs);
+      } catch {
         //
       }
     } else {
-      return fun.apply(objectId ? getObjectById(objectId) : null, args);
+      return fun.apply(objectId ? getObjectById(objectId) : null, callArgs);
     }
   }
 }
@@ -517,7 +527,7 @@ function callsites() {
       return callSitesWithoutCurrent;
     };
 
-    new Error().stack;
+    void new Error().stack;
     return result;
   } finally {
     Error.prepareStackTrace = _prepareStackTrace;

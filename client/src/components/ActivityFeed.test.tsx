@@ -18,7 +18,9 @@ describe("ActivityFeed", () => {
   it("hydrates feed entries from the seed router", async () => {
     renderWithProviders(<ActivityFeed pollMs={0} />);
     await waitFor(() => {
-      expect(screen.getAllByText(/Recorded session/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Recorded session/i).length).toBeGreaterThan(
+        0,
+      );
     });
   });
 

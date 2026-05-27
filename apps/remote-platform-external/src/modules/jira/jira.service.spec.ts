@@ -3,6 +3,8 @@ import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { UserInfoService } from "../user-info/user-info.service";
+import type { UserData } from "../webview/webview.types";
+import { getDefaultCommonInfo } from "../../utils/common-info";
 
 import { JiraService } from "./jira.service";
 
@@ -50,11 +52,22 @@ describe("JiraService", () => {
   });
 
   describe("createTicket", () => {
-    const mockUserData = {
+    const defaultCommonInfo = getDefaultCommonInfo();
+    const mockUserData: UserData = {
       commonInfo: {
-        device: { deviceId: "test-device-123" },
-        user: { memberId: "user-1" },
+        ...defaultCommonInfo,
+        device: {
+          ...defaultCommonInfo.device,
+          deviceId: "test-device-123",
+        },
+        user: {
+          ...defaultCommonInfo.user,
+          memberId: "user-1",
+        },
       },
+      userAgent: "test-agent",
+      URL: "https://example.com",
+      webTitle: "Example",
     };
 
     it("should throw when jiraProjectKey is not configured", async () => {
@@ -67,7 +80,7 @@ describe("JiraService", () => {
         service.createTicket({
           roomName: "Room-1",
           recordId: 1,
-          userData: mockUserData as any,
+          userData: mockUserData,
         }),
       ).rejects.toThrow("Jira project key is not configured");
     });
@@ -79,7 +92,7 @@ describe("JiraService", () => {
         service.createTicket({
           roomName: "Room-1",
           recordId: 1,
-          userData: mockUserData as any,
+          userData: mockUserData,
         }),
       ).rejects.toThrow();
     });

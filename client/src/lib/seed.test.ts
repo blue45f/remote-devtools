@@ -60,7 +60,8 @@ describe("buildTicketTrend / buildRecordTrend", () => {
   it("each ticket trend item sums roles into 'created' total", () => {
     const trend = buildTicketTrend("day");
     for (const item of trend) {
-      const sum = item.developer + item.designer + item.pm + item.qa + item.other;
+      const sum =
+        item.developer + item.designer + item.pm + item.qa + item.other;
       expect(sum).toBe(item.created);
     }
   });
@@ -69,9 +70,12 @@ describe("buildTicketTrend / buildRecordTrend", () => {
 describe("buildSeedSessionMeta + buildSeedEvents", () => {
   it("returns a metadata record for known seed ids", () => {
     const sessions = buildSeedSessions();
-    const meta = buildSeedSessionMeta(sessions[0]!.id);
-    expect(meta.id).toBe(sessions[0]!.id);
-    expect(meta.url).toBe(sessions[0]!.url);
+    const firstSession = sessions[0];
+    expect(firstSession).toBeDefined();
+    if (!firstSession) throw new Error("Expected at least one seeded session");
+    const meta = buildSeedSessionMeta(firstSession.id);
+    expect(meta.id).toBe(firstSession.id);
+    expect(meta.url).toBe(firstSession.url);
   });
 
   it("falls back gracefully for unknown ids", () => {
@@ -79,5 +83,4 @@ describe("buildSeedSessionMeta + buildSeedEvents", () => {
     expect(meta.id).toBe(999_999);
     expect(meta.recordMode).toBe(true);
   });
-
 });

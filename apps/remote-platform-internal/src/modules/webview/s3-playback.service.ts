@@ -1,9 +1,36 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Injectable, Logger } from "@nestjs/common";
 import * as WebSocket from "ws";
 
 import { ProtocolEntry } from "./webview.types";
+
+type ResponseBodyCacheValue = { body: string; base64Encoded: boolean };
+
+export type S3BackupSession = {
+  room?: string;
+  sessionStartTime?: number;
+  timestamp?: number;
+  bufferData?: unknown;
+};
+
+type S3BackupEvent = {
+  method: string;
+  params?: Record<string, unknown>;
+  timestamp?: number;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isS3BackupEvent = (value: unknown): value is S3BackupEvent =>
+  isRecord(value) && typeof value.method === "string";
+
+const getNumberParam = (
+  params: Record<string, unknown> | undefined,
+  key: string,
+): number | undefined => {
+  const value = params?.[key];
+  return typeof value === "number" ? value : undefined;
+};
 
 /**
  * Service responsible for S3 backup playback and data loading logic.
@@ -16,11 +43,11 @@ export class S3PlaybackService {
   /** Caches response bodies per client for S3 backup playback. */
   private readonly s3ResponseBodyCache: Map<
     WebSocket,
-    Map<number, { body: string; base64Encoded: boolean }>
+    Map<number, ResponseBodyCacheValue>
   > = new Map();
 
   /** Caches full S3 backup data per client for on-demand queries. */
-  private readonly s3BackupCache: Map<WebSocket, any[]> = new Map();
+  private readonly s3BackupCache: Map<WebSocket, S3BackupSession[]> = new Map();
 
   // -------------------------------------------------------------------------
   // Public API - Cache Management
@@ -29,11 +56,14 @@ export class S3PlaybackService {
   /**
    * Initializes caches for a client session.
    */
-  public initializeClientCaches(client: WebSocket, backupData: any[]): void {
+  public initializeClientCaches(
+    client: WebSocket,
+    backupData: S3BackupSession[],
+  ): void {
     this.s3BackupCache.set(client, backupData);
     this.s3ResponseBodyCache.set(
       client,
-      new Map<number, { body: string; base64Encoded: boolean }>(),
+      new Map<number, ResponseBodyCacheValue>(),
     );
   }
 
@@ -50,14 +80,14 @@ export class S3PlaybackService {
    */
   public getResponseBodyCache(
     client: WebSocket,
-  ): Map<number, { body: string; base64Encoded: boolean }> | undefined {
+  ): Map<number, ResponseBodyCacheValue> | undefined {
     return this.s3ResponseBodyCache.get(client);
   }
 
   /**
    * Gets the backup data cache for a client.
    */
-  public getBackupCache(client: WebSocket): any[] | undefined {
+  public getBackupCache(client: WebSocket): S3BackupSession[] | undefined {
     return this.s3BackupCache.get(client);
   }
 
@@ -68,7 +98,7 @@ export class S3PlaybackService {
   /**
    * Extracts the session start time from backup data.
    */
-  public extractSessionStartTime(backupData: any[]): number | null {
+  public extractSessionStartTime(backupData: S3BackupSession[]): number | null {
     if (backupData.length === 0) return null;
 
     const backupWithTime = backupData.find((backup) => backup.sessionStartTime);
@@ -99,8 +129,8 @@ export class S3PlaybackService {
    * Returns separate arrays for Network, Runtime, SessionReplay, and other protocols.
    */
   public classifyBackupEvents(
-    backupData: any[],
-    responseBodyCache: Map<number, { body: string; base64Encoded: boolean }>,
+    backupData: S3BackupSession[],
+    responseBodyCache: Map<number, ResponseBodyCacheValue>,
   ): {
     networkProtocols: ProtocolEntry[];
     runtimeProtocols: ProtocolEntry[];
@@ -129,24 +159,29 @@ export class S3PlaybackService {
       totalEvents += backup.bufferData.length;
 
       for (const event of backup.bufferData) {
-        if (!event || typeof event !== "object" || !event.method) continue;
+        if (!isS3BackupEvent(event)) continue;
 
         // Skip metadata events (not real CDP events)
         if (event.method === "buffering.saveSession") continue;
 
         // Cache updateResponseBody events (same lookup logic as DB playback)
-        if (event.method === "updateResponseBody" && event.params?.requestId) {
-          responseBodyCache.set(event.params.requestId, {
-            body: event.params.body || "",
-            base64Encoded: event.params.base64Encoded || false,
+        const requestId = getNumberParam(event.params, "requestId");
+        if (event.method === "updateResponseBody" && requestId !== undefined) {
+          responseBodyCache.set(requestId, {
+            body:
+              typeof event.params?.body === "string" ? event.params.body : "",
+            base64Encoded: event.params?.base64Encoded === true,
           });
         }
+
+        const timestamp =
+          typeof event.timestamp === "number" ? event.timestamp : 0;
 
         // Classify Session Replay events separately
         if (event.method.startsWith("SessionReplay.")) {
           sessionReplayProtocols.push({
-            protocol: { method: event.method, params: event.params },
-            timestamp: event.timestamp,
+            protocol: { method: event.method, params: event.params ?? {} },
+            timestamp,
             domain: "SessionReplay",
           });
           continue;
@@ -154,10 +189,10 @@ export class S3PlaybackService {
 
         // Standard CDP event classification
         const protocolData: ProtocolEntry = {
-          protocol: { method: event.method, params: event.params },
-          timestamp: event.timestamp,
+          protocol: { method: event.method, params: event.params ?? {} },
+          timestamp,
           domain: event.method.split(".")[0],
-          requestId: event.params?.requestId,
+          requestId,
         };
 
         if (event.method.startsWith("Network.")) {
@@ -216,18 +251,18 @@ export class S3PlaybackService {
   /**
    * Finds the latest DOM data from the S3 backup cache.
    */
-  public findDomDataInS3Cache(client: WebSocket): any | null {
+  public findDomDataInS3Cache(client: WebSocket): unknown | null {
     const cachedBackupData = this.s3BackupCache.get(client);
     if (!cachedBackupData) return null;
 
-    let latestDomData: any = null;
+    let latestDomData: unknown = null;
     let latestTimestamp = 0;
 
     for (const backup of cachedBackupData) {
       if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
 
       for (const event of backup.bufferData) {
-        if (!event || typeof event !== "object" || !event.method) continue;
+        if (!isS3BackupEvent(event)) continue;
 
         if (event.method === "DOM.updated" && event.params && event.timestamp) {
           if (event.timestamp > latestTimestamp) {
@@ -236,14 +271,17 @@ export class S3PlaybackService {
           }
         }
 
+        const result = isRecord(event.params?.result)
+          ? event.params.result
+          : null;
         if (
           event.method === "DOM.getDocument" &&
-          event.params?.result?.root &&
+          result?.root &&
           event.timestamp
         ) {
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
-            latestDomData = event.params.result.root;
+            latestDomData = result.root;
           }
         }
       }
@@ -261,17 +299,19 @@ export class S3PlaybackService {
   /**
    * Finds the latest screen capture data from the S3 backup cache.
    */
-  public findScreenDataInS3Cache(client: WebSocket): any | null {
+  public findScreenDataInS3Cache(client: WebSocket): unknown | null {
     const cachedBackupData = this.s3BackupCache.get(client);
     if (!cachedBackupData) return null;
 
-    let latestScreenData: any = null;
+    let latestScreenData: unknown = null;
     let latestTimestamp = 0;
 
     for (const backup of cachedBackupData) {
       if (!backup.bufferData || !Array.isArray(backup.bufferData)) continue;
 
       for (const event of backup.bufferData) {
+        if (!isS3BackupEvent(event)) continue;
+
         if (
           event.method === "ScreenPreview.captured" &&
           event.params &&

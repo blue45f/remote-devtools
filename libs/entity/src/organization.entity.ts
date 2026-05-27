@@ -17,6 +17,15 @@ import {
  * the table can stay empty.
  */
 export type OrganizationPlan = "free" | "starter" | "pro";
+export type OrganizationSubscriptionStatus =
+  | "incomplete"
+  | "incomplete_expired"
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid"
+  | "paused";
 
 @Entity("organizations")
 @Index(["slug"], { unique: true })
@@ -43,6 +52,41 @@ export class OrganizationEntity {
   /** Billing-side identifier when Stripe is connected. */
   @Column({ name: "stripe_customer_id", type: "varchar", nullable: true })
   public stripeCustomerId?: string | null;
+
+  /** Billing provider that owns the subscription state. */
+  @Column({
+    name: "billing_provider",
+    type: "varchar",
+    length: 32,
+    nullable: true,
+  })
+  public billingProvider?: string | null;
+
+  /** Provider-side subscription identifier. */
+  @Column({
+    name: "billing_subscription_id",
+    type: "varchar",
+    length: 128,
+    nullable: true,
+  })
+  public billingSubscriptionId?: string | null;
+
+  /** Last normalized provider subscription status. */
+  @Column({
+    name: "subscription_status",
+    type: "varchar",
+    length: 32,
+    nullable: true,
+  })
+  public subscriptionStatus?: OrganizationSubscriptionStatus | null;
+
+  /** End of the current paid period, when supplied by the provider. */
+  @Column({
+    name: "subscription_current_period_end",
+    type: "timestamp",
+    nullable: true,
+  })
+  public subscriptionCurrentPeriodEnd?: Date | null;
 
   @CreateDateColumn({ name: "created_at" })
   public createdAt: Date;

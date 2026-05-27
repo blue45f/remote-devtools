@@ -1,3 +1,11 @@
+declare global {
+  interface Window {
+    JavaScriptInterface?: {
+      getCommonInfo: (callbackName: string) => void;
+    };
+  }
+}
+
 /**
  * 방 주소를 변환하는 함수
  */
@@ -21,11 +29,9 @@ export const convertLink = (room: string, recordId: number | null) => {
  * 네이티브 앱에서 공통 정보를 가져오는 함수
  */
 export const getCommonInfo = () => {
-  const ctx = window as any;
-
-  if (!("JavaScriptInterface" in ctx)) {
+  if (!window.JavaScriptInterface) {
     return;
   }
 
-  ctx.JavaScriptInterface.getCommonInfo("REMOTE_DEBUG_SDK_COMMON_INFO");
+  window.JavaScriptInterface.getCommonInfo("REMOTE_DEBUG_SDK_COMMON_INFO");
 };

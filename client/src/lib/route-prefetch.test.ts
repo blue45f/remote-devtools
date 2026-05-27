@@ -21,7 +21,11 @@ describe("prefetchRoute", () => {
 
   it("triggers a dynamic import for a known exact path", async () => {
     const { prefetchRoute } = await import("./route-prefetch");
-    const spy = vi.spyOn(globalThis as unknown as { console: Console }, "console", "get");
+    const spy = vi.spyOn(
+      globalThis as unknown as { console: Console },
+      "console",
+      "get",
+    );
     expect(() => prefetchRoute("/sessions")).not.toThrow();
     spy.mockRestore?.();
   });

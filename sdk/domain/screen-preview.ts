@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { isElement, isMobile } from "../common/utils";
+import { logger } from "../utils/logger";
 
 import { BaseDomain } from "./base";
 import { Events } from "./protocol";
@@ -109,7 +108,9 @@ export class ScreenPreview extends BaseDomain {
       if (this.isDebuggerUIVisible()) {
         if (!this.isPaused) {
           this.isPaused = true;
-          console.log("[ScreenPreview] Paused - debugger UI is visible");
+          logger.remote.debug(
+            "[ScreenPreview] Paused - debugger UI is visible",
+          );
         }
         return;
       } else {
@@ -289,7 +290,7 @@ export class ScreenPreview extends BaseDomain {
 /**
  * 쓰로틀 헬퍼 함수
  */
-function throttle<T extends (...args: any[]) => void>(
+function throttle<T extends (...args: never[]) => void>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {

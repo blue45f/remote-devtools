@@ -113,7 +113,7 @@ export class FigmaController {
         // 1. Look up by username first
         let user = await this.userRepository.findOne({
           where: { username: userData.username },
-          relations: ["deviceInfoList"],
+          relations: { deviceInfoList: true },
         });
 
         // 2. Fall back to looking up by display name
@@ -123,7 +123,7 @@ export class FigmaController {
           );
           user = await this.userRepository.findOne({
             where: { name: userData.username },
-            relations: ["deviceInfoList"],
+            relations: { deviceInfoList: true },
           });
         }
 

@@ -25,7 +25,9 @@ describe("buildSeedRrwebEvents", () => {
     const start = 1_700_000_000_000;
     const events = buildSeedRrwebEvents(start);
     for (let i = 1; i < events.length; i++) {
-      expect(events[i].timestamp).toBeGreaterThanOrEqual(events[i - 1].timestamp);
+      expect(events[i].timestamp).toBeGreaterThanOrEqual(
+        events[i - 1].timestamp,
+      );
     }
   });
 

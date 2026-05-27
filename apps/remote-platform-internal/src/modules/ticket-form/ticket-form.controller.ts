@@ -112,7 +112,7 @@ export class TicketFormController {
     try {
       const device = await this.deviceRepository.findOne({
         where: { deviceId: actualDeviceId },
-        relations: ["user", "user.ticketTemplateList"],
+        relations: { user: { ticketTemplateList: true } },
       });
 
       if (!device) {
@@ -208,7 +208,7 @@ export class TicketFormController {
       // Simultaneously update the last selected template name
       const device = await this.deviceRepository.findOne({
         where: { deviceId: actualDeviceId },
-        relations: ["user"],
+        relations: { user: true },
       });
 
       if (device && device.user) {
@@ -263,7 +263,7 @@ export class TicketFormController {
     try {
       const device = await this.deviceRepository.findOne({
         where: { deviceId: actualDeviceId },
-        relations: ["user", "user.ticketTemplateList"],
+        relations: { user: { ticketTemplateList: true } },
       });
 
       if (!device) {

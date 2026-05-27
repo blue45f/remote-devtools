@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+if (process.env.FORCE_COLOR) {
+  delete process.env.NO_COLOR;
+}
+
 /**
  * Playwright configuration for the demo build.
  *
@@ -40,7 +44,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "VITE_FORCE_DEMO=true pnpm build && pnpm preview --host 127.0.0.1 --port 4173",
+    command:
+      "VITE_FORCE_DEMO=true pnpm build && pnpm preview --host 127.0.0.1 --port 4173",
     url: "http://localhost:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

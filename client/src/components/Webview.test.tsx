@@ -3,14 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Hoisted mock so the factory closes over a real reference.
-const { createDebuggerMock } = vi.hoisted(() => ({
+const { axiosGetMock, createDebuggerMock } = vi.hoisted(() => ({
+  axiosGetMock: vi.fn(),
   createDebuggerMock: vi.fn(),
+}));
+vi.mock("axios", () => ({
+  default: {
+    get: axiosGetMock,
+  },
 }));
 vi.mock("remote-debug-sdk", () => ({
   createDebugger: createDebuggerMock,
 }));
 
 import { WebviewPage } from "./Webview";
+
+let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
 function clearInjectedScripts() {
   document.head
@@ -19,11 +27,17 @@ function clearInjectedScripts() {
 }
 
 beforeEach(() => {
+  axiosGetMock.mockReset();
+  axiosGetMock.mockResolvedValue({ data: { ok: true } });
+  consoleLogSpy = vi
+    .spyOn(globalThis.console, "log")
+    .mockImplementation(() => undefined);
   createDebuggerMock.mockClear();
   clearInjectedScripts();
 });
 
 afterEach(() => {
+  consoleLogSpy.mockRestore();
   clearInjectedScripts();
 });
 
@@ -59,6 +73,18 @@ describe("WebviewPage", () => {
     expect(
       screen.getByRole("heading", { name: /SDK debug panel/ }),
     ).toBeInTheDocument();
+  });
+
+  it("uses axios for the Axios sample request", async () => {
+    const user = userEvent.setup();
+    render(<WebviewPage />);
+
+    await user.click(screen.getByRole("tab", { name: /Debug actions/ }));
+    await user.click(screen.getByRole("button", { name: /Axios/ }));
+
+    expect(axiosGetMock).toHaveBeenCalledWith(
+      "https://jsonplaceholder.typicode.com/todos/3",
+    );
   });
 
   it("shows the SDK badge that matches the chosen kind", () => {

@@ -9,6 +9,7 @@ describe("ImageBase64Service", () => {
   const mockFetch = vi.fn();
 
   beforeEach(async () => {
+    mockFetch.mockClear();
     vi.stubGlobal("fetch", mockFetch);
     const module: TestingModule = await Test.createTestingModule({
       providers: [ImageBase64Service],

@@ -17,12 +17,30 @@ vi.mock("fs", () => ({
   readdirSync: vi.fn().mockReturnValue([]),
 }));
 
-vi.mock("@aws-sdk/client-s3", () => ({
-  S3Client: vi.fn().mockImplementation(() => ({ send: vi.fn() })),
-  PutObjectCommand: vi.fn(),
-  ListObjectsV2Command: vi.fn(),
-  GetObjectCommand: vi.fn(),
-}));
+vi.mock("@aws-sdk/client-s3", () => {
+  class S3Client {
+    public readonly send = vi.fn();
+  }
+
+  class PutObjectCommand {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  class ListObjectsV2Command {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  class GetObjectCommand {
+    public constructor(public readonly input: unknown) {}
+  }
+
+  return {
+    S3Client,
+    PutObjectCommand,
+    ListObjectsV2Command,
+    GetObjectCommand,
+  };
+});
 
 describe("S3Service (External)", () => {
   let service: S3Service;

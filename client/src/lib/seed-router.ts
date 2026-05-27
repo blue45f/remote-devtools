@@ -20,11 +20,13 @@ export function resolveSeed<T>(path: string): T | undefined {
   }
   // /api/dashboard/tickets/trend?period=...
   if (path.startsWith("/api/dashboard/tickets/trend")) {
-    const period = new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
+    const period =
+      new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
     return { data: buildTicketTrend(period) } as T;
   }
   if (path.startsWith("/api/dashboard/record-sessions/trend")) {
-    const period = new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
+    const period =
+      new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
     return { data: buildRecordTrend(period) } as T;
   }
   // /sessions, /sessions/record (with optional pagination/search query string)
@@ -52,7 +54,9 @@ export function resolveSeed<T>(path: string): T | undefined {
   if (metaMatch) {
     return buildSeedSessionMeta(Number(metaMatch[1])) as unknown as T;
   }
-  const eventsMatch = path.match(/^\/api\/session-replay\/sessions\/(\d+)\/events$/);
+  const eventsMatch = path.match(
+    /^\/api\/session-replay\/sessions\/(\d+)\/events$/,
+  );
   if (eventsMatch) {
     const meta = buildSeedSessionMeta(Number(eventsMatch[1]));
     const start = new Date(meta.createdAt ?? Date.now()).getTime();

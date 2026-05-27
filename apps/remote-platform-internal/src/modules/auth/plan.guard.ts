@@ -3,12 +3,16 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
   SetMetadata,
 } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
+import { ModuleRef, Reflector } from "@nestjs/core";
 import type { Request } from "express";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import type { Repository } from "typeorm";
 
 import type { AuthClaims } from "./auth.service";
+import { OrganizationEntity, type OrganizationPlan } from "@remote-platform/entity";
 
 export type Plan = "free" | "starter" | "pro";
 
@@ -23,6 +27,21 @@ const PLAN_RANK: Record<Plan, number> = {
 };
 
 const PLAN_META_KEY = "rd:requiredPlan";
+
+function toPlan(value: unknown): OrganizationPlan | null {
+  if (
+    value === "free" ||
+    value === "starter" ||
+    value === "pro"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+function organizationPlanFromClaims(plan: unknown): OrganizationPlan | null {
+  return toPlan(plan);
+}
 
 /**
  * Decorator: gate a controller or handler behind a minimum plan tier.
@@ -43,9 +62,14 @@ export const RequirePlan = (plan: Plan) => SetMetadata(PLAN_META_KEY, plan);
 
 @Injectable()
 export class PlanGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  private readonly logger = new Logger(PlanGuard.name);
 
-  canActivate(context: ExecutionContext): boolean {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly moduleRef: ModuleRef,
+  ) {}
+
+  public async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<Plan | undefined>(
       PLAN_META_KEY,
       [context.getHandler(), context.getClass()],
@@ -55,7 +79,14 @@ export class PlanGuard implements CanActivate {
     const req = context
       .switchToHttp()
       .getRequest<Request & { auth?: AuthClaims }>();
-    const callerPlan = req.auth?.plan;
+    const orgPlan = await this.getPlanByOrganization(req.auth?.org);
+    const claimPlan = organizationPlanFromClaims(req.auth?.plan);
+    if (!orgPlan && req.auth?.plan !== undefined && !claimPlan) {
+      throw new ForbiddenException(
+        `Invalid plan claim "${req.auth?.plan}" on this token.`,
+      );
+    }
+    const callerPlan = orgPlan ?? claimPlan;
 
     // No claims at all → AuthGuard didn't run or is disabled. We do not want
     // to block self-host single-tenant deployments, so allow through.
@@ -69,5 +100,34 @@ export class PlanGuard implements CanActivate {
       );
     }
     return true;
+  }
+
+  private async getPlanByOrganization(orgId?: string): Promise<OrganizationPlan | null> {
+    const normalizedOrgId = orgId?.trim();
+    if (!normalizedOrgId) {
+      return null;
+    }
+
+    const repository = this.moduleRef.get<Repository<OrganizationEntity> | undefined>(
+      getRepositoryToken(OrganizationEntity),
+      { strict: false },
+    );
+    if (!repository) {
+      return null;
+    }
+
+    try {
+      const organization = await repository.findOne({
+        where: [{ id: normalizedOrgId }, { slug: normalizedOrgId }],
+      });
+      return organization?.plan ? toPlan(organization.plan) : null;
+    } catch (error) {
+      this.logger.warn(
+        `[PLAN_GUARD] failed to load organization plan for org "${normalizedOrgId}": ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
   }
 }
