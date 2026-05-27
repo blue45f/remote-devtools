@@ -8,7 +8,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import type { Logger } from "@nestjs/common";
-import { getLocalDate, getLocalDateString } from "@remote-platform/constants";
+import { getLocalDateString } from "@remote-platform/constants";
 import { LRUCache } from "lru-cache";
 
 // ---------------------------------------------------------------------------
@@ -446,24 +446,19 @@ export abstract class BaseS3Service {
    * 조회할 날짜 후보 목록을 생성한다 (KST 기준).
    */
   protected buildSearchDates(targetDate?: string): string[] {
+    const shiftDateString = (dateString: string, days: number): string => {
+      const [year, month, day] = dateString.split("-").map(Number);
+      return new Date(Date.UTC(year, month - 1, day + days))
+        .toISOString()
+        .split("T")[0];
+    };
+
     if (targetDate) {
-      const baseDate = new Date(targetDate);
-      const dates: string[] = [];
-      for (let i = -1; i <= 0; i++) {
-        const checkDate = new Date(baseDate);
-        checkDate.setDate(baseDate.getDate() + i);
-        dates.push(checkDate.toISOString().split("T")[0]);
-      }
-      return dates;
+      return [shiftDateString(targetDate, -1), targetDate];
     }
 
-    const today = getLocalDate();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return [
-      getLocalDateString(today.getTime()),
-      getLocalDateString(yesterday.getTime()),
-    ];
+    const today = getLocalDateString();
+    return [today, shiftDateString(today, -1)];
   }
 
   /**
