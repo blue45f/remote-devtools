@@ -23,6 +23,7 @@ export function CommandPalette() {
   const setTheme = useAppStore((s) => s.setTheme);
   const demoMode = useAppStore((s) => s.demoMode);
   const toggleDemoMode = useAppStore((s) => s.toggleDemoMode);
+  const setShortcutsOpen = useAppStore((s) => s.setShortcutsOpen);
 
   const run = (fn: () => void) => {
     fn();
@@ -108,31 +109,17 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Keyboard shortcuts">
-          {SHORTCUTS.map((s) => (
-            <CommandItem
-              key={s.label}
-              value={`shortcut ${s.label}`}
-              // Selecting these is a no-op on purpose — they exist as
-              // discoverable documentation, not as actions.
-              onSelect={() => setCommandOpen(false)}
-              className="cursor-default"
-            >
-              <Keyboard />
-              <span>{s.label}</span>
-              <CommandShortcut>{s.combo}</CommandShortcut>
-            </CommandItem>
-          ))}
+        <CommandGroup heading="Help">
+          <CommandItem
+            value="show keyboard shortcuts"
+            onSelect={() => run(() => setShortcutsOpen(true))}
+          >
+            <Keyboard />
+            <span>Keyboard shortcuts</span>
+            <CommandShortcut>?</CommandShortcut>
+          </CommandItem>
         </CommandGroup>
       </CommandList>
     </CommandDialog>
   );
 }
-
-const SHORTCUTS: { label: string; combo: string }[] = [
-  { label: "Open command palette", combo: "⌘K" },
-  { label: "Go to Dashboard", combo: "G D" },
-  { label: "Go to Sessions", combo: "G S" },
-  { label: "Go to Module SDK", combo: "G M" },
-  { label: "Go to Script SDK", combo: "G P" },
-];

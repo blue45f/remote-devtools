@@ -23,11 +23,11 @@ function renderProbe() {
 }
 
 beforeEach(() => {
-  useAppStore.setState({ commandOpen: false });
+  useAppStore.setState({ commandOpen: false, shortcutsOpen: false });
 });
 
 afterEach(() => {
-  useAppStore.setState({ commandOpen: false });
+  useAppStore.setState({ commandOpen: false, shortcutsOpen: false });
 });
 
 describe("useGlobalShortcuts", () => {
@@ -63,5 +63,19 @@ describe("useGlobalShortcuts", () => {
       await user.keyboard("gp");
     });
     expect(getByTestId("probe").textContent).toBe("/sandbox/script");
+  });
+
+  it("toggles the shortcuts dialog on `?`", async () => {
+    const user = userEvent.setup();
+    renderProbe();
+
+    expect(useAppStore.getState().shortcutsOpen).toBe(false);
+
+    // userEvent emits `?` as Shift+/; the handler matches on `e.key === "?"`.
+    await user.keyboard("?");
+    expect(useAppStore.getState().shortcutsOpen).toBe(true);
+
+    await user.keyboard("?");
+    expect(useAppStore.getState().shortcutsOpen).toBe(false);
   });
 });

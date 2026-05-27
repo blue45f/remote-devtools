@@ -42,6 +42,10 @@ interface AppState {
   setCommandOpen: (open: boolean) => void;
   toggleCommand: () => void;
 
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
+  toggleShortcuts: () => void;
+
   demoMode: boolean;
   setDemoMode: (on: boolean) => void;
   toggleDemoMode: () => void;
@@ -91,6 +95,10 @@ export const useAppStore = create<AppState>((set) => ({
   commandOpen: false,
   setCommandOpen: (open) => set({ commandOpen: open }),
   toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
+
+  shortcutsOpen: false,
+  setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
+  toggleShortcuts: () => set((s) => ({ shortcutsOpen: !s.shortcutsOpen })),
 
   demoMode: readDemoMode(),
   setDemoMode: (on) => {
