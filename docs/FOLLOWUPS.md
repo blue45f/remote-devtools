@@ -15,18 +15,19 @@ the next obvious candidates. Each entry: what shipped, what's next.
   seeks the player on mount and auto-opens the Replay tab. Share button
   copies a URL with the current playhead. Parity with PostHog / Sentry /
   Highlight.io.
-- **Events JSON download + Sessions regex search** — current commit —
+- **Events JSON download + Sessions regex search** — `3daaba93` —
   RawTab gets a Download button next to Copy. Sessions search has a regex
   toggle with inline error UI for invalid patterns. Parity with PostHog /
   Sentry export + Datadog / Clarity regex search.
+- **Timeline → Jump to replay** — current commit — Clicking any event in
+  the Timeline tab flips to the Replay tab with `?t=<offset>` set, and
+  the player re-seeks live (not just on mount). The Sentry / OpenReplay
+  debugger workflow: errors and incidents become navigable.
 
 ## Next obvious candidates
 
 Listed in rough order of value × ease:
 
-- **Console-error → "Jump to this point in replay"** — Timeline rows of
-  error type get a button that flips to the Replay tab with `?t=` set.
-  ~30 min, no schema change.
 - **Browser / OS badge on Session row** — requires capturing `userAgent`
   on the backend (`libs/entity` + `SessionRecord` API). Skip until backend
   is touched.
