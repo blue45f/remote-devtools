@@ -18,6 +18,7 @@ export function useGlobalShortcuts() {
   const navigate = useNavigate();
   const setCommandOpen = useAppStore((s) => s.setCommandOpen);
   const toggleCommand = useAppStore((s) => s.toggleCommand);
+  const toggleShortcuts = useAppStore((s) => s.toggleShortcuts);
 
   useEffect(() => {
     let pendingG = false;
@@ -41,6 +42,15 @@ export function useGlobalShortcuts() {
 
       // Escape closes command palette (handled by Radix Dialog already)
       if (isEditable(e.target)) return;
+
+      // "?" — keyboard shortcut reference. Industry-standard hotkey
+      // (Linear, GitHub, Slack, Notion). Arrives as Shift+/ on US layouts;
+      // matching on `e.key === "?"` covers every modern layout.
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        toggleShortcuts();
+        return;
+      }
 
       // "g" then nav letter (Linear-style)
       if (!pendingG && e.key === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -74,5 +84,41 @@ export function useGlobalShortcuts() {
       window.removeEventListener("keydown", handler);
       clearPending();
     };
-  }, [navigate, setCommandOpen, toggleCommand]);
+  }, [navigate, setCommandOpen, toggleCommand, toggleShortcuts]);
 }
+
+/**
+ * Static shortcut reference — kept here so the ShortcutsDialog and any
+ * future CommandPalette entry stay in sync with the actual handlers
+ * registered in `useGlobalShortcuts`. Update both together.
+ */
+export interface KeyboardShortcut {
+  keys: string[];
+  label: string;
+  description?: string;
+}
+
+export interface ShortcutGroup {
+  label: string;
+  shortcuts: KeyboardShortcut[];
+}
+
+export const SHORTCUT_GROUPS: ShortcutGroup[] = [
+  {
+    label: "General",
+    shortcuts: [
+      { keys: ["⌘", "K"], label: "Open command palette" },
+      { keys: ["?"], label: "Show keyboard shortcuts" },
+      { keys: ["Esc"], label: "Close dialog / cancel" },
+    ],
+  },
+  {
+    label: "Navigation",
+    shortcuts: [
+      { keys: ["G", "D"], label: "Go to Dashboard" },
+      { keys: ["G", "S"], label: "Go to Sessions" },
+      { keys: ["G", "M"], label: "Go to Module SDK" },
+      { keys: ["G", "P"], label: "Go to Script SDK" },
+    ],
+  },
+];
