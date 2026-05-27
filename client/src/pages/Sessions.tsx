@@ -7,6 +7,7 @@ import {
   Clock,
   ExternalLink,
   Filter,
+  Globe,
   LayoutGrid,
   Monitor,
   PlaySquare,
@@ -96,6 +97,15 @@ function pickDefaultView(): ViewMode {
   return window.innerWidth >= 1024 ? "table" : "grid";
 }
 
+function getHostname(url?: string): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
 export default function SessionsPage() {
   const [tab, setTab] = useState<SessionTab>("record");
   const [search, setSearch] = useState("");
@@ -103,6 +113,7 @@ export default function SessionsPage() {
   const [sort, setSort] = useState<SortKey>("newest");
   const [view, setView] = useState<ViewMode>(pickDefaultView);
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
+  const [hostFilter, setHostFilter] = useState<string | null>(null);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -199,15 +210,34 @@ export default function SessionsPage() {
       });
     }
 
+    if (hostFilter) {
+      result = result.filter((s) => getHostname(s.url) === hostFilter);
+    }
+
     return [...result].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       const ta = new Date(a.timestamp ?? 0).getTime();
       const tb = new Date(b.timestamp ?? 0).getTime();
       return sort === "newest" ? tb - ta : ta - tb;
     });
-  }, [sessions, matcher, sort, durationFilter]);
+  }, [sessions, matcher, sort, durationFilter, hostFilter]);
 
-  const filtersActive = search.trim() !== "" || durationFilter !== "all";
+  // Build the host strip from the *currently loaded* sessions so it
+  // reflects what's on screen. Sort by hit count descending so the
+  // dominant host floats to the front.
+  const hostCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of sessions) {
+      const host = getHostname(s.url);
+      if (host) counts.set(host, (counts.get(host) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8); // a longer list overflows the rail; 8 is plenty
+  }, [sessions]);
+
+  const filtersActive =
+    search.trim() !== "" || durationFilter !== "all" || hostFilter !== null;
   const SortIcon = SORT_ICONS[sort];
   // On phones / small tablets the row-based table is illegible — force the
   // card grid below `lg`. Users who explicitly opt into a table on a small
@@ -356,9 +386,18 @@ export default function SessionsPage() {
           onClear={() => {
             setSearch("");
             setDurationFilter("all");
+            setHostFilter(null);
           }}
           showClear={filtersActive}
         />
+
+        {hostCounts.length > 1 && (
+          <HostChips
+            hosts={hostCounts}
+            active={hostFilter}
+            onChange={setHostFilter}
+          />
+        )}
       </div>
 
       {/* Result meta */}
@@ -514,6 +553,68 @@ function ViewToggleButton({
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function HostChips({
+  hosts,
+  active,
+  onChange,
+}: {
+  hosts: [string, number][];
+  active: string | null;
+  onChange: (host: string | null) => void;
+}) {
+  return (
+    <div className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible">
+      <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
+        <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
+          <Globe className="size-3" />
+          Host
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={cn(
+            "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+            active === null
+              ? "bg-fg text-bg border-fg"
+              : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+          )}
+          aria-pressed={active === null}
+        >
+          Any
+        </button>
+        {hosts.map(([host, count]) => {
+          const isActive = active === host;
+          return (
+            <button
+              key={host}
+              type="button"
+              onClick={() => onChange(isActive ? null : host)}
+              className={cn(
+                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5",
+                isActive
+                  ? "bg-fg text-bg border-fg"
+                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+              )}
+              aria-pressed={isActive}
+              data-testid={`sessions-host-chip-${host}`}
+            >
+              <span className="font-mono">{host}</span>
+              <span
+                className={cn(
+                  "font-mono tabular-nums text-[10px]",
+                  isActive ? "text-bg/80" : "text-fg-faint",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
