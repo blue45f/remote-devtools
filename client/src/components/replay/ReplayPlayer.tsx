@@ -9,12 +9,26 @@ import { cn } from "@/lib/utils";
 interface ReplayPlayerProps {
   events: unknown[];
   className?: string;
+  /** Offset in ms from session start to seek to immediately after mount. */
+  startTime?: number;
+  /** Fired whenever the player's playhead moves. */
+  onTimeUpdate?: (currentTimeMs: number) => void;
+}
+
+interface RrwebPlayerInstance {
+  $destroy?: () => void;
+  goto?: (timeOffset: number, play?: boolean) => void;
+  addEventListener?: (
+    event: string,
+    cb: (payload: { payload: unknown }) => void,
+  ) => void;
 }
 
 interface RrwebPlayerCtor {
-  new (opts: { target: HTMLElement; props: Record<string, unknown> }): {
-    $destroy?: () => void;
-  };
+  new (opts: {
+    target: HTMLElement;
+    props: Record<string, unknown>;
+  }): RrwebPlayerInstance;
 }
 
 interface RrwebShapedEvent {
@@ -44,16 +58,26 @@ function getReplayProblem(events: unknown[]): string | null {
   return null;
 }
 
-export function ReplayPlayer({ events, className }: ReplayPlayerProps) {
+export function ReplayPlayer({
+  events,
+  className,
+  startTime,
+  onTimeUpdate,
+}: ReplayPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validationError = useMemo(() => getReplayProblem(events), [events]);
 
+  // Keep the latest callback in a ref so the effect doesn't tear down the
+  // player every time the parent re-renders with a new arrow function.
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  onTimeUpdateRef.current = onTimeUpdate;
+
   useEffect(() => {
     if (validationError) return;
     let disposed = false;
-    let instance: { $destroy?: () => void } | null = null;
+    let instance: RrwebPlayerInstance | null = null;
 
     setError(null);
 
@@ -74,6 +98,27 @@ export function ReplayPlayer({ events, className }: ReplayPlayerProps) {
               mouseTail: { strokeStyle: "#3b82f6", duration: 600 },
             },
           });
+
+          // Seek to a starting offset (e.g. shared deep link `?t=12345`).
+          // `goto` is a noop before the player is initialized, so defer with
+          // a microtask to give rrweb-player time to wire up its internals.
+          if (startTime && startTime > 0 && instance?.goto) {
+            queueMicrotask(() => {
+              try {
+                instance?.goto?.(startTime, false);
+              } catch {
+                /* ignore — invalid offsets just stay at the start */
+              }
+            });
+          }
+
+          // Track playhead so callers can build "share link to current time".
+          if (onTimeUpdateRef.current && instance?.addEventListener) {
+            instance.addEventListener("ui-update-current-time", (e) => {
+              const payload = e?.payload;
+              if (typeof payload === "number") onTimeUpdateRef.current?.(payload);
+            });
+          }
         } catch (err) {
           setError(toErrorMessage(err));
         }
@@ -90,6 +135,9 @@ export function ReplayPlayer({ events, className }: ReplayPlayerProps) {
         /* the player throws on double-destroy in some versions */
       }
     };
+    // `startTime` intentionally NOT in deps — we don't want re-seeking to
+    // tear down the whole player; deep links are an initial-state concern.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, validationError]);
 
   if (validationError) {
