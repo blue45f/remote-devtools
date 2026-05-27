@@ -1,0 +1,53 @@
+# Follow-ups
+
+Running log of small features shipped via the hourly benchmark routine, plus
+the next obvious candidates. Each entry: what shipped, what's next.
+
+## Shipped
+
+- **Responsive polish across all surfaces** — `a78fe431` — phone/tablet
+  layouts, safe-area, touch-targets, scroll rails. Sessions default view
+  now picks grid on phones.
+- **Keyboard shortcut help dialog** — `48751ba3` — `?` opens a categorized
+  reference (Linear/GitHub parity). Command palette gets one "Keyboard
+  shortcuts" entry instead of static rows.
+- **Replay timestamp deep-link** — `f21ac2ae` — `?t=ms` in `/sessions/:id`
+  seeks the player on mount and auto-opens the Replay tab. Share button
+  copies a URL with the current playhead. Parity with PostHog / Sentry /
+  Highlight.io.
+- **Events JSON download + Sessions regex search** — current commit —
+  RawTab gets a Download button next to Copy. Sessions search has a regex
+  toggle with inline error UI for invalid patterns. Parity with PostHog /
+  Sentry export + Datadog / Clarity regex search.
+
+## Next obvious candidates
+
+Listed in rough order of value × ease:
+
+- **Console-error → "Jump to this point in replay"** — Timeline rows of
+  error type get a button that flips to the Replay tab with `?t=` set.
+  ~30 min, no schema change.
+- **Browser / OS badge on Session row** — requires capturing `userAgent`
+  on the backend (`libs/entity` + `SessionRecord` API). Skip until backend
+  is touched.
+- **Network HAR / "Copy as cURL"** — depends on shaping network events
+  with method/url/headers; check `libs/core` to see if SDK already
+  captures these.
+- **Rage-click detection** — scan IncrementalSnapshot events for rapid
+  same-target clicks; add a chip to the timeline summary.
+- **Session URL hostname quick-filter** — chip strip generated from
+  hostnames present in the current page of sessions.
+- **Replay timeline minimap** — event-type density bar above the rrweb
+  player; clicking jumps to that offset.
+- **Session tags** — needs DB column + endpoint; defer until backend cycle.
+- **Comments / annotations on a replay** — needs DB + auth; defer.
+- **Heatmap overlay on Captured Preview** — aggregate click coordinates
+  across the session; needs decent event shape.
+
+## Conventions
+
+- All cycles ship to `main` directly (per user instruction).
+- `pnpm typecheck` + `pnpm test` must pass before push.
+- No backend / schema changes inside a single hourly cycle unless they're
+  tiny and self-contained.
+- Reference the peer that inspired the feature in the commit body.
