@@ -73,11 +73,13 @@ Vitest 기반.
 |------|------|--------|
 | 백엔드 | 44 | 350+ |
 | 클라이언트 (`client/`) | 45+ | 158+ |
+| 관리자 대시보드 (`debug-recorder-admin/`) | 별도 패키지 | typecheck/build |
 | **합계** | **89+** | **510+** |
 
 ```bash
 cd client && pnpm test       # 프론트 단위/통합 테스트
 cd client && pnpm test:cov   # 프론트 커버리지
+pnpm typecheck:admin         # 관리자 대시보드 타입체크
 ```
 
 ## 아키텍처
@@ -124,6 +126,7 @@ remote-devtools/
 │   └── interfaces/                 # 타입
 ├── sdk/                            # 프론트엔드 SDK (Vite 빌드)
 ├── client/                         # React 19 + Vite 클라이언트
+├── debug-recorder-admin/           # Debug Recorder 관리자 대시보드
 ├── devtools-frontend/              # Chrome DevTools UI
 ├── figma-plugin/                   # Figma 플러그인
 ├── eslint.config.mjs               # ESLint flat config
@@ -162,6 +165,7 @@ pnpm compose
   - `/sandbox/script` -- SDK 데모 (UMD 스크립트 태그)
   - `/` -- 자동으로 `/dashboard`로 리다이렉트
 - `http://localhost:5050` -- PgAdmin (DB 관리)
+- `https://localhost:5173` -- Debug Recorder Admin (별도 실행: `pnpm dev:admin`)
 
 ### 데모 모드 (백엔드 없이 UI 시연)
 
@@ -189,11 +193,15 @@ pnpm start:external:dev         # External 서버 (watch 모드)
 # 클라이언트 개발 서버
 cd client && pnpm dev
 
+# 관리자 대시보드 개발 서버
+pnpm dev:admin
+
 # SDK 빌드
 cd sdk && pnpm build            # dist/index.mjs, dist/index.umd.js
 
 # 프로덕션 빌드
 pnpm build:all                  # Internal + External 동시 빌드
+pnpm build:admin                # Debug Recorder Admin 빌드
 
 # 테스트
 pnpm test                       # Vitest 실행
