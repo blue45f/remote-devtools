@@ -5,10 +5,42 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const destinations = [
-  { id: 1, name: "Santorini, Greece", image: "https://picsum.photos/seed/santorini/640/360", rating: 4.9, reviews: 2847, price: "$1,240", tag: "Popular" },
-  { id: 2, name: "Kyoto, Japan", image: "https://picsum.photos/seed/kyoto/640/360", rating: 4.8, reviews: 3156, price: "$890", tag: "Trending" },
-  { id: 3, name: "Hallstatt, Austria", image: "https://picsum.photos/seed/hallstatt/640/360", rating: 4.7, reviews: 1923, price: "$720", tag: "Hidden Gem" },
-  { id: 4, name: "Bali, Indonesia", image: "https://picsum.photos/seed/bali/640/360", rating: 4.6, reviews: 4201, price: "$650", tag: "Best Value" },
+  {
+    id: 1,
+    name: "Santorini, Greece",
+    image: "https://picsum.photos/seed/santorini/640/360",
+    rating: 4.9,
+    reviews: 2847,
+    price: "$1,240",
+    tag: "Popular",
+  },
+  {
+    id: 2,
+    name: "Kyoto, Japan",
+    image: "https://picsum.photos/seed/kyoto/640/360",
+    rating: 4.8,
+    reviews: 3156,
+    price: "$890",
+    tag: "Trending",
+  },
+  {
+    id: 3,
+    name: "Hallstatt, Austria",
+    image: "https://picsum.photos/seed/hallstatt/640/360",
+    rating: 4.7,
+    reviews: 1923,
+    price: "$720",
+    tag: "Hidden Gem",
+  },
+  {
+    id: 4,
+    name: "Bali, Indonesia",
+    image: "https://picsum.photos/seed/bali/640/360",
+    rating: 4.6,
+    reviews: 4201,
+    price: "$650",
+    tag: "Best Value",
+  },
 ];
 
 const categories = [

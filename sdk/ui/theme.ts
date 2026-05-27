@@ -48,8 +48,7 @@ export const tokens = {
     },
   },
   font: {
-    system:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     mono: "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
   },
   radius: {
@@ -80,7 +79,7 @@ export const tokens = {
 
 export function applyStyles(
   el: HTMLElement,
-  styles: Partial<CSSStyleDeclaration>
+  styles: Partial<CSSStyleDeclaration>,
 ): void {
   Object.assign(el.style, styles);
 }
@@ -88,7 +87,7 @@ export function applyStyles(
 export function createStyledElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   styles: Partial<CSSStyleDeclaration>,
-  attrs?: Record<string, string>
+  attrs?: Record<string, string>,
 ): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   Object.assign(el.style, styles);
@@ -117,7 +116,7 @@ export function applyModalOverlayStyles(el: HTMLElement): void {
 
 export function applyModalContainerStyles(
   el: HTMLElement,
-  options?: { maxWidth?: string; maxHeight?: string }
+  options?: { maxWidth?: string; maxHeight?: string },
 ): void {
   Object.assign(el.style, {
     backgroundColor: tokens.color.bg.surface,
@@ -164,7 +163,7 @@ type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 export function applyButtonStyles(
   el: HTMLElement,
-  variant: ButtonVariant = "primary"
+  variant: ButtonVariant = "primary",
 ): void {
   const base: Partial<CSSStyleDeclaration> = {
     padding: "10px 20px",
@@ -230,10 +229,10 @@ export function applyButtonStyles(
 
   const originalStyles = { ...variants[variant] };
   el.addEventListener("mouseenter", () =>
-    Object.assign(el.style, hoverStyles[variant])
+    Object.assign(el.style, hoverStyles[variant]),
   );
   el.addEventListener("mouseleave", () =>
-    Object.assign(el.style, originalStyles)
+    Object.assign(el.style, originalStyles),
   );
 }
 

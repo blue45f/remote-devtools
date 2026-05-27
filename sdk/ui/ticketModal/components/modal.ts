@@ -2,7 +2,6 @@ import { CommonInfo } from "../../../types/common";
 import { loadTicketFormDataFromAPI } from "../api";
 import { applyButtonStyles } from "../styles";
 import {
-  tokens,
   applyModalOverlayStyles,
   applyModalContainerStyles,
   injectKeyframeAnimations,

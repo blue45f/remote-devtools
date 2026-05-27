@@ -99,11 +99,17 @@ describe("DomService", () => {
     });
 
     it("should upsert DOM entry when record exists", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(domRepository, "upsert").mockResolvedValue({
+        identifiers: [{ id: 10 }],
         generatedMaps: [{ id: 10 }],
-      } as any);
-      vi.spyOn(domRepository, "findOne").mockResolvedValue({ id: 10 } as any);
+        raw: [],
+      } as Awaited<ReturnType<Repository<DomEntity>["upsert"]>>);
+      vi.spyOn(domRepository, "findOne").mockResolvedValue({
+        id: 10,
+      } as DomEntity);
 
       const result = await service.upsert({
         recordId: 1,

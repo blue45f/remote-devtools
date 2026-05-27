@@ -1,6 +1,57 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Injectable, Logger } from "@nestjs/common";
+
+type RemoteObjectPreviewProperty = {
+  name: string;
+  type?: string;
+  subtype?: string;
+  value?: unknown;
+  description?: string;
+};
+
+type RemoteObjectValue = {
+  type?: string;
+  subtype?: string;
+  value?: unknown;
+  objectId?: string;
+  className?: string;
+  description?: string;
+  preview?: {
+    properties?: RemoteObjectPreviewProperty[];
+  };
+};
+
+type PropertySnapshot = {
+  name: string;
+  value?: RemoteObjectValue;
+};
+
+type PropertySnapshotsMap = Map<string, PropertySnapshot[]>;
+
+type RuntimeProtocolEntry = {
+  protocol?: {
+    method?: string;
+    params?: {
+      _propertySnapshots?: unknown;
+      [key: string]: unknown;
+    };
+  };
+};
+
+type ReconstructArgument = {
+  value?: {
+    indent?: string | number;
+  };
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isPropertySnapshotArray = (value: unknown): value is PropertySnapshot[] =>
+  Array.isArray(value) &&
+  value.every((item) => isRecord(item) && typeof item.name === "string");
+
+const isReconstructArgument = (value: unknown): value is ReconstructArgument =>
+  isRecord(value) && (!("value" in value) || isRecord(value.value));
 
 /**
  * Service responsible for reconstructing JavaScript objects from property snapshots.
@@ -20,13 +71,17 @@ export class ObjectReconstructionService {
    */
   public reconstructObjectAsJson(
     objectId: string,
-    propertySnapshotsMap: Map<string, any[]>,
-    args: any[],
+    propertySnapshotsMap: PropertySnapshotsMap,
+    args: ReconstructArgument[],
   ): string {
     // Extract indentation option from arguments
     let indent: string | number = 2;
-    if (args?.[0]?.value?.indent !== undefined) {
-      indent = args[0].value.indent;
+    const firstArg = args[0];
+    if (
+      isReconstructArgument(firstArg) &&
+      firstArg.value?.indent !== undefined
+    ) {
+      indent = firstArg.value.indent;
     }
 
     // Return empty object when no snapshot data is available
@@ -61,9 +116,9 @@ export class ObjectReconstructionService {
    * Supports both the new format (objectId-keyed object) and the legacy format (array).
    */
   public collectPropertySnapshots(
-    runtimeProtocols: Array<{ protocol: any }>,
-  ): Map<string, any[]> {
-    const propertySnapshotsMap = new Map<string, any[]>();
+    runtimeProtocols: RuntimeProtocolEntry[],
+  ): PropertySnapshotsMap {
+    const propertySnapshotsMap = new Map<string, PropertySnapshot[]>();
 
     for (const protocolData of runtimeProtocols) {
       const proto = protocolData.protocol;
@@ -79,7 +134,7 @@ export class ObjectReconstructionService {
       // New format: objectId-keyed object
       if (typeof snapshots === "object" && !Array.isArray(snapshots)) {
         for (const [objectId, properties] of Object.entries(snapshots)) {
-          if (Array.isArray(properties)) {
+          if (isPropertySnapshotArray(properties)) {
             propertySnapshotsMap.set(objectId, properties);
           }
         }
@@ -87,7 +142,11 @@ export class ObjectReconstructionService {
       // Legacy format: array of { objectId, properties }
       else if (Array.isArray(snapshots)) {
         for (const snapshot of snapshots) {
-          if (snapshot.objectId && Array.isArray(snapshot.properties)) {
+          if (
+            isRecord(snapshot) &&
+            typeof snapshot.objectId === "string" &&
+            isPropertySnapshotArray(snapshot.properties)
+          ) {
             propertySnapshotsMap.set(snapshot.objectId, snapshot.properties);
           }
         }
@@ -108,11 +167,11 @@ export class ObjectReconstructionService {
    * Recursively rebuilds a JavaScript object from an array of PropertyDescriptors.
    */
   private reconstructObjectFromProperties(
-    properties: any[],
-    propertySnapshotsMap: Map<string, any[]>,
+    properties: PropertySnapshot[],
+    propertySnapshotsMap: PropertySnapshotsMap,
     visited: Set<string>,
-  ): Record<string, any> {
-    const result: Record<string, any> = {};
+  ): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
 
     for (const prop of properties) {
       if (prop.name === "__proto__") continue;
@@ -134,11 +193,11 @@ export class ObjectReconstructionService {
    * Rebuilds an array object from property descriptors (numeric indices only).
    */
   private reconstructArrayFromProperties(
-    properties: any[],
-    propertySnapshotsMap: Map<string, any[]>,
+    properties: PropertySnapshot[],
+    propertySnapshotsMap: PropertySnapshotsMap,
     visited: Set<string>,
-  ): any[] {
-    const result: any[] = [];
+  ): unknown[] {
+    const result: unknown[] = [];
 
     for (const prop of properties) {
       const index = parseInt(prop.name, 10);
@@ -166,10 +225,10 @@ export class ObjectReconstructionService {
    * Handles primitives, null, objects, arrays, functions, and symbols.
    */
   private resolvePropertyValue(
-    value: any,
-    propertySnapshotsMap: Map<string, any[]>,
+    value: RemoteObjectValue,
+    propertySnapshotsMap: PropertySnapshotsMap,
     visited: Set<string>,
-  ): any {
+  ): unknown {
     if (value.type === "undefined") return undefined;
 
     if (
@@ -198,10 +257,10 @@ export class ObjectReconstructionService {
    * properties or falling back to the preview / description.
    */
   private resolveObjectValue(
-    value: any,
-    propertySnapshotsMap: Map<string, any[]>,
+    value: RemoteObjectValue,
+    propertySnapshotsMap: PropertySnapshotsMap,
     visited: Set<string>,
-  ): any {
+  ): unknown {
     if (value.objectId && !visited.has(value.objectId)) {
       visited.add(value.objectId);
       const subProperties = propertySnapshotsMap.get(value.objectId);
@@ -232,7 +291,7 @@ export class ObjectReconstructionService {
   /**
    * Extracts a value from a RemoteObject's preview (or description fallback).
    */
-  private extractValueFromPreview(remoteObject: any): any {
+  private extractValueFromPreview(remoteObject: RemoteObjectValue): unknown {
     // Primitive value present -- return it directly
     if (remoteObject.value !== undefined) {
       return remoteObject.value;
@@ -240,37 +299,22 @@ export class ObjectReconstructionService {
 
     // Build from preview properties when available
     if (remoteObject.preview?.properties) {
-      const result: any = remoteObject.subtype === "array" ? [] : {};
-
-      for (const prop of remoteObject.preview.properties) {
-        if (prop.name === "__proto__") continue;
-
-        let resolved: any;
-        if (prop.type === "undefined") {
-          resolved = undefined;
-        } else if (
-          prop.type === "string" ||
-          prop.type === "number" ||
-          prop.type === "boolean"
-        ) {
-          resolved = prop.value;
-        } else if (prop.subtype === "null") {
-          resolved = null;
-        } else if (prop.type === "object") {
-          // Nested objects use the description
-          resolved = prop.value || prop.description || {};
-        } else {
-          resolved = prop.value ?? prop.description ?? null;
-        }
-
-        if (remoteObject.subtype === "array") {
+      if (remoteObject.subtype === "array") {
+        const result: unknown[] = [];
+        for (const prop of remoteObject.preview.properties) {
+          if (prop.name === "__proto__") continue;
           const index = parseInt(prop.name, 10);
           if (!isNaN(index)) {
-            result[index] = resolved;
+            result[index] = this.resolvePreviewProperty(prop);
           }
-        } else {
-          result[prop.name] = resolved;
         }
+        return result;
+      }
+
+      const result: Record<string, unknown> = {};
+      for (const prop of remoteObject.preview.properties) {
+        if (prop.name === "__proto__") continue;
+        result[prop.name] = this.resolvePreviewProperty(prop);
       }
 
       return result;
@@ -286,11 +330,36 @@ export class ObjectReconstructionService {
     return null;
   }
 
+  private resolvePreviewProperty(prop: RemoteObjectPreviewProperty): unknown {
+    if (prop.type === "undefined") {
+      return undefined;
+    }
+
+    if (
+      prop.type === "string" ||
+      prop.type === "number" ||
+      prop.type === "boolean"
+    ) {
+      return prop.value;
+    }
+
+    if (prop.subtype === "null") {
+      return null;
+    }
+
+    if (prop.type === "object") {
+      // Nested objects use the description
+      return prop.value || prop.description || {};
+    }
+
+    return prop.value ?? prop.description ?? null;
+  }
+
   /**
    * Converts a property array to a simple string representation (fallback).
    */
-  private propertiesToSimpleString(properties: any[]): string {
-    const result: Record<string, any> = {};
+  private propertiesToSimpleString(properties: PropertySnapshot[]): string {
+    const result: Record<string, unknown> = {};
 
     for (const prop of properties) {
       if (prop.name === "__proto__") continue;

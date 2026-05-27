@@ -9,6 +9,37 @@ import {
 
 import type { BufferEvent } from "../buffer/buffer.service";
 
+type RrwebEventData = {
+  timestamp?: number;
+  type: number;
+  data?: {
+    sequence?: number;
+  };
+  [key: string]: unknown;
+};
+
+type CdpParams = {
+  requestId?: string | number;
+  event?: RrwebEventData;
+  events?: RrwebEventData[];
+  timestamp?: number;
+  type?: string;
+  sequence?: number;
+  [key: string]: unknown;
+};
+
+type CdpProtocol = {
+  method: string;
+  params?: CdpParams;
+  [key: string]: unknown;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const toCdpParams = (value: unknown): CdpParams =>
+  isRecord(value) ? (value as CdpParams) : {};
+
 /**
  * CDP 이벤트를 도메인별로 DB에 저장하는 서비스.
  *
@@ -64,11 +95,11 @@ export class CdpEventPersistenceService {
    */
   toTimestampNs(value?: number | string): number {
     const parsed = typeof value === "string" ? Number(value) : value;
-    if (!Number.isFinite(parsed)) {
+    if (parsed === undefined || !Number.isFinite(parsed)) {
       const [seconds, nanoseconds] = process.hrtime();
       return seconds * 1e9 + nanoseconds;
     }
-    return Math.trunc(parsed! * 1_000_000);
+    return Math.trunc(parsed * 1_000_000);
   }
 
   // -------------------------------------------------------------------------
@@ -78,15 +109,21 @@ export class CdpEventPersistenceService {
   /**
    * 프로토콜 메시지를 도메인별로 DB에 저장한다.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async persistProtocolEvent(protocol: any, recordId: number): Promise<void> {
+  async persistProtocolEvent(
+    protocol: CdpProtocol,
+    recordId: number,
+  ): Promise<void> {
     const timestamp = Date.now() * 1_000_000;
 
     if (protocol.params?.requestId) {
+      const requestId =
+        typeof protocol.params.requestId === "number"
+          ? protocol.params.requestId
+          : Number(protocol.params.requestId);
       await this.networkService.create({
         recordId,
         protocol,
-        requestId: protocol.params.requestId,
+        requestId,
         timestamp,
       });
     }
@@ -154,7 +191,7 @@ export class CdpEventPersistenceService {
    */
 
   async persistSingleRrwebEvent(
-    protocol: any,
+    protocol: CdpProtocol,
     recordId: number | null,
   ): Promise<{
     sessionTimestamp: bigint;
@@ -173,8 +210,7 @@ export class CdpEventPersistenceService {
       type: null,
       eventType,
       sequence: event.data?.sequence || null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
 
     return { sessionTimestamp };
   }
@@ -183,11 +219,12 @@ export class CdpEventPersistenceService {
    * 배치 rrweb 이벤트를 DB에 저장한다. 각 이벤트의 타임스탬프를 반환한다.
    */
   async persistBatchRrwebEvents(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    protocol: any,
+    protocol: CdpProtocol,
     recordId: number | null,
   ): Promise<Array<{ event: unknown; sessionTimestamp: bigint }>> {
-    const events = protocol.params?.events || [];
+    const events = Array.isArray(protocol.params?.events)
+      ? protocol.params.events
+      : [];
     this.logger.log(`[SessionReplay] Saving batch of ${events.length} events`);
 
     const results: Array<{ event: unknown; sessionTimestamp: bigint }> = [];
@@ -207,8 +244,7 @@ export class CdpEventPersistenceService {
         type: null,
         eventType,
         sequence: event.data?.sequence || null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      });
 
       results.push({ event, sessionTimestamp });
     }
@@ -221,8 +257,7 @@ export class CdpEventPersistenceService {
    */
 
   async persistLegacySessionReplay(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    protocol: any,
+    protocol: CdpProtocol,
     recordId: number | null,
     timestamp: number,
   ): Promise<void> {
@@ -253,8 +288,7 @@ export class CdpEventPersistenceService {
       type: null,
       eventType,
       sequence: protocol.params?.sequence,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -269,18 +303,19 @@ export class CdpEventPersistenceService {
     event: BufferEvent,
   ): Promise<void> {
     const method = event.method;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const params: any = event.params ?? {};
+    const params = toCdpParams(event.params);
     const protocol = { method, params };
     const timestampNs = this.toTimestampNs(event.timestamp);
 
     if (method.startsWith("Network.")) {
       const requestId = params?.requestId;
       if (requestId !== undefined && requestId !== null) {
+        const numericRequestId =
+          typeof requestId === "number" ? requestId : Number(requestId);
         await this.networkService.create({
           recordId,
           protocol,
-          requestId,
+          requestId: numericRequestId,
           timestamp: timestampNs,
         });
       }
@@ -291,8 +326,8 @@ export class CdpEventPersistenceService {
       if (params?.requestId !== undefined) {
         await this.networkService.updateResponseBody({
           recordId,
-          requestId: params.requestId,
-          body: params.body ?? "",
+          requestId: Number(params.requestId),
+          body: typeof params.body === "string" ? params.body : "",
           base64Encoded: Boolean(params.base64Encoded),
         });
       }
@@ -404,7 +439,7 @@ export class CdpEventPersistenceService {
 
   private async persistBufferedSingleRrwebEvent(
     recordId: number,
-    params: any,
+    params: CdpParams,
   ): Promise<void> {
     const eventData = params?.event;
     if (!eventData) return;
@@ -423,13 +458,12 @@ export class CdpEventPersistenceService {
       type: null,
       eventType,
       sequence: eventData.data?.sequence || null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
   }
 
   private async persistBufferedBatchRrwebEvents(
     recordId: number,
-    params: any,
+    params: CdpParams,
   ): Promise<void> {
     const events = Array.isArray(params?.events) ? params.events : [];
 
@@ -448,16 +482,14 @@ export class CdpEventPersistenceService {
         type: null,
         eventType,
         sequence: rrEvent.data?.sequence || null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      });
     }
   }
 
   private async persistBufferedLegacySessionReplay(
     recordId: number,
     method: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    params: any,
+    params: CdpParams,
   ): Promise<void> {
     const sdkTimestamp = params?.timestamp;
     let sessionTimestamp: bigint;
@@ -486,7 +518,6 @@ export class CdpEventPersistenceService {
       type: null,
       eventType,
       sequence: params?.sequence,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
   }
 }

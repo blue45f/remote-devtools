@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,8 @@ export function AreaChart({
   valueLabel = "Value",
   yTicks = 4,
 }: AreaChartProps) {
+  const reactId = useId();
+  const gradientId = `${reactId.replace(/:/g, "")}-dashboard-area-grad`;
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -115,8 +117,8 @@ export function AreaChart({
     );
   }
 
-  const hover = hoverIdx != null ? data[hoverIdx] : null;
-  const hoverPt = hoverIdx != null ? points[hoverIdx] : null;
+  const hover = hoverIdx !== null ? data[hoverIdx] : null;
+  const hoverPt = hoverIdx !== null ? points[hoverIdx] : null;
 
   return (
     <div className={cn("relative h-full w-full", className)}>
@@ -131,7 +133,7 @@ export function AreaChart({
         aria-label={`${valueLabel} trend chart`}
       >
         <defs>
-          <linearGradient id="dashboard-area-grad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="hsl(var(--fg))" stopOpacity={0.16} />
             <stop offset="100%" stopColor="hsl(var(--fg))" stopOpacity={0} />
           </linearGradient>
@@ -139,8 +141,7 @@ export function AreaChart({
 
         {/* Horizontal grid lines */}
         {yTickValues.map((v) => {
-          const y =
-            padTop + innerH - (v / (yMax || 1)) * innerH;
+          const y = padTop + innerH - (v / (yMax || 1)) * innerH;
           return (
             <g key={v}>
               <line
@@ -180,7 +181,9 @@ export function AreaChart({
               key={i}
               x={x}
               y={H - 6}
-              textAnchor={i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
+              textAnchor={
+                i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"
+              }
               fontSize={10}
               fill="hsl(var(--fg-faint))"
             >
@@ -190,7 +193,7 @@ export function AreaChart({
         })}
 
         {/* Filled area + line */}
-        {areaPath && <path d={areaPath} fill="url(#dashboard-area-grad)" />}
+        {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
         {linePath && (
           <path
             d={linePath}

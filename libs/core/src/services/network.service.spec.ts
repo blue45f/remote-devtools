@@ -63,7 +63,9 @@ describe("NetworkService", () => {
     });
 
     it("should return null when requestId is not a valid number", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
 
       const result = await service.create({
         recordId: 1,
@@ -75,14 +77,16 @@ describe("NetworkService", () => {
     });
 
     it("should create and save a network entry", async () => {
-      const mockRecord = { id: 1 };
-      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord as any);
+      const mockRecord = {
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>;
+      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord);
       vi.spyOn(networkRepository, "create").mockReturnValue({
         id: 10,
-      } as any);
+      } as NetworkEntity);
       vi.spyOn(networkRepository, "save").mockResolvedValue({
         id: 10,
-      } as any);
+      } as NetworkEntity);
 
       const result = await service.create({
         recordId: 1,
@@ -137,8 +141,10 @@ describe("NetworkService", () => {
     });
 
     it("should find existing network entry and update its body", async () => {
-      const mockNetwork = { id: 10, requestId: 42 } as any;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
       vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
 
@@ -155,8 +161,10 @@ describe("NetworkService", () => {
     });
 
     it("should keep base64 body as-is", async () => {
-      const mockNetwork = { id: 10, requestId: 42 } as any;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
       vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
 
@@ -173,8 +181,10 @@ describe("NetworkService", () => {
     });
 
     it("should keep non-JSON body as-is", async () => {
-      const mockNetwork = { id: 10, requestId: 42 } as any;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
       vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
 
@@ -190,7 +200,9 @@ describe("NetworkService", () => {
     });
 
     it("should return without saving when network entry not found after retries", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(networkRepository, "findOne").mockResolvedValue(null);
 
       await service.updateResponseBody({

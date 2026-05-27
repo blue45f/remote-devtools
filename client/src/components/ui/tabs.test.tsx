@@ -34,11 +34,13 @@ describe("Tabs", () => {
 
   it("marks the active tab via aria-selected", () => {
     render(<Demo />);
-    expect(
-      screen.getByRole("tab", { name: "First" }),
-    ).toHaveAttribute("aria-selected", "true");
-    expect(
-      screen.getByRole("tab", { name: "Second" }),
-    ).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "First" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: "Second" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
   });
 });

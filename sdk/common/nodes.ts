@@ -70,7 +70,6 @@ class Nodes {
     let nodeId = this.nodeIds.get(node);
     if (nodeId) return nodeId;
 
-    // eslint-disable-next-line
     nodeId = this.currentId++;
     this.create(nodeId, node);
 

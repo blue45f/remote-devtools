@@ -89,13 +89,13 @@ describe("DashboardController", () => {
 
     it("should throw BadRequestException when period is missing", async () => {
       await expect(
-        controller.getTicketTrend({ period: undefined as any }),
+        controller.getTicketTrend({ period: undefined as never }),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException for invalid period", async () => {
       await expect(
-        controller.getTicketTrend({ period: "year" as any }),
+        controller.getTicketTrend({ period: "year" as never }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -136,7 +136,7 @@ describe("DashboardController", () => {
 
     it("should throw BadRequestException when period is missing", async () => {
       await expect(
-        controller.getRecordSessionTrend({ period: undefined as any }),
+        controller.getRecordSessionTrend({ period: undefined as never }),
       ).rejects.toThrow(BadRequestException);
     });
   });

@@ -52,9 +52,7 @@ describe("Recording flow (demo mode)", () => {
 
     // Navigated to the detail page
     await waitFor(() => {
-      expect(
-        screen.getByRole("tab", { name: /Replay/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: /Replay/ })).toBeInTheDocument();
     });
 
     // Switch to Replay tab and verify the player gets seed rrweb events

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger } from "../utils/logger";
 
 // Rewrite 규칙 타입 정의
@@ -6,10 +5,10 @@ export interface RewriteRule {
   url: string;
   method: string;
   status: number;
-  response: any;
+  response?: unknown;
   // 요청 변조 관련 필드
   queryString?: string; // 변조할 쿼리스트링 (예: "?param1=value1&param2=value2")
-  requestBody?: any; // 변조할 요청 본문
+  requestBody?: unknown; // 변조할 요청 본문
   enabled: boolean;
   createdAt: number;
 }
@@ -30,9 +29,9 @@ export class NetworkRewrite {
     url: string,
     method: string,
     status: number,
-    response: any,
+    response: unknown,
     queryString?: string,
-    requestBody?: any,
+    requestBody?: unknown,
   ): void {
     const normalizedMethod = method.toUpperCase();
     const ruleKey = `${normalizedMethod}:${url}`;
@@ -53,8 +52,7 @@ export class NetworkRewrite {
       delete rule.response;
     }
 
-    // 디버깅 로그
-    console.log("[NetworkRewrite.addRule] Adding rule:", {
+    logger.rewrite.debug("[NetworkRewrite.addRule] Adding rule:", {
       url,
       method: normalizedMethod,
       status,
@@ -62,7 +60,7 @@ export class NetworkRewrite {
       requestBody,
       response,
     });
-    console.log("[NetworkRewrite.addRule] Full rule object:", rule);
+    logger.rewrite.debug("[NetworkRewrite.addRule] Full rule object:", rule);
 
     rewriteRules.set(ruleKey, rule);
     rewriteEnabled = true;
@@ -208,7 +206,7 @@ export class NetworkRewrite {
 
       // responseType에 따른 response 설정
       const responseType = xhr.responseType || "text";
-      let responseValue = JSON.stringify(rule.response);
+      let responseValue: unknown = JSON.stringify(rule.response);
 
       if (responseType === "json") {
         responseValue = rule.response;

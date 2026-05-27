@@ -1,7 +1,12 @@
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import type { Repository, SelectQueryBuilder } from "typeorm";
+import type {
+  DeleteResult,
+  Repository,
+  SelectQueryBuilder,
+  UpdateResult,
+} from "typeorm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { RecordEntity } from "@remote-platform/entity";
@@ -133,14 +138,14 @@ describe("RecordService", () => {
 
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ["networks"],
+        relations: { networks: true },
       });
     });
   });
 
   describe("updateDuration", () => {
     it("should update the duration", async () => {
-      vi.spyOn(repository, "update").mockResolvedValue({} as any);
+      vi.spyOn(repository, "update").mockResolvedValue({} as UpdateResult);
 
       await service.updateDuration(1, 5000000000);
 
@@ -152,7 +157,7 @@ describe("RecordService", () => {
 
   describe("delete", () => {
     it("should delete the record", async () => {
-      vi.spyOn(repository, "delete").mockResolvedValue({} as any);
+      vi.spyOn(repository, "delete").mockResolvedValue({} as DeleteResult);
 
       await service.delete(1);
 
@@ -215,7 +220,11 @@ describe("RecordService", () => {
 
       const out = await service.findPaginated({ limit: 5 });
       expect(out.rows).toHaveLength(5);
-      expect(out.nextCursor).toBe(rows[4].timestamp!.toISOString());
+      const cursorRow = rows[4];
+      if (!cursorRow.timestamp) {
+        throw new Error("Expected cursor row timestamp");
+      }
+      expect(out.nextCursor).toBe(cursorRow.timestamp.toISOString());
     });
 
     it("clamps limit between 1 and 200", async () => {

@@ -14,7 +14,7 @@ export interface Response<T> {
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path: string;

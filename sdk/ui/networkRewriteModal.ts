@@ -1,6 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Network } from "../domain/network";
+import type { RewriteRule } from "../domain/network-rewrite";
 import { logger } from "../utils/logger";
-import { tokens, injectKeyframeAnimations, getStatusColor, getMethodColor } from "./theme";
+import {
+  tokens,
+  injectKeyframeAnimations,
+  getStatusColor,
+  getMethodColor,
+} from "./theme";
 
 interface NetworkRequest {
   requestId: number;
@@ -8,20 +14,58 @@ interface NetworkRequest {
   url: string;
   status?: number;
   timestamp?: number;
-  responseData?: any;
-  requestBody?: any;
+  responseData?: unknown;
+  requestBody?: unknown;
+  queryString?: string;
+  hasRequestRewrite?: boolean;
+  hasResponseRewrite?: boolean;
+  rewriteRule?: RewriteRule;
 }
 
+type SaveRewriteHandler = (
+  url: string,
+  method: string,
+  status: number,
+  response: unknown,
+  queryString?: string,
+  requestBody?: unknown,
+) => void;
+
+type NetworkDataEntry = {
+  url?: string;
+  method?: string;
+  status?: number;
+  timestamp?: number;
+  responseBody?: unknown;
+  requestBody?: unknown;
+};
+
+type NetworkCardItem = {
+  method: string;
+  url: string;
+  status: number;
+  type: string;
+  responseData?: unknown;
+  requestBody?: unknown;
+  queryString?: string;
+  isRewriteed?: boolean;
+  hasRequestRewrite?: boolean;
+  hasResponseRewrite?: boolean;
+  rewriteRule?: RewriteRule;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isNetworkDataEntry = (value: unknown): value is NetworkDataEntry =>
+  isRecord(value);
+
+const isObjectWithKeys = (value: unknown): value is Record<string, unknown> =>
+  isRecord(value) && Object.keys(value).length > 0;
+
 export function createNetworkRewriteModal(
-  networkData: Map<number, any>,
-  onSaveRewrite: (
-    url: string,
-    method: string,
-    status: number,
-    response: any,
-    queryString?: string,
-    requestBody?: any,
-  ) => void,
+  networkData: Map<number, unknown>,
+  onSaveRewrite: SaveRewriteHandler,
 ) {
   // Inject shared keyframe animations
   injectKeyframeAnimations();
@@ -96,20 +140,10 @@ export function createNetworkRewriteModal(
     contentContainer.appendChild(listView);
   };
 
-  const showEditView = (
-    item: any,
-    onSave: (
-      url: string,
-      method: string,
-      status: number,
-      response: any,
-      queryString?: string,
-      requestBody?: any,
-    ) => void,
-  ) => {
+  const showEditView = (item: NetworkCardItem, onSave: SaveRewriteHandler) => {
     // Debug: check item object
-    console.log("[showEditView] Called with item:", item);
-    console.log("[showEditView] item.rewriteRule:", item.rewriteRule);
+    logger.rewrite.debug("[showEditView] Called with item:", item);
+    logger.rewrite.debug("[showEditView] item.rewriteRule:", item.rewriteRule);
 
     const headerTitle = header.querySelector("h3");
     if (headerTitle) headerTitle.textContent = "Rewrite Configuration";
@@ -239,8 +273,8 @@ function createModalHeader() {
 }
 
 function createNetworkList(
-  networkData: Map<number, any>,
-  onEditClick: (item: any) => void,
+  networkData: Map<number, unknown>,
+  onEditClick: (item: NetworkCardItem) => void,
 ) {
   const container = document.createElement("div");
   Object.assign(container.style, {
@@ -302,34 +336,35 @@ function createNetworkList(
 
   if (rewriteRulesData) {
     try {
-      const rewriteRules = JSON.parse(rewriteRulesData) as Array<[string, any]>;
+      const rewriteRules = JSON.parse(rewriteRulesData) as Array<
+        [string, RewriteRule]
+      >;
       rewriteRules.forEach(([_, rule]) => {
         if (rule && rule.enabled) {
-          const rewriteRequest: NetworkRequest & {
-            hasRequestRewrite?: boolean;
-            hasResponseRewrite?: boolean;
-            rewriteRule?: any;
-          } = {
+          const rewriteRequest: NetworkRequest = {
             requestId: -1 * Date.now() + Math.random(), // Negative ID for rewrite marker
             method: rule.method,
             url: rule.url,
             status: rule.status || 200,
             timestamp: rule.createdAt || Date.now(),
             responseData: rule.response,
+            requestBody: rule.requestBody,
+            queryString: rule.queryString,
+            hasRequestRewrite:
+              rule.queryString !== undefined || rule.requestBody !== undefined,
+            hasResponseRewrite: rule.response !== undefined,
+            rewriteRule: rule,
           };
 
-          // Add request/response rewrite status
-          (rewriteRequest as any).hasRequestRewrite = !!(
-            rule.queryString !== undefined || rule.requestBody !== undefined
-          );
-          (rewriteRequest as any).hasResponseRewrite = !!(
-            rule.response !== undefined
-          );
-          (rewriteRequest as any).rewriteRule = rule;
-
           // Debug logs
-          console.log("[createNetworkList] rule from sessionStorage:", rule);
-          console.log("[createNetworkList] rewriteRequest:", rewriteRequest);
+          logger.rewrite.debug(
+            "[createNetworkList] rule from sessionStorage:",
+            rule,
+          );
+          logger.rewrite.debug(
+            "[createNetworkList] rewriteRequest:",
+            rewriteRequest,
+          );
 
           allRequests.push(rewriteRequest);
           rewriteRulesSet.add(`${rule.method}:${rule.url}`);
@@ -343,9 +378,13 @@ function createNetworkList(
   // Add existing network data (only those not duplicated by rewrite rules)
   networkData.forEach((data, requestId) => {
     // Only add requests with actual response data
-    if (data) {
+    if (isNetworkDataEntry(data)) {
       // Handle new data structure
-      if (data.url && data.method && data.status !== undefined) {
+      if (
+        typeof data.url === "string" &&
+        typeof data.method === "string" &&
+        data.status !== undefined
+      ) {
         const key = `${data.method}:${data.url.split("?")[0]}`;
         // Only add if not in rewrite rules
         if (!rewriteRulesSet.has(key)) {
@@ -428,11 +467,11 @@ function createNetworkList(
         status: request.status || 200,
         type: "Fetch",
         responseData: request.responseData,
-        requestBody: (request as any).requestBody,
+        requestBody: request.requestBody,
         isRewriteed: request.requestId < 0, // Negative ID = rewrite rule
-        hasRequestRewrite: (request as any).hasRequestRewrite,
-        hasResponseRewrite: (request as any).hasResponseRewrite,
-        rewriteRule: (request as any).rewriteRule,
+        hasRequestRewrite: request.hasRequestRewrite,
+        hasResponseRewrite: request.hasResponseRewrite,
+        rewriteRule: request.rewriteRule,
       };
       const card = createCardItem(item, onEditClick);
       cardsContainer.appendChild(card);
@@ -462,18 +501,8 @@ function createNetworkList(
 }
 
 function createCardItem(
-  item: {
-    method: string;
-    url: string;
-    status: number;
-    type: string;
-    responseData?: any;
-    isRewriteed?: boolean;
-    hasRequestRewrite?: boolean;
-    hasResponseRewrite?: boolean;
-    rewriteRule?: any;
-  },
-  onEditClick: (item: any) => void,
+  item: NetworkCardItem,
+  onEditClick: (item: NetworkCardItem) => void,
 ) {
   const card = document.createElement("div");
   card.className = "network-card";
@@ -495,7 +524,9 @@ function createCardItem(
   });
   card.addEventListener("mouseleave", () => {
     card.style.boxShadow = "";
-    card.style.backgroundColor = item.isRewriteed ? "rgba(245, 158, 11, 0.08)" : tokens.color.bg.elevated;
+    card.style.backgroundColor = item.isRewriteed
+      ? "rgba(245, 158, 11, 0.08)"
+      : tokens.color.bg.elevated;
   });
 
   const statusColor = getStatusColor(item.status);
@@ -626,11 +657,9 @@ function createCardItem(
 
   // Disable button event (prevent event bubbling)
   const disableBtn = card.querySelector(".disable-btn");
-  disableBtn?.addEventListener("click", async (e) => {
+  disableBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     if (confirm(`Disable rewrite for "${item.url}"?`)) {
-      // Remove rewrite rule from Network class
-      const { Network } = await import("../domain/network");
       Network.Rewrite.removeRule(item.url, item.method);
 
       // Show success message
@@ -672,23 +701,8 @@ function createCardItem(
 }
 
 function createEditView(
-  item: {
-    method: string;
-    url: string;
-    status: number;
-    responseData?: any;
-    queryString?: string;
-    requestBody?: any;
-    rewriteRule?: any;
-  },
-  onSave: (
-    url: string,
-    method: string,
-    status: number,
-    response: any,
-    queryString?: string,
-    requestBody?: any,
-  ) => void,
+  item: NetworkCardItem,
+  onSave: SaveRewriteHandler,
   onBack: () => void,
 ) {
   // Content container
@@ -719,7 +733,7 @@ function createEditView(
   `;
 
   // Use actual response data, or example data if absent
-  let defaultResponse = {};
+  let defaultResponse: unknown = {};
   if (item.responseData) {
     // Parse if responseData is a string
     if (typeof item.responseData === "string") {
@@ -734,7 +748,7 @@ function createEditView(
   }
 
   // Provide example data if empty object
-  if (Object.keys(defaultResponse).length === 0) {
+  if (!isObjectWithKeys(defaultResponse)) {
     defaultResponse = {
       success: true,
       message: "Rewrite response example",
@@ -755,7 +769,7 @@ function createEditView(
       );
       if (rewriteRulesData) {
         const rewriteRules = JSON.parse(rewriteRulesData) as Array<
-          [string, any]
+          [string, RewriteRule]
         >;
         const urlWithoutQuery = item.url.split("?")[0];
         const ruleKey = `${item.method.toUpperCase()}:${urlWithoutQuery}`;
@@ -766,8 +780,14 @@ function createEditView(
           existingRule = foundRule[1];
         }
 
-        console.log("[createEditView] Checking existing rule for:", ruleKey);
-        console.log("[createEditView] Found existing rule:", existingRule);
+        logger.rewrite.debug(
+          "[createEditView] Checking existing rule for:",
+          ruleKey,
+        );
+        logger.rewrite.debug(
+          "[createEditView] Found existing rule:",
+          existingRule,
+        );
       }
     } catch (e) {
       console.error("[createEditView] Error loading existing rule:", e);
@@ -898,7 +918,10 @@ function createEditView(
   const queryStringContainer = container.querySelector(
     "#querystring-container",
   );
-  console.log("[Query String Container] Found:", !!queryStringContainer);
+  logger.rewrite.debug(
+    "[Query String Container] Found:",
+    !!queryStringContainer,
+  );
 
   if (queryStringContainer) {
     const queryStringInput = document.createElement("input");
@@ -915,7 +938,7 @@ function createEditView(
       existingRule.queryString !== null
     ) {
       defaultQueryString = existingRule.queryString;
-      console.log(
+      logger.rewrite.debug(
         "[Query String] Using existingRule.queryString:",
         defaultQueryString,
       );
@@ -923,18 +946,27 @@ function createEditView(
     // 2. Get from item
     else if (item.queryString !== undefined && item.queryString !== null) {
       defaultQueryString = item.queryString;
-      console.log("[Query String] Using item.queryString:", defaultQueryString);
+      logger.rewrite.debug(
+        "[Query String] Using item.queryString:",
+        defaultQueryString,
+      );
     }
     // 3. Extract from URL
     else if (item.url.includes("?")) {
       defaultQueryString = item.url.substring(item.url.indexOf("?"));
-      console.log("[Query String] Using URL query:", defaultQueryString);
+      logger.rewrite.debug(
+        "[Query String] Using URL query:",
+        defaultQueryString,
+      );
     }
 
     // Debug logs
-    console.log("[Query String] item:", item);
-    console.log("[Query String] existingRule:", existingRule);
-    console.log("[Query String] Final defaultQueryString:", defaultQueryString);
+    logger.rewrite.debug("[Query String] item:", item);
+    logger.rewrite.debug("[Query String] existingRule:", existingRule);
+    logger.rewrite.debug(
+      "[Query String] Final defaultQueryString:",
+      defaultQueryString,
+    );
 
     queryStringInput.value = defaultQueryString;
 
@@ -973,7 +1005,7 @@ function createEditView(
   tabButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const targetTab = (btn as HTMLElement).dataset.tab;
-      console.log("[Tab Switch] Switching to:", targetTab);
+      logger.rewrite.debug("[Tab Switch] Switching to:", targetTab);
 
       // Deactivate all tab buttons
       tabButtons.forEach((b) => {
@@ -1001,7 +1033,7 @@ function createEditView(
       if (targetTab === "request" && requestSection && responseSection) {
         (requestSection as HTMLElement).style.display = "block";
         (responseSection as HTMLElement).style.display = "none";
-        console.log("[Tab Switch] Request section displayed");
+        logger.rewrite.debug("[Tab Switch] Request section displayed");
       } else if (
         targetTab === "response" &&
         requestSection &&
@@ -1009,7 +1041,7 @@ function createEditView(
       ) {
         (requestSection as HTMLElement).style.display = "none";
         (responseSection as HTMLElement).style.display = "block";
-        console.log("[Tab Switch] Response section displayed");
+        logger.rewrite.debug("[Tab Switch] Response section displayed");
       }
     });
   });
@@ -1026,15 +1058,12 @@ function createEditView(
     let requestBodyValue = "";
 
     // Get Request Body from existing rule or item
-    let actualRequestBody = null;
+    let actualRequestBody: unknown = null;
     if (existingRule?.requestBody !== undefined) {
       actualRequestBody = existingRule.requestBody;
     } else if (item.requestBody !== undefined) {
       actualRequestBody = item.requestBody;
-    } else if (
-      defaultRequestBody &&
-      Object.keys(defaultRequestBody).length > 0
-    ) {
+    } else if (defaultRequestBody && isObjectWithKeys(defaultRequestBody)) {
       actualRequestBody = defaultRequestBody;
     }
 
@@ -1047,14 +1076,20 @@ function createEditView(
       }
     }
 
-    console.log("[Request Body] item.requestBody:", item.requestBody);
-    console.log(
+    logger.rewrite.debug("[Request Body] item.requestBody:", item.requestBody);
+    logger.rewrite.debug(
       "[Request Body] existingRule?.requestBody:",
       existingRule?.requestBody,
     );
-    console.log("[Request Body] defaultRequestBody:", defaultRequestBody);
-    console.log("[Request Body] actualRequestBody:", actualRequestBody);
-    console.log("[Request Body] requestBodyValue:", requestBodyValue);
+    logger.rewrite.debug(
+      "[Request Body] defaultRequestBody:",
+      defaultRequestBody,
+    );
+    logger.rewrite.debug(
+      "[Request Body] actualRequestBody:",
+      actualRequestBody,
+    );
+    logger.rewrite.debug("[Request Body] requestBodyValue:", requestBodyValue);
 
     requestBodyTextarea.value = requestBodyValue;
 
@@ -1264,9 +1299,9 @@ function createEditView(
           // Remove querystring from URL for saving (handle all querystring variations)
           const urlWithoutQuery = item.url.split("?")[0];
 
-          let queryString = undefined;
-          let requestBody = undefined;
-          let responseData = undefined;
+          let queryString: string | undefined = undefined;
+          let requestBody: unknown = undefined;
+          let responseData: unknown = undefined;
 
           if (isRequestTabActive) {
             // Request tab active - rewrite request only
@@ -1287,15 +1322,13 @@ function createEditView(
 
             // Check if there is actual request rewrite content
             if (!queryString && !requestBody) {
-              alert(
-                "Enter rewrite content (Query String or Request Body)",
-              );
+              alert("Enter rewrite content (Query String or Request Body)");
               return;
             }
 
-            console.log("[Save] Mode: Request Rewrite");
-            console.log("[Save] Query String:", queryString);
-            console.log("[Save] Request Body:", requestBody);
+            logger.rewrite.debug("[Save] Mode: Request Rewrite");
+            logger.rewrite.debug("[Save] Query String:", queryString);
+            logger.rewrite.debug("[Save] Request Body:", requestBody);
           } else {
             // Response tab active - rewrite response only
             if (!textarea.value.trim()) {
@@ -1305,8 +1338,8 @@ function createEditView(
 
             responseData = JSON.parse(textarea.value);
 
-            console.log("[Save] Mode: Response Rewrite");
-            console.log("[Save] Response Data:", responseData);
+            logger.rewrite.debug("[Save] Mode: Response Rewrite");
+            logger.rewrite.debug("[Save] Response Data:", responseData);
           }
 
           onSave(
@@ -1337,7 +1370,9 @@ function createEditView(
         max-width: 90%;
         font-family: ${tokens.font.system};
       `;
-          const modeText = isRequestTabActive ? "Request rewrite enabled" : "Response rewrite enabled";
+          const modeText = isRequestTabActive
+            ? "Request rewrite enabled"
+            : "Response rewrite enabled";
           successMsg.textContent = modeText;
           document.body.appendChild(successMsg);
 
@@ -1353,7 +1388,7 @@ function createEditView(
             // Reload page to apply rewrite
             window.location.reload();
           }, 1500);
-        } catch (e) {
+        } catch {
           alert("Invalid JSON format.");
         }
       });

@@ -7,6 +7,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { WsAdapter } from "@nestjs/platform-ws";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as express from "express";
+import type { Request, Response } from "express";
 import helmet from "helmet";
 
 import {
@@ -16,6 +17,20 @@ import {
 } from "@remote-platform/common";
 
 import { AppModule } from "./app.module";
+
+interface RequestWithRawBody extends Request {
+  rawBody?: Buffer;
+}
+
+function preserveBillingWebhookRawBody(
+  req: Request,
+  _res: Response,
+  buffer: Buffer,
+): void {
+  if (req.originalUrl.startsWith("/api/billing/webhook")) {
+    (req as RequestWithRawBody).rawBody = Buffer.from(buffer);
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -28,7 +43,9 @@ async function bootstrap() {
       crossOriginEmbedderPolicy: false,
     }),
   );
-  app.use(express.json({ limit: "30mb" }));
+  app.use(
+    express.json({ limit: "30mb", verify: preserveBillingWebhookRawBody }),
+  );
   app.use(express.urlencoded({ limit: "30mb", extended: true }));
   app.useWebSocketAdapter(new WsAdapter(app));
   app.useGlobalPipes(
@@ -74,7 +91,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "stripe-signature"],
   });
 
   // Swagger API documentation

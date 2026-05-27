@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -8,11 +8,15 @@ import { renderWithProviders } from "@/test/utils";
 import { CommandPalette } from "./CommandPalette";
 
 beforeEach(() => {
-  useAppStore.setState({ commandOpen: true, demoMode: false });
+  act(() => {
+    useAppStore.setState({ commandOpen: true, demoMode: false });
+  });
 });
 
 afterEach(() => {
-  useAppStore.setState({ commandOpen: false, demoMode: false });
+  act(() => {
+    useAppStore.setState({ commandOpen: false, demoMode: false });
+  });
   localStorage.clear();
 });
 
@@ -29,10 +33,7 @@ describe("CommandPalette", () => {
     const user = userEvent.setup();
     renderWithProviders(<CommandPalette />);
 
-    await user.type(
-      screen.getByPlaceholderText(/Type a command/),
-      "dashboard",
-    );
+    await user.type(screen.getByPlaceholderText(/Type a command/), "dashboard");
     await waitFor(() => {
       expect(screen.queryByText("Sessions")).not.toBeInTheDocument();
     });

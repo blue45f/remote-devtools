@@ -7,8 +7,20 @@ import { ErrorCode } from "../exceptions/error-codes.enum";
 
 import { AllExceptionsFilter } from "./all-exceptions.filter";
 
+type MockHttpResponse = {
+  status: ReturnType<typeof vi.fn>;
+  json: ReturnType<typeof vi.fn>;
+};
+
+type SdkErrorResponse = {
+  error?: {
+    code?: unknown;
+    message?: unknown;
+  };
+};
+
 function createMockHost(url = "/test"): ArgumentsHost {
-  const mockResponse = {
+  const mockResponse: MockHttpResponse = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
   };
@@ -24,12 +36,12 @@ function createMockHost(url = "/test"): ArgumentsHost {
 }
 
 function getResponseJson(host: ArgumentsHost): Record<string, unknown> {
-  const response = host.switchToHttp().getResponse() as any;
+  const response = host.switchToHttp().getResponse<MockHttpResponse>();
   return response.json.mock.calls[0][0];
 }
 
 function getResponseStatus(host: ArgumentsHost): number {
-  const response = host.switchToHttp().getResponse() as any;
+  const response = host.switchToHttp().getResponse<MockHttpResponse>();
   return response.status.mock.calls[0][0];
 }
 
@@ -117,8 +129,9 @@ describe("AllExceptionsFilter", () => {
       const json = getResponseJson(host);
       expect(json.success).toBe(false);
       expect(json.error).toBeDefined();
-      expect((json.error as any).code).toBe(ErrorCode.VALIDATION_FAILED);
-      expect((json.error as any).message).toBe("Bad input");
+      const sdkJson = json as SdkErrorResponse;
+      expect(sdkJson.error?.code).toBe(ErrorCode.VALIDATION_FAILED);
+      expect(sdkJson.error?.message).toBe("Bad input");
     });
   });
 });

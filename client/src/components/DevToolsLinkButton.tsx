@@ -6,8 +6,10 @@ import { toast } from "@/components/ui/toaster";
 import { buildDevToolsLink } from "@/lib/devtools-link";
 import { useAppStore } from "@/lib/store";
 
-interface DevToolsLinkButtonProps
-  extends Omit<ButtonProps, "asChild" | "onClick"> {
+interface DevToolsLinkButtonProps extends Omit<
+  ButtonProps,
+  "asChild" | "onClick"
+> {
   /** Session room name (matches the SDK's `room` param). */
   room: string;
   /** Optional record id when opening a recorded session. */

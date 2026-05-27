@@ -60,7 +60,7 @@ export class UserInfoService {
     try {
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
-        relations: ["user", "user.ticketTemplateList"],
+        relations: { user: { ticketTemplateList: true } },
       });
 
       if (!device || !device.user) {
@@ -113,7 +113,7 @@ export class UserInfoService {
     try {
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
-        relations: ["user", "user.ticketTemplateList"],
+        relations: { user: { ticketTemplateList: true } },
       });
 
       if (!device || !device.user) {
@@ -192,7 +192,7 @@ export class UserInfoService {
     try {
       const device = await this.deviceRepository.findOne({
         where: { deviceId },
-        relations: ["user", "user.ticketTemplateList"],
+        relations: { user: { ticketTemplateList: true } },
       });
 
       if (!device || !device.user) {

@@ -7,9 +7,7 @@ import { Button } from "./button";
 describe("Button", () => {
   it("renders the children", () => {
     render(<Button>Save</Button>);
-    expect(
-      screen.getByRole("button", { name: "Save" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
   });
 
   it("forwards click events", async () => {

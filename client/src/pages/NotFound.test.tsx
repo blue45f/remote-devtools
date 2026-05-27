@@ -10,11 +10,13 @@ describe("NotFound", () => {
     renderWithProviders(<NotFound />);
     expect(screen.getByText("404")).toBeInTheDocument();
     expect(screen.getByText("Lost in the network")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /All sessions/ }),
-    ).toHaveAttribute("href", "/sessions");
-    expect(
-      screen.getByRole("link", { name: /Dashboard/ }),
-    ).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: /All sessions/ })).toHaveAttribute(
+      "href",
+      "/sessions",
+    );
+    expect(screen.getByRole("link", { name: /Dashboard/ })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
   });
 });

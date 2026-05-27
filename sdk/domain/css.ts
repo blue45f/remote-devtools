@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { calculate, compare, SpecificityArray } from "specificity";
 
 import { DEVTOOL_STYLESHEET } from "../common/constant";
@@ -25,6 +24,43 @@ interface StyleRule {
     startColumn: number;
     endLine: number;
     endColumn: number;
+  };
+}
+
+type FormattedCssProperty = {
+  name: string;
+  value: string;
+  text: string;
+  important: boolean;
+  disabled: boolean;
+  implicit: boolean;
+  shorthandEntries: unknown[];
+  range?: {
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+  };
+  parsedOk?: boolean;
+} | null;
+
+interface FormattedCssRule {
+  index: number;
+  specificityArray: SpecificityArray;
+  cssRule: {
+    styleSheetId: string;
+    media: { source: string; text: string }[];
+    style: {
+      styleSheetId: string;
+      cssText?: string;
+      cssProperties: FormattedCssProperty[];
+      shorthandEntries: never[];
+      range: StyleRule["range"];
+    };
+    selectorList: {
+      selectors: { text: string }[];
+      text: string;
+    };
   };
 }
 
@@ -60,7 +96,7 @@ export class CSS extends BaseDomain {
     styleSheetId: string,
     rule: StyleRule,
     node: Node,
-  ): any {
+  ): FormattedCssRule {
     let index = 0;
     let specificityArray: SpecificityArray = [0, 0, 0, 0];
 
@@ -550,7 +586,7 @@ export class CSS extends BaseDomain {
 
     const matchedCSSRules: {
       matchingSelectors: number[];
-      rule: CSSRule;
+      rule: FormattedCssRule["cssRule"];
       specificityArray: SpecificityArray;
     }[] = [];
     const styleSheets = Array.from(document.styleSheets);
@@ -628,7 +664,7 @@ export class CSS extends BaseDomain {
       } else {
         css.disabled = false;
         css.implicit = false;
-        css.parsedOk = !!style[name as any];
+        css.parsedOk = name in style;
       }
     });
 

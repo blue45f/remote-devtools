@@ -3,6 +3,7 @@ import {
   createTemplateSelector,
   reloadFormWithTemplate,
 } from "./components/templateSelector";
+import { logger } from "../../utils/logger";
 import { applyButtonStyles } from "./styles";
 import {
   ApiResponse,
@@ -240,7 +241,7 @@ export async function loadTicketFormDataFromAPI({
         },
       );
     } else {
-      console.log(
+      logger.remote.debug(
         "[RemoteDebug-SDK][Template Debug] 템플릿이 1개뿐이거나 없음, 선택 UI 생성 안함",
       );
     }

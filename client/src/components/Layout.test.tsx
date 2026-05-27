@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Route, Routes } from "react-router-dom";
@@ -13,20 +13,24 @@ function HomeMock() {
 }
 
 beforeEach(() => {
-  useAppStore.setState({
-    commandOpen: false,
-    sidebarOpen: false,
-    sidebarCollapsed: false,
-    demoMode: false,
+  act(() => {
+    useAppStore.setState({
+      commandOpen: false,
+      sidebarOpen: false,
+      sidebarCollapsed: false,
+      demoMode: false,
+    });
   });
 });
 
 afterEach(() => {
-  useAppStore.setState({
-    commandOpen: false,
-    sidebarOpen: false,
-    sidebarCollapsed: false,
-    demoMode: false,
+  act(() => {
+    useAppStore.setState({
+      commandOpen: false,
+      sidebarOpen: false,
+      sidebarCollapsed: false,
+      demoMode: false,
+    });
   });
   localStorage.clear();
 });
@@ -59,6 +63,8 @@ describe("Layout", () => {
     );
     expect(useAppStore.getState().commandOpen).toBe(false);
     await user.keyboard("{Meta>}k{/Meta}");
-    expect(useAppStore.getState().commandOpen).toBe(true);
+    await waitFor(() => {
+      expect(useAppStore.getState().commandOpen).toBe(true);
+    });
   });
 });

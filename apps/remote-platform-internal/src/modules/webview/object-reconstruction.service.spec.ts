@@ -4,6 +4,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import { ObjectReconstructionService } from "./object-reconstruction.service";
 
+type PropertySnapshotsMap = Parameters<
+  ObjectReconstructionService["reconstructObjectAsJson"]
+>[1];
+
+const createPropertySnapshotsMap = (): PropertySnapshotsMap => new Map();
+
 describe("ObjectReconstructionService", () => {
   let service: ObjectReconstructionService;
 
@@ -19,20 +25,20 @@ describe("ObjectReconstructionService", () => {
 
   describe("reconstructObjectAsJson", () => {
     it("should return empty object when no snapshots found", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       const result = service.reconstructObjectAsJson("obj-1", map, []);
       expect(result).toBe("{}");
     });
 
     it("should return empty object for empty properties array", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", []);
       const result = service.reconstructObjectAsJson("obj-1", map, []);
       expect(result).toBe("{}");
     });
 
     it("should reconstruct simple string property", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", [
         {
           name: "greeting",
@@ -46,7 +52,7 @@ describe("ObjectReconstructionService", () => {
     });
 
     it("should reconstruct number property", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", [
         {
           name: "count",
@@ -60,7 +66,7 @@ describe("ObjectReconstructionService", () => {
     });
 
     it("should reconstruct boolean property", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", [
         {
           name: "active",
@@ -74,7 +80,7 @@ describe("ObjectReconstructionService", () => {
     });
 
     it("should handle null values", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", [
         {
           name: "data",
@@ -88,7 +94,7 @@ describe("ObjectReconstructionService", () => {
     });
 
     it("should respect custom indent", () => {
-      const map = new Map<string, any[]>();
+      const map = createPropertySnapshotsMap();
       map.set("obj-1", [
         {
           name: "key",

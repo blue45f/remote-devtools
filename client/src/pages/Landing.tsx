@@ -62,7 +62,11 @@ export default function LandingPage() {
       <SkipLink />
       <TopNav onTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
 
-      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 focus:outline-none"
+      >
         <Hero onEnterDemo={enterDemo} />
         <DashboardMockup />
         <StatsStrip />
@@ -163,9 +167,7 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
         >
           {t("landing.heroTitle")}
           <br />
-          <span className="text-fg-subtle">
-            {t("landing.heroTitleAccent")}
-          </span>
+          <span className="text-fg-subtle">{t("landing.heroTitleAccent")}</span>
         </motion.h1>
 
         <motion.p
@@ -271,9 +273,7 @@ function DashboardMockup() {
             <span className="ml-3 text-[11px] font-mono text-fg-faint">
               remote-devtools.vercel.app/dashboard
             </span>
-            <span className="ml-auto text-[10px] text-fg-faint">
-              demo mode
-            </span>
+            <span className="ml-auto text-[10px] text-fg-faint">demo mode</span>
           </div>
 
           {/* Mock UI body */}
@@ -495,7 +495,11 @@ function Features() {
     <section id="features" className="py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-4 lg:px-6">
         <div className="max-w-2xl mb-10 lg:mb-14">
-          <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
+          <Badge
+            variant="neutral"
+            size="sm"
+            className="mb-3 uppercase tracking-wider"
+          >
             What you get
           </Badge>
           <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
@@ -520,7 +524,9 @@ function Features() {
                   <f.icon className="size-4 text-fg-subtle" />
                 </div>
                 <h3 className="text-sm font-semibold mb-1.5">{f.title}</h3>
-                <p className="text-sm text-fg-subtle leading-relaxed">{f.body}</p>
+                <p className="text-sm text-fg-subtle leading-relaxed">
+                  {f.body}
+                </p>
               </Card>
             </motion.div>
           ))}
@@ -572,15 +578,19 @@ function QuickStart() {
     >
       <div className="max-w-5xl mx-auto px-4 lg:px-6">
         <div className="max-w-2xl mb-8">
-          <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
+          <Badge
+            variant="neutral"
+            size="sm"
+            className="mb-3 uppercase tracking-wider"
+          >
             Quick start
           </Badge>
           <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
             Three lines to start capturing.
           </h2>
           <p className="text-fg-subtle">
-            Pick the surface that fits — module import, script tag, or the
-            full Docker stack.
+            Pick the surface that fits — module import, script tag, or the full
+            Docker stack.
           </p>
         </div>
 
@@ -728,4 +738,3 @@ function SiteFooter() {
     </footer>
   );
 }
-

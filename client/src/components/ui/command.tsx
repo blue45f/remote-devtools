@@ -47,9 +47,7 @@ export function CommandDialog({
         <DialogDescription className="sr-only">
           Search for actions, sessions, and pages
         </DialogDescription>
-        <Command
-          className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-fg-faint"
-        >
+        <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-fg-faint">
           {children}
         </Command>
       </DialogContent>
@@ -61,7 +59,10 @@ export const CommandInput = forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b border-border px-3" cmdk-input-wrapper="">
+  <div
+    className="flex items-center border-b border-border px-3"
+    cmdk-input-wrapper=""
+  >
     <Search className="mr-2 size-4 shrink-0 text-fg-subtle" />
     <CommandPrimitive.Input
       ref={ref}
@@ -82,7 +83,10 @@ export const CommandList = forwardRef<
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.List
     ref={ref}
-    className={cn("max-h-[400px] overflow-y-auto overflow-x-hidden p-1", className)}
+    className={cn(
+      "max-h-[400px] overflow-y-auto overflow-x-hidden p-1",
+      className,
+    )}
     {...props}
   />
 ));

@@ -178,7 +178,10 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                         {
                           type: 2,
                           tagName: "button",
-                          attributes: { class: "btn", style: "margin-top:14px" },
+                          attributes: {
+                            class: "btn",
+                            style: "margin-top:14px",
+                          },
                           childNodes: [
                             { type: 3, textContent: "Continue", id: 131 },
                           ],

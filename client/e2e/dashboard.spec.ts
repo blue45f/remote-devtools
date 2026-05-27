@@ -31,8 +31,8 @@ test.describe("Dashboard", () => {
     // The topbar search button toggles the palette — exercise that instead of
     // the keyboard shortcut, which is OS-conditional and flaky in headless.
     await page.getByRole("button", { name: /Open command palette/ }).click();
-    await expect(
-      page.getByPlaceholder(/Type a command/),
-    ).toBeVisible({ timeout: 2000 });
+    await expect(page.getByPlaceholder(/Type a command/)).toBeVisible({
+      timeout: 2000,
+    });
   });
 });

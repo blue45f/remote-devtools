@@ -14,6 +14,22 @@ import {
 } from "../exceptions/business.exception";
 import { ErrorCode } from "../exceptions/error-codes.enum";
 
+const getExceptionMessage = (
+  exceptionResponse: unknown,
+  fallback: string,
+): string => {
+  if (
+    typeof exceptionResponse === "object" &&
+    exceptionResponse !== null &&
+    "message" in exceptionResponse &&
+    typeof exceptionResponse.message === "string"
+  ) {
+    return exceptionResponse.message;
+  }
+
+  return fallback;
+};
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -63,8 +79,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const message =
           typeof exceptionResponse === "string"
             ? exceptionResponse
-            : (exceptionResponse as any).message ||
-              "요청 처리 중 오류가 발생했습니다.";
+            : getExceptionMessage(
+                exceptionResponse,
+                "요청 처리 중 오류가 발생했습니다.",
+              );
 
         errorResponse = {
           statusCode: status,

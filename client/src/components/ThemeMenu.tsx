@@ -32,11 +32,7 @@ export function ThemeMenu({ collapsed }: { collapsed?: boolean }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Switch theme"
-            >
+            <Button variant="ghost" size="icon-sm" aria-label="Switch theme">
               <Icon />
             </Button>
           </DropdownMenuTrigger>

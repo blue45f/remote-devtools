@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
@@ -30,8 +28,11 @@ import {
 } from "@remote-platform/entity";
 
 import { getDefaultCommonInfo } from "../../utils/common-info";
-import { BufferService } from "../buffer/buffer.service";
-import { JiraService } from "../jira/jira.service";
+import { BufferService, type BufferEvent } from "../buffer/buffer.service";
+import {
+  JiraService,
+  type CreateTicketRequestBody,
+} from "../jira/jira.service";
 import { SlackService } from "../slack/slack.service";
 import { UserInfoService } from "../user-info/user-info.service";
 
@@ -54,6 +55,37 @@ export type {
   TicketFormData,
   UserData,
 } from "./webview.types";
+
+type ProtocolMessage = {
+  id?: number;
+  method?: string;
+  params?: Record<string, unknown>;
+  result?: object;
+  [key: string]: unknown;
+};
+
+type TicketUserInfo = NonNullable<
+  Awaited<ReturnType<UserInfoService["getUserInfoByDeviceId"]>>
+>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const parseProtocolMessage = (
+  message: string | object,
+): ProtocolMessage | null => {
+  try {
+    const parsed = typeof message === "string" ? JSON.parse(message) : message;
+    return isRecord(parsed) ? (parsed as ProtocolMessage) : null;
+  } catch {
+    return null;
+  }
+};
+
+const hasProtocolMethod = (
+  protocol: ProtocolMessage,
+): protocol is ProtocolMessage & { method: string } =>
+  typeof protocol.method === "string";
 
 // ---------------------------------------------------------------------------
 // Gateway -- SDK와 DevTools 간 WebSocket 통신 게이트웨이
@@ -119,7 +151,7 @@ export class WebviewGateway
   // Helpers
   // -------------------------------------------------------------------------
 
-  private sendMessage(socket: WebSocket, data: any): void {
+  private sendMessage(socket: WebSocket, data: unknown): void {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(data));
     }
@@ -427,20 +459,17 @@ export class WebviewGateway
     }
 
     if (roomData.recordId) {
-      let protocol: any;
-      try {
-        protocol =
-          typeof data.message === "string"
-            ? JSON.parse(data.message)
-            : data.message;
-      } catch {
+      const protocol = parseProtocolMessage(data.message);
+      if (!protocol) {
         this.logger.warn(
           `[messageToDevtools] Invalid JSON message in room ${data.room}`,
         );
         return;
       }
 
-      if (this.domService.isEnableDomResponseMessage(protocol.id)) {
+      const protocolId =
+        typeof protocol.id === "number" ? protocol.id : undefined;
+      if (this.domService.isEnableDomResponseMessage(protocolId)) {
         this.sendMessage(client, {
           event: "protocol",
           message: {
@@ -449,11 +478,11 @@ export class WebviewGateway
             params: {},
           },
         });
-      } else if (this.domService.isGetDomResponseMessage(protocol.id)) {
+      } else if (this.domService.isGetDomResponseMessage(protocolId)) {
         const [seconds, nanoseconds] = process.hrtime();
         void this.domService.upsert({
           recordId: roomData.recordId,
-          protocol: protocol.result,
+          protocol: protocol.result ?? {},
           timestamp: seconds * 1e9 + nanoseconds,
           type: "entireDom",
         });
@@ -470,10 +499,8 @@ export class WebviewGateway
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
-    let protocol: any;
-    try {
-      protocol = JSON.parse(data.message);
-    } catch {
+    const protocol = parseProtocolMessage(data.message);
+    if (!protocol) {
       this.logger.warn(
         `[protocolToAllDevtools] Invalid JSON message in room ${data.room}`,
       );
@@ -489,6 +516,7 @@ export class WebviewGateway
     roomData.devtools.forEach((devtools) => devtools.send(data.message));
 
     if (!roomData.recordId) return;
+    if (!hasProtocolMethod(protocol)) return;
 
     // Delegate persistence to CdpEventPersistenceService
     await this.cdpEventPersistence.persistProtocolEvent(
@@ -507,7 +535,7 @@ export class WebviewGateway
   // -------------------------------------------------------------------------
 
   private async handleSessionReplayProtocol(
-    protocol: any,
+    protocol: ProtocolMessage & { method: string },
     roomData: RoomData,
     roomName: string,
   ): Promise<void> {
@@ -580,7 +608,7 @@ export class WebviewGateway
   private addRrwebEventToBuffer(
     roomName: string,
     recordId: number,
-    protocol: any,
+    protocol: ProtocolMessage & { method: string },
     sessionTimestamp: bigint,
   ): void {
     const bufferInfo = this.bufferRooms.get(roomName);
@@ -622,7 +650,7 @@ export class WebviewGateway
       url: string;
       userAgent: string;
       title?: string;
-      event: any;
+      event: BufferEvent;
     },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
@@ -727,10 +755,16 @@ export class WebviewGateway
         data.title,
       );
       // Override sessionStartTime from client
-      const info = this.bufferRooms.get(bufferRoom)!;
+      const info = this.bufferRooms.get(bufferRoom);
+      if (!info) {
+        this.logger.warn(`Buffer room not found: ${bufferRoom}`);
+        return;
+      }
       info.sessionStartTime = sessionStartTime;
-      this.lastBufferInfoByDevice.get(data.deviceId)!.sessionStartTime =
-        sessionStartTime;
+      const lastBufferInfo = this.lastBufferInfoByDevice.get(data.deviceId);
+      if (lastBufferInfo) {
+        lastBufferInfo.sessionStartTime = sessionStartTime;
+      }
 
       this.sendMessage(client, {
         event: "bufferingEnabled",
@@ -936,7 +970,7 @@ export class WebviewGateway
     recordId: number,
     roomName: string,
     URL: string,
-    requestBody: any,
+    requestBody: CreateTicketRequestBody,
     ticketKey: string,
     ticketUrl: string,
     formData?: TicketFormData,
@@ -980,9 +1014,9 @@ export class WebviewGateway
     recordId: number,
     roomName: string,
     URL: string,
-    requestBody: any,
+    requestBody: CreateTicketRequestBody,
     ticketUrl: string,
-    userInfo: any,
+    userInfo: TicketUserInfo,
     formData?: TicketFormData,
   ): Promise<void> {
     try {
@@ -1165,9 +1199,13 @@ export class WebviewGateway
     if (!room.startsWith("Record-") && !room.startsWith("Live-")) {
       try {
         const bufferInfo = this.bufferRooms.get(room);
+        if (roomData.recordId === undefined || roomData.recordId === null) {
+          this.logger.warn(`Cannot flush buffer without recordId: ${room}`);
+          return;
+        }
         await this.bufferFlushService.flushBufferToFile(
           room,
-          roomData.recordId!,
+          roomData.recordId,
           bufferInfo?.deviceId || "unknown-device",
           bufferInfo?.url || "unknown-url",
           bufferInfo?.userAgent || "unknown-useragent",

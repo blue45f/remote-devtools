@@ -74,8 +74,7 @@ export default defineConfig(({ command }) => ({
           if (id.includes("node_modules/cmdk")) return "cmdk";
           if (id.includes("node_modules/lucide-react")) return "icons";
           if (id.includes("node_modules/sonner")) return "toast";
-          if (id.includes("node_modules/@tanstack/react-query"))
-            return "query";
+          if (id.includes("node_modules/@tanstack/react-query")) return "query";
           return undefined;
         },
       },

@@ -63,7 +63,10 @@ export function Topbar() {
   const demoMode = useAppStore((s) => s.demoMode);
   const { t } = useTranslation();
 
-  const crumbs = useMemo(() => buildCrumbs(location.pathname), [location.pathname]);
+  const crumbs = useMemo(
+    () => buildCrumbs(location.pathname),
+    [location.pathname],
+  );
 
   return (
     <header
@@ -152,9 +155,7 @@ export function Topbar() {
       >
         <Search className="size-3.5" />
         <span className="hidden sm:inline pr-3">{t("topbar.search")}</span>
-        <Kbd className="hidden sm:inline-flex">
-          {isMac ? "⌘" : "Ctrl"}
-        </Kbd>
+        <Kbd className="hidden sm:inline-flex">{isMac ? "⌘" : "Ctrl"}</Kbd>
         <Kbd className="hidden sm:inline-flex">K</Kbd>
       </button>
     </header>

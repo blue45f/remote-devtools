@@ -19,7 +19,9 @@ const meta = {
   decorators: [
     (Story) => {
       const client = new QueryClient({
-        defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+        },
       });
       return (
         <MemoryRouter>

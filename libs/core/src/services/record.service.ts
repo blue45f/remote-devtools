@@ -138,7 +138,7 @@ export class RecordService {
   public async findWithNetworks(id: number): Promise<RecordEntity | null> {
     return this.recordRepository.findOne({
       where: { id },
-      relations: ["networks"],
+      relations: { networks: true },
     });
   }
 

@@ -35,7 +35,7 @@ describe("WorkflowController", () => {
       const mockResponse = {
         data: { code: "200", data: [{ name: "Test User" }] },
       };
-      (axios.get as any).mockResolvedValue(mockResponse);
+      vi.mocked(axios.get).mockResolvedValue(mockResponse);
 
       const result = await controller.getMembers("Test");
 
@@ -46,7 +46,7 @@ describe("WorkflowController", () => {
   describe("uploadImageToJira", () => {
     it("should throw BadRequestException when no file provided", async () => {
       await expect(
-        controller.uploadImageToJira("PROJ-1", undefined as any),
+        controller.uploadImageToJira("PROJ-1", undefined as never),
       ).rejects.toThrow(BadRequestException);
     });
 

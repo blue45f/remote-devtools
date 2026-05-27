@@ -16,7 +16,6 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { AreaChart, Sparkline } from "@/components/charts";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -392,13 +391,7 @@ function ChartPanel({
         <p className="text-xs text-fg-subtle mb-4">{description}</p>
       )}
       <div className="h-[260px]">
-        {loading ? (
-          <ChartSkeleton />
-        ) : empty ? (
-          <ChartEmpty />
-        ) : (
-          children
-        )}
+        {loading ? <ChartSkeleton /> : empty ? <ChartEmpty /> : children}
       </div>
     </Card>
   );
@@ -501,4 +494,3 @@ function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
     </div>
   );
 }
-

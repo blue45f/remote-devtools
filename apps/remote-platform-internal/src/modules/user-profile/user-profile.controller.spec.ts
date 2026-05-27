@@ -56,7 +56,7 @@ describe("UserProfileController", () => {
       const dto = {
         name: "New User",
         username: "newuser",
-        jobType: "DEV" as any,
+        jobType: "DEV" as never,
         empNo: "22010083",
         email: "test@test.com",
       };
@@ -77,7 +77,7 @@ describe("UserProfileController", () => {
       const dto = {
         name: "Updated",
         username: "user",
-        jobType: "QA" as any,
+        jobType: "QA" as never,
         empNo: "22010083",
         email: "t@t.com",
       };

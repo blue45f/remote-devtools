@@ -19,4 +19,7 @@ export {
 export {
   OrganizationEntity,
   type OrganizationPlan,
+  type OrganizationSubscriptionStatus,
 } from "./organization.entity";
+
+export { BillingWebhookEventEntity } from "./billing-webhook-event.entity";

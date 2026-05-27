@@ -1,6 +1,7 @@
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach } from "vitest";
+import type * as WebSocket from "ws";
 
 import { S3PlaybackService } from "./s3-playback.service";
 
@@ -16,8 +17,8 @@ describe("S3PlaybackService", () => {
 
   describe("cache management", () => {
     it("should initialize and clear client caches", () => {
-      const mockClient = {} as any;
-      service.initializeClientCaches(mockClient, [{ test: true }]);
+      const mockClient = {} as WebSocket;
+      service.initializeClientCaches(mockClient, [{ timestamp: 1 }]);
 
       expect(service.getBackupCache(mockClient)).toHaveLength(1);
       expect(service.getResponseBodyCache(mockClient)).toBeDefined();
@@ -84,11 +85,25 @@ describe("S3PlaybackService", () => {
 
   describe("sortProtocolsByTimestamp", () => {
     it("should sort by timestamp ascending", () => {
-      const protocols = [
-        { protocol: {}, timestamp: 3000 },
-        { protocol: {}, timestamp: 1000 },
-        { protocol: {}, timestamp: 2000 },
-      ] as any;
+      const protocols: Parameters<
+        S3PlaybackService["sortProtocolsByTimestamp"]
+      >[0] = [
+        {
+          protocol: { method: "Test.event", params: {} },
+          timestamp: 3000,
+          domain: "Test",
+        },
+        {
+          protocol: { method: "Test.event", params: {} },
+          timestamp: 1000,
+          domain: "Test",
+        },
+        {
+          protocol: { method: "Test.event", params: {} },
+          timestamp: 2000,
+          domain: "Test",
+        },
+      ];
       const sorted = service.sortProtocolsByTimestamp(protocols);
       expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(
         Number(sorted[1].timestamp),
@@ -98,14 +113,14 @@ describe("S3PlaybackService", () => {
 
   describe("findDomDataInS3Cache", () => {
     it("should return null when no cache", () => {
-      const mockClient = {} as any;
+      const mockClient = {} as WebSocket;
       expect(service.findDomDataInS3Cache(mockClient)).toBeNull();
     });
   });
 
   describe("findScreenDataInS3Cache", () => {
     it("should return null when no cache", () => {
-      const mockClient = {} as any;
+      const mockClient = {} as WebSocket;
       expect(service.findScreenDataInS3Cache(mockClient)).toBeNull();
     });
   });

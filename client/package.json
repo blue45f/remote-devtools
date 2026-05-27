@@ -11,9 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
-    "e2e:debug": "playwright test --debug",
+    "e2e": "FORCE_COLOR=0 NO_COLOR= playwright test",
+    "e2e:ui": "FORCE_COLOR=0 NO_COLOR= playwright test --ui",
+    "e2e:debug": "FORCE_COLOR=0 NO_COLOR= playwright test --debug",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

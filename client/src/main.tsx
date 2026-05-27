@@ -35,41 +35,46 @@ function PageLoader() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Root element #root was not found");
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Public marketing landing — no app shell */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/sign-up" element={<SignUp />} />
-              {/* App shell — protected by RequireAuth when the backend has
+              <Routes>
+                {/* Public marketing landing — no app shell */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/sign-up" element={<SignUp />} />
+                {/* App shell — protected by RequireAuth when the backend has
                    AUTH_JWT_SECRET set; pass-through in demo / self-host. */}
-              <Route
-                element={
-                  <RequireAuth>
-                    <Layout />
-                  </RequireAuth>
-                }
-              >
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="sessions" element={<Sessions />} />
-                <Route path="sessions/:id" element={<SessionDetail />} />
-                <Route path="sandbox/module" element={<SdkModule />} />
-                <Route path="sandbox/script" element={<SdkScript />} />
-                {/* Legacy redirects (preserve old links) */}
                 <Route
-                  path="test"
-                  element={<Navigate to="/sandbox/script" replace />}
-                />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
+                  element={
+                    <RequireAuth>
+                      <Layout />
+                    </RequireAuth>
+                  }
+                >
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="sessions" element={<Sessions />} />
+                  <Route path="sessions/:id" element={<SessionDetail />} />
+                  <Route path="sandbox/module" element={<SdkModule />} />
+                  <Route path="sandbox/script" element={<SdkScript />} />
+                  {/* Legacy redirects (preserve old links) */}
+                  <Route
+                    path="test"
+                    element={<Navigate to="/sandbox/script" replace />}
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
             </Suspense>
           </BrowserRouter>
         </AuthProvider>

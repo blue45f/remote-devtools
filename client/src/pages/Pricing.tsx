@@ -161,71 +161,71 @@ export default function PricingPage() {
                   ? { ...rawPlan, cta: "Get started" }
                   : rawPlan;
               return (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
-                className="h-full"
-              >
-                <Card
-                  className={cn(
-                    "p-6 h-full flex flex-col gap-5 relative",
-                    plan.highlight && "border-fg shadow-md",
-                  )}
+                <motion.div
+                  key={plan.name}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
+                  className="h-full"
                 >
-                  {plan.highlight && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-fg text-bg text-[10px] font-semibold uppercase tracking-wider">
-                      {t("pricing.mostPopular")}
-                    </span>
-                  )}
-                  <div>
-                    <h3 className="text-lg font-semibold">{plan.name}</h3>
-                    <p className="text-xs text-fg-subtle mt-1">
-                      {plan.description}
-                    </p>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-4xl font-semibold tracking-tight">
-                      {plan.price}
-                    </span>
-                    {plan.cadence && (
-                      <span className="text-xs text-fg-subtle">
-                        / {plan.cadence}
+                  <Card
+                    className={cn(
+                      "p-6 h-full flex flex-col gap-5 relative",
+                      plan.highlight && "border-fg shadow-md",
+                    )}
+                  >
+                    {plan.highlight && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-fg text-bg text-[10px] font-semibold uppercase tracking-wider">
+                        {t("pricing.mostPopular")}
                       </span>
                     )}
-                  </div>
-                  <Button
-                    asChild
-                    variant={plan.highlight ? "primary" : "outline"}
-                    className="w-full"
-                  >
-                    {plan.href.startsWith("/") ? (
-                      <Link to={plan.href}>{plan.cta}</Link>
-                    ) : (
-                      <a href={plan.href} target="_blank" rel="noreferrer">
-                        {plan.cta}
-                      </a>
+                    <div>
+                      <h3 className="text-lg font-semibold">{plan.name}</h3>
+                      <p className="text-xs text-fg-subtle mt-1">
+                        {plan.description}
+                      </p>
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-semibold tracking-tight">
+                        {plan.price}
+                      </span>
+                      {plan.cadence && (
+                        <span className="text-xs text-fg-subtle">
+                          / {plan.cadence}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      asChild
+                      variant={plan.highlight ? "primary" : "outline"}
+                      className="w-full"
+                    >
+                      {plan.href.startsWith("/") ? (
+                        <Link to={plan.href}>{plan.cta}</Link>
+                      ) : (
+                        <a href={plan.href} target="_blank" rel="noreferrer">
+                          {plan.cta}
+                        </a>
+                      )}
+                    </Button>
+                    <ul className="flex flex-col gap-2 text-sm">
+                      {plan.features.map((f) => (
+                        <li
+                          key={f}
+                          className="flex items-start gap-2 text-fg-subtle"
+                        >
+                          <Check className="size-4 text-fg-faint mt-0.5 shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {plan.footnote && (
+                      <p className="text-[11px] text-fg-faint mt-auto pt-2 border-t border-border">
+                        {plan.footnote}
+                      </p>
                     )}
-                  </Button>
-                  <ul className="flex flex-col gap-2 text-sm">
-                    {plan.features.map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-2 text-fg-subtle"
-                      >
-                        <Check className="size-4 text-fg-faint mt-0.5 shrink-0" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.footnote && (
-                    <p className="text-[11px] text-fg-faint mt-auto pt-2 border-t border-border">
-                      {plan.footnote}
-                    </p>
-                  )}
-                </Card>
-              </motion.div>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>
@@ -240,9 +240,7 @@ export default function PricingPage() {
                   The hosted Starter and Pro tiers are not yet live. The
                   open-source release is fully functional today — see{" "}
                   <a
-                    href={
-                      GITHUB_URL + "/blob/main/docs/LAUNCH.md"
-                    }
+                    href={GITHUB_URL + "/blob/main/docs/LAUNCH.md"}
                     className="underline-offset-2 hover:underline text-fg-subtle hover:text-fg"
                     target="_blank"
                     rel="noreferrer"
@@ -326,7 +324,11 @@ function FAQ() {
   return (
     <section className="mt-16">
       <div className="mb-6">
-        <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
+        <Badge
+          variant="neutral"
+          size="sm"
+          className="mb-3 uppercase tracking-wider"
+        >
           FAQ
         </Badge>
         <h2 className="text-2xl font-semibold tracking-tight">

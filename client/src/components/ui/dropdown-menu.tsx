@@ -107,8 +107,7 @@ export const DropdownMenuSeparator = forwardRef<
     {...props}
   />
 ));
-DropdownMenuSeparator.displayName =
-  DropdownMenuPrimitive.Separator.displayName;
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 export function DropdownMenuShortcut({
   className,

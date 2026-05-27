@@ -23,7 +23,7 @@ export interface StandardResponse<T> {
     /** 에러 메시지 */
     message: string;
     /** 추가 에러 상세 정보 (선택) */
-    details?: any;
+    details?: unknown;
   };
   /** 응답 생성 시각 (ISO 8601 형식) */
   timestamp: string;

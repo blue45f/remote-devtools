@@ -56,14 +56,16 @@ describe("RuntimeService", () => {
     });
 
     it("should create and save runtime entry", async () => {
-      const mockRecord = { id: 1 };
-      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord as any);
+      const mockRecord = {
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>;
+      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord);
       vi.spyOn(runtimeRepository, "create").mockReturnValue({
         id: 5,
-      } as any);
+      } as RuntimeEntity);
       vi.spyOn(runtimeRepository, "save").mockResolvedValue({
         id: 5,
-      } as any);
+      } as RuntimeEntity);
 
       const result = await service.create({
         recordId: 1,

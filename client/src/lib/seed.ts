@@ -8,22 +8,13 @@ const MS_TO_NANOS = 1_000_000;
 
 const URLS = [
   "https://shop.example.com/cart/checkout",
-  "https://app.acme.io/dashboard",
-  "https://staging.acme.io/login",
+  "https://app.example.com/dashboard",
+  "https://staging.example.com/login",
   "https://news.example.com/article/2026/04/launch",
   "https://api.example.com/health",
-  "https://app.acme.io/settings/billing",
+  "https://app.example.com/settings/billing",
   "https://shop.example.com/products/sk-1234",
-  "https://app.acme.io/onboarding/step-2",
-];
-
-const DEVICES = [
-  "iPhone 15 Pro · iOS 18",
-  "Pixel 8 · Android 15",
-  "MacBook Pro 14 · Chrome 147",
-  "Galaxy S24 · Samsung Internet",
-  "Surface Pro · Edge 144",
-  "iPad Pro · Safari 18",
+  "https://app.example.com/onboarding/step-2",
 ];
 
 const NAMES = [
@@ -61,8 +52,8 @@ export interface SeedSession {
 export function buildSeedSessions(): SeedSession[] {
   const now = Date.now();
   return NAMES.map((name, i) => {
-    const seconds = [12, 47, 240, 1240, 18, 96, 720, 33, 5400, 64, 0, 0][i] ??
-      30;
+    const seconds =
+      [12, 47, 240, 1240, 18, 96, 720, 33, 5400, 64, 0, 0][i] ?? 30;
     const isLive = i >= 10;
     return {
       id: 1000 + i,
@@ -119,7 +110,7 @@ export interface SeedTrendItem {
 }
 
 function pseudoRand(seed: number) {
-  let x = Math.sin(seed) * 10000;
+  const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
@@ -127,7 +118,8 @@ export function buildTicketTrend(period: string): SeedTrendItem[] {
   const len = period === "month" ? 12 : period === "week" ? 8 : 14;
   const now = Date.now();
   return Array.from({ length: len }, (_, i) => {
-    const offset = (len - 1 - i) * (period === "month" ? 30 : period === "week" ? 7 : 1);
+    const offset =
+      (len - 1 - i) * (period === "month" ? 30 : period === "week" ? 7 : 1);
     const date = new Date(now - offset * DAY);
     const total = 12 + Math.floor(pseudoRand(i + 1) * 28);
     const developer = Math.floor(total * 0.45);
@@ -139,7 +131,10 @@ export function buildTicketTrend(period: string): SeedTrendItem[] {
       date:
         period === "month"
           ? date.toLocaleString(undefined, { month: "short" })
-          : date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+          : date.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            }),
       created: total,
       developer,
       designer,

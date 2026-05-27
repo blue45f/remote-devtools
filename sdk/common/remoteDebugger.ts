@@ -3,6 +3,19 @@ import { CommonInfo } from "../types/common";
 import { logger } from "../utils/logger";
 import { createUserDataText, UserData } from "../utils/userDataText";
 
+type NavigateEventLike = {
+  destination?: {
+    url?: string;
+  };
+};
+
+type NavigationWithNavigateEvent = Navigation & {
+  addEventListener: (
+    type: "navigate",
+    listener: (event: NavigateEventLike) => void,
+  ) => void;
+};
+
 /**
  * 간소화된 RemoteDebugger 클래스
  *
@@ -190,14 +203,14 @@ export class RemoteDebugger {
    */
   private setupNavigationAPI(): boolean {
     // Navigation API 지원 확인
-    if (typeof (window as any).navigation === "undefined") {
+    if (typeof window.navigation === "undefined") {
       return false;
     }
 
-    const navigation = (window as any).navigation;
+    const navigation = window.navigation as NavigationWithNavigateEvent;
 
     try {
-      navigation.addEventListener("navigate", (event: any) => {
+      navigation.addEventListener("navigate", (event) => {
         const destinationUrl = event.destination?.url;
 
         if (!destinationUrl) {
@@ -323,9 +336,8 @@ export class RemoteDebugger {
         this.lastLocationHref = new URL(url, window.location.href).href;
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       history.pushState = function (
-        data: any,
+        data: unknown,
         unused: string,
         url?: string | URL | null,
       ) {
@@ -337,9 +349,8 @@ export class RemoteDebugger {
         return originalPushState(data, unused, url);
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       history.replaceState = function (
-        data: any,
+        data: unknown,
         unused: string,
         url?: string | URL | null,
       ) {
@@ -384,8 +395,7 @@ export class RemoteDebugger {
     assignHooked: boolean;
     historyHooked: boolean;
   } {
-    const navigationAPISupported =
-      typeof (window as any).navigation !== "undefined";
+    const navigationAPISupported = typeof window.navigation !== "undefined";
 
     // Location.prototype 후킹 확인
     const replaceHooked =
@@ -411,8 +421,7 @@ export class RemoteDebugger {
    * 브라우저 콘솔에서 window.remoteDebugger?.testLocationLog("test-url") 호출 가능
    */
   public testLocationLog(url: string): void {
-    logger.hrefChange.info(`[테스트] ${url}`);
-    console.log(`[Href 감지 테스트] 입력된 URL: ${url}`);
+    logger.hrefChange.info(`[테스트] ${url}`, { inputUrl: url });
   }
 
   /**
@@ -805,7 +814,7 @@ export class RemoteDebugger {
       },
     };
 
-    console.log(logger.userData.info("\n" + createUserDataText(userData)));
+    logger.userData.info("\n" + createUserDataText(userData));
 
     this.domain.updateDeviceId(this.deviceId);
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -943,7 +952,7 @@ export class RemoteDebugger {
       },
     };
 
-    console.log(logger.userData.info("\n" + createUserDataText(userData)));
+    logger.userData.info("\n" + createUserDataText(userData));
 
     // Creating ticket
     this.socket.send(JSON.stringify(payload));

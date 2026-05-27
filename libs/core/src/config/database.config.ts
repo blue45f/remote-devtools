@@ -5,6 +5,7 @@ import * as dotenv from "dotenv";
 
 import {
   DomEntity,
+  BillingWebhookEventEntity,
   NetworkEntity,
   OrganizationEntity,
   RecordEntity,
@@ -40,6 +41,7 @@ export const ALL_ENTITIES = [
   UserEntity,
   DeviceInfoEntity,
   UserTicketTemplateEntity,
+  BillingWebhookEventEntity,
   OrganizationEntity,
 ] as const;
 

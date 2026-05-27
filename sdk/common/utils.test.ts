@@ -132,10 +132,7 @@ describe("isHTMLElement", () => {
     expect(isHTMLElement(null)).toBe(false);
     expect(isHTMLElement(document.createTextNode("hi"))).toBe(false);
     // SVG elements are Element but not HTMLElement
-    const svg = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "svg",
-    );
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     expect(isHTMLElement(svg)).toBe(false);
   });
 });

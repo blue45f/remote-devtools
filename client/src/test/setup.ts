@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom/vitest";
+import * as matchers from "@testing-library/jest-dom/matchers";
 
 // Side-effect: initialise i18n synchronously before any component test mounts.
 // Components under test use `useTranslation`, which would fall through to the
@@ -6,7 +6,9 @@ import "@testing-library/jest-dom/vitest";
 import "@/lib/i18n";
 
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
+
+expect.extend(matchers);
 
 // Reset DOM between tests
 afterEach(() => {

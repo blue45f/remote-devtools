@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-
 import { BaseDomain } from "./base";
 
 export class Page extends BaseDomain {

@@ -78,7 +78,7 @@ export class UserTicketTemplateEntity {
     name: "label_list",
     type: "json",
     nullable: true,
-    comment: 'JSON array: ["BmartOrder", "FoodOrder"]',
+    comment: 'JSON array: ["Issue", "Bugfix", "Feature"]',
   })
   labelList?: string[];
 

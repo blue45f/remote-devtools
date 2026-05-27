@@ -14,9 +14,7 @@ test.describe("Session detail tabs", () => {
     await firstSession.getByLabel(/View session details/).click();
     await page.waitForURL(/\/sessions\/\d+/);
 
-    await expect(
-      page.getByRole("heading", { level: 1 }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // All four tabs render
     await expect(page.getByRole("tab", { name: /Overview/ })).toBeVisible();
@@ -47,9 +45,7 @@ test.describe("Session detail tabs", () => {
       page.getByRole("tab", { name: /^Replay$/, selected: true }),
     ).toBeVisible();
     const replayMount = page.getByTestId("rrweb-mount");
-    const replayMessage = page.getByText(
-      /Replay unavailable|Replay failed/i,
-    );
+    const replayMessage = page.getByText(/Replay unavailable|Replay failed/i);
     // rrweb-player chunk is large + lazy; allow some time to load.
     await expect(replayMount.or(replayMessage)).toBeVisible({
       timeout: 10_000,
@@ -68,9 +64,7 @@ test.describe("Session detail tabs", () => {
     await expect(
       page.getByRole("tab", { name: /^Raw JSON$/, selected: true }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /^Copy$/ }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Copy$/ })).toBeVisible();
     await expect(page.locator("pre").first()).toContainText(/"timestamp"|\[/, {
       timeout: 3_000,
     });

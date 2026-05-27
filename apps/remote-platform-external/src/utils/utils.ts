@@ -134,8 +134,7 @@ export function parseUserAgent(userAgentString: string): {
  */
 export const createUserDataText = (userData: UserData): string => {
   const { commonInfo, userAgent, URL, webTitle } = userData;
-  const userAppData =
-    commonInfo?.user?.userAppData || commonInfo?.user?.userBaedal;
+  const userAppData = commonInfo?.user?.userAppData || "";
   const {
     appVersion,
     platform,

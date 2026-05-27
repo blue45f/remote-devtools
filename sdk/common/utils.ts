@@ -32,8 +32,11 @@ export function isMatches(element: Element, selector: string): boolean {
       return !!element.webkitMatchesSelector(selector);
     }
     // mozilla
-    if ((element as any).mozMatchesSelector) {
-      return !!(element as any).mozMatchesSelector(selector);
+    const legacyElement = element as Element & {
+      mozMatchesSelector?: (selector: string) => boolean;
+    };
+    if (legacyElement.mozMatchesSelector) {
+      return legacyElement.mozMatchesSelector(selector);
     }
   } catch {
     return false;

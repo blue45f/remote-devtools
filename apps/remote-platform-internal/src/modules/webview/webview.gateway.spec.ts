@@ -1,6 +1,7 @@
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type * as WebSocket from "ws";
 
 import {
   DomService,
@@ -76,7 +77,7 @@ describe("WebviewGateway (Internal)", () => {
     });
 
     it("should clean up S3 playback caches on disconnect", async () => {
-      const mockClient = { readyState: 3 } as any;
+      const mockClient = { readyState: 3 } as WebSocket;
       await gateway.handleDisconnect(mockClient);
       expect(mockS3Playback.clearClientCaches).toHaveBeenCalledWith(mockClient);
     });

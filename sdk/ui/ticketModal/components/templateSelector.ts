@@ -1,5 +1,9 @@
 import { tokens } from "../../theme";
-import { TicketTemplate, CustomDropdownConfig } from "../types";
+import {
+  TicketTemplate,
+  CustomDropdownConfig,
+  SimpleStructuredSheetData,
+} from "../types";
 
 import { createCustomDropdown } from "./dropdown";
 
@@ -67,7 +71,12 @@ export function createTemplateSelector(
     customDropdown.container.className = "template-selector-dropdown";
   } catch (error) {
     console.error("[RemoteDebug-SDK] customDropdown creation failed:", error);
-    throw new Error(`Template selector creation failed: ${error}`);
+    throw Object.assign(
+      new Error(`Template selector creation failed: ${error}`),
+      {
+        cause: error,
+      },
+    );
   }
 
   const hiddenInput = customDropdown.container.querySelector(
@@ -101,22 +110,13 @@ export function createTemplateSelector(
   selectorContainer.appendChild(label);
   selectorContainer.appendChild(customDropdown.container);
 
-  let inserted = false;
-
   const formElement = container.querySelector("form");
   if (formElement && formElement.parentElement) {
     formElement.parentElement.insertBefore(selectorContainer, formElement);
-    inserted = true;
-  }
-
-  if (!inserted && container.tagName === "FORM") {
+  } else if (container.tagName === "FORM") {
     container.insertBefore(selectorContainer, container.firstChild);
-    inserted = true;
-  }
-
-  if (!inserted) {
+  } else {
     container.insertBefore(selectorContainer, container.firstChild);
-    inserted = true;
   }
 
   return customDropdown.container;
@@ -157,8 +157,11 @@ export async function reloadFormWithTemplate(
   getTicketFormDataByTemplate: (
     deviceId: string,
     templateName: string,
-  ) => Promise<any>,
-  createFormFields: (form: HTMLFormElement, data: any) => void,
+  ) => Promise<SimpleStructuredSheetData | null>,
+  createFormFields: (
+    form: HTMLFormElement,
+    data: SimpleStructuredSheetData,
+  ) => void,
 ): Promise<void> {
   try {
     updateTemplateSelection(templateName);

@@ -24,14 +24,15 @@ describe("resolveSeed", () => {
   it("returns live sessions for /sessions", () => {
     const result = resolveSeed<unknown[]>("/sessions") ?? [];
     expect(Array.isArray(result)).toBe(true);
-    expect((result as { recordMode: boolean }[]).every((s) => !s.recordMode)).toBe(
-      true,
-    );
+    expect(
+      (result as { recordMode: boolean }[]).every((s) => !s.recordMode),
+    ).toBe(true);
   });
 
   it("returns recorded sessions for /sessions/record", () => {
-    const result = (resolveSeed<unknown[]>("/sessions/record") ??
-      []) as { recordMode: boolean }[];
+    const result = (resolveSeed<unknown[]>("/sessions/record") ?? []) as {
+      recordMode: boolean;
+    }[];
     expect(result.every((s) => s.recordMode)).toBe(true);
   });
 
@@ -45,11 +46,12 @@ describe("resolveSeed", () => {
       nextCursor: string | null;
     }>(`/sessions/record?q=${encodeURIComponent(term)}&limit=50`);
     expect(page).toBeDefined();
-    expect(Array.isArray(page!.rows)).toBe(true);
-    expect(page!.nextCursor).toBeNull();
-    expect(
-      page!.rows.every((r) => r.name.toLowerCase().includes(term)),
-    ).toBe(true);
+    if (!page) throw new Error("Expected seeded page result");
+    expect(Array.isArray(page.rows)).toBe(true);
+    expect(page.nextCursor).toBeNull();
+    expect(page.rows.every((r) => r.name.toLowerCase().includes(term))).toBe(
+      true,
+    );
   });
 
   it("returns rrweb events for session events endpoint", () => {
@@ -58,7 +60,7 @@ describe("resolveSeed", () => {
     );
     expect(events?.[0]?.type).toBe(4); // Meta
     expect(events?.[1]?.type).toBe(2); // FullSnapshot
-    expect(events!.length).toBeGreaterThan(20);
+    expect(events?.length).toBeGreaterThan(20);
   });
 
   it("returns metadata for the session detail endpoint", () => {
@@ -70,11 +72,13 @@ describe("resolveSeed", () => {
   });
 
   it("returns activity feed entries with required fields", () => {
-    const feed = resolveSeed<
-      { id: string; kind: string; title: string; at: string }[]
-    >("/api/activity/feed");
+    const feed =
+      resolveSeed<{ id: string; kind: string; title: string; at: string }[]>(
+        "/api/activity/feed",
+      );
     expect(feed?.length).toBeGreaterThan(0);
-    for (const item of feed!) {
+    if (!feed) throw new Error("Expected seeded feed entries");
+    for (const item of feed) {
       expect(item.id).toMatch(/^[a-z]+-\d+-\d+$/);
       expect(["session", "ticket", "error", "join"]).toContain(item.kind);
       expect(item.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);

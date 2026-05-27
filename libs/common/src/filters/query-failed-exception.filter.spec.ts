@@ -1,4 +1,4 @@
-import { HttpStatus } from "@nestjs/common";
+import { ArgumentsHost, HttpStatus } from "@nestjs/common";
 import { QueryFailedError } from "typeorm";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -10,7 +10,7 @@ describe("QueryFailedExceptionFilter", () => {
     status: ReturnType<typeof vi.fn>;
     json: ReturnType<typeof vi.fn>;
   };
-  let mockHost: any;
+  let mockHost: ArgumentsHost;
 
   beforeEach(() => {
     filter = new QueryFailedExceptionFilter();
@@ -20,9 +20,9 @@ describe("QueryFailedExceptionFilter", () => {
     };
     mockHost = {
       switchToHttp: () => ({
-        getResponse: () => mockResponse,
+        getResponse: <T = typeof mockResponse>() => mockResponse as T,
       }),
-    };
+    } as ArgumentsHost;
   });
 
   it("should handle duplicate slack_id constraint", () => {

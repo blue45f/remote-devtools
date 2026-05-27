@@ -57,7 +57,8 @@ export default function SignInPage() {
       if (res.status === 503) {
         // Backend has AUTH_JWT_SECRET unset — single-tenant self-host.
         toast.success("Signed in (auth disabled)", {
-          description: "AUTH_JWT_SECRET is unset, so the backend skips token verification.",
+          description:
+            "AUTH_JWT_SECRET is unset, so the backend skips token verification.",
         });
         navigate(next);
         return;
@@ -132,10 +133,7 @@ export default function SignInPage() {
 
       <p className="mt-7 text-center text-xs text-fg-subtle">
         New here?{" "}
-        <Link
-          to="/sign-up"
-          className="text-fg underline underline-offset-2"
-        >
+        <Link to="/sign-up" className="text-fg underline underline-offset-2">
           Create an account
         </Link>
       </p>

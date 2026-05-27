@@ -23,9 +23,6 @@ export function createDebuggerButtons(
   const recordButton = createActionButton("Start Recording", () =>
     onClick?.("record"),
   );
-  const liveButton = createActionButton("Live Session", () =>
-    onClick?.("live"),
-  );
 
   // Network Rewrite button with amber dot indicator
   const networkRewriteButton = createActionButton("Network Rewrite", () =>
@@ -44,7 +41,6 @@ export function createDebuggerButtons(
 
   buttonContainer.appendChild(ticketButton);
   buttonContainer.appendChild(recordButton);
-  // buttonContainer.appendChild(liveButton)
   buttonContainer.appendChild(networkRewriteButton);
 
   return buttonContainer;

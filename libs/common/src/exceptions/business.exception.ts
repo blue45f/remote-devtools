@@ -13,7 +13,7 @@ export interface BusinessErrorResponse {
   /** 사람이 읽을 수 있는 에러 메시지 */
   message: string;
   /** 추가 에러 상세 정보 (선택) */
-  details?: any;
+  details?: unknown;
   /** 에러 발생 시각 (ISO 8601 형식) */
   timestamp: string;
   /** 에러가 발생한 요청 경로 (선택) */
@@ -28,7 +28,7 @@ export class BusinessException extends HttpException {
   /** 애플리케이션 고유 에러 코드 */
   public readonly errorCode: ErrorCode;
   /** 추가 에러 상세 정보 */
-  public readonly details?: any;
+  public readonly details?: unknown;
 
   /**
    * BusinessException 인스턴스를 생성한다.
@@ -41,7 +41,7 @@ export class BusinessException extends HttpException {
     errorCode: ErrorCode,
     customMessage?: string,
     httpStatus: HttpStatus = HttpStatus.BAD_REQUEST,
-    details?: any,
+    details?: unknown,
   ) {
     const message =
       customMessage || ErrorMessages[errorCode] || "An unknown error occurred.";
@@ -64,7 +64,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 404 상태의 BusinessException
    */
-  static userNotFound(details?: any): BusinessException {
+  static userNotFound(details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.AUTH_USER_NOT_FOUND,
       undefined,
@@ -78,7 +78,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 404 상태의 BusinessException
    */
-  static deviceNotFound(details?: any): BusinessException {
+  static deviceNotFound(details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.DEVICE_NOT_FOUND,
       undefined,
@@ -92,7 +92,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 404 상태의 BusinessException
    */
-  static deviceUserNotFound(details?: any): BusinessException {
+  static deviceUserNotFound(details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.DEVICE_USER_NOT_FOUND,
       undefined,
@@ -109,7 +109,7 @@ export class BusinessException extends HttpException {
    */
   static unauthorized(
     customMessage?: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       ErrorCode.AUTH_UNAUTHORIZED,
@@ -127,7 +127,7 @@ export class BusinessException extends HttpException {
    */
   static validationFailed(
     customMessage?: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       ErrorCode.VALIDATION_FAILED,
@@ -145,7 +145,7 @@ export class BusinessException extends HttpException {
    */
   static resourceNotFound(
     resourceName: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       ErrorCode.RESOURCE_NOT_FOUND,
@@ -163,7 +163,7 @@ export class BusinessException extends HttpException {
    */
   static templateNotFound(
     templateName: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       ErrorCode.TEMPLATE_NOT_FOUND,
@@ -183,7 +183,7 @@ export class BusinessException extends HttpException {
   static jiraError(
     errorCode: ErrorCode,
     customMessage?: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       errorCode,
@@ -203,7 +203,7 @@ export class BusinessException extends HttpException {
   static slackError(
     errorCode: ErrorCode,
     customMessage?: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       errorCode,
@@ -221,7 +221,7 @@ export class BusinessException extends HttpException {
    */
   static internalError(
     customMessage?: string,
-    details?: any,
+    details?: unknown,
   ): BusinessException {
     return new BusinessException(
       ErrorCode.INTERNAL_SERVER_ERROR,

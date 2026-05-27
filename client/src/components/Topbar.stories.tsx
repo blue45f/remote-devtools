@@ -13,7 +13,8 @@ const meta = {
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story, ctx) => {
-      const route = (ctx.parameters.route as string | undefined) ?? "/dashboard";
+      const route =
+        (ctx.parameters.route as string | undefined) ?? "/dashboard";
       return (
         <MemoryRouter initialEntries={[route]}>
           <TooltipProvider delayDuration={150}>

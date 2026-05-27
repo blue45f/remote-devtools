@@ -22,7 +22,7 @@ vi.mock("googleapis", () => ({
 }));
 
 vi.mock("google-auth-library", () => ({
-  GoogleAuth: vi.fn().mockImplementation(() => ({})),
+  GoogleAuth: class GoogleAuth {},
 }));
 
 describe("GoogleSheetsService", () => {

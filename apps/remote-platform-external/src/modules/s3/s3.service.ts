@@ -286,10 +286,13 @@ export class S3Service extends BaseS3Service {
       );
 
       return filePath;
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
-        `[BUFFER_SAVE_ERROR] Failed to save buffer data to file: ${error.message}`,
-        error.stack,
+        `[BUFFER_SAVE_ERROR] Failed to save buffer data to file: ${errorMessage}`,
+        errorStack,
       );
       throw error;
     }
@@ -387,10 +390,9 @@ export class S3Service extends BaseS3Service {
 
       for (const data of allData) {
         const devId = data.deviceId || "unknown-device";
-        if (!deviceMap.has(devId)) {
-          deviceMap.set(devId, []);
-        }
-        deviceMap.get(devId)!.push(data);
+        const deviceData = deviceMap.get(devId) ?? [];
+        deviceData.push(data);
+        deviceMap.set(devId, deviceData);
       }
 
       return deviceMap;
@@ -475,8 +477,14 @@ export class S3Service extends BaseS3Service {
         timestamp: number;
       }> = [];
 
-      if ((latestSession as any).bufferChunks) {
-        for (const chunk of (latestSession as any).bufferChunks) {
+      const sessionWithChunks = latestSession as BufferUploadData & {
+        bufferChunks?: Array<{
+          events?: BufferUploadData["bufferData"];
+        }>;
+      };
+
+      if (sessionWithChunks.bufferChunks) {
+        for (const chunk of sessionWithChunks.bufferChunks) {
           if (chunk.events && Array.isArray(chunk.events)) {
             allEvents.push(...chunk.events);
           }

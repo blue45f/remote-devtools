@@ -1,4 +1,5 @@
 import {
+  ArgumentsHost,
   HttpStatus,
   BadRequestException,
   NotFoundException,
@@ -16,7 +17,7 @@ describe("HttpExceptionFilter", () => {
     status: ReturnType<typeof vi.fn>;
     json: ReturnType<typeof vi.fn>;
   };
-  let mockHost: any;
+  let mockHost: ArgumentsHost;
 
   beforeEach(() => {
     filter = new HttpExceptionFilter();
@@ -26,9 +27,9 @@ describe("HttpExceptionFilter", () => {
     };
     mockHost = {
       switchToHttp: () => ({
-        getResponse: () => mockResponse,
+        getResponse: <T = typeof mockResponse>() => mockResponse as T,
       }),
-    };
+    } as ArgumentsHost;
   });
 
   it("should map BAD_REQUEST to VALIDATION_ERROR", () => {

@@ -1,12 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Copy,
-  Download,
-  LogOut,
-  Settings,
-  Trash2,
-  User,
-} from "lucide-react";
+import { Copy, Download, LogOut, Settings, Trash2, User } from "lucide-react";
 
 import { Button } from "./button";
 import {

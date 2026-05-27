@@ -1,9 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import type { eventWithTime } from "@rrweb/types";
 import * as rrweb from "rrweb";
 
 import { BaseDomain } from "./base";
+
+type MutableEventData = Record<string, unknown> & {
+  width?: number;
+  height?: number;
+  sequence?: number;
+};
+
+type MatchablePrototype = {
+  matches?: () => boolean;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 /**
  * SessionReplay - rrweb 기반 세션 기록
@@ -61,28 +72,28 @@ export class SessionReplay extends BaseDomain {
     this.eventSequence = 0;
 
     // rrweb 설정 옵션
-    const options: any = {
-      emit: (event: any) => {
+    const options = {
+      emit: (event: eventWithTime) => {
         // 시퀀스 번호 추가
         const typedEvent = event as eventWithTime;
 
         // FullSnapshot에 viewport 정보 추가
         if (typedEvent.type === rrweb.EventType.FullSnapshot) {
           // FullSnapshot 이벤트
-          const data = typedEvent.data as any;
+          const data = typedEvent.data as MutableEventData;
           if (!data.width || !data.height) {
             data.width = window.innerWidth;
             data.height = window.innerHeight;
           }
         }
 
-        const enhancedEvent: eventWithTime = {
+        const enhancedEvent = {
           ...typedEvent,
           data: {
-            ...(typedEvent.data as any),
+            ...(isRecord(typedEvent.data) ? typedEvent.data : {}),
             sequence: (this.eventSequence += 1),
           },
-        };
+        } as unknown as eventWithTime;
 
         // Buffer 모드인지 확인
         const isBufferMode = this.room && this.room.startsWith("Buffer-");
@@ -184,7 +195,7 @@ export class SessionReplay extends BaseDomain {
 
       // 콜백 훅 - rrweb v2의 변경사항으로 hooks 구조 단순화
       // hooks 옵션은 더 이상 사용되지 않거나 다른 형태로 변경됨
-    };
+    } as unknown as Parameters<typeof rrweb.record>[0];
 
     // rrweb 기록 시작
     this.stopRecordingFn = rrweb.record(options);
@@ -317,14 +328,14 @@ export class SessionReplay extends BaseDomain {
    */
   private addMatchesPolyfill(): void {
     // Text, Comment 등의 노드에 matches 메서드 추가
-    const textProto: any = Text.prototype;
+    const textProto = Text.prototype as Text & MatchablePrototype;
     if (!textProto.matches) {
       textProto.matches = function () {
         return false;
       };
     }
 
-    const commentProto: any = Comment.prototype;
+    const commentProto = Comment.prototype as Comment & MatchablePrototype;
     if (!commentProto.matches) {
       commentProto.matches = function () {
         return false;
@@ -332,7 +343,8 @@ export class SessionReplay extends BaseDomain {
     }
 
     // DocumentFragment에도 추가
-    const fragProto: any = DocumentFragment.prototype;
+    const fragProto = DocumentFragment.prototype as DocumentFragment &
+      MatchablePrototype;
     if (!fragProto.matches) {
       fragProto.matches = function () {
         return false;

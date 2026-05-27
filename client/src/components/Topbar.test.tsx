@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useAppStore } from "@/lib/store";
@@ -7,11 +7,15 @@ import { renderWithProviders } from "@/test/utils";
 import { Topbar } from "./Topbar";
 
 beforeEach(() => {
-  useAppStore.setState({ demoMode: false });
+  act(() => {
+    useAppStore.setState({ demoMode: false });
+  });
 });
 
 afterEach(() => {
-  useAppStore.setState({ demoMode: false });
+  act(() => {
+    useAppStore.setState({ demoMode: false });
+  });
 });
 
 describe("Topbar", () => {
@@ -35,7 +39,9 @@ describe("Topbar", () => {
     const { rerender } = renderWithProviders(<Topbar />);
     expect(screen.queryByTestId("demo-mode-badge")).not.toBeInTheDocument();
 
-    useAppStore.setState({ demoMode: true });
+    act(() => {
+      useAppStore.setState({ demoMode: true });
+    });
     rerender(<Topbar />);
     expect(screen.getByTestId("demo-mode-badge")).toBeInTheDocument();
   });

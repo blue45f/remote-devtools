@@ -13,9 +13,11 @@ describe("apiFetch", () => {
   });
 
   it("issues a network request when demo mode is off", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
 
     const result = await apiFetch<{ ok: boolean }>("/api/dashboard/stats");
     expect(result).toEqual({ ok: true });
@@ -43,9 +45,9 @@ describe("apiFetch", () => {
 
   it("falls back to network when seed router does not match the path", async () => {
     localStorage.setItem("demo-mode", "1");
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify([]), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
     await apiFetch("/something/not/seeded");
     expect(fetchMock).toHaveBeenCalled();
   });

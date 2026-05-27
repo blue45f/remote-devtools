@@ -25,6 +25,18 @@ interface LoggerConfig {
   showDebug: boolean;
 }
 
+interface RemoteDebugLoggerHandle {
+  setLevel: (level: LogLevel) => void;
+  enable: () => void;
+  disable: () => void;
+}
+
+declare global {
+  interface Window {
+    remoteDebugLogger?: RemoteDebugLoggerHandle;
+  }
+}
+
 // 로그 레벨별 우선순위
 const LOG_PRIORITY: Record<LogLevel, number> = {
   debug: 0,
@@ -104,7 +116,7 @@ class Logger {
     category: LogCategory,
     level: LogLevel,
     message: string,
-    ...args: any[]
+    ...args: unknown[]
   ): void {
     if (!this.config.enabled) return;
 
@@ -125,10 +137,10 @@ class Logger {
     // 콘솔 메서드 선택
     const consoleMethod =
       level === "error"
-        ? console.error
+        ? window.console.error.bind(window.console)
         : level === "warn"
-          ? console.warn
-          : console.log;
+          ? window.console.warn.bind(window.console)
+          : window.console.log.bind(window.console);
 
     // 출력
     if (args.length > 0) {
@@ -149,79 +161,79 @@ class Logger {
 
   // 카테고리별 로거 메서드
   userData = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("UserData", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("UserData", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("UserData", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("UserData", "error", message, ...args),
   };
 
   rewrite = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("Rewrite", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("Rewrite", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("Rewrite", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("Rewrite", "error", message, ...args),
   };
 
   commonInfo = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("CommonInfo", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("CommonInfo", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("CommonInfo", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("CommonInfo", "error", message, ...args),
   };
 
   hrefChange = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("HrefChange", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("HrefChange", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("HrefChange", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("HrefChange", "error", message, ...args),
   };
 
   deepLink = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("DeepLink", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("DeepLink", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("DeepLink", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("DeepLink", "error", message, ...args),
   };
 
   deepLinkAction = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("DeepLinkAction", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("DeepLinkAction", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("DeepLinkAction", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("DeepLinkAction", "error", message, ...args),
   };
 
   remote = {
-    debug: (message: string, ...args: any[]) =>
+    debug: (message: string, ...args: unknown[]) =>
       this.log("Remote", "debug", message, ...args),
-    info: (message: string, ...args: any[]) =>
+    info: (message: string, ...args: unknown[]) =>
       this.log("Remote", "info", message, ...args),
-    warn: (message: string, ...args: any[]) =>
+    warn: (message: string, ...args: unknown[]) =>
       this.log("Remote", "warn", message, ...args),
-    error: (message: string, ...args: any[]) =>
+    error: (message: string, ...args: unknown[]) =>
       this.log("Remote", "error", message, ...args),
   };
 }
@@ -231,7 +243,7 @@ export const logger = new Logger();
 
 // 전역에서 디버그 모드 활성화할 수 있도록
 if (typeof window !== "undefined") {
-  (window as any).remoteDebugLogger = {
+  window.remoteDebugLogger = {
     setLevel: (level: LogLevel) => logger.setLevel(level),
     enable: () => logger.setEnabled(true),
     disable: () => logger.setEnabled(false),

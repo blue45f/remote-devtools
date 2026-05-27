@@ -16,6 +16,22 @@ import {
 } from "../exceptions/business.exception";
 import { ErrorCode } from "../exceptions/error-codes.enum";
 
+const getExceptionMessage = (
+  exceptionResponse: unknown,
+  fallback: string,
+): string => {
+  if (
+    typeof exceptionResponse === "object" &&
+    exceptionResponse !== null &&
+    "message" in exceptionResponse &&
+    typeof exceptionResponse.message === "string"
+  ) {
+    return exceptionResponse.message;
+  }
+
+  return fallback;
+};
+
 /**
  * 예외 필터 옵션을 주입하기 위한 프로바이더 토큰.
  */
@@ -117,8 +133,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const message =
           typeof exceptionResponse === "string"
             ? exceptionResponse
-            : (exceptionResponse as any).message ||
-              "An error occurred while processing the request.";
+            : getExceptionMessage(
+                exceptionResponse,
+                "An error occurred while processing the request.",
+              );
 
         errorResponse = {
           statusCode: status,

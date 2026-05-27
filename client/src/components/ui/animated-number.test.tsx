@@ -15,12 +15,7 @@ describe("AnimatedNumber", () => {
   });
 
   it("uses the custom formatter", () => {
-    render(
-      <AnimatedNumber
-        value={5}
-        format={(n) => `${Math.round(n)}%`}
-      />,
-    );
+    render(<AnimatedNumber value={5} format={(n) => `${Math.round(n)}%`} />);
     const el = document.querySelector(".tabular-nums");
     expect(el?.textContent).toMatch(/%$/);
   });

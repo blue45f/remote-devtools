@@ -57,13 +57,17 @@ describe("ScreenService", () => {
     });
 
     it("should upsert screen entry with screenPreview type", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({ id: 1 } as any);
+      vi.spyOn(recordService, "findOne").mockResolvedValue({
+        id: 1,
+      } as Awaited<ReturnType<RecordService["findOne"]>>);
       vi.spyOn(screenRepository, "upsert").mockResolvedValue({
+        identifiers: [{ id: 20 }],
         generatedMaps: [{ id: 20 }],
-      } as any);
+        raw: [],
+      } as Awaited<ReturnType<Repository<ScreenEntity>["upsert"]>>);
       vi.spyOn(screenRepository, "findOne").mockResolvedValue({
         id: 20,
-      } as any);
+      } as ScreenEntity);
 
       const result = await service.upsert({
         recordId: 1,

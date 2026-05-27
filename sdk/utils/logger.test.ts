@@ -36,7 +36,7 @@ describe("logger", () => {
       "remote",
     ] as const;
     for (const g of groups) {
-      const grp = (logger as any)[g];
+      const grp = logger[g];
       expect(typeof grp.debug).toBe("function");
       expect(typeof grp.info).toBe("function");
       expect(typeof grp.warn).toBe("function");
@@ -47,7 +47,9 @@ describe("logger", () => {
   it("routes info to console.log", () => {
     logger.remote.info("hello");
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const [fmt] = logSpy.mock.calls[0]!;
+    const firstCall = logSpy.mock.calls[0];
+    if (!firstCall) throw new Error("Expected logger to call console.log");
+    const [fmt] = firstCall;
     expect(String(fmt)).toContain("Remote");
     expect(String(fmt)).toContain("hello");
   });
@@ -67,7 +69,8 @@ describe("logger", () => {
     const obj = { foo: 1 };
     logger.rewrite.info("with args", obj);
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const args = logSpy.mock.calls[0]!;
+    const args = logSpy.mock.calls[0];
+    if (!args) throw new Error("Expected logger to call console.log");
     // The last argument to the console call should be the extra arg
     expect(args[args.length - 1]).toBe(obj);
   });
@@ -105,8 +108,8 @@ describe("logger", () => {
   });
 
   it("exposes a remoteDebugLogger handle on window", () => {
-    const handle = (window as any).remoteDebugLogger;
-    expect(handle).toBeDefined();
+    const handle = window.remoteDebugLogger;
+    if (!handle) throw new Error("Expected remoteDebugLogger on window");
     expect(typeof handle.setLevel).toBe("function");
     expect(typeof handle.enable).toBe("function");
     expect(typeof handle.disable).toBe("function");

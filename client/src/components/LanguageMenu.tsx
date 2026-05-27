@@ -16,7 +16,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const LANGUAGES: { code: "en" | "ko"; labelKey: "common.english" | "common.korean" }[] = [
+const LANGUAGES: {
+  code: "en" | "ko";
+  labelKey: "common.english" | "common.korean";
+}[] = [
   { code: "en", labelKey: "common.english" },
   { code: "ko", labelKey: "common.korean" },
 ];

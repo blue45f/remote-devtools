@@ -180,7 +180,7 @@ export class UserProfileService {
   public async findOne(id: number): Promise<UserProfileResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ["deviceInfoList", "ticketTemplateList"],
+      relations: { deviceInfoList: true, ticketTemplateList: true },
     });
 
     if (!user) {
@@ -200,7 +200,7 @@ export class UserProfileService {
   public async findOneByEmpNo(empNo: string): Promise<UserProfileResponseDto> {
     const user = await this.userRepository.findOne({
       where: { empNo },
-      relations: ["deviceInfoList", "ticketTemplateList"],
+      relations: { deviceInfoList: true, ticketTemplateList: true },
     });
 
     if (!user) {
@@ -219,7 +219,7 @@ export class UserProfileService {
    */
   public async findAll(): Promise<UserProfileResponseDto[]> {
     const users = await this.userRepository.find({
-      relations: ["deviceInfoList", "ticketTemplateList"],
+      relations: { deviceInfoList: true, ticketTemplateList: true },
       order: { createdAt: "DESC" },
     });
 
@@ -256,7 +256,7 @@ export class UserProfileService {
 
     const user = await this.userRepository.findOne({
       where: { empNo },
-      relations: ["deviceInfoList", "ticketTemplateList"],
+      relations: { deviceInfoList: true, ticketTemplateList: true },
     });
 
     if (!user) {
@@ -352,7 +352,7 @@ export class UserProfileService {
 
       const updatedUser = await manager.findOne(UserEntity, {
         where: { id: user.id },
-        relations: ["deviceInfoList", "ticketTemplateList"],
+        relations: { deviceInfoList: true, ticketTemplateList: true },
       });
 
       return this.formatResponse(
@@ -390,7 +390,7 @@ export class UserProfileService {
 
     const existingUser = await this.userRepository.findOne({
       where: { empNo },
-      relations: ["deviceInfoList", "ticketTemplateList"],
+      relations: { deviceInfoList: true, ticketTemplateList: true },
     });
 
     if (existingUser) {

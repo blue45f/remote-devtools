@@ -26,9 +26,14 @@ export class ScreenService {
    * @returns 저장된 ScreenEntity 또는 null
    */
   public async upsert(
-    data: Partial<ScreenEntity & { recordId: number }>,
+    data: Partial<ScreenEntity & { recordId: number | null }>,
   ): Promise<ScreenEntity | null> {
     const { recordId, ...screenInfo } = data;
+    if (!recordId) {
+      this.logger.warn("Skipping screen upsert: recordId is missing");
+      return null;
+    }
+
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {

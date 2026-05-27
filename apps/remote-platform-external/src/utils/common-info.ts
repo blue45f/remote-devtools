@@ -5,7 +5,7 @@ import type { CommonInfo } from "../modules/webview/webview.gateway";
  */
 export const getDefaultCommonInfo = (): CommonInfo => ({
   user: {
-    userBaedal: "unknown",
+    userAppData: "unknown",
     authorization: "unknown",
     memberId: "unknown",
     memberNumber: "unknown",
@@ -17,7 +17,7 @@ export const getDefaultCommonInfo = (): CommonInfo => ({
     adid: "unknown",
     att: undefined,
     appsflyerId: "unknown",
-    deviceBaedal: undefined,
+    deviceAppData: undefined,
     deviceId: `unknown-device`,
     sessionId: `session-${Date.now()}`,
     actionTrackingKey: undefined,
