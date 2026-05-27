@@ -324,6 +324,11 @@ export default function SessionDetailPage() {
               <div className="flex items-center justify-end">
                 <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
               </div>
+              <ReplayMinimap
+                events={events ?? []}
+                sessionStartMs={sessionStartMs}
+                onSeek={jumpToReplay}
+              />
               <Suspense
                 fallback={
                   <Card className="p-6">
@@ -451,6 +456,108 @@ function SessionHeader({
         )}
       </div>
     </div>
+  );
+}
+
+/* ───────── Replay minimap ───────── */
+
+/**
+ * A thin density bar above the rrweb player. Each pixel column on the bar
+ * is a bucket of session time; the column's opacity scales with the event
+ * count that falls in that bucket. Clicking the bar seeks the player to
+ * the matching offset.
+ *
+ * Why: parity with OpenReplay / FullStory, where a quick visual of where
+ * activity happens in a long session is essential triage. Without it the
+ * player's own controller only shows current position, not where the
+ * action is.
+ */
+function ReplayMinimap({
+  events,
+  sessionStartMs,
+  onSeek,
+}: {
+  events: ReplayEvent[];
+  sessionStartMs: number;
+  onSeek: (offsetMs: number) => void;
+}) {
+  const BUCKETS = 96;
+
+  const { buckets, totalMs } = useMemo(() => {
+    if (events.length === 0) return { buckets: [] as number[], totalMs: 0 };
+    const start = sessionStartMs;
+    const end = events[events.length - 1].timestamp;
+    const span = Math.max(1, end - start);
+    const arr = new Array<number>(BUCKETS).fill(0);
+    for (const e of events) {
+      const ratio = (e.timestamp - start) / span;
+      const idx = Math.min(
+        BUCKETS - 1,
+        Math.max(0, Math.floor(ratio * BUCKETS)),
+      );
+      arr[idx] += 1;
+    }
+    return { buckets: arr, totalMs: span };
+  }, [events, sessionStartMs]);
+
+  if (events.length === 0 || totalMs === 0) return null;
+
+  const max = buckets.reduce((m, n) => (n > m ? n : m), 0) || 1;
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(
+      1,
+      Math.max(0, (e.clientX - rect.left) / rect.width),
+    );
+    onSeek(Math.round(ratio * totalMs));
+  };
+
+  return (
+    <Card className="p-2.5">
+      <div className="flex items-center justify-between mb-1.5 text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
+        <span>Activity</span>
+        <span className="text-fg-faint normal-case tracking-normal">
+          Click to seek
+        </span>
+      </div>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Replay activity minimap — click to seek"
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSeek(totalMs / 2);
+          }
+        }}
+        className="flex h-10 items-end gap-px cursor-pointer rounded-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-testid="replay-minimap"
+      >
+        {buckets.map((count, i) => {
+          const intensity = count / max;
+          // Always render at least a thin sliver so the bar reads as a
+          // continuous strip even where no events landed.
+          const heightPct = count === 0 ? 6 : 12 + intensity * 88;
+          return (
+            <span
+              key={i}
+              aria-hidden
+              className="flex-1 rounded-sm bg-fg transition-colors"
+              style={{
+                height: `${heightPct}%`,
+                opacity: count === 0 ? 0.12 : 0.25 + intensity * 0.65,
+              }}
+            />
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between mt-1 text-[10px] text-fg-faint font-mono tabular-nums">
+        <span>0:00</span>
+        <span>{formatPlayhead(totalMs)}</span>
+      </div>
+    </Card>
   );
 }
 
