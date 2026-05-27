@@ -66,10 +66,6 @@ export class Overlay extends BaseDomain {
     this.nodeHighlightRequested();
   }
 
-  public onRecord(): void {
-    // TODO: DB저장 로직 구현 필요
-  }
-
   /**
    * @public
    * @param {Object} param
