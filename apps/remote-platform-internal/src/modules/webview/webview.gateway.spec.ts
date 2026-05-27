@@ -15,6 +15,7 @@ import { S3Service } from "../s3/s3.service";
 import { ObjectReconstructionService } from "./object-reconstruction.service";
 import { S3PlaybackService } from "./s3-playback.service";
 import { WebviewGateway } from "./webview.gateway";
+import type { RoomData } from "./webview.types";
 
 describe("WebviewGateway (Internal)", () => {
   let gateway: WebviewGateway;
@@ -30,6 +31,12 @@ describe("WebviewGateway (Internal)", () => {
     collectPropertySnapshots: vi.fn(),
   };
   const mockS3Playback = { clearClientCaches: vi.fn() };
+  const setRoom = (room: string, roomData: RoomData) => {
+    (gateway as unknown as { readonly rooms: Map<string, RoomData> }).rooms.set(
+      room,
+      roomData,
+    );
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -80,6 +87,68 @@ describe("WebviewGateway (Internal)", () => {
       const mockClient = { readyState: 3 } as WebSocket;
       await gateway.handleDisconnect(mockClient);
       expect(mockS3Playback.clearClientCaches).toHaveBeenCalledWith(mockClient);
+    });
+  });
+
+  describe("handleProtocolToAllDevtools", () => {
+    it("persists Network messages with requestId to the network service", async () => {
+      const devtools = { send: vi.fn() } as unknown as WebSocket;
+      const client = { send: vi.fn() } as unknown as WebSocket;
+      setRoom("Record-1", {
+        client,
+        devtools: new Map([["devtools-1", devtools]]),
+        recordMode: true,
+        recordId: 42,
+      });
+
+      await gateway.handleProtocolToAllDevtools(
+        {
+          room: "Record-1",
+          message: JSON.stringify({
+            method: "Network.responseReceived",
+            params: { requestId: "7" },
+          }),
+        },
+        client,
+      );
+
+      expect(devtools.send).toHaveBeenCalledTimes(1);
+      expect(mockNetworkService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recordId: 42,
+          requestId: 7,
+        }),
+      );
+      expect(mockRuntimeService.create).not.toHaveBeenCalled();
+    });
+
+    it("does not persist non-Network messages with requestId to the network service", async () => {
+      const devtools = { send: vi.fn() } as unknown as WebSocket;
+      const client = { send: vi.fn() } as unknown as WebSocket;
+      setRoom("Record-2", {
+        client,
+        devtools: new Map([["devtools-1", devtools]]),
+        recordMode: true,
+        recordId: 84,
+      });
+
+      await gateway.handleProtocolToAllDevtools(
+        {
+          room: "Record-2",
+          message: JSON.stringify({
+            method: "Runtime.consoleAPICalled",
+            params: { requestId: "7" },
+          }),
+        },
+        client,
+      );
+
+      expect(mockNetworkService.create).not.toHaveBeenCalled();
+      expect(mockRuntimeService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recordId: 84,
+        }),
+      );
     });
   });
 });
