@@ -5,7 +5,6 @@ import request from "supertest";
 import {
   afterAll,
   afterEach,
-  beforeAll,
   beforeEach,
   describe,
   expect,
@@ -274,6 +273,13 @@ describe("BillingModule (e2e)", () => {
   const originalStripe = process.env.STRIPE_SECRET_KEY;
   let app: INestApplication | undefined;
 
+  const getHttpServer = () => {
+    if (!app) {
+      throw new Error("Billing e2e app has not been initialized.");
+    }
+    return app.getHttpServer();
+  };
+
   beforeEach(async () => {
     // BillingService checks STRIPE_SECRET_KEY at call time; ensure unset.
     delete process.env.STRIPE_SECRET_KEY;
@@ -300,21 +306,19 @@ describe("BillingModule (e2e)", () => {
   });
 
   it("GET /api/billing/status returns { enabled: false } when STRIPE_SECRET_KEY is unset", async () => {
-    const res = await request(app!.getHttpServer()).get("/api/billing/status");
+    const res = await request(getHttpServer()).get("/api/billing/status");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ enabled: false });
   });
 
   it("GET /api/billing/subscription requires authenticated org context and returns 400 in self-host mode", async () => {
-    const res = await request(app!.getHttpServer()).get(
-      "/api/billing/subscription",
-    );
+    const res = await request(getHttpServer()).get("/api/billing/subscription");
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Authenticated org is required.");
   });
 
   it("POST /api/billing/portal requires authenticated org context and returns 400 in self-host mode", async () => {
-    const res = await request(app!.getHttpServer())
+    const res = await request(getHttpServer())
       .post("/api/billing/portal")
       .send({ returnUrl: "https://example.com/account" });
     expect(res.status).toBe(400);
@@ -323,7 +327,7 @@ describe("BillingModule (e2e)", () => {
 
   it("POST /api/billing/webhook returns 400 when stripe-signature header is missing", async () => {
     process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
-    const res = await request(app!.getHttpServer())
+    const res = await request(getHttpServer())
       .post("/api/billing/webhook")
       .send({ hello: "world" })
       .set("Content-Type", "application/json");

@@ -20,9 +20,7 @@ interface ModuleRefLike {
   get: (...args: unknown[]) => Repository<OrganizationEntity> | undefined;
 }
 
-function makeCtx(
-  claims?: AuthClaims | null,
-): ExecutionContext {
+function makeCtx(claims?: AuthClaims | null): ExecutionContext {
   const req: RequestWithAuth = { auth: claims };
   return {
     getHandler: () => () => undefined,
@@ -87,10 +85,7 @@ describe("PlanGuard", () => {
       findOne: vi.fn().mockResolvedValue({ plan: "free" }),
     } as Pick<Repository<OrganizationEntity>, "findOne">;
 
-    const guard = guardWith(
-      "starter",
-      repo as Repository<OrganizationEntity>,
-    );
+    const guard = guardWith("starter", repo as Repository<OrganizationEntity>);
 
     await expect(
       guard.canActivate(
@@ -109,10 +104,7 @@ describe("PlanGuard", () => {
         .fn()
         .mockRejectedValue(new Error("organization lookup failed")),
     } as Pick<Repository<OrganizationEntity>, "findOne">;
-    const guard = guardWith(
-      "starter",
-      repo as Repository<OrganizationEntity>,
-    );
+    const guard = guardWith("starter", repo as Repository<OrganizationEntity>);
 
     await expect(
       guard.canActivate(
@@ -142,10 +134,7 @@ describe("PlanGuard", () => {
       findOne: vi.fn().mockResolvedValue({ plan: "pro" }),
     } as Pick<Repository<OrganizationEntity>, "findOne">;
 
-    const guard = guardWith(
-      "starter",
-      repo as Repository<OrganizationEntity>,
-    );
+    const guard = guardWith("starter", repo as Repository<OrganizationEntity>);
 
     await expect(
       guard.canActivate(
