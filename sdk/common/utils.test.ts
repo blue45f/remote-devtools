@@ -18,9 +18,8 @@ describe("getAbsolutePath", () => {
   });
 
   it("returns the empty string for non-string inputs (URL objects, numbers)", () => {
-    // The signature accepts URL too, but the implementation requires a string.
+    // Runtime consumers may pass structured values; only strings resolve.
     expect(getAbsolutePath(new URL("https://example.com/x"))).toBe("");
-    // @ts-expect-error — runtime guard exercised
     expect(getAbsolutePath(42)).toBe("");
   });
 
