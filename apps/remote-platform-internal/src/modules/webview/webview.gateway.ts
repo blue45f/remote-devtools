@@ -74,6 +74,17 @@ const hasProtocolMethod = (
 ): protocol is ProtocolMessage & { method: string } =>
   typeof protocol.method === "string";
 
+const getFiniteRequestId = (params: Record<string, unknown>): number | null => {
+  const requestId = params.requestId;
+  if (requestId === undefined || requestId === null || requestId === "") {
+    return null;
+  }
+
+  const numericRequestId =
+    typeof requestId === "number" ? requestId : Number(requestId);
+  return Number.isFinite(numericRequestId) ? numericRequestId : null;
+};
+
 // ---------------------------------------------------------------------------
 // Gateway
 // ---------------------------------------------------------------------------
@@ -1304,12 +1315,12 @@ export class WebviewGateway
         const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
         const params = toParams(protocol.params);
 
-        // TODO: Improve domain-based message routing
-        if (params.requestId) {
-          const requestId =
-            typeof params.requestId === "number"
-              ? params.requestId
-              : Number(params.requestId);
+        if (protocol.method.startsWith("Network.")) {
+          const requestId = getFiniteRequestId(params);
+          if (requestId === null) {
+            return;
+          }
+
           await this.networkService.create({
             recordId: roomData.recordId,
             protocol,
