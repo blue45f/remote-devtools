@@ -1,30 +1,21 @@
 name: Deploy demo to Vercel
 
-# Manual-only trigger.
+# Deploy on-demand or automatically after a successful CI run on main.
+# When run by `workflow_run`, this workflow is executed only after CI completes.
 #
 # Required GitHub secrets (set under Settings → Environments → production):
 #   VERCEL_TOKEN       — https://vercel.com/account/tokens (full account scope)
 #   VERCEL_ORG_ID      — from .vercel/project.json after `vercel link`
 #   VERCEL_PROJECT_ID  — same file
-#
-# Until those are set this workflow always fails on the "Pull Vercel project
-# metadata" step, which is why we run it on demand only. For day-to-day
-# deploys, `vercel --prod` from a developer machine works fine — the Vercel
-# CLI uses your interactive login and bypasses GitHub Secrets entirely.
-#
-# To re-enable push-triggered auto-deploys: add the three secrets above and
-# uncomment the `push:` block below.
+#   Without these secrets, deployment steps fail with a clear error.
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "client/**"
-  #     - "sdk/**"
-  #     - "vercel.json"
-  #     - "pnpm-lock.yaml"
-  #     - "package.json"
-  #     - ".github/workflows/deploy-vercel.yml"
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
 
 concurrency:
   group: vercel-prod
@@ -32,14 +23,18 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     name: Deploy production
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
     permissions:
       contents: read
       deployments: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
 
@@ -47,6 +42,17 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Validate deployment secrets
+        run: |
+          if [ -z "${VERCEL_TOKEN:-}" ] || [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+            echo "::error::Missing Vercel deployment secrets. Set VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID in repository settings."
+            exit 1
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Install Vercel CLI
         run: pnpm add -g vercel@latest

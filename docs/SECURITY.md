@@ -66,12 +66,13 @@ CORS_ALLOWED_ORIGINS=example.com,myapp.io
 
 ## CI/CD Pipeline
 
-GitHub Actions CI runs on every push and PR to `main`/`develop`:
+GitHub Actions CI runs on every push and PR in this repository:
 
 1. **Lint** - ESLint with TypeScript rules
 2. **Type Check** - `tsc --noEmit`
 3. **Test** - Vitest with coverage report
-4. **Build** - NestJS production build (runs after all checks pass)
+4. **SDK/Admin checks** - SDK tests/typecheck and debug-recorder-admin lint/typecheck/build
+5. **Build** - Monorepo production build chain (backend + SDK + client + debug-recorder-admin)
 
 ## Database Security
 

@@ -5,8 +5,6 @@ import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
 import ApiOutlined from '@ant-design/icons/es/icons/ApiOutlined'
 import AppstoreOutlined from '@ant-design/icons/es/icons/AppstoreOutlined'
-import CloudUploadOutlined from '@ant-design/icons/es/icons/CloudUploadOutlined'
-import EyeOutlined from '@ant-design/icons/es/icons/EyeOutlined'
 import FileTextOutlined from '@ant-design/icons/es/icons/FileTextOutlined'
 import MessageOutlined from '@ant-design/icons/es/icons/MessageOutlined'
 import NodeIndexOutlined from '@ant-design/icons/es/icons/NodeIndexOutlined'
@@ -15,6 +13,12 @@ import { type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageContainer } from '@/shared/components'
 import { ROUTES, UX_TERMS } from '@/shared/constants'
+import designHandoffImage from '@/assets/feature-illustrations/design-handoff.jpg'
+import networkRewriteImage from '@/assets/feature-illustrations/network-rewrite.jpg'
+import remoteDevtoolsImage from '@/assets/feature-illustrations/remote-devtools.jpg'
+import sessionRecordingImage from '@/assets/feature-illustrations/session-recording.jpg'
+import teamSharingImage from '@/assets/feature-illustrations/team-sharing.jpg'
+import ticketAutomationImage from '@/assets/feature-illustrations/ticket-automation.jpg'
 
 const { Text, Paragraph } = Typography
 
@@ -22,7 +26,7 @@ interface FeatureCardProps {
   icon: ReactNode
   title: string
   description: string
-  visual: ReactNode
+  imageSrc: string
   onClick?: () => void
 }
 
@@ -30,7 +34,7 @@ function FeatureCard({
   icon,
   title,
   description,
-  visual,
+  imageSrc,
   onClick,
 }: FeatureCardProps) {
   return (
@@ -45,10 +49,22 @@ function FeatureCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#f5f7fb',
+            background: '#0b1220',
+            overflow: 'hidden',
           }}
         >
-          {visual}
+          <img
+            src={imageSrc}
+            alt={`${title} 기능 미리보기`}
+            loading="lazy"
+            decoding="async"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
         </div>
       }
     >
@@ -79,37 +95,12 @@ interface FeatureDefinition {
   icon: ReactNode
   title: string
   description: string
-  visual: ReactNode
+  imageSrc: string
   tab: FeatureGuideTab
-}
-
-const GALLERY_STYLE = {
-  height: '120px',
-  width: '120px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: '16px',
-  background: '#e6f4ff',
-  color: '#1677ff',
 }
 
 type UserGuideTab = 'recording' | 'ticket' | 'network-rewrite' | 'design' | 'share'
 type FeatureGuideTab = UserGuideTab | 'remote-devtools'
-
-function FeatureIconBadge({ icon, color }: { icon: ReactNode; color: string }) {
-  return (
-    <div
-      style={{
-        ...GALLERY_STYLE,
-        background: `${color}18`,
-        color,
-      }}
-    >
-      <span style={{ fontSize: 42 }}>{icon}</span>
-    </div>
-  )
-}
 
 export function FeatureIntroductionPage() {
   const navigate = useNavigate()
@@ -122,7 +113,7 @@ export function FeatureIntroductionPage() {
       title: '녹화방',
       description:
         '화면 녹화와 함께 네트워크 요청, 콘솔 로그를 자동으로 캡처하여 디버깅에 필요한 정보를 수집합니다.',
-      visual: <FeatureIconBadge icon={<VideoCameraOutlined />} color="#1677ff" />,
+      imageSrc: sessionRecordingImage,
       tab: 'recording',
     },
     {
@@ -130,7 +121,7 @@ export function FeatureIntroductionPage() {
       title: `${issueLabel} 생성`,
       description:
         `녹화된 정보를 바탕으로 ${issueTrackerName}을(를) 자동 생성합니다. 템플릿을 활용하여 일관된 형식의 ${issueLabel}을(를) 작성할 수 있습니다.`,
-      visual: <FeatureIconBadge icon={<FileTextOutlined />} color="#13c2c2" />,
+      imageSrc: ticketAutomationImage,
       tab: 'ticket',
     },
     {
@@ -138,7 +129,7 @@ export function FeatureIntroductionPage() {
       title: 'Network Rewrite',
       description:
         'API 응답을 수정하여 다양한 상황을 테스트할 수 있습니다. 에러 상황이나 엣지 케이스를 쉽게 재현할 수 있습니다.',
-      visual: <FeatureIconBadge icon={<ApiOutlined />} color="#722ed1" />,
+      imageSrc: networkRewriteImage,
       tab: 'network-rewrite',
     },
     {
@@ -146,14 +137,14 @@ export function FeatureIntroductionPage() {
       title: `${UX_TERMS.DESIGN_TOOL_NAME} 연동`,
       description:
         `${UX_TERMS.DESIGN_TOOL_NAME}와 연계해 녹화 흐름을 공유하고 피드백을 정리할 수 있습니다.`,
-      visual: <FeatureIconBadge icon={<CloudUploadOutlined />} color="#eb2f96" />,
+      imageSrc: designHandoffImage,
       tab: 'design',
     },
     {
       icon: <MessageOutlined />,
       title: UX_TERMS.SHARE_CHANNEL_NAME,
       description: `${UX_TERMS.SHARE_CHANNEL_NAME}로 알림/공유 메시지를 자동 전송할 수 있습니다.`,
-      visual: <FeatureIconBadge icon={<EyeOutlined />} color="#fa8c16" />,
+      imageSrc: teamSharingImage,
       tab: 'share',
     },
     {
@@ -161,7 +152,7 @@ export function FeatureIntroductionPage() {
       title: 'Remote DevTools',
       description:
         '실시간으로 원격 디버그 세션을 수집/관찰하고, 이벤트 스트림·세션 상태·명령 제어까지 한 화면에서 관리합니다.',
-      visual: <FeatureIconBadge icon={<NodeIndexOutlined />} color="#52c41a" />,
+      imageSrc: remoteDevtoolsImage,
       tab: 'remote-devtools',
     },
   ] satisfies Array<FeatureDefinition>

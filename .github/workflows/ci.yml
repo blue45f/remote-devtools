@@ -2,9 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +24,7 @@ jobs:
   backend-lint-and-typecheck:
     name: Backend lint & typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -29,13 +32,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm lint
       - run: pnpm typecheck
 
   backend-test:
     name: Backend test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -43,7 +47,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm test:cov
       - name: Upload coverage
         if: always()
@@ -56,6 +60,7 @@ jobs:
   client-typecheck:
     name: Client typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -63,13 +68,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - working-directory: client
         run: pnpm typecheck
 
   client-test:
     name: Client test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -77,7 +83,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - working-directory: client
         run: pnpm test:cov
       - name: Upload client coverage
@@ -88,14 +94,10 @@ jobs:
           path: client/coverage/
           retention-days: 14
 
-  build:
-    name: Build (backend + SDK + client)
+  sdk-check:
+    name: SDK checks
     runs-on: ubuntu-latest
-    needs:
-      - backend-lint-and-typecheck
-      - backend-test
-      - client-typecheck
-      - client-test
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -103,7 +105,71 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - working-directory: sdk
+        run: |
+          pnpm typecheck
+          pnpm test:cov
+      - name: Upload sdk coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-coverage
+          path: sdk/coverage/
+          retention-days: 14
+
+  debug-recorder-admin-check:
+    name: Debug recorder admin lint/typecheck/build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm --filter debug-recorder-admin lint
+      - run: pnpm --filter debug-recorder-admin typecheck
+      - run: pnpm --filter debug-recorder-admin build
+
+  figma-plugin-check:
+    name: Figma plugin lint/typecheck/build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm --filter figma-plugin lint
+      - run: pnpm --filter figma-plugin type-check
+      - run: pnpm --filter figma-plugin build
+
+  build:
+    name: Build (backend + SDK + client + admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - backend-lint-and-typecheck
+      - backend-test
+      - client-typecheck
+      - client-test
+      - sdk-check
+      - debug-recorder-admin-check
+      - figma-plugin-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build:all
       - name: Build SDK
         working-directory: sdk
@@ -111,3 +177,360 @@ jobs:
       - name: Build client
         working-directory: client
         run: pnpm build
+      - name: Build Debug Recorder Admin
+        run: pnpm --filter debug-recorder-admin build
+
+  ci-pass-gate:
+    name: CI pass gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      status: ${{ steps.gate.outputs.status }}
+      failed_jobs: ${{ steps.gate.outputs.failed_jobs }}
+      jobs_report: ${{ steps.gate.outputs.jobs_report }}
+    needs:
+      - backend-lint-and-typecheck
+      - backend-test
+      - client-typecheck
+      - client-test
+      - sdk-check
+      - debug-recorder-admin-check
+      - figma-plugin-check
+      - build
+    if: always()
+    steps:
+      - name: Ensure required jobs succeeded
+        id: gate
+        run: |
+          set -euo pipefail
+
+          summary_file="ci-pass-gate-summary.json"
+          jobs=(
+            "backend-lint-and-typecheck:${{ needs.backend-lint-and-typecheck.result }}"
+            "backend-test:${{ needs.backend-test.result }}"
+            "client-typecheck:${{ needs.client-typecheck.result }}"
+            "client-test:${{ needs.client-test.result }}"
+            "sdk-check:${{ needs.sdk-check.result }}"
+            "debug-recorder-admin-check:${{ needs.debug-recorder-admin-check.result }}"
+            "figma-plugin-check:${{ needs.figma-plugin-check.result }}"
+            "build:${{ needs.build.result }}"
+          )
+          fail=0
+          failed=()
+          jobs_report=("${jobs[@]}")
+
+          echo "## CI pass gate 결과" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Scope | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Event | ${{ github.event_name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Ref | ${{ github.ref }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | ${{ github.sha }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Workflow URL | https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          for job in "${jobs[@]}"; do
+            name="${job%%:*}"
+            result="${job#*:}"
+            if [ "$result" = "success" ]; then
+              badge="✅"
+            elif [ "$result" = "skipped" ]; then
+              badge="⏭️"
+              echo "::error::Required CI job '$name' was skipped (status: $result)"
+              failed+=("$name:$result")
+              fail=1
+            else
+              badge="❌"
+              echo "::error::Required CI job '$name' failed (status: $result)"
+              failed+=("$name:$result")
+              fail=1
+            fi
+            echo "| $name | $badge $result |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            gate_status="failure"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### CI fail reasons" >> "$GITHUB_STEP_SUMMARY"
+            for item in "${failed[@]}"; do
+              echo "- $item" >> "$GITHUB_STEP_SUMMARY"
+            done
+            echo "::error::CI pass gate failed. Resolve failed/skipped required jobs and rerun."
+          else
+            gate_status="success"
+          fi
+
+          {
+            printf '{\n'
+            printf '  "workflow": "%s",\n' "${{ github.workflow }}"
+            printf '  "run_id": %s,\n' "${{ github.run_id }}"
+            printf '  "event_name": "%s",\n' "${{ github.event_name }}"
+            printf '  "ref": "%s",\n' "${{ github.ref }}"
+            printf '  "sha": "%s",\n' "${{ github.sha }}"
+            printf '  "repository": "%s",\n' "${{ github.repository }}"
+            printf '  "triggered_by": "%s",\n' "${{ github.actor }}"
+            printf '  "jobs": [\n'
+            for i in "${!jobs[@]}"; do
+              job="${jobs[$i]}"
+              name="${job%%:*}"
+              result="${job#*:}"
+              sep=","
+              if [ "$i" -eq 0 ]; then
+                sep=""
+              fi
+              printf '    %s{"name":"%s","result":"%s"}\n' "$sep" "$name" "$result"
+            done
+            printf '  ],\n'
+            printf '  "failed_jobs": [\n'
+            for i in "${!failed[@]}"; do
+              item="${failed[$i]}"
+              sep=","
+              if [ "$i" -eq 0 ]; then
+                sep=""
+              fi
+              printf '    %s"%s"\n' "$sep" "$item"
+            done
+            printf '  ],\n'
+            printf '  "status": "%s"\n' "$gate_status"
+            printf '}\n'
+          } > "$summary_file"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "jobs_report=${jobs_report[*]}" >> "$GITHUB_OUTPUT"
+            echo "status=failure" >> "$GITHUB_OUTPUT"
+            echo "failed_jobs=${failed[*]}" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "jobs_report=${jobs_report[*]}" >> "$GITHUB_OUTPUT"
+          echo "status=success" >> "$GITHUB_OUTPUT"
+          echo "failed_jobs=" >> "$GITHUB_OUTPUT"
+          echo "::notice::All required CI jobs succeeded."
+          echo "All required CI jobs succeeded."
+
+      - name: Upload CI pass gate summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-pass-gate-summary
+          path: ci-pass-gate-summary.json
+          retention-days: 14
+
+  ci-pass-gate-pr-comment:
+    name: Post CI pass gate result on PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [ci-pass-gate]
+    permissions:
+      issues: write
+      pull-requests: write
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false
+    steps:
+      - name: Update CI pass gate PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = "<!-- ci-pass-gate-pr-summary -->";
+            const status = "${{ needs.ci-pass-gate.outputs.status }}";
+            const failedJobs = "${{ needs.ci-pass-gate.outputs.failed_jobs }}";
+            const jobsReport = "${{ needs.ci-pass-gate.outputs.jobs_report }}";
+            const pr = context.payload.pull_request;
+            const isSuccess = status === "success";
+
+            let existingComment = null;
+            try {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                per_page: 100,
+              });
+              existingComment = comments.find((comment) =>
+                (comment.body || "").includes(marker)
+              );
+            } catch (err) {
+              core.warning(
+                `Failed to read existing PR comments for #${pr.number}: ${err.message}`
+              );
+            }
+
+            const failedList = (failedJobs || "")
+              .split(" ")
+              .filter((value) => value.length > 0)
+              .map((item) => `- ${item}`)
+              .join("\n");
+
+            const jobStatusLines = (jobsReport || "")
+              .split(" ")
+              .filter((value) => value.length > 0)
+              .map((item) => {
+                const idx = item.lastIndexOf(":");
+                const name = item.slice(0, idx);
+                const result = item.slice(idx + 1);
+                const icon =
+                  result === "success" ? "✅" : result === "skipped" ? "⏭️" : "❌";
+                return `- ${icon} \`${name}\`: \`${result}\``;
+              });
+
+            const commentBody = [
+              `${marker}`,
+              isSuccess ? "### ✅ CI pass gate 통과" : "### 🧪 CI pass gate 상태 요약",
+              "",
+              `현재 PR의 CI pass gate 결과: **\`${status.toUpperCase()}\`**`,
+              "",
+              "실행 집계:",
+              `${jobStatusLines.length > 0 ? jobStatusLines.join("\n") : "- 없음"}`,
+              "",
+              isSuccess ? "실패/스킵 잡이 없습니다." : "실패/스킵 잡:",
+              `${isSuccess ? "- 없음" : (failedList || "- 없음")}`,
+              "",
+              "실패 세부 확인:",
+              `- GitHub Actions 실행: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              "- 체크섹션: `ci-pass-gate`",
+              isSuccess ? "" : "- 상세 아티팩트: `ci-pass-gate-summary.json`",
+              "",
+              "상기 결과를 PR 체크리스트(병합 전)와 함께 최종 반영해 주세요.",
+              "",
+            ].join("\n");
+
+            try {
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: commentBody,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: commentBody,
+                });
+              }
+            } catch (err) {
+              core.warning(
+                `Failed to write CI pass gate PR comment: ${err.message}`
+              );
+              if (status !== "success") {
+                core.setFailed(`CI pass gate status is ${status}.`);
+              }
+              return;
+            }
+
+            if (status !== "success") {
+              core.setFailed(`CI pass gate status is ${status}.`);
+            }
+
+  ci-pass-gate-push-notify:
+    name: Post CI pass gate result on pushed commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [ci-pass-gate]
+    if: always() && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Update CI pass gate commit comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const commitSha = context.sha;
+            const runId = context.runId;
+            const status = "${{ needs.ci-pass-gate.outputs.status }}";
+            const failedJobs = "${{ needs.ci-pass-gate.outputs.failed_jobs }}";
+            const jobsReport = "${{ needs.ci-pass-gate.outputs.jobs_report }}";
+            const marker = "<!-- ci-pass-gate-push-summary -->";
+            const branch =
+              context.ref?.replace(/^refs\/heads\//, "") ||
+              context.ref?.replace(/^refs\/tags\//, "") ||
+              context.ref ||
+              "";
+            const isSuccess = status === "success";
+
+            let existingComment = null;
+            try {
+              const existing = await github.paginate(
+                github.rest.repos.listCommitComments,
+                {
+                  owner,
+                  repo,
+                  commit_sha: commitSha,
+                  per_page: 100,
+                }
+              );
+              existingComment = existing.find((comment) =>
+                (comment.body || "").includes(marker)
+              );
+            } catch (err) {
+              core.warning(
+                `Failed to read existing commit comments for ${commitSha}: ${err.message}`
+              );
+            }
+
+            const failedList = (failedJobs || "")
+              .split(" ")
+              .filter((value) => value.length > 0)
+              .map((item) => `- ${item}`)
+              .join("\n");
+
+            const jobStatusLines = (jobsReport || "")
+              .split(" ")
+              .filter((value) => value.length > 0)
+              .map((item) => {
+                const idx = item.lastIndexOf(":");
+                const name = item.slice(0, idx);
+                const result = item.slice(idx + 1);
+                const icon =
+                  result === "success" ? "✅" : result === "skipped" ? "⏭️" : "❌";
+                return `- ${icon} \`${name}\`: \`${result}\``;
+              });
+
+            const commentBody = [
+              `${marker}`,
+              isSuccess ? "### ✅ Push CI pass gate 통과" : "### 🚫 Push CI pass gate 실패",
+              "",
+              `브랜치: \`${branch}\``,
+              `커밋: \`${commitSha}\``,
+              `현재 결과: **\`${status.toUpperCase()}\`**`,
+              "",
+              "실행 집계:",
+              `${jobStatusLines.length > 0 ? jobStatusLines.join("\n") : "- 없음"}`,
+              "",
+              isSuccess ? "실패/스킵 잡이 없습니다." : "실패/스킵 잡:",
+              `${isSuccess ? "- 없음" : (failedList || "- 없음")}`,
+              "",
+              "실패 상세:",
+              `- GitHub Actions 실행: https://github.com/${owner}/${repo}/actions/runs/${runId}`,
+              "- 체크섹션: `ci-pass-gate`",
+              isSuccess ? "" : "- 상세 아티팩트: `ci-pass-gate-summary.json`",
+              "",
+            ].join("\n");
+
+            try {
+              if (existingComment) {
+                await github.rest.repos.updateCommitComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                  body: commentBody,
+                });
+              } else {
+                await github.rest.repos.createCommitComment({
+                  owner,
+                  repo,
+                  commit_sha: commitSha,
+                  body: commentBody,
+                });
+              }
+            } catch (err) {
+              core.warning(
+                `Failed to update push CI summary comment for ${commitSha}: ${err.message}`
+              );
+            }
+
+            if (status !== "success") {
+              core.setFailed(`CI pass gate status is ${status}.`);
+            }
