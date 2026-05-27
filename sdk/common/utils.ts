@@ -1,4 +1,4 @@
-export function getAbsolutePath(url?: string | URL | null): string {
+export function getAbsolutePath(url?: unknown): string {
   if (!url || typeof url !== "string") return "";
   const a = document.createElement("a");
   a.href = url;

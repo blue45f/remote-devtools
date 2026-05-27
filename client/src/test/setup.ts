@@ -56,12 +56,16 @@ if (typeof Element.prototype.hasPointerCapture !== "function") {
 
 // IntersectionObserver
 if (!window.IntersectionObserver) {
-  // @ts-expect-error simple mock
-  window.IntersectionObserver = class {
+  window.IntersectionObserver = class implements IntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = "";
+    readonly scrollMargin = "";
+    readonly thresholds = [];
+
     observe() {}
     unobserve() {}
     disconnect() {}
-    takeRecords() {
+    takeRecords(): IntersectionObserverEntry[] {
       return [];
     }
   };
