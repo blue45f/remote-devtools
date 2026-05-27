@@ -1,14 +1,11 @@
 import { SimpleColumnData } from "./types";
+import { readSdkEnv } from "../../utils/env";
 
 /**
  * API 호스트 주소 가져오기
  */
 export function getAPIHost(): string {
-  // NOTE: 개발 HMR 활용될 때 import.meta.env 가 없으므로 이를 대응하기 위한 코드
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const host = import.meta.env?.VITE_INTERNAL_HOST || "http://localhost:3000";
-  return host;
+  return readSdkEnv("VITE_INTERNAL_HOST", "http://localhost:3000");
 }
 
 /**

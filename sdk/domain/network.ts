@@ -3,6 +3,7 @@ import jsCookie from "js-cookie";
 import mime from "mime";
 
 import { getAbsolutePath, key2UpperCase } from "../common/utils";
+import { readSdkEnv } from "../utils/env";
 import { logger } from "../utils/logger";
 
 import { BaseDomain, Option, ProtocolMessage } from "./base";
@@ -968,10 +969,10 @@ export class Network extends BaseDomain {
         const requestId = this.getRequestId();
 
         try {
-          // NOTE: 개발 HMR 활용될 때 import.meta.env 가 없으므로 이를 대응하기 위한 코드
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          const host = `${import.meta.env?.VITE_EXTERNAL_HOST || "http://localhost:3001"}`;
+          const host = readSdkEnv(
+            "VITE_EXTERNAL_HOST",
+            "http://localhost:3001",
+          );
           if (!originalFetch) return;
           const { base64 } = await originalFetch(
             `${host}/image/image_base64?url=${encodeURIComponent(url)}`,
