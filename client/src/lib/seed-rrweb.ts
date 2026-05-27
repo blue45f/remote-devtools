@@ -301,5 +301,23 @@ export function buildSeedRrwebEvents(start: number): RrwebEvent[] {
     });
   }
 
+  // Rage-click burst — five rapid clicks on the same area in ~1.2s.
+  // Used by demo mode to show the rage-click detection card off without
+  // needing a real captured session.
+  const burstStart = t + 800;
+  for (let i = 0; i < 5; i++) {
+    events.push({
+      type: 3,
+      timestamp: burstStart + i * 220,
+      data: {
+        source: 2,
+        type: 2,
+        id: 130,
+        x: 540,
+        y: 360,
+      },
+    });
+  }
+
   return events;
 }

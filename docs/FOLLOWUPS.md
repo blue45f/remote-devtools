@@ -27,11 +27,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   above the result list shows the top hosts currently on screen with
   hit counts. Clicking one narrows the result to that origin. Clarity /
   Datadog parity.
-- **Replay timeline minimap** — current commit — A 96-bucket density
+- **Replay timeline minimap** — `678fd274` — A 96-bucket density
   bar sits above the rrweb player on the Replay tab. Each column is a
   slice of session time; opacity scales with event count. Click anywhere
   to seek. OpenReplay / FullStory parity for "where's the action in a
   long session?".
+- **Rage-click detection** — current commit — Overview tab surfaces a
+  yellow card listing detected rage-click moments (≥3 clicks within
+  1.5s and 50px). Each gets a Jump button that lands the replay on the
+  first click. Demo seed now includes a 5-click burst so it's visible
+  out of the box. FullStory / Microsoft Clarity / LogRocket frustration
+  signal parity.
 
 ## Next obvious candidates
 
@@ -43,8 +49,6 @@ Listed in rough order of value × ease:
 - **Network HAR / "Copy as cURL"** — depends on shaping network events
   with method/url/headers; check `libs/core` to see if SDK already
   captures these.
-- **Rage-click detection** — scan IncrementalSnapshot events for rapid
-  same-target clicks; add a chip to the timeline summary.
 - **Session tags** — needs DB column + endpoint; defer until backend cycle.
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
