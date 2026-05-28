@@ -8,9 +8,10 @@ export const REPLAY_SPEEDS: ReplaySpeed[] = [0.5, 1, 2, 4];
 
 interface ReplayPrefs {
   speed: ReplaySpeed;
+  skipInactive: boolean;
 }
 
-const DEFAULT_PREFS: ReplayPrefs = { speed: 1 };
+const DEFAULT_PREFS: ReplayPrefs = { speed: 1, skipInactive: false };
 
 function readPrefs(): ReplayPrefs {
   if (typeof window === "undefined") return DEFAULT_PREFS;
@@ -21,7 +22,11 @@ function readPrefs(): ReplayPrefs {
     const speed = REPLAY_SPEEDS.includes(parsed?.speed as ReplaySpeed)
       ? (parsed.speed as ReplaySpeed)
       : DEFAULT_PREFS.speed;
-    return { speed };
+    const skipInactive =
+      typeof parsed?.skipInactive === "boolean"
+        ? parsed.skipInactive
+        : DEFAULT_PREFS.skipInactive;
+    return { speed, skipInactive };
   } catch {
     return DEFAULT_PREFS;
   }

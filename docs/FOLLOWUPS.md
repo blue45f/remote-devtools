@@ -167,13 +167,20 @@ the next obvious candidates. Each entry: what shipped, what's next.
   wipes `recent-sessions:v1` so the privacy-conscious reset is a
   single click. Toast copy updated to mention the recent history
   alongside view / sort / pins.
-- **Replay playback speed picker** — current commit — Above the
+- **Replay playback speed picker** — `5e88fc1b` — Above the
   rrweb-player, a four-button group (0.5× / 1× / 2× / 4×) replaces
   the buried speed selector hidden inside the rrweb controller.
   Choice persists via `replay-prefs:v1` so the next session opens at
   the speed you last picked. ReplayPlayer accepts a `speed` prop and
   re-applies via `setSpeed()` on change. PostHog / OpenReplay /
   Sentry replay parity for "I just want this to go faster".
+- **Replay "Skip idle" toggle** — current commit — A toggle button
+  next to the speed picker turns on rrweb-player's `skipInactive`
+  mode, fast-forwarding through idle stretches. Persists alongside
+  the speed in `replay-prefs:v1`. ReplayPlayer passes `skipInactive`
+  on init and re-applies via `setConfig({skipInactive})` when the
+  prop changes. PostHog "Skip inactivity" / OpenReplay "Skip idle"
+  parity — long sessions become bearable.
 
 ## Next obvious candidates
 

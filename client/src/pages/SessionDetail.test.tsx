@@ -83,6 +83,25 @@ describe("SessionDetail page", () => {
     expect(localStorage.getItem("replay-prefs:v1")).toContain('"speed":2');
   });
 
+  it("toggles skip-inactive and persists the choice", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("2");
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-skip-inactive")).toBeInTheDocument();
+    });
+
+    const toggle = screen.getByTestId("replay-skip-inactive");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(toggle);
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("replay-prefs:v1")).toContain(
+      '"skipInactive":true',
+    );
+  });
+
   it("multi-selects timeline type filters", async () => {
     const user = userEvent.setup();
     renderAt(1000);
