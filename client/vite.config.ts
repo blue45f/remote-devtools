@@ -3,19 +3,13 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
 
-const ReactCompilerConfig = {
-  target: "19" as const,
-};
-
+// React Compiler was previously wired through plugin-react v4's `babel`
+// option. v6 dropped that escape hatch in favour of `@rolldown/plugin-babel`
+// + `reactCompilerPreset` (see the plugin README). To re-enable, install
+// `@rolldown/plugin-babel`, `@babel/core`, and `@types/babel__core`, then
+// `plugins: [react(), babel({ presets: [reactCompilerPreset()] }), …]`.
 export default defineConfig(({ command }) => ({
-  plugins: [
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler", ReactCompilerConfig]],
-      },
-    }),
-    tailwindcss(),
-  ],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
