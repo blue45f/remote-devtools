@@ -588,6 +588,18 @@ interface NetworkRow {
   base64Encoded?: boolean | null;
 }
 
+type StatusClass = '2xx' | '3xx' | '4xx' | '5xx' | 'pending';
+const STATUS_CLASSES: readonly StatusClass[] = ['2xx', '3xx', '4xx', '5xx', 'pending'];
+
+function statusClassOf(status: number | undefined): StatusClass {
+  if (status === undefined || status === null) return 'pending';
+  if (status >= 200 && status < 300) return '2xx';
+  if (status >= 300 && status < 400) return '3xx';
+  if (status >= 400 && status < 500) return '4xx';
+  if (status >= 500 && status < 600) return '5xx';
+  return 'pending';
+}
+
 function NetworkTab({
   sessionId,
   sessionName,
@@ -612,6 +624,7 @@ function NetworkTab({
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<NetworkRow | null>(null);
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
+  const [activeStatusClasses, setActiveStatusClasses] = useState<Set<StatusClass>>(new Set());
 
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -619,8 +632,16 @@ function NetworkTab({
       const t = r.resourceType ?? 'Other';
       counts.set(t, (counts.get(t) ?? 0) + 1);
     }
-    // Order by count desc so the dominant type (usually XHR/Fetch) floats up.
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
+  const statusCounts = useMemo(() => {
+    const counts = new Map<StatusClass, number>();
+    for (const r of rows) {
+      const cls = statusClassOf(r.status);
+      counts.set(cls, (counts.get(cls) ?? 0) + 1);
+    }
+    return STATUS_CLASSES.map((c) => [c, counts.get(c) ?? 0] as const);
   }, [rows]);
 
   const toggleType = (t: string) => {
@@ -632,10 +653,22 @@ function NetworkTab({
     });
   };
 
+  const toggleStatusClass = (c: StatusClass) => {
+    setActiveStatusClasses((prev) => {
+      const next = new Set(prev);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
+      return next;
+    });
+  };
+
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       const type = r.resourceType ?? 'Other';
       if (activeTypes.size > 0 && !activeTypes.has(type)) return false;
+      if (activeStatusClasses.size > 0 && !activeStatusClasses.has(statusClassOf(r.status))) {
+        return false;
+      }
       if (filter) {
         const term = filter.toLowerCase();
         const match =
@@ -646,7 +679,7 @@ function NetworkTab({
       }
       return true;
     });
-  }, [rows, filter, activeTypes]);
+  }, [rows, filter, activeTypes, activeStatusClasses]);
 
   if (isLoading) {
     return (
@@ -758,6 +791,46 @@ function NetworkTab({
           </div>
         </div>
       )}
+      <div
+        className="flex items-center gap-1.5 flex-wrap"
+        data-testid="session-network-status-strip"
+      >
+        {statusCounts.map(([cls, count]) => {
+          const active = activeStatusClasses.has(cls);
+          const empty = count === 0;
+          return (
+            <button
+              key={cls}
+              type="button"
+              onClick={() => toggleStatusClass(cls)}
+              disabled={empty}
+              aria-pressed={active}
+              data-testid={`session-network-status-${cls}`}
+              className={cn(
+                'h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1',
+                empty && 'opacity-40 cursor-not-allowed',
+                active
+                  ? cls === '4xx'
+                    ? 'bg-warning text-bg border-warning'
+                    : cls === '5xx'
+                      ? 'bg-danger text-bg border-danger'
+                      : 'bg-fg text-bg border-fg'
+                  : 'bg-surface border-border text-fg-subtle hover:text-fg',
+              )}
+            >
+              <span>{cls}</span>
+              <span
+                className={cn(
+                  'font-mono tabular-nums text-[10px]',
+                  active ? 'text-bg/80' : 'text-fg-faint',
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>

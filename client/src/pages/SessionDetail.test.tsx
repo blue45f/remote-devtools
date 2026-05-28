@@ -121,6 +121,28 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('filters the Network tab by HTTP status class chip', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('session-network-status-strip')).toBeInTheDocument();
+
+    const before = screen.getAllByTestId('session-network-row').length;
+    // Seed has exactly one 4xx (401) row.
+    const fourChip = screen.getByTestId('session-network-status-4xx');
+    await user.click(fourChip);
+
+    await waitFor(() => {
+      const after = screen.getAllByTestId('session-network-row').length;
+      expect(after).toBe(1);
+      expect(after).toBeLessThan(before);
+    });
+  });
+
   it('triggers a HAR download from the Network tab', async () => {
     const user = userEvent.setup();
 
