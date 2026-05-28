@@ -38,10 +38,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   first click. Demo seed now includes a 5-click burst so it's visible
   out of the box. FullStory / Microsoft Clarity / LogRocket frustration
   signal parity.
-- **Replay keyboard controls** — current commit — Space/K toggle, J/L
+- **Replay keyboard controls** — `96efbe0b` — Space/K toggle, J/L
   ±10s, ←/→ ±5s, Home restart. Player wrapper takes focus on click and
   the shortcut help dialog gains a "Replay player" section. YouTube /
   OpenReplay parity.
+- **Sessions sticky toolbar + persisted prefs** — current commit —
+  Toolbar (tabs + search + sort + filter chips) stays pinned while a
+  long list scrolls. View + sort preferences write to `localStorage`
+  under `sessions-prefs:v1` so the page reopens with the user's last
+  shape. Linear / Notion / Vercel parity for table-shaped views.
 
 ## Next obvious candidates
 
