@@ -195,7 +195,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Replay group in the palette flips the `replay-prefs:v1`
   skipInactive flag from anywhere in the app — no need to visit
   a session first. Toast confirms the new state.
-- **Sessions list density toggle** — current commit — A new
+- **Sessions list density toggle** — `6ab5f36a` — A new
   Comfortable / Compact toggle next to the view-mode buttons.
   Compact halves row padding in the table view, tightens grid
   gutters and card padding, and hides the secondary ID line in
