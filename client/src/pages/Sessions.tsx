@@ -21,6 +21,7 @@ import {
   Rows4,
   Search,
   Smartphone,
+  StickyNote,
   Table as TableIcon,
   Tag,
   X,
@@ -66,6 +67,7 @@ interface SessionRecord {
   timestamp?: string;
   userAgent?: string;
   tags?: string[];
+  hasNote?: boolean;
 }
 
 type SessionTab = 'record' | 'live';
@@ -1479,8 +1481,17 @@ function SessionRow({
       </td>
       <td className={cn('px-3 align-middle', cellY)}>
         <div className="flex flex-col min-w-0">
-          <span className="font-medium text-fg truncate max-w-[280px]">
-            {session.name || `Session #${session.id}`}
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="font-medium text-fg truncate max-w-[280px]">
+              {session.name || `Session #${session.id}`}
+            </span>
+            {session.hasNote && (
+              <StickyNote
+                className="size-3.5 text-fg-faint shrink-0"
+                data-testid="session-note-indicator"
+                aria-label="Has note"
+              />
+            )}
           </span>
           {density === 'comfortable' && (
             <span className="text-[11px] text-fg-faint">

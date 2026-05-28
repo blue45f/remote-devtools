@@ -49,6 +49,7 @@ export interface SeedSession {
   timestamp: string;
   userAgent: string;
   tags: string[];
+  hasNote: boolean;
 }
 
 const SEED_TAGS: string[][] = [
@@ -91,6 +92,8 @@ export function buildSeedSessions(): SeedSession[] {
       timestamp: new Date(now - i * 17 * 60_000).toISOString(),
       userAgent: USER_AGENTS[i % USER_AGENTS.length],
       tags: SEED_TAGS[i % SEED_TAGS.length],
+      // Session 1000 ships a seeded note (see buildSeedSessionMeta).
+      hasNote: 1000 + i === 1000,
     };
   });
   return cachedSeedSessions;
