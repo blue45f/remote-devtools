@@ -684,6 +684,16 @@ limit)` extracts hostname directly in SQL
   attempt was reverted for racing `?t=`; this is the correct
   single-writer version.)
 
+- **Tag-aware session search** — `55520aef` — Session search
+  now matches user-authored tags alongside name/URL.
+  `findPaginated` flattens the tags array (`array_to_string`)
+  for a single LIKE; the client matcher tests tags too so
+  server + client results stay consistent. A step toward
+  cross-session search using structured columns (jsonb
+  console/network content search remains infeasible without a
+  denormalized text column + GIN index). Notes stay out — not
+  in the lean list payload.
+
 - **Session insights panel** — `1782fea7` — First slice of
   the "AI summarization" next-level item, delivered as honest
   deterministic heuristics (no model). An Insights card on
