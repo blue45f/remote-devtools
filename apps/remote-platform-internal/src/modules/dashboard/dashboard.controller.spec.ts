@@ -13,6 +13,7 @@ describe('DashboardController', () => {
     getTicketTrend: vi.fn(),
     getRecordSessionTrend: vi.fn(),
     getTopHosts: vi.fn(),
+    getTopTags: vi.fn(),
     getRecentlyAnnotated: vi.fn(),
   };
 
@@ -153,6 +154,22 @@ describe('DashboardController', () => {
 
     it('throws BadRequestException for unknown period', async () => {
       await expect(controller.getTopHosts({ period: 'year' as never })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('getTopTags', () => {
+    it('forwards period + parsed limit', async () => {
+      const rows = [{ tag: 'bug', count: 3 }];
+      mockDashboardService.getTopTags.mockResolvedValue(rows);
+      const result = await controller.getTopTags({ period: 'week' }, '5');
+      expect(result).toEqual(rows);
+      expect(mockDashboardService.getTopTags).toHaveBeenCalledWith('week', 5);
+    });
+
+    it('throws BadRequestException for unknown period', async () => {
+      await expect(controller.getTopTags({ period: 'year' as never })).rejects.toThrow(
         BadRequestException,
       );
     });

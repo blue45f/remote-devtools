@@ -233,6 +233,35 @@ export class DashboardService {
   }
 
   /**
+   * Top N tags by usage over the given period. Mirrors getTopHosts but
+   * aggregates the `tags` text[] via UNNEST. Powers the dashboard "Top
+   * tags" panel for navigating by label.
+   */
+  public async getTopTags(
+    period: PeriodType,
+    limit: number,
+  ): Promise<{ tag: string; count: number }[]> {
+    const ranges = this.buildDateRanges(period);
+    if (ranges.length === 0) return [];
+    const windowStart = ranges[0].start;
+    const windowEnd = ranges[ranges.length - 1].end;
+
+    const rows = await this.recordRepository
+      .createQueryBuilder('r')
+      .select('UNNEST(r.tags)', 'tag')
+      .addSelect('COUNT(*)::int', 'count')
+      .where('r.timestamp BETWEEN :start AND :end', { start: windowStart, end: windowEnd })
+      .groupBy('tag')
+      .orderBy('count', 'DESC')
+      .limit(Math.min(Math.max(limit, 1), 25))
+      .getRawMany<{ tag: string; count: number }>();
+
+    return rows
+      .filter((r) => typeof r.tag === 'string' && r.tag.length > 0)
+      .map((r) => ({ tag: r.tag, count: Number(r.count) }));
+  }
+
+  /**
    * Build date ranges for the given period granularity.
    */
   private buildDateRanges(period: PeriodType, startDate?: string, endDate?: string): DateRange[] {
