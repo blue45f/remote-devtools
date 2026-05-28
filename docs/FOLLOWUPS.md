@@ -708,6 +708,14 @@ limit)` extracts hostname directly in SQL
   never surfaced). Attribution for shared annotations — see
   who left which note.
 
+- **Near-real-time comment polling** — `1aec92fa` — The
+  session comments query refetches every 15s so a teammate's
+  new annotations / resolve toggles surface without a reload.
+  Low-risk step toward real-time collab using the established
+  polling pattern (no gateway changes); shared query key keeps
+  the list, minimap markers, and tab badge current. In-flight
+  edits are guarded against background refetches.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
