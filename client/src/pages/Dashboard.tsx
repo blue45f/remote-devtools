@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   ArrowDownRight,
@@ -7,10 +7,11 @@ import {
   Clapperboard,
   Minus,
   Radio,
+  RefreshCw,
   Ticket,
   TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Link } from "react-router-dom";
 
@@ -66,6 +67,15 @@ const ROLE_LABELS: Record<(typeof ROLE_KEYS)[number], string> = {
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>("day");
+  const queryClient = useQueryClient();
+  const [, forceTick] = useState(0);
+
+  // Re-render every 5s so the "Updated Xs ago" label stays fresh
+  // without depending on every query firing onSettled.
+  useEffect(() => {
+    const i = window.setInterval(() => forceTick((n) => n + 1), 5_000);
+    return () => window.clearInterval(i);
+  }, []);
 
   const statsQuery = useQuery({
     queryKey: ["dashboard-stats"],
@@ -112,17 +122,39 @@ export default function DashboardPage() {
             Activity overview across all your debug sessions and tickets.
           </p>
         </div>
-        <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <TabsList className="w-max">
-              {PERIODS.map((p) => (
-                <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
-                  <CalendarDays className="size-3.5" />
-                  {p.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+        <div className="flex items-center gap-2 flex-wrap">
+          <FreshnessBadge
+            updatedAt={Math.max(
+              statsQuery.dataUpdatedAt,
+              recordTrendQuery.dataUpdatedAt,
+              ticketTrendQuery.dataUpdatedAt,
+              liveQuery.dataUpdatedAt,
+            )}
+            fetching={
+              statsQuery.isFetching ||
+              recordTrendQuery.isFetching ||
+              ticketTrendQuery.isFetching ||
+              liveQuery.isFetching
+            }
+            onRefresh={() => {
+              void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+              void queryClient.invalidateQueries({ queryKey: ["ticket-trend"] });
+              void queryClient.invalidateQueries({ queryKey: ["record-trend"] });
+              void queryClient.invalidateQueries({ queryKey: ["live-sessions"] });
+            }}
+          />
+          <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
+            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+              <TabsList className="w-max">
+                {PERIODS.map((p) => (
+                  <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
+                    <CalendarDays className="size-3.5" />
+                    {p.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </div>
 
@@ -223,6 +255,51 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+/* ─────────────  Freshness badge  ───────────── */
+
+function FreshnessBadge({
+  updatedAt,
+  fetching,
+  onRefresh,
+}: {
+  updatedAt: number;
+  fetching: boolean;
+  onRefresh: () => void;
+}) {
+  // Recompute on every render; the parent ticks every 5s so the relative
+  // time string stays current without an internal interval.
+  const label = formatRelativeAge(updatedAt);
+
+  return (
+    <button
+      type="button"
+      onClick={onRefresh}
+      disabled={fetching}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px]",
+        "border border-border bg-surface text-fg-subtle",
+        "hover:border-border-strong hover:text-fg transition-colors",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      aria-label="Refresh dashboard data"
+      data-testid="dashboard-refresh"
+    >
+      <RefreshCw className={cn("size-3", fetching && "animate-spin")} />
+      <span>{fetching ? "Refreshing…" : `Updated ${label}`}</span>
+    </button>
+  );
+}
+
+function formatRelativeAge(updatedAt: number) {
+  if (!updatedAt) return "just now";
+  const ms = Date.now() - updatedAt;
+  if (ms < 5_000) return "just now";
+  if (ms < 60_000) return `${Math.floor(ms / 1_000)}s ago`;
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
+  return `${Math.floor(ms / 3_600_000)}h ago`;
 }
 
 /* ─────────────  Hero cards  ───────────── */
