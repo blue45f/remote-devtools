@@ -58,4 +58,24 @@ export class ReplayCommentService {
       .execute();
     return (result.affected ?? 0) > 0;
   }
+
+  /**
+   * Update the body text of an existing comment scoped to a record.
+   * Returns the updated entity, or null when the comment doesn't exist on
+   * that record. The controller is responsible for normalising (trim,
+   * length cap) before calling in.
+   */
+  public async updateBody(
+    commentId: number,
+    recordId: number,
+    body: string,
+  ): Promise<ReplayCommentEntity | null> {
+    const row = await this.repo.findOne({
+      where: { id: commentId, record: { id: recordId } },
+      relations: { record: true },
+    });
+    if (!row) return null;
+    row.body = body;
+    return this.repo.save(row);
+  }
 }

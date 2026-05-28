@@ -408,6 +408,20 @@ the next obvious candidates. Each entry: what shipped, what's next.
   to the Console tab. Reuses the pre-fetched consoleRows
   query so no extra network hit. PostHog / Sentry / Datadog
   session-overview "what went wrong" parity.
+- **Comments inline edit (PATCH endpoint)** — current commit —
+  Eighth backend cycle. Completes the CRUD on `replay_comment`.
+  New `ReplayCommentService.updateBody(commentId, recordId, body)`
+  loads with FK scope, mutates, saves. New
+  `PATCH /sessions/record/:id/comments/:commentId` endpoint
+  with trim + length cap + non-empty validation. Frontend:
+  comment body becomes a click-to-edit affordance — input
+  appears in place, Enter commits, Esc cancels, blur commits.
+  Optimistic update lands instantly; failure rolls back via
+  the same pattern the delete mutation already uses. Demo
+  seed router echoes PATCH so the offline demo feels live.
+  Backend tests cover trim, blank rejection, non-string
+  rejection, 404 when missing. Linear / Notion / Figma
+  comment-edit parity.
 
 Listed in rough order of value × ease:
 

@@ -23,6 +23,7 @@ describe('WebviewController (Internal)', () => {
     findByRecordId: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
+    updateBody: vi.fn(),
   };
   const mockS3Service = {
     listBackupFiles: vi.fn(),
@@ -299,6 +300,40 @@ describe('WebviewController (Internal)', () => {
     it('deleteRecordComment 404s when no row was deleted', async () => {
       mockReplayCommentService.delete.mockResolvedValue(false);
       await expect(controller.deleteRecordComment('42', '7')).rejects.toThrow(NotFoundException);
+    });
+
+    it('patchRecordComment trims body before saving', async () => {
+      mockReplayCommentService.updateBody.mockResolvedValue({
+        id: 7,
+        timestampMs: 1234,
+        body: 'updated text',
+        author: 'qa',
+        createdAt: new Date('2026-05-29'),
+      });
+      const out = await controller.patchRecordComment('42', '7', {
+        body: '  updated text   ',
+      });
+      expect(out.body).toBe('updated text');
+      expect(mockReplayCommentService.updateBody).toHaveBeenCalledWith(7, 42, 'updated text');
+    });
+
+    it('patchRecordComment rejects blank body', async () => {
+      await expect(controller.patchRecordComment('42', '7', { body: '   ' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('patchRecordComment rejects non-string body', async () => {
+      await expect(
+        controller.patchRecordComment('42', '7', { body: 1 as unknown as string }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('patchRecordComment 404s when service returns null', async () => {
+      mockReplayCommentService.updateBody.mockResolvedValue(null);
+      await expect(controller.patchRecordComment('42', '999', { body: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

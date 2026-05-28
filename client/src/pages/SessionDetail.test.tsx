@@ -148,6 +148,53 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('edits a comment inline and the new body persists', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+
+    const bodyButton = screen.getAllByTestId('replay-comment-body')[0];
+    const originalText = bodyButton.textContent ?? '';
+    expect(originalText).not.toBe('');
+
+    await user.click(bodyButton);
+    const input = await screen.findByTestId('replay-comment-edit-input');
+    await user.clear(input);
+    await user.type(input, 'rewritten note about a regression{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText(/rewritten note about a regression/)).toBeInTheDocument();
+    });
+    // The edit input should be gone after commit.
+    expect(screen.queryByTestId('replay-comment-edit-input')).not.toBeInTheDocument();
+  });
+
+  it('Escape cancels an in-progress comment edit', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+
+    const bodyButton = screen.getAllByTestId('replay-comment-body')[0];
+    const originalText = bodyButton.textContent ?? '';
+
+    await user.click(bodyButton);
+    const input = await screen.findByTestId('replay-comment-edit-input');
+    await user.clear(input);
+    await user.type(input, 'this should be discarded{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('replay-comment-edit-input')).not.toBeInTheDocument();
+    });
+    // Original text restored.
+    expect(screen.getAllByTestId('replay-comment-body')[0].textContent).toBe(originalText);
+  });
+
   it('adds a new comment and the chip count increments', async () => {
     const user = userEvent.setup();
     renderAt(1001);
