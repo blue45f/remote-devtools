@@ -24,6 +24,7 @@ import {
   PlayCircle,
   Plus,
   RotateCcw,
+  StickyNote,
   Tag,
   Terminal,
   Trash2,
@@ -85,6 +86,7 @@ interface SessionMetadata {
   eventCount?: number;
   userAgent?: string;
   tags?: string[];
+  note?: string | null;
 }
 
 /**
@@ -404,6 +406,9 @@ export default function SessionDetailPage() {
       <SessionHeader id={id ?? ''} metadata={metadata} loading={metaLoading} recordId={recordId} />
       {recordId !== null && (
         <TagsEditor recordId={recordId} loading={metaLoading} tags={metadata?.tags ?? []} />
+      )}
+      {recordId !== null && (
+        <NoteEditor recordId={recordId} loading={metaLoading} note={metadata?.note ?? ''} />
       )}
 
       <Separator className="my-5 sm:my-6" />
@@ -1777,6 +1782,95 @@ function TagsEditor({
             <Plus className="size-3" />
           </button>
         </form>
+      )}
+    </div>
+  );
+}
+
+const MAX_NOTE_LENGTH = 4000;
+
+function NoteEditor({
+  recordId,
+  loading,
+  note,
+}: {
+  recordId: number;
+  loading: boolean;
+  note: string;
+}) {
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState(note);
+
+  // Re-sync when the metadata cache updates (e.g. after a save round-trips
+  // the server-trimmed value, or when navigating between sessions).
+  useEffect(() => {
+    setDraft(note);
+  }, [note]);
+
+  const mutation = useMutation({
+    mutationFn: async (next: string) => {
+      const res = await apiFetch<{ id: number; note: string | null }>(
+        `/sessions/record/${recordId}/note`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: next }),
+        },
+      );
+      return res.note ?? '';
+    },
+    onSuccess: (saved) => {
+      queryClient.setQueryData<SessionMetadata | undefined>(
+        ['session-metadata', String(recordId)],
+        (prev) => (prev ? { ...prev, note: saved } : prev),
+      );
+      toast.success('Note saved');
+    },
+    onError: () => toast.error("Couldn't save note"),
+  });
+
+  if (loading) return null;
+
+  const dirty = draft.trim() !== note.trim();
+
+  return (
+    <div className="mt-3" data-testid="session-note-editor">
+      <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-fg-faint">
+        <StickyNote className="size-3.5 shrink-0" />
+        <span>Note</span>
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        maxLength={MAX_NOTE_LENGTH}
+        rows={2}
+        placeholder="Add a note — repro steps, context, anything worth remembering…"
+        aria-label="Session note"
+        data-testid="session-note-input"
+        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-xs text-fg placeholder:text-fg-faint focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+      />
+      {dirty && (
+        <div className="flex items-center gap-2 mt-1.5">
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate(draft.trim())}
+            data-testid="session-note-save"
+          >
+            <Check />
+            Save note
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={mutation.isPending}
+            onClick={() => setDraft(note)}
+            data-testid="session-note-cancel"
+          >
+            Cancel
+          </Button>
+        </div>
       )}
     </div>
   );
