@@ -174,6 +174,7 @@ docker-compose up
 - [ ] 테스트 통과: `pnpm test`
 - [ ] CI 필수 체크(`CI pass gate`) 통과: GitHub Actions 요약에서 확인
 - [ ] `CI pass gate` 결과에 `skipped` 항목이 없는지 확인 (`backend`, `client`, `SDK`, `admin`, `plugin`, `build` 모두 성공)
+- [ ] `CodeRabbit review gate` 통과: CodeRabbit이 PR을 `APPROVED` 했는지 확인
 - [ ] 파일명이 kebab-case를 따르는지 확인
 - [ ] same-repo PR인 경우 `pr-checklist-enforcer` 워크플로우가 통과(체크리스트 완전 체크)하는지 확인 (`failed` 또는 중복 코멘트가 없어야 함)
 - [ ] fork PR은 `pr-checklist-enforcer`가 실행되지 않으므로, PR 템플릿 체크리스트와 수동 검토를 함께 수행한다.
@@ -182,6 +183,10 @@ docker-compose up
 
 - `.coderabbit.yaml`은 모든 PR에서 공통 리뷰 규칙을 적용합니다.
 - PR 작성 후 CodeRabbit 앱이 설치되어 있으면 리뷰/요약 코멘트를 자동으로 받습니다.
+- `.github/workflows/coderabbit-gate.yml` 워크플로우가 PR의 가장 최근 CodeRabbit 리뷰
+  상태를 검증해 `APPROVED` 일 때만 머지 게이트(`CodeRabbit review gate`)를 통과시킵니다.
+- 리뷰가 `CHANGES_REQUESTED` 또는 미리뷰 상태이면 머지가 막힙니다. 코멘트를 반영하고
+  새 커밋을 푸시하면 CodeRabbit이 재리뷰해 게이트가 다시 녹색으로 전환됩니다.
 
 ### 리뷰 프로세스
 

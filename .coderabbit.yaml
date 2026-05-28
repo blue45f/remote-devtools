@@ -3,7 +3,12 @@ language: "en-US"
 early_access: false
 reviews:
   profile: "chill"
-  request_changes_workflow: false
+  # Required for the `CodeRabbit review gate` workflow: when issues are
+  # found, post a proper "Request Changes" review (not just a comment).
+  # The gate keys off the latest review state — without this flag,
+  # CodeRabbit only ever posts COMMENTED reviews and the gate can't tell
+  # a clean approval from a "I left some notes" pass.
+  request_changes_workflow: true
   high_level_summary: true
   poem: true
   review_status: true

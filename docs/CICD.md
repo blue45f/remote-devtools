@@ -5,17 +5,26 @@
 | File | Trigger | What it does |
 |------|---------|--------------|
 | `.github/workflows/ci.yml` | every push / PR | lint + typecheck + test + build (backend, SDK, client, debug-recorder-admin, figma-plugin) |
-| `.coderabbit.yaml` | App 설치 후 모든 PR | PR 단위 AI 코드 리뷰 규칙 및 톤 설정 |
+| `.github/workflows/coderabbit-gate.yml` | PR / PR review 이벤트 | CodeRabbit이 PR을 `APPROVED` 했는지 검증하는 필수 머지 게이트 |
+| `.coderabbit.yaml` | App 설치 후 모든 PR | PR 단위 AI 코드 리뷰 규칙 및 톤 설정 (`request_changes_workflow: true`로 CHANGES_REQUESTED 발행) |
 | `.github/workflows/deploy-vercel.yml` | workflow_dispatch + `workflow_run(CI/main)` | builds + deploys the public Vercel demo |
 | `.github/workflows/pr-checklist-enforcer.yml` | PR `opened`/`edited`/`synchronize` | same-repo PR의 CI 체크리스트 누락 항목 자동 안내 |
 
 ## CI 게이트 운영
 
-브랜치 보호 규칙(Branch protection rules)에서 `CI pass gate` 체크를 필수로 설정하면,
+브랜치 보호 규칙(Branch protection rules)에서 `CI pass gate` 와 `CodeRabbit review gate`
+체크를 모두 필수로 설정하면, 두 게이트가 모두 `success` 일 때만 병합이 가능해집니다.
+
+`CI pass gate`는
 `backend-lint-and-typecheck`, `backend-test`, `client-typecheck`, `client-test`,
 `sdk-check`, `debug-recorder-admin-check`,
 `figma-plugin-check`,
-`build`의 모든 필수 작업이 통과되어야 병합이 가능해집니다.
+`build`의 모든 필수 작업이 통과되어야 통과합니다.
+
+`CodeRabbit review gate`는 PR의 가장 최근 CodeRabbit 리뷰 상태가 `APPROVED`일 때만 통과합니다.
+`CHANGES_REQUESTED`, `COMMENTED`, 또는 미리뷰 상태이면 게이트가 빨간색으로 유지되어
+머지가 막힙니다. CodeRabbit이 코멘트 반영 이후 자동으로 재리뷰하면 게이트가 다시 녹색으로
+전환됩니다.
 
 PR 템플릿([`.github/PULL_REQUEST_TEMPLATE.md`](/Users/hjunkim/WebstormProjects/remote-devtools/.github/PULL_REQUEST_TEMPLATE.md))의 체크항목을 기준으로,
 `CI pass gate` `success`/`skipped` 상태를 수동 검토해야 하며,
@@ -54,11 +63,12 @@ PR 템플릿([`.github/PULL_REQUEST_TEMPLATE.md`](/Users/hjunkim/WebstormProject
 
 ### 권장 브랜치 보호 규칙 설정
 
-브랜치 보호 규칙을 통해 `CI pass gate`를 필수 체크로 등록하면, 병합이 그 전에 막히므로
-“원격 푸시 후 CI 실패”가 실제로 배포/병합에 반영됩니다.
+브랜치 보호 규칙을 통해 `CI pass gate`와 `CodeRabbit review gate`를 필수 체크로 등록하면,
+병합이 그 전에 막히므로 "원격 푸시 후 CI 실패" 와 "리뷰 미통과"가 실제로 배포/병합에 반영됩니다.
 
 - `main` 브랜치 기준 필수 체크 리스트:
   - `CI pass gate`
+  - `CodeRabbit review gate`
   - (same-repo 협업을 엄격히 지키는 팀이라면) `pr-checklist-enforcer`
 - 보통 함께 추가하는 권장 옵션:
   - `Require a pull request before merging`
@@ -71,10 +81,30 @@ PR 템플릿([`.github/PULL_REQUEST_TEMPLATE.md`](/Users/hjunkim/WebstormProject
 - 브랜치: `main`
 - Require a pull request before merging: 활성화
 - Require status checks to pass before merging: 활성화
-- Required status checks: `CI pass gate` 체크
+- Required status checks: `CI pass gate`, `CodeRabbit review gate` 모두 체크
 - `pr-checklist-enforcer`는 same-repo PR에서만 동작하므로, fork PR이 허용되는 저장소는 팀 정책에 따라 적용 여부를 결정하세요.
 
-`develop` 또는 `release/*`에 동일 적용이 필요한 경우에도 `CI pass gate`만 필수로 추가하면 됩니다.
+`develop` 또는 `release/*`에 동일 적용이 필요한 경우에도 두 게이트 모두 필수로 추가하면 됩니다.
+
+#### `gh` CLI로 한 번에 적용하기
+
+브랜치 보호 규칙은 GitHub UI에서도 설정 가능하지만, 동일 설정을 다른 저장소로 옮길 때는
+다음 명령 한 줄로 적용할 수 있습니다(권한: repo admin 필요).
+
+```bash
+gh api -X PUT \
+  "repos/$OWNER/$REPO/branches/main/protection" \
+  -f required_status_checks.strict=true \
+  -f 'required_status_checks.contexts[]=CI pass gate' \
+  -f 'required_status_checks.contexts[]=CodeRabbit review gate' \
+  -f enforce_admins=false \
+  -f 'required_pull_request_reviews.require_code_owner_reviews=true' \
+  -f 'required_pull_request_reviews.required_approving_review_count=0' \
+  -f restrictions=null
+```
+
+`required_approving_review_count=0`은 사람 리뷰 강제는 별도 정책에 맡기고
+필수 체크만 게이트로 사용한다는 의미입니다(필요 시 1 이상으로 올리세요).
 
 ## 원격 푸시 후 CI 확인 루틴
 
