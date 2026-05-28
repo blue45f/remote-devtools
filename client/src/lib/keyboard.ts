@@ -130,6 +130,14 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    label: "Timeline tab",
+    shortcuts: [
+      { keys: ["J"], label: "Next event", description: "↓ also works" },
+      { keys: ["K"], label: "Previous event", description: "↑ also works" },
+      { keys: ["Enter"], label: "Jump replay to this event" },
+    ],
+  },
+  {
     label: "Replay player",
     shortcuts: [
       {

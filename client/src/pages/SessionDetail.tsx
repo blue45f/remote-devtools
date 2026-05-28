@@ -1097,6 +1097,9 @@ function TimelineTab({
 }) {
   const [search, setSearch] = useState("");
   const [activeType, setActiveType] = useState<number | null>(null);
+  // Cursor for keyboard navigation. -1 = no row focused yet; revealed
+  // on first j / k press.
+  const [cursorIdx, setCursorIdx] = useState<number>(-1);
 
   const types = useMemo(() => {
     const set = new Set<number>();
@@ -1117,6 +1120,69 @@ function TimelineTab({
       return true;
     });
   }, [events, activeType, search]);
+
+  // Reset cursor whenever the visible result set changes — the row at
+  // `cursorIdx` might no longer exist.
+  useEffect(() => {
+    setCursorIdx(-1);
+  }, [activeType, search]);
+
+  // j / k navigation, Enter jumps the replay to that moment. Consistent
+  // with the Sessions list — same keys, same Linear/Gmail mental model.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (filtered.length === 0) return;
+
+      const move = (delta: number) => {
+        e.preventDefault();
+        setCursorIdx((idx) => {
+          const next = idx < 0 ? (delta > 0 ? 0 : filtered.length - 1) : idx + delta;
+          const clamped = Math.max(0, Math.min(filtered.length - 1, next));
+          requestAnimationFrame(() => {
+            const el = document.querySelector<HTMLElement>(
+              `[data-timeline-row="${clamped}"]`,
+            );
+            el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          });
+          return clamped;
+        });
+      };
+
+      switch (e.key) {
+        case "j":
+        case "ArrowDown":
+          move(1);
+          return;
+        case "k":
+        case "ArrowUp":
+          move(-1);
+          return;
+        case "Enter": {
+          if (cursorIdx < 0) return;
+          const ev = filtered[cursorIdx];
+          if (!ev) return;
+          e.preventDefault();
+          onJumpToReplay(Math.max(0, ev.timestamp - sessionStartMs));
+          return;
+        }
+        default:
+          return;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [filtered, cursorIdx, onJumpToReplay, sessionStartMs]);
 
   if (loading) {
     return (
@@ -1246,6 +1312,7 @@ function TimelineTab({
           sessionStartMs={sessionStartMs}
           onJumpToReplay={onJumpToReplay}
           highlight={search}
+          cursorIdx={cursorIdx}
         />
       </Card>
     </div>
@@ -1301,11 +1368,13 @@ function VirtualEventList({
   sessionStartMs,
   onJumpToReplay,
   highlight,
+  cursorIdx,
 }: {
   events: ReplayEvent[];
   sessionStartMs: number;
   onJumpToReplay: (offsetMs: number) => void;
   highlight?: string;
+  cursorIdx?: number;
 }) {
   const parentRef = useRef<HTMLDivElement | null>(null);
 
@@ -1315,6 +1384,14 @@ function VirtualEventList({
     estimateSize: () => 36, // px per row, matches py-2 + 24px content
     overscan: 12,
   });
+
+  // When the keyboard cursor moves to a row that's been virtualised out
+  // of view, scroll the virtualizer to bring it into the window.
+  useEffect(() => {
+    if (cursorIdx === undefined || cursorIdx < 0) return;
+    if (cursorIdx >= events.length) return;
+    virtualizer.scrollToIndex(cursorIdx, { align: "auto" });
+  }, [cursorIdx, events.length, virtualizer]);
 
   if (events.length === 0) {
     return (
@@ -1352,7 +1429,11 @@ function VirtualEventList({
               <button
                 type="button"
                 onClick={() => onJumpToReplay(offsetMs)}
-                className="group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors"
+                data-timeline-row={virtualRow.index}
+                className={cn(
+                  "group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors",
+                  cursorIdx === virtualRow.index && "bg-accent-soft/40",
+                )}
                 title="Jump to this point in the replay"
               >
                 <span className="w-10 shrink-0 text-right text-[10px] text-fg-faint font-mono tabular-nums">
