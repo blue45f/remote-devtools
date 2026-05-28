@@ -139,11 +139,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   font, suggests the closest nav route (Levenshtein ≤ 3) as a
   Did-you-mean link, and adds a "Search" button that opens the
   CommandPalette. Vercel / Linear 404 parity.
-- **Timeline tab keyboard navigation** — current commit — j/↓ next
+- **Timeline tab keyboard navigation** — `182379ad` — j/↓ next
   event, k/↑ previous, Enter jumps the replay to that timestamp.
   Cursor row gets bg-accent-soft and the virtualizer scrolls it into
   view via `scrollToIndex`. Matches the Sessions list bindings so
   the keyboard model is consistent across the app.
+- **SessionDetail tab number shortcuts** — current commit — 1/2/3/4
+  switch Overview / Replay / Timeline / Raw JSON without leaving the
+  keyboard. Shortcuts skip inputs/textarea/contentEditable so they
+  don't fight the Timeline search field. Chrome DevTools docking and
+  Linear tab-by-number parity.
 
 ## Next obvious candidates
 
