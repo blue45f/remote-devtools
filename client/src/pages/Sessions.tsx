@@ -288,6 +288,7 @@ export default function SessionsPage() {
     urlAge === '24h' || urlAge === '7d' || urlAge === '30d' || urlAge === 'all' ? urlAge : 'all';
   const initialHost = searchParams.get('host');
   const initialTag = searchParams.get('tag');
+  const initialNoteOnly = searchParams.get('note') === '1';
 
   const [tab, setTab] = useState<SessionTab>(initialTab);
   const [search, setSearch] = useState(initialSearch);
@@ -304,6 +305,7 @@ export default function SessionsPage() {
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
   const [tagFilter, setTagFilter] = useState<string | null>(initialTag);
+  const [noteOnly, setNoteOnly] = useState<boolean>(initialNoteOnly);
 
   // Live tab polling: 5s default, 15s / 30s slower, "off" pauses.
   // Stored in component state only — most sessions are short-lived
@@ -342,6 +344,7 @@ export default function SessionsPage() {
         writeOrDelete('age', ageFilter, 'all');
         writeOrDelete('host', hostFilter ?? '', '');
         writeOrDelete('tag', tagFilter ?? '', '');
+        writeOrDelete('note', noteOnly ? '1' : '', '');
         return next;
       },
       { replace: true },
@@ -355,6 +358,7 @@ export default function SessionsPage() {
     ageFilter,
     hostFilter,
     tagFilter,
+    noteOnly,
     setSearchParams,
   ]);
   // Index of the currently-focused row in the filtered list. -1 means
@@ -373,7 +377,7 @@ export default function SessionsPage() {
   // cursorIdx might not exist any more.
   useEffect(() => {
     setCursorIdx(-1);
-  }, [tab, search, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
+  }, [tab, search, sort, durationFilter, ageFilter, hostFilter, tagFilter, noteOnly]);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -493,13 +497,17 @@ export default function SessionsPage() {
       result = result.filter((s) => Array.isArray(s.tags) && s.tags.includes(tagFilter));
     }
 
+    if (noteOnly) {
+      result = result.filter((s) => s.hasNote);
+    }
+
     return [...result].sort((a, b) => {
       if (sort === 'name') return a.name.localeCompare(b.name);
       const ta = new Date(a.timestamp ?? 0).getTime();
       const tb = new Date(b.timestamp ?? 0).getTime();
       return sort === 'newest' ? tb - ta : ta - tb;
     });
-  }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
+  }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter, tagFilter, noteOnly]);
 
   const downloadExport = (format: 'csv' | 'json') => {
     const filename = `sessions-${new Date().toISOString().slice(0, 10)}.${format}`;
@@ -555,7 +563,8 @@ export default function SessionsPage() {
     durationFilter !== 'all' ||
     ageFilter !== 'all' ||
     hostFilter !== null ||
-    tagFilter !== null;
+    tagFilter !== null ||
+    noteOnly;
 
   // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
   // while typing in inputs, while modifier keys are held, and while
@@ -787,9 +796,26 @@ export default function SessionsPage() {
             setAgeFilter('all');
             setHostFilter(null);
             setTagFilter(null);
+            setNoteOnly(false);
           }}
           showClear={filtersActive}
         />
+
+        <button
+          type="button"
+          onClick={() => setNoteOnly((v) => !v)}
+          aria-pressed={noteOnly}
+          data-testid="sessions-note-filter"
+          className={cn(
+            'h-7 px-2.5 rounded-full border text-xs font-medium transition-colors inline-flex items-center gap-1.5 shrink-0',
+            noteOnly
+              ? 'bg-fg text-bg border-fg'
+              : 'bg-surface border-border text-fg-subtle hover:text-fg',
+          )}
+        >
+          <StickyNote className="size-3.5" />
+          Annotated
+        </button>
 
         {hostCounts.length > 1 && (
           <HostChips hosts={hostCounts} active={hostFilter} onChange={setHostFilter} />
@@ -835,6 +861,7 @@ export default function SessionsPage() {
           {tagFilter && (
             <FilterPill label={`tag: ${tagFilter}`} onRemove={() => setTagFilter(null)} />
           )}
+          {noteOnly && <FilterPill label="annotated" onRemove={() => setNoteOnly(false)} />}
         </div>
       )}
 
