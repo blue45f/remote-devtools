@@ -494,6 +494,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   a reader inspect a row without it scrolling away. Button
   only renders when polling is enabled (`pollMs > 0`).
 
+- **Download response body** — `6f045dc7` — Adds a Download
+  button next to Copy body in the NetworkRowDetail dialog.
+  Picks the extension from the row's mimeType (json/html/
+  xml/css/js/txt, bin for base64) and a basename from the
+  URL pathname's last segment so the saved file is
+  recognisable. base64 payloads decode through a typed
+  Uint8Array before being wrapped in a Blob so binary
+  captures survive the round-trip. JSON downloads use the
+  pretty-printed body to stay diffable.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
