@@ -66,7 +66,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.1",
     "@nestjs/websockets": "^11.1.24",
-    "@sentry/nestjs": "^10.54.0",
+    "@sentry/nestjs": "^10.55.0",
     "@types/express": "^5.0.6",
     "axios": "^1.16.1",
     "class-transformer": "^0.5.1",
@@ -97,9 +97,9 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
     "@eslint/js": "^10.0.1",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
     "@nestjs/cli": "^11.0.21",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.24",
@@ -116,6 +116,8 @@
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
     "sharp": "^0.34.5",
     "supertest": "^7.2.2",
@@ -124,8 +126,6 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.0.5",
     "unplugin-swc": "^1.5.9",
     "vitest": "^4.1.7"
   },
