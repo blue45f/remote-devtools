@@ -349,7 +349,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   working. Lets the user pick the dominant tag without
   scanning every row. Linear / Notion / Datadog list-tag
   parity.
-- **Comments badge + `C` shortcut on Replay** — current commit —
+- **Comments badge + `C` shortcut on Replay** — `c901d504` —
   Mirrors the Network / Console error-badge pattern: the
   Replay tab trigger shows a neutral badge with the comment
   count, pre-fetched from `/sessions/record/:id/comments` so it
