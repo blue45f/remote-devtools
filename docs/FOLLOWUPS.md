@@ -275,7 +275,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   (`-1` sizes, `0` timings, `x-unknown` mime) for missing fields.
   Chrome DevTools / Charles / Insomnia accept the output. Closes
   the HAR-export half of FOLLOWUPS #2.
-- **Network response body viewer** — current commit — Clicking
+- **Network response body viewer** — `4db41ac7` — Clicking
   a Network row opens a modal with the captured response body.
   JSON bodies are detected (via mimeType or first-non-WS char)
   and pretty-printed with 2-space indent; everything else renders
