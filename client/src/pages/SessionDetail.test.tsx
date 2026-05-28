@@ -723,6 +723,21 @@ describe('SessionDetail page', () => {
     expect(screen.getByTestId('console-error-badge').textContent).toBe('2');
   });
 
+  it('surfaces a failed-requests card on the Overview tab and jumps to Network', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId('overview-failed-requests')).toBeInTheDocument();
+    });
+    // Seed has a 401 + 500 → at least one failed-request row.
+    expect(screen.getAllByTestId('overview-failed-request-row').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByTestId('overview-failed-requests-jump'));
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+  });
+
   it('surfaces a top-errors card on the Overview tab when console errors exist', async () => {
     renderAt(1000);
     await waitFor(() => {
