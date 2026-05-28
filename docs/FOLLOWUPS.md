@@ -125,10 +125,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   count, each active filter renders as an accent-soft pill with an X
   that removes only that filter. Hidden when nothing is active.
   Linear / Notion / GitHub PR list parity.
-- **Reset Sessions preferences command** — current commit — A new
+- **Reset Sessions preferences command** — `2439e77a` — A new
   "Reset Sessions preferences" entry in the CommandPalette wipes
   `sessions-prefs:v1` + `sessions-pins:v1` from localStorage. The
   escape hatch for when stored prefs end up in a weird state.
+- **ErrorBoundary copy/forward/escape hatch** — current commit —
+  Fallback UI adds a collapsible stack-trace, "Copy error details"
+  (clipboard with message + URL + UA + stacks + componentStack),
+  "Go to dashboard" escape link, and `Sentry.captureException` with
+  componentStack context. Linear / Sentry / Vercel error page parity.
 
 ## Next obvious candidates
 
