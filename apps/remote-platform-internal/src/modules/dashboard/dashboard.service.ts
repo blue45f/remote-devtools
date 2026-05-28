@@ -163,6 +163,48 @@ export class DashboardService {
   }
 
   /**
+   * Top N hostnames by record count over the given period. Anchored to
+   * the same date-range logic as the trend queries so it covers the
+   * same window the dashboard charts show.
+   *
+   * Hostname is extracted from the stored `url` column inside SQL
+   * (substring before the third `/`, stripped of port) so we don't need
+   * to load every row into Node.
+   */
+  public async getTopHosts(
+    period: PeriodType,
+    limit: number,
+  ): Promise<{ host: string; count: number }[]> {
+    const ranges = this.buildDateRanges(period);
+    if (ranges.length === 0) return [];
+    const windowStart = ranges[0].start;
+    const windowEnd = ranges[ranges.length - 1].end;
+
+    const rows = await this.recordRepository
+      .createQueryBuilder('r')
+      .select(
+        `regexp_replace(split_part(split_part(r.url, '/', 3), ':', 1), '^www\\\\.', '')`,
+        'host',
+      )
+      .addSelect('COUNT(*)::int', 'count')
+      .where('r.url IS NOT NULL')
+      .andWhere(`r.url <> ''`)
+      .andWhere('r.timestamp BETWEEN :start AND :end', {
+        start: windowStart,
+        end: windowEnd,
+      })
+      .groupBy('host')
+      .having('COUNT(*) > 0')
+      .orderBy('count', 'DESC')
+      .limit(Math.min(Math.max(limit, 1), 25))
+      .getRawMany<{ host: string; count: number }>();
+
+    return rows
+      .filter((r) => r.host && r.host.length > 0)
+      .map((r) => ({ host: r.host, count: Number(r.count) }));
+  }
+
+  /**
    * Build date ranges for the given period granularity.
    */
   private buildDateRanges(period: PeriodType, startDate?: string, endDate?: string): DateRange[] {

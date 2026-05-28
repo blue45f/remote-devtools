@@ -57,4 +57,15 @@ describe('Dashboard page', () => {
       expect(screen.getByRole('tab', { name: /Monthly/, selected: true })).toBeInTheDocument();
     });
   });
+
+  it('renders the Top hosts panel with rows from seed data', async () => {
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-top-hosts')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      const rows = screen.getAllByTestId('dashboard-top-host-row');
+      expect(rows.length).toBeGreaterThan(0);
+    });
+  });
 });
