@@ -193,6 +193,13 @@ export function resolveSeed<T>(
   if (networkMatch) {
     return buildSeedNetwork(Number(networkMatch[1])) as unknown as T;
   }
+  // Captured console / runtime rows for the Console tab.
+  const consoleMatch = path.match(
+    /^\/api\/session-replay\/sessions\/(\d+)\/console$/,
+  );
+  if (consoleMatch) {
+    return buildSeedConsole(Number(consoleMatch[1])) as unknown as T;
+  }
   // Billing status (demo always reports billing disabled).
   if (path === "/api/billing/status") {
     return { enabled: false } as unknown as T;
@@ -292,6 +299,48 @@ const SEED_NETWORK_ROWS: Omit<SeedNetworkRow, "id" | "requestId" | "timestamp">[
     encodedDataLength: 112408,
   },
 ];
+
+interface SeedConsoleRow {
+  id: number;
+  timestamp: number;
+  level: "log" | "info" | "warn" | "error" | "debug";
+  text: string;
+  source: "console" | "exception";
+  url?: string;
+  lineNumber?: number;
+}
+
+const SEED_CONSOLE_ROWS: Omit<SeedConsoleRow, "id" | "timestamp">[] = [
+  { level: "log", text: "Cart hydrated with 3 items", source: "console" },
+  {
+    level: "warn",
+    text: "Deprecation: legacy /v1/cart endpoint will be removed in March",
+    source: "console",
+  },
+  {
+    level: "error",
+    text: "TypeError: cannot read property 'discount' of undefined",
+    source: "exception",
+    url: "https://shop.example.com/static/app.js",
+    lineNumber: 1284,
+  },
+  { level: "info", text: "Stripe checkout opened in popup", source: "console" },
+  {
+    level: "error",
+    text: "Network request failed: 500 Internal Server Error",
+    source: "console",
+  },
+  { level: "debug", text: "feature flag: checkout_v2=true", source: "console" },
+];
+
+function buildSeedConsole(id: number): SeedConsoleRow[] {
+  const base = Date.now() - 60_000;
+  return SEED_CONSOLE_ROWS.map((row, i) => ({
+    ...row,
+    id: id * 100 + 50 + i,
+    timestamp: base + i * 900,
+  }));
+}
 
 /** Returns a small fixture of captured network rows for a seeded session. */
 function buildSeedNetwork(id: number): SeedNetworkRow[] {

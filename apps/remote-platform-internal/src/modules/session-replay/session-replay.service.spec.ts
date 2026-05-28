@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NetworkService } from "@remote-platform/core";
+import { NetworkService, RuntimeService } from "@remote-platform/core";
 import { RecordEntity, ScreenEntity } from "@remote-platform/entity";
 
 import { S3Service } from "../s3/s3.service";
@@ -40,6 +40,10 @@ describe("SessionReplayService.getSessionMetadata", () => {
         { provide: S3Service, useValue: {} },
         {
           provide: NetworkService,
+          useValue: { findByRecordId: vi.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: RuntimeService,
           useValue: { findByRecordId: vi.fn().mockResolvedValue([]) },
         },
       ],
@@ -143,6 +147,10 @@ describe("SessionReplayService.getSessionNetwork", () => {
         },
         { provide: S3Service, useValue: {} },
         { provide: NetworkService, useValue: networkService },
+        {
+          provide: RuntimeService,
+          useValue: { findByRecordId: vi.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -220,5 +228,124 @@ describe("SessionReplayService.getSessionNetwork", () => {
     expect(row.url).toBe("");
     expect(row.method).toBe("GET");
     expect(row.status).toBeUndefined();
+  });
+});
+
+describe("SessionReplayService.getSessionConsole", () => {
+  let service: SessionReplayService;
+  let runtimeService: { findByRecordId: ReturnType<typeof vi.fn> };
+
+  beforeEach(async () => {
+    runtimeService = { findByRecordId: vi.fn() };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        SessionReplayService,
+        {
+          provide: getRepositoryToken(RecordEntity),
+          useValue: { findOne: vi.fn() },
+        },
+        {
+          provide: getRepositoryToken(ScreenEntity),
+          useValue: { createQueryBuilder: vi.fn() },
+        },
+        { provide: S3Service, useValue: {} },
+        {
+          provide: NetworkService,
+          useValue: { findByRecordId: vi.fn().mockResolvedValue([]) },
+        },
+        { provide: RuntimeService, useValue: runtimeService },
+      ],
+    }).compile();
+
+    service = moduleRef.get(SessionReplayService);
+  });
+
+  it("returns [] for S3 / non-integer session ids without querying", async () => {
+    expect(await service.getSessionConsole("s3-foo-1-0")).toEqual([]);
+    expect(await service.getSessionConsole("garbage")).toEqual([]);
+    expect(runtimeService.findByRecordId).not.toHaveBeenCalled();
+  });
+
+  it("flattens consoleAPICalled into a single text + level entry", async () => {
+    runtimeService.findByRecordId.mockResolvedValue([
+      {
+        id: 1,
+        timestamp: 1_700_000_000_000n,
+        protocol: {
+          method: "Runtime.consoleAPICalled",
+          params: {
+            type: "error",
+            args: [
+              { value: "Cart failed:" },
+              { description: "TypeError: x.map is not a function" },
+            ],
+          },
+        },
+      },
+    ]);
+    const [entry] = await service.getSessionConsole(7);
+    expect(entry).toMatchObject({
+      level: "error",
+      source: "console",
+      text: "Cart failed: TypeError: x.map is not a function",
+    });
+  });
+
+  it("normalises warning + assert levels", async () => {
+    runtimeService.findByRecordId.mockResolvedValue([
+      {
+        id: 1,
+        timestamp: 0,
+        protocol: {
+          method: "Runtime.consoleAPICalled",
+          params: { type: "warning", args: [{ value: "slow request" }] },
+        },
+      },
+      {
+        id: 2,
+        timestamp: 0,
+        protocol: {
+          method: "Runtime.consoleAPICalled",
+          params: { type: "assert", args: [{ value: "bad invariant" }] },
+        },
+      },
+    ]);
+    const rows = await service.getSessionConsole(7);
+    expect(rows[0].level).toBe("warn");
+    expect(rows[1].level).toBe("error");
+  });
+
+  it("captures Runtime.exceptionThrown as an error entry", async () => {
+    runtimeService.findByRecordId.mockResolvedValue([
+      {
+        id: 9,
+        timestamp: 0,
+        protocol: {
+          method: "Runtime.exceptionThrown",
+          params: {
+            exceptionDetails: {
+              text: "Uncaught (in promise)",
+              url: "https://x.test/app.js",
+              lineNumber: 42,
+              exception: { description: "TypeError: oops" },
+            },
+          },
+        },
+      },
+    ]);
+    const [entry] = await service.getSessionConsole(7);
+    expect(entry.level).toBe("error");
+    expect(entry.source).toBe("exception");
+    expect(entry.text).toBe("Uncaught (in promise)");
+    expect(entry.url).toBe("https://x.test/app.js");
+    expect(entry.lineNumber).toBe(42);
+  });
+
+  it("skips unknown methods", async () => {
+    runtimeService.findByRecordId.mockResolvedValue([
+      { id: 1, timestamp: 0, protocol: { method: "Runtime.executionContextCreated" } },
+    ]);
+    expect(await service.getSessionConsole(7)).toEqual([]);
   });
 });

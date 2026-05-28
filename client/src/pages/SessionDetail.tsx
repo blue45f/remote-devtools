@@ -25,6 +25,7 @@ import {
   Plus,
   RotateCcw,
   Tag,
+  Terminal,
   Trash2,
   RadioTower,
   Smartphone,
@@ -177,7 +178,7 @@ export default function SessionDetailPage() {
   }, [searchParams]);
 
   const [tab, setTab] = useState<
-    "overview" | "replay" | "timeline" | "network" | "raw"
+    "overview" | "replay" | "timeline" | "network" | "console" | "raw"
   >(initialReplayOffset > 0 ? "replay" : "overview");
 
   // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
@@ -296,8 +297,10 @@ export default function SessionDetailPage() {
               : e.key === "4"
                 ? "network"
                 : e.key === "5"
-                  ? "raw"
-                  : null;
+                  ? "console"
+                  : e.key === "6"
+                    ? "raw"
+                    : null;
       if (!next) return;
       e.preventDefault();
       setTab(next);
@@ -419,6 +422,10 @@ export default function SessionDetailPage() {
               <Globe className="size-3.5" />
               Network
             </TabsTrigger>
+            <TabsTrigger value="console" className="gap-1.5">
+              <Terminal className="size-3.5" />
+              Console
+            </TabsTrigger>
             <TabsTrigger value="raw" className="gap-1.5">
               <FileJson className="size-3.5" />
               Raw JSON
@@ -472,6 +479,10 @@ export default function SessionDetailPage() {
             sessionId={id ?? ""}
             sessionName={metadata?.name ?? metadata?.room}
           />
+        </TabsContent>
+
+        <TabsContent value="console" className="mt-5">
+          <ConsoleTab sessionId={id ?? ""} />
         </TabsContent>
 
         <TabsContent value="raw" className="mt-5">
@@ -846,6 +857,215 @@ function formatBytes(n?: number): string {
   if (n < 1024) return `${n}B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
   return `${(n / 1024 / 1024).toFixed(1)}MB`;
+}
+
+/* ───────── Console tab ───────── */
+
+type ConsoleLevel = "log" | "info" | "warn" | "error" | "debug";
+
+interface ConsoleRow {
+  id: number;
+  timestamp: number;
+  level: ConsoleLevel;
+  text: string;
+  source: "console" | "exception";
+  url?: string;
+  lineNumber?: number;
+}
+
+const ALL_CONSOLE_LEVELS: ConsoleLevel[] = [
+  "log",
+  "info",
+  "warn",
+  "error",
+  "debug",
+];
+
+function ConsoleTab({ sessionId }: { sessionId: string }) {
+  const { data, isLoading } = useQuery<ConsoleRow[]>({
+    queryKey: ["session-console", sessionId],
+    queryFn: () =>
+      apiFetch<ConsoleRow[]>(
+        `/api/session-replay/sessions/${sessionId}/console`,
+      ),
+    enabled: !!sessionId,
+  });
+
+  const rows = data ?? [];
+  const [activeLevels, setActiveLevels] = useState<Set<ConsoleLevel>>(
+    new Set(),
+  );
+  const [filter, setFilter] = useState("");
+
+  const counts = useMemo(() => {
+    const out: Record<ConsoleLevel, number> = {
+      log: 0,
+      info: 0,
+      warn: 0,
+      error: 0,
+      debug: 0,
+    };
+    for (const r of rows) out[r.level] += 1;
+    return out;
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (activeLevels.size > 0 && !activeLevels.has(r.level)) return false;
+      if (filter && !r.text.toLowerCase().includes(filter.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [rows, activeLevels, filter]);
+
+  const toggleLevel = (l: ConsoleLevel) => {
+    setActiveLevels((prev) => {
+      const next = new Set(prev);
+      if (next.has(l)) next.delete(l);
+      else next.add(l);
+      return next;
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="p-3 space-y-2">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-5 w-full" />
+        ))}
+      </Card>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <EmptyState
+          icon={Terminal}
+          title="No console activity"
+          description={
+            sessionId.startsWith("s3-")
+              ? "Console capture is only available on live DB sessions."
+              : "This session didn't log any console output or exceptions."
+          }
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="Filter console messages…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            leadingIcon={<Terminal />}
+            trailingIcon={
+              filter ? (
+                <button
+                  type="button"
+                  onClick={() => setFilter("")}
+                  aria-label="Clear filter"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : undefined
+            }
+          />
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {ALL_CONSOLE_LEVELS.map((l) => {
+            const count = counts[l];
+            const active = activeLevels.has(l);
+            const empty = count === 0;
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => toggleLevel(l)}
+                disabled={empty}
+                aria-pressed={active}
+                data-testid={`console-level-chip-${l}`}
+                className={cn(
+                  "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0",
+                  "inline-flex items-center gap-1",
+                  empty && "opacity-40 cursor-not-allowed",
+                  active
+                    ? "bg-fg text-bg border-fg"
+                    : "bg-surface border-border text-fg-subtle hover:text-fg",
+                )}
+              >
+                <span className="capitalize">{l}</span>
+                <span
+                  className={cn(
+                    "font-mono tabular-nums text-[10px]",
+                    active ? "text-bg/80" : "text-fg-faint",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <Card className="overflow-hidden p-0">
+        <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
+          <span className="font-medium text-fg-subtle">
+            {filtered.length}
+          </span>{" "}
+          messages
+          {filtered.length !== rows.length && (
+            <span className="text-fg-faint ml-1">(of {rows.length})</span>
+          )}
+        </div>
+        <ul className="divide-y divide-border" data-testid="session-console-list">
+          {filtered.map((r) => (
+            <ConsoleRowView key={r.id} row={r} />
+          ))}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function ConsoleRowView({ row }: { row: ConsoleRow }) {
+  const colour =
+    row.level === "error"
+      ? "text-danger"
+      : row.level === "warn"
+        ? "text-warning"
+        : row.level === "info"
+          ? "text-accent"
+          : "text-fg-subtle";
+  return (
+    <li
+      className="px-3 py-1.5 flex items-start gap-2 text-[12px] font-mono"
+      data-testid="session-console-row"
+      data-level={row.level}
+    >
+      <span
+        className={cn(
+          "uppercase tracking-wider text-[10px] font-semibold shrink-0 w-12",
+          colour,
+        )}
+      >
+        {row.level}
+      </span>
+      <span className="flex-1 whitespace-pre-wrap break-words text-fg">
+        {row.text}
+      </span>
+      {row.url && (
+        <span className="text-[10px] text-fg-faint shrink-0">
+          {row.url.replace(/^https?:\/\//, "")}
+          {row.lineNumber ? `:${row.lineNumber}` : ""}
+        </span>
+      )}
+    </li>
+  );
 }
 
 /* ───────── Tags editor ───────── */
