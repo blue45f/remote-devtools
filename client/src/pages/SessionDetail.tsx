@@ -60,6 +60,7 @@ import { apiFetch } from "@/lib/api";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import { formatDurationFromNanos, shortHash } from "@/lib/format";
 import { buildCurlCommand } from "@/lib/curl";
+import { buildHar } from "@/lib/har";
 import { recordSessionVisit } from "@/lib/recent-sessions";
 import { REPLAY_SPEEDS, useReplayPrefs } from "@/lib/replay-prefs";
 import { formatUserAgentBadge } from "@/lib/user-agent";
@@ -457,7 +458,10 @@ export default function SessionDetailPage() {
         </TabsContent>
 
         <TabsContent value="network" className="mt-5">
-          <NetworkTab sessionId={id ?? ""} />
+          <NetworkTab
+            sessionId={id ?? ""}
+            sessionName={metadata?.name ?? metadata?.room}
+          />
         </TabsContent>
 
         <TabsContent value="raw" className="mt-5">
@@ -485,7 +489,13 @@ interface NetworkRow {
   base64Encoded?: boolean | null;
 }
 
-function NetworkTab({ sessionId }: { sessionId: string }) {
+function NetworkTab({
+  sessionId,
+  sessionName,
+}: {
+  sessionId: string;
+  sessionName?: string;
+}) {
   const { data, isLoading } = useQuery<NetworkRow[]>({
     queryKey: ["session-network", sessionId],
     queryFn: () =>
@@ -535,25 +545,57 @@ function NetworkTab({ sessionId }: { sessionId: string }) {
     );
   }
 
+  const exportHar = () => {
+    const har = buildHar(rows, sessionName);
+    const blob = new Blob([JSON.stringify(har, null, 2)], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `${sessionName || `session-${sessionId}`}.har`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("HAR downloaded", {
+      description: `${rows.length} request${rows.length === 1 ? "" : "s"}`,
+    });
+  };
+
   return (
     <div className="space-y-3">
-      <Input
-        placeholder="Filter URL, method, or MIME…"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        leadingIcon={<Globe />}
-        trailingIcon={
-          filter ? (
-            <button
-              type="button"
-              onClick={() => setFilter("")}
-              aria-label="Clear filter"
-            >
-              <X className="size-3.5" />
-            </button>
-          ) : undefined
-        }
-      />
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="Filter URL, method, or MIME…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            leadingIcon={<Globe />}
+            trailingIcon={
+              filter ? (
+                <button
+                  type="button"
+                  onClick={() => setFilter("")}
+                  aria-label="Clear filter"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : undefined
+            }
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportHar}
+          data-testid="session-network-har"
+          title="Download captured requests as HAR (HTTP Archive)"
+        >
+          <Download />
+          <span className="hidden sm:inline">Export HAR</span>
+        </Button>
+      </div>
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
