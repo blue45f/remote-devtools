@@ -3,12 +3,11 @@ import { resolve } from "path";
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx|mdx)"],
-  addons: [
-    "@storybook/addon-essentials",
-    "@storybook/addon-interactions",
-    "@storybook/addon-a11y",
-    "@storybook/addon-themes",
-  ],
+  // Storybook 10 bundles the former `addon-essentials` (controls,
+  // actions, viewport, backgrounds, toolbars, measure, outline) and
+  // `addon-interactions` into core, so we only list the addons that
+  // are still distributed as separate packages.
+  addons: ["@storybook/addon-a11y", "@storybook/addon-themes"],
   framework: {
     name: "@storybook/react-vite",
     options: {},
