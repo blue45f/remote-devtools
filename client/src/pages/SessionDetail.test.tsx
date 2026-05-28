@@ -358,6 +358,19 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('renders error markers on the Replay minimap', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-minimap')).toBeInTheDocument();
+    });
+    // Seed has a 401 + 500 network row and a console error → red ticks.
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-minimap-error').length).toBeGreaterThan(0);
+    });
+  });
+
   it('renders comment markers on the Replay minimap', async () => {
     const user = userEvent.setup();
     renderAt(1000);

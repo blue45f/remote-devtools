@@ -308,6 +308,26 @@ export default function SessionDetailPage() {
   // session start, not absolute epoch ms.
   const sessionStartMs = useMemo(() => events?.[0]?.timestamp ?? 0, [events]);
 
+  // Error positions (console errors + 4xx/5xx network) drawn as red ticks
+  // on the replay minimap so the user can jump straight to a failure.
+  const errorMarkers = useMemo(() => {
+    const out: { id: string; offsetMs: number }[] = [];
+    for (const r of consoleRows ?? []) {
+      if (r.level === 'error') {
+        out.push({
+          id: `console-${r.id}`,
+          offsetMs: normaliseOffsetMs(r.timestamp, sessionStartMs),
+        });
+      }
+    }
+    for (const r of networkRows ?? []) {
+      if (r.status !== undefined && r.status >= 400) {
+        out.push({ id: `net-${r.id}`, offsetMs: normaliseOffsetMs(r.timestamp, sessionStartMs) });
+      }
+    }
+    return out;
+  }, [consoleRows, networkRows, sessionStartMs]);
+
   const jumpToReplay = (offsetMs: number) => {
     const clamped = Math.max(0, Math.round(offsetMs));
     setTab('replay');
@@ -614,6 +634,7 @@ export default function SessionDetailPage() {
                 id: c.id,
                 timestampMs: c.timestampMs,
               }))}
+              errorMarkers={errorMarkers}
             />
           )}
         </TabsContent>
@@ -2224,6 +2245,8 @@ interface ReplayPanelProps {
   commentFocusSignal: number;
   /** Comment positions (ms-from-session-start) drawn as minimap markers. */
   commentMarkers?: { id: number; timestampMs: number }[];
+  /** Error positions (ms-from-session-start) drawn as red minimap ticks. */
+  errorMarkers?: { id: string; offsetMs: number }[];
 }
 
 function ReplayPanel({
@@ -2235,6 +2258,7 @@ function ReplayPanel({
   recordId,
   commentFocusSignal,
   commentMarkers,
+  errorMarkers,
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -2343,6 +2367,7 @@ function ReplayPanel({
         sessionStartMs={sessionStartMs}
         onSeek={onJumpToReplay}
         commentMarkers={commentMarkers}
+        errorMarkers={errorMarkers}
       />
       <Suspense
         fallback={
@@ -2835,12 +2860,15 @@ function ReplayMinimap({
   sessionStartMs,
   onSeek,
   commentMarkers,
+  errorMarkers,
 }: {
   events: ReplayEvent[];
   sessionStartMs: number;
   onSeek: (offsetMs: number) => void;
   /** Comment positions (ms-from-session-start) to render as marker pins. */
   commentMarkers?: { id: number; timestampMs: number }[];
+  /** Error positions (ms-from-session-start) to render as red ticks. */
+  errorMarkers?: { id: string; offsetMs: number }[];
 }) {
   const BUCKETS = 96;
 
@@ -2902,6 +2930,23 @@ function ReplayMinimap({
                 height: `${heightPct}%`,
                 opacity: count === 0 ? 0.12 : 0.25 + intensity * 0.65,
               }}
+            />
+          );
+        })}
+        {(errorMarkers ?? []).map((m) => {
+          const ratio = Math.min(1, Math.max(0, m.offsetMs / totalMs));
+          return (
+            <button
+              key={m.id}
+              type="button"
+              aria-label="Jump to error"
+              data-testid="replay-minimap-error"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSeek(m.offsetMs);
+              }}
+              className="absolute top-0 bottom-0 w-0.5 bg-danger hover:w-1 transition-all"
+              style={{ left: `calc(${ratio * 100}% - 1px)` }}
             />
           );
         })}
