@@ -237,7 +237,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `apiFetch` helper now accepts a `RequestInit` and the demo seed
   router echoes the PUT body so offline edits feel live. Linear
   / Notion / GitHub issue-tag parity.
-- **Network tab on SessionDetail** — current commit — Third
+- **Network tab on SessionDetail** — `deaec788` — Third
   backend cycle. SessionReplayService gains `getSessionNetwork`
   which flattens captured CDP-shaped network rows
   (Network.requestWillBeSent / responseReceived) into a flat
