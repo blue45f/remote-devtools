@@ -1,5 +1,11 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { resolve } from "path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Storybook 10 loads this config as ESM, so `__dirname` is no longer
+// defined. Derive it from `import.meta.url` to keep the `@` alias
+// resolution stable regardless of the cwd that called Storybook.
+const here = dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx|mdx)"],
@@ -19,12 +25,10 @@ const config: StorybookConfig = {
     autodocs: "tag",
   },
   async viteFinal(config) {
-    // Storybook loads this file in CJS mode via esbuild-register, so `__dirname`
-    // is the .storybook directory regardless of ESM gymnastics — perfect for us.
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias as Record<string, string> | undefined),
-      "@": resolve(__dirname, "../src"),
+      "@": resolve(here, "../src"),
     };
     return config;
   },
