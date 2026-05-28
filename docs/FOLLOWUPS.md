@@ -479,6 +479,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   list down to just the broken ones in one click — primary
   triage flow upgrade.
 
+- **Session detail shortcuts cheatsheet** — `1f818095` —
+  Global `?` handler on the Session detail page toggles a
+  Dialog listing the existing tab (1-6), Comment (C) and
+  Timeline navigation (J/K/Enter) bindings. Timeline rows
+  conditionally render only when the Timeline tab is active.
+  Until now the bindings were only documented in the
+  source — discoverability upgrade.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
