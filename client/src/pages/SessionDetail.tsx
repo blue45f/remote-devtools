@@ -20,6 +20,7 @@ import {
   Maximize2,
   Minimize2,
   PlayCircle,
+  RotateCcw,
   RadioTower,
   Smartphone,
   X,
@@ -546,6 +547,7 @@ function ReplayPanel({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [{ speed, skipInactive }, setPrefs] = useReplayPrefs();
+  const [restartToken, setRestartToken] = useState(0);
   const fullscreenSupported =
     typeof document !== "undefined" &&
     typeof document.fullscreenEnabled === "boolean"
@@ -615,6 +617,16 @@ function ReplayPanel({
           onChange={(next) => setPrefs({ speed: next })}
         />
         <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setRestartToken((t) => t + 1)}
+          data-testid="replay-restart"
+          title="Restart from the beginning (Home)"
+        >
+          <RotateCcw />
+          <span className="hidden sm:inline">Restart</span>
+        </Button>
+        <Button
           variant={skipInactive ? "primary" : "outline"}
           size="sm"
           onClick={() => setPrefs({ skipInactive: !skipInactive })}
@@ -658,6 +670,7 @@ function ReplayPanel({
           startTime={initialReplayOffset}
           speed={speed}
           skipInactive={skipInactive}
+          restartToken={restartToken}
           onTimeUpdate={(ms) => {
             playheadMsRef.current = ms;
           }}
