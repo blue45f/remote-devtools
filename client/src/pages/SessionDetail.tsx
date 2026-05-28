@@ -1245,6 +1245,7 @@ function TimelineTab({
           events={filtered}
           sessionStartMs={sessionStartMs}
           onJumpToReplay={onJumpToReplay}
+          highlight={search}
         />
       </Card>
     </div>
@@ -1299,10 +1300,12 @@ function VirtualEventList({
   events,
   sessionStartMs,
   onJumpToReplay,
+  highlight,
 }: {
   events: ReplayEvent[];
   sessionStartMs: number;
   onJumpToReplay: (offsetMs: number) => void;
+  highlight?: string;
 }) {
   const parentRef = useRef<HTMLDivElement | null>(null);
 
@@ -1364,7 +1367,7 @@ function VirtualEventList({
                   <Icon className="size-3" />
                 </span>
                 <span className="text-xs font-medium text-fg min-w-[110px]">
-                  {meta.name}
+                  {highlightText(meta.name, highlight)}
                 </span>
                 <span className="font-mono text-[11px] text-fg-faint flex-1 truncate">
                   {formatTimestampWithMillis(event.timestamp)}
@@ -1376,6 +1379,45 @@ function VirtualEventList({
         })}
       </ol>
     </div>
+  );
+}
+
+/**
+ * Wraps each case-insensitive match of `query` inside `text` with a `<mark>`
+ * tinted via design tokens. Returns plain text when query is empty/missing
+ * and falls back to plain text if the regex compilation fails.
+ *
+ * Uses `split` with a capturing group, then identifies match segments by
+ * `toLowerCase()` equality against the trimmed query rather than re-running
+ * the regex (which is stateful with the `g` flag and unsafe after split).
+ */
+function highlightText(text: string, query?: string) {
+  if (!query) return text;
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let re: RegExp;
+  try {
+    re = new RegExp(`(${escaped})`, "ig");
+  } catch {
+    return text;
+  }
+
+  const needle = trimmed.toLowerCase();
+  const parts = text.split(re);
+  return parts.map((part, i) =>
+    part.toLowerCase() === needle ? (
+      <mark
+        key={i}
+        className="bg-warning-soft text-fg rounded px-0.5"
+        data-testid="event-highlight"
+      >
+        {part}
+      </mark>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
   );
 }
 
