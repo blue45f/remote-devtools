@@ -81,11 +81,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   ID eyebrow and Device metric tile become hover-to-copy. Copy icon
   flips to a Check on success and a toast confirms. Linear / Vercel /
   Stripe metadata block parity.
-- **Timeline search highlight** — current commit — Timeline filter
+- **Timeline search highlight** — `6812f04c` — Timeline filter
   input matches now render with a `<mark>` highlight on each row's
   event-type label. Special regex characters are escaped before
   compile; query is split via capturing group and re-identified via
   case-insensitive equality. PostHog / Sentry / Algolia parity.
+- **Topbar theme quick toggle** — current commit — Sun/Moon/Monitor
+  icon button on the topbar cycles light → dark → system → light.
+  Desktop-only; mobile keeps the CommandPalette / sidebar theme menu.
+  GitHub / Vercel / Linear parity.
 
 ## Next obvious candidates
 

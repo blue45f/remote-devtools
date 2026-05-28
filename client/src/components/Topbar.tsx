@@ -1,4 +1,4 @@
-import { ChevronRight, Menu, Search, Sparkles } from "lucide-react";
+import { ChevronRight, Menu, Monitor, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
@@ -61,7 +61,21 @@ export function Topbar() {
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const toggleCommand = useAppStore((s) => s.toggleCommand);
   const demoMode = useAppStore((s) => s.demoMode);
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
   const { t } = useTranslation();
+
+  // Cycle: light → dark → system → light. GitHub / Vercel pattern.
+  const cycleTheme = () => {
+    setTheme(theme === "light" ? "dark" : theme === "dark" ? "system" : "light");
+  };
+  const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+  const themeLabel =
+    theme === "light"
+      ? "Light theme · switch to dark"
+      : theme === "dark"
+        ? "Dark theme · switch to system"
+        : "System theme · switch to light";
 
   const crumbs = useMemo(
     () => buildCrumbs(location.pathname),
@@ -152,6 +166,28 @@ export function Topbar() {
           </TooltipContent>
         </Tooltip>
       )}
+
+      {/* Theme quick toggle — desktop only; on mobile the Sidebar's
+          theme menu and CommandPalette cover this. */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={cycleTheme}
+            className={cn(
+              "hidden lg:inline-flex items-center justify-center size-8 rounded-md shrink-0",
+              "border border-border bg-surface text-fg-subtle",
+              "hover:border-border-strong hover:text-fg transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            )}
+            aria-label={themeLabel}
+            data-testid="topbar-theme-toggle"
+          >
+            <ThemeIcon className="size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{themeLabel}</TooltipContent>
+      </Tooltip>
 
       {/* Search trigger — full pill on tablet+, icon-only on phone */}
       <button
