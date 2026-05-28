@@ -695,6 +695,14 @@ limit)` extracts hostname directly in SQL
   the existing async-collaboration comments. Demo seed-router
   handles the PATCH.
 
+- **Hide-resolved + clean minimap** — `1b42bbe7` — Resolved
+  comments drop out of the replay minimap markers (timeline
+  flags only open annotations) and the Comments panel gains a
+  "Hide resolved (N)" toggle with an "All comments resolved"
+  empty state. Also adds a test-only `__resetDemoComments()`
+  (called in beforeEach) to stop the module-level demo store
+  leaking state across tests.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
