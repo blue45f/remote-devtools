@@ -716,6 +716,11 @@ limit)` extracts hostname directly in SQL
   the list, minimap markers, and tab badge current. In-flight
   edits are guarded against background refetches.
 
+- **Open-comment tab badge** — `8fc8dade` — The Replay tab
+  badge counts unresolved (open) comments — the actionable
+  triage number — rather than the total, decrementing live as
+  comments are resolved. Copy-summary still reports total.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
