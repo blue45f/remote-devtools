@@ -456,6 +456,20 @@ the next obvious candidates. Each entry: what shipped, what's next.
   enables seed-mode so the offline run reaches the seeded
   activity feed. ninth backend cycle.
 
+- **Session tag autosuggest** — `bf677f8b` — Tenth backend
+  cycle. New `RecordService.findAllTags(orgId?)` using a
+  Postgres `UNNEST(r.tags)` distinct, surfaced as
+  `GET /sessions/record/tags`. The Session detail tag editor
+  pulls that list with a 5-minute TanStack query and renders
+  matching suggestions as the user types (already-applied
+  tags are filtered out, top 6 shown, `mousedown` activates
+  before blur kills the dropdown). Free-form input still
+  works. Demo seed-router returns the deduped tag set so the
+  offline mode keeps parity. Drive-by: `buildSeedSessions()`
+  memoizes itself so the rrweb event anchor and the network
+  anchors share one base — eliminates a 1ms drift that broke
+  the Network-row-to-replay-offset test.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
