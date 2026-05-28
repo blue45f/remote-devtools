@@ -587,6 +587,14 @@ limit)` extracts hostname directly in SQL
   statuses without scrolling. Chrome DevTools column-sort
   parity.
 
+- **Sessions note indicator** — `94e636d3` (server) +
+  `f788434e` (client) — Record list mapping adds a lean
+  `hasNote` boolean (non-empty note after trim) so the list
+  payload stays slim while the Sessions rows can show a note
+  icon next to the name. Spot annotated sessions at a glance
+  without opening each. Seed session 1000 flags hasNote to
+  match its detail-view note.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
