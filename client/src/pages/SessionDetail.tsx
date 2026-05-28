@@ -410,6 +410,9 @@ export default function SessionDetailPage() {
     refetchInterval: 15_000,
   });
   const commentCount = commentRows?.length ?? 0;
+  // Open (unresolved) count drives the tab badge — the actionable triage
+  // number — while the total still feeds the copy-summary.
+  const openCommentCount = (commentRows ?? []).filter((c) => !c.resolved).length;
 
   const events = useMemo<ReplayEvent[]>(() => (rawEvents ?? []).map(normaliseEvent), [rawEvents]);
 
@@ -703,14 +706,15 @@ export default function SessionDetailPage() {
             <TabsTrigger value="replay" className="gap-1.5">
               <PlayCircle className="size-3.5" />
               Replay
-              {commentCount > 0 && (
+              {openCommentCount > 0 && (
                 <Badge
                   variant="neutral"
                   size="sm"
                   className="ml-1 h-4 px-1 text-[10px]"
                   data-testid="replay-comments-badge"
+                  title={`${openCommentCount} open comment${openCommentCount === 1 ? '' : 's'}`}
                 >
-                  {commentCount}
+                  {openCommentCount}
                 </Badge>
               )}
             </TabsTrigger>
