@@ -315,6 +315,22 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Demo seed router holds an in-memory store with two starter
   comments per session so the UI demos out of the box. PostHog
   / Sentry / OpenReplay collaborative-review parity.
+- **Console tab on SessionDetail** — current commit — Fifth
+  backend cycle (no schema change — `RuntimeEntity` was already
+  populated by the SDK). New
+  `SessionReplayService.getSessionConsole()` flattens captured
+  CDP `Runtime.consoleAPICalled` (concatenates args into a
+  single text) and `Runtime.exceptionThrown` (text / url /
+  lineNumber) rows into a uniform
+  `{ id, timestamp, level, text, source, url?, lineNumber? }`
+  shape with level normalisation (warning→warn, assert→error).
+  New `GET /api/session-replay/sessions/:id/console` endpoint.
+  Frontend: 5th-position "Console" tab — message list with
+  per-level colour, level-chip multi-select filter (counts +
+  disabled-empty styling), free-text filter, url:line suffix
+  on exception rows. Tab number shortcuts now run
+  1/2/3/4/5/6 = Overview / Replay / Timeline / Network /
+  Console / Raw. Chrome DevTools console parity.
 
 Listed in rough order of value × ease:
 

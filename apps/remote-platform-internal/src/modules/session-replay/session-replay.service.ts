@@ -10,7 +10,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
-import { NetworkService } from "@remote-platform/core";
+import { NetworkService, RuntimeService } from "@remote-platform/core";
 import { RecordEntity, ScreenEntity } from "@remote-platform/entity";
 
 import { S3Service } from "../s3/s3.service";
@@ -38,6 +38,19 @@ export interface SessionPreview {
   readonly height?: number;
   readonly baseHref?: string;
   readonly capturedAt: string;
+}
+
+export type ConsoleLevel = "log" | "info" | "warn" | "error" | "debug";
+
+export interface SessionConsoleEntry {
+  readonly id: number;
+  readonly timestamp: number;
+  readonly level: ConsoleLevel;
+  readonly text: string;
+  /** "console" for Runtime.consoleAPICalled, "exception" for thrown errors. */
+  readonly source: "console" | "exception";
+  readonly url?: string;
+  readonly lineNumber?: number;
 }
 
 export interface SessionNetworkEntry {
@@ -101,6 +114,7 @@ export class SessionReplayService {
 
     private readonly s3Service: S3Service,
     private readonly networkService: NetworkService,
+    private readonly runtimeService: RuntimeService,
   ) {}
 
   /**
@@ -934,5 +948,111 @@ export class SessionReplayService {
         base64Encoded: row.base64Encoded,
       };
     });
+  }
+
+  /**
+   * Flatten captured CDP runtime events into a console-panel-friendly list.
+   *
+   * Two CDP methods produce console output:
+   *   - `Runtime.consoleAPICalled` — every console.log/info/warn/error/debug
+   *     call. We concatenate the `args[].value` (or the `description` for
+   *     non-primitives) into a single text string.
+   *   - `Runtime.exceptionThrown` — uncaught exceptions. We surface the
+   *     `text` (or `exception.description`) and stack URL.
+   *
+   * S3-backed sessions return [] (runtime capture only writes to the DB
+   * table for live sessions).
+   */
+  public async getSessionConsole(
+    sessionId: string | number,
+  ): Promise<SessionConsoleEntry[]> {
+    const sessionIdStr = String(sessionId);
+    if (sessionIdStr.startsWith("s3-")) return [];
+
+    const recordId = Number(sessionId);
+    if (!Number.isInteger(recordId) || recordId <= 0) return [];
+
+    const rows = await this.runtimeService.findByRecordId(recordId);
+    const out: SessionConsoleEntry[] = [];
+
+    for (const row of rows) {
+      const protocol =
+        (row.protocol as Record<string, unknown> | null | undefined) ?? {};
+      const method =
+        typeof protocol.method === "string" ? protocol.method : "";
+      const params =
+        (protocol.params as Record<string, unknown> | undefined) ?? {};
+
+      if (method === "Runtime.consoleAPICalled") {
+        const rawLevel =
+          typeof params.type === "string" ? (params.type as string) : "log";
+        const level = normaliseConsoleLevel(rawLevel);
+        const args = Array.isArray(params.args)
+          ? (params.args as Array<Record<string, unknown>>)
+          : [];
+        const text = args
+          .map((arg) => {
+            if (typeof arg.value === "string") return arg.value;
+            if (typeof arg.value !== "undefined") return String(arg.value);
+            if (typeof arg.description === "string")
+              return arg.description as string;
+            return "";
+          })
+          .filter(Boolean)
+          .join(" ");
+        out.push({
+          id: row.id,
+          timestamp: Number(row.timestamp),
+          level,
+          text: text || "(no value)",
+          source: "console",
+        });
+      } else if (method === "Runtime.exceptionThrown") {
+        const details =
+          (params.exceptionDetails as Record<string, unknown> | undefined) ??
+          {};
+        const exception =
+          (details.exception as Record<string, unknown> | undefined) ?? {};
+        const text =
+          (typeof details.text === "string" && (details.text as string)) ||
+          (typeof exception.description === "string" &&
+            (exception.description as string)) ||
+          "Uncaught exception";
+        const url = typeof details.url === "string" ? (details.url as string) : undefined;
+        const lineNumber =
+          typeof details.lineNumber === "number"
+            ? (details.lineNumber as number)
+            : undefined;
+        out.push({
+          id: row.id,
+          timestamp: Number(row.timestamp),
+          level: "error",
+          text,
+          source: "exception",
+          url,
+          lineNumber,
+        });
+      }
+    }
+
+    return out;
+  }
+}
+
+function normaliseConsoleLevel(raw: string): ConsoleLevel {
+  switch (raw) {
+    case "error":
+    case "assert":
+      return "error";
+    case "warn":
+    case "warning":
+      return "warn";
+    case "info":
+      return "info";
+    case "debug":
+    case "trace":
+      return "debug";
+    default:
+      return "log";
   }
 }

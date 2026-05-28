@@ -13,6 +13,7 @@ import { ApiTags } from "@nestjs/swagger";
 import {
   SessionReplayService,
   ReplayEvent,
+  SessionConsoleEntry,
   SessionMetadata,
   SessionNetworkEntry,
   SessionPreview,
@@ -140,5 +141,19 @@ export class SessionReplayController {
     @Param("id") id: string,
   ): Promise<SessionNetworkEntry[]> {
     return this.sessionReplayService.getSessionNetwork(id);
+  }
+
+  /**
+   * GET /api/session-replay/sessions/:id/console
+   *
+   * Returns the captured runtime / console events for a DB session as a
+   * flat list — one entry per CDP `Runtime.consoleAPICalled` /
+   * `Runtime.exceptionThrown` event with level + text + source.
+   */
+  @Get("sessions/:id/console")
+  public async getSessionConsole(
+    @Param("id") id: string,
+  ): Promise<SessionConsoleEntry[]> {
+    return this.sessionReplayService.getSessionConsole(id);
   }
 }

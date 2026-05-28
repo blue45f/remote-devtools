@@ -224,6 +224,46 @@ describe("SessionDetail page", () => {
     );
   });
 
+  it("renders captured console messages on the Console tab", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("5"); // Console
+    await waitFor(() => {
+      expect(screen.getByTestId("session-console-list")).toBeInTheDocument();
+    });
+    const rows = screen.getAllByTestId("session-console-row");
+    expect(rows.length).toBeGreaterThan(0);
+    // Error and warn levels exist in the seed fixture.
+    expect(
+      rows.some((r) => r.getAttribute("data-level") === "error"),
+    ).toBe(true);
+    expect(
+      rows.some((r) => r.getAttribute("data-level") === "warn"),
+    ).toBe(true);
+  });
+
+  it("filters Console rows by level chip", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("5");
+    await waitFor(() => {
+      expect(screen.getByTestId("console-level-chip-error")).toBeInTheDocument();
+    });
+
+    const before = screen.getAllByTestId("session-console-row").length;
+    await user.click(screen.getByTestId("console-level-chip-error"));
+
+    await waitFor(() => {
+      const rows = screen.getAllByTestId("session-console-row");
+      expect(rows.length).toBeLessThan(before);
+      expect(
+        rows.every((r) => r.getAttribute("data-level") === "error"),
+      ).toBe(true);
+    });
+  });
+
   it("switches between overview, replay, timeline, network and raw tabs", async () => {
     const user = userEvent.setup();
     renderAt(1000);
@@ -370,6 +410,11 @@ describe("SessionDetail page", () => {
     });
 
     await user.keyboard("5");
+    await waitFor(() => {
+      expect(screen.getByTestId("session-console-list")).toBeInTheDocument();
+    });
+
+    await user.keyboard("6");
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Copy/ })).toBeInTheDocument();
     });
