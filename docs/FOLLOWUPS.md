@@ -546,6 +546,13 @@ limit)` extracts hostname directly in SQL
   gets a `raw-copy` testid so the tab-switch tests don't
   ambiguously match either Copy button.
 
+- **Sessions JSON export** — `230642f2` — Promotes the
+  Sessions export button into a dropdown with Export CSV /
+  Export JSON. JSON dumps the same per-row shape as CSV
+  but keyed and indented so engineering consumers get a
+  structured payload — useful for jq pipelines or pasting
+  into a scratch script. Same filter-respecting behaviour.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
