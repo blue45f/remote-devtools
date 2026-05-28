@@ -109,6 +109,37 @@ describe("Sessions page", () => {
     expect(detail.getAttribute("href")).toMatch(/^\/sessions\/\d+$/);
   });
 
+  it("filters the list by clicking a tag chip on a row", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    // The first seeded session (index 0) has tags=["checkout","bug"].
+    const chips = screen.getAllByTestId("session-tag-chip");
+    const checkoutChip = chips.find((c) => c.textContent === "checkout");
+    expect(checkoutChip).toBeDefined();
+
+    await user.click(checkoutChip as HTMLElement);
+
+    // Active filter pill should now mention the tag.
+    await waitFor(() => {
+      expect(screen.getByText(/tag: checkout/)).toBeInTheDocument();
+    });
+
+    // Clicking again unpins (deselects) the tag.
+    const activeChip = screen
+      .getAllByTestId("session-tag-chip")
+      .find((c) => c.textContent === "checkout" && c.getAttribute("aria-pressed") === "true");
+    expect(activeChip).toBeDefined();
+    await user.click(activeChip as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/tag: checkout/)).not.toBeInTheDocument();
+    });
+  });
+
   it("toggles row density and persists the choice", async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);

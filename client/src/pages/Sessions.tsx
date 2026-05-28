@@ -65,6 +65,7 @@ interface SessionRecord {
   recordMode?: boolean;
   timestamp?: string;
   userAgent?: string;
+  tags?: string[];
 }
 
 type SessionTab = "record" | "live";
@@ -236,6 +237,7 @@ export default function SessionsPage() {
       ? urlAge
       : "all";
   const initialHost = searchParams.get("host");
+  const initialTag = searchParams.get("tag");
 
   const [tab, setTab] = useState<SessionTab>(initialTab);
   const [search, setSearch] = useState(initialSearch);
@@ -254,6 +256,7 @@ export default function SessionsPage() {
     useState<DurationFilter>(initialDuration);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
+  const [tagFilter, setTagFilter] = useState<string | null>(initialTag);
 
   // Live tab polling: 5s default, 15s / 30s slower, "off" pauses.
   // Stored in component state only — most sessions are short-lived
@@ -293,6 +296,7 @@ export default function SessionsPage() {
         writeOrDelete("dur", durationFilter, "all");
         writeOrDelete("age", ageFilter, "all");
         writeOrDelete("host", hostFilter ?? "", "");
+        writeOrDelete("tag", tagFilter ?? "", "");
         return next;
       },
       { replace: true },
@@ -305,6 +309,7 @@ export default function SessionsPage() {
     durationFilter,
     ageFilter,
     hostFilter,
+    tagFilter,
     setSearchParams,
   ]);
   // Index of the currently-focused row in the filtered list. -1 means
@@ -323,7 +328,7 @@ export default function SessionsPage() {
   // cursorIdx might not exist any more.
   useEffect(() => {
     setCursorIdx(-1);
-  }, [tab, search, sort, durationFilter, ageFilter, hostFilter]);
+  }, [tab, search, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -442,13 +447,27 @@ export default function SessionsPage() {
       result = result.filter((s) => getHostname(s.url) === hostFilter);
     }
 
+    if (tagFilter) {
+      result = result.filter(
+        (s) => Array.isArray(s.tags) && s.tags.includes(tagFilter),
+      );
+    }
+
     return [...result].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       const ta = new Date(a.timestamp ?? 0).getTime();
       const tb = new Date(b.timestamp ?? 0).getTime();
       return sort === "newest" ? tb - ta : ta - tb;
     });
-  }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter]);
+  }, [
+    sessions,
+    matcher,
+    sort,
+    durationFilter,
+    ageFilter,
+    hostFilter,
+    tagFilter,
+  ]);
 
   // Build the host strip from the *currently loaded* sessions so it
   // reflects what's on screen. Sort by hit count descending so the
@@ -468,7 +487,8 @@ export default function SessionsPage() {
     search.trim() !== "" ||
     durationFilter !== "all" ||
     ageFilter !== "all" ||
-    hostFilter !== null;
+    hostFilter !== null ||
+    tagFilter !== null;
 
   // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
   // while typing in inputs, while modifier keys are held, and while
@@ -686,6 +706,7 @@ export default function SessionsPage() {
             setDurationFilter("all");
             setAgeFilter("all");
             setHostFilter(null);
+            setTagFilter(null);
           }}
           showClear={filtersActive}
         />
@@ -732,6 +753,12 @@ export default function SessionsPage() {
             <FilterPill
               label={`host: ${hostFilter}`}
               onRemove={() => setHostFilter(null)}
+            />
+          )}
+          {tagFilter && (
+            <FilterPill
+              label={`tag: ${tagFilter}`}
+              onRemove={() => setTagFilter(null)}
             />
           )}
         </div>
@@ -873,6 +900,8 @@ export default function SessionsPage() {
                   pinned={pinned}
                   onTogglePin={togglePin}
                   density={density}
+                  onTagClick={setTagFilter}
+                  activeTag={tagFilter}
                 />
               ) : (
                 <SessionGrid
@@ -882,6 +911,8 @@ export default function SessionsPage() {
                   pinned={pinned}
                   onTogglePin={togglePin}
                   density={density}
+                  onTagClick={setTagFilter}
+                  activeTag={tagFilter}
                 />
               );
             return (
@@ -931,6 +962,37 @@ export default function SessionsPage() {
 }
 
 /* ───────── Toolbar ───────── */
+
+function SessionRowTagChip({
+  tag,
+  active,
+  onClick,
+}: {
+  tag: string;
+  active?: boolean;
+  onClick?: (next: string | null) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick?.(active ? null : tag);
+      }}
+      aria-pressed={!!active}
+      data-testid="session-tag-chip"
+      className={cn(
+        "inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-medium border transition-colors",
+        active
+          ? "bg-fg text-bg border-fg"
+          : "bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong",
+      )}
+    >
+      {tag}
+    </button>
+  );
+}
 
 function DensityToggle({
   value,
@@ -1231,6 +1293,8 @@ function SessionTable({
   pinned,
   onTogglePin,
   density,
+  onTagClick,
+  activeTag,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
@@ -1238,6 +1302,8 @@ function SessionTable({
   pinned: Set<number>;
   onTogglePin: (id: number) => void;
   density: Density;
+  onTagClick: (tag: string | null) => void;
+  activeTag: string | null;
 }) {
   return (
     <Card className="overflow-hidden p-0">
@@ -1264,6 +1330,8 @@ function SessionTable({
                 pinned={pinned.has(session.id)}
                 onTogglePin={onTogglePin}
                 density={density}
+                onTagClick={onTagClick}
+                activeTag={activeTag}
               />
             ))}
           </tbody>
@@ -1300,6 +1368,8 @@ function SessionRow({
   pinned,
   onTogglePin,
   density,
+  onTagClick,
+  activeTag,
 }: {
   session: SessionRecord;
   tab: SessionTab;
@@ -1307,6 +1377,8 @@ function SessionRow({
   pinned?: boolean;
   onTogglePin?: (id: number) => void;
   density: Density;
+  onTagClick?: (tag: string | null) => void;
+  activeTag?: string | null;
 }) {
   const isLive = tab === "live";
   const isRecording = session.recordMode ?? !isLive;
@@ -1333,6 +1405,20 @@ function SessionRow({
               ID {shortHash(String(session.id), 10)}
             </span>
           )}
+          {density === "comfortable" &&
+            session.tags &&
+            session.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {session.tags.map((t) => (
+                  <SessionRowTagChip
+                    key={t}
+                    tag={t}
+                    active={activeTag === t}
+                    onClick={onTagClick}
+                  />
+                ))}
+              </div>
+            )}
         </div>
       </td>
       <td className={cn("px-3 align-middle", cellY)}>
@@ -1487,6 +1573,8 @@ function SessionGrid({
   pinned,
   onTogglePin,
   density,
+  onTagClick,
+  activeTag,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
@@ -1494,6 +1582,8 @@ function SessionGrid({
   pinned: Set<number>;
   onTogglePin: (id: number) => void;
   density: Density;
+  onTagClick: (tag: string | null) => void;
+  activeTag: string | null;
 }) {
   return (
     <div
@@ -1511,6 +1601,8 @@ function SessionGrid({
           pinned={pinned.has(session.id)}
           onTogglePin={onTogglePin}
           density={density}
+          onTagClick={onTagClick}
+          activeTag={activeTag}
         />
       ))}
     </div>
@@ -1524,6 +1616,8 @@ function SessionCard({
   pinned,
   onTogglePin,
   density,
+  onTagClick,
+  activeTag,
 }: {
   session: SessionRecord;
   tab: SessionTab;
@@ -1531,6 +1625,8 @@ function SessionCard({
   pinned?: boolean;
   onTogglePin?: (id: number) => void;
   density: Density;
+  onTagClick?: (tag: string | null) => void;
+  activeTag?: string | null;
 }) {
   const isLive = tab === "live";
   return (
@@ -1596,6 +1692,19 @@ function SessionCard({
         <p className="font-mono text-[11px] text-fg-faint truncate mb-3">
           {session.url}
         </p>
+      )}
+
+      {session.tags && session.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {session.tags.map((t) => (
+            <SessionRowTagChip
+              key={t}
+              tag={t}
+              active={activeTag === t}
+              onClick={onTagClick}
+            />
+          ))}
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-xs text-fg-subtle">

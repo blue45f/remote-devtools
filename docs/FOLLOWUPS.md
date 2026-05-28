@@ -251,13 +251,21 @@ the next obvious candidates. Each entry: what shipped, what's next.
   shortcuts shift: 1/2/3/4/5 = Overview / Replay / Timeline /
   Network / Raw. Chrome DevTools / PostHog / Highlight.io
   network-panel parity.
-- **Network row Copy as cURL** — current commit — Each Network
+- **Network row Copy as cURL** — `4c03a32a` — Each Network
   row gets a hover-revealed Copy icon that writes
   `curl [-X METHOD] 'URL' [-H 'Accept: …']` to the clipboard.
   Logic lives in a tiny pure `lib/curl.ts` (single-quote-escapes
   embedded apostrophes) so it's unit-testable without the React
   shell. Toast confirms with the method + URL preview. Closes
   the "Copy as cURL" half of FOLLOWUPS #2.
+- **Sessions list tag chips + filter** — current commit —
+  Comfortable-density rows render saved tags as small accent
+  chips below the session ID. Clicking a chip toggles it as the
+  list-wide `tagFilter`, which round-trips through `?tag=…` in
+  the URL and surfaces as a `tag: foo` pill in the active-filter
+  summary. Card view places the chips between URL and meta row.
+  Builds on the `record.tags` data shipped in the second backend
+  cycle. Linear / Notion list-tag parity.
 
 ## Next obvious candidates
 
