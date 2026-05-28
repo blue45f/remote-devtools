@@ -703,6 +703,11 @@ limit)` extracts hostname directly in SQL
   (called in beforeEach) to stop the module-level demo store
   leaking state across tests.
 
+- **Comment author byline** — `a0da7fef` — Comment rows show
+  the author beneath the body (field was stored/returned but
+  never surfaced). Attribution for shared annotations — see
+  who left which note.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
