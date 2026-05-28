@@ -15,7 +15,7 @@ import { DashboardService } from './dashboard.service';
 describe('DashboardService', () => {
   let service: DashboardService;
   const mockTicketLogRepo = { count: vi.fn(), find: vi.fn() };
-  const mockRecordRepo = { count: vi.fn(), find: vi.fn() };
+  const mockRecordRepo = { count: vi.fn(), find: vi.fn(), createQueryBuilder: vi.fn() };
   const mockUserRepo = { find: vi.fn() };
   const mockDeviceInfoRepo = { find: vi.fn() };
 
@@ -129,6 +129,57 @@ describe('DashboardService', () => {
       // messages = created * 20, participants = created * 3
       expect(result[0].messages).toBe(result[0].created * 20);
       expect(result[0].participants).toBe(result[0].created * 3);
+    });
+  });
+
+  describe('getTopHosts', () => {
+    it('returns top hosts mapped from the raw query', async () => {
+      const getRawMany = vi.fn().mockResolvedValue([
+        { host: 'shop.example.com', count: '42' },
+        { host: 'admin.example.com', count: 17 },
+        { host: '', count: 5 }, // empty host filtered out
+      ]);
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        having: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        getRawMany,
+      };
+      mockRecordRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await service.getTopHosts('day', 8);
+      expect(rows).toEqual([
+        { host: 'shop.example.com', count: 42 },
+        { host: 'admin.example.com', count: 17 },
+      ]);
+      // The limit clamps within [1, 25].
+      expect(qb.limit).toHaveBeenCalledWith(8);
+    });
+
+    it('clamps the limit between 1 and 25', async () => {
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        having: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        getRawMany: vi.fn().mockResolvedValue([]),
+      };
+      mockRecordRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.getTopHosts('day', 9999);
+      expect(qb.limit).toHaveBeenCalledWith(25);
+
+      await service.getTopHosts('day', 0);
+      expect(qb.limit).toHaveBeenCalledWith(1);
     });
   });
 });

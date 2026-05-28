@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   Clapperboard,
+  Globe,
   Minus,
   Radio,
   RefreshCw,
@@ -273,12 +274,93 @@ export default function DashboardPage() {
           >
             <TicketsByRoleChart data={ticketTrend} />
           </ChartPanel>
+          <TopHostsPanel period={period} />
         </div>
         <ActivityFeed />
       </div>
     </div>
   );
 }
+
+function TopHostsPanel({ period }: { period: Period }) {
+  const { data, isLoading } = useQuery<{ host: string; count: number }[]>({
+    queryKey: ['top-hosts', period],
+    queryFn: () =>
+      apiFetch<{ host: string; count: number }[]>(
+        `/api/dashboard/top-hosts?period=${period}&limit=8`,
+      ),
+  });
+  const rows = data ?? [];
+  const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
+
+  if (isLoading) {
+    return (
+      <Card className="p-5 space-y-2.5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Globe className="size-3.5 text-fg-faint" />
+          Top hosts
+        </h3>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-6 w-full" />
+        ))}
+      </Card>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Globe className="size-3.5 text-fg-faint" />
+          Top hosts
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">No host data for this period yet.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5" data-testid="dashboard-top-hosts">
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Globe className="size-3.5 text-fg-faint" />
+          Top hosts
+        </h3>
+        <span className="text-[11px] text-fg-faint">Last {PERIOD_LABEL[period]}</span>
+      </div>
+      <ul className="space-y-1.5">
+        {rows.map((r) => {
+          const pct = max > 0 ? Math.round((r.count / max) * 100) : 0;
+          return (
+            <li key={r.host}>
+              <Link
+                to={`/sessions?host=${encodeURIComponent(r.host)}`}
+                className="group block rounded-md px-2 py-1.5 hover:bg-bg-muted/60 transition-colors"
+                data-testid="dashboard-top-host-row"
+              >
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate font-mono text-fg group-hover:text-accent">
+                    {r.host}
+                  </span>
+                  <span className="font-mono tabular-nums text-fg-subtle shrink-0">{r.count}</span>
+                </div>
+                <div className="mt-1 h-1 rounded-full bg-bg-subtle overflow-hidden">
+                  <div className="h-full bg-accent/70" style={{ width: `${Math.max(pct, 4)}%` }} />
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
+  );
+}
+
+const PERIOD_LABEL: Record<Period, string> = {
+  day: '7 days',
+  week: '8 weeks',
+  month: '6 months',
+};
 
 /* ─────────────  Freshness badge  ───────────── */
 

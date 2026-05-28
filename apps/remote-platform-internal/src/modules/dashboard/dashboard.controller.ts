@@ -137,4 +137,24 @@ export class DashboardController {
       });
     }
   }
+
+  /**
+   * Top hostnames by record count over the selected period.
+   * GET /api/dashboard/top-hosts?period=day&limit=8
+   */
+  @Get('top-hosts')
+  @ApiOperation({ summary: '기간 내 호스트별 레코드 수 상위 N' })
+  @ApiResponse({ status: 200, description: '[{ host, count }] 배열' })
+  public async getTopHosts(
+    @Query() query: PeriodQueryDto,
+    @Query('limit') limitRaw?: string,
+  ): Promise<{ host: string; count: number }[]> {
+    if (!query.period || !['day', 'week', 'month'].includes(query.period)) {
+      throw new BadRequestException(
+        "The 'period' parameter is required and must be one of: day, week, month.",
+      );
+    }
+    const limit = Number.parseInt(limitRaw ?? '8', 10);
+    return this.dashboardService.getTopHosts(query.period, Number.isFinite(limit) ? limit : 8);
+  }
 }

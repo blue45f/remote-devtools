@@ -12,6 +12,7 @@ describe('DashboardController', () => {
     getDashboardStats: vi.fn(),
     getTicketTrend: vi.fn(),
     getRecordSessionTrend: vi.fn(),
+    getTopHosts: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -127,6 +128,32 @@ describe('DashboardController', () => {
       await expect(
         controller.getRecordSessionTrend({ period: undefined as never }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getTopHosts', () => {
+    it('returns the service result as-is', async () => {
+      const rows = [
+        { host: 'a.example.com', count: 12 },
+        { host: 'b.example.com', count: 7 },
+      ];
+      mockDashboardService.getTopHosts.mockResolvedValue(rows);
+
+      const result = await controller.getTopHosts({ period: 'day' }, '8');
+      expect(result).toEqual(rows);
+      expect(mockDashboardService.getTopHosts).toHaveBeenCalledWith('day', 8);
+    });
+
+    it('defaults limit to 8 when not provided', async () => {
+      mockDashboardService.getTopHosts.mockResolvedValue([]);
+      await controller.getTopHosts({ period: 'week' });
+      expect(mockDashboardService.getTopHosts).toHaveBeenCalledWith('week', 8);
+    });
+
+    it('throws BadRequestException for unknown period', async () => {
+      await expect(controller.getTopHosts({ period: 'year' as never })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

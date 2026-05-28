@@ -162,6 +162,26 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
     const period = new URLSearchParams(path.split('?')[1] ?? '').get('period') ?? 'day';
     return { data: buildRecordTrend(period) } as T;
   }
+  // /api/dashboard/top-hosts?period=…&limit=…
+  if (path.startsWith('/api/dashboard/top-hosts')) {
+    const params = new URLSearchParams(path.split('?')[1] ?? '');
+    const limit = Number.parseInt(params.get('limit') ?? '8', 10) || 8;
+    const counts = new Map<string, number>();
+    for (const s of recordSeedSessions()) {
+      try {
+        const host = new URL(s.url ?? '').hostname.replace(/^www\./, '');
+        if (!host) continue;
+        counts.set(host, (counts.get(host) ?? 0) + 1);
+      } catch {
+        /* skip non-URLs */
+      }
+    }
+    const rows = Array.from(counts.entries())
+      .map(([host, count]) => ({ host, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, Math.min(Math.max(limit, 1), 25));
+    return rows as unknown as T;
+  }
   // Unique tag list — aggregates from the seed sessions for autosuggest.
   if (path === '/sessions/record/tags') {
     const all = new Set<string>();
