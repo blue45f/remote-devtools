@@ -3,7 +3,11 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RecordEntity, TicketLogEntity } from "@remote-platform/entity";
+import {
+  RecordEntity,
+  ReplayCommentEntity,
+  TicketLogEntity,
+} from "@remote-platform/entity";
 
 import { ActivityService } from "./activity.service";
 
@@ -11,10 +15,12 @@ describe("ActivityService", () => {
   let service: ActivityService;
   let recordRepo: { find: ReturnType<typeof vi.fn> };
   let ticketRepo: { find: ReturnType<typeof vi.fn> };
+  let commentRepo: { find: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     recordRepo = { find: vi.fn() };
     ticketRepo = { find: vi.fn() };
+    commentRepo = { find: vi.fn().mockResolvedValue([]) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -26,6 +32,10 @@ describe("ActivityService", () => {
         {
           provide: getRepositoryToken(TicketLogEntity),
           useValue: ticketRepo as unknown as Repository<TicketLogEntity>,
+        },
+        {
+          provide: getRepositoryToken(ReplayCommentEntity),
+          useValue: commentRepo as unknown as Repository<ReplayCommentEntity>,
         },
       ],
     }).compile();
@@ -176,6 +186,58 @@ describe("ActivityService", () => {
       // No where clause should have been added for an invalid date.
       const args = recordRepo.find.mock.calls.at(0)?.[0];
       expect(args?.where?.timestamp).toBeUndefined();
+    });
+  });
+
+  describe("replay comments in the feed", () => {
+    it("surfaces recent replay comments with the truncated body subtitle", async () => {
+      recordRepo.find.mockResolvedValue([]);
+      ticketRepo.find.mockResolvedValue([]);
+      const longBody =
+        "this is a very long comment body that should be truncated after eighty characters to keep the feed glanceable";
+      commentRepo.find.mockResolvedValue([
+        {
+          id: 7,
+          createdAt: new Date("2026-05-29T00:00:00Z"),
+          body: longBody,
+          author: "qa",
+          record: { id: 42, name: "checkout" },
+        },
+      ]);
+
+      const rows = await service.getFeed(10);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: "comment-7",
+        kind: "comment",
+        title: "Comment by qa on checkout",
+        sessionId: 42,
+      });
+      expect(rows[0].subtitle).toMatch(/^this is a very long comment .{0,80}…$/);
+    });
+
+    it("falls back to anonymous + session id when author / name are missing", async () => {
+      recordRepo.find.mockResolvedValue([]);
+      ticketRepo.find.mockResolvedValue([]);
+      commentRepo.find.mockResolvedValue([
+        {
+          id: 9,
+          createdAt: new Date(),
+          body: "x",
+          author: null,
+          record: { id: 99 },
+        },
+      ]);
+      const rows = await service.getFeed(10);
+      expect(rows[0].title).toBe("Comment by anonymous on Session #99");
+    });
+
+    it("gracefully degrades when the comment table is missing", async () => {
+      recordRepo.find.mockResolvedValue([]);
+      ticketRepo.find.mockResolvedValue([]);
+      commentRepo.find.mockRejectedValue(new Error("table missing"));
+      const rows = await service.getFeed(10);
+      expect(rows).toEqual([]);
     });
   });
 });

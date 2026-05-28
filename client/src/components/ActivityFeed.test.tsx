@@ -49,6 +49,19 @@ describe("ActivityFeed", () => {
     });
   });
 
+  it("renders comment kind entries from the activity feed", async () => {
+    renderWithProviders(<ActivityFeed pollMs={0} />);
+    await waitFor(() => {
+      // The seed router emits one "comment" entry per 5 in the rotation.
+      expect(
+        screen.getByTestId("activity-kind-chip-comment"),
+      ).toBeInTheDocument();
+    });
+    // The chip should report a non-zero count.
+    const chip = screen.getByTestId("activity-kind-chip-comment");
+    expect(chip.textContent).toMatch(/Comment\s*\d/);
+  });
+
   it("hydrates chip filter from localStorage on mount", async () => {
     localStorage.setItem(
       "activity-prefs:v1",

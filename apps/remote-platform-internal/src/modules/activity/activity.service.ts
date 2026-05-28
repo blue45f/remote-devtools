@@ -4,9 +4,13 @@ import { Repository } from "typeorm";
 
 import { LessThan } from "typeorm";
 
-import { RecordEntity, TicketLogEntity } from "@remote-platform/entity";
+import {
+  RecordEntity,
+  ReplayCommentEntity,
+  TicketLogEntity,
+} from "@remote-platform/entity";
 
-export type ActivityKind = "session" | "ticket" | "error" | "join";
+export type ActivityKind = "session" | "ticket" | "error" | "join" | "comment";
 
 export interface ActivityEntry {
   id: string;
@@ -41,6 +45,8 @@ export class ActivityService {
     private readonly recordRepo: Repository<RecordEntity>,
     @InjectRepository(TicketLogEntity)
     private readonly ticketRepo: Repository<TicketLogEntity>,
+    @InjectRepository(ReplayCommentEntity)
+    private readonly commentRepo: Repository<ReplayCommentEntity>,
   ) {}
 
   public async getFeed(
@@ -64,8 +70,9 @@ export class ActivityService {
     orgId?: string | null,
     before?: string | null,
   ): Promise<ActivityPage> {
-    const sessionsLimit = Math.ceil(limit * 0.7);
-    const ticketsLimit = Math.ceil(limit * 0.5);
+    const sessionsLimit = Math.ceil(limit * 0.6);
+    const ticketsLimit = Math.ceil(limit * 0.4);
+    const commentsLimit = Math.ceil(limit * 0.4);
 
     const beforeDate = before ? new Date(before) : null;
     const validBefore =
@@ -78,8 +85,12 @@ export class ActivityService {
     const ticketWhere = validBefore
       ? { createdAt: LessThan(validBefore) }
       : undefined;
+    const commentWhere = {
+      ...(orgId ? { orgId } : {}),
+      ...(validBefore ? { createdAt: LessThan(validBefore) } : {}),
+    };
 
-    const [records, tickets] = await Promise.all([
+    const [records, tickets, comments] = await Promise.all([
       this.recordRepo.find({
         ...(Object.keys(recordWhere).length ? { where: recordWhere } : {}),
         order: { timestamp: "DESC" },
@@ -92,6 +103,14 @@ export class ActivityService {
           take: ticketsLimit,
         })
         .catch(() => [] as TicketLogEntity[]),
+      this.commentRepo
+        .find({
+          ...(Object.keys(commentWhere).length ? { where: commentWhere } : {}),
+          relations: { record: true },
+          order: { createdAt: "DESC" },
+          take: commentsLimit,
+        })
+        .catch(() => [] as ReplayCommentEntity[]),
     ]);
 
     const entries: ActivityEntry[] = [];
@@ -131,6 +150,24 @@ export class ActivityService {
         title: row.name ? `Ticket created · ${row.name}` : "Ticket created",
         subtitle: row.ticketUrl,
         at: createdAt,
+      });
+    }
+
+    for (const c of comments) {
+      const sessionName = c.record?.name ?? `Session #${c.record?.id ?? "?"}`;
+      const author = c.author ?? "anonymous";
+      const truncated =
+        c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body;
+      entries.push({
+        id: `comment-${c.id}`,
+        kind: "comment",
+        title: `Comment by ${author} on ${sessionName}`,
+        subtitle: truncated,
+        at: (c.createdAt instanceof Date
+          ? c.createdAt
+          : new Date(c.createdAt)
+        ).toISOString(),
+        sessionId: c.record?.id,
       });
     }
 
