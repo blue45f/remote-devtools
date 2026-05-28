@@ -69,6 +69,16 @@ describe('Dashboard page', () => {
     });
   });
 
+  it('renders the Top tags panel with chips from seed data', async () => {
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-top-tags')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('dashboard-top-tag-chip').length).toBeGreaterThan(0);
+    });
+  });
+
   it('renders the Recently annotated panel from seed data', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => {

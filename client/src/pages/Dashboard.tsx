@@ -10,6 +10,7 @@ import {
   Radio,
   RefreshCw,
   StickyNote,
+  Tag,
   Ticket,
   TrendingUp,
 } from 'lucide-react';
@@ -167,6 +168,7 @@ export default function DashboardPage() {
               void queryClient.invalidateQueries({ queryKey: ['record-trend'] });
               void queryClient.invalidateQueries({ queryKey: ['live-sessions'] });
               void queryClient.invalidateQueries({ queryKey: ['top-hosts'] });
+              void queryClient.invalidateQueries({ queryKey: ['top-tags'] });
               void queryClient.invalidateQueries({ queryKey: ['recent-notes'] });
             }}
           />
@@ -278,6 +280,7 @@ export default function DashboardPage() {
             <TicketsByRoleChart data={ticketTrend} />
           </ChartPanel>
           <TopHostsPanel period={period} />
+          <TopTagsPanel period={period} />
           <RecentNotesPanel />
         </div>
         <ActivityFeed />
@@ -436,6 +439,68 @@ const PERIOD_LABEL: Record<Period, string> = {
   week: '8 weeks',
   month: '6 months',
 };
+
+function TopTagsPanel({ period }: { period: Period }) {
+  const { data, isLoading } = useQuery<{ tag: string; count: number }[]>({
+    queryKey: ['top-tags', period],
+    queryFn: () =>
+      apiFetch<{ tag: string; count: number }[]>(
+        `/api/dashboard/top-tags?period=${period}&limit=10`,
+      ),
+  });
+  const rows = data ?? [];
+
+  if (isLoading) {
+    return (
+      <Card className="p-5 space-y-2.5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Tag className="size-3.5 text-fg-faint" />
+          Top tags
+        </h3>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-6 w-full" />
+        ))}
+      </Card>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Tag className="size-3.5 text-fg-faint" />
+          Top tags
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">No tags applied in this period yet.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5" data-testid="dashboard-top-tags">
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Tag className="size-3.5 text-fg-faint" />
+          Top tags
+        </h3>
+        <span className="text-[11px] text-fg-faint">Last {PERIOD_LABEL[period]}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {rows.map((r) => (
+          <Link
+            key={r.tag}
+            to={`/sessions?tag=${encodeURIComponent(r.tag)}`}
+            data-testid="dashboard-top-tag-chip"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-surface text-xs text-fg-subtle hover:text-fg hover:border-border-strong transition-colors"
+          >
+            <span>{r.tag}</span>
+            <span className="font-mono tabular-nums text-[10px] text-fg-faint">{r.count}</span>
+          </Link>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 /* ─────────────  Freshness badge  ───────────── */
 

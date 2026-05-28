@@ -211,6 +211,20 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       .slice(0, Math.min(Math.max(limit, 1), 25));
     return annotated as unknown as T;
   }
+  // /api/dashboard/top-tags?period=…&limit=…
+  if (path.startsWith('/api/dashboard/top-tags')) {
+    const params = new URLSearchParams(path.split('?')[1] ?? '');
+    const limit = Number.parseInt(params.get('limit') ?? '8', 10) || 8;
+    const counts = new Map<string, number>();
+    for (const s of recordSeedSessions()) {
+      for (const t of s.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    const rows = Array.from(counts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, Math.min(Math.max(limit, 1), 25));
+    return rows as unknown as T;
+  }
   // Unique tag list — aggregates from the seed sessions for autosuggest.
   if (path === '/sessions/record/tags') {
     const all = new Set<string>();
