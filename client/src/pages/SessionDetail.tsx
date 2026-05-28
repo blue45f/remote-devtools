@@ -988,6 +988,37 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     }
   };
 
+  const downloadBody = () => {
+    if (!body || !row) return;
+    const extension = row.base64Encoded
+      ? 'bin'
+      : isJson
+        ? 'json'
+        : row.mimeType?.includes('html')
+          ? 'html'
+          : row.mimeType?.includes('xml')
+            ? 'xml'
+            : row.mimeType?.includes('css')
+              ? 'css'
+              : row.mimeType?.includes('javascript')
+                ? 'js'
+                : 'txt';
+    const filename = filenameFromUrl(row.url, row.requestId, extension);
+    const payload = row.base64Encoded ? base64ToBytes(body) : (pretty ?? body);
+    const blob = new Blob([payload], {
+      type: row.mimeType || 'application/octet-stream',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Body downloaded', { description: filename });
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden" data-testid="session-network-detail">
@@ -1020,6 +1051,16 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
                 >
                   <Copy />
                   <span className="hidden sm:inline">Copy body</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadBody}
+                  data-testid="session-network-body-download"
+                  title="Download response body to a file"
+                >
+                  <Download />
+                  <span className="hidden sm:inline">Download</span>
                 </Button>
               </div>
               <pre
@@ -1174,6 +1215,25 @@ function normaliseOffsetMs(rowTimestamp: number, sessionStartMs: number): number
   // 24 hours in ms — anything beyond this is almost certainly ns.
   if (Math.abs(raw) > 86_400_000) return Math.max(0, Math.round(raw / 1_000_000));
   return Math.max(0, Math.round(raw));
+}
+
+function filenameFromUrl(url: string, requestId: number, extension: string): string {
+  try {
+    const u = new URL(url);
+    const last = u.pathname.split('/').filter(Boolean).pop() ?? '';
+    const base = last.replace(/\.[^.]+$/, '') || `response-${requestId}`;
+    return `${base}.${extension}`;
+  } catch {
+    return `response-${requestId}.${extension}`;
+  }
+}
+
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(b64);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 function formatBytes(n?: number): string {

@@ -346,6 +346,41 @@ describe('SessionDetail page', () => {
     expect(body.textContent).toContain('"ok": true');
   });
 
+  it('downloads the response body from the detail dialog', async () => {
+    const user = userEvent.setup();
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:dl');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const rows = screen.getAllByTestId('session-network-row');
+    await user.click(rows[2]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-detail')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('session-network-body-download'));
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toContain('json');
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+  });
+
   it('exposes a Copy cURL button on Network rows', async () => {
     const user = userEvent.setup();
 
