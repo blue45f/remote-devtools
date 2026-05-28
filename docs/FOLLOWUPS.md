@@ -60,12 +60,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   and per-bucket counts. The spine that connects events is preserved
   across groups so the timeline metaphor still reads. Linear / PostHog
   / Slack parity.
-- **Dashboard cards click-through + Sessions tab URL** — current commit
+- **Dashboard cards click-through + Sessions tab URL** — `6a7b0b6d`
   — Hero "Live now" jumps to `/sessions?tab=live`; "Sessions today",
   "Total sessions", "Weekly avg sessions" link to `/sessions`. Cards
   use real `<a>` semantics (Cmd+click for new tab works). Sessions
   reads `?tab=live` from the URL and writes it back as tab changes.
   Vercel / Linear dashboard parity.
+- **Captured preview click heatmap** — current commit — SessionDetail
+  overlays click coordinates as accent-colored dots on the captured
+  preview thumbnail. Toggle in the overlay shows / hides them with the
+  total count. FullStory / Microsoft Clarity heatmap MVP.
 
 ## Next obvious candidates
 

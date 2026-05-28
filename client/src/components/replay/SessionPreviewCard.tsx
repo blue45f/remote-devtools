@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ImageOff } from "lucide-react";
+import { Camera, EyeOff, ImageOff, MousePointerClick } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -17,9 +17,16 @@ interface SessionPreview {
   capturedAt?: string;
 }
 
+export interface ClickPoint {
+  x: number;
+  y: number;
+}
+
 interface SessionPreviewCardProps {
   sessionId: string | number;
   className?: string;
+  /** Native-coordinate click points to overlay as a heatmap. */
+  clickPoints?: ClickPoint[];
 }
 
 /**
@@ -33,7 +40,9 @@ interface SessionPreviewCardProps {
 export function SessionPreviewCard({
   sessionId,
   className,
+  clickPoints,
 }: SessionPreviewCardProps) {
+  const [showHeatmap, setShowHeatmap] = useState(true);
   const { data, isLoading, error } = useQuery({
     queryKey: ["session-preview", sessionId],
     queryFn: () =>
@@ -114,6 +123,23 @@ export function SessionPreviewCard({
             transform: `scale(${scale})`,
           }}
         />
+        {showHeatmap &&
+          clickPoints &&
+          clickPoints.length > 0 &&
+          clickPoints.map((p, i) => (
+            <span
+              key={i}
+              aria-hidden
+              data-testid="preview-click-dot"
+              className="absolute rounded-full bg-accent/40 ring-2 ring-accent/70 pointer-events-none"
+              style={{
+                left: p.x * scale - 5,
+                top: p.y * scale - 5,
+                width: 10,
+                height: 10,
+              }}
+            />
+          ))}
       </div>
       <div
         className={cn(
@@ -123,7 +149,25 @@ export function SessionPreviewCard({
         )}
       >
         <Camera className="size-3" />
-        Captured preview
+        <span className="flex-1">Captured preview</span>
+        {clickPoints && clickPoints.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowHeatmap((v) => !v)}
+            aria-pressed={showHeatmap}
+            className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-bg/80"
+            data-testid="preview-heatmap-toggle"
+          >
+            {showHeatmap ? (
+              <EyeOff className="size-3" />
+            ) : (
+              <MousePointerClick className="size-3" />
+            )}
+            <span className="font-mono normal-case tracking-normal">
+              {clickPoints.length}
+            </span>
+          </button>
+        )}
       </div>
     </Card>
   );
