@@ -422,6 +422,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Backend tests cover trim, blank rejection, non-string
   rejection, 404 when missing. Linear / Notion / Figma
   comment-edit parity.
+- **Comment markers on Replay minimap** — current commit —
+  Captured comments render as small accent-colored vertical
+  pins on the existing ReplayMinimap, positioned by
+  `timestampMs / totalSessionMs`. Clicking a pin jumps the
+  player to that comment's playhead (stopPropagation so it
+  doesn't fire the bar-wide seek-at-click). Hover widens the
+  pin slightly for affordance. Connects comments back to the
+  timeline view — reviewers can scan the entire session for
+  annotated moments at a glance. Figma comments / Loom
+  timestamp-pin parity.
 
 Listed in rough order of value × ease:
 
