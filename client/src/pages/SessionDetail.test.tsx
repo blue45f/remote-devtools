@@ -366,6 +366,19 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('shows the comment author byline', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+    // Seed comments carry authors (qa, frontend).
+    const authors = screen.getAllByTestId('replay-comment-author');
+    expect(authors.length).toBeGreaterThan(0);
+    expect(authors[0].textContent).toMatch(/qa|frontend/);
+  });
+
   it('resolves a replay comment and reflects it in the row state', async () => {
     const user = userEvent.setup();
     renderAt(1000);
