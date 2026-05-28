@@ -331,6 +331,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   on exception rows. Tab number shortcuts now run
   1/2/3/4/5/6 = Overview / Replay / Timeline / Network /
   Console / Raw. Chrome DevTools console parity.
+- **Tab error count badges** — current commit — Network and
+  Console tab triggers grow a small red `Badge` showing the
+  number of failed requests (`status >= 400`) or error-level
+  console rows. Counts are computed from cached network /
+  console queries pre-fetched by the parent page so the badge
+  appears before the user clicks into either panel. Reuses the
+  TanStack Query cache (same key as the in-tab fetches) so the
+  pre-fetch is free for the panels. Chrome DevTools tab-badge
+  parity.
 
 Listed in rough order of value × ease:
 
