@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 interface DashboardStats {
@@ -441,10 +442,21 @@ function ChartSkeleton() {
 }
 
 function ChartEmpty() {
+  const demoMode = useAppStore((s) => s.demoMode);
+  const toggleDemoMode = useAppStore((s) => s.toggleDemoMode);
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center text-fg-faint">
-      <Activity className="size-6 mb-2" />
+    <div className="h-full flex flex-col items-center justify-center text-center text-fg-faint gap-2">
+      <Activity className="size-6" />
       <p className="text-xs">No data for this period</p>
+      {!demoMode && (
+        <button
+          type="button"
+          onClick={() => toggleDemoMode()}
+          className="text-xs text-fg-subtle hover:text-fg underline-offset-2 hover:underline"
+        >
+          Enable demo mode to preview with seed data
+        </button>
+      )}
     </div>
   );
 }

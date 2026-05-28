@@ -94,10 +94,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Session / Ticket / Error / Join chips with per-kind counts. Zero-count
   chips render disabled-looking so the row width stays stable across
   polls. Linear / Slack feed-filter parity.
-- **Sessions page-size selector** — current commit — Recorded tab gets
+- **Sessions page-size selector** — `c6345055` — Recorded tab gets
   a per-page select (50 / 100 / 200) in the result-meta row. Choice
   persists to `localStorage` via the existing `sessions-prefs:v1`
   schema. Datadog / PostHog data-list parity.
+- **Empty-state CTAs to Sandbox + Demo mode** — current commit —
+  Sessions "No sessions yet" empty offers Module / Script SDK sandbox
+  buttons; Dashboard ChartEmpty offers "Enable demo mode" inline.
+  Removes the dead-end first-run experience.
 
 ## Next obvious candidates
 
