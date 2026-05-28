@@ -59,6 +59,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import { formatDurationFromNanos, shortHash } from "@/lib/format";
+import { buildCurlCommand } from "@/lib/curl";
 import { recordSessionVisit } from "@/lib/recent-sessions";
 import { REPLAY_SPEEDS, useReplayPrefs } from "@/lib/replay-prefs";
 import { formatUserAgentBadge } from "@/lib/user-agent";
@@ -580,9 +581,8 @@ function NetworkTab({ sessionId }: { sessionId: string }) {
                 <th className="h-9 px-3 text-left font-semibold">URL</th>
                 <th className="h-9 px-3 text-right font-semibold">Status</th>
                 <th className="h-9 px-3 text-left font-semibold">Type</th>
-                <th className="h-9 px-3 text-right font-semibold last:pr-4">
-                  Size
-                </th>
+                <th className="h-9 px-3 text-right font-semibold">Size</th>
+                <th className="h-9 pl-3 pr-4 text-right font-semibold w-[40px]" />
               </tr>
             </thead>
             <tbody>
@@ -611,7 +611,7 @@ function NetworkRowView({ row }: { row: NetworkRow }) {
 
   return (
     <tr
-      className="border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors"
+      className="group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors"
       data-testid="session-network-row"
     >
       <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg">
@@ -639,7 +639,42 @@ function NetworkRowView({ row }: { row: NetworkRow }) {
       <td className="px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums text-fg-subtle">
         {formatBytes(row.encodedDataLength)}
       </td>
+      <td className="pl-3 pr-4 py-2 align-middle text-right">
+        <NetworkRowCopyCurl row={row} />
+      </td>
     </tr>
+  );
+}
+
+function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    const cmd = buildCurlCommand(row);
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success("cURL copied", { description: row.method + " " + row.url });
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label="Copy as cURL"
+      data-testid="session-network-curl"
+      className={cn(
+        "inline-flex items-center justify-center size-6 rounded-md transition-opacity",
+        "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+        "hover:bg-bg-muted text-fg-subtle hover:text-fg",
+      )}
+    >
+      {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+    </button>
   );
 }
 

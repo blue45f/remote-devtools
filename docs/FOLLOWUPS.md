@@ -251,6 +251,13 @@ the next obvious candidates. Each entry: what shipped, what's next.
   shortcuts shift: 1/2/3/4/5 = Overview / Replay / Timeline /
   Network / Raw. Chrome DevTools / PostHog / Highlight.io
   network-panel parity.
+- **Network row Copy as cURL** — current commit — Each Network
+  row gets a hover-revealed Copy icon that writes
+  `curl [-X METHOD] 'URL' [-H 'Accept: …']` to the clipboard.
+  Logic lives in a tiny pure `lib/curl.ts` (single-quote-escapes
+  embedded apostrophes) so it's unit-testable without the React
+  shell. Toast confirms with the method + URL preview. Closes
+  the "Copy as cURL" half of FOLLOWUPS #2.
 
 ## Next obvious candidates
 
@@ -258,8 +265,8 @@ Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
 - ~~**Session tags** — done above.~~
-- ~~**Network HAR / "Copy as cURL"** — Network list shipped above; HAR
-  export and cURL copy still pending.~~
+- ~~**Network HAR / "Copy as cURL"** — Network list + cURL copy
+  shipped above; HAR export still pending.~~
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
   across the session; needs decent event shape.
