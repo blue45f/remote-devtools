@@ -643,7 +643,7 @@ export default function SessionsPage() {
           description={
             filtersActive
               ? "Try clearing some filters or expanding the date range."
-              : "Sessions will appear here as your SDK starts capturing traffic."
+              : "Sessions will appear here as your SDK starts capturing traffic. The Module / Script sandbox pages generate live events to test the pipeline end-to-end."
           }
           action={
             filtersActive ? (
@@ -652,11 +652,28 @@ export default function SessionsPage() {
                 onClick={() => {
                   setSearch("");
                   setDurationFilter("all");
+                  setAgeFilter("all");
+                  setHostFilter(null);
                 }}
               >
                 Clear filters
               </Button>
-            ) : null
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button asChild variant="primary" size="sm">
+                  <Link to="/sandbox/module">
+                    <PlaySquare />
+                    Open Module SDK sandbox
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/sandbox/script">
+                    <ExternalLink />
+                    Script SDK
+                  </Link>
+                </Button>
+              </div>
+            )
           }
         />
       ) : (
