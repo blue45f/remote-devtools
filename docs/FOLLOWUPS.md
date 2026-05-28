@@ -70,9 +70,13 @@ the next obvious candidates. Each entry: what shipped, what's next.
   overlays click coordinates as accent-colored dots on the captured
   preview thumbnail. Toggle in the overlay shows / hides them with the
   total count. FullStory / Microsoft Clarity heatmap MVP.
-- **Pricing FAQ search** — current commit — Live filter input over
+- **Pricing FAQ search** — `5145105a` — Live filter input over
   questions + answers, with a helpful "no matches" CTA that links to
   GitHub issues. Stripe / Vercel / Linear pricing parity.
+- **Sessions time-range filter** — current commit — Sessions filter
+  chips gain a "Time" group (24h / 7d / 30d / all time) ahead of the
+  Duration group. Filters by `s.timestamp`. Datadog / PostHog parity
+  for "show me what happened recently" triage flows.
 
 ## Next obvious candidates
 
