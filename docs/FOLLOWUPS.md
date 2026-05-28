@@ -504,6 +504,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   captures survive the round-trip. JSON downloads use the
   pretty-printed body to stay diffable.
 
+- **Console text export** — `315086e2` — Export button on
+  the Console tab downloads the currently filtered rows as a
+  plain-text file (`[timestamp] [LEVEL] message`, one per
+  line). Respects both the level chip and text filter so the
+  saved file matches what's on screen — great for attaching
+  the right slice to a support ticket without leaking
+  unrelated rows.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
