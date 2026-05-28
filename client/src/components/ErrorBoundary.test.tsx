@@ -36,7 +36,9 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
     expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
-    expect(screen.getByText(/oh no/)).toBeInTheDocument();
+    // The thrown message can show up in the visible description AND in the
+    // expandable stack trace. We just want at least one occurrence.
+    expect(screen.getAllByText(/oh no/).length).toBeGreaterThan(0);
   });
 
   it("offers a reload action", async () => {
@@ -51,7 +53,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Reload/ }));
+    await user.click(screen.getByRole("button", { name: /Reload page/ }));
     expect(reloadMock).toHaveBeenCalledOnce();
   });
 });
