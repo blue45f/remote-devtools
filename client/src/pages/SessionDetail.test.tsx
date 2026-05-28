@@ -738,6 +738,22 @@ describe('SessionDetail page', () => {
     expect(screen.getByTestId('console-error-badge').textContent).toBe('2');
   });
 
+  it('jumps to the replay moment from an Overview failed-request row', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId('overview-failed-requests')).toBeInTheDocument();
+    });
+
+    const jumpRows = screen.getAllByTestId('overview-failed-request-jump');
+    expect(jumpRows.length).toBeGreaterThan(0);
+    await user.click(jumpRows[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+    });
+  });
+
   it('surfaces a failed-requests card on the Overview tab and jumps to Network', async () => {
     const user = userEvent.setup();
     renderAt(1000);

@@ -614,12 +614,16 @@ export default function SessionDetailPage() {
             <TopErrorsCard
               rows={(consoleRows ?? []).filter((r) => r.level === 'error')}
               onJumpToConsole={() => setTab('console')}
+              onJumpToReplay={jumpToReplay}
+              sessionStartMs={sessionStartMs}
             />
           )}
           {(networkRows ?? []).some((r) => r.status !== undefined && r.status >= 400) && (
             <FailedRequestsCard
               rows={(networkRows ?? []).filter((r) => r.status !== undefined && r.status >= 400)}
               onJumpToNetwork={() => setTab('network')}
+              onJumpToReplay={jumpToReplay}
+              sessionStartMs={sessionStartMs}
             />
           )}
           <OverviewTab loading={eventsLoading} counts={eventTypeCounts} total={totalEvents} />
@@ -3246,9 +3250,13 @@ function CopyChip({
 function TopErrorsCard({
   rows,
   onJumpToConsole,
+  onJumpToReplay,
+  sessionStartMs,
 }: {
   rows: ConsoleRow[];
   onJumpToConsole: () => void;
+  onJumpToReplay?: (offsetMs: number) => void;
+  sessionStartMs?: number;
 }) {
   // Show the most recent 3 — sort by timestamp desc, slice.
   const recent = useMemo(
@@ -3276,18 +3284,33 @@ function TopErrorsCard({
         </Button>
       </div>
       <ul className="space-y-1.5">
-        {recent.map((r) => (
-          <li
-            key={r.id}
-            className="flex items-start gap-2 text-[12px] font-mono"
-            data-testid="overview-top-error-row"
-          >
-            <span className="text-fg-faint shrink-0 tabular-nums">
-              {formatTimestampWithMillis(r.timestamp)}
-            </span>
-            <span className="text-danger truncate">{r.text}</span>
-          </li>
-        ))}
+        {recent.map((r) => {
+          const canJump = onJumpToReplay && sessionStartMs !== undefined;
+          return (
+            <li key={r.id} data-testid="overview-top-error-row">
+              <button
+                type="button"
+                disabled={!canJump}
+                onClick={
+                  canJump
+                    ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                    : undefined
+                }
+                data-testid="overview-top-error-jump"
+                className={cn(
+                  'flex items-start gap-2 text-[12px] font-mono w-full text-left rounded px-1 -mx-1',
+                  canJump && 'hover:bg-danger-soft/60 cursor-pointer',
+                )}
+                title={canJump ? 'Jump to this moment in the replay' : undefined}
+              >
+                <span className="text-fg-faint shrink-0 tabular-nums">
+                  {formatTimestampWithMillis(r.timestamp)}
+                </span>
+                <span className="text-danger truncate">{r.text}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
@@ -3296,9 +3319,13 @@ function TopErrorsCard({
 function FailedRequestsCard({
   rows,
   onJumpToNetwork,
+  onJumpToReplay,
+  sessionStartMs,
 }: {
   rows: NetworkRow[];
   onJumpToNetwork: () => void;
+  onJumpToReplay?: (offsetMs: number) => void;
+  sessionStartMs?: number;
 }) {
   const recent = useMemo(
     () => [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3),
@@ -3328,17 +3355,32 @@ function FailedRequestsCard({
         </Button>
       </div>
       <ul className="space-y-1.5">
-        {recent.map((r) => (
-          <li
-            key={r.id}
-            className="flex items-center gap-2 text-[12px] font-mono"
-            data-testid="overview-failed-request-row"
-          >
-            <span className="text-danger shrink-0 tabular-nums w-9">{r.status}</span>
-            <span className="text-fg-faint shrink-0">{r.method}</span>
-            <span className="text-fg-subtle truncate">{r.url}</span>
-          </li>
-        ))}
+        {recent.map((r) => {
+          const canJump = onJumpToReplay && sessionStartMs !== undefined;
+          return (
+            <li key={r.id} data-testid="overview-failed-request-row">
+              <button
+                type="button"
+                disabled={!canJump}
+                onClick={
+                  canJump
+                    ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                    : undefined
+                }
+                data-testid="overview-failed-request-jump"
+                className={cn(
+                  'flex items-center gap-2 text-[12px] font-mono w-full text-left rounded px-1 -mx-1',
+                  canJump && 'hover:bg-danger-soft/60 cursor-pointer',
+                )}
+                title={canJump ? 'Jump to this moment in the replay' : undefined}
+              >
+                <span className="text-danger shrink-0 tabular-nums w-9">{r.status}</span>
+                <span className="text-fg-faint shrink-0">{r.method}</span>
+                <span className="text-fg-subtle truncate">{r.url}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
