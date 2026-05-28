@@ -258,7 +258,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   embedded apostrophes) so it's unit-testable without the React
   shell. Toast confirms with the method + URL preview. Closes
   the "Copy as cURL" half of FOLLOWUPS #2.
-- **Sessions list tag chips + filter** — current commit —
+- **Sessions list tag chips + filter** — `90906a3a` —
   Comfortable-density rows render saved tags as small accent
   chips below the session ID. Clicking a chip toggles it as the
   list-wide `tagFilter`, which round-trips through `?tag=…` in
