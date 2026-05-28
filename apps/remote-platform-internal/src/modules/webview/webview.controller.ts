@@ -130,6 +130,8 @@ export class WebviewController {
       timestamp: record.timestamp,
       userAgent: record.userAgent || undefined,
       tags: record.tags ?? [],
+      // Lean boolean only — the full note text stays on the detail endpoint.
+      hasNote: !!(record.note && record.note.trim().length > 0),
     }));
 
     if (noFilters) return items; // back-compat

@@ -100,8 +100,26 @@ describe('WebviewController (Internal)', () => {
           url: 'https://example.com',
           deviceId: 'dev-1',
           recordMode: true,
+          hasNote: false,
         }),
       );
+    });
+
+    it('flags rows that carry a note via hasNote', async () => {
+      mockRecordService.findPaginated.mockResolvedValue({
+        rows: [
+          { id: 1, name: 'with-note', recordMode: true, timestamp: new Date(), note: 'repro' },
+          { id: 2, name: 'blank-note', recordMode: true, timestamp: new Date(), note: '   ' },
+          { id: 3, name: 'no-note', recordMode: true, timestamp: new Date() },
+        ],
+        nextCursor: null,
+      });
+
+      const result = (await controller.getRecordSessionList(null)) as unknown as {
+        id: number;
+        hasNote: boolean;
+      }[];
+      expect(result.map((r) => r.hasNote)).toEqual([true, false, false]);
     });
 
     it('returns the paginated envelope when filters are present', async () => {
