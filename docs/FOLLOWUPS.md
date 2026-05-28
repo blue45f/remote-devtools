@@ -285,7 +285,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Network row's Copy-cURL button gets a stopPropagation so it
   doesn't fight the row-click. Chrome DevTools / Sentry / PostHog
   response-preview parity.
-- **Heatmap overlay on Captured Preview** — current commit —
+- **Heatmap overlay on Captured Preview** — `77ba5e5e` —
   Replaces the per-click accent dots with a true canvas-based
   radial-gradient heatmap. Each click paints a warm 40-px blob;
   `globalCompositeOperation = "lighter"` makes overlapping blobs
@@ -296,7 +296,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the canvas keeps the underlying preview readable. Closes
   FOLLOWUPS #5. FullStory / Microsoft Clarity / LogRocket
   heatmap parity.
-- **Replay comments / annotations** — current commit — Fourth
+- **Replay comments / annotations** — `3defa228` — Fourth
   backend cycle and the last open FOLLOWUPS candidate. New
   `replay_comment` table (id PK, record_id FK CASCADE,
   timestamp_ms int, body text, author varchar(80) NULL,
