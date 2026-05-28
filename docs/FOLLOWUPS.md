@@ -655,6 +655,13 @@ limit)` extracts hostname directly in SQL
   lists Replay-tab bindings (F, E, Shift+E) when active, so
   they're discoverable.
 
+- **Jump-to-replay from Overview cards** — `eb61a5fc` — The
+  console-errors and failed-requests cards on the Overview
+  tab now have clickable rows that seek the replay to that
+  error's moment (via normaliseOffsetMs), not just the
+  See-all tab jump. Click an error on the landing tab, watch
+  what the user saw.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
