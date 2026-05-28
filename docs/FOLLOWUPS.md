@@ -684,6 +684,15 @@ limit)` extracts hostname directly in SQL
   attempt was reverted for racing `?t=`; this is the correct
   single-writer version.)
 
+- **Top tags dashboard panel** — `a2e8edfd` (server) +
+  `98f1121c` (client) — Fourteenth backend cycle.
+  `DashboardService.getTopTags(period, limit)` aggregates the
+  tags text[] via UNNEST over the window
+  (`GET /api/dashboard/top-tags`); the dashboard renders tag
+  chips with counts, each linking to `/sessions?tag=`. Makes
+  the dashboard a jump-off for tag navigation, completing the
+  tag loop (autosuggest → search → filter → dashboard).
+
 - **Command palette session search** — `3dd2dda7` — Cmd+K now
   runs a debounced backend search as you type (controlled
   input → `/sessions/record?q=`) and shows a "Sessions" group
