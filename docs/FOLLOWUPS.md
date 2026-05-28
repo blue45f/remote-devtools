@@ -77,10 +77,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   chips gain a "Time" group (24h / 7d / 30d / all time) ahead of the
   Duration group. Filters by `s.timestamp`. Datadog / PostHog parity
   for "show me what happened recently" triage flows.
-- **SessionDetail copy-to-clipboard chips** — current commit — Session
+- **SessionDetail copy-to-clipboard chips** — `ed3cec93` — Session
   ID eyebrow and Device metric tile become hover-to-copy. Copy icon
   flips to a Check on success and a toast confirms. Linear / Vercel /
   Stripe metadata block parity.
+- **Timeline search highlight** — current commit — Timeline filter
+  input matches now render with a `<mark>` highlight on each row's
+  event-type label. Special regex characters are escaped before
+  compile; query is split via capturing group and re-identified via
+  case-insensitive equality. PostHog / Sentry / Algolia parity.
 
 ## Next obvious candidates
 
