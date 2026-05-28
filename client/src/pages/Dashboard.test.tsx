@@ -41,4 +41,29 @@ describe("Dashboard page", () => {
       expect(screen.getByText(/Recent activity/)).toBeInTheDocument();
     });
   });
+
+  it("persists the chosen period to localStorage", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Dashboard />);
+
+    await user.click(screen.getByRole("tab", { name: /Weekly/ }));
+    await waitFor(() => {
+      expect(localStorage.getItem("dashboard-prefs:v1")).toContain(
+        '"period":"week"',
+      );
+    });
+  });
+
+  it("hydrates the period from localStorage on mount", async () => {
+    localStorage.setItem(
+      "dashboard-prefs:v1",
+      JSON.stringify({ period: "month" }),
+    );
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("tab", { name: /Monthly/, selected: true }),
+      ).toBeInTheDocument();
+    });
+  });
 });
