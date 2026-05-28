@@ -1,11 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { MSG_ID } from "@remote-platform/constants";
-import { DomEntity } from "@remote-platform/entity";
+import { MSG_ID } from '@remote-platform/constants';
+import { DomEntity } from '@remote-platform/entity';
 
-import { RecordService } from "./record.service";
+import { RecordService } from './record.service';
 
 /**
  * 녹화 세션 중 캡처된 DOM 스냅샷을 저장하고 조회하는 서비스.
@@ -44,7 +44,7 @@ export class DomService {
    * @returns DOM.getDocument 요청 여부
    */
   public isGetDomRequestMessage(message: Record<string, unknown>): boolean {
-    return message["method"] === "DOM.getDocument";
+    return message['method'] === 'DOM.getDocument';
   }
 
   /**
@@ -54,15 +54,13 @@ export class DomService {
    * @returns 저장된 DomEntity 또는 null
    */
   public async upsert(
-    data: Partial<DomEntity> & { recordId: number } & Pick<DomEntity, "type">,
+    data: Partial<DomEntity> & { recordId: number } & Pick<DomEntity, 'type'>,
   ): Promise<DomEntity | null> {
     const { recordId, ...domInfo } = data;
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      this.logger.warn(
-        `Skipping DOM upsert: record not found for id=${recordId}`,
-      );
+      this.logger.warn(`Skipping DOM upsert: record not found for id=${recordId}`);
       return null;
     }
 
@@ -71,9 +69,7 @@ export class DomService {
       { conflictPaths: { record: true, type: true } },
     );
 
-    this.logger.debug(
-      `DOM upserted: recordId=${recordId}, type=${domInfo.type}`,
-    );
+    this.logger.debug(`DOM upserted: recordId=${recordId}, type=${domInfo.type}`);
     return this.domRepository.findOne({
       where: { record: { id: recordId }, type: domInfo.type },
     });
@@ -87,7 +83,7 @@ export class DomService {
   public async findByRecordId(recordId: number): Promise<DomEntity[]> {
     return this.domRepository.find({
       where: { record: { id: recordId } },
-      order: { timestamp: "ASC" },
+      order: { timestamp: 'ASC' },
     });
   }
 
@@ -98,7 +94,7 @@ export class DomService {
    */
   public async findEntireDom(recordId: number): Promise<DomEntity | null> {
     return this.domRepository.findOne({
-      where: { record: { id: recordId }, type: "entireDom" },
+      where: { record: { id: recordId }, type: 'entireDom' },
     });
   }
 }

@@ -1,6 +1,6 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 
-import { BufferService } from "./buffer.service";
+import { BufferService } from './buffer.service';
 
 @Module({
   providers: [BufferService],

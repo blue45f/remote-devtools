@@ -1,12 +1,12 @@
-import { BadRequestException, Body, Controller, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 
-import { WebviewGateway } from "./webview.gateway";
+import { WebviewGateway } from './webview.gateway';
 
-@Controller("buffer")
+@Controller('buffer')
 export class BufferController {
   constructor(private readonly webviewGateway: WebviewGateway) {}
 
-  @Post("save")
+  @Post('save')
   public async saveBuffer(
     @Body()
     body: {
@@ -21,7 +21,7 @@ export class BufferController {
     const deviceId = body.deviceId?.trim();
 
     if (!deviceId) {
-      throw new BadRequestException("deviceId is required");
+      throw new BadRequestException('deviceId is required');
     }
 
     const success = await this.webviewGateway.triggerBufferSave(

@@ -1,8 +1,8 @@
-import https from "https";
+import https from 'https';
 
-import { Injectable, Logger } from "@nestjs/common";
-import { GoogleAuth } from "google-auth-library";
-import { google, sheets_v4 } from "googleapis";
+import { Injectable, Logger } from '@nestjs/common';
+import { GoogleAuth } from 'google-auth-library';
+import { google, sheets_v4 } from 'googleapis';
 
 type SheetsV4 = sheets_v4.Sheets;
 type GridData = sheets_v4.Schema$GridData;
@@ -15,7 +15,7 @@ interface MentionInfo {
   readonly username?: string;
   readonly email?: string;
   readonly link?: string;
-  readonly type: "mention" | "text";
+  readonly type: 'mention' | 'text';
 }
 
 /** Detailed cell information including mentions and hyperlinks */
@@ -69,17 +69,15 @@ export class GoogleSheetsService {
    */
   private extractEmailFromLink(url: string): string | null {
     try {
-      if (url.includes("drive.google.com") || url.includes("docs.google.com")) {
+      if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
         return null;
       }
 
-      if (url.startsWith("mailto:")) {
-        return url.replace("mailto:", "");
+      if (url.startsWith('mailto:')) {
+        return url.replace('mailto:', '');
       }
 
-      const emailMatch = url.match(
-        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
-      );
+      const emailMatch = url.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       return emailMatch ? emailMatch[0] : null;
     } catch (error) {
       this.logger.warn(`Failed to extract email from link: ${url}`, error);
@@ -96,18 +94,15 @@ export class GoogleSheetsService {
     }
 
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const serviceAccountPrivateKeyEncoded =
-      process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+    const serviceAccountPrivateKeyEncoded = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
     if (!serviceAccountEmail || !serviceAccountPrivateKeyEncoded) {
       throw new Error(
-        "Google service account credentials are not configured. " +
-          "Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables.",
+        'Google service account credentials are not configured. ' +
+          'Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables.',
       );
     }
 
-    this.logger.log(
-      "Authenticating Google Sheets via service account (new client)",
-    );
+    this.logger.log('Authenticating Google Sheets via service account (new client)');
 
     // Decode Base64-encoded private key
     const serviceAccountPrivateKey = atob(serviceAccountPrivateKeyEncoded);
@@ -115,25 +110,23 @@ export class GoogleSheetsService {
     const auth = new GoogleAuth({
       credentials: {
         client_email: serviceAccountEmail,
-        private_key: serviceAccountPrivateKey.replace(/\\n/g, "\n"),
+        private_key: serviceAccountPrivateKey.replace(/\\n/g, '\n'),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
 
     // For Docker environments with self-signed certificates, apply a custom HTTPS agent
     // scoped to googleapis only (not the entire Node.js process)
-    const isDocker = process.env.RUNNING_IN_DOCKER === "true";
+    const isDocker = process.env.RUNNING_IN_DOCKER === 'true';
     if (isDocker) {
       const agent = new https.Agent({ rejectUnauthorized: false });
       google.options({ agent });
-      this.logger.warn(
-        "SSL verification disabled for Google API client only (Docker environment)",
-      );
+      this.logger.warn('SSL verification disabled for Google API client only (Docker environment)');
     }
 
-    this.sheetsClient = google.sheets({ version: "v4", auth });
+    this.sheetsClient = google.sheets({ version: 'v4', auth });
 
-    this.logger.log("Google Sheets API client created and cached");
+    this.logger.log('Google Sheets API client created and cached');
     return this.sheetsClient;
   }
 
@@ -150,9 +143,7 @@ export class GoogleSheetsService {
     try {
       const fullRange = `${sheetName}!${range}`;
 
-      this.logger.log(
-        `Fetching sheet with metadata: ${spreadsheetId}, range: ${fullRange}`,
-      );
+      this.logger.log(`Fetching sheet with metadata: ${spreadsheetId}, range: ${fullRange}`);
       const apiStartTime = Date.now();
 
       const response = await sheets.spreadsheets.get(
@@ -177,10 +168,7 @@ export class GoogleSheetsService {
 
       return gridData;
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch sheet with metadata (${sheetName}):`,
-        error,
-      );
+      this.logger.error(`Failed to fetch sheet with metadata (${sheetName}):`, error);
       return null;
     }
   }
@@ -198,20 +186,17 @@ export class GoogleSheetsService {
       const response = await sheets.spreadsheets.get(
         {
           spreadsheetId,
-          fields: "properties.title,sheets.properties.title",
+          fields: 'properties.title,sheets.properties.title',
         },
         { timeout: 30_000 },
       );
 
-      const title = response.data.properties?.title || "Unknown Spreadsheet";
+      const title = response.data.properties?.title || 'Unknown Spreadsheet';
       const sheetList = response.data.sheets || [];
 
       return { title, sheets: sheetList };
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch spreadsheet metadata (${spreadsheetId}):`,
-        error,
-      );
+      this.logger.error(`Failed to fetch spreadsheet metadata (${spreadsheetId}):`, error);
       return null;
     }
   }
@@ -225,16 +210,12 @@ export class GoogleSheetsService {
     range?: string,
   ): Promise<SimpleStructuredSheetData | null> {
     try {
-      const actualRange = range || "A:Z";
+      const actualRange = range || 'A:Z';
 
       const metadata = await this.getSpreadsheetMetadata(spreadsheetId);
-      const spreadsheetTitle = metadata?.title || "Unknown Spreadsheet";
+      const spreadsheetTitle = metadata?.title || 'Unknown Spreadsheet';
 
-      const gridData = await this.getSheetDataWithMetadata(
-        spreadsheetId,
-        sheetName,
-        actualRange,
-      );
+      const gridData = await this.getSheetDataWithMetadata(spreadsheetId, sheetName, actualRange);
 
       if (!gridData || !gridData.rowData || gridData.rowData.length === 0) {
         this.logger.warn(`Sheet data is empty: ${sheetName}`);
@@ -244,8 +225,7 @@ export class GoogleSheetsService {
       // Extract headers from the first row
       const headerRow = gridData.rowData[0]?.values || [];
       const headers = headerRow.map(
-        (cell) =>
-          cell?.formattedValue || cell?.userEnteredValue?.stringValue || "",
+        (cell) => cell?.formattedValue || cell?.userEnteredValue?.stringValue || '',
       );
       const dataRows = gridData.rowData.slice(1);
 
@@ -261,23 +241,18 @@ export class GoogleSheetsService {
         }
 
         // "담당자" = "Assignee" column header in Korean
-        const hasMentions =
-          header.includes("Assignee") || header.includes("담당자");
+        const hasMentions = header.includes('Assignee') || header.includes('담당자');
 
         const columnValues: (string | CellInfo)[] = [];
 
         for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
           const cellData = dataRows[rowIndex]?.values?.[colIndex];
-          const cellValue =
-            cellData?.formattedValue || cellData?.userEnteredValue?.stringValue;
+          const cellValue = cellData?.formattedValue || cellData?.userEnteredValue?.stringValue;
 
           if (cellValue && String(cellValue).trim()) {
             if (hasMentions) {
               // For assignee columns, extract mention metadata
-              const cellInfo = this.extractCellInfoFromGridData(
-                cellData,
-                cellValue,
-              );
+              const cellInfo = this.extractCellInfoFromGridData(cellData, cellValue);
               columnValues.push(cellInfo);
             } else {
               columnValues.push(String(cellValue));
@@ -296,7 +271,7 @@ export class GoogleSheetsService {
       const simpleColumns: SimpleColumnData[] = columns.map((column) => ({
         header: column.header,
         values: column.values.map((value) => {
-          if (typeof value === "string") {
+          if (typeof value === 'string') {
             return { text: value };
           }
 
@@ -306,7 +281,7 @@ export class GoogleSheetsService {
             const mention = value.mentions[0];
             if (mention.email && mention.userDisplayName) {
               simpleCellValue.userData = {
-                username: mention.username || mention.email.split("@")[0],
+                username: mention.username || mention.email.split('@')[0],
                 userDisplayName: mention.userDisplayName,
                 email: mention.email,
               };
@@ -331,10 +306,7 @@ export class GoogleSheetsService {
 
       return result;
     } catch (error) {
-      this.logger.error(
-        `Failed to retrieve structured sheet data (${sheetName}):`,
-        error,
-      );
+      this.logger.error(`Failed to retrieve structured sheet data (${sheetName}):`, error);
       return null;
     }
   }
@@ -342,10 +314,7 @@ export class GoogleSheetsService {
   /**
    * Extract cell information and mention data from grid cell metadata.
    */
-  private extractCellInfoFromGridData(
-    cellData: CellData | undefined,
-    cellValue: string,
-  ): CellInfo {
+  private extractCellInfoFromGridData(cellData: CellData | undefined, cellValue: string): CellInfo {
     const cellInfo: CellInfo = {
       value: cellValue,
       mentions: [],
@@ -377,9 +346,9 @@ export class GoogleSheetsService {
 
           const mentionInfo: MentionInfo = {
             userDisplayName: mentionText || cellValue,
-            username: personProps.email?.split("@")[0],
+            username: personProps.email?.split('@')[0],
             email: personProps.email,
-            type: "mention",
+            type: 'mention',
           };
 
           cellInfo.mentions.push(mentionInfo);
@@ -396,10 +365,10 @@ export class GoogleSheetsService {
           const mentionInfo: MentionInfo = {
             userDisplayName: this.extractTextFromRunData(cellValue, run),
             username: fmt.link.uri
-              ? this.extractEmailFromLink(fmt.link.uri)?.split("@")[0]
+              ? this.extractEmailFromLink(fmt.link.uri)?.split('@')[0]
               : undefined,
             link: fmt.link.uri,
-            type: "mention",
+            type: 'mention',
           };
 
           if (fmt.link.uri) {

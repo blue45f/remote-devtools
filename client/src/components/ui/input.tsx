@@ -1,6 +1,6 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leadingIcon?: ReactNode;
@@ -8,14 +8,14 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, leadingIcon, trailingIcon, type = "text", ...props }, ref) => {
+  ({ className, leadingIcon, trailingIcon, type = 'text', ...props }, ref) => {
     if (leadingIcon || trailingIcon) {
       return (
         <div
           className={cn(
-            "group relative flex items-center h-9 rounded-md border border-border bg-surface text-sm",
-            "transition-[border-color,box-shadow] duration-150",
-            "has-[:focus-visible]:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/20",
+            'group relative flex items-center h-9 rounded-md border border-border bg-surface text-sm',
+            'transition-[border-color,box-shadow] duration-150',
+            'has-[:focus-visible]:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/20',
             className,
           )}
         >
@@ -28,17 +28,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={type}
             className={cn(
-              "h-full w-full bg-transparent text-fg placeholder:text-fg-faint outline-none",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-              leadingIcon ? "pl-9" : "pl-3",
-              trailingIcon ? "pr-9" : "pr-3",
+              'h-full w-full bg-transparent text-fg placeholder:text-fg-faint outline-none',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              leadingIcon ? 'pl-9' : 'pl-3',
+              trailingIcon ? 'pr-9' : 'pr-3',
             )}
             {...props}
           />
           {trailingIcon && (
-            <span className="absolute right-3 text-fg-faint [&_svg]:size-4">
-              {trailingIcon}
-            </span>
+            <span className="absolute right-3 text-fg-faint [&_svg]:size-4">{trailingIcon}</span>
           )}
         </div>
       );
@@ -49,11 +47,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         type={type}
         className={cn(
-          "h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg",
-          "placeholder:text-fg-faint outline-none",
-          "transition-[border-color,box-shadow] duration-150",
-          "focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20",
-          "disabled:cursor-not-allowed disabled:opacity-50",
+          'h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg',
+          'placeholder:text-fg-faint outline-none',
+          'transition-[border-color,box-shadow] duration-150',
+          'focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20',
+          'disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
         {...props}
@@ -61,4 +59,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     );
   },
 );
-Input.displayName = "Input";
+Input.displayName = 'Input';

@@ -13,7 +13,7 @@ export interface ParsedUserAgent {
  * a glanceable hint on the Session row / detail page.
  */
 export function parseUserAgent(ua?: string | null): ParsedUserAgent | null {
-  if (!ua || typeof ua !== "string" || ua.trim().length === 0) return null;
+  if (!ua || typeof ua !== 'string' || ua.trim().length === 0) return null;
 
   return {
     browser: detectBrowser(ua),
@@ -23,28 +23,28 @@ export function parseUserAgent(ua?: string | null): ParsedUserAgent | null {
 
 function detectBrowser(ua: string): string {
   // Order matters — Edge / Opera / Brave all include "Chrome" in their UA.
-  if (/Edg\//.test(ua)) return "Edge";
-  if (/OPR\/|Opera/.test(ua)) return "Opera";
-  if (/Brave/.test(ua)) return "Brave";
-  if (/Vivaldi/.test(ua)) return "Vivaldi";
-  if (/Firefox\//.test(ua)) return "Firefox";
-  if (/Chrome\//.test(ua)) return "Chrome";
-  if (/Safari\//.test(ua)) return "Safari";
-  if (/MSIE |Trident\//.test(ua)) return "IE";
-  return "Unknown";
+  if (/Edg\//.test(ua)) return 'Edge';
+  if (/OPR\/|Opera/.test(ua)) return 'Opera';
+  if (/Brave/.test(ua)) return 'Brave';
+  if (/Vivaldi/.test(ua)) return 'Vivaldi';
+  if (/Firefox\//.test(ua)) return 'Firefox';
+  if (/Chrome\//.test(ua)) return 'Chrome';
+  if (/Safari\//.test(ua)) return 'Safari';
+  if (/MSIE |Trident\//.test(ua)) return 'IE';
+  return 'Unknown';
 }
 
 function detectOS(ua: string): string {
   // iOS and Android come before macOS/Linux — iPhone UAs contain
   // "Mac OS X" too ("like Mac OS X"), Android UAs include "Linux".
-  if (/iPhone|iPad|iPod/.test(ua)) return "iOS";
-  if (/Android/.test(ua)) return "Android";
-  if (/Windows NT 10/.test(ua)) return "Windows 10/11";
-  if (/Windows NT/.test(ua)) return "Windows";
-  if (/Mac OS X|Macintosh/.test(ua)) return "macOS";
-  if (/CrOS/.test(ua)) return "ChromeOS";
-  if (/Linux/.test(ua)) return "Linux";
-  return "Unknown";
+  if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
+  if (/Android/.test(ua)) return 'Android';
+  if (/Windows NT 10/.test(ua)) return 'Windows 10/11';
+  if (/Windows NT/.test(ua)) return 'Windows';
+  if (/Mac OS X|Macintosh/.test(ua)) return 'macOS';
+  if (/CrOS/.test(ua)) return 'ChromeOS';
+  if (/Linux/.test(ua)) return 'Linux';
+  return 'Unknown';
 }
 
 /** Compact "Chrome · macOS" style label. */

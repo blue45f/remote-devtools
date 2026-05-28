@@ -1,8 +1,8 @@
 // Config
-export * from "./config";
+export * from './config';
 
 // Database
-export * from "./database";
+export * from './database';
 
 // Services
-export * from "./services";
+export * from './services';

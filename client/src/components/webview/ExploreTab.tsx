@@ -1,55 +1,55 @@
-import { Heart, Search } from "lucide-react";
-import { useState } from "react";
+import { Heart, Search } from 'lucide-react';
+import { useState } from 'react';
 
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 const destinations = [
   {
     id: 1,
-    name: "Santorini, Greece",
-    image: "https://picsum.photos/seed/santorini/640/360",
+    name: 'Santorini, Greece',
+    image: 'https://picsum.photos/seed/santorini/640/360',
     rating: 4.9,
     reviews: 2847,
-    price: "$1,240",
-    tag: "Popular",
+    price: '$1,240',
+    tag: 'Popular',
   },
   {
     id: 2,
-    name: "Kyoto, Japan",
-    image: "https://picsum.photos/seed/kyoto/640/360",
+    name: 'Kyoto, Japan',
+    image: 'https://picsum.photos/seed/kyoto/640/360',
     rating: 4.8,
     reviews: 3156,
-    price: "$890",
-    tag: "Trending",
+    price: '$890',
+    tag: 'Trending',
   },
   {
     id: 3,
-    name: "Hallstatt, Austria",
-    image: "https://picsum.photos/seed/hallstatt/640/360",
+    name: 'Hallstatt, Austria',
+    image: 'https://picsum.photos/seed/hallstatt/640/360',
     rating: 4.7,
     reviews: 1923,
-    price: "$720",
-    tag: "Hidden Gem",
+    price: '$720',
+    tag: 'Hidden Gem',
   },
   {
     id: 4,
-    name: "Bali, Indonesia",
-    image: "https://picsum.photos/seed/bali/640/360",
+    name: 'Bali, Indonesia',
+    image: 'https://picsum.photos/seed/bali/640/360',
     rating: 4.6,
     reviews: 4201,
-    price: "$650",
-    tag: "Best Value",
+    price: '$650',
+    tag: 'Best Value',
   },
 ];
 
 const categories = [
-  { icon: "\u{1F3D4}", label: "Mountains" },
-  { icon: "\u{1F3D6}", label: "Beach" },
-  { icon: "\u{1F3DB}", label: "Culture" },
-  { icon: "\u{1F33F}", label: "Nature" },
-  { icon: "\u{1F3BF}", label: "Adventure" },
-  { icon: "\u{1F377}", label: "Food & Wine" },
+  { icon: '\u{1F3D4}', label: 'Mountains' },
+  { icon: '\u{1F3D6}', label: 'Beach' },
+  { icon: '\u{1F3DB}', label: 'Culture' },
+  { icon: '\u{1F33F}', label: 'Nature' },
+  { icon: '\u{1F3BF}', label: 'Adventure' },
+  { icon: '\u{1F377}', label: 'Food & Wine' },
 ];
 
 interface ExploreTabProps {
@@ -57,7 +57,7 @@ interface ExploreTabProps {
 }
 
 export default function ExploreTab({ domNodes }: ExploreTabProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="space-y-6">
@@ -92,9 +92,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
             <span className="text-xl group-hover:scale-110 transition-transform duration-200">
               {cat.icon}
             </span>
-            <span className="text-[11px] font-medium text-fg-subtle">
-              {cat.label}
-            </span>
+            <span className="text-[11px] font-medium text-fg-subtle">{cat.label}</span>
           </button>
         ))}
       </div>
@@ -102,10 +100,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-fg">Top destinations</h2>
-          <button
-            type="button"
-            className="text-xs font-medium text-fg-subtle hover:text-fg"
-          >
+          <button type="button" className="text-xs font-medium text-fg-subtle hover:text-fg">
             View all
           </button>
         </div>
@@ -134,21 +129,15 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
                 </button>
               </div>
               <div className="p-4">
-                <h3 className="font-medium text-sm text-fg mb-1">
-                  {dest.name}
-                </h3>
+                <h3 className="font-medium text-sm text-fg mb-1">{dest.name}</h3>
                 <div className="flex items-center gap-1 mb-2 text-xs">
                   <span className="text-warning">★</span>
                   <span className="font-medium text-fg">{dest.rating}</span>
-                  <span className="text-fg-faint">
-                    ({dest.reviews.toLocaleString()})
-                  </span>
+                  <span className="text-fg-faint">({dest.reviews.toLocaleString()})</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-base font-semibold text-fg">
-                      {dest.price}
-                    </span>
+                    <span className="text-base font-semibold text-fg">{dest.price}</span>
                     <span className="text-[11px] text-fg-faint">/ person</span>
                   </div>
                   <button

@@ -1,7 +1,7 @@
-import type { eventWithTime } from "@rrweb/types";
-import * as rrweb from "rrweb";
+import type { eventWithTime } from '@rrweb/types';
+import * as rrweb from 'rrweb';
 
-import { BaseDomain } from "./base";
+import { BaseDomain } from './base';
 
 type MutableEventData = Record<string, unknown> & {
   width?: number;
@@ -14,14 +14,14 @@ type MatchablePrototype = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
 /**
  * SessionReplay - rrweb 기반 세션 기록
  * 더 안정적이고 완벽한 세션 리플레이 구현
  */
 export class SessionReplay extends BaseDomain {
-  public namespace = "SessionReplay";
+  public namespace = 'SessionReplay';
 
   // rrweb 관련
   private stopRecordingFn: ReturnType<typeof rrweb.record> | null = null;
@@ -44,7 +44,7 @@ export class SessionReplay extends BaseDomain {
    */
   public startRecording(): void {
     // Buffer 모드에서는 기존 기록을 중지하고 새로 시작
-    const isBufferMode = this.room && this.room.startsWith("Buffer-");
+    const isBufferMode = this.room && this.room.startsWith('Buffer-');
 
     if (this.recording && isBufferMode) {
       this.stopRecording();
@@ -53,9 +53,9 @@ export class SessionReplay extends BaseDomain {
     }
 
     // DOM이 완전히 로드되지 않은 경우 대기
-    if (document.readyState === "loading") {
+    if (document.readyState === 'loading') {
       document.addEventListener(
-        "DOMContentLoaded",
+        'DOMContentLoaded',
         () => {
           this.startRecording();
         },
@@ -96,7 +96,7 @@ export class SessionReplay extends BaseDomain {
         } as unknown as eventWithTime;
 
         // Buffer 모드인지 확인
-        const isBufferMode = this.room && this.room.startsWith("Buffer-");
+        const isBufferMode = this.room && this.room.startsWith('Buffer-');
 
         if (this.buffering) {
           // 버퍼링 모드: 메모리에 저장
@@ -109,9 +109,7 @@ export class SessionReplay extends BaseDomain {
 
           // 메모리 관리: 버퍼 크기 제한
           if (this.eventBuffer.length > 2000) {
-            console.warn(
-              "[RemoteDebug-SDK][SessionReplay] 버퍼 크기 초과, 오래된 이벤트 삭제",
-            );
+            console.warn('[RemoteDebug-SDK][SessionReplay] 버퍼 크기 초과, 오래된 이벤트 삭제');
             this.eventBuffer = this.eventBuffer.slice(-1500);
           }
         } else {
@@ -126,7 +124,7 @@ export class SessionReplay extends BaseDomain {
       sampling: {
         scroll: 150, // 스크롤 이벤트 150ms 샘플링
         media: 800, // 미디어 이벤트 800ms 샘플링
-        input: "last", // 입력은 마지막 값만
+        input: 'last', // 입력은 마지막 값만
         canvas: 5, // Canvas FPS
         mousemove: true, // 마우스 이동 기록
         mouseInteraction: true, // 마우스 상호작용 기록
@@ -134,15 +132,9 @@ export class SessionReplay extends BaseDomain {
 
       // 에러 핸들링 추가
       errorHandler: (error: Error) => {
-        console.warn(
-          "[RemoteDebug-SDK][SessionReplay] rrweb 내부 오류 발생:",
-          error.message,
-        );
+        console.warn('[RemoteDebug-SDK][SessionReplay] rrweb 내부 오류 발생:', error.message);
         // scrollLeft/scrollTop 관련 오류는 무시 (일시적인 DOM 상태)
-        if (
-          error.message?.includes("scrollLeft") ||
-          error.message?.includes("scrollTop")
-        ) {
+        if (error.message?.includes('scrollLeft') || error.message?.includes('scrollTop')) {
           return true; // 오류 무시하고 계속 진행
         }
         return false; // 다른 오류는 기본 처리
@@ -175,11 +167,11 @@ export class SessionReplay extends BaseDomain {
       // 추가 기능
       recordCanvas: true, // Canvas 기록
       recordCrossOriginIframes: false, // Cross-origin iframe (보안상 비활성화)
-      recordAfter: "DOMContentLoaded", // DOM 로드 후 기록 시작
+      recordAfter: 'DOMContentLoaded', // DOM 로드 후 기록 시작
 
       // SDK UI 요소 제외
-      blockSelector: "#REMOTE_DEBUGGER, .remote-debug-sdk-ui",
-      ignoreSelector: ".rrweb-ignore",
+      blockSelector: '#REMOTE_DEBUGGER, .remote-debug-sdk-ui',
+      ignoreSelector: '.rrweb-ignore',
 
       // 인라인 스타일시트 수집 (CSS-in-JS 지원)
       inlineStylesheet: true,
@@ -205,7 +197,7 @@ export class SessionReplay extends BaseDomain {
    * 기록 중지
    */
   public stopRecording(): void {
-    if (this.stopRecordingFn && typeof this.stopRecordingFn === "function") {
+    if (this.stopRecordingFn && typeof this.stopRecordingFn === 'function') {
       this.stopRecordingFn();
       this.stopRecordingFn = null;
     }
@@ -220,17 +212,13 @@ export class SessionReplay extends BaseDomain {
    * 룸 연결 시 버퍼 플러시
    */
   public onRoomConnected(): void {
-    const isBufferRoom = this.room && this.room.startsWith("Buffer-");
+    const isBufferRoom = this.room && this.room.startsWith('Buffer-');
 
     if (isBufferRoom && this.eventBuffer.length > 0) {
       this.lastBufferedEvents = [...this.eventBuffer];
     }
 
-    if (
-      !isBufferRoom &&
-      this.eventBuffer.length === 0 &&
-      this.lastBufferedEvents.length > 0
-    ) {
+    if (!isBufferRoom && this.eventBuffer.length === 0 && this.lastBufferedEvents.length > 0) {
       this.eventBuffer = [...this.lastBufferedEvents];
     }
 
@@ -249,7 +237,7 @@ export class SessionReplay extends BaseDomain {
 
         // CDP 프로토콜 형식으로 래핑
         const cdpEvent = {
-          method: "SessionReplay.rrwebEvents",
+          method: 'SessionReplay.rrwebEvents',
           params: {
             events: batch,
             batchIndex: (batchIndex += 1),
@@ -277,10 +265,7 @@ export class SessionReplay extends BaseDomain {
         }
       })
       .catch((err) => {
-        console.error(
-          "[RemoteDebug-SDK][SessionReplay] 버퍼 전송 중 오류:",
-          err,
-        );
+        console.error('[RemoteDebug-SDK][SessionReplay] 버퍼 전송 중 오류:', err);
       });
   }
 
@@ -289,7 +274,7 @@ export class SessionReplay extends BaseDomain {
    */
   private sendEvent(event: eventWithTime): void {
     const cdpEvent = {
-      method: "SessionReplay.rrwebEvent",
+      method: 'SessionReplay.rrwebEvent',
       params: {
         event,
         timestamp: Date.now(),
@@ -343,8 +328,7 @@ export class SessionReplay extends BaseDomain {
     }
 
     // DocumentFragment에도 추가
-    const fragProto = DocumentFragment.prototype as DocumentFragment &
-      MatchablePrototype;
+    const fragProto = DocumentFragment.prototype as DocumentFragment & MatchablePrototype;
     if (!fragProto.matches) {
       fragProto.matches = function () {
         return false;
@@ -353,18 +337,16 @@ export class SessionReplay extends BaseDomain {
 
     // scrollingElement polyfill 추가 (구형 브라우저/특수 환경 대응)
     if (!document.scrollingElement) {
-      Object.defineProperty(document, "scrollingElement", {
+      Object.defineProperty(document, 'scrollingElement', {
         get: function () {
           // documentElement이 없는 경우를 대비한 안전장치
           if (!document.documentElement) {
-            console.warn(
-              "[RemoteDebug-SDK][SessionReplay] document.documentElement is null",
-            );
+            console.warn('[RemoteDebug-SDK][SessionReplay] document.documentElement is null');
             return document.body || null;
           }
 
           // 표준 모드
-          if (document.compatMode !== "BackCompat") {
+          if (document.compatMode !== 'BackCompat') {
             return document.documentElement;
           }
           // 쿼크 모드

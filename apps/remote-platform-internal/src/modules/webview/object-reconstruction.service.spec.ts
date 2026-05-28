@@ -1,16 +1,14 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-import { ObjectReconstructionService } from "./object-reconstruction.service";
+import { ObjectReconstructionService } from './object-reconstruction.service';
 
-type PropertySnapshotsMap = Parameters<
-  ObjectReconstructionService["reconstructObjectAsJson"]
->[1];
+type PropertySnapshotsMap = Parameters<ObjectReconstructionService['reconstructObjectAsJson']>[1];
 
 const createPropertySnapshotsMap = (): PropertySnapshotsMap => new Map();
 
-describe("ObjectReconstructionService", () => {
+describe('ObjectReconstructionService', () => {
   let service: ObjectReconstructionService;
 
   beforeEach(async () => {
@@ -18,108 +16,102 @@ describe("ObjectReconstructionService", () => {
       providers: [ObjectReconstructionService],
     }).compile();
 
-    service = module.get<ObjectReconstructionService>(
-      ObjectReconstructionService,
-    );
+    service = module.get<ObjectReconstructionService>(ObjectReconstructionService);
   });
 
-  describe("reconstructObjectAsJson", () => {
-    it("should return empty object when no snapshots found", () => {
+  describe('reconstructObjectAsJson', () => {
+    it('should return empty object when no snapshots found', () => {
       const map = createPropertySnapshotsMap();
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
-      expect(result).toBe("{}");
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
+      expect(result).toBe('{}');
     });
 
-    it("should return empty object for empty properties array", () => {
+    it('should return empty object for empty properties array', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", []);
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
-      expect(result).toBe("{}");
+      map.set('obj-1', []);
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
+      expect(result).toBe('{}');
     });
 
-    it("should reconstruct simple string property", () => {
+    it('should reconstruct simple string property', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", [
+      map.set('obj-1', [
         {
-          name: "greeting",
-          value: { type: "string", value: "hello" },
+          name: 'greeting',
+          value: { type: 'string', value: 'hello' },
         },
       ]);
 
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
       const parsed = JSON.parse(result);
-      expect(parsed.greeting).toBe("hello");
+      expect(parsed.greeting).toBe('hello');
     });
 
-    it("should reconstruct number property", () => {
+    it('should reconstruct number property', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", [
+      map.set('obj-1', [
         {
-          name: "count",
-          value: { type: "number", value: 42 },
+          name: 'count',
+          value: { type: 'number', value: 42 },
         },
       ]);
 
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
       const parsed = JSON.parse(result);
       expect(parsed.count).toBe(42);
     });
 
-    it("should reconstruct boolean property", () => {
+    it('should reconstruct boolean property', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", [
+      map.set('obj-1', [
         {
-          name: "active",
-          value: { type: "boolean", value: true },
+          name: 'active',
+          value: { type: 'boolean', value: true },
         },
       ]);
 
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
       const parsed = JSON.parse(result);
       expect(parsed.active).toBe(true);
     });
 
-    it("should handle null values", () => {
+    it('should handle null values', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", [
+      map.set('obj-1', [
         {
-          name: "data",
-          value: { type: "object", subtype: "null", value: null },
+          name: 'data',
+          value: { type: 'object', subtype: 'null', value: null },
         },
       ]);
 
-      const result = service.reconstructObjectAsJson("obj-1", map, []);
+      const result = service.reconstructObjectAsJson('obj-1', map, []);
       const parsed = JSON.parse(result);
       expect(parsed.data).toBeNull();
     });
 
-    it("should respect custom indent", () => {
+    it('should respect custom indent', () => {
       const map = createPropertySnapshotsMap();
-      map.set("obj-1", [
+      map.set('obj-1', [
         {
-          name: "key",
-          value: { type: "string", value: "val" },
+          name: 'key',
+          value: { type: 'string', value: 'val' },
         },
       ]);
 
-      const result = service.reconstructObjectAsJson("obj-1", map, [
-        { value: { indent: 4 } },
-      ]);
-      expect(result).toContain("    "); // 4 spaces
+      const result = service.reconstructObjectAsJson('obj-1', map, [{ value: { indent: 4 } }]);
+      expect(result).toContain('    '); // 4 spaces
     });
   });
 
-  describe("collectPropertySnapshots", () => {
-    it("should collect snapshots from Runtime.consoleAPICalled events", () => {
+  describe('collectPropertySnapshots', () => {
+    it('should collect snapshots from Runtime.consoleAPICalled events', () => {
       const runtimeProtocols = [
         {
           protocol: {
-            method: "Runtime.consoleAPICalled",
+            method: 'Runtime.consoleAPICalled',
             params: {
               _propertySnapshots: {
-                "obj-1": [
-                  { name: "key", value: { type: "string", value: "val" } },
-                ],
+                'obj-1': [{ name: 'key', value: { type: 'string', value: 'val' } }],
               },
             },
           },
@@ -128,15 +120,15 @@ describe("ObjectReconstructionService", () => {
 
       const result = service.collectPropertySnapshots(runtimeProtocols);
 
-      expect(result.has("obj-1")).toBe(true);
-      expect(result.get("obj-1")).toHaveLength(1);
+      expect(result.has('obj-1')).toBe(true);
+      expect(result.get('obj-1')).toHaveLength(1);
     });
 
-    it("should skip non-console events", () => {
+    it('should skip non-console events', () => {
       const runtimeProtocols = [
         {
           protocol: {
-            method: "Runtime.executionContextCreated",
+            method: 'Runtime.executionContextCreated',
             params: {},
           },
         },
@@ -147,12 +139,12 @@ describe("ObjectReconstructionService", () => {
       expect(result.size).toBe(0);
     });
 
-    it("should skip events without _propertySnapshots", () => {
+    it('should skip events without _propertySnapshots', () => {
       const runtimeProtocols = [
         {
           protocol: {
-            method: "Runtime.consoleAPICalled",
-            params: { type: "log", args: [] },
+            method: 'Runtime.consoleAPICalled',
+            params: { type: 'log', args: [] },
           },
         },
       ];
@@ -162,15 +154,13 @@ describe("ObjectReconstructionService", () => {
       expect(result.size).toBe(0);
     });
 
-    it("should handle legacy array format", () => {
+    it('should handle legacy array format', () => {
       const runtimeProtocols = [
         {
           protocol: {
-            method: "Runtime.consoleAPICalled",
+            method: 'Runtime.consoleAPICalled',
             params: {
-              _propertySnapshots: [
-                { name: "a", value: { type: "string", value: "b" } },
-              ],
+              _propertySnapshots: [{ name: 'a', value: { type: 'string', value: 'b' } }],
             },
           },
         },

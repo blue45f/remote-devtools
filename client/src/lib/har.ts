@@ -27,27 +27,32 @@ export function buildHar(
   sessionName?: string,
 ): {
   log: {
-    version: "1.2";
+    version: '1.2';
     creator: { name: string; version: string };
-    pages?: { id: string; startedDateTime: string; title: string; pageTimings: { onContentLoad: -1; onLoad: -1 } }[];
+    pages?: {
+      id: string;
+      startedDateTime: string;
+      title: string;
+      pageTimings: { onContentLoad: -1; onLoad: -1 };
+    }[];
     entries: HarEntry[];
   };
 } {
   return {
     log: {
-      version: "1.2",
-      creator: { name: "remote-devtools", version: "1.0" },
+      version: '1.2',
+      creator: { name: 'remote-devtools', version: '1.0' },
       pages: sessionName
         ? [
             {
-              id: "page_0",
+              id: 'page_0',
               startedDateTime: new Date(rows[0]?.timestamp ?? Date.now()).toISOString(),
               title: sessionName,
               pageTimings: { onContentLoad: -1, onLoad: -1 },
             },
           ]
         : undefined,
-      entries: rows.map((row) => toHarEntry(row, sessionName ? "page_0" : undefined)),
+      entries: rows.map((row) => toHarEntry(row, sessionName ? 'page_0' : undefined)),
     },
   };
 }
@@ -90,17 +95,15 @@ interface HarEntry {
 function toHarEntry(row: HarRow, pageref?: string): HarEntry {
   const queryString = extractQueryString(row.url);
   const responseHeaders =
-    row.mimeType !== undefined
-      ? [{ name: "Content-Type", value: row.mimeType }]
-      : [];
+    row.mimeType !== undefined ? [{ name: 'Content-Type', value: row.mimeType }] : [];
 
-  const responseContent: HarEntry["response"]["content"] = {
+  const responseContent: HarEntry['response']['content'] = {
     size: row.encodedDataLength ?? -1,
-    mimeType: row.mimeType ?? "x-unknown",
+    mimeType: row.mimeType ?? 'x-unknown',
   };
-  if (row.responseBody != null) {
+  if (row.responseBody !== null && row.responseBody !== undefined) {
     responseContent.text = row.responseBody;
-    if (row.base64Encoded) responseContent.encoding = "base64";
+    if (row.base64Encoded) responseContent.encoding = 'base64';
   }
 
   return {
@@ -110,7 +113,7 @@ function toHarEntry(row: HarRow, pageref?: string): HarEntry {
     request: {
       method: row.method.toUpperCase(),
       url: row.url,
-      httpVersion: "HTTP/1.1",
+      httpVersion: 'HTTP/1.1',
       headers: [],
       queryString,
       cookies: [],
@@ -119,12 +122,12 @@ function toHarEntry(row: HarRow, pageref?: string): HarEntry {
     },
     response: {
       status: row.status ?? 0,
-      statusText: row.statusText ?? "",
-      httpVersion: "HTTP/1.1",
+      statusText: row.statusText ?? '',
+      httpVersion: 'HTTP/1.1',
       headers: responseHeaders,
       cookies: [],
       content: responseContent,
-      redirectURL: "",
+      redirectURL: '',
       headersSize: -1,
       bodySize: row.encodedDataLength ?? -1,
     },

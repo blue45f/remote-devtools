@@ -1,17 +1,12 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import {
-  DomService,
-  NetworkService,
-  RuntimeService,
-  ScreenService,
-} from "@remote-platform/core";
+import { DomService, NetworkService, RuntimeService, ScreenService } from '@remote-platform/core';
 
-import { CdpEventPersistenceService } from "./cdp-event-persistence.service";
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
 
-describe("CdpEventPersistenceService", () => {
+describe('CdpEventPersistenceService', () => {
   let service: CdpEventPersistenceService;
   const mockNetworkService = { create: vi.fn(), updateResponseBody: vi.fn() };
   const mockDomService = { upsert: vi.fn() };
@@ -31,46 +26,44 @@ describe("CdpEventPersistenceService", () => {
       ],
     }).compile();
 
-    service = module.get<CdpEventPersistenceService>(
-      CdpEventPersistenceService,
-    );
+    service = module.get<CdpEventPersistenceService>(CdpEventPersistenceService);
   });
 
-  describe("mapRrwebEventType", () => {
-    it("should map known rrweb event types", () => {
-      expect(service.mapRrwebEventType(0)).toBe("dom_loaded");
-      expect(service.mapRrwebEventType(1)).toBe("page_loaded");
-      expect(service.mapRrwebEventType(2)).toBe("full_snapshot");
-      expect(service.mapRrwebEventType(3)).toBe("incremental_snapshot");
-      expect(service.mapRrwebEventType(4)).toBe("meta");
-      expect(service.mapRrwebEventType(5)).toBe("custom");
+  describe('mapRrwebEventType', () => {
+    it('should map known rrweb event types', () => {
+      expect(service.mapRrwebEventType(0)).toBe('dom_loaded');
+      expect(service.mapRrwebEventType(1)).toBe('page_loaded');
+      expect(service.mapRrwebEventType(2)).toBe('full_snapshot');
+      expect(service.mapRrwebEventType(3)).toBe('incremental_snapshot');
+      expect(service.mapRrwebEventType(4)).toBe('meta');
+      expect(service.mapRrwebEventType(5)).toBe('custom');
     });
 
-    it("should return fallback for unknown types", () => {
-      expect(service.mapRrwebEventType(99)).toBe("rrweb_99");
+    it('should return fallback for unknown types', () => {
+      expect(service.mapRrwebEventType(99)).toBe('rrweb_99');
     });
   });
 
-  describe("toTimestampNs", () => {
-    it("should convert milliseconds to nanoseconds", () => {
+  describe('toTimestampNs', () => {
+    it('should convert milliseconds to nanoseconds', () => {
       expect(service.toTimestampNs(1000)).toBe(1000_000_000);
     });
 
-    it("should handle string input", () => {
-      expect(service.toTimestampNs("1000")).toBe(1000_000_000);
+    it('should handle string input', () => {
+      expect(service.toTimestampNs('1000')).toBe(1000_000_000);
     });
 
-    it("should return hrtime-based timestamp for invalid input", () => {
+    it('should return hrtime-based timestamp for invalid input', () => {
       const result = service.toTimestampNs(undefined);
       expect(result).toBeGreaterThan(0);
     });
   });
 
-  describe("persistProtocolEvent", () => {
-    it("should persist network events", async () => {
+  describe('persistProtocolEvent', () => {
+    it('should persist network events', async () => {
       const protocol = {
-        method: "Network.requestWillBeSent",
-        params: { requestId: "1" },
+        method: 'Network.requestWillBeSent',
+        params: { requestId: '1' },
       };
 
       await service.persistProtocolEvent(protocol, 100);
@@ -84,9 +77,9 @@ describe("CdpEventPersistenceService", () => {
       );
     });
 
-    it("should persist DOM events", async () => {
+    it('should persist DOM events', async () => {
       const protocol = {
-        method: "DOM.updated",
+        method: 'DOM.updated',
         params: { nodeId: 1 },
       };
 
@@ -95,15 +88,15 @@ describe("CdpEventPersistenceService", () => {
       expect(mockDomService.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           recordId: 100,
-          type: "entireDom",
+          type: 'entireDom',
         }),
       );
     });
 
-    it("should persist Runtime events", async () => {
+    it('should persist Runtime events', async () => {
       const protocol = {
-        method: "Runtime.consoleAPICalled",
-        params: { type: "log" },
+        method: 'Runtime.consoleAPICalled',
+        params: { type: 'log' },
       };
 
       await service.persistProtocolEvent(protocol, 100);
@@ -116,9 +109,9 @@ describe("CdpEventPersistenceService", () => {
       );
     });
 
-    it("should persist ScreenPreview events", async () => {
+    it('should persist ScreenPreview events', async () => {
       const protocol = {
-        method: "ScreenPreview.captured",
+        method: 'ScreenPreview.captured',
         params: { isFirstSnapshot: true },
       };
 
@@ -127,16 +120,16 @@ describe("CdpEventPersistenceService", () => {
       expect(mockScreenService.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           recordId: 100,
-          type: "screenPreview",
-          eventType: "full_snapshot",
+          type: 'screenPreview',
+          eventType: 'full_snapshot',
         }),
       );
     });
 
-    it("should persist user.interaction events", async () => {
+    it('should persist user.interaction events', async () => {
       const protocol = {
-        method: "user.interaction",
-        params: { type: "click" },
+        method: 'user.interaction',
+        params: { type: 'click' },
       };
 
       await service.persistProtocolEvent(protocol, 100);
@@ -144,14 +137,14 @@ describe("CdpEventPersistenceService", () => {
       expect(mockScreenService.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           recordId: 100,
-          eventType: "user_interaction",
+          eventType: 'user_interaction',
         }),
       );
     });
 
-    it("should persist user.scroll events", async () => {
+    it('should persist user.scroll events', async () => {
       const protocol = {
-        method: "user.scroll",
+        method: 'user.scroll',
         params: { scrollTop: 100 },
       };
 
@@ -160,27 +153,27 @@ describe("CdpEventPersistenceService", () => {
       expect(mockScreenService.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           recordId: 100,
-          eventType: "viewport_change",
+          eventType: 'viewport_change',
         }),
       );
     });
   });
 
-  describe("persistBufferedEvent", () => {
-    it("should route Network events correctly", async () => {
+  describe('persistBufferedEvent', () => {
+    it('should route Network events correctly', async () => {
       await service.persistBufferedEvent(100, {
-        method: "Network.requestWillBeSent",
-        params: { requestId: "1" },
+        method: 'Network.requestWillBeSent',
+        params: { requestId: '1' },
         timestamp: 1000,
       });
 
       expect(mockNetworkService.create).toHaveBeenCalled();
     });
 
-    it("should route updateResponseBody events correctly", async () => {
+    it('should route updateResponseBody events correctly', async () => {
       await service.persistBufferedEvent(100, {
-        method: "updateResponseBody",
-        params: { requestId: "1", body: "test", base64Encoded: false },
+        method: 'updateResponseBody',
+        params: { requestId: '1', body: 'test', base64Encoded: false },
         timestamp: 1000,
       });
 
@@ -188,15 +181,15 @@ describe("CdpEventPersistenceService", () => {
         expect.objectContaining({
           recordId: 100,
           requestId: 1,
-          body: "test",
+          body: 'test',
           base64Encoded: false,
         }),
       );
     });
 
-    it("should route DOM events correctly", async () => {
+    it('should route DOM events correctly', async () => {
       await service.persistBufferedEvent(100, {
-        method: "DOM.updated",
+        method: 'DOM.updated',
         params: { nodeId: 1 },
         timestamp: 1000,
       });
@@ -204,10 +197,10 @@ describe("CdpEventPersistenceService", () => {
       expect(mockDomService.upsert).toHaveBeenCalled();
     });
 
-    it("should route Runtime events correctly", async () => {
+    it('should route Runtime events correctly', async () => {
       await service.persistBufferedEvent(100, {
-        method: "Runtime.consoleAPICalled",
-        params: { type: "log" },
+        method: 'Runtime.consoleAPICalled',
+        params: { type: 'log' },
         timestamp: 1000,
       });
 

@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import jsCookie from "js-cookie";
-import mime from "mime";
+import jsCookie from 'js-cookie';
+import mime from 'mime';
 
-import { getAbsolutePath, key2UpperCase } from "../common/utils";
-import { readSdkEnv } from "../utils/env";
-import { logger } from "../utils/logger";
+import { getAbsolutePath, key2UpperCase } from '../common/utils';
+import { readSdkEnv } from '../utils/env';
+import { logger } from '../utils/logger';
 
-import { BaseDomain, Option, ProtocolMessage } from "./base";
-import { NetworkRewrite } from "./network-rewrite";
-import { Events } from "./protocol";
+import { BaseDomain, Option, ProtocolMessage } from './base';
+import { NetworkRewrite } from './network-rewrite';
+import { Events } from './protocol';
 
 const getTimestamp = () => Date.now() / 1000;
 
-type XhrBody = Parameters<XMLHttpRequest["send"]>[0];
+type XhrBody = Parameters<XMLHttpRequest['send']>[0];
 
 type CapturedRequest = {
   method: string;
@@ -43,7 +43,7 @@ type NetworkEventParams = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
 // 원본 fetch 함수 저장 (전역)
 let originalFetch: typeof fetch | null = null;
@@ -62,76 +62,58 @@ const getResourceType = (
     const lowerContentType = contentType.toLowerCase();
 
     // Document (HTML)
-    if (lowerContentType.includes("text/html")) return "Document";
+    if (lowerContentType.includes('text/html')) return 'Document';
 
     // Stylesheet (CSS)
-    if (lowerContentType.includes("text/css")) return "Stylesheet";
+    if (lowerContentType.includes('text/css')) return 'Stylesheet';
 
     // Script (JavaScript)
-    if (
-      lowerContentType.includes("javascript") ||
-      lowerContentType.includes("ecmascript")
-    )
-      return "Script";
+    if (lowerContentType.includes('javascript') || lowerContentType.includes('ecmascript'))
+      return 'Script';
 
     // Image
-    if (lowerContentType.includes("image/")) return "Image";
+    if (lowerContentType.includes('image/')) return 'Image';
 
     // Font
-    if (
-      lowerContentType.includes("font/") ||
-      lowerContentType.includes("application/font")
-    )
-      return "Font";
+    if (lowerContentType.includes('font/') || lowerContentType.includes('application/font'))
+      return 'Font';
 
     // Media (Audio/Video)
-    if (
-      lowerContentType.includes("video/") ||
-      lowerContentType.includes("audio/")
-    )
-      return "Media";
+    if (lowerContentType.includes('video/') || lowerContentType.includes('audio/')) return 'Media';
 
     // JSON/API 요청 - XHR/Fetch로 분류
     if (
-      lowerContentType.includes("application/json") ||
-      lowerContentType.includes("application/xml")
+      lowerContentType.includes('application/json') ||
+      lowerContentType.includes('application/xml')
     ) {
-      return isXHR ? "XHR" : "Fetch";
+      return isXHR ? 'XHR' : 'Fetch';
     }
   }
 
   // URL 확장자 기반 판단 (fallback)
-  const urlPath = url.split("?")[0].toLowerCase();
+  const urlPath = url.split('?')[0].toLowerCase();
 
   // 확장자로 판단
-  if (urlPath.endsWith(".html") || urlPath.endsWith(".htm")) return "Document";
-  if (urlPath.endsWith(".css")) return "Stylesheet";
-  if (
-    urlPath.endsWith(".js") ||
-    urlPath.endsWith(".mjs") ||
-    urlPath.endsWith(".ts")
-  )
-    return "Script";
-  if (urlPath.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/)) return "Image";
-  if (urlPath.match(/\.(woff|woff2|ttf|eot|otf)$/)) return "Font";
-  if (urlPath.match(/\.(mp4|webm|mp3|wav|ogg)$/)) return "Media";
+  if (urlPath.endsWith('.html') || urlPath.endsWith('.htm')) return 'Document';
+  if (urlPath.endsWith('.css')) return 'Stylesheet';
+  if (urlPath.endsWith('.js') || urlPath.endsWith('.mjs') || urlPath.endsWith('.ts'))
+    return 'Script';
+  if (urlPath.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/)) return 'Image';
+  if (urlPath.match(/\.(woff|woff2|ttf|eot|otf)$/)) return 'Font';
+  if (urlPath.match(/\.(mp4|webm|mp3|wav|ogg)$/)) return 'Media';
 
   // API 패턴 확인
-  if (
-    urlPath.includes("/api/") ||
-    urlPath.includes("/graphql") ||
-    urlPath.includes("/rest/")
-  ) {
-    return isXHR ? "XHR" : "Fetch";
+  if (urlPath.includes('/api/') || urlPath.includes('/graphql') || urlPath.includes('/rest/')) {
+    return isXHR ? 'XHR' : 'Fetch';
   }
 
   // 루트 경로는 Document로 간주
-  if (urlPath === "/" || urlPath === "") {
-    return "Document";
+  if (urlPath === '/' || urlPath === '') {
+    return 'Document';
   }
 
   // 기본값: 확장자가 없으면 API 요청으로 간주
-  return isXHR ? "XHR" : "Fetch";
+  return isXHR ? 'XHR' : 'Fetch';
 };
 
 // 전역 responseData 저장소
@@ -155,10 +137,10 @@ export class Network extends BaseDomain {
   public static formatResponseHeader(header: string): Record<string, string> {
     const headers = new Map();
     header
-      .split("\n")
+      .split('\n')
       .filter((val) => val)
       .forEach((item) => {
-        const [key, val] = item.split(":");
+        const [key, val] = item.split(':');
         headers.set(key2UpperCase(key), val);
       });
     return Object.fromEntries(headers);
@@ -170,7 +152,7 @@ export class Network extends BaseDomain {
    */
   public static getDefaultHeaders(): Record<string, string> {
     const headers = {
-      "User-Agent": navigator.userAgent,
+      'User-Agent': navigator.userAgent,
       ...(document.cookie && { Cookie: document.cookie }),
     };
 
@@ -250,10 +232,7 @@ export class Network extends BaseDomain {
 
   public handleResponseData = (id: number, data: unknown): void => {
     this.responseData.set(id, data);
-    if (
-      this.enabled &&
-      (this.recordMode || (this.room && this.room.startsWith("Buffer-")))
-    ) {
+    if (this.enabled && (this.recordMode || (this.room && this.room.startsWith('Buffer-')))) {
       globalResponseData.set(id, data);
       this.sendResponseData(id, this.getResponseBody({ requestId: id }));
     }
@@ -277,7 +256,7 @@ export class Network extends BaseDomain {
     }
 
     // 버퍼 모드일 때 캐시된 응답 데이터도 버퍼에 추가
-    const isBufferMode = this.room && this.room.startsWith("Buffer-");
+    const isBufferMode = this.room && this.room.startsWith('Buffer-');
     if (isBufferMode) {
       this.responseData.forEach((_, id) => {
         this.sendResponseData(id, this.getResponseBody({ requestId: id }));
@@ -300,7 +279,7 @@ export class Network extends BaseDomain {
       return;
     }
 
-    if (!this.recordMode || !this.room || this.room.startsWith("Buffer-")) {
+    if (!this.recordMode || !this.room || this.room.startsWith('Buffer-')) {
       return;
     }
 
@@ -323,19 +302,19 @@ export class Network extends BaseDomain {
     body: string;
     base64Encoded: boolean;
   } {
-    let body = "";
+    let body = '';
     let base64Encoded = false;
     const response = globalResponseData.get(requestId);
 
-    if (typeof response === "string") {
+    if (typeof response === 'string') {
       body = response;
     } else if (isRecord(response)) {
       // XHR/Fetch 응답 처리 (responseBody 필드)
-      if (typeof response.responseBody === "string") {
+      if (typeof response.responseBody === 'string') {
         body = response.responseBody;
       }
       // Image 응답 처리 (data 필드)
-      else if (typeof response.data === "string") {
+      else if (typeof response.data === 'string') {
         body = response.data;
         base64Encoded = true;
       }
@@ -397,17 +376,15 @@ export class Network extends BaseDomain {
 
           // Query String 변조
           if (rewriteRule.queryString !== undefined) {
-            const baseUrl = absoluteUrl.split("?")[0];
+            const baseUrl = absoluteUrl.split('?')[0];
             modifiedUrl = baseUrl + rewriteRule.queryString;
-            logger.rewrite.debug(
-              `[XHR Request] Query String 변조: ${rewriteRule.queryString}`,
-            );
+            logger.rewrite.debug(`[XHR Request] Query String 변조: ${rewriteRule.queryString}`);
           }
 
           // Request Body 변조
           if (rewriteRule.requestBody !== undefined) {
             modifiedData =
-              typeof rewriteRule.requestBody === "string"
+              typeof rewriteRule.requestBody === 'string'
                 ? rewriteRule.requestBody
                 : JSON.stringify(rewriteRule.requestBody);
             logger.rewrite.debug(`[XHR Request] Body 변조: ${modifiedData}`);
@@ -415,17 +392,11 @@ export class Network extends BaseDomain {
 
           // 응답도 변조하는 경우
           if (rewriteRule.response !== undefined) {
-            logger.rewrite.info(
-              `[XHR] ${method} ${absoluteUrl} → ${rewriteRule.status}`,
-            );
-            logger.rewrite.debug("Response body:", rewriteRule.response);
+            logger.rewrite.info(`[XHR] ${method} ${absoluteUrl} → ${rewriteRule.status}`);
+            logger.rewrite.debug('Response body:', rewriteRule.response);
 
             // NetworkRewrite 모듈의 XHR 응답 생성 메서드 사용
-            NetworkRewrite.createXHRRewriteResponse(
-              this,
-              rewriteRule,
-              absoluteUrl,
-            );
+            NetworkRewrite.createXHRRewriteResponse(this, rewriteRule, absoluteUrl);
 
             // 데이터 저장 (디버깅용)
             setTimeout(() => {
@@ -435,10 +406,10 @@ export class Network extends BaseDomain {
                   url: absoluteUrl,
                   method: method.toUpperCase(),
                   status: rewriteRule.status,
-                  statusText: "OK",
+                  statusText: 'OK',
                   responseBody: JSON.stringify(rewriteRule.response),
                   timestamp: Date.now(),
-                  type: "XHR",
+                  type: 'XHR',
                 });
               }
             }, 10);
@@ -447,10 +418,7 @@ export class Network extends BaseDomain {
           }
 
           // 요청만 변조하고 실제 요청은 보내기
-          if (
-            rewriteRule.queryString !== undefined ||
-            rewriteRule.requestBody !== undefined
-          ) {
+          if (rewriteRule.queryString !== undefined || rewriteRule.requestBody !== undefined) {
             // URL이 변경되었으면 open을 다시 호출
             if (modifiedUrl !== absoluteUrl) {
               xhrOpen.call(this, method, modifiedUrl, true);
@@ -468,7 +436,7 @@ export class Network extends BaseDomain {
             if (!request) return;
             const { requestId } = request;
             const reqMethod = request.method;
-            if (reqMethod.toLowerCase() === "post") {
+            if (reqMethod.toLowerCase() === 'post') {
               request.postData = modifiedData;
               request.hasPostData = !!modifiedData;
             }
@@ -481,10 +449,10 @@ export class Network extends BaseDomain {
                   url: modifiedUrl,
                   method: reqMethod.toUpperCase(),
                   headers: request.headers,
-                  mixedContentType: "none",
-                  initialPriority: "High",
-                  referrerPolicy: "no-referrer-when-downgrade",
-                  ...(reqMethod.toLowerCase() === "post" && {
+                  mixedContentType: 'none',
+                  initialPriority: 'High',
+                  referrerPolicy: 'no-referrer-when-downgrade',
+                  ...(reqMethod.toLowerCase() === 'post' && {
                     postData: modifiedData,
                     hasPostData: !!modifiedData,
                   }),
@@ -508,7 +476,7 @@ export class Network extends BaseDomain {
       if (!request) return;
       const { requestId, url } = request;
       const reqMethod = request.method;
-      if (reqMethod.toLowerCase() === "post") {
+      if (reqMethod.toLowerCase() === 'post') {
         request.postData = data;
         request.hasPostData = !!data;
       }
@@ -529,24 +497,18 @@ export class Network extends BaseDomain {
       if (!xhr.$$listenersAdded) {
         xhr.$$listenersAdded = true;
 
-        this.addEventListener("readystatechange", () => {
+        this.addEventListener('readystatechange', () => {
           if (this.readyState === 4) {
             const headers = this.getAllResponseHeaders();
             const responseHeaders = Network.formatResponseHeader(headers);
 
             // Content-Type이 없으면 기본값 설정
-            if (
-              !responseHeaders["Content-Type"] &&
-              !responseHeaders["content-type"]
-            ) {
+            if (!responseHeaders['Content-Type'] && !responseHeaders['content-type']) {
               // JSON 요청인 경우 기본값으로 application/json 설정
               const isJsonUrl =
-                url.includes("json") ||
-                url.includes("/api/") ||
-                url.includes("jsonplaceholder");
+                url.includes('json') || url.includes('/api/') || url.includes('jsonplaceholder');
               if (isJsonUrl) {
-                responseHeaders["Content-Type"] =
-                  "application/json; charset=utf-8";
+                responseHeaders['Content-Type'] = 'application/json; charset=utf-8';
               }
             }
 
@@ -555,19 +517,17 @@ export class Network extends BaseDomain {
               url: getAbsolutePath(url),
               headers: responseHeaders,
               blockedCookies: [],
-              headersText: headers || "Content-Type: application/json\r\n",
-              type: "XHR",
+              headersText: headers || 'Content-Type: application/json\r\n',
+              type: 'XHR',
               status: this.status,
               statusText: this.statusText,
-              encodedDataLength: Number(
-                this.getResponseHeader("Content-Length"),
-              ),
+              encodedDataLength: Number(this.getResponseHeader('Content-Length')),
             });
           }
         });
 
-        this.addEventListener("load", () => {
-          if (this.responseType === "" || this.responseType === "text") {
+        this.addEventListener('load', () => {
+          if (this.responseType === '' || this.responseType === 'text') {
             const request = xhr.$$request;
             if (!request) return;
 
@@ -588,9 +548,8 @@ export class Network extends BaseDomain {
               const responseHeaders = Network.formatResponseHeader(headers);
 
               // Content-Type이 없으면 application/json으로 설정
-              if (!responseHeaders["Content-Type"]) {
-                responseHeaders["Content-Type"] =
-                  "application/json; charset=utf-8";
+              if (!responseHeaders['Content-Type']) {
+                responseHeaders['Content-Type'] = 'application/json; charset=utf-8';
               }
 
               // 다시 sendNetworkEvent 호출하여 mimeType 업데이트
@@ -599,8 +558,8 @@ export class Network extends BaseDomain {
                 url: request.url,
                 headers: responseHeaders,
                 blockedCookies: [],
-                headersText: headers || "Content-Type: application/json\r\n",
-                type: "XHR",
+                headersText: headers || 'Content-Type: application/json\r\n',
+                type: 'XHR',
                 status: this.status,
                 statusText: this.statusText,
                 encodedDataLength: this.responseText.length,
@@ -624,7 +583,7 @@ export class Network extends BaseDomain {
               responseBody: processedBody,
               requestBody: request.postData,
               timestamp: Date.now(),
-              type: "XHR",
+              type: 'XHR',
             });
           }
         });
@@ -666,21 +625,21 @@ export class Network extends BaseDomain {
       let finalInitConfig = initConfig; // 최종적으로 사용할 config
 
       // When request is a string, it is the requested url
-      if (typeof request === "string" || request instanceof URL) {
+      if (typeof request === 'string' || request instanceof URL) {
         url = request;
-        method = (initConfig.method || "GET").toUpperCase();
+        method = (initConfig.method || 'GET').toUpperCase();
         data = initConfig.body;
       } else {
         // Otherwise it is a Request object
         ({ url, method } = request);
-        method = (method || "GET").toUpperCase();
+        method = (method || 'GET').toUpperCase();
       }
 
       url = getAbsolutePath(url);
 
       // Rewrite 규칙 체크
       if (NetworkRewrite.isEnabled()) {
-        const normalizedMethod = (method || "GET").toUpperCase();
+        const normalizedMethod = (method || 'GET').toUpperCase();
         const rewriteRule = NetworkRewrite.getRule(normalizedMethod, url);
 
         if (rewriteRule) {
@@ -690,17 +649,15 @@ export class Network extends BaseDomain {
 
           // Query String 변조
           if (rewriteRule.queryString !== undefined) {
-            const baseUrl = url.split("?")[0];
+            const baseUrl = url.split('?')[0];
             modifiedUrl = baseUrl + rewriteRule.queryString;
-            logger.rewrite.debug(
-              `[Fetch Request] Query String 변조: ${rewriteRule.queryString}`,
-            );
+            logger.rewrite.debug(`[Fetch Request] Query String 변조: ${rewriteRule.queryString}`);
           }
 
           // Request Body 변조
           if (rewriteRule.requestBody !== undefined) {
             modifiedData =
-              typeof rewriteRule.requestBody === "string"
+              typeof rewriteRule.requestBody === 'string'
                 ? rewriteRule.requestBody
                 : JSON.stringify(rewriteRule.requestBody);
             // initConfig 업데이트
@@ -720,15 +677,12 @@ export class Network extends BaseDomain {
           }
 
           // 요청만 변조하고 실제 요청 전송
-          if (
-            rewriteRule.queryString !== undefined ||
-            rewriteRule.requestBody !== undefined
-          ) {
+          if (rewriteRule.queryString !== undefined || rewriteRule.requestBody !== undefined) {
             url = modifiedUrl;
             data = modifiedData;
 
             // Request 객체인 경우 새로 생성
-            if (typeof request !== "string" && !(request instanceof URL)) {
+            if (typeof request !== 'string' && !(request instanceof URL)) {
               request = new Request(modifiedUrl, {
                 ...request,
                 body: modifiedData,
@@ -742,14 +696,14 @@ export class Network extends BaseDomain {
       const requestId = instance.getRequestId();
       const sendRequest = new Map<string, unknown>();
 
-      sendRequest.set("url", url);
-      sendRequest.set("method", method);
-      sendRequest.set("requestId", requestId);
-      sendRequest.set("headers", Network.getDefaultHeaders());
+      sendRequest.set('url', url);
+      sendRequest.set('method', method);
+      sendRequest.set('requestId', requestId);
+      sendRequest.set('headers', Network.getDefaultHeaders());
 
-      if (method.toLowerCase() === "post") {
-        sendRequest.set("postData", data);
-        sendRequest.set("hasPostData", !!data);
+      if (method.toLowerCase() === 'post') {
+        sendRequest.set('postData', data);
+        sendRequest.set('hasPostData', !!data);
       }
 
       instance.socketSend({
@@ -768,9 +722,7 @@ export class Network extends BaseDomain {
 
       // 전역 원본 fetch 사용
       if (!originalFetch) {
-        return Promise.reject(
-          new Error("[Network] Original fetch is not initialized"),
-        );
+        return Promise.reject(new Error('[Network] Original fetch is not initialized'));
       }
 
       return originalFetch(request, finalInitConfig)
@@ -780,7 +732,7 @@ export class Network extends BaseDomain {
 
           const { headers, status, statusText } = response;
           const responseHeaders = new Map();
-          let headersText = "";
+          let headersText = '';
           headers.forEach((val, key) => {
             key = key2UpperCase(key);
             responseHeaders.set(key, val);
@@ -793,30 +745,30 @@ export class Network extends BaseDomain {
             status,
             statusText,
             headersText,
-            type: "Fetch",
+            type: 'Fetch',
             blockedCookies: [],
             headers: Object.fromEntries(responseHeaders),
-            encodedDataLength: Number(headers.get("Content-Length")),
+            encodedDataLength: Number(headers.get('Content-Length')),
           });
 
-          const contentType = headers.get("Content-Type");
+          const contentType = headers.get('Content-Type');
           if (
             [
-              "application/json",
-              "application/javascript",
-              "text/plain",
-              "text/html",
-              "text/css",
+              'application/json',
+              'application/javascript',
+              'text/plain',
+              'text/html',
+              'text/css',
             ].some((type) => contentType?.includes(type))
           ) {
             return response.clone().text();
           }
-          return "";
+          return '';
         })
         .then((responseBody) => {
           // JSON을 minified 형태로 저장 (DevTools pretty print 지원)
           let processedBody = responseBody;
-          if (typeof responseBody === "string") {
+          if (typeof responseBody === 'string') {
             try {
               const parsed = JSON.parse(responseBody);
               processedBody = JSON.stringify(parsed); // minified
@@ -833,22 +785,22 @@ export class Network extends BaseDomain {
             statusText: oriResponse.statusText,
             responseBody: processedBody,
             requestBody:
-              method.toLowerCase() === "post" ||
-              method.toLowerCase() === "put" ||
-              method.toLowerCase() === "patch"
+              method.toLowerCase() === 'post' ||
+              method.toLowerCase() === 'put' ||
+              method.toLowerCase() === 'patch'
                 ? data
                 : undefined,
             timestamp: Date.now(),
-            type: "Fetch",
+            type: 'Fetch',
           });
           // Returns the raw response to the request
           return oriResponse;
         })
         .catch((error) => {
           const status = error.status || 500; // error 객체에서 상태 코드 추출 (없으면 기본값 500)
-          const statusText = error.statusText || "Fetch Error"; // error 객체에서 상태 텍스트 추출 (없으면 기본값)
-          const message = error.message || "An unknown error occurred"; // 에러 메시지
-          const stack = error.stack || ""; // 에러 스택 트레이스 (옵션)
+          const statusText = error.statusText || 'Fetch Error'; // error 객체에서 상태 텍스트 추출 (없으면 기본값)
+          const message = error.message || 'An unknown error occurred'; // 에러 메시지
+          const stack = error.stack || ''; // 에러 스택 트레이스 (옵션)
           const errorDetails = `Message: ${message}\nStack: ${stack}`;
 
           instance.sendNetworkEvent({
@@ -857,9 +809,9 @@ export class Network extends BaseDomain {
             status,
             statusText,
             headersText: `Content-Type: text/plain\r\n${errorDetails}`, // 에러 메시지 포함
-            type: "Fetch",
+            type: 'Fetch',
             blockedCookies: [],
-            headers: { "Content-Type": "text/plain" }, // 기본 헤더
+            headers: { 'Content-Type': 'text/plain' }, // 기본 헤더
             encodedDataLength: 0, // 실패 시 데이터 길이는 0
           });
 
@@ -867,7 +819,7 @@ export class Network extends BaseDomain {
             url,
             requestId,
             blockedCookies: [],
-            type: "Fetch",
+            type: 'Fetch',
           });
           throw error;
         });
@@ -875,44 +827,33 @@ export class Network extends BaseDomain {
   }
 
   private sendNetworkEvent(params: NetworkEventParams): void {
-    const {
-      requestId,
-      headers,
-      headersText,
-      type,
-      url,
-      status,
-      statusText,
-      encodedDataLength,
-    } = params;
+    const { requestId, headers, headersText, type, url, status, statusText, encodedDataLength } =
+      params;
 
     // Content-Type 헤더 추출
-    let contentType =
-      headers?.["Content-Type"] ||
-      headers?.["content-type"] ||
-      mime.getType(url);
+    let contentType = headers?.['Content-Type'] || headers?.['content-type'] || mime.getType(url);
 
     // Content-Type이 없고 JSON API 패턴인 경우 기본값 설정
     if (!contentType) {
       // URL 패턴으로 JSON API 판단
       const isJsonApi =
-        url.includes("json") ||
-        url.includes("/api/") ||
-        url.includes("/graphql") ||
-        url.includes("jsonplaceholder") ||
+        url.includes('json') ||
+        url.includes('/api/') ||
+        url.includes('/graphql') ||
+        url.includes('jsonplaceholder') ||
         url.match(/\/\d+(\/|\?|$)/); // /1, /1?dd=1 같은 패턴
 
-      if (isJsonApi && (type === "XHR" || type === "Fetch")) {
-        contentType = "application/json";
+      if (isJsonApi && (type === 'XHR' || type === 'Fetch')) {
+        contentType = 'application/json';
         // headers 객체에도 추가
-        if (headers && !headers["Content-Type"]) {
-          headers["Content-Type"] = "application/json; charset=utf-8";
+        if (headers && !headers['Content-Type']) {
+          headers['Content-Type'] = 'application/json; charset=utf-8';
         }
       }
     }
 
     // 리소스 타입 결정 (type이 XHR인지 확인)
-    const resourceType = getResourceType(url, contentType, type === "XHR");
+    const resourceType = getResourceType(url, contentType, type === 'XHR');
 
     this.socketSend({
       method: Events.responseReceivedExtraInfo,
@@ -920,14 +861,14 @@ export class Network extends BaseDomain {
         requestId,
         headers: headers || {},
         blockedCookies: [],
-        headersText: headersText || "",
+        headersText: headersText || '',
       },
     });
 
     // mimeType에서 charset 제거 (DevTools pretty print 호환성)
-    let cleanMimeType = contentType || "text/plain";
-    if (cleanMimeType && cleanMimeType.includes("application/json")) {
-      cleanMimeType = "application/json"; // charset 정보 제거
+    let cleanMimeType = contentType || 'text/plain';
+    if (cleanMimeType && cleanMimeType.includes('application/json')) {
+      cleanMimeType = 'application/json'; // charset 정보 제거
     }
 
     const responseReceivedData = {
@@ -969,10 +910,7 @@ export class Network extends BaseDomain {
         const requestId = this.getRequestId();
 
         try {
-          const host = readSdkEnv(
-            "VITE_EXTERNAL_HOST",
-            "http://localhost:3001",
-          );
+          const host = readSdkEnv('VITE_EXTERNAL_HOST', 'http://localhost:3001');
           if (!originalFetch) return;
           const { base64 } = await originalFetch(
             `${host}/image/image_base64?url=${encodeURIComponent(url)}`,
@@ -992,8 +930,8 @@ export class Network extends BaseDomain {
             documentURL: location.href,
             timestamp: getTimestamp(),
             wallTime: Date.now(),
-            type: "Image",
-            request: { method: "GET", url },
+            type: 'Image',
+            request: { method: 'GET', url },
           },
         });
 
@@ -1001,9 +939,9 @@ export class Network extends BaseDomain {
           url,
           requestId,
           status: 200,
-          statusText: "",
-          headersText: "",
-          type: "Image",
+          statusText: '',
+          headersText: '',
+          type: 'Image',
           blockedCookies: [],
           encodedDataLength: 0,
         });
@@ -1013,7 +951,7 @@ export class Network extends BaseDomain {
     const getImageUrls = () => {
       const urls: string[] = [];
       Object.values(document.images).forEach((image) => {
-        const url = image.getAttribute("src");
+        const url = image.getAttribute('src');
         if (!imgUrls.has(url) && url) {
           imgUrls.add(url);
           urls.push(url);
@@ -1052,20 +990,20 @@ export class Network extends BaseDomain {
     }
 
     // Buffer 모드인지 확인 (room이 Buffer-로 시작하는지)
-    const isBufferMode = this.room.startsWith("Buffer-");
+    const isBufferMode = this.room.startsWith('Buffer-');
 
     if (isBufferMode) {
       // Buffer 모드일 때는 bufferEvent로 전송
       const payload = JSON.stringify({
-        event: "bufferEvent",
+        event: 'bufferEvent',
         data: {
           room: this.room,
           recordId: 0, // Buffer 모드에서는 recordId가 0
-          deviceId: this.deviceId || "unknown-device",
+          deviceId: this.deviceId || 'unknown-device',
           url: this.url || window.location.href,
           userAgent: navigator.userAgent,
           event: {
-            method: "updateResponseBody",
+            method: 'updateResponseBody',
             params: {
               requestId,
               ...(isRecord(data) ? data : {}),
@@ -1086,7 +1024,7 @@ export class Network extends BaseDomain {
     } else {
       // 일반 모드일 때는 기존 방식 사용
       const payload = JSON.stringify({
-        event: "updateResponseBody",
+        event: 'updateResponseBody',
         data: { requestId, room: this.room, ...(isRecord(data) ? data : {}) },
       });
 
@@ -1101,7 +1039,7 @@ export class Network extends BaseDomain {
     }
   };
 
-  public namespace = "Network";
+  public namespace = 'Network';
   public originFetch: typeof fetch;
   public responseData = globalResponseData; // 전역 데이터 참조
 

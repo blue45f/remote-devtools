@@ -1,7 +1,7 @@
-import { ChromeDomain } from "../domain";
-import { CommonInfo } from "../types/common";
-import { logger } from "../utils/logger";
-import { createUserDataText, UserData } from "../utils/userDataText";
+import { ChromeDomain } from '../domain';
+import { CommonInfo } from '../types/common';
+import { logger } from '../utils/logger';
+import { createUserDataText, UserData } from '../utils/userDataText';
 
 type NavigateEventLike = {
   destination?: {
@@ -10,10 +10,7 @@ type NavigateEventLike = {
 };
 
 type NavigationWithNavigateEvent = Navigation & {
-  addEventListener: (
-    type: "navigate",
-    listener: (event: NavigateEventLike) => void,
-  ) => void;
+  addEventListener: (type: 'navigate', listener: (event: NavigateEventLike) => void) => void;
 };
 
 /**
@@ -31,7 +28,7 @@ export class RemoteDebugger {
   private roomTimestamp: number | null = null; // 녹화 세션 생성 시간 저장
   private domain: ChromeDomain;
   private isRecordMode: boolean = false;
-  private deviceId: string = "unknown-device";
+  private deviceId: string = 'unknown-device';
   private bufferRoomName: string | null = null;
   private isBuffering: boolean = false; // 현재 버퍼링 중인지 여부
   private isSaving: boolean = false; // 현재 저장 중인지 여부 (중복 방지)
@@ -114,27 +111,25 @@ export class RemoteDebugger {
    *
    * @returns 'deepLinkAction' | 'deepLink' | 'href'
    */
-  private getUrlLogCategory(
-    url: string,
-  ): "deepLinkAction" | "deepLink" | "hrefChange" {
+  private getUrlLogCategory(url: string): 'deepLinkAction' | 'deepLink' | 'hrefChange' {
     const lowerUrl = url.toLowerCase();
 
     // app-action:// 또는 커스텀 action 딥링크
-    if (lowerUrl.includes("-action://")) {
-      return "deepLinkAction";
+    if (lowerUrl.includes('-action://')) {
+      return 'deepLinkAction';
     }
 
     // 커스텀 앱 딥링크 (http, https가 아닌 경우)
     if (
-      !lowerUrl.startsWith("http://") &&
-      !lowerUrl.startsWith("https://") &&
-      lowerUrl.includes("://")
+      !lowerUrl.startsWith('http://') &&
+      !lowerUrl.startsWith('https://') &&
+      lowerUrl.includes('://')
     ) {
-      return "deepLink";
+      return 'deepLink';
     }
 
     // 일반 URL
-    return "hrefChange";
+    return 'hrefChange';
   }
 
   /**
@@ -181,7 +176,7 @@ export class RemoteDebugger {
     this.setupHistoryAPIHooks();
 
     // 5. popstate/hashchange 이벤트 감지 (뒤로가기/앞으로가기, 해시 변경)
-    window.addEventListener("popstate", () => {
+    window.addEventListener('popstate', () => {
       const currentHref = window.location.href;
       if (currentHref !== this.lastLocationHref) {
         logger.hrefChange.info(`[popstate] ${currentHref}`);
@@ -189,7 +184,7 @@ export class RemoteDebugger {
       }
     });
 
-    window.addEventListener("hashchange", (event) => {
+    window.addEventListener('hashchange', (event) => {
       logger.hrefChange.info(`[hashchange] ${event.newURL}`);
       this.lastLocationHref = window.location.href;
     });
@@ -203,14 +198,14 @@ export class RemoteDebugger {
    */
   private setupNavigationAPI(): boolean {
     // Navigation API 지원 확인
-    if (typeof window.navigation === "undefined") {
+    if (typeof window.navigation === 'undefined') {
       return false;
     }
 
     const navigation = window.navigation as NavigationWithNavigateEvent;
 
     try {
-      navigation.addEventListener("navigate", (event) => {
+      navigation.addEventListener('navigate', (event) => {
         const destinationUrl = event.destination?.url;
 
         if (!destinationUrl) {
@@ -257,14 +252,10 @@ export class RemoteDebugger {
 
       // 원본 메서드 저장 (bind 없이 저장, 호출 시 apply 사용)
       this.originalLocationReplace = (url: string | URL) => {
-        return Function.prototype.apply.call(originalReplace, window.location, [
-          url,
-        ]);
+        return Function.prototype.apply.call(originalReplace, window.location, [url]);
       };
       this.originalLocationAssign = (url: string | URL) => {
-        return Function.prototype.apply.call(originalAssign, window.location, [
-          url,
-        ]);
+        return Function.prototype.apply.call(originalAssign, window.location, [url]);
       };
 
       // 바인딩된 메서드 참조
@@ -273,7 +264,7 @@ export class RemoteDebugger {
 
       // Location.prototype.replace 후킹
       LocationPrototype.replace = function (url: string | URL) {
-        const targetUrl = typeof url === "string" ? url : url.toString();
+        const targetUrl = typeof url === 'string' ? url : url.toString();
         boundLogUrl(targetUrl);
         boundHandleLocationChange(targetUrl);
         return Function.prototype.apply.call(originalReplace, this, [url]);
@@ -281,13 +272,13 @@ export class RemoteDebugger {
 
       // Location.prototype.assign 후킹
       LocationPrototype.assign = function (url: string | URL) {
-        const targetUrl = typeof url === "string" ? url : url.toString();
+        const targetUrl = typeof url === 'string' ? url : url.toString();
         boundLogUrl(targetUrl);
         boundHandleLocationChange(targetUrl);
         return Function.prototype.apply.call(originalAssign, this, [url]);
       };
 
-      logger.hrefChange.debug("Location.prototype.assign/replace 후킹 성공");
+      logger.hrefChange.debug('Location.prototype.assign/replace 후킹 성공');
     } catch (error) {
       logger.hrefChange.warn(
         `Location.prototype 후킹 실패: ${error instanceof Error ? error.message : String(error)}`,
@@ -300,19 +291,19 @@ export class RemoteDebugger {
    */
   private setupLinkClickInterceptor(): void {
     document.addEventListener(
-      "click",
+      'click',
       (event) => {
         // 클릭된 요소 또는 부모 중 <a> 태그 찾기
         const target = event.target as HTMLElement;
-        const anchor = target.closest("a");
+        const anchor = target.closest('a');
 
         if (!anchor) return;
 
-        const href = anchor.getAttribute("href");
+        const href = anchor.getAttribute('href');
         if (!href) return;
 
         // javascript:, #만 있는 경우, 빈 문자열 제외
-        if (href.startsWith("javascript:") || href === "#" || href === "") {
+        if (href.startsWith('javascript:') || href === '#' || href === '') {
           return;
         }
 
@@ -336,33 +327,25 @@ export class RemoteDebugger {
         this.lastLocationHref = new URL(url, window.location.href).href;
       };
 
-      history.pushState = function (
-        data: unknown,
-        unused: string,
-        url?: string | URL | null,
-      ) {
+      history.pushState = function (data: unknown, unused: string, url?: string | URL | null) {
         if (url) {
-          const targetUrl = typeof url === "string" ? url : url.toString();
+          const targetUrl = typeof url === 'string' ? url : url.toString();
           boundLogUrl(targetUrl);
           updateLastHref(targetUrl);
         }
         return originalPushState(data, unused, url);
       };
 
-      history.replaceState = function (
-        data: unknown,
-        unused: string,
-        url?: string | URL | null,
-      ) {
+      history.replaceState = function (data: unknown, unused: string, url?: string | URL | null) {
         if (url) {
-          const targetUrl = typeof url === "string" ? url : url.toString();
+          const targetUrl = typeof url === 'string' ? url : url.toString();
           boundLogUrl(targetUrl);
           updateLastHref(targetUrl);
         }
         return originalReplaceState(data, unused, url);
       };
 
-      logger.hrefChange.debug("History API 후킹 성공");
+      logger.hrefChange.debug('History API 후킹 성공');
     } catch (error) {
       logger.hrefChange.warn(
         `History API 후킹 실패: ${error instanceof Error ? error.message : String(error)}`,
@@ -395,7 +378,7 @@ export class RemoteDebugger {
     assignHooked: boolean;
     historyHooked: boolean;
   } {
-    const navigationAPISupported = typeof window.navigation !== "undefined";
+    const navigationAPISupported = typeof window.navigation !== 'undefined';
 
     // Location.prototype 후킹 확인
     const replaceHooked =
@@ -406,7 +389,7 @@ export class RemoteDebugger {
       Location.prototype.assign !== this.originalLocationAssign;
 
     // History API 후킹 확인 (원본 함수와 다른지)
-    const historyHooked = history.pushState.toString().includes("targetUrl");
+    const historyHooked = history.pushState.toString().includes('targetUrl');
 
     return {
       navigationAPISupported,
@@ -447,11 +430,7 @@ export class RemoteDebugger {
 
       const now = Date.now();
 
-      if (
-        !force &&
-        this.bufferSaved &&
-        this.lastBufferActivityAt <= this.lastBufferSaveAt
-      ) {
+      if (!force && this.bufferSaved && this.lastBufferActivityAt <= this.lastBufferSaveAt) {
         return;
       }
 
@@ -466,7 +445,7 @@ export class RemoteDebugger {
       }
 
       // 이미 예약된 저장이 있으면 취소하고 새로 예약 (마지막 이벤트만 처리)
-      const shouldForceImmediate = force || trigger === "pagehide";
+      const shouldForceImmediate = force || trigger === 'pagehide';
 
       if (shouldForceImmediate) {
         this.saveBufferToStorage(trigger, true, true);
@@ -487,19 +466,19 @@ export class RemoteDebugger {
     };
 
     // 페이지 숨김/표시 (다른 탭으로 이동, 앱 백그라운드)
-    document.addEventListener("visibilitychange", () => {
+    document.addEventListener('visibilitychange', () => {
       // Visibility changed
 
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === 'hidden') {
         // Page hidden
-        handlePageUnload("visibilitychange");
-      } else if (document.visibilityState === "visible") {
+        handlePageUnload('visibilitychange');
+      } else if (document.visibilityState === 'visible') {
         lastUnloadTime = 0;
       }
     });
 
     // 페이지 언로드 (닫기, 새로고침, 다른 페이지로 이동) - 웹뷰 종료 시 가장 확실한 이벤트
-    window.addEventListener("beforeunload", (_event) => {
+    window.addEventListener('beforeunload', (_event) => {
       // 기존 타이머가 있으면 취소 (중복 방지)
       if (unloadTimer) {
         clearTimeout(unloadTimer);
@@ -509,23 +488,23 @@ export class RemoteDebugger {
       // beforeunload는 즉시 저장만 수행 (Buffer → Record 전환 시에는 저장하지 않음)
       if (this.isBuffering && !this.roomOrTicketCreated) {
         // Execute immediate save
-        this.saveBufferToStorage("beforeunload_immediate", true, true);
+        this.saveBufferToStorage('beforeunload_immediate', true, true);
       }
     });
 
     // 모바일 페이지 숨김
-    window.addEventListener("pagehide", () => {
-      handlePageUnload("pagehide");
+    window.addEventListener('pagehide', () => {
+      handlePageUnload('pagehide');
     });
 
     // 추가 웹뷰 종료 감지
-    window.addEventListener("unload", () => {
+    window.addEventListener('unload', () => {
       // Page unload
-      handlePageUnload("unload", true);
+      handlePageUnload('unload', true);
     });
 
     // 모바일 앱 백그라운드에서 복귀 시 플래그 리셋
-    window.addEventListener("pageshow", (_event) => {
+    window.addEventListener('pageshow', (_event) => {
       if (_event.persisted) {
         // Return from background - reset flags
         lastUnloadTime = 0;
@@ -536,11 +515,7 @@ export class RemoteDebugger {
   /**
    * 현재 버퍼 데이터를 서버에 저장 요청
    */
-  private saveBufferToStorage(
-    trigger: string,
-    preferBeacon = false,
-    force = false,
-  ): void {
+  private saveBufferToStorage(trigger: string, preferBeacon = false, force = false): void {
     // 중복 방지
     if (!force && (this.bufferSaved || this.isSaving)) {
       return;
@@ -553,7 +528,7 @@ export class RemoteDebugger {
     const sessionTimestamp = this.roomTimestamp || Date.now();
 
     const payload = {
-      event: "saveBuffer",
+      event: 'saveBuffer',
       data: {
         deviceId: this.deviceId,
         url: window.location.href,
@@ -565,8 +540,7 @@ export class RemoteDebugger {
     };
 
     const serializedPayload = JSON.stringify(payload);
-    const canUseWebSocket =
-      this.socket && this.socket.readyState === WebSocket.OPEN;
+    const canUseWebSocket = this.socket && this.socket.readyState === WebSocket.OPEN;
 
     let deliveredViaWebSocket = false;
 
@@ -589,22 +563,20 @@ export class RemoteDebugger {
         room: this.bufferRoomName || undefined,
       });
 
-      const apiHost =
-        import.meta.env?.VITE_EXTERNAL_HOST || "http://localhost:3001";
+      const apiHost = import.meta.env?.VITE_EXTERNAL_HOST || 'http://localhost:3001';
       const endpoint = `${apiHost}/buffer/save`;
 
       const beaconBody = new Blob([beaconPayload], {
-        type: "application/json",
+        type: 'application/json',
       });
       const beaconSent =
-        typeof navigator.sendBeacon === "function" &&
-        navigator.sendBeacon(endpoint, beaconBody);
+        typeof navigator.sendBeacon === 'function' && navigator.sendBeacon(endpoint, beaconBody);
 
       if (!beaconSent) {
         // keepalive fetch는 일부 웹뷰에서 sendBeacon 미지원 시 대안
         fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: beaconPayload,
           keepalive: true,
         }).catch(() => {
@@ -628,10 +600,8 @@ export class RemoteDebugger {
     this.isRecordMode = recordMode;
 
     // 환경 변수 사용 (recordMode = true는 External, false는 Internal)
-    const externalWs =
-      import.meta.env?.VITE_EXTERNAL_WS || "ws://localhost:3001";
-    const internalWs =
-      import.meta.env?.VITE_INTERNAL_WS || "ws://localhost:3000";
+    const externalWs = import.meta.env?.VITE_EXTERNAL_WS || 'ws://localhost:3001';
+    const internalWs = import.meta.env?.VITE_INTERNAL_WS || 'ws://localhost:3000';
     const finalHost = recordMode ? externalWs : internalWs;
 
     // Connecting to WebSocket
@@ -657,12 +627,12 @@ export class RemoteDebugger {
       };
       const event = data.event;
 
-      if (event === "error") {
-        logger.remote.error(" WebSocket error:", data);
+      if (event === 'error') {
+        logger.remote.error(' WebSocket error:', data);
         return;
       }
 
-      if (event === "roomCreated") {
+      if (event === 'roomCreated') {
         if (!this.socket) return;
 
         this.recordId = data.recordId;
@@ -680,7 +650,7 @@ export class RemoteDebugger {
         return;
       }
 
-      if (event === "ticketCreateSuccess") {
+      if (event === 'ticketCreateSuccess') {
         // 티켓 생성 성공 시 커스텀 딥링크로 토스트 메시지 표시 (네이티브 앱 연동 시)
         // 필요한 경우 앱의 커스텀 스킴으로 변경 가능
         this.handleTicketSuccess();
@@ -689,15 +659,15 @@ export class RemoteDebugger {
         return;
       }
 
-      if (event === "ticketCreateError") {
-        alert("티켓 생성에 실패했습니다");
-      } else if (event === "protocol") {
+      if (event === 'ticketCreateError') {
+        alert('티켓 생성에 실패했습니다');
+      } else if (event === 'protocol') {
         this.handleProtocolMessage(data);
       }
     };
 
     this.socket.onerror = (error) => {
-      logger.remote.error("WebSocket error:", error);
+      logger.remote.error('WebSocket error:', error);
     };
 
     this.socket.onclose = (_event) => {
@@ -761,7 +731,7 @@ export class RemoteDebugger {
     }
 
     const payload = {
-      event: "enableBuffering",
+      event: 'enableBuffering',
       data: {
         deviceId: this.deviceId,
         url: window.location.href,
@@ -797,7 +767,7 @@ export class RemoteDebugger {
     }
 
     // commonInfo에서 deviceId 추출
-    this.deviceId = commonInfo?.device?.deviceId || "unknown-device";
+    this.deviceId = commonInfo?.device?.deviceId || 'unknown-device';
 
     const userData: UserData = {
       commonInfo,
@@ -807,14 +777,14 @@ export class RemoteDebugger {
     };
 
     const payload = {
-      event: "createRoom",
+      event: 'createRoom',
       data: {
         recordMode,
         userData,
       },
     };
 
-    logger.userData.info("\n" + createUserDataText(userData));
+    logger.userData.info('\n' + createUserDataText(userData));
 
     this.domain.updateDeviceId(this.deviceId);
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -884,12 +854,12 @@ export class RemoteDebugger {
    */
   private sendMessageToDevtools(devtoolsId: string, message: unknown): void {
     if (!this.socket || !this.roomName) {
-      logger.remote.error(" WebSocket is not connected or room is not set");
+      logger.remote.error(' WebSocket is not connected or room is not set');
       return;
     }
 
     const payload = {
-      event: "messageToDevtools",
+      event: 'messageToDevtools',
       data: {
         devtoolsId,
         room: this.roomName,
@@ -910,7 +880,7 @@ export class RemoteDebugger {
 
     // 네이티브 앱과 연동 시 커스텀 딥링크로 토스트 메시지 표시 가능
     // 예: window.location.href = 'app-action://showToast?message=티켓이 생성되었습니다'
-    alert("티켓이 생성되었습니다");
+    alert('티켓이 생성되었습니다');
     this.disconnect();
   }
 
@@ -930,7 +900,7 @@ export class RemoteDebugger {
   }): void {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       // Cannot create ticket - WebSocket not connected
-      logger.remote.error(" WebSocket is not connected or room is not set");
+      logger.remote.error(' WebSocket is not connected or room is not set');
       return;
     }
 
@@ -945,14 +915,14 @@ export class RemoteDebugger {
     };
 
     const payload = {
-      event: "createTicket",
+      event: 'createTicket',
       data: {
         userData,
         formData,
       },
     };
 
-    logger.userData.info("\n" + createUserDataText(userData));
+    logger.userData.info('\n' + createUserDataText(userData));
 
     // Creating ticket
     this.socket.send(JSON.stringify(payload));
@@ -969,7 +939,7 @@ export class RemoteDebugger {
     if (this.socket) {
       // 연결 종료 전 마지막 버퍼 저장
       if (this.isBuffering) {
-        this.saveBufferToStorage("disconnect");
+        this.saveBufferToStorage('disconnect');
       }
 
       this.socket.close();
@@ -981,11 +951,9 @@ export class RemoteDebugger {
   /**
    * WebSocket 이벤트 리스너 추가
    */
-  public addSocketEventListener(
-    ...arg: Parameters<WebSocket["addEventListener"]>
-  ): void {
+  public addSocketEventListener(...arg: Parameters<WebSocket['addEventListener']>): void {
     if (!this.socket) {
-      logger.remote.error(" WebSocket is not initialized");
+      logger.remote.error(' WebSocket is not initialized');
       return;
     }
 

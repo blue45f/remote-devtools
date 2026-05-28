@@ -1,9 +1,9 @@
-import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { UserEntity, DeviceInfoEntity } from "@remote-platform/entity";
+import { UserEntity, DeviceInfoEntity } from '@remote-platform/entity';
 
-import { FigmaController } from "./figma.controller";
+import { FigmaController } from './figma.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, DeviceInfoEntity])],

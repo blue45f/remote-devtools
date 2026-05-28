@@ -1,5 +1,5 @@
-import { IGNORE_NODE } from "./constant";
-import { isElement } from "./utils";
+import { IGNORE_NODE } from './constant';
+import { isElement } from './utils';
 
 class Nodes {
   // DOM node id collection
@@ -23,17 +23,13 @@ class Nodes {
     if (
       isElement(node) &&
       node.getAttribute &&
-      IGNORE_NODE.includes(node.getAttribute("class") ?? "")
+      IGNORE_NODE.includes(node.getAttribute('class') ?? '')
     )
       return false;
     // non-text node
     if (node.nodeType !== Node.TEXT_NODE) return true;
     // non-empty text node
-    if (
-      node.nodeType === Node.TEXT_NODE &&
-      (node.nodeValue || "").trim() !== ""
-    )
-      return true;
+    if (node.nodeType === Node.TEXT_NODE && (node.nodeValue || '').trim() !== '') return true;
     return false;
   }
 
@@ -85,7 +81,7 @@ class Nodes {
   public collectNodes(node: Node, depth = 2) {
     const nodeId = this.getIdByNode(node);
     const { nodeType, nodeName, nodeValue, parentNode, childNodes } = node;
-    const res: Pick<HTMLElement, "nodeType" | "nodeName" | "nodeValue"> & {
+    const res: Pick<HTMLElement, 'nodeType' | 'nodeName' | 'nodeValue'> & {
       nodeId: number;
       localName?: string;
       backendNodeId: number;
@@ -120,14 +116,14 @@ class Nodes {
     }
 
     if (isElement(node)) {
-      const beforeContent = window.getComputedStyle(node, "::before").content;
-      const afterContent = window.getComputedStyle(node, "::after").content;
+      const beforeContent = window.getComputedStyle(node, '::before').content;
+      const afterContent = window.getComputedStyle(node, '::after').content;
       const pseudoTypes = [];
-      if (beforeContent !== "none") {
-        pseudoTypes.push("before");
+      if (beforeContent !== 'none') {
+        pseudoTypes.push('before');
       }
-      if (afterContent !== "none") {
-        pseudoTypes.push("after");
+      if (afterContent !== 'none') {
+        pseudoTypes.push('after');
       }
       if (pseudoTypes.length) {
         res.pseudoElements = pseudoTypes.map((pseudoType) => {

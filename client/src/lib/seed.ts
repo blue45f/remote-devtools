@@ -7,36 +7,36 @@ const DAY = 24 * 60 * 60 * 1000;
 const MS_TO_NANOS = 1_000_000;
 
 const URLS = [
-  "https://shop.example.com/cart/checkout",
-  "https://app.example.com/dashboard",
-  "https://staging.example.com/login",
-  "https://news.example.com/article/2026/04/launch",
-  "https://api.example.com/health",
-  "https://app.example.com/settings/billing",
-  "https://shop.example.com/products/sk-1234",
-  "https://app.example.com/onboarding/step-2",
+  'https://shop.example.com/cart/checkout',
+  'https://app.example.com/dashboard',
+  'https://staging.example.com/login',
+  'https://news.example.com/article/2026/04/launch',
+  'https://api.example.com/health',
+  'https://app.example.com/settings/billing',
+  'https://shop.example.com/products/sk-1234',
+  'https://app.example.com/onboarding/step-2',
 ];
 
 const NAMES = [
-  "checkout-flow-test",
-  "billing-modal-bug",
-  "onboarding-step-fail",
-  "settings-permissions",
-  "homepage-perf-trace",
-  "search-suggestions",
-  "auth-flaky-redirect",
-  "image-upload-403",
-  "dark-mode-flicker",
-  "table-pagination-jump",
-  "live-stream-debug",
-  "live-checkout-monitor",
+  'checkout-flow-test',
+  'billing-modal-bug',
+  'onboarding-step-fail',
+  'settings-permissions',
+  'homepage-perf-trace',
+  'search-suggestions',
+  'auth-flaky-redirect',
+  'image-upload-403',
+  'dark-mode-flicker',
+  'table-pagination-jump',
+  'live-stream-debug',
+  'live-checkout-monitor',
 ];
 
 function deviceHash(seed: number) {
   // Stable pseudo hash so the same seed produces the same id
-  return `device-${seed.toString(16).padStart(6, "0")}-${(seed * 31 + 11)
+  return `device-${seed.toString(16).padStart(6, '0')}-${(seed * 31 + 11)
     .toString(16)
-    .padStart(6, "0")}`;
+    .padStart(6, '0')}`;
 }
 
 export interface SeedSession {
@@ -52,32 +52,31 @@ export interface SeedSession {
 }
 
 const SEED_TAGS: string[][] = [
-  ["checkout", "bug"],
-  ["pricing"],
+  ['checkout', 'bug'],
+  ['pricing'],
   [],
-  ["mobile", "verified"],
-  ["error"],
+  ['mobile', 'verified'],
+  ['error'],
   [],
 ];
 
 const USER_AGENTS: string[] = [
   // Chrome / macOS
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
   // Safari / iOS
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
   // Firefox / Linux
-  "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+  'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
   // Edge / Windows
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0',
   // Chrome / Android
-  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36',
 ];
 
 export function buildSeedSessions(): SeedSession[] {
   const now = Date.now();
   return NAMES.map((name, i) => {
-    const seconds =
-      [12, 47, 240, 1240, 18, 96, 720, 33, 5400, 64, 0, 0][i] ?? 30;
+    const seconds = [12, 47, 240, 1240, 18, 96, 720, 33, 5400, 64, 0, 0][i] ?? 30;
     const isLive = i >= 10;
     return {
       id: 1000 + i,
@@ -141,11 +140,10 @@ function pseudoRand(seed: number) {
 }
 
 export function buildTicketTrend(period: string): SeedTrendItem[] {
-  const len = period === "month" ? 12 : period === "week" ? 8 : 14;
+  const len = period === 'month' ? 12 : period === 'week' ? 8 : 14;
   const now = Date.now();
   return Array.from({ length: len }, (_, i) => {
-    const offset =
-      (len - 1 - i) * (period === "month" ? 30 : period === "week" ? 7 : 1);
+    const offset = (len - 1 - i) * (period === 'month' ? 30 : period === 'week' ? 7 : 1);
     const date = new Date(now - offset * DAY);
     const total = 12 + Math.floor(pseudoRand(i + 1) * 28);
     const developer = Math.floor(total * 0.45);
@@ -155,11 +153,11 @@ export function buildTicketTrend(period: string): SeedTrendItem[] {
     const other = total - developer - designer - pm - qa;
     return {
       date:
-        period === "month"
-          ? date.toLocaleString(undefined, { month: "short" })
+        period === 'month'
+          ? date.toLocaleString(undefined, { month: 'short' })
           : date.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
+              month: 'short',
+              day: 'numeric',
             }),
       created: total,
       developer,
@@ -197,7 +195,7 @@ export function buildSeedSessionMeta(id: number) {
       id,
       name: `unknown-${id}`,
       deviceId: deviceHash(id),
-      url: "https://app.example.com/",
+      url: 'https://app.example.com/',
       duration: 60_000 * MS_TO_NANOS,
       recordMode: true,
       createdAt: new Date(Date.now() - 5 * 60_000).toISOString(),

@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import { DataSource } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { DataSource } from 'typeorm';
 
 /**
  * Protected record ID that should never be deleted.
@@ -29,9 +29,9 @@ export class RemoveRecordService {
    * Scheduled job: runs on the 1st of every month at 03:00.
    * Deletes records older than RECORD_RETENTION_DAYS in batches, excluding protected records.
    */
-  @Cron("0 3 1 * *")
+  @Cron('0 3 1 * *')
   public async removeRecordOldRecords(): Promise<void> {
-    this.logger.log("Monthly record cleanup job started");
+    this.logger.log('Monthly record cleanup job started');
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -56,14 +56,12 @@ export class RemoveRecordService {
       );
 
       const deletedCount = parseInt(result[0].count, 10);
-      this.logger.log(
-        `Record cleanup complete: ${deletedCount} records deleted`,
-      );
+      this.logger.log(`Record cleanup complete: ${deletedCount} records deleted`);
 
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      this.logger.error("Error during record cleanup", err);
+      this.logger.error('Error during record cleanup', err);
     } finally {
       await queryRunner.release();
     }

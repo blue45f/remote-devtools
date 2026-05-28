@@ -1,18 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Button } from "./button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./tooltip";
+import { Button } from './button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 
 const meta = {
-  title: "UI/Tooltip",
+  title: 'UI/Tooltip',
   component: Tooltip,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   decorators: [
     (Story) => (
       <TooltipProvider delayDuration={150}>
@@ -37,10 +32,10 @@ export const Default: Story = {
 };
 
 export const Sides: Story = {
-  parameters: { layout: "padded" },
+  parameters: { layout: 'padded' },
   render: () => (
     <div className="grid grid-cols-2 gap-12 place-items-center p-24">
-      {(["top", "right", "bottom", "left"] as const).map((side) => (
+      {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
         <Tooltip key={side} defaultOpen>
           <TooltipTrigger asChild>
             <Button variant="outline">{side}</Button>

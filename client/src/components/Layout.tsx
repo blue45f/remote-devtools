@@ -1,16 +1,16 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { Outlet, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from 'framer-motion';
+import { Outlet, useLocation } from 'react-router-dom';
 
-import { CommandPalette } from "@/components/CommandPalette";
-import { ShortcutsDialog } from "@/components/ShortcutsDialog";
-import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
-import { SkipLink } from "@/components/a11y/SkipLink";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGlobalShortcuts } from "@/lib/keyboard";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { CommandPalette } from '@/components/CommandPalette';
+import { ShortcutsDialog } from '@/components/ShortcutsDialog';
+import { Sidebar } from '@/components/Sidebar';
+import { Topbar } from '@/components/Topbar';
+import { SkipLink } from '@/components/a11y/SkipLink';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { useGlobalShortcuts } from '@/lib/keyboard';
+import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 export default function Layout() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
@@ -47,11 +47,11 @@ export default function Layout() {
             slightly wider than the desktop rail for thumb-friendly nav. */}
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 lg:hidden",
-            "w-[280px] max-w-[85vw] safe-pt",
-            "transform transition-transform duration-200 ease-out",
-            "shadow-lg",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+            'fixed inset-y-0 left-0 z-50 lg:hidden',
+            'w-[280px] max-w-[85vw] safe-pt',
+            'transform transition-transform duration-200 ease-out',
+            'shadow-lg',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           )}
           aria-hidden={!sidebarOpen}
         >

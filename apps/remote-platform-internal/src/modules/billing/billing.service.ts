@@ -5,21 +5,17 @@ import {
   Logger,
   Optional,
   ServiceUnavailableException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { LessThan, QueryFailedError, type Repository } from "typeorm";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { LessThan, QueryFailedError, type Repository } from 'typeorm';
 
-import {
-  BILLING_PROVIDER,
-  type BillingProvider,
-  StripeBillingProvider,
-} from "./billing.provider";
+import { BILLING_PROVIDER, type BillingProvider, StripeBillingProvider } from './billing.provider';
 import {
   BillingWebhookEventEntity,
   OrganizationPlan,
   OrganizationEntity,
-} from "@remote-platform/entity";
-import { BillingSubscriptionSyncService } from "./billing-subscription-sync.service";
+} from '@remote-platform/entity';
+import { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
 import type {
   BillingPlan,
   BillingStatus,
@@ -29,24 +25,24 @@ import type {
   BillingWebhookResult,
   CheckoutSessionInput,
   VerifyWebhookInput,
-} from "./billing.types";
+} from './billing.types';
 
 type QueryFailedErrorWithDriver = QueryFailedError & {
   driverError?: { code?: string };
 };
 
 const PLAN_CATALOG: BillingPlan[] = [
-  { id: "free", name: "Free", monthly: 0 },
-  { id: "starter", name: "Starter", monthly: 19 },
-  { id: "pro", name: "Pro", monthly: 49 },
+  { id: 'free', name: 'Free', monthly: 0 },
+  { id: 'starter', name: 'Starter', monthly: 19 },
+  { id: 'pro', name: 'Pro', monthly: 49 },
 ];
-const DEFAULT_PLAN: OrganizationPlan = "free";
+const DEFAULT_PLAN: OrganizationPlan = 'free';
 
 const WEBHOOK_RESERVATION_CLEANUP_INTERVAL_MS = Number(
-  process.env.BILLING_WEBHOOK_RESERVATION_CLEANUP_INTERVAL_MS ?? "60000",
+  process.env.BILLING_WEBHOOK_RESERVATION_CLEANUP_INTERVAL_MS ?? '60000',
 );
 const WEBHOOK_RESERVATION_TTL_MS = Number(
-  process.env.BILLING_WEBHOOK_RESERVATION_TTL_MS ?? "900000",
+  process.env.BILLING_WEBHOOK_RESERVATION_TTL_MS ?? '900000',
 );
 
 /**
@@ -92,9 +88,7 @@ export class BillingService {
   /**
    * Build the redirect target for a Checkout session.
    */
-  public async createCheckoutSession(
-    input: CheckoutSessionInput,
-  ): Promise<{ url: string }> {
+  public async createCheckoutSession(input: CheckoutSessionInput): Promise<{ url: string }> {
     this.assertEnabled();
     return this.provider.createCheckoutSession(input);
   }
@@ -103,9 +97,7 @@ export class BillingService {
    * Build the redirect target for the provider Customer Portal so a user can
    * manage their subscription / payment method.
    */
-  public async createPortalSession(
-    input: PortalSessionRequest,
-  ): Promise<{ url: string }> {
+  public async createPortalSession(input: PortalSessionRequest): Promise<{ url: string }> {
     this.assertEnabled();
     const customerId = await this.resolveCustomerId(input);
     return this.provider.createPortalSession({
@@ -114,20 +106,14 @@ export class BillingService {
     });
   }
 
-  public async getSubscriptionState(
-    orgId: string,
-  ): Promise<BillingSubscriptionState> {
-    const organization = await this.resolveOrganization(
-      orgId,
-      "subscription-state",
-    );
+  public async getSubscriptionState(orgId: string): Promise<BillingSubscriptionState> {
+    const organization = await this.resolveOrganization(orgId, 'subscription-state');
     return {
       plan: this.normalizePlan(organization?.plan),
       billingProvider: organization.billingProvider ?? null,
       billingSubscriptionId: organization.billingSubscriptionId ?? null,
       subscriptionStatus: organization.subscriptionStatus ?? null,
-      subscriptionCurrentPeriodEnd:
-        organization.subscriptionCurrentPeriodEnd ?? null,
+      subscriptionCurrentPeriodEnd: organization.subscriptionCurrentPeriodEnd ?? null,
     };
   }
 
@@ -135,9 +121,7 @@ export class BillingService {
    * Verify the webhook signature, normalize the event, and sync local
    * subscription state when the event carries subscription data.
    */
-  public async handleWebhook(
-    input: VerifyWebhookInput,
-  ): Promise<BillingWebhookResult> {
+  public async handleWebhook(input: VerifyWebhookInput): Promise<BillingWebhookResult> {
     this.assertEnabled();
     await this.cleanupWebhookReservationBacklog();
     const event = await this.provider.verifyWebhook(input);
@@ -148,15 +132,15 @@ export class BillingService {
       );
       return {
         event,
-        sync: { action: "ignored", reason: "duplicate_event" },
+        sync: { action: 'ignored', reason: 'duplicate_event' },
       };
     }
-    let sync: BillingWebhookResult["sync"] = {
-      action: "ignored",
-      reason: "subscription_state_not_present",
+    let sync: BillingWebhookResult['sync'] = {
+      action: 'ignored',
+      reason: 'subscription_state_not_present',
     };
     if (!this.subscriptionSync) {
-      this.logger.debug("[BILLING_WEBHOOK] no subscription sync configured");
+      this.logger.debug('[BILLING_WEBHOOK] no subscription sync configured');
     } else {
       try {
         sync = await this.subscriptionSync.syncFromBillingEvent(event);
@@ -189,10 +173,7 @@ export class BillingService {
       });
       return false;
     } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        this.isDuplicateWebhookEventError(error)
-      ) {
+      if (error instanceof QueryFailedError && this.isDuplicateWebhookEventError(error)) {
         if (
           !options.retriedAfterReservationClear &&
           this.shouldRetryWebhookEventAfterReservationTimeout(event)
@@ -218,9 +199,7 @@ export class BillingService {
     }
   }
 
-  private async clearWebhookEventReservation(
-    event: VerifiedBillingEvent,
-  ): Promise<boolean> {
+  private async clearWebhookEventReservation(event: VerifiedBillingEvent): Promise<boolean> {
     if (!this.webhookEventRepository) {
       return true;
     }
@@ -241,30 +220,22 @@ export class BillingService {
     }
   }
 
-  private async cleanupWebhookReservationBacklog(
-    now = Date.now(),
-  ): Promise<void> {
+  private async cleanupWebhookReservationBacklog(now = Date.now()): Promise<void> {
     if (!this.webhookEventRepository) {
       return;
     }
 
-    if (
-      now - this.lastWebhookReservationCleanupAt <
-      WEBHOOK_RESERVATION_CLEANUP_INTERVAL_MS
-    ) {
+    if (now - this.lastWebhookReservationCleanupAt < WEBHOOK_RESERVATION_CLEANUP_INTERVAL_MS) {
       return;
     }
 
     this.lastWebhookReservationCleanupAt = now;
 
-    if (
-      !Number.isFinite(WEBHOOK_RESERVATION_TTL_MS) ||
-      WEBHOOK_RESERVATION_TTL_MS <= 0
-    ) {
+    if (!Number.isFinite(WEBHOOK_RESERVATION_TTL_MS) || WEBHOOK_RESERVATION_TTL_MS <= 0) {
       return;
     }
 
-    const canDelete = "delete" in this.webhookEventRepository;
+    const canDelete = 'delete' in this.webhookEventRepository;
     if (!canDelete) {
       return;
     }
@@ -274,12 +245,9 @@ export class BillingService {
       const deleted = await this.webhookEventRepository.delete({
         receivedAt: LessThan(cutoff),
       });
-      const removed =
-        typeof deleted?.affected === "number" ? deleted.affected : 0;
+      const removed = typeof deleted?.affected === 'number' ? deleted.affected : 0;
       if (removed > 0) {
-        this.logger.debug(
-          `[BILLING_WEBHOOK] cleaned stale reservation markers count=${removed}`,
-        );
+        this.logger.debug(`[BILLING_WEBHOOK] cleaned stale reservation markers count=${removed}`);
       }
     } catch (error) {
       this.logger.warn(
@@ -290,9 +258,7 @@ export class BillingService {
     }
   }
 
-  private async isWebhookReservationStale(
-    event: VerifiedBillingEvent,
-  ): Promise<boolean> {
+  private async isWebhookReservationStale(event: VerifiedBillingEvent): Promise<boolean> {
     if (
       !this.webhookEventRepository ||
       !this.shouldRetryWebhookEventAfterReservationTimeout(event)
@@ -300,15 +266,12 @@ export class BillingService {
       return false;
     }
 
-    const hasFindOne = "findOne" in this.webhookEventRepository;
+    const hasFindOne = 'findOne' in this.webhookEventRepository;
     if (!hasFindOne) {
       return false;
     }
 
-    let existing:
-      | Pick<BillingWebhookEventEntity, "receivedAt">
-      | null
-      | undefined;
+    let existing: Pick<BillingWebhookEventEntity, 'receivedAt'> | null | undefined;
     try {
       existing = await this.webhookEventRepository.findOne({
         where: {
@@ -338,21 +301,16 @@ export class BillingService {
     return ageMs > WEBHOOK_RESERVATION_TTL_MS;
   }
 
-  private shouldRetryWebhookEventAfterReservationTimeout(
-    event: VerifiedBillingEvent,
-  ): boolean {
+  private shouldRetryWebhookEventAfterReservationTimeout(event: VerifiedBillingEvent): boolean {
     if (!event.provider || !event.id) {
       return false;
     }
 
-    return (
-      Number.isFinite(WEBHOOK_RESERVATION_TTL_MS) &&
-      WEBHOOK_RESERVATION_TTL_MS > 0
-    );
+    return Number.isFinite(WEBHOOK_RESERVATION_TTL_MS) && WEBHOOK_RESERVATION_TTL_MS > 0;
   }
 
   private normalizePlan(plan: unknown): OrganizationPlan {
-    if (plan === "free" || plan === "starter" || plan === "pro") {
+    if (plan === 'free' || plan === 'starter' || plan === 'pro') {
       return plan;
     }
 
@@ -363,27 +321,23 @@ export class BillingService {
     const queryFailedError = error as QueryFailedErrorWithDriver;
     const driverCode = queryFailedError.driverError?.code;
     const fallbackCode = (error as { code?: string }).code;
-    return driverCode === "23505" || fallbackCode === "23505";
+    return driverCode === '23505' || fallbackCode === '23505';
   }
 
   private assertEnabled(): void {
     if (!this.enabled) {
       throw new ServiceUnavailableException(
-        "Billing is disabled. Set STRIPE_SECRET_KEY to enable.",
+        'Billing is disabled. Set STRIPE_SECRET_KEY to enable.',
       );
     }
   }
 
-  private async resolveCustomerId(
-    input: PortalSessionRequest,
-  ): Promise<string> {
-    const organization = await this.resolveOrganization(input.orgId, "portal");
+  private async resolveCustomerId(input: PortalSessionRequest): Promise<string> {
+    const organization = await this.resolveOrganization(input.orgId, 'portal');
 
     const customerId = organization?.stripeCustomerId;
     if (!customerId) {
-      throw new BadRequestException(
-        "No Stripe customer is configured for this organization.",
-      );
+      throw new BadRequestException('No Stripe customer is configured for this organization.');
     }
 
     return customerId;
@@ -391,28 +345,26 @@ export class BillingService {
 
   private async resolveOrganization(
     orgId: string,
-    context: "portal" | "subscription-state",
+    context: 'portal' | 'subscription-state',
   ): Promise<OrganizationEntity> {
     if (!this.organizationRepository) {
       throw new ServiceUnavailableException(
-        context === "subscription-state"
-          ? "Billing subscription state requires organization repository wiring."
-          : "Billing portal requires organization repository wiring.",
+        context === 'subscription-state'
+          ? 'Billing subscription state requires organization repository wiring.'
+          : 'Billing portal requires organization repository wiring.',
       );
     }
 
     const normalizedOrgId = orgId.trim();
     if (!normalizedOrgId) {
-      throw new BadRequestException("Authenticated org is required.");
+      throw new BadRequestException('Authenticated org is required.');
     }
 
     const organization = await this.organizationRepository.findOne({
       where: [{ id: normalizedOrgId }, { slug: normalizedOrgId }],
     });
     if (!organization) {
-      throw new BadRequestException(
-        `Organization not found for id "${normalizedOrgId}".`,
-      );
+      throw new BadRequestException(`Organization not found for id "${normalizedOrgId}".`);
     }
 
     return organization;

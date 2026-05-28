@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
-import { assertSafePublicUrl } from "../utils/url-safety";
+import { assertSafePublicUrl } from '../utils/url-safety';
 
 /**
  * Maximum response size accepted when fetching a remote image (10 MB).
@@ -30,24 +30,24 @@ export class ImageBase64Service {
       this.logger.warn(
         `Refusing to fetch image (unsafe URL): ${error instanceof Error ? error.message : error}`,
       );
-      return "";
+      return '';
     }
 
     try {
       const response = await fetch(url);
       if (!response.ok) {
         this.logger.warn(`Failed to fetch image: ${response.status} ${url}`);
-        return "";
+        return '';
       }
 
-      const contentLengthHeader = response.headers?.get?.("content-length");
+      const contentLengthHeader = response.headers?.get?.('content-length');
       if (contentLengthHeader) {
         const declared = Number(contentLengthHeader);
         if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES) {
           this.logger.warn(
             `Refusing to fetch image (declared size ${declared} exceeds ${MAX_IMAGE_BYTES}): ${url}`,
           );
-          return "";
+          return '';
         }
       }
 
@@ -56,16 +56,16 @@ export class ImageBase64Service {
         this.logger.warn(
           `Refusing to decode image (body size ${arrayBuffer.byteLength} exceeds ${MAX_IMAGE_BYTES}): ${url}`,
         );
-        return "";
+        return '';
       }
 
       const buffer = Buffer.from(arrayBuffer);
-      return buffer.toString("base64");
+      return buffer.toString('base64');
     } catch (error) {
       this.logger.warn(
         `Failed to convert image to base64: ${error instanceof Error ? error.message : error}`,
       );
-      return "";
+      return '';
     }
   }
 }

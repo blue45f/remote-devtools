@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 
 export interface BufferEvent {
   readonly method: string;
@@ -53,14 +53,9 @@ export class BufferService implements OnModuleDestroy {
 
   constructor() {
     // Periodically clean up stale buffers every 5 minutes
-    this.cleanupIntervalHandle = setInterval(
-      () => this.cleanupOldBuffers(),
-      CLEANUP_INTERVAL_MS,
-    );
+    this.cleanupIntervalHandle = setInterval(() => this.cleanupOldBuffers(), CLEANUP_INTERVAL_MS);
 
-    this.logger.log(
-      "[BUFFER_SERVICE] Periodic auto-save disabled - only save on disconnect",
-    );
+    this.logger.log('[BUFFER_SERVICE] Periodic auto-save disabled - only save on disconnect');
   }
 
   /**
@@ -124,10 +119,7 @@ export class BufferService implements OnModuleDestroy {
   }
 
   private isScreenPreviewEvent(event: BufferEvent): boolean {
-    return (
-      typeof event.method === "string" &&
-      event.method.startsWith("ScreenPreview.")
-    );
+    return typeof event.method === 'string' && event.method.startsWith('ScreenPreview.');
   }
 
   /**
@@ -199,18 +191,12 @@ export class BufferService implements OnModuleDestroy {
     event: BufferEvent,
   ): { shouldFlush: boolean; eventCount: number } {
     // Record/Live rooms are not buffered
-    if (room.startsWith("Record-") || room.startsWith("Live-")) {
-      this.logger.log(
-        `[BUFFER_SERVICE_SKIP] Ignoring buffer event for ${room}`,
-      );
+    if (room.startsWith('Record-') || room.startsWith('Live-')) {
+      this.logger.log(`[BUFFER_SERVICE_SKIP] Ignoring buffer event for ${room}`);
       return { shouldFlush: false, eventCount: 0 };
     }
 
-    const { key, buffer: resolvedBuffer } = this.maybeMigrateLegacyKey(
-      room,
-      recordId,
-      deviceId,
-    );
+    const { key, buffer: resolvedBuffer } = this.maybeMigrateLegacyKey(room, recordId, deviceId);
     const safeRecordId = recordId ?? 0;
 
     let buffer = resolvedBuffer;
@@ -253,16 +239,12 @@ export class BufferService implements OnModuleDestroy {
     if (isScreenPreview && screenPreviewMethod) {
       const existingIndex = buffer.screenPreviewIndexes[screenPreviewMethod];
       if (
-        typeof existingIndex === "number" &&
+        typeof existingIndex === 'number' &&
         existingIndex >= 0 &&
         existingIndex < buffer.events.length
       ) {
         buffer.events.splice(existingIndex, 1);
-        this.adjustScreenPreviewIndexesAfterRemoval(
-          buffer,
-          existingIndex,
-          screenPreviewMethod,
-        );
+        this.adjustScreenPreviewIndexesAfterRemoval(buffer, existingIndex, screenPreviewMethod);
       } else if (existingIndex !== undefined) {
         delete buffer.screenPreviewIndexes[screenPreviewMethod];
       }
@@ -276,7 +258,7 @@ export class BufferService implements OnModuleDestroy {
     buffer.lastUpdated = new Date();
     buffer.url = url;
     buffer.userAgent = userAgent;
-    if (typeof title === "string") {
+    if (typeof title === 'string') {
       buffer.title = title;
     }
 
@@ -299,8 +281,7 @@ export class BufferService implements OnModuleDestroy {
 
     if (isScreenPreview && screenPreviewMethod) {
       if (newScreenPreviewIndex !== null && newScreenPreviewIndex >= 0) {
-        buffer.screenPreviewIndexes[screenPreviewMethod] =
-          newScreenPreviewIndex;
+        buffer.screenPreviewIndexes[screenPreviewMethod] = newScreenPreviewIndex;
       } else {
         delete buffer.screenPreviewIndexes[screenPreviewMethod];
       }
@@ -326,11 +307,7 @@ export class BufferService implements OnModuleDestroy {
     recordId: number | null,
     deviceId: string,
   ): SessionBuffer | null {
-    const { key, buffer } = this.maybeMigrateLegacyKey(
-      room,
-      recordId,
-      deviceId,
-    );
+    const { key, buffer } = this.maybeMigrateLegacyKey(room, recordId, deviceId);
 
     if (!buffer || buffer.events.length === 0) {
       return null;
@@ -358,20 +335,12 @@ export class BufferService implements OnModuleDestroy {
     recordId: number | null,
     deviceId: string,
   ): SessionBuffer | null {
-    const { key, buffer } = this.maybeMigrateLegacyKey(
-      room,
-      recordId,
-      deviceId,
-    );
+    const { key, buffer } = this.maybeMigrateLegacyKey(room, recordId, deviceId);
 
-    this.logger.log(
-      `[FLUSH_BUFFER_CALLED] key: ${key}, timestamp: ${Date.now()}`,
-    );
+    this.logger.log(`[FLUSH_BUFFER_CALLED] key: ${key}, timestamp: ${Date.now()}`);
 
     if (!buffer || buffer.events.length === 0) {
-      this.logger.log(
-        `[FLUSH_BUFFER_EMPTY] No events to flush for key: ${key}`,
-      );
+      this.logger.log(`[FLUSH_BUFFER_EMPTY] No events to flush for key: ${key}`);
       return null;
     }
 
@@ -406,10 +375,7 @@ export class BufferService implements OnModuleDestroy {
   /**
    * Retrieves all buffers belonging to a specific room and record.
    */
-  public getSessionBuffers(
-    room: string,
-    recordId: number | null,
-  ): SessionBuffer[] {
+  public getSessionBuffers(room: string, recordId: number | null): SessionBuffer[] {
     const safeRecordId = recordId ?? 0;
     const buffers: SessionBuffer[] = [];
 
@@ -419,9 +385,7 @@ export class BufferService implements OnModuleDestroy {
       }
     }
 
-    return buffers.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-    );
+    return buffers.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   /**
@@ -563,11 +527,7 @@ export class BufferService implements OnModuleDestroy {
     room: string,
     recordId: number | null,
   ): BufferEvent[] {
-    const { buffer: previousBuffer } = this.maybeMigrateLegacyKey(
-      room,
-      recordId,
-      deviceId,
-    );
+    const { buffer: previousBuffer } = this.maybeMigrateLegacyKey(room, recordId, deviceId);
 
     if (previousBuffer && previousBuffer.events.length > 0) {
       this.logger.log(
@@ -594,20 +554,14 @@ export class BufferService implements OnModuleDestroy {
       }
     }
 
-    return deviceBuffers.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-    );
+    return deviceBuffers.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   /**
    * Checks whether the given device has a recent session on the same domain,
    * indicating a session continuation.
    */
-  public isSessionContinuation(
-    deviceId: string,
-    url: string,
-    _room: string,
-  ): boolean {
+  public isSessionContinuation(deviceId: string, url: string, _room: string): boolean {
     const deviceBuffers = this.getDeviceSessionBuffers(deviceId);
 
     if (deviceBuffers.length === 0) {
@@ -637,8 +591,11 @@ export class BufferService implements OnModuleDestroy {
     }
 
     const safeRecordId = currentRecordId ?? 0;
-    const { key: currentKey, buffer: resolvedBuffer } =
-      this.maybeMigrateLegacyKey(currentRoom, safeRecordId, deviceId);
+    const { key: currentKey, buffer: resolvedBuffer } = this.maybeMigrateLegacyKey(
+      currentRoom,
+      safeRecordId,
+      deviceId,
+    );
 
     let currentBuffer = resolvedBuffer;
 
@@ -648,8 +605,8 @@ export class BufferService implements OnModuleDestroy {
         room: currentRoom,
         recordId: safeRecordId,
         deviceId,
-        url: "",
-        userAgent: "",
+        url: '',
+        userAgent: '',
         events: [],
         createdAt: now,
         lastUpdated: now,

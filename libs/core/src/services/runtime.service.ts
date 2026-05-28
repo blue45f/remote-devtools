@@ -1,10 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { RuntimeEntity } from "@remote-platform/entity";
+import { RuntimeEntity } from '@remote-platform/entity';
 
-import { RecordService } from "./record.service";
+import { RecordService } from './record.service';
 
 /**
  * 녹화 세션 중 캡처된 런타임 콘솔 메시지를 저장하고 조회하는 서비스.
@@ -32,9 +32,7 @@ export class RuntimeService {
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      this.logger.warn(
-        `Skipping runtime creation: record not found for id=${recordId}`,
-      );
+      this.logger.warn(`Skipping runtime creation: record not found for id=${recordId}`);
       return null;
     }
 
@@ -44,9 +42,7 @@ export class RuntimeService {
     });
 
     const saved = await this.runtimeRepository.save(runtime);
-    this.logger.debug(
-      `Runtime entry created: recordId=${recordId}, id=${saved.id}`,
-    );
+    this.logger.debug(`Runtime entry created: recordId=${recordId}, id=${saved.id}`);
     return saved;
   }
 
@@ -58,7 +54,7 @@ export class RuntimeService {
   public async findByRecordId(recordId: number): Promise<RuntimeEntity[]> {
     return this.runtimeRepository.find({
       where: { record: { id: recordId } },
-      order: { timestamp: "ASC" },
+      order: { timestamp: 'ASC' },
     });
   }
 

@@ -20,10 +20,10 @@ export interface CDPMessage {
 
 // Recording session state
 export enum RecordSessionState {
-  IDLE = "idle",
-  RECORDING = "recording",
-  PAUSED = "paused",
-  STOPPED = "stopped",
+  IDLE = 'idle',
+  RECORDING = 'recording',
+  PAUSED = 'paused',
+  STOPPED = 'stopped',
 }
 
 // Page information

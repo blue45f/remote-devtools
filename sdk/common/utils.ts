@@ -1,6 +1,6 @@
 export function getAbsolutePath(url?: unknown): string {
-  if (!url || typeof url !== "string") return "";
-  const a = document.createElement("a");
+  if (!url || typeof url !== 'string') return '';
+  const a = document.createElement('a');
   a.href = url;
   return a.href;
 }
@@ -45,5 +45,5 @@ export function isMatches(element: Element, selector: string): boolean {
 }
 
 export function escapeRegString(string: string): string {
-  return string.replace(/[\\$*+?.^|(){}[\]]/g, "\\$&");
+  return string.replace(/[\\$*+?.^|(){}[\]]/g, '\\$&');
 }

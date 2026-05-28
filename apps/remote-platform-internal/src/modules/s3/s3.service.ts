@@ -1,19 +1,15 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
-import {
-  PutObjectCommand,
-  ListObjectsV2Command,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { Injectable, Logger } from "@nestjs/common";
-import { getLocalDate, getLocalDateString } from "@remote-platform/constants";
-import { BaseS3Service, BufferUploadData } from "@remote-platform/core";
+import { PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Injectable, Logger } from '@nestjs/common';
+import { getLocalDate, getLocalDateString } from '@remote-platform/constants';
+import { BaseS3Service, BufferUploadData } from '@remote-platform/core';
 
 export { BufferUploadData };
 
 type BufferChunk = {
-  events?: BufferUploadData["bufferData"];
+  events?: BufferUploadData['bufferData'];
 };
 
 type RecordLookupService = {
@@ -91,9 +87,7 @@ export class S3Service extends BaseS3Service {
       }
 
       if (beforeTimestamp) {
-        const filteredRecords = records.filter(
-          (record) => record.timestamp < beforeTimestamp,
-        );
+        const filteredRecords = records.filter((record) => record.timestamp < beforeTimestamp);
         this.logger.log(
           `[S3_QUERY] Filtered ${records.length} → ${filteredRecords.length} records before timestamp ${beforeTimestamp}`,
         );
@@ -104,7 +98,7 @@ export class S3Service extends BaseS3Service {
     } else {
       // Dev environment: query from local files
       if (!deviceId) {
-        return this.getBufferData("", undefined);
+        return this.getBufferData('', undefined);
       }
       return this.getBufferDataByDeviceId(deviceId);
     }
@@ -119,7 +113,7 @@ export class S3Service extends BaseS3Service {
     targetDate?: string,
   ): Promise<BufferUploadData[]> {
     try {
-      const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+      const bucketName = process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3';
       const searchDates: string[] = [];
 
       if (targetDate) {
@@ -127,21 +121,18 @@ export class S3Service extends BaseS3Service {
         for (let i = -1; i <= 0; i++) {
           const checkDate = new Date(baseDate);
           checkDate.setDate(baseDate.getDate() + i);
-          searchDates.push(checkDate.toISOString().split("T")[0]);
+          searchDates.push(checkDate.toISOString().split('T')[0]);
         }
       } else {
         for (let i = 0; i < 2; i++) {
           const date = getLocalDate();
           date.setDate(date.getDate() - i);
-          searchDates.push(date.toISOString().split("T")[0]);
+          searchDates.push(date.toISOString().split('T')[0]);
         }
       }
 
       const results: BufferUploadData[] = [];
-      const MAX_RESULTS = Math.min(
-        200,
-        Number(process.env.S3_PREVIOUS_LIMIT) || 10,
-      );
+      const MAX_RESULTS = Math.min(200, Number(process.env.S3_PREVIOUS_LIMIT) || 10);
 
       const objectEntries: Array<{
         key: string;
@@ -151,9 +142,7 @@ export class S3Service extends BaseS3Service {
       }> = [];
 
       for (const searchDate of searchDates) {
-        const prefix = deviceId
-          ? `backups/${searchDate}/${deviceId}/`
-          : `backups/${searchDate}/`;
+        const prefix = deviceId ? `backups/${searchDate}/${deviceId}/` : `backups/${searchDate}/`;
 
         const listCommand = new ListObjectsV2Command({
           Bucket: bucketName,
@@ -225,16 +214,11 @@ export class S3Service extends BaseS3Service {
 
           results.push(data);
           this.setCachedObject(
-            this.buildObjectCacheKey(
-              data.deviceId || entry.deviceId,
-              data.timestamp,
-            ),
+            this.buildObjectCacheKey(data.deviceId || entry.deviceId, data.timestamp),
             data,
           );
         } catch (parseError) {
-          this.logger.warn(
-            `[S3_CLOUD_QUERY] Failed to parse object ${entry.key}: ${parseError}`,
-          );
+          this.logger.warn(`[S3_CLOUD_QUERY] Failed to parse object ${entry.key}: ${parseError}`);
         }
       }
 
@@ -255,11 +239,9 @@ export class S3Service extends BaseS3Service {
    * Save to local file.
    * Overrides base: uses UTC date instead of KST.
    */
-  protected override async saveToLocalFile(
-    data: BufferUploadData,
-  ): Promise<string> {
-    const date = new Date(data.timestamp).toISOString().split("T")[0];
-    const deviceId = data.deviceId || "unknown-device";
+  protected override async saveToLocalFile(data: BufferUploadData): Promise<string> {
+    const date = new Date(data.timestamp).toISOString().split('T')[0];
+    const deviceId = data.deviceId || 'unknown-device';
     const fileName = `session_${data.timestamp}.json`;
 
     const dirPath = path.join(this.backupDir, date, deviceId);
@@ -282,19 +264,19 @@ export class S3Service extends BaseS3Service {
    * Overrides base: uses UTC date.
    */
   protected override async uploadToS3(data: BufferUploadData): Promise<string> {
-    const date = new Date(data.timestamp).toISOString().split("T")[0];
-    const deviceId = data.deviceId || "unknown-device";
+    const date = new Date(data.timestamp).toISOString().split('T')[0];
+    const deviceId = data.deviceId || 'unknown-device';
     const fileName = `session_${data.timestamp}.json`;
     const s3Key = `backups/${date}/${deviceId}/${fileName}`;
 
     const command = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET || "remote-debug-tools-s3",
+      Bucket: process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3',
       Key: s3Key,
       Body: JSON.stringify(data, null, 2),
-      ContentType: "application/json",
+      ContentType: 'application/json',
       Metadata: ((sanitizedTitle) => ({
         deviceId: deviceId,
-        url: data.url || "",
+        url: data.url || '',
         timestamp: data.timestamp.toString(),
         ...(sanitizedTitle ? { title: sanitizedTitle } : {}),
       }))(this.sanitizeMetadata(data.title)),
@@ -302,7 +284,7 @@ export class S3Service extends BaseS3Service {
 
     await this.s3Client.send(command);
     this.logger.log(
-      `[S3_UPLOADED] s3://${process.env.AWS_S3_BUCKET || "remote-debug-tools-s3"}/${s3Key}`,
+      `[S3_UPLOADED] s3://${process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3'}/${s3Key}`,
     );
     this.logger.log(
       `[S3_UPLOAD_SUCCESS] deviceId: ${deviceId}, events: ${data.bufferData?.length || 0}`,
@@ -339,13 +321,13 @@ export class S3Service extends BaseS3Service {
         const files = await fs.promises.readdir(devicePath);
 
         for (const file of files) {
-          if (file.endsWith(".json")) {
+          if (file.endsWith('.json')) {
             const fileMatch = file.match(/session_(\d+)\.json/);
             if (!fileMatch) continue;
 
             const filePath = path.join(devicePath, file);
             try {
-              const content = await fs.promises.readFile(filePath, "utf-8");
+              const content = await fs.promises.readFile(filePath, 'utf-8');
               const rawData = JSON.parse(content);
 
               // Check if using new structure (bufferChunks present)
@@ -372,8 +354,7 @@ export class S3Service extends BaseS3Service {
                 if (
                   !room ||
                   !recordId ||
-                  (convertedData.room === room &&
-                    convertedData.recordId === recordId)
+                  (convertedData.room === room && convertedData.recordId === recordId)
                 ) {
                   results.push(convertedData);
                 }
@@ -382,18 +363,12 @@ export class S3Service extends BaseS3Service {
                 const data = rawData as BufferUploadData;
 
                 // Optional filtering
-                if (
-                  !room ||
-                  !recordId ||
-                  (data.room === room && data.recordId === recordId)
-                ) {
+                if (!room || !recordId || (data.room === room && data.recordId === recordId)) {
                   results.push(data);
                 }
               }
             } catch (parseError) {
-              this.logger.warn(
-                `[BACKUP_GET_BY_DEVICE_PARSE_ERROR] ${filePath}: ${parseError}`,
-              );
+              this.logger.warn(`[BACKUP_GET_BY_DEVICE_PARSE_ERROR] ${filePath}: ${parseError}`);
             }
           }
         }
@@ -407,7 +382,7 @@ export class S3Service extends BaseS3Service {
           deviceId,
           room,
           recordId,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         })}`,
       );
       throw error;
@@ -417,10 +392,7 @@ export class S3Service extends BaseS3Service {
   /**
    * Retrieve backed-up buffer data (new directory structure only).
    */
-  public async getBufferData(
-    room?: string,
-    recordId?: number,
-  ): Promise<BufferUploadData[]> {
+  public async getBufferData(room?: string, recordId?: number): Promise<BufferUploadData[]> {
     try {
       const results: BufferUploadData[] = [];
 
@@ -448,14 +420,14 @@ export class S3Service extends BaseS3Service {
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
-            if (file.endsWith(".json")) {
+            if (file.endsWith('.json')) {
               // Extract timestamp from filename (session_timestamp.json)
               const fileMatch = file.match(/session_(\d+)\.json/);
               if (!fileMatch) continue;
 
               const filePath = path.join(devicePath, file);
               try {
-                const content = await fs.promises.readFile(filePath, "utf-8");
+                const content = await fs.promises.readFile(filePath, 'utf-8');
                 const rawData = JSON.parse(content);
 
                 // Check if using new structure (bufferChunks present)
@@ -482,8 +454,7 @@ export class S3Service extends BaseS3Service {
                   if (
                     !room ||
                     !recordId ||
-                    (convertedData.room === room &&
-                      convertedData.recordId === recordId)
+                    (convertedData.room === room && convertedData.recordId === recordId)
                   ) {
                     results.push(convertedData);
                   }
@@ -492,18 +463,12 @@ export class S3Service extends BaseS3Service {
                   const data = rawData as BufferUploadData;
 
                   // Optional filtering
-                  if (
-                    !room ||
-                    !recordId ||
-                    (data.room === room && data.recordId === recordId)
-                  ) {
+                  if (!room || !recordId || (data.room === room && data.recordId === recordId)) {
                     results.push(data);
                   }
                 }
               } catch (parseError) {
-                this.logger.warn(
-                  `[BACKUP_GET_PARSE_ERROR] ${filePath}: ${parseError}`,
-                );
+                this.logger.warn(`[BACKUP_GET_PARSE_ERROR] ${filePath}: ${parseError}`);
               }
             }
           }
@@ -517,7 +482,7 @@ export class S3Service extends BaseS3Service {
         `[BACKUP_GET_ERROR] ${JSON.stringify({
           room,
           recordId,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         })}`,
       );
       throw error;
@@ -558,13 +523,13 @@ export class S3Service extends BaseS3Service {
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
-            if (file.endsWith(".json")) {
+            if (file.endsWith('.json')) {
               const fileMatch = file.match(/session_(\d+)\.json/);
               if (!fileMatch) continue;
 
               const filePath = path.join(devicePath, file);
               try {
-                const content = await fs.promises.readFile(filePath, "utf-8");
+                const content = await fs.promises.readFile(filePath, 'utf-8');
                 const rawData = JSON.parse(content);
 
                 let processedData: BufferUploadData;
@@ -597,17 +562,14 @@ export class S3Service extends BaseS3Service {
                 if (
                   !room ||
                   !recordId ||
-                  (processedData.room === room &&
-                    processedData.recordId === recordId)
+                  (processedData.room === room && processedData.recordId === recordId)
                 ) {
                   const deviceData = deviceMap.get(deviceId) || [];
                   deviceData.push(processedData);
                   deviceMap.set(deviceId, deviceData);
                 }
               } catch (parseError) {
-                this.logger.warn(
-                  `[ALL_BACKUP_PARSE_ERROR] ${filePath}: ${parseError}`,
-                );
+                this.logger.warn(`[ALL_BACKUP_PARSE_ERROR] ${filePath}: ${parseError}`);
               }
             }
           }
@@ -650,7 +612,7 @@ export class S3Service extends BaseS3Service {
   }> {
     return bufferData.bufferData.map((item) => {
       // Extract domain from method name
-      const [domain] = item.method.split(".");
+      const [domain] = item.method.split('.');
 
       return {
         protocol: {
@@ -704,8 +666,7 @@ export class S3Service extends BaseS3Service {
       }
 
       // Default limit to 10 when beforeDate is set (historical lookup)
-      const effectiveLimit =
-        options?.beforeDate && !options?.limit ? 10 : options?.limit;
+      const effectiveLimit = options?.beforeDate && !options?.limit ? 10 : options?.limit;
 
       const dateDirs = await fs.promises.readdir(this.backupDir);
       const validDateDirs = dateDirs
@@ -735,7 +696,7 @@ export class S3Service extends BaseS3Service {
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
-            if (file.endsWith(".json")) {
+            if (file.endsWith('.json')) {
               const filePath = path.join(devicePath, file);
               const stat = await fs.promises.stat(filePath);
 
@@ -749,7 +710,7 @@ export class S3Service extends BaseS3Service {
               let eventCount = undefined;
               let url = undefined;
               try {
-                const content = await fs.promises.readFile(filePath, "utf-8");
+                const content = await fs.promises.readFile(filePath, 'utf-8');
                 const data = JSON.parse(content) as BufferUploadData;
                 eventCount = data.bufferData?.length;
                 url = data.url;
@@ -759,8 +720,8 @@ export class S3Service extends BaseS3Service {
 
               backupFiles.push({
                 fileName: file,
-                room: "N/A", // room folder removed
-                recordId: "N/A", // recordId removed from filename
+                room: 'N/A', // room folder removed
+                recordId: 'N/A', // recordId removed from filename
                 deviceId,
                 timestamp,
                 date: dateDir,
@@ -773,19 +734,13 @@ export class S3Service extends BaseS3Service {
         }
 
         // Check limit (when a specific date is set, fetch all files for that date)
-        if (
-          effectiveLimit &&
-          backupFiles.length >= effectiveLimit &&
-          !options?.date
-        ) {
+        if (effectiveLimit && backupFiles.length >= effectiveLimit && !options?.date) {
           break;
         }
       }
 
       // Sort by timestamp descending (newest first)
-      backupFiles.sort(
-        (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10),
-      );
+      backupFiles.sort((a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10));
 
       // Apply limit
       if (effectiveLimit) {
@@ -812,18 +767,10 @@ export class S3Service extends BaseS3Service {
     try {
       if (this.isRemoteStorageEnabled) {
         // Beta/production: fetch from S3
-        primaryUrl = await this.getUrlsFromS3(
-          filePaths,
-          urlByFilePath,
-          primaryUrl,
-        );
+        primaryUrl = await this.getUrlsFromS3(filePaths, urlByFilePath, primaryUrl);
       } else {
         // Development: fetch from local files
-        primaryUrl = await this.getUrlsFromLocalFiles(
-          filePaths,
-          urlByFilePath,
-          primaryUrl,
-        );
+        primaryUrl = await this.getUrlsFromLocalFiles(filePaths, urlByFilePath, primaryUrl);
       }
     } catch (error) {
       this.logger.error(`[URL_EXTRACT_ERROR] ${error}`);
@@ -844,15 +791,13 @@ export class S3Service extends BaseS3Service {
     urlByFilePath: Record<string, string>,
     primaryUrl?: string,
   ): Promise<string | undefined> {
-    const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+    const bucketName = process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3';
     let resolvedPrimary = primaryUrl;
 
     for (const relativePath of filePaths) {
       let data: BufferUploadData | null = null;
 
-      const match = relativePath.match(
-        /^(\d{4}-\d{2}-\d{2})\/([^/]+)\/session_(\d+)\.json$/,
-      );
+      const match = relativePath.match(/^(\d{4}-\d{2}-\d{2})\/([^/]+)\/session_(\d+)\.json$/);
       if (match) {
         const [, dateSegment, rawDeviceId, timestampSegment] = match;
         let deviceId = rawDeviceId;
@@ -863,11 +808,7 @@ export class S3Service extends BaseS3Service {
         }
         const timestamp = Number(timestampSegment);
         if (Number.isFinite(timestamp)) {
-          data = await this.getBackupByDeviceAndTimestamp(
-            deviceId,
-            timestamp,
-            dateSegment,
-          );
+          data = await this.getBackupByDeviceAndTimestamp(deviceId, timestamp, dateSegment);
         }
       }
 
@@ -882,10 +823,7 @@ export class S3Service extends BaseS3Service {
             const bodyString = await getResponse.Body.transformToString();
             data = JSON.parse(bodyString) as BufferUploadData;
             if (data.deviceId && Number.isFinite(data.timestamp)) {
-              this.setCachedObject(
-                this.buildObjectCacheKey(data.deviceId, data.timestamp),
-                data,
-              );
+              this.setCachedObject(this.buildObjectCacheKey(data.deviceId, data.timestamp), data);
             }
           }
         } catch (error) {
@@ -918,7 +856,7 @@ export class S3Service extends BaseS3Service {
 
       if (fs.existsSync(fullPath)) {
         try {
-          const content = await fs.promises.readFile(fullPath, "utf-8");
+          const content = await fs.promises.readFile(fullPath, 'utf-8');
           const data = JSON.parse(content) as BufferUploadData;
 
           if (data.url) {
@@ -929,9 +867,7 @@ export class S3Service extends BaseS3Service {
             }
           }
         } catch (parseError) {
-          this.logger.warn(
-            `[URL_EXTRACT_PARSE_ERROR] ${relativePath}: ${parseError}`,
-          );
+          this.logger.warn(`[URL_EXTRACT_PARSE_ERROR] ${relativePath}: ${parseError}`);
         }
       } else {
         this.logger.warn(`[URL_EXTRACT_FILE_NOT_FOUND] ${relativePath}`);
@@ -979,8 +915,7 @@ export class S3Service extends BaseS3Service {
       }
 
       // Default limit to 10 when beforeDate is set (historical lookup)
-      const effectiveLimit =
-        options?.beforeDate && !options?.limit ? 10 : options?.limit;
+      const effectiveLimit = options?.beforeDate && !options?.limit ? 10 : options?.limit;
 
       const allItems = await fs.promises.readdir(this.backupDir);
 
@@ -1013,7 +948,7 @@ export class S3Service extends BaseS3Service {
           const files = await fs.promises.readdir(devicePath);
 
           for (const file of files) {
-            if (file.endsWith(".json")) {
+            if (file.endsWith('.json')) {
               const filePath = path.join(devicePath, file);
               const stat = await fs.promises.stat(filePath);
 
@@ -1041,19 +976,13 @@ export class S3Service extends BaseS3Service {
         }
 
         // Check limit (when a specific date is set, fetch all files for that date)
-        if (
-          effectiveLimit &&
-          backupFiles.length >= effectiveLimit &&
-          !options?.date
-        ) {
+        if (effectiveLimit && backupFiles.length >= effectiveLimit && !options?.date) {
           break;
         }
       }
 
       // Sort by timestamp descending (newest first)
-      backupFiles.sort(
-        (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10),
-      );
+      backupFiles.sort((a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10));
 
       // Apply limit
       if (effectiveLimit) {
@@ -1073,12 +1002,10 @@ export class S3Service extends BaseS3Service {
   /**
    * Retrieve S3 backup data by direct file paths (supports both legacy and new structure).
    */
-  public async getS3BackupByPaths(
-    filePaths: string[],
-  ): Promise<BufferUploadData[]> {
+  public async getS3BackupByPaths(filePaths: string[]): Promise<BufferUploadData[]> {
     // Sort file paths to build a deterministic cache key
     const sortedPaths = [...filePaths].sort();
-    const cacheKey = sortedPaths.join("|"); // pipe-delimited
+    const cacheKey = sortedPaths.join('|'); // pipe-delimited
 
     // Check cache
     if (this.s3PlaybackCache.has(cacheKey)) {
@@ -1094,7 +1021,7 @@ export class S3Service extends BaseS3Service {
         for (const relativePath of filePaths) {
           try {
             const getCommand = new GetObjectCommand({
-              Bucket: process.env.AWS_S3_BUCKET || "remote-debug-tools-s3",
+              Bucket: process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3',
               Key: `backups/${relativePath}`, // add backups/ prefix
             });
 
@@ -1107,9 +1034,7 @@ export class S3Service extends BaseS3Service {
               this.logger.log(`[S3_DIRECT_FILE_LOADED] ${relativePath}`);
             }
           } catch (error) {
-            this.logger.warn(
-              `[S3_DIRECT_FILE_ERROR] ${relativePath}: ${error}`,
-            );
+            this.logger.warn(`[S3_DIRECT_FILE_ERROR] ${relativePath}: ${error}`);
           }
         }
       } else {
@@ -1119,7 +1044,7 @@ export class S3Service extends BaseS3Service {
 
           if (fs.existsSync(fullPath)) {
             try {
-              const content = await fs.promises.readFile(fullPath, "utf-8");
+              const content = await fs.promises.readFile(fullPath, 'utf-8');
               const rawData = JSON.parse(content);
 
               // Convert new structure (bufferChunks) to legacy format
@@ -1152,9 +1077,7 @@ export class S3Service extends BaseS3Service {
 
               results.push(convertedData);
             } catch (parseError) {
-              this.logger.warn(
-                `[S3_SELECTED_FILE_PARSE_ERROR] ${relativePath}: ${parseError}`,
-              );
+              this.logger.warn(`[S3_SELECTED_FILE_PARSE_ERROR] ${relativePath}: ${parseError}`);
             }
           } else {
             this.logger.warn(`[S3_SELECTED_FILE_NOT_FOUND] ${relativePath}`);
@@ -1198,9 +1121,7 @@ export class S3Service extends BaseS3Service {
     // Look up the actual creation time of the current recording session
     if (!currentTimestamp) {
       // Try to extract timestamp from room name (for Buffer mode)
-      const roomTimestampMatch = room.match(
-        /(?:Record|Live|Buffer)-(?:\w+-)?(\d+)/,
-      );
+      const roomTimestampMatch = room.match(/(?:Record|Live|Buffer)-(?:\w+-)?(\d+)/);
       if (roomTimestampMatch) {
         currentTimestamp = parseInt(roomTimestampMatch[1], 10);
         this.logger.log(
@@ -1216,15 +1137,11 @@ export class S3Service extends BaseS3Service {
               `[S3_TIMESTAMP_FROM_DB] RecordId: ${recordId} → Timestamp: ${currentTimestamp} (${record.createdAt.toISOString()})`,
             );
           } else {
-            this.logger.warn(
-              `[S3_RECORD_NOT_FOUND] Record ${recordId} not found in DB`,
-            );
+            this.logger.warn(`[S3_RECORD_NOT_FOUND] Record ${recordId} not found in DB`);
             currentTimestamp = Date.now();
           }
         } catch (error) {
-          this.logger.error(
-            `[S3_DB_QUERY_ERROR] Failed to query record ${recordId}: ${error}`,
-          );
+          this.logger.error(`[S3_DB_QUERY_ERROR] Failed to query record ${recordId}: ${error}`);
           currentTimestamp = Date.now();
         }
       } else {
@@ -1260,9 +1177,7 @@ export class S3Service extends BaseS3Service {
       // Search for previous records only within the same date folder
       const devicePath = path.join(this.backupDir, targetDateDir, deviceId);
       if (!fs.existsSync(devicePath)) {
-        this.logger.log(
-          `[S3_NO_SAME_DAY_RECORDS] No backup folder found: ${devicePath}`,
-        );
+        this.logger.log(`[S3_NO_SAME_DAY_RECORDS] No backup folder found: ${devicePath}`);
         return [];
       }
 
@@ -1272,7 +1187,7 @@ export class S3Service extends BaseS3Service {
       );
 
       for (const file of files) {
-        if (file.endsWith(".json")) {
+        if (file.endsWith('.json')) {
           const fileMatch = file.match(/session_(\d+)\.json/);
           if (!fileMatch) continue;
 
@@ -1288,25 +1203,19 @@ export class S3Service extends BaseS3Service {
             this.logger.log(
               `  🎯 Current timestamp: ${currentTimestamp} (${new Date(currentTimestamp).toISOString()})`,
             );
-            this.logger.log(
-              `  ❌ Reason: File is ${Math.abs(timeDiff)}ms AFTER current time`,
-            );
+            this.logger.log(`  ❌ Reason: File is ${Math.abs(timeDiff)}ms AFTER current time`);
             continue; // exclude records after the current timestamp
           } else {
-            this.logger.log(
-              `[S3_INCLUDE_PREVIOUS_RECORD] ✅ Including ${file}`,
-            );
+            this.logger.log(`[S3_INCLUDE_PREVIOUS_RECORD] ✅ Including ${file}`);
             this.logger.log(
               `  📄 File timestamp: ${fileTimestamp} (${new Date(fileTimestamp).toISOString()})`,
             );
-            this.logger.log(
-              `  ⏰ Time difference: ${timeDiff}ms BEFORE current time`,
-            );
+            this.logger.log(`  ⏰ Time difference: ${timeDiff}ms BEFORE current time`);
           }
 
           const filePath = path.join(devicePath, file);
           try {
-            const content = await fs.promises.readFile(filePath, "utf-8");
+            const content = await fs.promises.readFile(filePath, 'utf-8');
             const rawData = JSON.parse(content);
 
             // Convert new structure (bufferChunks) to legacy format
@@ -1347,16 +1256,12 @@ export class S3Service extends BaseS3Service {
             // Collect previous records only (same date, same device)
             results.push(convertedData);
             const recordDate = new Date(fileTimestamp);
-            this.logger.log(
-              `[S3_PREVIOUS_RECORD_FOUND] ${targetDateDir}/${file}`,
-            );
+            this.logger.log(`[S3_PREVIOUS_RECORD_FOUND] ${targetDateDir}/${file}`);
             this.logger.log(
               `[S3_PREVIOUS_RECORD_DETAIL] timestamp: ${fileTimestamp} → ${recordDate.toISOString()}`,
             );
           } catch (parseError) {
-            this.logger.warn(
-              `[S3_PLAYBACK_PARSE_ERROR] ${filePath}: ${parseError}`,
-            );
+            this.logger.warn(`[S3_PLAYBACK_PARSE_ERROR] ${filePath}: ${parseError}`);
           }
         }
       }
@@ -1369,15 +1274,11 @@ export class S3Service extends BaseS3Service {
       }
 
       // Pre-sort state log
-      this.logger.log(
-        `[S3_BEFORE_SORT] Found ${results.length} previous records in same day:`,
-      );
+      this.logger.log(`[S3_BEFORE_SORT] Found ${results.length} previous records in same day:`);
       results.forEach((r, index) => {
         const recordDate = new Date(r.timestamp);
         const timeDiff = currentTimestamp - r.timestamp;
-        this.logger.log(
-          `  ${index + 1}. ${recordDate.toISOString()} (${timeDiff}ms ago)`,
-        );
+        this.logger.log(`  ${index + 1}. ${recordDate.toISOString()} (${timeDiff}ms ago)`);
       });
 
       // Sort by timestamp descending (most recent previous record first)
@@ -1391,7 +1292,7 @@ export class S3Service extends BaseS3Service {
         const recordDate = new Date(r.timestamp);
         const timeDiff = currentTimestamp - r.timestamp;
         this.logger.log(
-          `  ${index + 1}. ${recordDate.toISOString()} (${timeDiff}ms ago) ← ${index === 0 ? "Most recent previous" : "Older previous"}`,
+          `  ${index + 1}. ${recordDate.toISOString()} (${timeDiff}ms ago) ← ${index === 0 ? 'Most recent previous' : 'Older previous'}`,
         );
       });
 
@@ -1408,16 +1309,16 @@ export class S3Service extends BaseS3Service {
         .slice(0, 3)
         .map((r) => {
           const recordDate = new Date(r.timestamp);
-          return `${recordDate.toISOString().split("T")[0]} ${recordDate.toTimeString().split(" ")[0]}`;
+          return `${recordDate.toISOString().split('T')[0]} ${recordDate.toTimeString().split(' ')[0]}`;
         })
-        .join(", ");
+        .join(', ');
 
       this.logger.log(
         `[S3_PREVIOUS_RECORDS_LOADED] Found ${results.length} previous records before ${currentTimestamp}`,
       );
       if (results.length > 0) {
         this.logger.log(
-          `[S3_PREVIOUS_RECORDS_TOP3] Latest previous: ${resultSummary}${results.length > 3 ? "..." : ""}`,
+          `[S3_PREVIOUS_RECORDS_TOP3] Latest previous: ${resultSummary}${results.length > 3 ? '...' : ''}`,
         );
       }
       return results;
@@ -1430,9 +1331,7 @@ export class S3Service extends BaseS3Service {
   /**
    * Save buffer data to file.
    */
-  public async saveBufferDataToFile(
-    bufferData: BufferUploadData,
-  ): Promise<void> {
+  public async saveBufferDataToFile(bufferData: BufferUploadData): Promise<void> {
     try {
       const { deviceId, timestamp, date } = bufferData;
 
@@ -1441,7 +1340,7 @@ export class S3Service extends BaseS3Service {
       );
 
       // Use KST-based date (fall back to current date if not provided)
-      const targetDate = date || new Date().toISOString().split("T")[0];
+      const targetDate = date || new Date().toISOString().split('T')[0];
 
       // Save path: backups/YYYY-MM-DD/deviceId/session_timestamp.json
       const devicePath = path.join(this.backupDir, targetDate, deviceId);
@@ -1464,19 +1363,11 @@ export class S3Service extends BaseS3Service {
       }
 
       // Write file
-      await fs.promises.writeFile(
-        filePath,
-        JSON.stringify(bufferData, null, 2),
-        "utf-8",
-      );
+      await fs.promises.writeFile(filePath, JSON.stringify(bufferData, null, 2), 'utf-8');
 
-      this.logger.log(
-        `[BUFFER_SAVED] ${filePath}, events: ${bufferData.bufferData?.length || 0}`,
-      );
+      this.logger.log(`[BUFFER_SAVED] ${filePath}, events: ${bufferData.bufferData?.length || 0}`);
     } catch (error) {
-      this.logger.error(
-        `[BUFFER_SAVE_ERROR] Failed to save buffer data: ${error}`,
-      );
+      this.logger.error(`[BUFFER_SAVE_ERROR] Failed to save buffer data: ${error}`);
       throw error;
     }
   }

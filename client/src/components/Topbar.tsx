@@ -1,23 +1,17 @@
-import { ChevronRight, Menu, Monitor, Moon, Search, Sparkles, Sun } from "lucide-react";
-import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { ChevronRight, Menu, Monitor, Moon, Search, Sparkles, Sun } from 'lucide-react';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useLocation } from 'react-router-dom';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { allNavItems } from "@/lib/nav";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { allNavItems } from '@/lib/nav';
+import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
+const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 interface Crumb {
   label: string;
@@ -25,11 +19,11 @@ interface Crumb {
 }
 
 function buildCrumbs(pathname: string): Crumb[] {
-  if (pathname === "/" || pathname === "") {
-    return [{ label: "Home" }];
+  if (pathname === '/' || pathname === '') {
+    return [{ label: 'Home' }];
   }
 
-  const parts = pathname.split("/").filter(Boolean);
+  const parts = pathname.split('/').filter(Boolean);
   const crumbs: Crumb[] = [];
 
   // First segment: try to map to nav label
@@ -44,7 +38,7 @@ function buildCrumbs(pathname: string): Crumb[] {
     const isLast = i === parts.length - 1;
     crumbs.push({
       label: prettify(parts[i]),
-      to: isLast ? undefined : `/${parts.slice(0, i + 1).join("/")}`,
+      to: isLast ? undefined : `/${parts.slice(0, i + 1).join('/')}`,
     });
   }
 
@@ -67,27 +61,24 @@ export function Topbar() {
 
   // Cycle: light → dark → system → light. GitHub / Vercel pattern.
   const cycleTheme = () => {
-    setTheme(theme === "light" ? "dark" : theme === "dark" ? "system" : "light");
+    setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light');
   };
-  const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+  const ThemeIcon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
   const themeLabel =
-    theme === "light"
-      ? "Light theme · switch to dark"
-      : theme === "dark"
-        ? "Dark theme · switch to system"
-        : "System theme · switch to light";
+    theme === 'light'
+      ? 'Light theme · switch to dark'
+      : theme === 'dark'
+        ? 'Dark theme · switch to system'
+        : 'System theme · switch to light';
 
-  const crumbs = useMemo(
-    () => buildCrumbs(location.pathname),
-    [location.pathname],
-  );
+  const crumbs = useMemo(() => buildCrumbs(location.pathname), [location.pathname]);
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex items-center gap-1.5 sm:gap-2",
-        "h-14 px-2 sm:px-3 lg:px-5 safe-pt",
-        "border-b border-border bg-bg/80 backdrop-blur-xl",
+        'sticky top-0 z-30 flex items-center gap-1.5 sm:gap-2',
+        'h-14 px-2 sm:px-3 lg:px-5 safe-pt',
+        'border-b border-border bg-bg/80 backdrop-blur-xl',
       )}
     >
       {/* Mobile sidebar trigger — full 44×44 touch target on phones */}
@@ -96,7 +87,7 @@ export function Topbar() {
         size="icon"
         className="lg:hidden touch-target"
         onClick={() => setSidebarOpen(true)}
-        aria-label={t("sidebar.expand")}
+        aria-label={t('sidebar.expand')}
       >
         <Menu />
       </Button>
@@ -115,10 +106,7 @@ export function Topbar() {
           return (
             <div
               key={idx}
-              className={cn(
-                "flex items-center gap-1 min-w-0",
-                !isLeaf && "hidden sm:flex",
-              )}
+              className={cn('flex items-center gap-1 min-w-0', !isLeaf && 'hidden sm:flex')}
             >
               {idx > 0 && (
                 <ChevronRight className="size-3.5 text-fg-faint shrink-0 hidden sm:block" />
@@ -132,11 +120,8 @@ export function Topbar() {
                 </Link>
               ) : (
                 <span
-                  aria-current={isLast ? "page" : undefined}
-                  className={cn(
-                    "truncate",
-                    isLast ? "text-fg font-medium" : "text-fg-subtle",
-                  )}
+                  aria-current={isLast ? 'page' : undefined}
+                  className={cn('truncate', isLast ? 'text-fg font-medium' : 'text-fg-subtle')}
                 >
                   {crumb.label}
                 </span>
@@ -157,13 +142,11 @@ export function Topbar() {
               data-testid="demo-mode-badge"
             >
               <Sparkles className="size-3" />
-              <span className="hidden sm:inline">{t("topbar.demoMode")}</span>
+              <span className="hidden sm:inline">{t('topbar.demoMode')}</span>
               <span className="sm:hidden">Demo</span>
             </Badge>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("topbar.demoModeTooltip")}
-          </TooltipContent>
+          <TooltipContent side="bottom">{t('topbar.demoModeTooltip')}</TooltipContent>
         </Tooltip>
       )}
 
@@ -175,10 +158,10 @@ export function Topbar() {
             type="button"
             onClick={cycleTheme}
             className={cn(
-              "hidden lg:inline-flex items-center justify-center size-8 rounded-md shrink-0",
-              "border border-border bg-surface text-fg-subtle",
-              "hover:border-border-strong hover:text-fg transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              'hidden lg:inline-flex items-center justify-center size-8 rounded-md shrink-0',
+              'border border-border bg-surface text-fg-subtle',
+              'hover:border-border-strong hover:text-fg transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             )}
             aria-label={themeLabel}
             data-testid="topbar-theme-toggle"
@@ -194,17 +177,17 @@ export function Topbar() {
         type="button"
         onClick={toggleCommand}
         className={cn(
-          "group flex items-center justify-center gap-2 rounded-md shrink-0",
-          "h-9 w-9 sm:h-8 sm:w-auto sm:pl-2.5 sm:pr-2 touch-target",
-          "border border-border bg-surface text-sm text-fg-faint",
-          "hover:border-border-strong hover:text-fg-subtle transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          'group flex items-center justify-center gap-2 rounded-md shrink-0',
+          'h-9 w-9 sm:h-8 sm:w-auto sm:pl-2.5 sm:pr-2 touch-target',
+          'border border-border bg-surface text-sm text-fg-faint',
+          'hover:border-border-strong hover:text-fg-subtle transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         )}
-        aria-label={t("topbar.openCommandPalette")}
+        aria-label={t('topbar.openCommandPalette')}
       >
         <Search className="size-4 sm:size-3.5" />
-        <span className="hidden sm:inline pr-3">{t("topbar.search")}</span>
-        <Kbd className="hidden sm:inline-flex">{isMac ? "⌘" : "Ctrl"}</Kbd>
+        <span className="hidden sm:inline pr-3">{t('topbar.search')}</span>
+        <Kbd className="hidden sm:inline-flex">{isMac ? '⌘' : 'Ctrl'}</Kbd>
         <Kbd className="hidden sm:inline-flex">K</Kbd>
       </button>
     </header>

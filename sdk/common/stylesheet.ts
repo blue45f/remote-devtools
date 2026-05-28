@@ -8,16 +8,11 @@ export function createStyleSheet(styleSheetId: string): CSSStyleSheet {
   return styleSheet;
 }
 
-export function getStyleSheetById(
-  styleSheetId: string,
-): CSSStyleSheet | undefined {
+export function getStyleSheetById(styleSheetId: string): CSSStyleSheet | undefined {
   return styleSheetMap.get(styleSheetId);
 }
 
-export function setStyleSheet(
-  styleSheetId: string,
-  styleSheet: CSSStyleSheet,
-): void {
+export function setStyleSheet(styleSheetId: string, styleSheet: CSSStyleSheet): void {
   styleSheetMap.set(styleSheetId, styleSheet);
 }
 
@@ -29,10 +24,7 @@ export function getInlineStyleNodeId(styleSheetId: string): number | undefined {
   return inlineStyleNodeIds.get(styleSheetId);
 }
 
-export function setInlineStyleSheetId(
-  nodeId: number,
-  styleSheetId: string,
-): void {
+export function setInlineStyleSheetId(nodeId: number, styleSheetId: string): void {
   inlineStyleSheetIds.set(nodeId, styleSheetId);
   inlineStyleNodeIds.set(styleSheetId, nodeId);
 }

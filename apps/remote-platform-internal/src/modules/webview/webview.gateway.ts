@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,12 +7,12 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-} from "@nestjs/websockets";
-import { randomUUID } from "node:crypto";
-import { Server } from "ws";
-import * as WebSocket from "ws";
+} from '@nestjs/websockets';
+import { randomUUID } from 'node:crypto';
+import { Server } from 'ws';
+import * as WebSocket from 'ws';
 
-import { MSG_ID } from "@remote-platform/constants";
+import { MSG_ID } from '@remote-platform/constants';
 import {
   DomService,
   NetworkService,
@@ -20,49 +20,32 @@ import {
   RuntimeService,
   ScreenService,
   type BufferUploadData,
-} from "@remote-platform/core";
-import type { IncomingMessage } from "node:http";
+} from '@remote-platform/core';
+import type { IncomingMessage } from 'node:http';
 
-import { S3Service } from "../s3/s3.service";
+import { S3Service } from '../s3/s3.service';
 
-import { ObjectReconstructionService } from "./object-reconstruction.service";
-import { S3PlaybackService } from "./s3-playback.service";
-import {
-  DevtoolsData,
-  ProtocolEntry,
-  ProtocolMessage,
-  RoomData,
-} from "./webview.types";
+import { ObjectReconstructionService } from './object-reconstruction.service';
+import { S3PlaybackService } from './s3-playback.service';
+import { DevtoolsData, ProtocolEntry, ProtocolMessage, RoomData } from './webview.types';
 
 // Re-export types for backward compatibility
-export type {
-  DevtoolsData,
-  ProtocolEntry,
-  ProtocolMessage,
-  RoomData,
-} from "./webview.types";
+export type { DevtoolsData, ProtocolEntry, ProtocolMessage, RoomData } from './webview.types';
 
-import escapeHtml from "escape-html";
+import escapeHtml from 'escape-html';
 
-type BufferPlaybackEvent = BufferUploadData["bufferData"][number];
-type PropertySnapshotsMap = Parameters<
-  ObjectReconstructionService["reconstructObjectAsJson"]
->[1];
-type ReconstructArguments = Parameters<
-  ObjectReconstructionService["reconstructObjectAsJson"]
->[2];
+type BufferPlaybackEvent = BufferUploadData['bufferData'][number];
+type PropertySnapshotsMap = Parameters<ObjectReconstructionService['reconstructObjectAsJson']>[1];
+type ReconstructArguments = Parameters<ObjectReconstructionService['reconstructObjectAsJson']>[2];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-const toParams = (value: unknown): Record<string, unknown> =>
-  isRecord(value) ? value : {};
+const toParams = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
 
-const parseProtocolMessage = (
-  message: string | object,
-): ProtocolMessage | null => {
+const parseProtocolMessage = (message: string | object): ProtocolMessage | null => {
   try {
-    const parsed = typeof message === "string" ? JSON.parse(message) : message;
+    const parsed = typeof message === 'string' ? JSON.parse(message) : message;
     return isRecord(parsed) ? (parsed as ProtocolMessage) : null;
   } catch {
     return null;
@@ -71,17 +54,15 @@ const parseProtocolMessage = (
 
 const hasProtocolMethod = (
   protocol: ProtocolMessage,
-): protocol is ProtocolMessage & { method: string } =>
-  typeof protocol.method === "string";
+): protocol is ProtocolMessage & { method: string } => typeof protocol.method === 'string';
 
 const getFiniteRequestId = (params: Record<string, unknown>): number | null => {
   const requestId = params.requestId;
-  if (requestId === undefined || requestId === null || requestId === "") {
+  if (requestId === undefined || requestId === null || requestId === '') {
     return null;
   }
 
-  const numericRequestId =
-    typeof requestId === "number" ? requestId : Number(requestId);
+  const numericRequestId = typeof requestId === 'number' ? requestId : Number(requestId);
   return Number.isFinite(numericRequestId) ? numericRequestId : null;
 };
 
@@ -90,9 +71,7 @@ const getFiniteRequestId = (params: Record<string, unknown>): number | null => {
 // ---------------------------------------------------------------------------
 
 @WebSocketGateway()
-export class WebviewGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebviewGateway.name);
 
   private readonly rooms: Map<string, RoomData> = new Map();
@@ -100,8 +79,7 @@ export class WebviewGateway
   private readonly devtoolsMap: Map<WebSocket, DevtoolsData> = new Map();
 
   /** Per-device buffer data storage (used during live streaming). */
-  private readonly bufferStorage: Map<string, BufferPlaybackEvent[]> =
-    new Map();
+  private readonly bufferStorage: Map<string, BufferPlaybackEvent[]> = new Map();
 
   @WebSocketServer() public server: Server;
 
@@ -126,19 +104,11 @@ export class WebviewGateway
    */
   private sendMessage(socket: WebSocket, data: unknown): void {
     try {
-      const method =
-        isRecord(data) && typeof data.method === "string"
-          ? data.method
-          : undefined;
-      const event =
-        isRecord(data) && typeof data.event === "string"
-          ? data.event
-          : undefined;
+      const method = isRecord(data) && typeof data.method === 'string' ? data.method : undefined;
+      const event = isRecord(data) && typeof data.event === 'string' ? data.event : undefined;
 
       if (socket.readyState !== WebSocket.OPEN) {
-        this.logger.warn(
-          `[SOCKET_NOT_READY] WebSocket closed, skipping: ${method || event}`,
-        );
+        this.logger.warn(`[SOCKET_NOT_READY] WebSocket closed, skipping: ${method || event}`);
         return;
       }
 
@@ -146,7 +116,7 @@ export class WebviewGateway
       socket.send(message);
 
       // Only log initialisation and error-related messages
-      if (event || method?.includes("enable") || method?.includes("Error")) {
+      if (event || method?.includes('enable') || method?.includes('Error')) {
         this.logger.log(`[SOCKET] ${method || event}`);
       }
     } catch (error) {
@@ -168,11 +138,8 @@ export class WebviewGateway
     propertySnapshotsMap: PropertySnapshotsMap,
   ): void {
     const params = toParams(protocol.params);
-    const objectId =
-      typeof params.objectId === "string" ? params.objectId : undefined;
-    const properties = objectId
-      ? propertySnapshotsMap.get(objectId)
-      : undefined;
+    const objectId = typeof params.objectId === 'string' ? params.objectId : undefined;
+    const properties = objectId ? propertySnapshotsMap.get(objectId) : undefined;
 
     if (properties) {
       this.logger.debug(`Found properties for objectId: ${objectId}`);
@@ -201,37 +168,31 @@ export class WebviewGateway
     modeLabel: string,
   ): void {
     const params = toParams(protocol.params);
-    const objectId =
-      typeof params.objectId === "string" ? params.objectId : undefined;
+    const objectId = typeof params.objectId === 'string' ? params.objectId : undefined;
     const functionDeclaration =
-      typeof params.functionDeclaration === "string"
-        ? params.functionDeclaration
-        : "";
+      typeof params.functionDeclaration === 'string' ? params.functionDeclaration : '';
     const args: ReconstructArguments = Array.isArray(params.arguments)
       ? (params.arguments as ReconstructArguments)
       : [];
 
-    this.logger.debug(
-      `Runtime.callFunctionOn called for objectId: ${objectId}`,
-    );
+    this.logger.debug(`Runtime.callFunctionOn called for objectId: ${objectId}`);
 
     const isCopyObjectCall =
-      functionDeclaration.includes("toStringForClipboard") ||
-      functionDeclaration.includes("JSON.stringify");
+      functionDeclaration.includes('toStringForClipboard') ||
+      functionDeclaration.includes('JSON.stringify');
 
     if (isCopyObjectCall && objectId) {
-      const jsonResult =
-        this.objectReconstructionService.reconstructObjectAsJson(
-          objectId,
-          propertySnapshotsMap,
-          args,
-        );
+      const jsonResult = this.objectReconstructionService.reconstructObjectAsJson(
+        objectId,
+        propertySnapshotsMap,
+        args,
+      );
 
       this.sendMessage(client, {
         id: protocol.id,
         result: {
           result: {
-            type: "string",
+            type: 'string',
             value: jsonResult,
           },
         },
@@ -257,36 +218,36 @@ export class WebviewGateway
     // Network domain
     this.sendMessage(client, {
       id: MSG_ID.NETWORK.ENABLE,
-      method: "Network.enable",
+      method: 'Network.enable',
       params: { maxPostDataSize: 65536 },
     });
     this.sendMessage(client, {
       id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-      method: "Network.setAttachDebugStack",
+      method: 'Network.setAttachDebugStack',
       params: { enabled: true },
     });
     this.sendMessage(client, {
       id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-      method: "Network.clearAcceptedEncodingsOverride",
+      method: 'Network.clearAcceptedEncodingsOverride',
       params: {},
     });
 
     // Runtime domain
     this.sendMessage(client, {
       id: MSG_ID.RUNTIME.ENABLE,
-      method: "Runtime.enable",
+      method: 'Runtime.enable',
       params: {},
     });
 
     // Page domain
     this.sendMessage(client, {
       id: MSG_ID.PAGE.ENABLE,
-      method: "Page.enable",
+      method: 'Page.enable',
       params: {},
     });
     this.sendMessage(client, {
       id: MSG_ID.PAGE.GET_RESOURCE_TREE,
-      method: "Page.getResourceTree",
+      method: 'Page.getResourceTree',
       params: {},
     });
   }
@@ -295,12 +256,12 @@ export class WebviewGateway
   private sendDomAndScreenInitMessages(client: WebSocket): void {
     this.sendMessage(client, {
       id: MSG_ID.DOM.ENABLE,
-      method: "DOM.enable",
+      method: 'DOM.enable',
       params: {},
     });
     this.sendMessage(client, {
       id: MSG_ID.SCREEN.START_PREVIEW,
-      method: "ScreenPreview.startPreview",
+      method: 'ScreenPreview.startPreview',
       params: {},
     });
   }
@@ -344,14 +305,12 @@ export class WebviewGateway
           );
         }
       } catch (error) {
-        this.logger.error(
-          `[ROOM_CREATED_ERROR] Failed to get record timestamp: ${error}`,
-        );
+        this.logger.error(`[ROOM_CREATED_ERROR] Failed to get record timestamp: ${error}`);
       }
     }
 
     this.sendMessage(client, {
-      event: "roomCreated",
+      event: 'roomCreated',
       roomName,
       recordId,
       timestamp: roomTimestamp,
@@ -366,22 +325,22 @@ export class WebviewGateway
     await this.screenService.upsert({
       recordId,
       protocol: {
-        method: "session_start",
+        method: 'session_start',
         params: { url: client.url, userAgent: client.protocol },
       },
       timestamp,
       type: null,
-      eventType: "session_start",
+      eventType: 'session_start',
     });
   }
 
-  @SubscribeMessage("createRoom")
+  @SubscribeMessage('createRoom')
   public async handleCreateRoom(
     @MessageBody() data: { recordMode?: boolean },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     const { recordMode = false } = data;
-    const room = `${recordMode ? "Record-" : "Live-"}${randomUUID()}`;
+    const room = `${recordMode ? 'Record-' : 'Live-'}${randomUUID()}`;
     await this.createRoom(room, client, recordMode);
   }
 
@@ -389,7 +348,7 @@ export class WebviewGateway
   // Buffer events (live streaming)
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("bufferEvent")
+  @SubscribeMessage('bufferEvent')
   public async handleBufferEvent(
     @MessageBody()
     data: {
@@ -405,7 +364,7 @@ export class WebviewGateway
       const { room, deviceId, event } = data;
 
       // Skip buffer events for Record / Live rooms (prevent session.json creation)
-      if (room.startsWith("Record-") || room.startsWith("Live-")) {
+      if (room.startsWith('Record-') || room.startsWith('Live-')) {
         this.logger.log(
           `[BUFFER_SKIP] Skipping buffer event for ${room} - record/live room detected`,
         );
@@ -424,14 +383,10 @@ export class WebviewGateway
           `[BUFFER_EVENT] Stored event for device ${deviceId}: ${event.method}, total: ${deviceBuffer.length}`,
         );
       } else {
-        this.logger.error(
-          `[BUFFER_EVENT] Failed to get device buffer for: ${deviceId}`,
-        );
+        this.logger.error(`[BUFFER_EVENT] Failed to get device buffer for: ${deviceId}`);
       }
     } catch (error) {
-      this.logger.error(
-        `[BUFFER_EVENT] Error storing buffer event: ${(error as Error).message}`,
-      );
+      this.logger.error(`[BUFFER_EVENT] Error storing buffer event: ${(error as Error).message}`);
     }
   }
 
@@ -439,49 +394,33 @@ export class WebviewGateway
   // Connection handling
   // -------------------------------------------------------------------------
 
-  public async handleConnection(
-    client: WebSocket,
-    req: IncomingMessage,
-  ): Promise<void> {
+  public async handleConnection(client: WebSocket, req: IncomingMessage): Promise<void> {
     this.logger.log(`[WS_CONNECTION] New connection attempt (url=${req?.url})`);
 
     const devtoolsId = randomUUID();
-    const {
-      room,
-      recordMode,
-      recordId,
-      playbackDevice,
-      s3Backup,
-      deviceId,
-      filePaths,
-    } = this.parseQueryParams(req?.url || "");
+    const { room, recordMode, recordId, playbackDevice, s3Backup, deviceId, filePaths } =
+      this.parseQueryParams(req?.url || '');
 
     this.logger.log(
       `[WS_CONNECTION] Parsed params: room=${room}, recordMode=${recordMode}, recordId=${recordId}, s3Backup=${s3Backup}`,
     );
 
     // S3 backup playback mode (s3Backup=true with filePaths)
-    if (s3Backup === "true" && filePaths) {
-      this.logger.log("[WS_CONNECTION] S3 backup playback mode detected");
-      await this.handleS3BackupPlaybackByPaths(
-        client,
-        deviceId || "unknown",
-        filePaths,
-      );
+    if (s3Backup === 'true' && filePaths) {
+      this.logger.log('[WS_CONNECTION] S3 backup playback mode detected');
+      await this.handleS3BackupPlaybackByPaths(client, deviceId || 'unknown', filePaths);
       return;
     }
 
     // Legacy backup playback mode (playbackDevice present) -- kept for compatibility
     if (playbackDevice && room && recordId) {
-      this.logger.log(
-        `[WS_CONNECTION] Legacy backup playback mode for device: ${playbackDevice}`,
-      );
+      this.logger.log(`[WS_CONNECTION] Legacy backup playback mode for device: ${playbackDevice}`);
       await this.handleBackupPlayback(client, room, recordId, playbackDevice);
       return;
     }
 
     // Record mode reconnection: recordMode=true and a recordId is provided
-    if (recordMode === "true" && recordId) {
+    if (recordMode === 'true' && recordId) {
       this.sendRecordModeInitMessages(client);
       this.sendDomAndScreenInitMessages(client);
 
@@ -494,22 +433,20 @@ export class WebviewGateway
         const screen = await this.screenService.findLatestScreen(recordId);
         if (screen) {
           this.sendMessage(client, screen.protocol);
-          this.logger.log(
-            "[DB_AUTO_SCREEN] Automatically sent latest screen data",
-          );
+          this.logger.log('[DB_AUTO_SCREEN] Automatically sent latest screen data');
         }
       }, 100);
 
-      client.on("message", async (message: string) => {
+      client.on('message', async (message: string) => {
         const protocol = parseProtocolMessage(message);
         if (!protocol) {
-          this.logger.error("[RECORD_MODE_RECONNECT] Failed to parse message");
+          this.logger.error('[RECORD_MODE_RECONNECT] Failed to parse message');
           return;
         }
-        if (protocol.method === "Page.getResourceTree") {
+        if (protocol.method === 'Page.getResourceTree') {
           this.sendMessage(client, { id: protocol.id });
         }
-        if (protocol.method === "ScreenPreview.startPreview") {
+        if (protocol.method === 'ScreenPreview.startPreview') {
           screenPreviewActive = true;
           void this.screenService.findLatestScreen(recordId).then((screen) => {
             if (screen) {
@@ -517,7 +454,7 @@ export class WebviewGateway
             }
           });
         }
-        if (protocol.method === "ScreenPreview.stopPreview") {
+        if (protocol.method === 'ScreenPreview.stopPreview') {
           screenPreviewActive = false;
         }
         // When DevTools is ready to receive DOM data, send from DB
@@ -526,26 +463,24 @@ export class WebviewGateway
           if (dom) {
             this.sendMessage(client, {
               result: dom.protocol,
-              id: protocol["id"],
+              id: protocol['id'],
             });
           } else {
-            this.logger.warn(
-              `[RECORD_MODE] No DOM data found for recordId=${recordId}`,
-            );
+            this.logger.warn(`[RECORD_MODE] No DOM data found for recordId=${recordId}`);
             this.sendMessage(client, {
-              id: protocol["id"],
+              id: protocol['id'],
               result: { root: null },
             });
           }
         }
       });
-      client.on("close", () => this.handleDisconnect(client));
+      client.on('close', () => this.handleDisconnect(client));
       await this.handleRecordMode(client, recordId);
       return;
     }
 
     if (!room) {
-      this.logger.log("No room specified, closing connection");
+      this.logger.log('No room specified, closing connection');
       client.close();
       return;
     }
@@ -555,15 +490,15 @@ export class WebviewGateway
       this.logger.log(`Adding devtools client to existing room: ${room}`);
       roomData.devtools.set(devtoolsId, client);
       this.devtoolsMap.set(client, { room, devtoolsId });
-      client.on("message", (message: string) => {
+      client.on('message', (message: string) => {
         const parsed = parseProtocolMessage(message);
         if (!parsed) {
-          this.logger.error("[DEVTOOLS_MESSAGE] Failed to parse message");
+          this.logger.error('[DEVTOOLS_MESSAGE] Failed to parse message');
           return;
         }
         this.handleDevtoolsMessage(room, parsed);
       });
-      client.on("close", () => this.handleDisconnect(client));
+      client.on('close', () => this.handleDisconnect(client));
     } else {
       this.logger.log(`Room ${room} not found, closing connection`);
       client.close();
@@ -574,26 +509,20 @@ export class WebviewGateway
   // Record mode playback (DB-based)
   // -------------------------------------------------------------------------
 
-  private async handleRecordMode(
-    client: WebSocket,
-    recordId: number,
-  ): Promise<void> {
+  private async handleRecordMode(client: WebSocket, recordId: number): Promise<void> {
     // Send URL information if available
     const record = await this.recordService.findOne(recordId);
     if (record?.url) {
       this.sendMessage(client, {
-        method: "Page.navigatedWithinDocument",
-        params: { frameId: "main", url: record.url },
+        method: 'Page.navigatedWithinDocument',
+        params: { frameId: 'main', url: record.url },
       });
     }
 
     // Send stored network records
     const networks = await this.networkService.findNetworks(recordId);
     this.logger.log(`Found ${networks.length} network records`);
-    networks.forEach(
-      (network) =>
-        network.protocol && this.sendMessage(client, network.protocol),
-    );
+    networks.forEach((network) => network.protocol && this.sendMessage(client, network.protocol));
 
     // Send stored runtime records and collect property snapshots
     const runtimes = await this.runtimeService.findRuntimes(recordId);
@@ -609,26 +538,24 @@ export class WebviewGateway
       this.objectReconstructionService.collectPropertySnapshots(runtimeEntries);
 
     // Handle subsequent DevTools requests
-    client.on("message", (message: string) => {
+    client.on('message', (message: string) => {
       const protocol = parseProtocolMessage(message);
       if (!protocol) {
-        this.logger.error("[RECORD_PLAYBACK] Failed to parse message");
+        this.logger.error('[RECORD_PLAYBACK] Failed to parse message');
         return;
       }
 
       // Network.getResponseBody
-      if (protocol.method === "Network.getResponseBody") {
+      if (protocol.method === 'Network.getResponseBody') {
         const params = toParams(protocol.params);
         const data = networks.find(
-          (network) =>
-            network.requestId === params.requestId &&
-            network.base64Encoded !== null,
+          (network) => network.requestId === params.requestId && network.base64Encoded !== null,
         );
 
         if (!data) {
           this.sendMessage(client, {
             id: protocol.id,
-            error: { message: "No response body found" },
+            error: { message: 'No response body found' },
           });
           return;
         }
@@ -644,18 +571,13 @@ export class WebviewGateway
       }
 
       // Runtime.getProperties (object expansion in playback)
-      if (protocol.method === "Runtime.getProperties") {
+      if (protocol.method === 'Runtime.getProperties') {
         this.handleGetPropertiesRequest(client, protocol, propertySnapshotsMap);
       }
 
       // Runtime.callFunctionOn (Copy Object in playback)
-      if (protocol.method === "Runtime.callFunctionOn") {
-        this.handleCallFunctionOnRequest(
-          client,
-          protocol,
-          propertySnapshotsMap,
-          "recording",
-        );
+      if (protocol.method === 'Runtime.callFunctionOn') {
+        this.handleCallFunctionOnRequest(client, protocol, propertySnapshotsMap, 'recording');
       }
     });
   }
@@ -688,30 +610,30 @@ export class WebviewGateway
     };
 
     if (!url) {
-      this.logger.debug("No URL provided for parsing");
+      this.logger.debug('No URL provided for parsing');
       return empty;
     }
 
-    const urlParts = url.split("?");
+    const urlParts = url.split('?');
     if (urlParts.length < 2) {
       this.logger.debug(`No query params in URL: ${url}`);
       return empty;
     }
 
     const queryParams = new URLSearchParams(urlParts[1]);
-    const recordIdParam = queryParams.get("recordId");
-    const fileCountParam = queryParams.get("fileCount");
+    const recordIdParam = queryParams.get('recordId');
+    const fileCountParam = queryParams.get('fileCount');
 
     const result = {
-      room: queryParams.get("room"),
-      recordMode: queryParams.get("recordMode"),
+      room: queryParams.get('room'),
+      recordMode: queryParams.get('recordMode'),
       recordId: recordIdParam ? Number(recordIdParam) : null,
-      playbackDevice: queryParams.get("playbackDevice"),
-      s3Backup: queryParams.get("s3Backup"),
-      deviceId: queryParams.get("deviceId"),
-      date: queryParams.get("date"),
+      playbackDevice: queryParams.get('playbackDevice'),
+      s3Backup: queryParams.get('s3Backup'),
+      deviceId: queryParams.get('deviceId'),
+      date: queryParams.get('date'),
       fileCount: fileCountParam ? Number(fileCountParam) : null,
-      filePaths: queryParams.get("filePaths"),
+      filePaths: queryParams.get('filePaths'),
     };
 
     this.logger.debug(`Parsed params: ${JSON.stringify(result)}`);
@@ -734,30 +656,24 @@ export class WebviewGateway
       );
 
       // Retrieve device-specific backup data from S3
-      const deviceData = await this.s3Service.getBufferDataByDeviceId(
-        deviceId,
-        room,
-        recordId,
-      );
+      const deviceData = await this.s3Service.getBufferDataByDeviceId(deviceId, room, recordId);
 
       if (!deviceData || deviceData.length === 0) {
         this.sendMessage(client, {
-          event: "error",
+          event: 'error',
           message: `No backup data found for device ${deviceId}.`,
         });
         client.close();
         return;
       }
 
-      this.logger.log(
-        `Found ${deviceData.length} backup sessions for device ${deviceId}`,
-      );
+      this.logger.log(`Found ${deviceData.length} backup sessions for device ${deviceId}`);
 
       // Send URL information from the first backup
       if (deviceData[0]?.url) {
         this.sendMessage(client, {
-          method: "Page.navigatedWithinDocument",
-          params: { frameId: "main", url: deviceData[0].url },
+          method: 'Page.navigatedWithinDocument',
+          params: { frameId: 'main', url: deviceData[0].url },
         });
       }
 
@@ -768,7 +684,7 @@ export class WebviewGateway
           allProtocols.push({
             protocol: { method: event.method, params: toParams(event.params) },
             timestamp: event.timestamp,
-            domain: event.method.split(".")[0],
+            domain: event.method.split('.')[0],
           });
         }
       }
@@ -785,25 +701,23 @@ export class WebviewGateway
       });
 
       // Handle subsequent DevTools requests
-      client.on("message", (message: string) => {
+      client.on('message', (message: string) => {
         const protocol = parseProtocolMessage(message);
         if (!protocol) {
-          this.logger.error("[BACKUP_PLAYBACK] Failed to parse message");
+          this.logger.error('[BACKUP_PLAYBACK] Failed to parse message');
           return;
         }
 
-        if (protocol.method === "Page.getResourceTree") {
+        if (protocol.method === 'Page.getResourceTree') {
           this.sendMessage(client, { id: protocol.id });
         }
 
-        this.logger.log(
-          `[BACKUP_PLAYBACK] DevTools request: ${protocol.method}`,
-        );
+        this.logger.log(`[BACKUP_PLAYBACK] DevTools request: ${protocol.method}`);
       });
 
       // Notify playback completion
       this.sendMessage(client, {
-        event: "playbackComplete",
+        event: 'playbackComplete',
         data: { room, recordId, deviceId, totalEvents: allProtocols.length },
       });
 
@@ -811,8 +725,8 @@ export class WebviewGateway
     } catch (error) {
       this.logger.error(`Backup playback error: ${(error as Error).message}`);
       this.sendMessage(client, {
-        event: "error",
-        message: "An error occurred during backup data playback.",
+        event: 'error',
+        message: 'An error occurred during backup data playback.',
       });
       client.close();
     }
@@ -828,14 +742,14 @@ export class WebviewGateway
     filePaths: string,
   ): Promise<void> {
     try {
-      const pathArray = filePaths.split(",").filter((path) => path.trim());
+      const pathArray = filePaths.split(',').filter((path) => path.trim());
 
       const backupData = await this.s3Service.getS3BackupByPaths(pathArray);
 
       if (!backupData || backupData.length === 0) {
         this.sendMessage(client, {
-          event: "error",
-          message: "No backup data found for the specified file paths.",
+          event: 'error',
+          message: 'No backup data found for the specified file paths.',
         });
         client.close();
         return;
@@ -847,13 +761,10 @@ export class WebviewGateway
 
       await this.processS3BackupData(client, deviceId, backupData);
     } catch (error) {
-      this.logger.error(
-        `[S3_DIRECT_PLAYBACK_ERROR] ${(error as Error).message}`,
-      );
+      this.logger.error(`[S3_DIRECT_PLAYBACK_ERROR] ${(error as Error).message}`);
       this.sendMessage(client, {
-        event: "error",
-        message:
-          "An error occurred during S3 backup playback via direct paths.",
+        event: 'error',
+        message: 'An error occurred during S3 backup playback via direct paths.',
       });
       client.close();
     }
@@ -869,20 +780,16 @@ export class WebviewGateway
     backupData: BufferUploadData[],
   ): Promise<void> {
     // Extract session start time from the oldest backup
-    const sessionStartTime =
-      this.s3PlaybackService.extractSessionStartTime(backupData);
+    const sessionStartTime = this.s3PlaybackService.extractSessionStartTime(backupData);
 
     // Generate an S3 session ID (s3-deviceId-timestamp-index format)
-    const s3SessionId = this.s3PlaybackService.generateS3SessionId(
-      deviceId,
-      sessionStartTime,
-    );
+    const s3SessionId = this.s3PlaybackService.generateS3SessionId(deviceId, sessionStartTime);
     this.logger.log(`[S3_PLAYBACK] Generated S3 session ID: ${s3SessionId}`);
 
     // Send S3 session ID to DevTools so the Session Replay API returns correct data
     if (s3SessionId) {
       this.sendMessage(client, {
-        method: "SessionReplay.setSessionId",
+        method: 'SessionReplay.setSessionId',
         params: { sessionId: s3SessionId },
       });
     }
@@ -894,20 +801,17 @@ export class WebviewGateway
     // Send URL information
     if (backupData[0]?.url) {
       this.sendMessage(client, {
-        method: "Page.navigatedWithinDocument",
-        params: { frameId: "main", url: backupData[0].url },
+        method: 'Page.navigatedWithinDocument',
+        params: { frameId: 'main', url: backupData[0].url },
       });
     }
 
     // Automatically send the latest screen data from S3 cache after a short delay
     setTimeout(() => {
-      const latestScreenData =
-        this.s3PlaybackService.findScreenDataInS3Cache(client);
+      const latestScreenData = this.s3PlaybackService.findScreenDataInS3Cache(client);
       if (latestScreenData) {
         this.sendMessage(client, latestScreenData);
-        this.logger.log(
-          "[S3_AUTO_SCREEN] Automatically sent latest screen data",
-        );
+        this.logger.log('[S3_AUTO_SCREEN] Automatically sent latest screen data');
       }
     }, 100);
 
@@ -915,25 +819,15 @@ export class WebviewGateway
     this.s3PlaybackService.initializeClientCaches(client, backupData);
 
     // Get the response body cache for this client
-    const responseBodyCache =
-      this.s3PlaybackService.getResponseBodyCache(client);
+    const responseBodyCache = this.s3PlaybackService.getResponseBodyCache(client);
     if (!responseBodyCache) {
-      this.logger.error(
-        "[S3_PLAYBACK] Failed to initialize response body cache",
-      );
+      this.logger.error('[S3_PLAYBACK] Failed to initialize response body cache');
       return;
     }
 
     // Classify backup events into domain-specific protocol arrays
-    const {
-      networkProtocols,
-      runtimeProtocols,
-      sessionReplayProtocols,
-      otherProtocols,
-    } = this.s3PlaybackService.classifyBackupEvents(
-      backupData,
-      responseBodyCache,
-    );
+    const { networkProtocols, runtimeProtocols, sessionReplayProtocols, otherProtocols } =
+      this.s3PlaybackService.classifyBackupEvents(backupData, responseBodyCache);
 
     // Sort each group chronologically
     this.s3PlaybackService.sortProtocolsByTimestamp(networkProtocols);
@@ -974,23 +868,14 @@ export class WebviewGateway
       }
     });
 
-    this.logger.log(
-      `[S3_PLAYBACK] Sent ${sentCount}/${totalProtocols} protocols to DevTools`,
-    );
+    this.logger.log(`[S3_PLAYBACK] Sent ${sentCount}/${totalProtocols} protocols to DevTools`);
 
     // Collect property snapshots from runtime events (for object expansion)
     const propertySnapshotsMap =
-      this.objectReconstructionService.collectPropertySnapshots(
-        runtimeProtocols,
-      );
+      this.objectReconstructionService.collectPropertySnapshots(runtimeProtocols);
 
     // Register DevTools request handler for this S3 playback session
-    this.registerS3PlaybackMessageHandler(
-      client,
-      backupData,
-      deviceId,
-      propertySnapshotsMap,
-    );
+    this.registerS3PlaybackMessageHandler(client, backupData, deviceId, propertySnapshotsMap);
   }
 
   // -------------------------------------------------------------------------
@@ -1008,56 +893,45 @@ export class WebviewGateway
     deviceId: string,
     propertySnapshotsMap: PropertySnapshotsMap,
   ): void {
-    client.on("message", async (message: string) => {
+    client.on('message', async (message: string) => {
       const protocol = parseProtocolMessage(message);
       if (!protocol) {
-        this.logger.error("[S3_PLAYBACK] Failed to parse message");
+        this.logger.error('[S3_PLAYBACK] Failed to parse message');
         return;
       }
 
-      if (protocol.method === "Page.getResourceTree") {
+      if (protocol.method === 'Page.getResourceTree') {
         this.handlePageGetResourceTree(client, protocol, backupData);
       }
 
-      if (protocol.method === "DOM.getDocument") {
+      if (protocol.method === 'DOM.getDocument') {
         this.handleDomGetDocument(client, protocol, deviceId);
       }
 
-      if (protocol.method === "ScreenPreview.startPreview") {
-        const screenData =
-          this.s3PlaybackService.findScreenDataInS3Cache(client);
+      if (protocol.method === 'ScreenPreview.startPreview') {
+        const screenData = this.s3PlaybackService.findScreenDataInS3Cache(client);
         if (screenData) {
           this.sendMessage(client, screenData);
         } else {
           this.sendMessage(client, {
             id: protocol.id,
             result: {
-              message: "No screen capture available in buffered session",
+              message: 'No screen capture available in buffered session',
             },
           });
         }
       }
 
-      if (protocol.method === "Network.getResponseBody") {
-        this.handleNetworkGetResponseBody(
-          client,
-          protocol,
-          backupData,
-          deviceId,
-        );
+      if (protocol.method === 'Network.getResponseBody') {
+        this.handleNetworkGetResponseBody(client, protocol, backupData, deviceId);
       }
 
-      if (protocol.method === "Runtime.getProperties") {
+      if (protocol.method === 'Runtime.getProperties') {
         this.handleGetPropertiesRequest(client, protocol, propertySnapshotsMap);
       }
 
-      if (protocol.method === "Runtime.callFunctionOn") {
-        this.handleCallFunctionOnRequest(
-          client,
-          protocol,
-          propertySnapshotsMap,
-          "S3 backup",
-        );
+      if (protocol.method === 'Runtime.callFunctionOn') {
+        this.handleCallFunctionOnRequest(client, protocol, propertySnapshotsMap, 'S3 backup');
       }
     });
   }
@@ -1068,7 +942,7 @@ export class WebviewGateway
     protocol: ProtocolMessage,
     backupData: BufferUploadData[],
   ): void {
-    const mainUrl = backupData[0]?.url || "https://buffered-session.local";
+    const mainUrl = backupData[0]?.url || 'https://buffered-session.local';
 
     try {
       const parsedUrl = new URL(mainUrl);
@@ -1077,19 +951,17 @@ export class WebviewGateway
         result: {
           frameTree: {
             frame: {
-              id: "main",
+              id: 'main',
               loaderId: `loader-${Date.now()}`,
               url: mainUrl,
               domainAndRegistry: parsedUrl.hostname,
               securityOrigin: parsedUrl.origin,
-              mimeType: "text/html",
-              secureContextType: "Secure",
-              crossOriginIsolatedContextType: "NotIsolated",
+              mimeType: 'text/html',
+              secureContextType: 'Secure',
+              crossOriginIsolatedContextType: 'NotIsolated',
               gatedAPIFeatures: [],
             },
-            resources: [
-              { url: mainUrl, type: "Document", mimeType: "text/html" },
-            ],
+            resources: [{ url: mainUrl, type: 'Document', mimeType: 'text/html' }],
           },
         },
       });
@@ -1100,21 +972,21 @@ export class WebviewGateway
         result: {
           frameTree: {
             frame: {
-              id: "main",
+              id: 'main',
               loaderId: `loader-${Date.now()}`,
-              url: "https://buffered-session.local",
-              domainAndRegistry: "buffered-session.local",
-              securityOrigin: "https://buffered-session.local",
-              mimeType: "text/html",
-              secureContextType: "Secure",
-              crossOriginIsolatedContextType: "NotIsolated",
+              url: 'https://buffered-session.local',
+              domainAndRegistry: 'buffered-session.local',
+              securityOrigin: 'https://buffered-session.local',
+              mimeType: 'text/html',
+              secureContextType: 'Secure',
+              crossOriginIsolatedContextType: 'NotIsolated',
               gatedAPIFeatures: [],
             },
             resources: [
               {
-                url: "https://buffered-session.local",
-                type: "Document",
-                mimeType: "text/html",
+                url: 'https://buffered-session.local',
+                type: 'Document',
+                mimeType: 'text/html',
               },
             ],
           },
@@ -1134,36 +1006,36 @@ export class WebviewGateway
       root: {
         nodeId: 1,
         nodeType: 9, // DOCUMENT_NODE
-        nodeName: "#document",
-        localName: "",
-        nodeValue: "",
+        nodeName: '#document',
+        localName: '',
+        nodeValue: '',
         children: [
           {
             nodeId: 2,
             nodeType: 1, // ELEMENT_NODE
-            nodeName: "HTML",
-            localName: "html",
-            nodeValue: "",
+            nodeName: 'HTML',
+            localName: 'html',
+            nodeValue: '',
             children: [
               {
                 nodeId: 3,
                 nodeType: 1,
-                nodeName: "HEAD",
-                localName: "head",
-                nodeValue: "",
+                nodeName: 'HEAD',
+                localName: 'head',
+                nodeValue: '',
                 children: [
                   {
                     nodeId: 4,
                     nodeType: 1,
-                    nodeName: "TITLE",
-                    localName: "title",
-                    nodeValue: "",
+                    nodeName: 'TITLE',
+                    localName: 'title',
+                    nodeValue: '',
                     children: [
                       {
                         nodeId: 5,
                         nodeType: 3, // TEXT_NODE
-                        nodeName: "#text",
-                        nodeValue: "Buffered Session",
+                        nodeName: '#text',
+                        nodeValue: 'Buffered Session',
                       },
                     ],
                   },
@@ -1172,27 +1044,22 @@ export class WebviewGateway
               {
                 nodeId: 6,
                 nodeType: 1,
-                nodeName: "BODY",
-                localName: "body",
-                nodeValue: "",
+                nodeName: 'BODY',
+                localName: 'body',
+                nodeValue: '',
                 children: [
                   {
                     nodeId: 7,
                     nodeType: 1,
-                    nodeName: "DIV",
-                    localName: "div",
-                    nodeValue: "",
-                    attributes: [
-                      "id",
-                      "app",
-                      "class",
-                      "remote-debugger-session",
-                    ],
+                    nodeName: 'DIV',
+                    localName: 'div',
+                    nodeValue: '',
+                    attributes: ['id', 'app', 'class', 'remote-debugger-session'],
                     children: [
                       {
                         nodeId: 8,
                         nodeType: 3,
-                        nodeName: "#text",
+                        nodeName: '#text',
                         nodeValue: `Buffered session from device: ${deviceId}`,
                       },
                     ],
@@ -1219,12 +1086,8 @@ export class WebviewGateway
     deviceId: string,
   ): void {
     const params = toParams(protocol.params);
-    const requestId =
-      typeof params.requestId === "number" ? params.requestId : NaN;
-    const responseData = this.s3PlaybackService.findResponseBodyInS3Cache(
-      client,
-      requestId,
-    );
+    const requestId = typeof params.requestId === 'number' ? params.requestId : NaN;
+    const responseData = this.s3PlaybackService.findResponseBodyInS3Cache(client, requestId);
 
     const finalResponse = responseData || {
       body: `<!DOCTYPE html>
@@ -1235,7 +1098,7 @@ export class WebviewGateway
     <h1>Buffered Session Data</h1>
     <p>Device: ${escapeHtml(deviceId)}</p>
     <p>Sessions: ${backupData.length}</p>
-    <p>URL: ${escapeHtml(backupData[0]?.url || "Unknown")}</p>
+    <p>URL: ${escapeHtml(backupData[0]?.url || 'Unknown')}</p>
   </div>
 </body>
 </html>`,
@@ -1252,7 +1115,7 @@ export class WebviewGateway
   // Message handlers
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("messageToDevtools")
+  @SubscribeMessage('messageToDevtools')
   public handleMessageToDevtools(
     @MessageBody()
     data: { room: string; devtoolsId: string; message: string | object },
@@ -1264,24 +1127,23 @@ export class WebviewGateway
       this.sendMessage(devtools, data.message as ProtocolMessage);
     } else {
       this.sendMessage(client, {
-        event: "error",
-        message: "Devtools not found",
+        event: 'error',
+        message: 'Devtools not found',
       });
     }
 
     if (roomData?.recordMode) {
       const protocol = parseProtocolMessage(data.message);
       if (!protocol) {
-        this.logger.warn("[MESSAGE_TO_DEVTOOLS] Failed to parse message JSON");
+        this.logger.warn('[MESSAGE_TO_DEVTOOLS] Failed to parse message JSON');
         return;
       }
-      const protocolId =
-        typeof protocol.id === "number" ? protocol.id : undefined;
+      const protocolId = typeof protocol.id === 'number' ? protocol.id : undefined;
       if (this.domService.isEnableDomResponseMessage(protocolId)) {
         // DOM is enabled -- request DOM data
         this.sendMessage(client, {
           id: MSG_ID.DOM.GET_DOCUMENT,
-          method: "DOM.getDocument",
+          method: 'DOM.getDocument',
           params: {},
         });
       } else if (this.domService.isGetDomResponseMessage(protocolId)) {
@@ -1291,20 +1153,20 @@ export class WebviewGateway
           recordId: roomData.recordId,
           protocol,
           timestamp,
-          type: "entireDom",
+          type: 'entireDom',
         });
       }
     }
   }
 
-  @SubscribeMessage("protocolToAllDevtools")
+  @SubscribeMessage('protocolToAllDevtools')
   public async handleProtocolToAllDevtools(
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     const protocol = parseProtocolMessage(data.message);
     if (!protocol || !hasProtocolMethod(protocol)) {
-      this.logger.error("[PROTOCOL_TO_ALL] Failed to parse message");
+      this.logger.error('[PROTOCOL_TO_ALL] Failed to parse message');
       return;
     }
     const roomData = this.rooms.get(data.room);
@@ -1315,7 +1177,7 @@ export class WebviewGateway
         const timestamp = Date.now() * 1_000_000; // milliseconds -> nanoseconds
         const params = toParams(protocol.params);
 
-        if (protocol.method.startsWith("Network.")) {
+        if (protocol.method.startsWith('Network.')) {
           const requestId = getFiniteRequestId(params);
           if (requestId === null) {
             return;
@@ -1329,16 +1191,16 @@ export class WebviewGateway
           });
         }
 
-        if (protocol.method.startsWith("DOM.updated")) {
+        if (protocol.method.startsWith('DOM.updated')) {
           await this.domService.upsert({
             recordId: roomData.recordId,
             protocol: { root: protocol.params },
             timestamp,
-            type: "entireDom",
+            type: 'entireDom',
           });
         }
 
-        if (protocol.method.startsWith("Runtime.")) {
+        if (protocol.method.startsWith('Runtime.')) {
           await this.runtimeService.create({
             recordId: roomData.recordId,
             protocol,
@@ -1346,29 +1208,28 @@ export class WebviewGateway
           });
         }
 
-        if (protocol.method.startsWith("ScreenPreview.captured")) {
+        if (protocol.method.startsWith('ScreenPreview.captured')) {
           // Determine event type
-          let eventType: "full_snapshot" | "incremental_snapshot" =
-            "incremental_snapshot";
+          let eventType: 'full_snapshot' | 'incremental_snapshot' = 'incremental_snapshot';
           if (params.isFirstSnapshot) {
-            eventType = "full_snapshot";
+            eventType = 'full_snapshot';
           }
 
           await this.screenService.upsert({
             recordId: roomData.recordId,
             protocol,
             timestamp,
-            type: "screenPreview",
+            type: 'screenPreview',
             eventType: eventType,
           });
         }
       }
     } else {
-      this.sendMessage(client, { event: "error", message: "Room not found" });
+      this.sendMessage(client, { event: 'error', message: 'Room not found' });
     }
   }
 
-  @SubscribeMessage("updateResponseBody")
+  @SubscribeMessage('updateResponseBody')
   public async handleResponseBody(
     @MessageBody()
     data: {
@@ -1381,9 +1242,7 @@ export class WebviewGateway
     const roomData = this.rooms.get(data.room);
     const recordId = roomData?.recordId;
     if (!recordId) {
-      this.logger.warn(
-        `[UPDATE_RESPONSE_BODY] Missing recordId for room=${data.room}`,
-      );
+      this.logger.warn(`[UPDATE_RESPONSE_BODY] Missing recordId for room=${data.room}`);
       return;
     }
     await this.networkService.updateResponseBody({ recordId, ...data });
@@ -1404,16 +1263,14 @@ export class WebviewGateway
 
         await this.screenService.upsert({
           recordId: roomData.recordId,
-          protocol: { method: "session_end", params: {} },
+          protocol: { method: 'session_end', params: {} },
           timestamp: endTime,
           type: null,
-          eventType: "session_end",
+          eventType: 'session_end',
         });
 
         // Calculate and update session duration
-        const startEvent = await this.screenService.findScreens(
-          roomData.recordId,
-        );
+        const startEvent = await this.screenService.findScreens(roomData.recordId);
         if (startEvent && startEvent.length > 0) {
           const startTime = startEvent[0].timestamp;
           const duration = endTime - Number(startTime);
@@ -1430,9 +1287,7 @@ export class WebviewGateway
 
     const devtoolsInfo = this.devtoolsMap.get(client);
     if (devtoolsInfo) {
-      this.rooms
-        .get(devtoolsInfo.room)
-        ?.devtools.delete(devtoolsInfo.devtoolsId);
+      this.rooms.get(devtoolsInfo.room)?.devtools.delete(devtoolsInfo.devtoolsId);
       this.devtoolsMap.delete(client);
     }
 
@@ -1457,7 +1312,7 @@ export class WebviewGateway
   private handleDevtoolsMessage(room: string, message: unknown): void {
     const roomData = this.rooms.get(room);
     // Forward devtools messages directly (no protocol wrapper)
-    const raw = typeof message === "string" ? message : JSON.stringify(message);
+    const raw = typeof message === 'string' ? message : JSON.stringify(message);
     roomData?.client.send(raw);
   }
 }

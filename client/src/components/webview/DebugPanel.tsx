@@ -1,17 +1,8 @@
-import {
-  ArrowDownToLine,
-  Code2,
-  Edit,
-  Loader2,
-  Plus,
-  Send,
-  Terminal,
-  Trash2,
-} from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowDownToLine, Code2, Edit, Loader2, Plus, Send, Terminal, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface DebugPanelProps {
   domNodes: string[];
@@ -43,9 +34,7 @@ export default function DebugPanel({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
-          SDK debug panel
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">SDK debug panel</h1>
         <p className="text-sm text-fg-subtle mt-1">
           Trigger SDK-instrumented events to verify capture in the DevTools.
         </p>
@@ -120,9 +109,7 @@ export default function DebugPanel({
           <div className="flex items-center gap-2 mb-3 text-[11px] uppercase tracking-wider font-semibold text-fg-faint">
             <Code2 className="size-3" />
             Captured DOM nodes
-            <span className="font-mono text-fg-subtle">
-              ({domNodes.length})
-            </span>
+            <span className="font-mono text-fg-subtle">({domNodes.length})</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {domNodes.map((char, index) => (
@@ -148,15 +135,15 @@ function Section({
   children,
 }: {
   badge: string;
-  badgeTone: "success" | "info" | "warning";
+  badgeTone: 'success' | 'info' | 'warning';
   title: string;
   description: string;
   children: ReactNode;
 }) {
   const tone = {
-    success: "bg-success-soft text-success",
-    info: "bg-accent-soft text-accent-soft-fg",
-    warning: "bg-warning-soft text-warning",
+    success: 'bg-success-soft text-success',
+    info: 'bg-accent-soft text-accent-soft-fg',
+    warning: 'bg-warning-soft text-warning',
   }[badgeTone];
 
   return (

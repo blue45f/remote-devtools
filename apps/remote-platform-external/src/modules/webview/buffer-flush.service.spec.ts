@@ -1,15 +1,15 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ScreenService } from "@remote-platform/core";
+import { ScreenService } from '@remote-platform/core';
 
-import { BufferService } from "../buffer/buffer.service";
-import { S3Service } from "../s3/s3.service";
-import { CdpEventPersistenceService } from "./cdp-event-persistence.service";
-import { BufferFlushService } from "./buffer-flush.service";
+import { BufferService } from '../buffer/buffer.service';
+import { S3Service } from '../s3/s3.service';
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+import { BufferFlushService } from './buffer-flush.service';
 
-describe("BufferFlushService", () => {
+describe('BufferFlushService', () => {
   let service: BufferFlushService;
   const mockBufferService = {
     getBuffer: vi.fn(),
@@ -41,32 +41,32 @@ describe("BufferFlushService", () => {
     service = module.get<BufferFlushService>(BufferFlushService);
   });
 
-  describe("initialization", () => {
-    it("should be defined", () => {
+  describe('initialization', () => {
+    it('should be defined', () => {
       expect(service).toBeDefined();
     });
   });
 
-  describe("triggerBufferSave", () => {
-    it("should be a public method", () => {
+  describe('triggerBufferSave', () => {
+    it('should be a public method', () => {
       expect(service.triggerBufferSave).toBeDefined();
     });
   });
 
-  describe("flushBufferToFile", () => {
-    it("should be a public method", () => {
+  describe('flushBufferToFile', () => {
+    it('should be a public method', () => {
       expect(service.flushBufferToFile).toBeDefined();
     });
   });
 
-  describe("flushBufferToFileForce", () => {
-    it("should be a public method", () => {
+  describe('flushBufferToFileForce', () => {
+    it('should be a public method', () => {
       expect(service.flushBufferToFileForce).toBeDefined();
     });
   });
 
-  describe("transferBufferedDataToRecord", () => {
-    it("should be a public method", () => {
+  describe('transferBufferedDataToRecord', () => {
+    it('should be a public method', () => {
       expect(service.transferBufferedDataToRecord).toBeDefined();
     });
   });

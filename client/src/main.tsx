@@ -1,31 +1,31 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { StrictMode, Suspense, lazy } from "react";
-import { createRoot } from "react-dom/client";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { QueryClientProvider } from '@tanstack/react-query';
+import { StrictMode, Suspense, lazy } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
-import ErrorBoundary from "@/components/ErrorBoundary";
-import Layout from "@/components/Layout";
-import { RequireAuth } from "@/components/RequireAuth";
-import { Spinner } from "@/components/ui/spinner";
-import { queryClient } from "@/lib/api";
-import { AuthProvider } from "@/lib/auth";
-import "@/lib/i18n"; // side-effect import — initialises react-i18next
-import { initSentry } from "@/lib/sentry";
+import ErrorBoundary from '@/components/ErrorBoundary';
+import Layout from '@/components/Layout';
+import { RequireAuth } from '@/components/RequireAuth';
+import { Spinner } from '@/components/ui/spinner';
+import { queryClient } from '@/lib/api';
+import { AuthProvider } from '@/lib/auth';
+import '@/lib/i18n'; // side-effect import — initialises react-i18next
+import { initSentry } from '@/lib/sentry';
 
-import "./index.css";
+import './index.css';
 
 initSentry();
 
-const Landing = lazy(() => import("@/pages/Landing"));
-const Pricing = lazy(() => import("@/pages/Pricing"));
-const SignIn = lazy(() => import("@/pages/SignIn"));
-const SignUp = lazy(() => import("@/pages/SignUp"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Sessions = lazy(() => import("@/pages/Sessions"));
-const SessionDetail = lazy(() => import("@/pages/SessionDetail"));
-const SdkModule = lazy(() => import("@/pages/SdkModule"));
-const SdkScript = lazy(() => import("@/pages/SdkScript"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
+const Landing = lazy(() => import('@/pages/Landing'));
+const Pricing = lazy(() => import('@/pages/Pricing'));
+const SignIn = lazy(() => import('@/pages/SignIn'));
+const SignUp = lazy(() => import('@/pages/SignUp'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Sessions = lazy(() => import('@/pages/Sessions'));
+const SessionDetail = lazy(() => import('@/pages/SessionDetail'));
+const SdkModule = lazy(() => import('@/pages/SdkModule'));
+const SdkScript = lazy(() => import('@/pages/SdkScript'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
 
 function PageLoader() {
   return (
@@ -35,9 +35,9 @@ function PageLoader() {
   );
 }
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Root element #root was not found");
+  throw new Error('Root element #root was not found');
 }
 
 createRoot(rootElement).render(
@@ -68,10 +68,7 @@ createRoot(rootElement).render(
                   <Route path="sandbox/module" element={<SdkModule />} />
                   <Route path="sandbox/script" element={<SdkScript />} />
                   {/* Legacy redirects (preserve old links) */}
-                  <Route
-                    path="test"
-                    element={<Navigate to="/sandbox/script" replace />}
-                  />
+                  <Route path="test" element={<Navigate to="/sandbox/script" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

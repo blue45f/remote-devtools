@@ -1,16 +1,9 @@
-import type { HTMLAttributes } from "react";
+import type { HTMLAttributes } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
-export function Skeleton({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      aria-hidden="true"
-      className={cn("animate-shimmer rounded-md", className)}
-      {...props}
-    />
+    <div aria-hidden="true" className={cn('animate-shimmer rounded-md', className)} {...props} />
   );
 }

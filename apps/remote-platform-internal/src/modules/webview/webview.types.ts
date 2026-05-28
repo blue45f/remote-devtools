@@ -1,4 +1,4 @@
-import type * as WebSocket from "ws";
+import type * as WebSocket from 'ws';
 
 // ---------------------------------------------------------------------------
 // Types

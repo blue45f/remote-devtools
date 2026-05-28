@@ -5,19 +5,16 @@ import {
   Injectable,
   Logger,
   SetMetadata,
-} from "@nestjs/common";
-import { ModuleRef, Reflector } from "@nestjs/core";
-import type { Request } from "express";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import type { Repository } from "typeorm";
+} from '@nestjs/common';
+import { ModuleRef, Reflector } from '@nestjs/core';
+import type { Request } from 'express';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
 
-import type { AuthClaims } from "./auth.service";
-import {
-  OrganizationEntity,
-  type OrganizationPlan,
-} from "@remote-platform/entity";
+import type { AuthClaims } from './auth.service';
+import { OrganizationEntity, type OrganizationPlan } from '@remote-platform/entity';
 
-export type Plan = "free" | "starter" | "pro";
+export type Plan = 'free' | 'starter' | 'pro';
 
 /**
  * Plan tiers in ascending order. A user on tier N may access any route
@@ -29,10 +26,10 @@ const PLAN_RANK: Record<Plan, number> = {
   pro: 2,
 };
 
-const PLAN_META_KEY = "rd:requiredPlan";
+const PLAN_META_KEY = 'rd:requiredPlan';
 
 function toPlan(value: unknown): OrganizationPlan | null {
-  if (value === "free" || value === "starter" || value === "pro") {
+  if (value === 'free' || value === 'starter' || value === 'pro') {
     return value;
   }
   return null;
@@ -69,21 +66,17 @@ export class PlanGuard implements CanActivate {
   ) {}
 
   public async canActivate(context: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<Plan | undefined>(
-      PLAN_META_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const required = this.reflector.getAllAndOverride<Plan | undefined>(PLAN_META_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     if (!required) return true; // unannotated route
 
-    const req = context
-      .switchToHttp()
-      .getRequest<Request & { auth?: AuthClaims }>();
+    const req = context.switchToHttp().getRequest<Request & { auth?: AuthClaims }>();
     const orgPlan = await this.getPlanByOrganization(req.auth?.org);
     const claimPlan = organizationPlanFromClaims(req.auth?.plan);
     if (!orgPlan && req.auth?.plan !== undefined && !claimPlan) {
-      throw new ForbiddenException(
-        `Invalid plan claim "${req.auth?.plan}" on this token.`,
-      );
+      throw new ForbiddenException(`Invalid plan claim "${req.auth?.plan}" on this token.`);
     }
     const callerPlan = orgPlan ?? claimPlan;
 
@@ -94,24 +87,21 @@ export class PlanGuard implements CanActivate {
     const callerRank = PLAN_RANK[callerPlan] ?? -1;
     const requiredRank = PLAN_RANK[required];
     if (callerRank < requiredRank) {
-      throw new ForbiddenException(
-        `This endpoint requires the "${required}" plan or higher`,
-      );
+      throw new ForbiddenException(`This endpoint requires the "${required}" plan or higher`);
     }
     return true;
   }
 
-  private async getPlanByOrganization(
-    orgId?: string,
-  ): Promise<OrganizationPlan | null> {
+  private async getPlanByOrganization(orgId?: string): Promise<OrganizationPlan | null> {
     const normalizedOrgId = orgId?.trim();
     if (!normalizedOrgId) {
       return null;
     }
 
-    const repository = this.moduleRef.get<
-      Repository<OrganizationEntity> | undefined
-    >(getRepositoryToken(OrganizationEntity), { strict: false });
+    const repository = this.moduleRef.get<Repository<OrganizationEntity> | undefined>(
+      getRepositoryToken(OrganizationEntity),
+      { strict: false },
+    );
     if (!repository) {
       return null;
     }

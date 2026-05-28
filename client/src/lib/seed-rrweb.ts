@@ -16,7 +16,7 @@ interface RrwebEvent {
   data: unknown;
 }
 
-function makeFullSnapshot(): RrwebEvent["data"] {
+function makeFullSnapshot(): RrwebEvent['data'] {
   // ids must be unique, 1 = document
   return {
     node: {
@@ -25,24 +25,24 @@ function makeFullSnapshot(): RrwebEvent["data"] {
         // Doctype
         {
           type: 1,
-          name: "html",
-          publicId: "",
-          systemId: "",
+          name: 'html',
+          publicId: '',
+          systemId: '',
           id: 2,
         },
         {
           type: 2, // Element <html>
-          tagName: "html",
-          attributes: { lang: "en" },
+          tagName: 'html',
+          attributes: { lang: 'en' },
           childNodes: [
             {
               type: 2,
-              tagName: "head",
+              tagName: 'head',
               attributes: {},
               childNodes: [
                 {
                   type: 2,
-                  tagName: "style",
+                  tagName: 'style',
                   attributes: {},
                   childNodes: [
                     {
@@ -74,31 +74,29 @@ function makeFullSnapshot(): RrwebEvent["data"] {
             },
             {
               type: 2,
-              tagName: "body",
+              tagName: 'body',
               attributes: {},
               childNodes: [
                 {
                   type: 2,
-                  tagName: "div",
-                  attributes: { class: "wrap" },
+                  tagName: 'div',
+                  attributes: { class: 'wrap' },
                   childNodes: [
                     {
                       type: 2,
-                      tagName: "span",
-                      attributes: { class: "pill" },
-                      childNodes: [
-                        { type: 3, textContent: "Replay · demo", id: 102 },
-                      ],
+                      tagName: 'span',
+                      attributes: { class: 'pill' },
+                      childNodes: [{ type: 3, textContent: 'Replay · demo', id: 102 }],
                       id: 101,
                     },
                     {
                       type: 2,
-                      tagName: "h1",
+                      tagName: 'h1',
                       attributes: {},
                       childNodes: [
                         {
                           type: 3,
-                          textContent: "Checkout flow · live trace",
+                          textContent: 'Checkout flow · live trace',
                           id: 104,
                         },
                       ],
@@ -106,13 +104,13 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                     },
                     {
                       type: 2,
-                      tagName: "p",
+                      tagName: 'p',
                       attributes: {},
                       childNodes: [
                         {
                           type: 3,
                           textContent:
-                            "A captured customer session showing how rrweb-player replays DOM mutations, mouse activity, and console events captured by the SDK.",
+                            'A captured customer session showing how rrweb-player replays DOM mutations, mouse activity, and console events captured by the SDK.',
                           id: 106,
                         },
                       ],
@@ -120,29 +118,29 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                     },
                     {
                       type: 2,
-                      tagName: "div",
-                      attributes: { class: "card" },
+                      tagName: 'div',
+                      attributes: { class: 'card' },
                       childNodes: [
                         {
                           type: 2,
-                          tagName: "div",
-                          attributes: { class: "row" },
+                          tagName: 'div',
+                          attributes: { class: 'row' },
                           childNodes: [
                             {
                               type: 2,
-                              tagName: "span",
-                              attributes: { class: "dot" },
+                              tagName: 'span',
+                              attributes: { class: 'dot' },
                               childNodes: [],
                               id: 110,
                             },
                             {
                               type: 2,
-                              tagName: "strong",
+                              tagName: 'strong',
                               attributes: {},
                               childNodes: [
                                 {
                                   type: 3,
-                                  textContent: "Session live",
+                                  textContent: 'Session live',
                                   id: 112,
                                 },
                               ],
@@ -150,12 +148,12 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                             },
                             {
                               type: 2,
-                              tagName: "span",
-                              attributes: { class: "meta" },
+                              tagName: 'span',
+                              attributes: { class: 'meta' },
                               childNodes: [
                                 {
                                   type: 3,
-                                  textContent: "device · iPhone 15",
+                                  textContent: 'device · iPhone 15',
                                   id: 114,
                                 },
                               ],
@@ -166,25 +164,23 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                         },
                         {
                           type: 2,
-                          tagName: "div",
-                          attributes: { class: "grid" },
+                          tagName: 'div',
+                          attributes: { class: 'grid' },
                           childNodes: [
-                            statBox(120, "events", "0", "captured"),
-                            statBox(123, "errors", "0", "console"),
-                            statBox(126, "duration", "00:00", "elapsed"),
+                            statBox(120, 'events', '0', 'captured'),
+                            statBox(123, 'errors', '0', 'console'),
+                            statBox(126, 'duration', '00:00', 'elapsed'),
                           ],
                           id: 119,
                         },
                         {
                           type: 2,
-                          tagName: "button",
+                          tagName: 'button',
                           attributes: {
-                            class: "btn",
-                            style: "margin-top:14px",
+                            class: 'btn',
+                            style: 'margin-top:14px',
                           },
-                          childNodes: [
-                            { type: 3, textContent: "Continue", id: 131 },
-                          ],
+                          childNodes: [{ type: 3, textContent: 'Continue', id: 131 }],
                           id: 130,
                         },
                       ],
@@ -195,8 +191,8 @@ function makeFullSnapshot(): RrwebEvent["data"] {
                 },
                 {
                   type: 2,
-                  tagName: "div",
-                  attributes: { id: "cursor" },
+                  tagName: 'div',
+                  attributes: { id: 'cursor' },
                   childNodes: [],
                   id: 200,
                 },
@@ -216,23 +212,21 @@ function makeFullSnapshot(): RrwebEvent["data"] {
 function statBox(baseId: number, label: string, big: string, sub: string) {
   return {
     type: 2,
-    tagName: "div",
-    attributes: { class: "stat" },
+    tagName: 'div',
+    attributes: { class: 'stat' },
     childNodes: [
       {
         type: 2,
-        tagName: "b",
+        tagName: 'b',
         attributes: { id: `stat-${label}` },
         childNodes: [{ type: 3, textContent: big, id: baseId + 1 }],
         id: baseId,
       },
       {
         type: 2,
-        tagName: "span",
+        tagName: 'span',
         attributes: {},
-        childNodes: [
-          { type: 3, textContent: `${label} · ${sub}`, id: baseId + 2 },
-        ],
+        childNodes: [{ type: 3, textContent: `${label} · ${sub}`, id: baseId + 2 }],
         id: baseId + 3,
       },
     ],
@@ -249,7 +243,7 @@ export function buildSeedRrwebEvents(start: number): RrwebEvent[] {
   events.push({
     type: 4,
     timestamp: start,
-    data: { href: "https://shop.example.com/cart", width: 1024, height: 640 },
+    data: { href: 'https://shop.example.com/cart', width: 1024, height: 640 },
   });
   events.push({
     type: 2,
@@ -291,7 +285,7 @@ export function buildSeedRrwebEvents(start: number): RrwebEvent[] {
           { id: 124, value: String(Math.floor(i / 3)) },
           {
             id: 127,
-            value: `00:${String(i * 4).padStart(2, "0")}`,
+            value: `00:${String(i * 4).padStart(2, '0')}`,
           },
         ],
         attributes: [],

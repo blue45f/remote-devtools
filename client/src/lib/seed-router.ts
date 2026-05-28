@@ -10,8 +10,8 @@ import {
   buildTicketTrend,
   liveSeedSessions,
   recordSeedSessions,
-} from "./seed";
-import { buildSeedRrwebEvents } from "./seed-rrweb";
+} from './seed';
+import { buildSeedRrwebEvents } from './seed-rrweb';
 
 interface DemoComment {
   id: number;
@@ -33,15 +33,15 @@ function seedDemoComments(recordId: number): DemoComment[] {
     {
       id: recordId * 1000 + 1,
       timestampMs: 4500,
-      body: "Login button is offset to the right — looks broken on iPhone SE.",
-      author: "qa",
+      body: 'Login button is offset to the right — looks broken on iPhone SE.',
+      author: 'qa',
       createdAt: new Date(Date.now() - 3 * 60_000).toISOString(),
     },
     {
       id: recordId * 1000 + 2,
       timestampMs: 12000,
       body: "Confirmed: the spinner doesn't disappear after the request resolves.",
-      author: "frontend",
+      author: 'frontend',
       createdAt: new Date(Date.now() - 2 * 60_000).toISOString(),
     },
   ];
@@ -68,21 +68,18 @@ function deleteDemoComment(recordId: number, commentId: number): void {
   );
 }
 
-export function resolveSeed<T>(
-  path: string,
-  init?: RequestInit,
-): T | undefined {
+export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined {
   // Demo-mode mutations don't hit a backend. Echo the parsed body back
   // as the result so optimistic UI keeps working offline. The api layer
   // also has this fallback but reaching it here keeps the test surface
   // visible.
-  const method = (init?.method ?? "GET").toUpperCase();
-  if (method === "PUT" && /^\/sessions\/record\/\d+\/tags$/.test(path)) {
-    const id = Number(path.split("/")[3]);
+  const method = (init?.method ?? 'GET').toUpperCase();
+  if (method === 'PUT' && /^\/sessions\/record\/\d+\/tags$/.test(path)) {
+    const id = Number(path.split('/')[3]);
     try {
       const body = init?.body ? JSON.parse(init.body as string) : { tags: [] };
       const tags = Array.isArray(body?.tags)
-        ? (body.tags as unknown[]).filter((t) => typeof t === "string")
+        ? (body.tags as unknown[]).filter((t) => typeof t === 'string')
         : [];
       return { id, tags } as T;
     } catch {
@@ -90,22 +87,20 @@ export function resolveSeed<T>(
     }
   }
   // Replay comments (in-memory demo store, lives for the page session).
-  const commentListMatch = path.match(
-    /^\/sessions\/record\/(\d+)\/comments$/,
-  );
+  const commentListMatch = path.match(/^\/sessions\/record\/(\d+)\/comments$/);
   if (commentListMatch) {
     const recordId = Number(commentListMatch[1]);
-    if (method === "GET") {
+    if (method === 'GET') {
       return getDemoComments(recordId) as T;
     }
-    if (method === "POST" && init?.body) {
+    if (method === 'POST' && init?.body) {
       try {
         const parsed = JSON.parse(init.body as string) as {
           timestampMs?: number;
           body?: string;
           author?: string;
         };
-        const text = (parsed.body ?? "").trim();
+        const text = (parsed.body ?? '').trim();
         if (!text) return undefined;
         const saved: DemoComment = {
           id: Date.now() + Math.floor(Math.random() * 1000),
@@ -121,10 +116,8 @@ export function resolveSeed<T>(
       }
     }
   }
-  const commentDeleteMatch = path.match(
-    /^\/sessions\/record\/(\d+)\/comments\/(\d+)$/,
-  );
-  if (commentDeleteMatch && method === "DELETE") {
+  const commentDeleteMatch = path.match(/^\/sessions\/record\/(\d+)\/comments\/(\d+)$/);
+  if (commentDeleteMatch && method === 'DELETE') {
     const recordId = Number(commentDeleteMatch[1]);
     const commentId = Number(commentDeleteMatch[2]);
     deleteDemoComment(recordId, commentId);
@@ -132,36 +125,34 @@ export function resolveSeed<T>(
   }
 
   // /api/dashboard/stats
-  if (path === "/api/dashboard/stats") {
+  if (path === '/api/dashboard/stats') {
     return { data: buildSeedStats() } as T;
   }
   // /api/dashboard/tickets/trend?period=...
-  if (path.startsWith("/api/dashboard/tickets/trend")) {
-    const period =
-      new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
+  if (path.startsWith('/api/dashboard/tickets/trend')) {
+    const period = new URLSearchParams(path.split('?')[1] ?? '').get('period') ?? 'day';
     return { data: buildTicketTrend(period) } as T;
   }
-  if (path.startsWith("/api/dashboard/record-sessions/trend")) {
-    const period =
-      new URLSearchParams(path.split("?")[1] ?? "").get("period") ?? "day";
+  if (path.startsWith('/api/dashboard/record-sessions/trend')) {
+    const period = new URLSearchParams(path.split('?')[1] ?? '').get('period') ?? 'day';
     return { data: buildRecordTrend(period) } as T;
   }
   // /sessions, /sessions/record (with optional pagination/search query string)
-  if (path === "/sessions") {
+  if (path === '/sessions') {
     return liveSeedSessions() as unknown as T;
   }
-  if (path === "/sessions/record" || path.startsWith("/sessions/record?")) {
-    const qs = new URLSearchParams(path.split("?")[1] ?? "");
+  if (path === '/sessions/record' || path.startsWith('/sessions/record?')) {
+    const qs = new URLSearchParams(path.split('?')[1] ?? '');
     const all = recordSeedSessions();
     const noFilters = [...qs.keys()].length === 0;
     if (noFilters) return all as unknown as T;
-    const q = (qs.get("q") ?? "").toLowerCase();
+    const q = (qs.get('q') ?? '').toLowerCase();
     const filtered = q
       ? all.filter(
           (s) =>
             s.name.toLowerCase().includes(q) ||
-            (s.url ?? "").toLowerCase().includes(q) ||
-            (s.deviceId ?? "").toLowerCase().includes(q),
+            (s.url ?? '').toLowerCase().includes(q) ||
+            (s.deviceId ?? '').toLowerCase().includes(q),
         )
       : all;
     return { rows: filtered, nextCursor: null } as unknown as T;
@@ -171,44 +162,36 @@ export function resolveSeed<T>(
   if (metaMatch) {
     return buildSeedSessionMeta(Number(metaMatch[1])) as unknown as T;
   }
-  const eventsMatch = path.match(
-    /^\/api\/session-replay\/sessions\/(\d+)\/events$/,
-  );
+  const eventsMatch = path.match(/^\/api\/session-replay\/sessions\/(\d+)\/events$/);
   if (eventsMatch) {
     const meta = buildSeedSessionMeta(Number(eventsMatch[1]));
     const start = new Date(meta.createdAt ?? Date.now()).getTime();
     return buildSeedRrwebEvents(start) as unknown as T;
   }
   // Session preview thumbnail (head + body HTML for the iframe card)
-  const previewMatch = path.match(
-    /^\/api\/session-replay\/sessions\/(\d+)\/preview$/,
-  );
+  const previewMatch = path.match(/^\/api\/session-replay\/sessions\/(\d+)\/preview$/);
   if (previewMatch) {
     return buildSeedPreview(Number(previewMatch[1])) as unknown as T;
   }
   // Captured network rows for the Network tab.
-  const networkMatch = path.match(
-    /^\/api\/session-replay\/sessions\/(\d+)\/network$/,
-  );
+  const networkMatch = path.match(/^\/api\/session-replay\/sessions\/(\d+)\/network$/);
   if (networkMatch) {
     return buildSeedNetwork(Number(networkMatch[1])) as unknown as T;
   }
   // Captured console / runtime rows for the Console tab.
-  const consoleMatch = path.match(
-    /^\/api\/session-replay\/sessions\/(\d+)\/console$/,
-  );
+  const consoleMatch = path.match(/^\/api\/session-replay\/sessions\/(\d+)\/console$/);
   if (consoleMatch) {
     return buildSeedConsole(Number(consoleMatch[1])) as unknown as T;
   }
   // Billing status (demo always reports billing disabled).
-  if (path === "/api/billing/status") {
+  if (path === '/api/billing/status') {
     return { enabled: false } as unknown as T;
   }
   // Activity feed (Phase 10 endpoint, demo only)
-  if (path === "/api/activity/feed" || path.startsWith("/api/activity/feed?")) {
-    const qs = new URLSearchParams(path.split("?")[1] ?? "");
-    const before = qs.get("before");
-    const limitParam = qs.get("limit");
+  if (path === '/api/activity/feed' || path.startsWith('/api/activity/feed?')) {
+    const qs = new URLSearchParams(path.split('?')[1] ?? '');
+    const before = qs.get('before');
+    const limitParam = qs.get('limit');
     const limit = limitParam ? Math.max(1, Number(limitParam)) || 20 : 20;
     const all = buildActivityFeed();
 
@@ -222,9 +205,7 @@ export function resolveSeed<T>(
       : all.filter((e) => new Date(e.at).getTime() < beforeTime);
     const rows = filtered.slice(0, limit);
     const nextCursor =
-      rows.length === limit && rows.length > 0
-        ? (rows[rows.length - 1]?.at ?? null)
-        : null;
+      rows.length === limit && rows.length > 0 ? (rows[rows.length - 1]?.at ?? null) : null;
     return { rows, nextCursor } as unknown as T;
   }
   return undefined;
@@ -245,57 +226,57 @@ interface SeedNetworkRow {
   base64Encoded?: boolean | null;
 }
 
-const SEED_NETWORK_ROWS: Omit<SeedNetworkRow, "id" | "requestId" | "timestamp">[] = [
+const SEED_NETWORK_ROWS: Omit<SeedNetworkRow, 'id' | 'requestId' | 'timestamp'>[] = [
   {
-    method: "GET",
-    url: "https://shop.example.com/cart/checkout",
+    method: 'GET',
+    url: 'https://shop.example.com/cart/checkout',
     status: 200,
-    statusText: "OK",
-    resourceType: "Document",
-    mimeType: "text/html",
+    statusText: 'OK',
+    resourceType: 'Document',
+    mimeType: 'text/html',
     encodedDataLength: 38221,
   },
   {
-    method: "GET",
-    url: "https://shop.example.com/static/app.css",
+    method: 'GET',
+    url: 'https://shop.example.com/static/app.css',
     status: 200,
-    resourceType: "Stylesheet",
-    mimeType: "text/css",
+    resourceType: 'Stylesheet',
+    mimeType: 'text/css',
     encodedDataLength: 18432,
   },
   {
-    method: "POST",
-    url: "https://api.shop.example.com/v1/cart/items",
+    method: 'POST',
+    url: 'https://api.shop.example.com/v1/cart/items',
     status: 201,
-    resourceType: "Fetch",
-    mimeType: "application/json",
+    resourceType: 'Fetch',
+    mimeType: 'application/json',
     encodedDataLength: 412,
     responseBody: '{"ok":true,"cartId":"cart_12ab34cd"}',
   },
   {
-    method: "GET",
-    url: "https://api.shop.example.com/v1/checkout/session",
+    method: 'GET',
+    url: 'https://api.shop.example.com/v1/checkout/session',
     status: 401,
-    statusText: "Unauthorized",
-    resourceType: "Fetch",
-    mimeType: "application/json",
+    statusText: 'Unauthorized',
+    resourceType: 'Fetch',
+    mimeType: 'application/json',
     encodedDataLength: 89,
   },
   {
-    method: "POST",
-    url: "https://api.shop.example.com/v1/log/error",
+    method: 'POST',
+    url: 'https://api.shop.example.com/v1/log/error',
     status: 500,
-    statusText: "Internal Server Error",
-    resourceType: "Fetch",
-    mimeType: "application/json",
+    statusText: 'Internal Server Error',
+    resourceType: 'Fetch',
+    mimeType: 'application/json',
     encodedDataLength: 217,
   },
   {
-    method: "GET",
-    url: "https://cdn.shop.example.com/img/banner.jpg",
+    method: 'GET',
+    url: 'https://cdn.shop.example.com/img/banner.jpg',
     status: 200,
-    resourceType: "Image",
-    mimeType: "image/jpeg",
+    resourceType: 'Image',
+    mimeType: 'image/jpeg',
     encodedDataLength: 112408,
   },
 ];
@@ -303,34 +284,34 @@ const SEED_NETWORK_ROWS: Omit<SeedNetworkRow, "id" | "requestId" | "timestamp">[
 interface SeedConsoleRow {
   id: number;
   timestamp: number;
-  level: "log" | "info" | "warn" | "error" | "debug";
+  level: 'log' | 'info' | 'warn' | 'error' | 'debug';
   text: string;
-  source: "console" | "exception";
+  source: 'console' | 'exception';
   url?: string;
   lineNumber?: number;
 }
 
-const SEED_CONSOLE_ROWS: Omit<SeedConsoleRow, "id" | "timestamp">[] = [
-  { level: "log", text: "Cart hydrated with 3 items", source: "console" },
+const SEED_CONSOLE_ROWS: Omit<SeedConsoleRow, 'id' | 'timestamp'>[] = [
+  { level: 'log', text: 'Cart hydrated with 3 items', source: 'console' },
   {
-    level: "warn",
-    text: "Deprecation: legacy /v1/cart endpoint will be removed in March",
-    source: "console",
+    level: 'warn',
+    text: 'Deprecation: legacy /v1/cart endpoint will be removed in March',
+    source: 'console',
   },
   {
-    level: "error",
+    level: 'error',
     text: "TypeError: cannot read property 'discount' of undefined",
-    source: "exception",
-    url: "https://shop.example.com/static/app.js",
+    source: 'exception',
+    url: 'https://shop.example.com/static/app.js',
     lineNumber: 1284,
   },
-  { level: "info", text: "Stripe checkout opened in popup", source: "console" },
+  { level: 'info', text: 'Stripe checkout opened in popup', source: 'console' },
   {
-    level: "error",
-    text: "Network request failed: 500 Internal Server Error",
-    source: "console",
+    level: 'error',
+    text: 'Network request failed: 500 Internal Server Error',
+    source: 'console',
   },
-  { level: "debug", text: "feature flag: checkout_v2=true", source: "console" },
+  { level: 'debug', text: 'feature flag: checkout_v2=true', source: 'console' },
 ];
 
 function buildSeedConsole(id: number): SeedConsoleRow[] {
@@ -375,7 +356,7 @@ function buildSeedPreview(id: number) {
     </style>`,
     body: `
       <div class="nav">
-        <span class="brand">${(meta.url ?? "shop.example.com").replace(/https?:\/\//, "").split("/")[0]}</span>
+        <span class="brand">${(meta.url ?? 'shop.example.com').replace(/https?:\/\//, '').split('/')[0]}</span>
         <a href="#">Products</a>
         <a href="#">Cart</a>
         <a href="#">Account</a>
@@ -383,24 +364,24 @@ function buildSeedPreview(id: number) {
       </div>
       <section class="hero">
         <h1>Captured customer page</h1>
-        <p class="lead">${meta.name ?? `Session #${id}`} — recorded ${meta.createdAt ? new Date(meta.createdAt).toLocaleDateString() : "recently"}.</p>
+        <p class="lead">${meta.name ?? `Session #${id}`} — recorded ${meta.createdAt ? new Date(meta.createdAt).toLocaleDateString() : 'recently'}.</p>
       </section>
       <section class="grid">
         <div class="card"><h3>Free shipping</h3><p>On orders over $40</p></div>
         <div class="card"><h3>30-day returns</h3><p>No questions asked</p></div>
         <div class="card"><h3>Live chat</h3><p>Replies in under 2 minutes</p></div>
       </section>`,
-    bodyClass: "page-checkout",
+    bodyClass: 'page-checkout',
     width: 1280,
     height: 800,
-    baseHref: meta.url ?? "https://shop.example.com/",
+    baseHref: meta.url ?? 'https://shop.example.com/',
     capturedAt: meta.createdAt ?? new Date().toISOString(),
   };
 }
 
 interface ActivityEntry {
   id: string;
-  kind: "session" | "ticket" | "error" | "join" | "comment";
+  kind: 'session' | 'ticket' | 'error' | 'join' | 'comment';
   title: string;
   subtitle?: string;
   at: string;
@@ -413,7 +394,7 @@ function buildActivityFeed(): ActivityEntry[] {
   const sessions = buildSeedSessions();
   const events: ActivityEntry[] = [];
 
-  const kinds = ["session", "ticket", "error", "join", "comment"] as const;
+  const kinds = ['session', 'ticket', 'error', 'join', 'comment'] as const;
 
   for (let i = 0; i < 15; i++) {
     const s = sessions[i % sessions.length];
@@ -423,7 +404,7 @@ function buildActivityFeed(): ActivityEntry[] {
     const titleByKind = {
       session: `Recorded session · ${s.name}`,
       ticket: `Ticket created on ${s.name}`,
-      error: `Console error in ${s.url.split("/")[2]}`,
+      error: `Console error in ${s.url.split('/')[2]}`,
       join: `Engineer joined ${s.name}`,
       comment: `Comment by qa on ${s.name}`,
     };
@@ -434,8 +415,8 @@ function buildActivityFeed(): ActivityEntry[] {
       join: s.url,
       comment:
         i % 2 === 0
-          ? "The checkout button is offset to the right on iPhone SE."
-          : "Confirmed reproducible: spinner never resolves after 3s.",
+          ? 'The checkout button is offset to the right on iPhone SE.'
+          : 'Confirmed reproducible: spinner never resolves after 3s.',
     };
     events.push({
       id: `${kind}-${i}-${s.id}`,

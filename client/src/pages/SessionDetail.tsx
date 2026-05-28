@@ -1453,7 +1453,6 @@ function ReplayPanel({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
     // toggleFullscreen reads fresh refs each call — safe to omit from deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullscreenSupported]);
 
   return (

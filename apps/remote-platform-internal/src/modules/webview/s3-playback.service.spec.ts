@@ -1,11 +1,11 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach } from "vitest";
-import type * as WebSocket from "ws";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach } from 'vitest';
+import type * as WebSocket from 'ws';
 
-import { S3PlaybackService } from "./s3-playback.service";
+import { S3PlaybackService } from './s3-playback.service';
 
-describe("S3PlaybackService", () => {
+describe('S3PlaybackService', () => {
   let service: S3PlaybackService;
 
   beforeEach(async () => {
@@ -15,8 +15,8 @@ describe("S3PlaybackService", () => {
     service = module.get<S3PlaybackService>(S3PlaybackService);
   });
 
-  describe("cache management", () => {
-    it("should initialize and clear client caches", () => {
+  describe('cache management', () => {
+    it('should initialize and clear client caches', () => {
       const mockClient = {} as WebSocket;
       service.initializeClientCaches(mockClient, [{ timestamp: 1 }]);
 
@@ -30,45 +30,45 @@ describe("S3PlaybackService", () => {
     });
   });
 
-  describe("extractSessionStartTime", () => {
-    it("should extract sessionStartTime", () => {
+  describe('extractSessionStartTime', () => {
+    it('should extract sessionStartTime', () => {
       const data = [{ sessionStartTime: 1000, timestamp: 2000 }];
       expect(service.extractSessionStartTime(data)).toBe(1000);
     });
 
-    it("should fallback to first timestamp", () => {
+    it('should fallback to first timestamp', () => {
       const data = [{ timestamp: 5000 }];
       expect(service.extractSessionStartTime(data)).toBe(5000);
     });
 
-    it("should return null for empty data", () => {
+    it('should return null for empty data', () => {
       expect(service.extractSessionStartTime([])).toBeNull();
     });
   });
 
-  describe("generateS3SessionId", () => {
-    it("should generate ID with deviceId and timestamp", () => {
-      const id = service.generateS3SessionId("device-1", 1000);
-      expect(id).toContain("device-1");
-      expect(id).toContain("1000");
+  describe('generateS3SessionId', () => {
+    it('should generate ID with deviceId and timestamp', () => {
+      const id = service.generateS3SessionId('device-1', 1000);
+      expect(id).toContain('device-1');
+      expect(id).toContain('1000');
     });
 
-    it("should return null when no timestamp", () => {
-      expect(service.generateS3SessionId("device-1", null)).toBeNull();
+    it('should return null when no timestamp', () => {
+      expect(service.generateS3SessionId('device-1', null)).toBeNull();
     });
   });
 
-  describe("classifyBackupEvents", () => {
-    it("should classify events by type", () => {
+  describe('classifyBackupEvents', () => {
+    it('should classify events by type', () => {
       const backupData = [
         {
           bufferData: [
             {
-              method: "Network.requestWillBeSent",
+              method: 'Network.requestWillBeSent',
               params: { requestId: 1 },
               timestamp: 1,
             },
-            { method: "Runtime.consoleAPICalled", params: {}, timestamp: 2 },
+            { method: 'Runtime.consoleAPICalled', params: {}, timestamp: 2 },
           ],
         },
       ];
@@ -77,49 +77,45 @@ describe("S3PlaybackService", () => {
       expect(result.runtimeProtocols.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should handle empty data", () => {
+    it('should handle empty data', () => {
       const result = service.classifyBackupEvents([], new Map());
       expect(result.networkProtocols).toHaveLength(0);
     });
   });
 
-  describe("sortProtocolsByTimestamp", () => {
-    it("should sort by timestamp ascending", () => {
-      const protocols: Parameters<
-        S3PlaybackService["sortProtocolsByTimestamp"]
-      >[0] = [
+  describe('sortProtocolsByTimestamp', () => {
+    it('should sort by timestamp ascending', () => {
+      const protocols: Parameters<S3PlaybackService['sortProtocolsByTimestamp']>[0] = [
         {
-          protocol: { method: "Test.event", params: {} },
+          protocol: { method: 'Test.event', params: {} },
           timestamp: 3000,
-          domain: "Test",
+          domain: 'Test',
         },
         {
-          protocol: { method: "Test.event", params: {} },
+          protocol: { method: 'Test.event', params: {} },
           timestamp: 1000,
-          domain: "Test",
+          domain: 'Test',
         },
         {
-          protocol: { method: "Test.event", params: {} },
+          protocol: { method: 'Test.event', params: {} },
           timestamp: 2000,
-          domain: "Test",
+          domain: 'Test',
         },
       ];
       const sorted = service.sortProtocolsByTimestamp(protocols);
-      expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(
-        Number(sorted[1].timestamp),
-      );
+      expect(Number(sorted[0].timestamp)).toBeLessThanOrEqual(Number(sorted[1].timestamp));
     });
   });
 
-  describe("findDomDataInS3Cache", () => {
-    it("should return null when no cache", () => {
+  describe('findDomDataInS3Cache', () => {
+    it('should return null when no cache', () => {
       const mockClient = {} as WebSocket;
       expect(service.findDomDataInS3Cache(mockClient)).toBeNull();
     });
   });
 
-  describe("findScreenDataInS3Cache", () => {
-    it("should return null when no cache", () => {
+  describe('findScreenDataInS3Cache', () => {
+    it('should return null when no cache', () => {
       const mockClient = {} as WebSocket;
       expect(service.findScreenDataInS3Cache(mockClient)).toBeNull();
     });

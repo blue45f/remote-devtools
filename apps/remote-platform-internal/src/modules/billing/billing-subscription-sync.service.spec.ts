@@ -1,39 +1,37 @@
-import type { Repository, UpdateResult } from "typeorm";
-import { describe, expect, it, vi } from "vitest";
+import type { Repository, UpdateResult } from 'typeorm';
+import { describe, expect, it, vi } from 'vitest';
 
-import type { OrganizationEntity } from "@remote-platform/entity";
+import type { OrganizationEntity } from '@remote-platform/entity';
 
-import { BillingSubscriptionSyncService } from "./billing-subscription-sync.service";
-import type { VerifiedBillingEvent } from "./billing.types";
+import { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
+import type { VerifiedBillingEvent } from './billing.types';
 
-describe("BillingSubscriptionSyncService", () => {
+describe('BillingSubscriptionSyncService', () => {
   const makeService = () => {
     const repo = {
       update: vi.fn().mockResolvedValue({ affected: 1 } as UpdateResult),
-    } as Pick<Repository<OrganizationEntity>, "update">;
+    } as Pick<Repository<OrganizationEntity>, 'update'>;
 
     return {
       repo,
-      service: new BillingSubscriptionSyncService(
-        repo as Repository<OrganizationEntity>,
-      ),
+      service: new BillingSubscriptionSyncService(repo as Repository<OrganizationEntity>),
     };
   };
 
-  it("updates the organization subscription fields from a subscription webhook event", async () => {
+  it('updates the organization subscription fields from a subscription webhook event', async () => {
     const { repo, service } = makeService();
-    const currentPeriodEnd = new Date("2026-06-01T00:00:00.000Z");
+    const currentPeriodEnd = new Date('2026-06-01T00:00:00.000Z');
     const event: VerifiedBillingEvent = {
-      id: "evt_123",
-      type: "customer.subscription.updated",
-      provider: "stripe",
-      raw: { id: "evt_123" },
+      id: 'evt_123',
+      type: 'customer.subscription.updated',
+      provider: 'stripe',
+      raw: { id: 'evt_123' },
       subscription: {
-        orgId: "org_123",
-        providerCustomerId: "cus_123",
-        providerSubscriptionId: "sub_123",
-        status: "active",
-        plan: "pro",
+        orgId: 'org_123',
+        providerCustomerId: 'cus_123',
+        providerSubscriptionId: 'sub_123',
+        status: 'active',
+        plan: 'pro',
         currentPeriodEnd,
       },
     };
@@ -41,37 +39,37 @@ describe("BillingSubscriptionSyncService", () => {
     const result = await service.syncFromBillingEvent(event);
 
     expect(repo.update).toHaveBeenCalledWith(
-      { id: "org_123" },
+      { id: 'org_123' },
       {
-        stripeCustomerId: "cus_123",
-        billingProvider: "stripe",
-        billingSubscriptionId: "sub_123",
-        subscriptionStatus: "active",
+        stripeCustomerId: 'cus_123',
+        billingProvider: 'stripe',
+        billingSubscriptionId: 'sub_123',
+        subscriptionStatus: 'active',
         subscriptionCurrentPeriodEnd: currentPeriodEnd,
-        plan: "pro",
+        plan: 'pro',
       },
     );
     expect(result).toEqual({
-      action: "updated",
-      orgId: "org_123",
-      providerCustomerId: "cus_123",
+      action: 'updated',
+      orgId: 'org_123',
+      providerCustomerId: 'cus_123',
       affected: 1,
     });
   });
 
-  it("does not clear plan when subscription webhook omits plan and is active", async () => {
+  it('does not clear plan when subscription webhook omits plan and is active', async () => {
     const { repo, service } = makeService();
-    const currentPeriodEnd = new Date("2026-06-01T00:00:00.000Z");
+    const currentPeriodEnd = new Date('2026-06-01T00:00:00.000Z');
     const event: VerifiedBillingEvent = {
-      id: "evt_789",
-      type: "customer.subscription.updated",
-      provider: "stripe",
-      raw: { id: "evt_789" },
+      id: 'evt_789',
+      type: 'customer.subscription.updated',
+      provider: 'stripe',
+      raw: { id: 'evt_789' },
       subscription: {
-        orgId: "org_123",
-        providerCustomerId: "cus_123",
-        providerSubscriptionId: "sub_789",
-        status: "active",
+        orgId: 'org_123',
+        providerCustomerId: 'cus_123',
+        providerSubscriptionId: 'sub_789',
+        status: 'active',
         plan: null,
         currentPeriodEnd,
       },
@@ -80,106 +78,106 @@ describe("BillingSubscriptionSyncService", () => {
     await service.syncFromBillingEvent(event);
 
     expect(repo.update).toHaveBeenCalledWith(
-      { id: "org_123" },
+      { id: 'org_123' },
       expect.objectContaining({
-        stripeCustomerId: "cus_123",
-        billingProvider: "stripe",
-        billingSubscriptionId: "sub_789",
-        subscriptionStatus: "active",
+        stripeCustomerId: 'cus_123',
+        billingProvider: 'stripe',
+        billingSubscriptionId: 'sub_789',
+        subscriptionStatus: 'active',
         subscriptionCurrentPeriodEnd: currentPeriodEnd,
       }),
     );
     expect(repo.update).not.toHaveBeenCalledWith(
-      { id: "org_123" },
+      { id: 'org_123' },
       expect.objectContaining({
         plan: expect.anything(),
       }),
     );
   });
 
-  it("downgrades canceled subscriptions to the free plan", async () => {
+  it('downgrades canceled subscriptions to the free plan', async () => {
     const { repo, service } = makeService();
     const event: VerifiedBillingEvent = {
-      id: "evt_456",
-      type: "customer.subscription.deleted",
-      provider: "stripe",
-      raw: { id: "evt_456" },
+      id: 'evt_456',
+      type: 'customer.subscription.deleted',
+      provider: 'stripe',
+      raw: { id: 'evt_456' },
       subscription: {
-        providerCustomerId: "cus_456",
-        providerSubscriptionId: "sub_456",
-        status: "canceled",
+        providerCustomerId: 'cus_456',
+        providerSubscriptionId: 'sub_456',
+        status: 'canceled',
       },
     };
 
     await service.syncFromBillingEvent(event);
 
     expect(repo.update).toHaveBeenCalledWith(
-      { stripeCustomerId: "cus_456" },
+      { stripeCustomerId: 'cus_456' },
       expect.objectContaining({
-        stripeCustomerId: "cus_456",
-        plan: "free",
-        subscriptionStatus: "canceled",
+        stripeCustomerId: 'cus_456',
+        plan: 'free',
+        subscriptionStatus: 'canceled',
       }),
     );
   });
 
-  it("falls back to stripeCustomerId matching when orgId is blank", async () => {
+  it('falls back to stripeCustomerId matching when orgId is blank', async () => {
     const { repo, service } = makeService();
     const event: VerifiedBillingEvent = {
-      id: "evt_no_org",
-      type: "customer.subscription.updated",
-      provider: "stripe",
-      raw: { id: "evt_no_org" },
+      id: 'evt_no_org',
+      type: 'customer.subscription.updated',
+      provider: 'stripe',
+      raw: { id: 'evt_no_org' },
       subscription: {
-        providerCustomerId: "cus_789",
-        providerSubscriptionId: "sub_789",
-        status: "active",
-        orgId: "   ",
+        providerCustomerId: 'cus_789',
+        providerSubscriptionId: 'sub_789',
+        status: 'active',
+        orgId: '   ',
       },
     };
 
     await service.syncFromBillingEvent(event);
 
     expect(repo.update).toHaveBeenCalledWith(
-      { stripeCustomerId: "cus_789" },
+      { stripeCustomerId: 'cus_789' },
       expect.objectContaining({
-        stripeCustomerId: "cus_789",
-        billingSubscriptionId: "sub_789",
-        subscriptionStatus: "active",
+        stripeCustomerId: 'cus_789',
+        billingSubscriptionId: 'sub_789',
+        subscriptionStatus: 'active',
       }),
     );
   });
 
-  it("ignores webhook events that do not carry subscription state", async () => {
+  it('ignores webhook events that do not carry subscription state', async () => {
     const { repo, service } = makeService();
     const event: VerifiedBillingEvent = {
-      id: "evt_789",
-      type: "invoice.payment_succeeded",
-      provider: "stripe",
-      raw: { id: "evt_789" },
+      id: 'evt_789',
+      type: 'invoice.payment_succeeded',
+      provider: 'stripe',
+      raw: { id: 'evt_789' },
     };
 
     const result = await service.syncFromBillingEvent(event);
 
     expect(repo.update).not.toHaveBeenCalled();
     expect(result).toEqual({
-      action: "ignored",
-      reason: "subscription_state_not_present",
+      action: 'ignored',
+      reason: 'subscription_state_not_present',
     });
   });
 
-  it("ignores webhook events missing the provider customer id", async () => {
+  it('ignores webhook events missing the provider customer id', async () => {
     const { repo, service } = makeService();
     const event: VerifiedBillingEvent = {
-      id: "evt_no_customer",
-      type: "customer.subscription.updated",
-      provider: "stripe",
-      raw: { id: "evt_no_customer" },
+      id: 'evt_no_customer',
+      type: 'customer.subscription.updated',
+      provider: 'stripe',
+      raw: { id: 'evt_no_customer' },
       subscription: {
-        orgId: "org_123",
-        providerCustomerId: "",
-        providerSubscriptionId: "sub_123",
-        status: "active",
+        orgId: 'org_123',
+        providerCustomerId: '',
+        providerSubscriptionId: 'sub_123',
+        status: 'active',
       },
     };
 
@@ -187,8 +185,8 @@ describe("BillingSubscriptionSyncService", () => {
 
     expect(repo.update).not.toHaveBeenCalled();
     expect(result).toEqual({
-      action: "ignored",
-      reason: "missing_provider_customer_id",
+      action: 'ignored',
+      reason: 'missing_provider_customer_id',
     });
   });
 });

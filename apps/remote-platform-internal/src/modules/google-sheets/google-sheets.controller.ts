@@ -5,10 +5,10 @@ import {
   Query,
   BadRequestException,
   InternalServerErrorException,
-} from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
-import { GoogleSheetsService } from "./google-sheets.service";
+import { GoogleSheetsService } from './google-sheets.service';
 
 /** Standard API response wrapper */
 interface ApiResponse<T = unknown> {
@@ -20,8 +20,8 @@ interface ApiResponse<T = unknown> {
   readonly errorCode?: string;
 }
 
-@ApiTags("Google Sheets")
-@Controller("api/google-sheets")
+@ApiTags('Google Sheets')
+@Controller('api/google-sheets')
 export class GoogleSheetsController {
   private readonly logger = new Logger(GoogleSheetsController.name);
 
@@ -30,10 +30,10 @@ export class GoogleSheetsController {
   /**
    * Read TC sheet data directly from a Google Sheets URL (admin use).
    */
-  @Get("read-tc-sheet")
+  @Get('read-tc-sheet')
   public async readTcSheetFromUrl(
-    @Query("sheetUrl") sheetUrl: string,
-    @Query("sheetName") sheetName?: string,
+    @Query('sheetUrl') sheetUrl: string,
+    @Query('sheetName') sheetName?: string,
   ): Promise<ApiResponse> {
     this.logger.log(`[ADMIN] Reading TC sheet: ${sheetUrl}`);
     const timeStart = Date.now();
@@ -42,32 +42,26 @@ export class GoogleSheetsController {
       // 1. Extract spreadsheet ID from URL
       const spreadsheetId = this.extractSpreadsheetId(sheetUrl);
       if (!spreadsheetId) {
-        throw new BadRequestException("Invalid Google Sheets URL.");
+        throw new BadRequestException('Invalid Google Sheets URL.');
       }
 
       // 2. Set default sheet name
-      const targetSheetName = sheetName || "DebugTools";
+      const targetSheetName = sheetName || 'DebugTools';
 
-      this.logger.log(
-        `[ADMIN] Spreadsheet ID: ${spreadsheetId}, sheet: ${targetSheetName}`,
-      );
+      this.logger.log(`[ADMIN] Spreadsheet ID: ${spreadsheetId}, sheet: ${targetSheetName}`);
 
       // 3. Retrieve all sheet tab names for debugging
-      const metadata =
-        await this.googleSheetsService.getSpreadsheetMetadata(spreadsheetId);
+      const metadata = await this.googleSheetsService.getSpreadsheetMetadata(spreadsheetId);
       const availableSheets: string[] = [];
       if (metadata?.sheets) {
         for (const sheet of metadata.sheets) {
-          const sheetTitle = (sheet as { properties?: { title?: string } })
-            ?.properties?.title;
+          const sheetTitle = (sheet as { properties?: { title?: string } })?.properties?.title;
           if (sheetTitle) {
             availableSheets.push(sheetTitle);
           }
         }
       }
-      this.logger.log(
-        `Available sheet tabs: ${JSON.stringify(availableSheets)}`,
-      );
+      this.logger.log(`Available sheet tabs: ${JSON.stringify(availableSheets)}`);
       this.logger.log(`Target sheet: "${targetSheetName}"`);
 
       // 4. Fetch structured data via Google Sheets API
@@ -77,9 +71,7 @@ export class GoogleSheetsController {
       );
 
       if (!sheetData) {
-        throw new BadRequestException(
-          `No data found in sheet '${targetSheetName}'.`,
-        );
+        throw new BadRequestException(`No data found in sheet '${targetSheetName}'.`);
       }
 
       const time = Date.now() - timeStart;
@@ -102,9 +94,7 @@ export class GoogleSheetsController {
       }
 
       throw new InternalServerErrorException(
-        error instanceof Error
-          ? error.message
-          : "An error occurred while reading sheet data.",
+        error instanceof Error ? error.message : 'An error occurred while reading sheet data.',
       );
     }
   }
@@ -117,7 +107,7 @@ export class GoogleSheetsController {
       const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
       return match ? match[1] : null;
     } catch (error) {
-      this.logger.error("Failed to extract spreadsheet ID:", error);
+      this.logger.error('Failed to extract spreadsheet ID:', error);
       return null;
     }
   }

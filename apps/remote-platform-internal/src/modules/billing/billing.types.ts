@@ -1,9 +1,6 @@
-import type {
-  OrganizationPlan,
-  OrganizationSubscriptionStatus,
-} from "@remote-platform/entity";
+import type { OrganizationPlan, OrganizationSubscriptionStatus } from '@remote-platform/entity';
 
-export type BillingProviderId = "stripe";
+export type BillingProviderId = 'stripe';
 
 export interface BillingPlan {
   readonly id: OrganizationPlan;
@@ -58,17 +55,17 @@ export interface VerifiedBillingEvent {
 
 export type BillingSyncResult =
   | {
-      readonly action: "updated";
+      readonly action: 'updated';
       readonly providerCustomerId: string;
       readonly orgId?: string | null;
       readonly affected: number;
     }
   | {
-      readonly action: "ignored";
+      readonly action: 'ignored';
       readonly reason:
-        | "missing_provider_customer_id"
-        | "subscription_state_not_present"
-        | "duplicate_event";
+        | 'missing_provider_customer_id'
+        | 'subscription_state_not_present'
+        | 'duplicate_event';
     };
 
 export interface BillingWebhookResult {

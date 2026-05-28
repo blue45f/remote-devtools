@@ -1,15 +1,15 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DeviceInfoEntity, UserEntity } from "@remote-platform/entity";
-import { BusinessException } from "@remote-platform/common";
+import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
+import { BusinessException } from '@remote-platform/common';
 
-import { TicketFormController } from "./ticket-form.controller";
-import { UserInfoService } from "../user-info/user-info.service";
+import { TicketFormController } from './ticket-form.controller';
+import { UserInfoService } from '../user-info/user-info.service';
 
-describe("TicketFormController", () => {
+describe('TicketFormController', () => {
   let controller: TicketFormController;
   const mockUserInfoService = {
     getTicketFormData: vi.fn(),
@@ -37,62 +37,54 @@ describe("TicketFormController", () => {
     controller = module.get<TicketFormController>(TicketFormController);
   });
 
-  describe("getTicketFormData", () => {
-    it("should return ticket form data", async () => {
+  describe('getTicketFormData', () => {
+    it('should return ticket form data', async () => {
       const mockData = { templates: [], assignees: [] };
       mockUserInfoService.getTicketFormData.mockResolvedValue(mockData);
 
-      const result = await controller.getTicketFormData("device-123");
+      const result = await controller.getTicketFormData('device-123');
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockData);
       expect(result.time).toBeGreaterThanOrEqual(0);
     });
 
-    it("should use LOCAL_DEVICE_ID for test deviceId", async () => {
-      process.env.LOCAL_DEVICE_ID = "local-dev-device";
+    it('should use LOCAL_DEVICE_ID for test deviceId', async () => {
+      process.env.LOCAL_DEVICE_ID = 'local-dev-device';
       mockUserInfoService.getTicketFormData.mockResolvedValue({});
 
-      await controller.getTicketFormData("test");
+      await controller.getTicketFormData('test');
 
-      expect(mockUserInfoService.getTicketFormData).toHaveBeenCalledWith(
-        "local-dev-device",
-      );
+      expect(mockUserInfoService.getTicketFormData).toHaveBeenCalledWith('local-dev-device');
       delete process.env.LOCAL_DEVICE_ID;
     });
 
-    it("should propagate BusinessException", async () => {
+    it('should propagate BusinessException', async () => {
       mockUserInfoService.getTicketFormData.mockRejectedValue(
-        BusinessException.deviceNotFound({ deviceId: "bad-device" }),
+        BusinessException.deviceNotFound({ deviceId: 'bad-device' }),
       );
 
-      await expect(controller.getTicketFormData("bad-device")).rejects.toThrow(
-        BusinessException,
-      );
+      await expect(controller.getTicketFormData('bad-device')).rejects.toThrow(BusinessException);
     });
 
-    it("should wrap unknown errors in internalError", async () => {
-      mockUserInfoService.getTicketFormData.mockRejectedValue(
-        new Error("DB connection lost"),
-      );
+    it('should wrap unknown errors in internalError', async () => {
+      mockUserInfoService.getTicketFormData.mockRejectedValue(new Error('DB connection lost'));
 
-      await expect(controller.getTicketFormData("device-123")).rejects.toThrow(
-        BusinessException,
-      );
+      await expect(controller.getTicketFormData('device-123')).rejects.toThrow(BusinessException);
     });
   });
 
-  describe("getUserTemplates", () => {
-    it("should return user templates with last selected", async () => {
+  describe('getUserTemplates', () => {
+    it('should return user templates with last selected', async () => {
       const mockDevice = {
         user: {
           id: 1,
-          lastSelectedTemplateName: "Bug Template",
+          lastSelectedTemplateName: 'Bug Template',
           ticketTemplateList: [
             {
               id: 1,
-              name: "Bug Template",
-              jiraProjectKey: "PROJ",
+              name: 'Bug Template',
+              jiraProjectKey: 'PROJ',
               componentList: [],
               labelList: [],
             },
@@ -101,65 +93,59 @@ describe("TicketFormController", () => {
       };
       mockDeviceRepo.findOne.mockResolvedValue(mockDevice);
 
-      const result = await controller.getUserTemplates("device-123");
+      const result = await controller.getUserTemplates('device-123');
 
       expect(result.success).toBe(true);
       expect(result.data?.ticketTemplateList).toHaveLength(1);
-      expect(result.data?.lastSelectedTemplate?.name).toBe("Bug Template");
+      expect(result.data?.lastSelectedTemplate?.name).toBe('Bug Template');
     });
 
-    it("should throw when device not found", async () => {
+    it('should throw when device not found', async () => {
       mockDeviceRepo.findOne.mockResolvedValue(null);
 
-      await expect(controller.getUserTemplates("nonexistent")).rejects.toThrow(
-        BusinessException,
-      );
+      await expect(controller.getUserTemplates('nonexistent')).rejects.toThrow(BusinessException);
     });
 
-    it("should throw when device has no user", async () => {
+    it('should throw when device has no user', async () => {
       mockDeviceRepo.findOne.mockResolvedValue({ user: null });
 
-      await expect(controller.getUserTemplates("device-123")).rejects.toThrow(
-        BusinessException,
-      );
+      await expect(controller.getUserTemplates('device-123')).rejects.toThrow(BusinessException);
     });
   });
 
-  describe("selectTemplate", () => {
-    it("should update last selected template", async () => {
+  describe('selectTemplate', () => {
+    it('should update last selected template', async () => {
       mockDeviceRepo.findOne.mockResolvedValue({
         user: {
           id: 1,
-          ticketTemplateList: [{ name: "Bug Template" }],
+          ticketTemplateList: [{ name: 'Bug Template' }],
         },
       });
       mockDeviceRepo.manager.update.mockResolvedValue({});
 
       const result = await controller.selectTemplate({
-        deviceId: "device-123",
-        templateName: "Bug Template",
+        deviceId: 'device-123',
+        templateName: 'Bug Template',
       });
 
       expect(result.success).toBe(true);
-      expect(mockDeviceRepo.manager.update).toHaveBeenCalledWith(
-        UserEntity,
-        1,
-        { lastSelectedTemplateName: "Bug Template" },
-      );
+      expect(mockDeviceRepo.manager.update).toHaveBeenCalledWith(UserEntity, 1, {
+        lastSelectedTemplateName: 'Bug Template',
+      });
     });
 
-    it("should throw when template not found", async () => {
+    it('should throw when template not found', async () => {
       mockDeviceRepo.findOne.mockResolvedValue({
         user: {
           id: 1,
-          ticketTemplateList: [{ name: "Other Template" }],
+          ticketTemplateList: [{ name: 'Other Template' }],
         },
       });
 
       await expect(
         controller.selectTemplate({
-          deviceId: "device-123",
-          templateName: "Nonexistent",
+          deviceId: 'device-123',
+          templateName: 'Nonexistent',
         }),
       ).rejects.toThrow(BusinessException);
     });

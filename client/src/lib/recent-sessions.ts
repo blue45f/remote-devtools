@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = "recent-sessions:v1";
+const STORAGE_KEY = 'recent-sessions:v1';
 const MAX_ENTRIES = 5;
 
 export interface RecentSession {
@@ -11,7 +11,7 @@ export interface RecentSession {
 }
 
 function readStorage(): RecentSession[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -20,10 +20,10 @@ function readStorage(): RecentSession[] {
     return parsed
       .filter(
         (r): r is RecentSession =>
-          typeof r === "object" &&
+          typeof r === 'object' &&
           r !== null &&
-          typeof (r as RecentSession).id === "string" &&
-          typeof (r as RecentSession).visitedAt === "number",
+          typeof (r as RecentSession).id === 'string' &&
+          typeof (r as RecentSession).visitedAt === 'number',
       )
       .slice(0, MAX_ENTRIES);
   } catch {
@@ -32,16 +32,16 @@ function readStorage(): RecentSession[] {
 }
 
 function writeStorage(list: RecentSession[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event("recent-sessions:change"));
+    window.dispatchEvent(new Event('recent-sessions:change'));
   } catch {
     /* localStorage is sometimes unavailable (private mode, quota) — silent skip */
   }
 }
 
-export function recordSessionVisit(entry: Omit<RecentSession, "visitedAt">) {
+export function recordSessionVisit(entry: Omit<RecentSession, 'visitedAt'>) {
   const list = readStorage();
   const filtered = list.filter((r) => r.id !== entry.id);
   const next: RecentSession[] = [{ ...entry, visitedAt: Date.now() }, ...filtered].slice(
@@ -52,10 +52,10 @@ export function recordSessionVisit(entry: Omit<RecentSession, "visitedAt">) {
 }
 
 export function clearRecentSessions() {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     window.localStorage.removeItem(STORAGE_KEY);
-    window.dispatchEvent(new Event("recent-sessions:change"));
+    window.dispatchEvent(new Event('recent-sessions:change'));
   } catch {
     /* see writeStorage */
   }
@@ -73,15 +73,15 @@ export function useRecentSessions(): RecentSession[] {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) sync();
     };
-    window.addEventListener("recent-sessions:change", sync);
-    window.addEventListener("storage", onStorage);
+    window.addEventListener('recent-sessions:change', sync);
+    window.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener("recent-sessions:change", sync);
-      window.removeEventListener("storage", onStorage);
+      window.removeEventListener('recent-sessions:change', sync);
+      window.removeEventListener('storage', onStorage);
     };
   }, [sync]);
 

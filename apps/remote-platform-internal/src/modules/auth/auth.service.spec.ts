@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AuthService } from "./auth.service";
+import { AuthService } from './auth.service';
 
-describe("AuthService", () => {
+describe('AuthService', () => {
   let original: { secret?: string; pub?: string; env?: string };
   let svc: AuthService;
 
@@ -26,49 +26,49 @@ describe("AuthService", () => {
     else process.env.NODE_ENV = original.env;
   });
 
-  it("is disabled when no env keys are set", () => {
+  it('is disabled when no env keys are set', () => {
     expect(svc.enabled).toBe(false);
   });
 
-  it("is enabled when AUTH_JWT_SECRET is set", () => {
-    process.env.AUTH_JWT_SECRET = "x";
+  it('is enabled when AUTH_JWT_SECRET is set', () => {
+    process.env.AUTH_JWT_SECRET = 'x';
     svc = new AuthService();
     expect(svc.enabled).toBe(true);
   });
 
-  it("issues + verifies dev tokens (HS256)", () => {
-    process.env.AUTH_JWT_SECRET = "test-secret";
+  it('issues + verifies dev tokens (HS256)', () => {
+    process.env.AUTH_JWT_SECRET = 'test-secret';
     svc = new AuthService();
     const token = svc.issueDevToken({
-      sub: "user-1",
-      org: "org-1",
-      plan: "starter",
-      email: "a@b.com",
+      sub: 'user-1',
+      org: 'org-1',
+      plan: 'starter',
+      email: 'a@b.com',
     });
     expect(token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
     const claims = svc.verify(token);
-    expect(claims.sub).toBe("user-1");
-    expect(claims.org).toBe("org-1");
-    expect(claims.plan).toBe("starter");
-    expect(claims.email).toBe("a@b.com");
+    expect(claims.sub).toBe('user-1');
+    expect(claims.org).toBe('org-1');
+    expect(claims.plan).toBe('starter');
+    expect(claims.email).toBe('a@b.com');
   });
 
-  it("rejects tampered tokens", () => {
-    process.env.AUTH_JWT_SECRET = "test-secret";
+  it('rejects tampered tokens', () => {
+    process.env.AUTH_JWT_SECRET = 'test-secret';
     svc = new AuthService();
-    const token = svc.issueDevToken({ sub: "u" });
-    const tampered = token.replace(/.$/, "x");
+    const token = svc.issueDevToken({ sub: 'u' });
+    const tampered = token.replace(/.$/, 'x');
     expect(() => svc.verify(tampered)).toThrow();
   });
 
-  it("refuses to issue dev tokens in production", () => {
-    process.env.AUTH_JWT_SECRET = "x";
-    process.env.NODE_ENV = "production";
+  it('refuses to issue dev tokens in production', () => {
+    process.env.AUTH_JWT_SECRET = 'x';
+    process.env.NODE_ENV = 'production';
     svc = new AuthService();
-    expect(() => svc.issueDevToken({ sub: "u" })).toThrow(/production/);
+    expect(() => svc.issueDevToken({ sub: 'u' })).toThrow(/production/);
   });
 
-  it("verify throws when auth is disabled", () => {
-    expect(() => svc.verify("anything")).toThrow(/Auth is disabled/);
+  it('verify throws when auth is disabled', () => {
+    expect(() => svc.verify('anything')).toThrow(/Auth is disabled/);
   });
 });

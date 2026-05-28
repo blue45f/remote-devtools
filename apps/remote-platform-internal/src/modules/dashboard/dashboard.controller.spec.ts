@@ -1,15 +1,12 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  BadRequestException,
-  InternalServerErrorException,
-} from "@nestjs/common";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
-import { DashboardController } from "./dashboard.controller";
-import { DashboardService } from "./dashboard.service";
+import { DashboardController } from './dashboard.controller';
+import { DashboardService } from './dashboard.service';
 
-describe("DashboardController", () => {
+describe('DashboardController', () => {
   let controller: DashboardController;
   const mockDashboardService = {
     getDashboardStats: vi.fn(),
@@ -22,16 +19,14 @@ describe("DashboardController", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DashboardController],
-      providers: [
-        { provide: DashboardService, useValue: mockDashboardService },
-      ],
+      providers: [{ provide: DashboardService, useValue: mockDashboardService }],
     }).compile();
 
     controller = module.get<DashboardController>(DashboardController);
   });
 
-  describe("getStats", () => {
-    it("should return dashboard statistics", async () => {
+  describe('getStats', () => {
+    it('should return dashboard statistics', async () => {
       const mockStats = {
         totalTickets: 100,
         todayTickets: 5,
@@ -47,22 +42,18 @@ describe("DashboardController", () => {
       expect(result).toEqual({ success: true, data: mockStats });
     });
 
-    it("should throw InternalServerErrorException on failure", async () => {
-      mockDashboardService.getDashboardStats.mockRejectedValue(
-        new Error("DB error"),
-      );
+    it('should throw InternalServerErrorException on failure', async () => {
+      mockDashboardService.getDashboardStats.mockRejectedValue(new Error('DB error'));
 
-      await expect(controller.getStats()).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      await expect(controller.getStats()).rejects.toThrow(InternalServerErrorException);
     });
   });
 
-  describe("getTicketTrend", () => {
-    it("should return ticket trend data", async () => {
+  describe('getTicketTrend', () => {
+    it('should return ticket trend data', async () => {
       const mockTrend = [
         {
-          date: "2026-04-01",
+          date: '2026-04-01',
           created: 5,
           developer: 2,
           designer: 1,
@@ -74,47 +65,45 @@ describe("DashboardController", () => {
       mockDashboardService.getTicketTrend.mockResolvedValue(mockTrend);
 
       const result = await controller.getTicketTrend({
-        period: "day",
-        startDate: "2026-04-01",
-        endDate: "2026-04-01",
+        period: 'day',
+        startDate: '2026-04-01',
+        endDate: '2026-04-01',
       });
 
       expect(result).toEqual({ success: true, data: mockTrend });
       expect(mockDashboardService.getTicketTrend).toHaveBeenCalledWith(
-        "day",
-        "2026-04-01",
-        "2026-04-01",
+        'day',
+        '2026-04-01',
+        '2026-04-01',
       );
     });
 
-    it("should throw BadRequestException when period is missing", async () => {
-      await expect(
-        controller.getTicketTrend({ period: undefined as never }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("should throw BadRequestException for invalid period", async () => {
-      await expect(
-        controller.getTicketTrend({ period: "year" as never }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("should throw InternalServerErrorException on service error", async () => {
-      mockDashboardService.getTicketTrend.mockRejectedValue(
-        new Error("DB error"),
+    it('should throw BadRequestException when period is missing', async () => {
+      await expect(controller.getTicketTrend({ period: undefined as never })).rejects.toThrow(
+        BadRequestException,
       );
+    });
 
-      await expect(
-        controller.getTicketTrend({ period: "day" }),
-      ).rejects.toThrow(InternalServerErrorException);
+    it('should throw BadRequestException for invalid period', async () => {
+      await expect(controller.getTicketTrend({ period: 'year' as never })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw InternalServerErrorException on service error', async () => {
+      mockDashboardService.getTicketTrend.mockRejectedValue(new Error('DB error'));
+
+      await expect(controller.getTicketTrend({ period: 'day' })).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
-  describe("getRecordSessionTrend", () => {
-    it("should return record session trend data", async () => {
+  describe('getRecordSessionTrend', () => {
+    it('should return record session trend data', async () => {
       const mockTrend = [
         {
-          date: "2026-04-01",
+          date: '2026-04-01',
           created: 10,
           messages: 200,
           participants: 30,
@@ -128,13 +117,13 @@ describe("DashboardController", () => {
       mockDashboardService.getRecordSessionTrend.mockResolvedValue(mockTrend);
 
       const result = await controller.getRecordSessionTrend({
-        period: "week",
+        period: 'week',
       });
 
       expect(result).toEqual({ success: true, data: mockTrend });
     });
 
-    it("should throw BadRequestException when period is missing", async () => {
+    it('should throw BadRequestException when period is missing', async () => {
       await expect(
         controller.getRecordSessionTrend({ period: undefined as never }),
       ).rejects.toThrow(BadRequestException);

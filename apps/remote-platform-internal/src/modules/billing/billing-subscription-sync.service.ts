@@ -1,10 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import type { DeepPartial, Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import type { DeepPartial, Repository } from 'typeorm';
 
-import { OrganizationEntity } from "@remote-platform/entity";
+import { OrganizationEntity } from '@remote-platform/entity';
 
-import type { BillingSyncResult, VerifiedBillingEvent } from "./billing.types";
+import type { BillingSyncResult, VerifiedBillingEvent } from './billing.types';
 
 @Injectable()
 export class BillingSubscriptionSyncService {
@@ -15,21 +15,19 @@ export class BillingSubscriptionSyncService {
     private readonly organizationRepository: Repository<OrganizationEntity>,
   ) {}
 
-  public async syncFromBillingEvent(
-    event: VerifiedBillingEvent,
-  ): Promise<BillingSyncResult> {
+  public async syncFromBillingEvent(event: VerifiedBillingEvent): Promise<BillingSyncResult> {
     const subscription = event.subscription;
     if (!subscription) {
       return {
-        action: "ignored",
-        reason: "subscription_state_not_present",
+        action: 'ignored',
+        reason: 'subscription_state_not_present',
       };
     }
 
     if (!subscription.providerCustomerId) {
       return {
-        action: "ignored",
-        reason: "missing_provider_customer_id",
+        action: 'ignored',
+        reason: 'missing_provider_customer_id',
       };
     }
 
@@ -43,8 +41,8 @@ export class BillingSubscriptionSyncService {
 
     if (subscription.plan) {
       patch.plan = subscription.plan;
-    } else if (subscription.status === "canceled") {
-      patch.plan = "free";
+    } else if (subscription.status === 'canceled') {
+      patch.plan = 'free';
     }
 
     const normalizedOrgId = subscription.orgId?.trim();
@@ -61,7 +59,7 @@ export class BillingSubscriptionSyncService {
     }
 
     return {
-      action: "updated",
+      action: 'updated',
       orgId: subscription.orgId ?? null,
       providerCustomerId: subscription.providerCustomerId,
       affected,

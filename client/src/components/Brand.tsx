@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface BrandProps {
   className?: string;
@@ -7,13 +7,11 @@ interface BrandProps {
 
 export function Brand({ className, collapsed = false }: BrandProps) {
   return (
-    <div className={cn("flex items-center gap-2.5 select-none", className)}>
+    <div className={cn('flex items-center gap-2.5 select-none', className)}>
       <BrandMark />
       {!collapsed && (
         <div className="flex flex-col leading-none">
-          <span className="text-[13px] font-semibold tracking-tight text-fg">
-            Remote DevTools
-          </span>
+          <span className="text-[13px] font-semibold tracking-tight text-fg">Remote DevTools</span>
           <span className="text-[10px] text-fg-faint mt-0.5">v0.1</span>
         </div>
       )}
@@ -27,7 +25,7 @@ export function BrandMark({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("size-7 shrink-0 text-fg", className)}
+      className={cn('size-7 shrink-0 text-fg', className)}
       aria-hidden="true"
     >
       {/* monogram: stylized "R" + signal arc */}

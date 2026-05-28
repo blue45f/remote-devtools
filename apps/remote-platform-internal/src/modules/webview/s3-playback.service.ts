@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import * as WebSocket from "ws";
+import { Injectable, Logger } from '@nestjs/common';
+import * as WebSocket from 'ws';
 
-import { ProtocolEntry } from "./webview.types";
+import { ProtocolEntry } from './webview.types';
 
 type ResponseBodyCacheValue = { body: string; base64Encoded: boolean };
 
@@ -19,17 +19,17 @@ type S3BackupEvent = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
 const isS3BackupEvent = (value: unknown): value is S3BackupEvent =>
-  isRecord(value) && typeof value.method === "string";
+  isRecord(value) && typeof value.method === 'string';
 
 const getNumberParam = (
   params: Record<string, unknown> | undefined,
   key: string,
 ): number | undefined => {
   const value = params?.[key];
-  return typeof value === "number" ? value : undefined;
+  return typeof value === 'number' ? value : undefined;
 };
 
 /**
@@ -41,10 +41,8 @@ export class S3PlaybackService {
   private readonly logger = new Logger(S3PlaybackService.name);
 
   /** Caches response bodies per client for S3 backup playback. */
-  private readonly s3ResponseBodyCache: Map<
-    WebSocket,
-    Map<number, ResponseBodyCacheValue>
-  > = new Map();
+  private readonly s3ResponseBodyCache: Map<WebSocket, Map<number, ResponseBodyCacheValue>> =
+    new Map();
 
   /** Caches full S3 backup data per client for on-demand queries. */
   private readonly s3BackupCache: Map<WebSocket, S3BackupSession[]> = new Map();
@@ -56,15 +54,9 @@ export class S3PlaybackService {
   /**
    * Initializes caches for a client session.
    */
-  public initializeClientCaches(
-    client: WebSocket,
-    backupData: S3BackupSession[],
-  ): void {
+  public initializeClientCaches(client: WebSocket, backupData: S3BackupSession[]): void {
     this.s3BackupCache.set(client, backupData);
-    this.s3ResponseBodyCache.set(
-      client,
-      new Map<number, ResponseBodyCacheValue>(),
-    );
+    this.s3ResponseBodyCache.set(client, new Map<number, ResponseBodyCacheValue>());
   }
 
   /**
@@ -78,9 +70,7 @@ export class S3PlaybackService {
   /**
    * Gets the response body cache for a client.
    */
-  public getResponseBodyCache(
-    client: WebSocket,
-  ): Map<number, ResponseBodyCacheValue> | undefined {
+  public getResponseBodyCache(client: WebSocket): Map<number, ResponseBodyCacheValue> | undefined {
     return this.s3ResponseBodyCache.get(client);
   }
 
@@ -110,14 +100,9 @@ export class S3PlaybackService {
   /**
    * Generates an S3 session ID from device ID and session start time.
    */
-  public generateS3SessionId(
-    deviceId: string,
-    sessionStartTime: number | null,
-  ): string | null {
-    const encodedDeviceId = encodeURIComponent(deviceId || "unknown-device");
-    return sessionStartTime
-      ? `s3-${encodedDeviceId}-${sessionStartTime}-0`
-      : null;
+  public generateS3SessionId(deviceId: string, sessionStartTime: number | null): string | null {
+    const encodedDeviceId = encodeURIComponent(deviceId || 'unknown-device');
+    return sessionStartTime ? `s3-${encodedDeviceId}-${sessionStartTime}-0` : null;
   }
 
   // -------------------------------------------------------------------------
@@ -142,17 +127,13 @@ export class S3PlaybackService {
     const sessionReplayProtocols: ProtocolEntry[] = [];
     const otherProtocols: ProtocolEntry[] = [];
 
-    this.logger.log(
-      `[S3_PLAYBACK] Loading ${backupData.length} sessions from S3`,
-    );
+    this.logger.log(`[S3_PLAYBACK] Loading ${backupData.length} sessions from S3`);
 
     let totalEvents = 0;
 
     for (const backup of backupData) {
       if (!backup.bufferData || !Array.isArray(backup.bufferData)) {
-        this.logger.warn(
-          `[S3_PLAYBACK] Invalid bufferData in session ${backup.room}`,
-        );
+        this.logger.warn(`[S3_PLAYBACK] Invalid bufferData in session ${backup.room}`);
         continue;
       }
 
@@ -162,27 +143,25 @@ export class S3PlaybackService {
         if (!isS3BackupEvent(event)) continue;
 
         // Skip metadata events (not real CDP events)
-        if (event.method === "buffering.saveSession") continue;
+        if (event.method === 'buffering.saveSession') continue;
 
         // Cache updateResponseBody events (same lookup logic as DB playback)
-        const requestId = getNumberParam(event.params, "requestId");
-        if (event.method === "updateResponseBody" && requestId !== undefined) {
+        const requestId = getNumberParam(event.params, 'requestId');
+        if (event.method === 'updateResponseBody' && requestId !== undefined) {
           responseBodyCache.set(requestId, {
-            body:
-              typeof event.params?.body === "string" ? event.params.body : "",
+            body: typeof event.params?.body === 'string' ? event.params.body : '',
             base64Encoded: event.params?.base64Encoded === true,
           });
         }
 
-        const timestamp =
-          typeof event.timestamp === "number" ? event.timestamp : 0;
+        const timestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
 
         // Classify Session Replay events separately
-        if (event.method.startsWith("SessionReplay.")) {
+        if (event.method.startsWith('SessionReplay.')) {
           sessionReplayProtocols.push({
             protocol: { method: event.method, params: event.params ?? {} },
             timestamp,
-            domain: "SessionReplay",
+            domain: 'SessionReplay',
           });
           continue;
         }
@@ -191,13 +170,13 @@ export class S3PlaybackService {
         const protocolData: ProtocolEntry = {
           protocol: { method: event.method, params: event.params ?? {} },
           timestamp,
-          domain: event.method.split(".")[0],
+          domain: event.method.split('.')[0],
           requestId,
         };
 
-        if (event.method.startsWith("Network.")) {
+        if (event.method.startsWith('Network.')) {
           networkProtocols.push(protocolData);
-        } else if (event.method.startsWith("Runtime.")) {
+        } else if (event.method.startsWith('Runtime.')) {
           runtimeProtocols.push(protocolData);
         } else {
           otherProtocols.push(protocolData);
@@ -239,9 +218,7 @@ export class S3PlaybackService {
 
     const responseData = responseBodyCache.get(requestId);
     if (responseData) {
-      this.logger.log(
-        `[RESPONSE_BODY_FOUND] Found responseBody for requestId ${requestId}`,
-      );
+      this.logger.log(`[RESPONSE_BODY_FOUND] Found responseBody for requestId ${requestId}`);
       return responseData;
     }
 
@@ -264,21 +241,15 @@ export class S3PlaybackService {
       for (const event of backup.bufferData) {
         if (!isS3BackupEvent(event)) continue;
 
-        if (event.method === "DOM.updated" && event.params && event.timestamp) {
+        if (event.method === 'DOM.updated' && event.params && event.timestamp) {
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
             latestDomData = event.params.root || event.params;
           }
         }
 
-        const result = isRecord(event.params?.result)
-          ? event.params.result
-          : null;
-        if (
-          event.method === "DOM.getDocument" &&
-          result?.root &&
-          event.timestamp
-        ) {
+        const result = isRecord(event.params?.result) ? event.params.result : null;
+        if (event.method === 'DOM.getDocument' && result?.root && event.timestamp) {
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
             latestDomData = result.root;
@@ -288,9 +259,7 @@ export class S3PlaybackService {
     }
 
     if (latestDomData) {
-      this.logger.log(
-        `[S3_LATEST_DOM] Found latest DOM with timestamp: ${latestTimestamp}`,
-      );
+      this.logger.log(`[S3_LATEST_DOM] Found latest DOM with timestamp: ${latestTimestamp}`);
     }
 
     return latestDomData;
@@ -312,15 +281,11 @@ export class S3PlaybackService {
       for (const event of backup.bufferData) {
         if (!isS3BackupEvent(event)) continue;
 
-        if (
-          event.method === "ScreenPreview.captured" &&
-          event.params &&
-          event.timestamp
-        ) {
+        if (event.method === 'ScreenPreview.captured' && event.params && event.timestamp) {
           if (event.timestamp > latestTimestamp) {
             latestTimestamp = event.timestamp;
             latestScreenData = {
-              method: "ScreenPreview.captured",
+              method: 'ScreenPreview.captured',
               params: event.params,
             };
           }
@@ -329,9 +294,7 @@ export class S3PlaybackService {
     }
 
     if (latestScreenData) {
-      this.logger.log(
-        `[S3_LATEST_SCREEN] Found latest screen with timestamp: ${latestTimestamp}`,
-      );
+      this.logger.log(`[S3_LATEST_SCREEN] Found latest screen with timestamp: ${latestTimestamp}`);
     }
 
     return latestScreenData;

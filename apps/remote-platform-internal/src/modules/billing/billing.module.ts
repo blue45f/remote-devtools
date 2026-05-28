@@ -1,23 +1,17 @@
-import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import {
-  BillingWebhookEventEntity,
-  OrganizationEntity,
-} from "@remote-platform/entity";
+import { BillingWebhookEventEntity, OrganizationEntity } from '@remote-platform/entity';
 
-import { AuthModule } from "../auth/auth.module";
+import { AuthModule } from '../auth/auth.module';
 
-import { BillingController } from "./billing.controller";
-import { BILLING_PROVIDER, StripeBillingProvider } from "./billing.provider";
-import { BillingService } from "./billing.service";
-import { BillingSubscriptionSyncService } from "./billing-subscription-sync.service";
+import { BillingController } from './billing.controller';
+import { BILLING_PROVIDER, StripeBillingProvider } from './billing.provider';
+import { BillingService } from './billing.service';
+import { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    TypeOrmModule.forFeature([OrganizationEntity, BillingWebhookEventEntity]),
-  ],
+  imports: [AuthModule, TypeOrmModule.forFeature([OrganizationEntity, BillingWebhookEventEntity])],
   controllers: [BillingController],
   providers: [
     BillingService,

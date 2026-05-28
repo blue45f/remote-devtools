@@ -1,12 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import pRetry from "p-retry";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import pRetry from 'p-retry';
+import { Repository } from 'typeorm';
 
-import { BusinessException } from "@remote-platform/common";
-import { NetworkEntity } from "@remote-platform/entity";
+import { BusinessException } from '@remote-platform/common';
+import { NetworkEntity } from '@remote-platform/entity';
 
-import { RecordService } from "./record.service";
+import { RecordService } from './record.service';
 
 /**
  * Maximum number of retry attempts when looking up network entries.
@@ -24,7 +24,7 @@ const RETRY_DELAY_MS = 500;
  */
 const MAX_RESPONSE_BODY_BYTES = 65536;
 
-const TRUNCATION_MARKER = "…[truncated]";
+const TRUNCATION_MARKER = '…[truncated]';
 
 /**
  * 기존 네트워크 항목에 응답 본문을 삽입하기 위한 페이로드.
@@ -65,25 +65,23 @@ export class NetworkService {
     const { recordId, ...networkInfo } = data;
 
     if (!recordId) {
-      this.logger.warn("Skipping network creation: recordId is missing");
+      this.logger.warn('Skipping network creation: recordId is missing');
       return null;
     }
 
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      this.logger.warn(
-        `Skipping network creation: record not found for id=${recordId}`,
-      );
+      this.logger.warn(`Skipping network creation: record not found for id=${recordId}`);
       return null;
     }
 
     const requestId =
-      typeof networkInfo.requestId === "number"
+      typeof networkInfo.requestId === 'number'
         ? networkInfo.requestId
         : Number(networkInfo.requestId);
     const timestamp =
-      typeof networkInfo.timestamp === "number"
+      typeof networkInfo.timestamp === 'number'
         ? networkInfo.timestamp
         : Number(networkInfo.timestamp);
 
@@ -116,7 +114,7 @@ export class NetworkService {
   public async findByRecordId(recordId: number): Promise<NetworkEntity[]> {
     return this.networkRepository.find({
       where: { record: { id: recordId } },
-      order: { timestamp: "ASC" },
+      order: { timestamp: 'ASC' },
     });
   }
 
@@ -139,7 +137,7 @@ export class NetworkService {
   public async updateResponseBody(data: UpdateResponseBodyData): Promise<void> {
     const record = await this.recordService.findOne(data.recordId);
     if (!record) {
-      throw BusinessException.resourceNotFound("Record", {
+      throw BusinessException.resourceNotFound('Record', {
         recordId: data.recordId,
       });
     }
@@ -171,17 +169,14 @@ export class NetworkService {
     }
 
     if (bodyToSave && bodyToSave.length > MAX_RESPONSE_BODY_BYTES) {
-      bodyToSave =
-        bodyToSave.slice(0, MAX_RESPONSE_BODY_BYTES) + TRUNCATION_MARKER;
+      bodyToSave = bodyToSave.slice(0, MAX_RESPONSE_BODY_BYTES) + TRUNCATION_MARKER;
     }
 
     network.responseBody = bodyToSave;
     network.base64Encoded = data.base64Encoded;
     await this.networkRepository.save(network);
 
-    this.logger.debug(
-      `Response body saved: recordId=${data.recordId}, requestId=${requestId}`,
-    );
+    this.logger.debug(`Response body saved: recordId=${data.recordId}, requestId=${requestId}`);
   }
 
   /**
@@ -203,7 +198,7 @@ export class NetworkService {
           const network = await this.networkRepository.findOne({
             where: { record: { id: record.id }, requestId },
           });
-          if (!network) throw new Error("Not found yet");
+          if (!network) throw new Error('Not found yet');
           return network;
         },
         {

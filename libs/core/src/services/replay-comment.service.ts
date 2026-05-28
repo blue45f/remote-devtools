@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { ReplayCommentEntity } from "@remote-platform/entity";
+import { ReplayCommentEntity } from '@remote-platform/entity';
 
 /**
  * Service backing the replay-comments feature. Single-table CRUD; the
@@ -18,12 +18,10 @@ export class ReplayCommentService {
     private readonly repo: Repository<ReplayCommentEntity>,
   ) {}
 
-  public async findByRecordId(
-    recordId: number,
-  ): Promise<ReplayCommentEntity[]> {
+  public async findByRecordId(recordId: number): Promise<ReplayCommentEntity[]> {
     return this.repo.find({
       where: { record: { id: recordId } },
-      order: { timestampMs: "ASC", createdAt: "ASC" },
+      order: { timestampMs: 'ASC', createdAt: 'ASC' },
     });
   }
 
@@ -36,16 +34,14 @@ export class ReplayCommentService {
   }): Promise<ReplayCommentEntity> {
     const saved = await this.repo.save(
       this.repo.create({
-        record: { id: input.recordId } as ReplayCommentEntity["record"],
+        record: { id: input.recordId } as ReplayCommentEntity['record'],
         timestampMs: input.timestampMs,
         body: input.body,
         author: input.author ?? null,
         orgId: input.orgId ?? null,
       }),
     );
-    this.logger.debug(
-      `Replay comment created: id=${saved.id}, record=${input.recordId}`,
-    );
+    this.logger.debug(`Replay comment created: id=${saved.id}, record=${input.recordId}`);
     return saved;
   }
 
@@ -55,7 +51,7 @@ export class ReplayCommentService {
       .createQueryBuilder()
       .delete()
       .from(ReplayCommentEntity)
-      .where("id = :commentId AND record_id = :recordId", {
+      .where('id = :commentId AND record_id = :recordId', {
         commentId,
         recordId,
       })

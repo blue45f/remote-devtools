@@ -1,11 +1,5 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from "@nestjs/common";
-import { Response } from "express";
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
 
 interface ApiErrorResponse {
   success: false;
@@ -28,16 +22,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // 에러 코드 매핑
     const errorCodeMap: Record<number, string> = {
-      [HttpStatus.BAD_REQUEST]: "VALIDATION_ERROR",
-      [HttpStatus.NOT_FOUND]: "NOT_FOUND",
-      [HttpStatus.CONFLICT]: "CONFLICT_ERROR",
-      [HttpStatus.INTERNAL_SERVER_ERROR]: "INTERNAL_ERROR",
+      [HttpStatus.BAD_REQUEST]: 'VALIDATION_ERROR',
+      [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
+      [HttpStatus.CONFLICT]: 'CONFLICT_ERROR',
+      [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL_ERROR',
     };
 
     const errorResponse: ApiErrorResponse = {
       success: false,
       error: {
-        code: errorCodeMap[status] || "UNKNOWN_ERROR",
+        code: errorCodeMap[status] || 'UNKNOWN_ERROR',
         message: exception.message,
       },
     };

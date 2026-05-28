@@ -1,17 +1,17 @@
-import { screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from "@/test/utils";
+import { renderWithProviders } from '@/test/utils';
 
-import { SessionPreviewCard } from "./SessionPreviewCard";
+import { SessionPreviewCard } from './SessionPreviewCard';
 
 beforeEach(() => {
-  localStorage.setItem("demo-mode", "1");
+  localStorage.setItem('demo-mode', '1');
 });
 
-describe("SessionPreviewCard", () => {
-  it("renders the heatmap canvas with native-pixel dimensions when click points are present", async () => {
+describe('SessionPreviewCard', () => {
+  it('renders the heatmap canvas with native-pixel dimensions when click points are present', async () => {
     renderWithProviders(
       <SessionPreviewCard
         sessionId={1000}
@@ -24,31 +24,24 @@ describe("SessionPreviewCard", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("preview-heatmap")).toBeInTheDocument();
+      expect(screen.getByTestId('preview-heatmap')).toBeInTheDocument();
     });
-    const canvas = screen.getByTestId("preview-heatmap") as HTMLCanvasElement;
+    const canvas = screen.getByTestId('preview-heatmap') as HTMLCanvasElement;
     // The default native canvas matches the seed preview dimensions.
     expect(canvas.width).toBe(1280);
     expect(canvas.height).toBe(800);
   });
 
-  it("hides the heatmap when the toggle is pressed", async () => {
+  it('hides the heatmap when the toggle is pressed', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <SessionPreviewCard
-        sessionId={1000}
-        clickPoints={[{ x: 100, y: 200 }]}
-      />,
-    );
+    renderWithProviders(<SessionPreviewCard sessionId={1000} clickPoints={[{ x: 100, y: 200 }]} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("preview-heatmap")).toBeInTheDocument();
+      expect(screen.getByTestId('preview-heatmap')).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId("preview-heatmap-toggle"));
+    await user.click(screen.getByTestId('preview-heatmap-toggle'));
     await waitFor(() => {
-      expect(
-        screen.queryByTestId("preview-heatmap"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('preview-heatmap')).not.toBeInTheDocument();
     });
   });
 
@@ -56,8 +49,8 @@ describe("SessionPreviewCard", () => {
     renderWithProviders(<SessionPreviewCard sessionId={1000} />);
     // Wait for the iframe to settle, then assert the canvas never appears.
     await waitFor(() => {
-      expect(screen.getByTitle("Session preview")).toBeInTheDocument();
+      expect(screen.getByTitle('Session preview')).toBeInTheDocument();
     });
-    expect(screen.queryByTestId("preview-heatmap")).not.toBeInTheDocument();
+    expect(screen.queryByTestId('preview-heatmap')).not.toBeInTheDocument();
   });
 });

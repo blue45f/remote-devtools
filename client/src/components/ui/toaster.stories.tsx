@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Button } from "./button";
-import { Toaster, toast } from "./toaster";
+import { Button } from './button';
+import { Toaster, toast } from './toaster';
 
 const meta = {
-  title: "UI/Toaster",
+  title: 'UI/Toaster',
   component: Toaster,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   decorators: [
     (Story) => (
       <div className="flex flex-col items-center gap-4">
@@ -26,17 +26,15 @@ export const Triggers: Story = {
     <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
-        onClick={() =>
-          toast("Saved", { description: "Changes synced to the server." })
-        }
+        onClick={() => toast('Saved', { description: 'Changes synced to the server.' })}
       >
         Default
       </Button>
       <Button
         variant="outline"
         onClick={() =>
-          toast.success("Session uploaded", {
-            description: "All 1.2k events flushed.",
+          toast.success('Session uploaded', {
+            description: 'All 1.2k events flushed.',
           })
         }
       >
@@ -44,28 +42,24 @@ export const Triggers: Story = {
       </Button>
       <Button
         variant="outline"
-        onClick={() =>
-          toast.warning("Slow network", { description: "Retrying upload…" })
-        }
+        onClick={() => toast.warning('Slow network', { description: 'Retrying upload…' })}
       >
         Warning
       </Button>
       <Button
         variant="outline"
-        onClick={() =>
-          toast.error("Upload failed", { description: "Connection refused" })
-        }
+        onClick={() => toast.error('Upload failed', { description: 'Connection refused' })}
       >
         Error
       </Button>
       <Button
         variant="outline"
         onClick={() =>
-          toast("Replay paused", {
-            description: "Press space to resume.",
+          toast('Replay paused', {
+            description: 'Press space to resume.',
             action: {
-              label: "Resume",
-              onClick: () => toast.success("Resumed"),
+              label: 'Resume',
+              onClick: () => toast.success('Resumed'),
             },
           })
         }

@@ -4,7 +4,7 @@
  * @returns The spreadsheet ID, or null if the URL is invalid
  */
 export function extractGoogleSheetsId(url: string): string | null {
-  if (!url || typeof url !== "string") {
+  if (!url || typeof url !== 'string') {
     return null;
   }
 

@@ -1,23 +1,21 @@
-import { screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from "@/test/utils";
+import { renderWithProviders } from '@/test/utils';
 
-import Sessions from "./Sessions";
+import Sessions from './Sessions';
 
 beforeEach(() => {
   // Demo mode short-circuits apiFetch to seed data — avoids any real network.
-  localStorage.setItem("demo-mode", "1");
+  localStorage.setItem('demo-mode', '1');
 });
 
-describe("Sessions page", () => {
-  it("renders the title, controls and a table of seeded sessions", async () => {
+describe('Sessions page', () => {
+  it('renders the title, controls and a table of seeded sessions', async () => {
     renderWithProviders(<Sessions />);
 
-    expect(
-      screen.getByRole("heading", { name: "Sessions", level: 1 }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sessions', level: 1 })).toBeInTheDocument();
 
     // Wait for skeleton to be replaced with real rows
     await waitFor(() => {
@@ -25,11 +23,11 @@ describe("Sessions page", () => {
     });
 
     // Tabs
-    expect(screen.getByRole("tab", { name: /Recorded/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Live/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Recorded/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Live/ })).toBeInTheDocument();
   });
 
-  it("filters rows when the user types in the search box", async () => {
+  it('filters rows when the user types in the search box', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
@@ -37,35 +35,35 @@ describe("Sessions page", () => {
     });
 
     const search = screen.getByPlaceholderText(/Search by name, URL/);
-    await user.type(search, "billing");
+    await user.type(search, 'billing');
 
     expect(screen.queryByText(/checkout-flow-test/)).not.toBeInTheDocument();
     expect(screen.getByText(/billing-modal-bug/)).toBeInTheDocument();
   });
 
-  it("toggles between table and grid views", async () => {
+  it('toggles between table and grid views', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    expect(document.querySelector("table")).toBeInTheDocument();
+    expect(document.querySelector('table')).toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: /Grid view/ }));
+    await user.click(screen.getByRole('radio', { name: /Grid view/ }));
     await waitFor(() => {
-      expect(document.querySelector("table")).not.toBeInTheDocument();
+      expect(document.querySelector('table')).not.toBeInTheDocument();
     });
   });
 
-  it("switches to live tab and shows live entries only", async () => {
+  it('switches to live tab and shows live entries only', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("tab", { name: /Live/ }));
+    await user.click(screen.getByRole('tab', { name: /Live/ }));
 
     await waitFor(() => {
       // Live sessions in the seed are the last two
@@ -82,14 +80,12 @@ describe("Sessions page", () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "< 30s" }));
+    await user.click(screen.getByRole('button', { name: '< 30s' }));
     await waitFor(() => {
-      expect(
-        screen.queryByText(/onboarding-step-fail/),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/onboarding-step-fail/)).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /Clear/ }));
+    await user.click(screen.getByRole('button', { name: /Clear/ }));
     await waitFor(() => {
       expect(screen.getByText(/onboarding-step-fail/)).toBeInTheDocument();
     });
@@ -101,15 +97,15 @@ describe("Sessions page", () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    const row = screen.getByText(/checkout-flow-test/).closest("tr");
+    const row = screen.getByText(/checkout-flow-test/).closest('tr');
     expect(row).not.toBeNull();
-    const detail = within(row as HTMLElement).getByRole("link", {
+    const detail = within(row as HTMLElement).getByRole('link', {
       name: /View session details/,
     });
-    expect(detail.getAttribute("href")).toMatch(/^\/sessions\/\d+$/);
+    expect(detail.getAttribute('href')).toMatch(/^\/sessions\/\d+$/);
   });
 
-  it("surfaces a top-tags quick-filter strip and clicking one filters the list", async () => {
+  it('surfaces a top-tags quick-filter strip and clicking one filters the list', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
@@ -117,12 +113,12 @@ describe("Sessions page", () => {
     });
 
     // The strip itself is rendered.
-    expect(screen.getByTestId("sessions-tag-strip")).toBeInTheDocument();
+    expect(screen.getByTestId('sessions-tag-strip')).toBeInTheDocument();
 
     // The seeded sessions cycle through ["checkout","bug"], ["pricing"],
     // [], ["mobile","verified"], ["error"], [] — so "checkout" appears
     // at least once and should be in the top-8.
-    const chip = screen.getByTestId("sessions-top-tag-checkout");
+    const chip = screen.getByTestId('sessions-top-tag-checkout');
     expect(chip).toBeInTheDocument();
     await user.click(chip);
 
@@ -131,7 +127,7 @@ describe("Sessions page", () => {
     });
   });
 
-  it("filters the list by clicking a tag chip on a row", async () => {
+  it('filters the list by clicking a tag chip on a row', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
@@ -139,8 +135,8 @@ describe("Sessions page", () => {
     });
 
     // The first seeded session (index 0) has tags=["checkout","bug"].
-    const chips = screen.getAllByTestId("session-tag-chip");
-    const checkoutChip = chips.find((c) => c.textContent === "checkout");
+    const chips = screen.getAllByTestId('session-tag-chip');
+    const checkoutChip = chips.find((c) => c.textContent === 'checkout');
     expect(checkoutChip).toBeDefined();
 
     await user.click(checkoutChip as HTMLElement);
@@ -152,8 +148,8 @@ describe("Sessions page", () => {
 
     // Clicking again unpins (deselects) the tag.
     const activeChip = screen
-      .getAllByTestId("session-tag-chip")
-      .find((c) => c.textContent === "checkout" && c.getAttribute("aria-pressed") === "true");
+      .getAllByTestId('session-tag-chip')
+      .find((c) => c.textContent === 'checkout' && c.getAttribute('aria-pressed') === 'true');
     expect(activeChip).toBeDefined();
     await user.click(activeChip as HTMLElement);
 
@@ -162,30 +158,26 @@ describe("Sessions page", () => {
     });
   });
 
-  it("toggles row density and persists the choice", async () => {
+  it('toggles row density and persists the choice', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
     await waitFor(() => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    const toggle = screen.getByTestId("sessions-density-toggle");
-    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    const toggle = screen.getByTestId('sessions-density-toggle');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
 
     await user.click(toggle);
-    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
     // The visible row should pick up the new density data attribute so
     // CSS-only selectors (e.g. story screenshots) can target either state.
-    const row = screen
-      .getByText(/checkout-flow-test/)
-      .closest("[data-session-row]") as HTMLElement;
-    expect(row.getAttribute("data-density")).toBe("compact");
+    const row = screen.getByText(/checkout-flow-test/).closest('[data-session-row]') as HTMLElement;
+    expect(row.getAttribute('data-density')).toBe('compact');
 
     await waitFor(() => {
-      expect(localStorage.getItem("sessions-prefs:v1")).toContain(
-        '"density":"compact"',
-      );
+      expect(localStorage.getItem('sessions-prefs:v1')).toContain('"density":"compact"');
     });
   });
 });

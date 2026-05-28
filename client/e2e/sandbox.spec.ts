@@ -1,4 +1,4 @@
-import { expect, test, type ConsoleMessage } from "@playwright/test";
+import { expect, test, type ConsoleMessage } from '@playwright/test';
 
 /**
  * The SDK sandbox pages load the SDK either as a UMD `<script>` or via ESM
@@ -27,73 +27,59 @@ const ALLOWED_CONSOLE_PATTERNS = [
 
 function collectFatalConsoleErrors(messages: ConsoleMessage[]) {
   return messages
-    .filter((m) => m.type() === "error")
+    .filter((m) => m.type() === 'error')
     .map((m) => m.text())
-    .filter(
-      (text) => !ALLOWED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text)),
-    );
+    .filter((text) => !ALLOWED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text)));
 }
 
-test.describe("SDK sandbox pages", () => {
-  test("/sandbox/script renders the playground shell", async ({ page }) => {
+test.describe('SDK sandbox pages', () => {
+  test('/sandbox/script renders the playground shell', async ({ page }) => {
     const consoleMessages: ConsoleMessage[] = [];
     const sdkRequests: string[] = [];
-    page.on("console", (msg) => consoleMessages.push(msg));
-    page.on("request", (request) => {
-      if (request.url().includes("/sdk/index.umd.js")) {
+    page.on('console', (msg) => consoleMessages.push(msg));
+    page.on('request', (request) => {
+      if (request.url().includes('/sdk/index.umd.js')) {
         sdkRequests.push(request.url());
       }
     });
 
-    await page.goto("/sandbox/script");
+    await page.goto('/sandbox/script');
 
     // The sidebar also renders a "SDK Playground" group label, so scope the
     // visibility check to the main page surface only.
-    const main = page.locator("#main-content");
+    const main = page.locator('#main-content');
     await expect(main.getByText(/SDK Playground/i)).toBeVisible();
     await expect(main.getByText(/Script SDK \(UMD\)/i)).toBeVisible();
 
     // Tab switcher is rendered.
-    await expect(
-      page.getByRole("tab", { name: /Customer page/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("tab", { name: /Debug actions/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Customer page/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Debug actions/i })).toBeVisible();
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
-    expect(fatal, fatal.join("\n")).toEqual([]);
+    expect(fatal, fatal.join('\n')).toEqual([]);
     expect(sdkRequests).toEqual([]);
   });
 
-  test("/sandbox/module renders the playground shell", async ({ page }) => {
+  test('/sandbox/module renders the playground shell', async ({ page }) => {
     const consoleMessages: ConsoleMessage[] = [];
-    page.on("console", (msg) => consoleMessages.push(msg));
+    page.on('console', (msg) => consoleMessages.push(msg));
 
-    await page.goto("/sandbox/module");
+    await page.goto('/sandbox/module');
 
-    const main = page.locator("#main-content");
+    const main = page.locator('#main-content');
     await expect(main.getByText(/SDK Playground/i)).toBeVisible();
     await expect(main.getByText(/^Module SDK$/i)).toBeVisible();
-    await expect(
-      page.getByRole("tab", { name: /Customer page/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Customer page/i })).toBeVisible();
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
-    expect(fatal, fatal.join("\n")).toEqual([]);
+    expect(fatal, fatal.join('\n')).toEqual([]);
   });
 
-  test("can switch between Customer page and Debug actions tabs", async ({
-    page,
-  }) => {
-    await page.goto("/sandbox/module");
-    await page.getByRole("tab", { name: /Debug actions/i }).click();
-    await expect(
-      page.getByRole("tab", { name: /Debug actions/i, selected: true }),
-    ).toBeVisible();
-    await page.getByRole("tab", { name: /Customer page/i }).click();
-    await expect(
-      page.getByRole("tab", { name: /Customer page/i, selected: true }),
-    ).toBeVisible();
+  test('can switch between Customer page and Debug actions tabs', async ({ page }) => {
+    await page.goto('/sandbox/module');
+    await page.getByRole('tab', { name: /Debug actions/i }).click();
+    await expect(page.getByRole('tab', { name: /Debug actions/i, selected: true })).toBeVisible();
+    await page.getByRole('tab', { name: /Customer page/i }).click();
+    await expect(page.getByRole('tab', { name: /Customer page/i, selected: true })).toBeVisible();
   });
 });

@@ -5,9 +5,9 @@ import {
   Logger,
   NotFoundException,
   Query,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Like, Repository } from "typeorm";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Like, Repository } from 'typeorm';
 
 import {
   DomEntity,
@@ -16,19 +16,19 @@ import {
   TicketComponentEntity,
   TicketLabelEntity,
   TicketLogEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
 // HTML을 실제 브라우저로 렌더링
-import { renderHTMLToImage } from "../../utils/html-to-image";
-import { RecordService } from "@remote-platform/core";
-import { ApiTags } from "@nestjs/swagger";
-import { S3Service } from "../s3/s3.service";
+import { renderHTMLToImage } from '../../utils/html-to-image';
+import { RecordService } from '@remote-platform/core';
+import { ApiTags } from '@nestjs/swagger';
+import { S3Service } from '../s3/s3.service';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-@ApiTags("Sessions")
-@Controller("sessions")
+@ApiTags('Sessions')
+@Controller('sessions')
 export class WebviewController {
   private readonly logger = new Logger(WebviewController.name);
 
@@ -52,7 +52,7 @@ export class WebviewController {
   /**
    * 티켓 생성 통계 조회
    */
-  @Get("ticket-stats")
+  @Get('ticket-stats')
   public async getTicketStats() {
     // 총 티켓 생성 수
     const totalTickets = await this.ticketLogRepository.count();
@@ -61,49 +61,49 @@ export class WebviewController {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTickets = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .where("ticket.created_at >= :today", { today })
+      .createQueryBuilder('ticket')
+      .where('ticket.created_at >= :today', { today })
       .getCount();
 
     // 사용자별 티켓 생성 수 (상위 10명)
     const userStats = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .select("ticket.username", "username")
-      .addSelect("ticket.userDisplayName", "userDisplayName")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("ticket.username")
-      .addGroupBy("ticket.userDisplayName")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('ticket')
+      .select('ticket.username', 'username')
+      .addSelect('ticket.userDisplayName', 'userDisplayName')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('ticket.username')
+      .addGroupBy('ticket.userDisplayName')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
 
     // 프로젝트별 티켓 생성 수
     const projectStats = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .select("ticket.jiraProjectKey", "project")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("ticket.jiraProjectKey")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('ticket')
+      .select('ticket.jiraProjectKey', 'project')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('ticket.jiraProjectKey')
+      .orderBy('COUNT(*)', 'DESC')
       .getRawMany();
 
     // 담당자별 티켓 생성 수 (상위 10명)
     const assigneeStats = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .select("ticket.assignee", "assignee")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("ticket.assignee")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('ticket')
+      .select('ticket.assignee', 'assignee')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('ticket.assignee')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
 
     // Epic별 티켓 생성 수 (상위 10개)
     const epicStats = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .select("ticket.parentEpic", "epic")
-      .addSelect("COUNT(*)", "count")
-      .where("ticket.parentEpic IS NOT NULL")
-      .groupBy("ticket.parentEpic")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('ticket')
+      .select('ticket.parentEpic', 'epic')
+      .addSelect('COUNT(*)', 'count')
+      .where('ticket.parentEpic IS NOT NULL')
+      .groupBy('ticket.parentEpic')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
 
@@ -120,29 +120,29 @@ export class WebviewController {
   /**
    * 녹화 세션 상세 정보 조회 (screenPreview 포함)
    */
-  @Get("session-detail")
-  public async getSessionDetail(@Query("sessionName") sessionName: string) {
+  @Get('session-detail')
+  public async getSessionDetail(@Query('sessionName') sessionName: string) {
     if (!sessionName) {
-      throw new NotFoundException("sessionName is required");
+      throw new NotFoundException('sessionName is required');
     }
 
     // 녹화 세션 정보 조회
     const record = await this.recordRepository.findOne({
       where: { name: sessionName },
-      order: { timestamp: "DESC" }, // 같은 이름이 여러 개일 경우 최신 것 선택
+      order: { timestamp: 'DESC' }, // 같은 이름이 여러 개일 경우 최신 것 선택
     });
 
     if (!record) {
-      throw new NotFoundException("녹화 세션을 찾을 수 없습니다");
+      throw new NotFoundException('녹화 세션을 찾을 수 없습니다');
     }
 
     // DOM 데이터가 있는지 확인 (화면 렌더링용)
     const domData = await this.domRepository.findOne({
       where: {
         record: { id: record.id },
-        type: "entireDom",
+        type: 'entireDom',
       },
-      order: { timestamp: "DESC" },
+      order: { timestamp: 'DESC' },
     });
 
     // 임시 스크린샷 URL 생성
@@ -153,9 +153,9 @@ export class WebviewController {
     if (domData && domData.protocol) {
       // DOM 데이터가 있으면 스크린샷 생성 API 엔드포인트 제공
       const baseUrl =
-        process.env.NODE_ENV === "production"
-          ? process.env.EXTERNAL_HOST || "http://localhost:3001"
-          : "http://localhost:3001";
+        process.env.NODE_ENV === 'production'
+          ? process.env.EXTERNAL_HOST || 'http://localhost:3001'
+          : 'http://localhost:3001';
 
       // 스크린샷 생성 엔드포인트 URL 반환
       screenPreviewUrl = `${baseUrl}/sessions/generate-screenshot?recordId=${record.id}`;
@@ -177,23 +177,21 @@ export class WebviewController {
    *
    * ScreenPreview 데이터를 기반으로 실제 화면과 유사한 이미지 생성
    */
-  @Get("generate-screenshot")
+  @Get('generate-screenshot')
   public async generateScreenshot(
-    @Query("recordId") recordId: string,
-    @Query("fullPage") fullPage?: string, // 전체 페이지 캡처 옵션
+    @Query('recordId') recordId: string,
+    @Query('fullPage') fullPage?: string, // 전체 페이지 캡처 옵션
   ) {
     if (!recordId) {
-      throw new NotFoundException("recordId is required");
+      throw new NotFoundException('recordId is required');
     }
 
-    this.logger.log(
-      `[Screenshot] Starting screenshot generation for recordId: ${recordId}`,
-    );
+    this.logger.log(`[Screenshot] Starting screenshot generation for recordId: ${recordId}`);
 
     // Record 정보 가져오기
     const parsedRecordId = parseInt(recordId, 10);
     if (isNaN(parsedRecordId)) {
-      throw new BadRequestException("recordId must be a valid number");
+      throw new BadRequestException('recordId must be a valid number');
     }
 
     const record = await this.recordRepository.findOne({
@@ -208,51 +206,44 @@ export class WebviewController {
     const screenData = await this.screenRepository.findOne({
       where: {
         record: { id: parsedRecordId },
-        type: "screenPreview",
+        type: 'screenPreview',
       },
-      order: { timestamp: "DESC" },
+      order: { timestamp: 'DESC' },
     });
 
     let dataURL: string;
 
     try {
       if (screenData && screenData.protocol) {
-        this.logger.debug("[Screenshot] Found ScreenPreview data");
+        this.logger.debug('[Screenshot] Found ScreenPreview data');
 
         // ScreenPreview protocol의 구조 확인
         const protocol = screenData.protocol as Record<string, unknown>;
-        this.logger.debug(
-          `[Screenshot] Protocol keys: ${Object.keys(protocol).join(", ")}`,
-        );
+        this.logger.debug(`[Screenshot] Protocol keys: ${Object.keys(protocol).join(', ')}`);
 
         // protocol이 ScreenPreview.captured 형식인지 확인
-        if (protocol.method === "ScreenPreview.captured" && protocol.params) {
+        if (protocol.method === 'ScreenPreview.captured' && protocol.params) {
           const params = isRecord(protocol.params) ? protocol.params : null;
           if (!params) {
-            throw new Error("Invalid ScreenPreview params");
+            throw new Error('Invalid ScreenPreview params');
           }
-          this.logger.debug(
-            "[Screenshot] Found ScreenPreview.captured data, rendering HTML",
-          );
+          this.logger.debug('[Screenshot] Found ScreenPreview.captured data, rendering HTML');
 
-          if (typeof params.body === "string" && params.body) {
+          if (typeof params.body === 'string' && params.body) {
             // head는 배열 형태로 저장되어 있으므로 join
             const headHtml = Array.isArray(params.head)
-              ? params.head.join("\n")
-              : typeof params.head === "string"
+              ? params.head.join('\n')
+              : typeof params.head === 'string'
                 ? params.head
-                : "";
-            const baseHref =
-              typeof params.baseHref === "string" ? params.baseHref : undefined;
+                : '';
+            const baseHref = typeof params.baseHref === 'string' ? params.baseHref : undefined;
             const bodyHtml = params.body;
-            const width = typeof params.width === "number" ? params.width : 800;
-            const height =
-              typeof params.height === "number" ? params.height : 600;
-            const bodyClass =
-              typeof params.bodyClass === "string" ? params.bodyClass : "";
+            const width = typeof params.width === 'number' ? params.width : 800;
+            const height = typeof params.height === 'number' ? params.height : 600;
+            const bodyClass = typeof params.bodyClass === 'string' ? params.bodyClass : '';
 
             this.logger.debug(
-              `[Screenshot] Rendering ${width}x${height}, fullPage: ${fullPage === "true"}`,
+              `[Screenshot] Rendering ${width}x${height}, fullPage: ${fullPage === 'true'}`,
             );
 
             // 실제 HTML을 브라우저로 렌더링
@@ -263,26 +254,20 @@ export class WebviewController {
               height,
               bodyClass,
               baseHref,
-              fullPage === "true", // Query 파라미터가 'true'이면 전체 페이지 캡처
+              fullPage === 'true', // Query 파라미터가 'true'이면 전체 페이지 캡처
             );
 
-            this.logger.debug(
-              "[Screenshot] Successfully rendered HTML to image",
-            );
+            this.logger.debug('[Screenshot] Successfully rendered HTML to image');
           } else {
-            throw new Error("ScreenPreview에 body 데이터가 없습니다");
+            throw new Error('ScreenPreview에 body 데이터가 없습니다');
           }
         } else {
-          this.logger.warn(
-            "[Screenshot] Protocol is not ScreenPreview.captured format",
-          );
-          throw new Error("ScreenPreview.captured 형식이 아닙니다");
+          this.logger.warn('[Screenshot] Protocol is not ScreenPreview.captured format');
+          throw new Error('ScreenPreview.captured 형식이 아닙니다');
         }
       } else {
-        this.logger.warn("[Screenshot] No ScreenPreview data found");
-        throw new NotFoundException(
-          `녹화 세션 ${record.name}에 ScreenPreview 데이터가 없습니다`,
-        );
+        this.logger.warn('[Screenshot] No ScreenPreview data found');
+        throw new NotFoundException(`녹화 세션 ${record.name}에 ScreenPreview 데이터가 없습니다`);
       }
     } catch (error) {
       this.logger.error(`[Screenshot] Image generation failed: ${error}`);
@@ -297,9 +282,7 @@ export class WebviewController {
       throw new Error(`스크린샷 생성 실패: ${message}`, { cause: error });
     }
 
-    this.logger.log(
-      `[Screenshot] Successfully generated image for record: ${record.name}`,
-    );
+    this.logger.log(`[Screenshot] Successfully generated image for record: ${record.name}`);
 
     return {
       dataURL,
@@ -310,15 +293,15 @@ export class WebviewController {
   /**
    * 특정 사용자의 티켓 생성 이력 조회
    */
-  @Get("user-tickets")
-  public async getUserTickets(@Query("deviceId") deviceId: string) {
+  @Get('user-tickets')
+  public async getUserTickets(@Query('deviceId') deviceId: string) {
     if (!deviceId) {
-      throw new BadRequestException("deviceId is required");
+      throw new BadRequestException('deviceId is required');
     }
 
     const tickets = await this.ticketLogRepository.find({
       where: { deviceId },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
       take: 50, // 최근 50개만
       relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
@@ -331,7 +314,7 @@ export class WebviewController {
         sessionName: ticket.sessionName,
         ticketUrl: ticket.ticketUrl,
         jiraProjectKey: ticket.jiraProjectKey,
-        title: ticket.title || "제목 없음",
+        title: ticket.title || '제목 없음',
         assignee: ticket.assignee,
         parentEpic: ticket.parentEpic,
         components: ticket.components.map((comp) => comp.componentName),
@@ -344,22 +327,22 @@ export class WebviewController {
   /**
    * 일별 티켓 생성 통계 (최근 30일)
    */
-  @Get("daily-stats")
+  @Get('daily-stats')
   public async getDailyStats() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const dailyStats = await this.ticketLogRepository
-      .createQueryBuilder("ticket")
-      .select("DATE(ticket.created_at)", "date")
-      .addSelect("COUNT(*)", "count")
-      .where("ticket.created_at >= :thirtyDaysAgo", { thirtyDaysAgo })
-      .groupBy("DATE(ticket.created_at)")
-      .orderBy("DATE(ticket.created_at)", "DESC")
+      .createQueryBuilder('ticket')
+      .select('DATE(ticket.created_at)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('ticket.created_at >= :thirtyDaysAgo', { thirtyDaysAgo })
+      .groupBy('DATE(ticket.created_at)')
+      .orderBy('DATE(ticket.created_at)', 'DESC')
       .getRawMany();
 
     return {
-      period: "최근 30일",
+      period: '최근 30일',
       dailyStats,
     };
   }
@@ -367,20 +350,20 @@ export class WebviewController {
   /**
    * 컴포넌트별 티켓 생성 통계
    */
-  @Get("component-stats")
+  @Get('component-stats')
   public async getComponentStats() {
     const componentStats = await this.ticketComponentRepository
-      .createQueryBuilder("component")
-      .select("component.componentName", "component")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("component.componentName")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('component')
+      .select('component.componentName', 'component')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('component.componentName')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(20)
       .getRawMany();
 
     const totalUniqueComponents = await this.ticketComponentRepository
-      .createQueryBuilder("component")
-      .select("COUNT(DISTINCT component.componentName)", "count")
+      .createQueryBuilder('component')
+      .select('COUNT(DISTINCT component.componentName)', 'count')
       .getRawOne();
 
     return {
@@ -395,20 +378,20 @@ export class WebviewController {
   /**
    * 라벨별 티켓 생성 통계
    */
-  @Get("label-stats")
+  @Get('label-stats')
   public async getLabelStats() {
     const labelStats = await this.ticketLabelRepository
-      .createQueryBuilder("label")
-      .select("label.labelName", "label")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("label.labelName")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('label')
+      .select('label.labelName', 'label')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('label.labelName')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(20)
       .getRawMany();
 
     const totalUniqueLabels = await this.ticketLabelRepository
-      .createQueryBuilder("label")
-      .select("COUNT(DISTINCT label.labelName)", "count")
+      .createQueryBuilder('label')
+      .select('COUNT(DISTINCT label.labelName)', 'count')
       .getRawOne();
 
     return {
@@ -423,15 +406,15 @@ export class WebviewController {
   /**
    * 특정 Epic으로 생성된 티켓 조회
    */
-  @Get("tickets-by-epic")
-  public async getTicketsByEpic(@Query("parentEpic") parentEpic: string) {
+  @Get('tickets-by-epic')
+  public async getTicketsByEpic(@Query('parentEpic') parentEpic: string) {
     if (!parentEpic) {
-      throw new BadRequestException("parentEpic is required");
+      throw new BadRequestException('parentEpic is required');
     }
 
     const tickets = await this.ticketLogRepository.find({
       where: { parentEpic },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
       relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
@@ -457,16 +440,16 @@ export class WebviewController {
   /**
    * 특정 URL에서 생성된 티켓 조회 (부분 일치)
    */
-  @Get("tickets-by-url")
-  public async getTicketsByUrl(@Query("url") url: string) {
+  @Get('tickets-by-url')
+  public async getTicketsByUrl(@Query('url') url: string) {
     if (!url) {
-      throw new BadRequestException("url is required");
+      throw new BadRequestException('url is required');
     }
 
-    const escapedUrl = url.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    const escapedUrl = url.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const tickets = await this.ticketLogRepository.find({
       where: { url: Like(`%${escapedUrl}%`) },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
       relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
@@ -494,46 +477,46 @@ export class WebviewController {
   /**
    * 녹화 세션 생성 통계 조회
    */
-  @Get("session-stats")
+  @Get('session-stats')
   public async getSessionStats() {
     // 총 녹화 세션 생성 수
     const totalSessions = await this.recordRepository.count();
 
     // 녹화 모드별 통계
     const recordModeStats = await this.recordRepository
-      .createQueryBuilder("record")
-      .select("record.recordMode", "recordMode")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("record.recordMode")
+      .createQueryBuilder('record')
+      .select('record.recordMode', 'recordMode')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('record.recordMode')
       .getRawMany();
 
     // 오늘 생성된 녹화 세션 수
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todaySessions = await this.recordRepository
-      .createQueryBuilder("record")
-      .where("record.timestamp >= :today", { today })
+      .createQueryBuilder('record')
+      .where('record.timestamp >= :today', { today })
       .getCount();
 
     // deviceId별 녹화 세션 생성 수 (상위 10개)
     const deviceStats = await this.recordRepository
-      .createQueryBuilder("record")
-      .select("record.deviceId", "deviceId")
-      .addSelect("COUNT(*)", "count")
-      .where("record.deviceId IS NOT NULL")
-      .groupBy("record.deviceId")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('record')
+      .select('record.deviceId', 'deviceId')
+      .addSelect('COUNT(*)', 'count')
+      .where('record.deviceId IS NOT NULL')
+      .groupBy('record.deviceId')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
 
     // referrer별 통계
     const referrerStats = await this.recordRepository
-      .createQueryBuilder("record")
-      .select("record.referrer", "referrer")
-      .addSelect("COUNT(*)", "count")
-      .where("record.referrer IS NOT NULL")
-      .groupBy("record.referrer")
-      .orderBy("COUNT(*)", "DESC")
+      .createQueryBuilder('record')
+      .select('record.referrer', 'referrer')
+      .addSelect('COUNT(*)', 'count')
+      .where('record.referrer IS NOT NULL')
+      .groupBy('record.referrer')
+      .orderBy('COUNT(*)', 'DESC')
       .limit(10)
       .getRawMany();
 
@@ -558,15 +541,15 @@ export class WebviewController {
   /**
    * 특정 디바이스의 녹화 세션 생성 이력 조회
    */
-  @Get("user-sessions")
-  public async getUserSessions(@Query("deviceId") deviceId: string) {
+  @Get('user-sessions')
+  public async getUserSessions(@Query('deviceId') deviceId: string) {
     if (!deviceId) {
-      throw new BadRequestException("deviceId is required");
+      throw new BadRequestException('deviceId is required');
     }
 
     const records = await this.recordRepository.find({
       where: { deviceId },
-      order: { timestamp: "DESC" },
+      order: { timestamp: 'DESC' },
       take: 50, // 최근 50개만
     });
 
@@ -588,30 +571,24 @@ export class WebviewController {
   /**
    * 일별 녹화 세션 생성 통계 (최근 30일)
    */
-  @Get("session-daily-stats")
+  @Get('session-daily-stats')
   public async getSessionDailyStats() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const dailyStats = await this.recordRepository
-      .createQueryBuilder("record")
-      .select("DATE(record.timestamp)", "date")
-      .addSelect("COUNT(*)", "totalCount")
-      .addSelect(
-        "SUM(CASE WHEN record.recordMode = true THEN 1 ELSE 0 END)",
-        "recordModeCount",
-      )
-      .addSelect(
-        "SUM(CASE WHEN record.recordMode = false THEN 1 ELSE 0 END)",
-        "liveModeCount",
-      )
-      .where("record.timestamp >= :thirtyDaysAgo", { thirtyDaysAgo })
-      .groupBy("DATE(record.timestamp)")
-      .orderBy("DATE(record.timestamp)", "DESC")
+      .createQueryBuilder('record')
+      .select('DATE(record.timestamp)', 'date')
+      .addSelect('COUNT(*)', 'totalCount')
+      .addSelect('SUM(CASE WHEN record.recordMode = true THEN 1 ELSE 0 END)', 'recordModeCount')
+      .addSelect('SUM(CASE WHEN record.recordMode = false THEN 1 ELSE 0 END)', 'liveModeCount')
+      .where('record.timestamp >= :thirtyDaysAgo', { thirtyDaysAgo })
+      .groupBy('DATE(record.timestamp)')
+      .orderBy('DATE(record.timestamp)', 'DESC')
       .getRawMany();
 
     return {
-      period: "최근 30일",
+      period: '최근 30일',
       dailyStats: dailyStats.map((stat) => ({
         date: stat.date,
         totalCount: parseInt(stat.totalCount, 10),

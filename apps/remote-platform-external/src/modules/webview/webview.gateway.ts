@@ -1,5 +1,5 @@
-import { Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
+import { Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,36 +8,24 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-} from "@nestjs/websockets";
-import { Repository } from "typeorm";
-import { randomUUID } from "node:crypto";
-import * as WebSocket from "ws";
-import { Server } from "ws";
+} from '@nestjs/websockets';
+import { Repository } from 'typeorm';
+import { randomUUID } from 'node:crypto';
+import * as WebSocket from 'ws';
+import { Server } from 'ws';
 
-import { MSG_ID } from "@remote-platform/constants";
-import {
-  DomService,
-  NetworkService,
-  RecordService,
-  ScreenService,
-} from "@remote-platform/core";
-import {
-  TicketComponentEntity,
-  TicketLabelEntity,
-  TicketLogEntity,
-} from "@remote-platform/entity";
+import { MSG_ID } from '@remote-platform/constants';
+import { DomService, NetworkService, RecordService, ScreenService } from '@remote-platform/core';
+import { TicketComponentEntity, TicketLabelEntity, TicketLogEntity } from '@remote-platform/entity';
 
-import { getDefaultCommonInfo } from "../../utils/common-info";
-import { BufferService, type BufferEvent } from "../buffer/buffer.service";
-import {
-  JiraService,
-  type CreateTicketRequestBody,
-} from "../jira/jira.service";
-import { SlackService } from "../slack/slack.service";
-import { UserInfoService } from "../user-info/user-info.service";
+import { getDefaultCommonInfo } from '../../utils/common-info';
+import { BufferService, type BufferEvent } from '../buffer/buffer.service';
+import { JiraService, type CreateTicketRequestBody } from '../jira/jira.service';
+import { SlackService } from '../slack/slack.service';
+import { UserInfoService } from '../user-info/user-info.service';
 
-import { BufferFlushService } from "./buffer-flush.service";
-import { CdpEventPersistenceService } from "./cdp-event-persistence.service";
+import { BufferFlushService } from './buffer-flush.service';
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
 import type {
   BufferRoomInfo,
   CommonInfo,
@@ -46,15 +34,10 @@ import type {
   RoomData,
   TicketFormData,
   UserData,
-} from "./webview.types";
+} from './webview.types';
 
 // Re-export types for backward compatibility
-export type {
-  CommonInfo,
-  AgentInfo,
-  TicketFormData,
-  UserData,
-} from "./webview.types";
+export type { CommonInfo, AgentInfo, TicketFormData, UserData } from './webview.types';
 
 type ProtocolMessage = {
   id?: number;
@@ -64,18 +47,14 @@ type ProtocolMessage = {
   [key: string]: unknown;
 };
 
-type TicketUserInfo = NonNullable<
-  Awaited<ReturnType<UserInfoService["getUserInfoByDeviceId"]>>
->;
+type TicketUserInfo = NonNullable<Awaited<ReturnType<UserInfoService['getUserInfoByDeviceId']>>>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-const parseProtocolMessage = (
-  message: string | object,
-): ProtocolMessage | null => {
+const parseProtocolMessage = (message: string | object): ProtocolMessage | null => {
   try {
-    const parsed = typeof message === "string" ? JSON.parse(message) : message;
+    const parsed = typeof message === 'string' ? JSON.parse(message) : message;
     return isRecord(parsed) ? (parsed as ProtocolMessage) : null;
   } catch {
     return null;
@@ -84,8 +63,7 @@ const parseProtocolMessage = (
 
 const hasProtocolMethod = (
   protocol: ProtocolMessage,
-): protocol is ProtocolMessage & { method: string } =>
-  typeof protocol.method === "string";
+): protocol is ProtocolMessage & { method: string } => typeof protocol.method === 'string';
 
 // ---------------------------------------------------------------------------
 // Gateway -- SDK와 DevTools 간 WebSocket 통신 게이트웨이
@@ -103,9 +81,7 @@ const hasProtocolMethod = (
  * 버퍼 플러시 로직은 {@link BufferFlushService}로 분리되었다.
  */
 @WebSocketGateway()
-export class WebviewGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebviewGateway.name);
 
   /** 활성 WebSocket 룸 관리 */
@@ -120,8 +96,7 @@ export class WebviewGateway
   /** deviceId를 현재 룸에 매핑 */
   private readonly deviceToRoom: Map<string, string> = new Map();
   /** 연결 해제 후에도 유지되는 디바이스별 최근 버퍼 정보 */
-  private readonly lastBufferInfoByDevice: Map<string, LastBufferInfo> =
-    new Map();
+  private readonly lastBufferInfoByDevice: Map<string, LastBufferInfo> = new Map();
   /** visibility change로 이미 저장된 룸 추적 */
   private readonly visibilityExitSavedRooms: Set<string> = new Set();
 
@@ -191,7 +166,7 @@ export class WebviewGateway
       });
       recordId = id;
 
-      this.sendMessage(client, { event: "roomCreated", roomName, recordId });
+      this.sendMessage(client, { event: 'roomCreated', roomName, recordId });
       this.sendRecordModeInitMessages(client);
     }
 
@@ -210,15 +185,15 @@ export class WebviewGateway
       await this.screenService.upsert({
         recordId,
         protocol: {
-          method: "session_start",
+          method: 'session_start',
           params: {
-            url: "http://localhost:3001",
-            userAgent: "Session Recording",
+            url: 'http://localhost:3001',
+            userAgent: 'Session Recording',
           },
         },
         timestamp,
         type: null,
-        eventType: "session_start",
+        eventType: 'session_start',
       });
     }
 
@@ -227,40 +202,40 @@ export class WebviewGateway
 
   private sendRecordModeInitMessages(client: WebSocket): void {
     this.sendMessage(client, {
-      event: "protocol",
+      event: 'protocol',
       message: {
         id: MSG_ID.NETWORK.ENABLE,
-        method: "Network.enable",
+        method: 'Network.enable',
         params: { maxPostDataSize: 65536 },
       },
     });
     this.sendMessage(client, {
       id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-      method: "Network.setAttachDebugStack",
+      method: 'Network.setAttachDebugStack',
       params: { enabled: true },
     });
     this.sendMessage(client, {
       id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-      method: "Network.clearAcceptedEncodingsOverride",
+      method: 'Network.clearAcceptedEncodingsOverride',
       params: {},
     });
     this.sendMessage(client, {
-      event: "protocol",
+      event: 'protocol',
       message: {
         id: MSG_ID.RUNTIME.ENABLE,
-        method: "Runtime.enable",
+        method: 'Runtime.enable',
         params: {},
       },
     });
     this.sendMessage(client, {
-      event: "protocol",
-      message: { id: MSG_ID.PAGE.ENABLE, method: "Page.enable", params: {} },
+      event: 'protocol',
+      message: { id: MSG_ID.PAGE.ENABLE, method: 'Page.enable', params: {} },
     });
     this.sendMessage(client, {
-      event: "protocol",
+      event: 'protocol',
       message: {
         id: MSG_ID.PAGE.GET_RESOURCE_TREE,
-        method: "Page.getResourceTree",
+        method: 'Page.getResourceTree',
         params: {},
       },
     });
@@ -268,14 +243,14 @@ export class WebviewGateway
 
   private sendDomAndScreenInitMessages(client: WebSocket): void {
     this.sendMessage(client, {
-      event: "protocol",
-      message: { id: MSG_ID.DOM.ENABLE, method: "DOM.enable", params: {} },
+      event: 'protocol',
+      message: { id: MSG_ID.DOM.ENABLE, method: 'DOM.enable', params: {} },
     });
     this.sendMessage(client, {
-      event: "protocol",
+      event: 'protocol',
       message: {
         id: MSG_ID.SCREEN.START_PREVIEW,
-        method: "ScreenPreview.startPreview",
+        method: 'ScreenPreview.startPreview',
         params: {},
       },
     });
@@ -308,7 +283,7 @@ export class WebviewGateway
   // Create Room handler
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("createRoom")
+  @SubscribeMessage('createRoom')
   public async handleCreateRoom(
     @MessageBody() data: { recordMode?: boolean; userData: UserData },
     @ConnectedSocket() client: WebSocket,
@@ -320,11 +295,10 @@ export class WebviewGateway
     }
 
     userData.commonInfo.URL = userData.URL || userData.commonInfo.URL;
-    userData.commonInfo.userAgent =
-      userData.userAgent || userData.commonInfo.userAgent;
+    userData.commonInfo.userAgent = userData.userAgent || userData.commonInfo.userAgent;
 
     const { commonInfo } = userData;
-    const roomName = `${recordMode ? "Record-" : "Live-"}${randomUUID()}`;
+    const roomName = `${recordMode ? 'Record-' : 'Live-'}${randomUUID()}`;
 
     if (!recordMode) {
       this.registerBufferRoom(
@@ -341,7 +315,7 @@ export class WebviewGateway
         recordMode,
         deviceId: commonInfo.device.deviceId,
         memberId: commonInfo.user.memberId,
-        isDefaultCommonInfo: commonInfo.device.deviceId.startsWith("unknown-"),
+        isDefaultCommonInfo: commonInfo.device.deviceId.startsWith('unknown-'),
       })}`,
     );
 
@@ -351,7 +325,7 @@ export class WebviewGateway
       recordMode,
       url: commonInfo.URL,
       deviceId: commonInfo.device.deviceId,
-      referrer: userData.URL?.split("?")[0],
+      referrer: userData.URL?.split('?')[0],
       userAgent: commonInfo.userAgent,
     });
 
@@ -382,12 +356,10 @@ export class WebviewGateway
     roomName: string,
     userData: UserData,
   ): Promise<void> {
-    if (commonInfo.device.deviceId.startsWith("unknown-")) return;
+    if (commonInfo.device.deviceId.startsWith('unknown-')) return;
 
     try {
-      const userInfo = await this.userInfoService.getUserInfoByDeviceId(
-        commonInfo.device.deviceId,
-      );
+      const userInfo = await this.userInfoService.getUserInfoByDeviceId(commonInfo.device.deviceId);
 
       if (userInfo?.slackUserId) {
         await this.slackService.sendCreateRoomDM({
@@ -414,9 +386,9 @@ export class WebviewGateway
   // -------------------------------------------------------------------------
 
   public handleConnection(client: WebSocket): void {
-    this.clientMap.set(client, "pending");
+    this.clientMap.set(client, 'pending');
 
-    client.on("error", (error) => {
+    client.on('error', (error) => {
       this.logger.error(
         `[CLIENT_ERROR] ${JSON.stringify({
           error: error.message,
@@ -425,7 +397,7 @@ export class WebviewGateway
       );
     });
 
-    client.on("close", (code, reason) => {
+    client.on('close', (code, reason) => {
       this.logger.log(
         `[CLIENT_CLOSE] ${JSON.stringify({
           code,
@@ -440,7 +412,7 @@ export class WebviewGateway
   // Message to DevTools
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("messageToDevtools")
+  @SubscribeMessage('messageToDevtools')
   public handleMessageToDevtools(
     @MessageBody()
     data: { room: string; devtoolsId: string; message: string | object },
@@ -448,7 +420,7 @@ export class WebviewGateway
   ): void {
     const roomData = this.rooms.get(data.room);
     if (!roomData) {
-      this.sendMessage(client, { event: "error", message: "Room not found" });
+      this.sendMessage(client, { event: 'error', message: 'Room not found' });
       return;
     }
 
@@ -457,28 +429,25 @@ export class WebviewGateway
       this.sendMessage(devtools, data.message);
     } else {
       this.sendMessage(client, {
-        event: "error",
-        message: "Devtools not found",
+        event: 'error',
+        message: 'Devtools not found',
       });
     }
 
     if (roomData.recordId) {
       const protocol = parseProtocolMessage(data.message);
       if (!protocol) {
-        this.logger.warn(
-          `[messageToDevtools] Invalid JSON message in room ${data.room}`,
-        );
+        this.logger.warn(`[messageToDevtools] Invalid JSON message in room ${data.room}`);
         return;
       }
 
-      const protocolId =
-        typeof protocol.id === "number" ? protocol.id : undefined;
+      const protocolId = typeof protocol.id === 'number' ? protocol.id : undefined;
       if (this.domService.isEnableDomResponseMessage(protocolId)) {
         this.sendMessage(client, {
-          event: "protocol",
+          event: 'protocol',
           message: {
             id: MSG_ID.DOM.GET_DOCUMENT,
-            method: "DOM.getDocument",
+            method: 'DOM.getDocument',
             params: {},
           },
         });
@@ -488,7 +457,7 @@ export class WebviewGateway
           recordId: roomData.recordId,
           protocol: protocol.result ?? {},
           timestamp: seconds * 1e9 + nanoseconds,
-          type: "entireDom",
+          type: 'entireDom',
         });
       }
     }
@@ -498,22 +467,20 @@ export class WebviewGateway
   // Protocol to all DevTools
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("protocolToAllDevtools")
+  @SubscribeMessage('protocolToAllDevtools')
   public async handleProtocolToAllDevtools(
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     const protocol = parseProtocolMessage(data.message);
     if (!protocol) {
-      this.logger.warn(
-        `[protocolToAllDevtools] Invalid JSON message in room ${data.room}`,
-      );
+      this.logger.warn(`[protocolToAllDevtools] Invalid JSON message in room ${data.room}`);
       return;
     }
     const roomData = this.rooms.get(data.room);
 
     if (!roomData) {
-      this.sendMessage(client, { event: "error", message: "Room not found" });
+      this.sendMessage(client, { event: 'error', message: 'Room not found' });
       return;
     }
 
@@ -523,13 +490,10 @@ export class WebviewGateway
     if (!hasProtocolMethod(protocol)) return;
 
     // Delegate persistence to CdpEventPersistenceService
-    await this.cdpEventPersistence.persistProtocolEvent(
-      protocol,
-      roomData.recordId,
-    );
+    await this.cdpEventPersistence.persistProtocolEvent(protocol, roomData.recordId);
 
     // rrweb-based SessionReplay events
-    if (protocol.method.startsWith("SessionReplay.")) {
+    if (protocol.method.startsWith('SessionReplay.')) {
       await this.handleSessionReplayProtocol(protocol, roomData, data.room);
     }
   }
@@ -543,39 +507,34 @@ export class WebviewGateway
     roomData: RoomData,
     roomName: string,
   ): Promise<void> {
-    if (protocol.method === "SessionReplay.rrwebEvent") {
+    if (protocol.method === 'SessionReplay.rrwebEvent') {
       const result = await this.cdpEventPersistence.persistSingleRrwebEvent(
         protocol,
         roomData.recordId,
       );
-      if (result && roomData.recordId && roomName.startsWith("Buffer-")) {
-        this.addRrwebEventToBuffer(
-          roomName,
-          roomData.recordId,
-          protocol,
-          result.sessionTimestamp,
-        );
+      if (result && roomData.recordId && roomName.startsWith('Buffer-')) {
+        this.addRrwebEventToBuffer(roomName, roomData.recordId, protocol, result.sessionTimestamp);
       }
       return;
     }
 
-    if (protocol.method === "SessionReplay.rrwebEvents") {
+    if (protocol.method === 'SessionReplay.rrwebEvents') {
       const results = await this.cdpEventPersistence.persistBatchRrwebEvents(
         protocol,
         roomData.recordId,
       );
 
-      if (roomData.recordId && roomName.startsWith("Buffer-")) {
+      if (roomData.recordId && roomName.startsWith('Buffer-')) {
         const bufferInfo = this.bufferRooms.get(roomName);
-        const deviceId = bufferInfo?.deviceId || "unknown-device";
-        const url = bufferInfo?.url || "unknown-url";
-        const userAgent = bufferInfo?.userAgent || "unknown-useragent";
+        const deviceId = bufferInfo?.deviceId || 'unknown-device';
+        const url = bufferInfo?.url || 'unknown-url';
+        const userAgent = bufferInfo?.userAgent || 'unknown-useragent';
         const title = bufferInfo?.title;
         const sessionStartTime = bufferInfo?.sessionStartTime;
 
         for (const { event, sessionTimestamp } of results) {
           const bufferEvent = {
-            method: "SessionReplay.rrwebEvent",
+            method: 'SessionReplay.rrwebEvent',
             params: { event },
             timestamp: Number(sessionTimestamp / BigInt(1_000_000)),
           };
@@ -597,8 +556,8 @@ export class WebviewGateway
 
     // Legacy format compatibility
     if (
-      protocol.method === "SessionReplay.snapshot" ||
-      protocol.method === "SessionReplay.interaction"
+      protocol.method === 'SessionReplay.snapshot' ||
+      protocol.method === 'SessionReplay.interaction'
     ) {
       const timestamp = Date.now() * 1_000_000;
       await this.cdpEventPersistence.persistLegacySessionReplay(
@@ -616,9 +575,9 @@ export class WebviewGateway
     sessionTimestamp: bigint,
   ): void {
     const bufferInfo = this.bufferRooms.get(roomName);
-    const deviceId = bufferInfo?.deviceId || "unknown-device";
-    const url = bufferInfo?.url || "unknown-url";
-    const userAgent = bufferInfo?.userAgent || "unknown-useragent";
+    const deviceId = bufferInfo?.deviceId || 'unknown-device';
+    const url = bufferInfo?.url || 'unknown-url';
+    const userAgent = bufferInfo?.userAgent || 'unknown-useragent';
     const title = bufferInfo?.title;
     const sessionStartTime = bufferInfo?.sessionStartTime;
 
@@ -644,7 +603,7 @@ export class WebviewGateway
   // Buffer events
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("bufferEvent")
+  @SubscribeMessage('bufferEvent')
   public async handleBufferEvent(
     @MessageBody()
     data: {
@@ -661,12 +620,11 @@ export class WebviewGateway
     try {
       const { room, deviceId, event, url, userAgent, title } = data;
 
-      if (room.startsWith("Record-") || room.startsWith("Live-")) {
+      if (room.startsWith('Record-') || room.startsWith('Live-')) {
         return;
       }
 
-      const existingInfo =
-        this.bufferRooms.get(room) || this.lastBufferInfoByDevice.get(deviceId);
+      const existingInfo = this.bufferRooms.get(room) || this.lastBufferInfoByDevice.get(deviceId);
       const sessionStartTime = existingInfo?.sessionStartTime ?? Date.now();
 
       const bufferInfo: BufferRoomInfo = {
@@ -683,7 +641,7 @@ export class WebviewGateway
       });
       this.visibilityExitSavedRooms.delete(room);
 
-      if (!room.startsWith("Record-")) {
+      if (!room.startsWith('Record-')) {
         this.deviceToRoom.set(deviceId, room);
       }
 
@@ -711,7 +669,7 @@ export class WebviewGateway
         bufferEvent,
       );
 
-      if (this.clientMap.get(client) === "pending") {
+      if (this.clientMap.get(client) === 'pending') {
         this.clientMap.set(client, room);
       }
     } catch (error) {
@@ -726,7 +684,7 @@ export class WebviewGateway
   // Enable buffering
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("enableBuffering")
+  @SubscribeMessage('enableBuffering')
   public async handleEnableBuffering(
     @MessageBody()
     data: {
@@ -740,24 +698,15 @@ export class WebviewGateway
     @ConnectedSocket() client: WebSocket,
   ): Promise<void> {
     try {
-      this.logger.log(
-        `[ENABLE_BUFFERING] Buffer mode enabled for device: ${data.deviceId}`,
-      );
+      this.logger.log(`[ENABLE_BUFFERING] Buffer mode enabled for device: ${data.deviceId}`);
 
       const sessionStartTime = data.timestamp || Date.now();
-      const bufferRoom =
-        data.room || `Buffer-${data.deviceId}-${sessionStartTime}`;
+      const bufferRoom = data.room || `Buffer-${data.deviceId}-${sessionStartTime}`;
 
       this.clientMap.set(client, bufferRoom);
       this.deviceToRoom.set(data.deviceId, bufferRoom);
 
-      this.registerBufferRoom(
-        bufferRoom,
-        data.deviceId,
-        data.url,
-        data.userAgent,
-        data.title,
-      );
+      this.registerBufferRoom(bufferRoom, data.deviceId, data.url, data.userAgent, data.title);
       // Override sessionStartTime from client
       const info = this.bufferRooms.get(bufferRoom);
       if (!info) {
@@ -771,14 +720,14 @@ export class WebviewGateway
       }
 
       this.sendMessage(client, {
-        event: "bufferingEnabled",
-        message: "Buffer mode activated successfully",
+        event: 'bufferingEnabled',
+        message: 'Buffer mode activated successfully',
       });
     } catch (error) {
       this.logger.error(`[ENABLE_BUFFERING_ERROR] ${error}`);
       this.sendMessage(client, {
-        event: "error",
-        message: "Failed to enable buffer mode",
+        event: 'error',
+        message: 'Failed to enable buffer mode',
       });
     }
   }
@@ -787,7 +736,7 @@ export class WebviewGateway
   // Save buffer
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("saveBuffer")
+  @SubscribeMessage('saveBuffer')
   public async handleSaveBuffer(
     @MessageBody()
     data: {
@@ -801,7 +750,7 @@ export class WebviewGateway
   ): Promise<void> {
     const { deviceId, trigger, title, timestamp, room, url } = data;
 
-    if (trigger === "visibilitychange") {
+    if (trigger === 'visibilitychange') {
       const bufferRoom = this.deviceToRoom.get(deviceId);
       if (bufferRoom) {
         this.visibilityExitSavedRooms.add(bufferRoom);
@@ -822,9 +771,7 @@ export class WebviewGateway
     );
 
     if (!success) {
-      this.logger.warn(
-        `[SAVE_BUFFER_WS_FAIL] deviceId: ${deviceId}, trigger: ${trigger}`,
-      );
+      this.logger.warn(`[SAVE_BUFFER_WS_FAIL] deviceId: ${deviceId}, trigger: ${trigger}`);
     }
   }
 
@@ -857,7 +804,7 @@ export class WebviewGateway
   // Update response body
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("updateResponseBody")
+  @SubscribeMessage('updateResponseBody')
   public async handleResponseBody(
     @MessageBody()
     data: {
@@ -876,7 +823,7 @@ export class WebviewGateway
   // Ticket creation
   // -------------------------------------------------------------------------
 
-  @SubscribeMessage("createTicket")
+  @SubscribeMessage('createTicket')
   public async handleCreateTicket(
     @MessageBody()
     data: { userData: UserData; formData?: TicketFormData },
@@ -890,8 +837,7 @@ export class WebviewGateway
       }
 
       userData.commonInfo.URL = userData.URL || userData.commonInfo.URL;
-      userData.commonInfo.userAgent =
-        userData.userAgent || userData.commonInfo.userAgent;
+      userData.commonInfo.userAgent = userData.userAgent || userData.commonInfo.userAgent;
 
       const { commonInfo, URL } = userData;
       const roomName = `Record-${randomUUID()}`;
@@ -908,8 +854,7 @@ export class WebviewGateway
           deviceId: commonInfo.device.deviceId,
           memberId: commonInfo.user.memberId,
           URL,
-          isDefaultCommonInfo:
-            commonInfo.device.deviceId.startsWith("unknown-"),
+          isDefaultCommonInfo: commonInfo.device.deviceId.startsWith('unknown-'),
         })}`,
       );
 
@@ -919,17 +864,16 @@ export class WebviewGateway
         recordMode: true,
         url: commonInfo.URL,
         deviceId: commonInfo.device.deviceId,
-        referrer: URL?.split("?")[0],
+        referrer: URL?.split('?')[0],
         userAgent: commonInfo.userAgent,
       });
 
-      const { requestBody, ticketKey, ticketUrl } =
-        await this.jiraService.createTicket({
-          roomName,
-          recordId,
-          userData,
-          formData,
-        });
+      const { requestBody, ticketKey, ticketUrl } = await this.jiraService.createTicket({
+        roomName,
+        recordId,
+        userData,
+        formData,
+      });
 
       this.logger.log(
         `[TICKET_CREATE_SUCCESS] ${JSON.stringify({
@@ -980,10 +924,8 @@ export class WebviewGateway
     ticketUrl: string,
     formData?: TicketFormData,
   ): Promise<void> {
-    const userInfo = !commonInfo.device.deviceId.startsWith("unknown-")
-      ? await this.userInfoService.getUserInfoByDeviceId(
-          commonInfo.device.deviceId,
-        )
+    const userInfo = !commonInfo.device.deviceId.startsWith('unknown-')
+      ? await this.userInfoService.getUserInfoByDeviceId(commonInfo.device.deviceId)
       : null;
 
     if (userInfo?.slackUserId) {
@@ -996,8 +938,8 @@ export class WebviewGateway
     }
 
     this.sendMessage(client, {
-      event: "ticketCreateSuccess",
-      message: "QA ticket created successfully.",
+      event: 'ticketCreateSuccess',
+      message: 'QA ticket created successfully.',
     });
 
     if (userInfo) {
@@ -1033,12 +975,12 @@ export class WebviewGateway
         userDisplayName: userInfo.userDisplayName,
         recordId,
         ticketUrl,
-        jiraProjectKey: userInfo.jiraProjectKey || "N/A",
+        jiraProjectKey: userInfo.jiraProjectKey || 'N/A',
         assignee,
         parentEpic: formData?.Epic || null,
         title: requestBody.title,
         sessionName: roomName,
-        url: URL.split("?")[0],
+        url: URL.split('?')[0],
       });
 
       await this.ticketLogRepository.save(ticketLog);
@@ -1094,7 +1036,7 @@ export class WebviewGateway
       })}`,
     );
     this.sendMessage(client, {
-      event: "ticketCreateError",
+      event: 'ticketCreateError',
       message: `Ticket creation failed: ${error.message}`,
     });
   }
@@ -1107,7 +1049,7 @@ export class WebviewGateway
     const room = this.clientMap.get(client);
 
     if (room) {
-      if (room.startsWith("Buffer-")) {
+      if (room.startsWith('Buffer-')) {
         await this.handleBufferRoomDisconnect(room);
         this.clientMap.delete(client);
         return;
@@ -1130,9 +1072,7 @@ export class WebviewGateway
 
     const devtoolsInfo = this.devtoolsMap.get(client);
     if (devtoolsInfo) {
-      this.rooms
-        .get(devtoolsInfo.room)
-        ?.devtools.delete(devtoolsInfo.devtoolsId);
+      this.rooms.get(devtoolsInfo.room)?.devtools.delete(devtoolsInfo.devtoolsId);
       this.devtoolsMap.delete(client);
     }
 
@@ -1142,15 +1082,11 @@ export class WebviewGateway
   private async handleBufferRoomDisconnect(room: string): Promise<void> {
     const directInfo = this.bufferRooms.get(room);
     const lastInfo =
-      [...this.lastBufferInfoByDevice.values()].find(
-        (info) => info.room === room,
-      ) || null;
+      [...this.lastBufferInfoByDevice.values()].find((info) => info.room === room) || null;
 
-    const resolvedDeviceId =
-      directInfo?.deviceId ?? lastInfo?.deviceId ?? "unknown-device";
-    const resolvedUrl = directInfo?.url ?? lastInfo?.url ?? "unknown-url";
-    const resolvedUserAgent =
-      directInfo?.userAgent ?? lastInfo?.userAgent ?? "unknown-useragent";
+    const resolvedDeviceId = directInfo?.deviceId ?? lastInfo?.deviceId ?? 'unknown-device';
+    const resolvedUrl = directInfo?.url ?? lastInfo?.url ?? 'unknown-url';
+    const resolvedUserAgent = directInfo?.userAgent ?? lastInfo?.userAgent ?? 'unknown-useragent';
     const resolvedTitle = directInfo?.title ?? lastInfo?.title;
 
     try {
@@ -1180,18 +1116,15 @@ export class WebviewGateway
     }
   }
 
-  private async handleRecordRoomDisconnect(
-    room: string,
-    roomData: RoomData,
-  ): Promise<void> {
+  private async handleRecordRoomDisconnect(room: string, roomData: RoomData): Promise<void> {
     const endTime = Date.now() * 1_000_000;
 
     await this.screenService.upsert({
       recordId: roomData.recordId,
-      protocol: { method: "session_end", params: {} },
+      protocol: { method: 'session_end', params: {} },
       timestamp: endTime,
       type: null,
-      eventType: "session_end",
+      eventType: 'session_end',
     });
 
     const startEvent = await this.screenService.findScreens(roomData.recordId);
@@ -1201,7 +1134,7 @@ export class WebviewGateway
       await this.recordService.updateDuration(roomData.recordId, duration);
     }
 
-    if (!room.startsWith("Record-") && !room.startsWith("Live-")) {
+    if (!room.startsWith('Record-') && !room.startsWith('Live-')) {
       try {
         const bufferInfo = this.bufferRooms.get(room);
         if (roomData.recordId === undefined || roomData.recordId === null) {
@@ -1211,16 +1144,14 @@ export class WebviewGateway
         await this.bufferFlushService.flushBufferToFile(
           room,
           roomData.recordId,
-          bufferInfo?.deviceId || "unknown-device",
-          bufferInfo?.url || "unknown-url",
-          bufferInfo?.userAgent || "unknown-useragent",
+          bufferInfo?.deviceId || 'unknown-device',
+          bufferInfo?.url || 'unknown-url',
+          bufferInfo?.userAgent || 'unknown-useragent',
           bufferInfo?.title,
           this.visibilityExitSavedRooms,
         );
       } catch (error) {
-        this.logger.error(
-          `[DISCONNECT_FLUSH_ERROR] ${(error as Error).message}`,
-        );
+        this.logger.error(`[DISCONNECT_FLUSH_ERROR] ${(error as Error).message}`);
       }
     }
   }
@@ -1228,10 +1159,7 @@ export class WebviewGateway
   private async flushRemainingBufferRooms(): Promise<void> {
     try {
       for (const [bufferRoom, bufferInfo] of this.bufferRooms.entries()) {
-        if (
-          bufferRoom.startsWith("Buffer-") &&
-          !this.visibilityExitSavedRooms.has(bufferRoom)
-        ) {
+        if (bufferRoom.startsWith('Buffer-') && !this.visibilityExitSavedRooms.has(bufferRoom)) {
           await this.bufferFlushService.flushBufferToFile(
             bufferRoom,
             0,
@@ -1248,9 +1176,7 @@ export class WebviewGateway
         }
       }
     } catch (error) {
-      this.logger.error(
-        `[DISCONNECT_BUFFER_FLUSH_ERROR] ${(error as Error).message}`,
-      );
+      this.logger.error(`[DISCONNECT_BUFFER_FLUSH_ERROR] ${(error as Error).message}`);
     }
   }
 }

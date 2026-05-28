@@ -1,8 +1,8 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
-import { buildSmoothPath, type Point } from "./path";
+import { buildSmoothPath, type Point } from './path';
 
 interface AreaChartDatum {
   /** X-axis label (string is rendered as-is). */
@@ -30,14 +30,9 @@ interface AreaChartProps {
  * 100-line component is much cheaper. Visual parity verified against the old
  * recharts output (smooth curve, faint dashed grid, small axis ticks).
  */
-export function AreaChart({
-  data,
-  className,
-  valueLabel = "Value",
-  yTicks = 4,
-}: AreaChartProps) {
+export function AreaChart({ data, className, valueLabel = 'Value', yTicks = 4 }: AreaChartProps) {
   const reactId = useId();
-  const gradientId = `${reactId.replace(/:/g, "")}-dashboard-area-grad`;
+  const gradientId = `${reactId.replace(/:/g, '')}-dashboard-area-grad`;
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -55,8 +50,8 @@ export function AreaChart({
   const { linePath, areaPath, points, yTickValues, yMax } = useMemo(() => {
     if (data.length === 0) {
       return {
-        linePath: "",
-        areaPath: "",
+        linePath: '',
+        areaPath: '',
         points: [] as Point[],
         yTickValues: [] as number[],
         yMax: 0,
@@ -68,9 +63,7 @@ export function AreaChart({
     const range = yMax - yMin;
 
     const points: Point[] = data.map((d, i) => ({
-      x:
-        padLeft +
-        (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW),
+      x: padLeft + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW),
       y: padTop + innerH - ((d.value - yMin) / range) * innerH,
     }));
 
@@ -107,10 +100,7 @@ export function AreaChart({
   if (data.length === 0) {
     return (
       <div
-        className={cn(
-          "flex items-center justify-center h-full text-xs text-fg-faint",
-          className,
-        )}
+        className={cn('flex items-center justify-center h-full text-xs text-fg-faint', className)}
       >
         No data to chart yet
       </div>
@@ -121,7 +111,7 @@ export function AreaChart({
   const hoverPt = hoverIdx !== null ? points[hoverIdx] : null;
 
   return (
-    <div className={cn("relative h-full w-full", className)}>
+    <div className={cn('relative h-full w-full', className)}>
       <svg
         ref={svgRef}
         className="h-full w-full"
@@ -181,9 +171,7 @@ export function AreaChart({
               key={i}
               x={x}
               y={H - 6}
-              textAnchor={
-                i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"
-              }
+              textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
               fontSize={10}
               fill="hsl(var(--fg-faint))"
             >

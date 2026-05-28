@@ -1,11 +1,11 @@
-import type { ArgumentsHost } from "@nestjs/common";
-import { HttpException, HttpStatus } from "@nestjs/common";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ArgumentsHost } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { BusinessException } from "../exceptions/business.exception";
-import { ErrorCode } from "../exceptions/error-codes.enum";
+import { BusinessException } from '../exceptions/business.exception';
+import { ErrorCode } from '../exceptions/error-codes.enum';
 
-import { AllExceptionsFilter } from "./all-exceptions.filter";
+import { AllExceptionsFilter } from './all-exceptions.filter';
 
 type MockHttpResponse = {
   status: ReturnType<typeof vi.fn>;
@@ -19,15 +19,15 @@ type SdkErrorResponse = {
   };
 };
 
-function createMockHost(url = "/test"): ArgumentsHost {
+function createMockHost(url = '/test'): ArgumentsHost {
   const mockResponse: MockHttpResponse = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
   };
-  const mockRequest = { url, method: "GET" };
+  const mockRequest = { url, method: 'GET' };
 
   return {
-    getType: () => "http",
+    getType: () => 'http',
     switchToHttp: () => ({
       getResponse: () => mockResponse,
       getRequest: () => mockRequest,
@@ -45,41 +45,41 @@ function getResponseStatus(host: ArgumentsHost): number {
   return response.status.mock.calls[0][0];
 }
 
-describe("AllExceptionsFilter", () => {
-  describe("default mode", () => {
+describe('AllExceptionsFilter', () => {
+  describe('default mode', () => {
     let filter: AllExceptionsFilter;
 
     beforeEach(() => {
       filter = new AllExceptionsFilter();
     });
 
-    it("should handle BusinessException", () => {
-      const host = createMockHost("/api/test");
-      const exception = BusinessException.validationFailed("Bad input");
+    it('should handle BusinessException', () => {
+      const host = createMockHost('/api/test');
+      const exception = BusinessException.validationFailed('Bad input');
 
       filter.catch(exception, host);
 
       expect(getResponseStatus(host)).toBe(HttpStatus.BAD_REQUEST);
       const json = getResponseJson(host);
       expect(json.errorCode).toBe(ErrorCode.VALIDATION_FAILED);
-      expect(json.path).toBe("/api/test");
+      expect(json.path).toBe('/api/test');
     });
 
-    it("should handle standard HttpException", () => {
-      const host = createMockHost("/api/test");
-      const exception = new HttpException("Forbidden", HttpStatus.FORBIDDEN);
+    it('should handle standard HttpException', () => {
+      const host = createMockHost('/api/test');
+      const exception = new HttpException('Forbidden', HttpStatus.FORBIDDEN);
 
       filter.catch(exception, host);
 
       expect(getResponseStatus(host)).toBe(HttpStatus.FORBIDDEN);
       const json = getResponseJson(host);
-      expect(json.message).toBe("Forbidden");
+      expect(json.message).toBe('Forbidden');
     });
 
-    it("should handle HttpException with object response", () => {
+    it('should handle HttpException with object response', () => {
       const host = createMockHost();
       const exception = new HttpException(
-        { message: "Not Found", statusCode: 404 },
+        { message: 'Not Found', statusCode: 404 },
         HttpStatus.NOT_FOUND,
       );
 
@@ -87,42 +87,42 @@ describe("AllExceptionsFilter", () => {
 
       expect(getResponseStatus(host)).toBe(HttpStatus.NOT_FOUND);
       const json = getResponseJson(host);
-      expect(json.message).toBe("Not Found");
+      expect(json.message).toBe('Not Found');
     });
 
-    it("should handle unknown errors", () => {
+    it('should handle unknown errors', () => {
       const host = createMockHost();
-      const exception = new Error("Something broke");
+      const exception = new Error('Something broke');
 
       filter.catch(exception, host);
 
       expect(getResponseStatus(host)).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const json = getResponseJson(host);
-      expect(json.message).toBe("Something broke");
+      expect(json.message).toBe('Something broke');
       expect(json.errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR);
     });
 
-    it("should handle non-Error exceptions", () => {
+    it('should handle non-Error exceptions', () => {
       const host = createMockHost();
 
-      filter.catch("string error", host);
+      filter.catch('string error', host);
 
       expect(getResponseStatus(host)).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const json = getResponseJson(host);
-      expect(json.message).toBe("An unknown error occurred.");
+      expect(json.message).toBe('An unknown error occurred.');
     });
   });
 
-  describe("SDK-compatible mode", () => {
+  describe('SDK-compatible mode', () => {
     let filter: AllExceptionsFilter;
 
     beforeEach(() => {
       filter = new AllExceptionsFilter({ sdkCompatible: true });
     });
 
-    it("should wrap error in SDK-compatible format", () => {
+    it('should wrap error in SDK-compatible format', () => {
       const host = createMockHost();
-      const exception = BusinessException.validationFailed("Bad input");
+      const exception = BusinessException.validationFailed('Bad input');
 
       filter.catch(exception, host);
 
@@ -131,7 +131,7 @@ describe("AllExceptionsFilter", () => {
       expect(json.error).toBeDefined();
       const sdkJson = json as SdkErrorResponse;
       expect(sdkJson.error?.code).toBe(ErrorCode.VALIDATION_FAILED);
-      expect(sdkJson.error?.message).toBe("Bad input");
+      expect(sdkJson.error?.message).toBe('Bad input');
     });
   });
 });

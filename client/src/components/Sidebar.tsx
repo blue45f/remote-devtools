@@ -1,21 +1,17 @@
-import { ChevronsLeft, ChevronsRight, X } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { ChevronsLeft, ChevronsRight, X } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 
-import { Brand } from "@/components/Brand";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { navSections, type NavItem } from "@/lib/nav";
-import { prefetchRoute } from "@/lib/route-prefetch";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { Brand } from '@/components/Brand';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { navSections, type NavItem } from '@/lib/nav';
+import { prefetchRoute } from '@/lib/route-prefetch';
+import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
-import { LanguageMenu } from "./LanguageMenu";
-import { ThemeMenu } from "./ThemeMenu";
+import { LanguageMenu } from './LanguageMenu';
+import { ThemeMenu } from './ThemeMenu';
 
 interface SidebarProps {
   onItemClick?: () => void;
@@ -35,17 +31,17 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
   return (
     <div
       className={cn(
-        "flex h-full flex-col bg-bg-subtle border-r border-border",
-        mobile ? "w-full" : collapsed ? "w-[60px]" : "w-[232px]",
-        !mobile && "transition-[width] duration-200 ease-out",
+        'flex h-full flex-col bg-bg-subtle border-r border-border',
+        mobile ? 'w-full' : collapsed ? 'w-[60px]' : 'w-[232px]',
+        !mobile && 'transition-[width] duration-200 ease-out',
       )}
     >
       {/* Brand row — on mobile, includes a close affordance. */}
       <div
         className={cn(
-          "h-14 flex items-center border-b border-border shrink-0",
-          collapsed ? "px-2 justify-center" : "px-4",
-          mobile && "justify-between",
+          'h-14 flex items-center border-b border-border shrink-0',
+          collapsed ? 'px-2 justify-center' : 'px-4',
+          mobile && 'justify-between',
         )}
       >
         <Brand collapsed={collapsed} />
@@ -63,12 +59,9 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
       </div>
 
       {/* Nav */}
-      <nav
-        className="flex-1 overflow-y-auto px-2 py-3"
-        aria-label="Main navigation"
-      >
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Main navigation">
         {navSections.map((section, idx) => (
-          <div key={idx} className={cn(idx > 0 && "mt-5")}>
+          <div key={idx} className={cn(idx > 0 && 'mt-5')}>
             {section.label && !collapsed && (
               <div className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
                 {section.label}
@@ -77,11 +70,7 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
             <ul className="flex flex-col gap-0.5">
               {section.items.map((item) => (
                 <li key={item.to}>
-                  <SidebarLink
-                    item={item}
-                    collapsed={collapsed}
-                    onClick={onItemClick}
-                  />
+                  <SidebarLink item={item} collapsed={collapsed} onClick={onItemClick} />
                 </li>
               ))}
             </ul>
@@ -94,8 +83,8 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
       {/* Footer — collapse toggle is hidden on mobile (no rail mode there) */}
       <div
         className={cn(
-          "p-2 flex gap-1 safe-pb",
-          collapsed ? "flex-col items-center" : "items-center justify-between",
+          'p-2 flex gap-1 safe-pb',
+          collapsed ? 'flex-col items-center' : 'items-center justify-between',
         )}
       >
         <ThemeMenu collapsed={collapsed} />
@@ -107,13 +96,13 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
                 variant="ghost"
                 size="icon-sm"
                 onClick={toggleCollapsed}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {collapsed ? <ChevronsRight /> : <ChevronsLeft />}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             </TooltipContent>
           </Tooltip>
         )}
@@ -136,18 +125,16 @@ function SidebarLink({
   const link = (
     <NavLink
       to={item.to}
-      end={item.to === "/"}
+      end={item.to === '/'}
       onClick={onClick}
       onMouseEnter={() => prefetchRoute(item.to)}
       onFocus={() => prefetchRoute(item.to)}
       className={({ isActive }) =>
         cn(
-          "group relative flex items-center gap-2.5 rounded-md px-2 py-2 sm:py-1.5 text-sm font-medium",
-          "transition-[background-color,color] duration-150",
-          isActive
-            ? "bg-bg-muted text-fg"
-            : "text-fg-subtle hover:bg-bg-muted/60 hover:text-fg",
-          collapsed && "justify-center px-0",
+          'group relative flex items-center gap-2.5 rounded-md px-2 py-2 sm:py-1.5 text-sm font-medium',
+          'transition-[background-color,color] duration-150',
+          isActive ? 'bg-bg-muted text-fg' : 'text-fg-subtle hover:bg-bg-muted/60 hover:text-fg',
+          collapsed && 'justify-center px-0',
         )
       }
     >

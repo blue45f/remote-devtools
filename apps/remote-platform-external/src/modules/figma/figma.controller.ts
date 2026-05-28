@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Logger, Post } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Body, Controller, Get, Logger, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { DeviceInfoEntity, UserEntity } from "@remote-platform/entity";
+import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
 
 interface FigmaUserRequest {
   readonly userId: string;
@@ -50,8 +50,8 @@ interface HealthCheckResponse {
   readonly timestamp: string;
 }
 
-@ApiTags("Figma")
-@Controller("api/figma")
+@ApiTags('Figma')
+@Controller('api/figma')
 export class FigmaController {
   private readonly logger = new Logger(FigmaController.name);
 
@@ -66,43 +66,37 @@ export class FigmaController {
    * Receives Figma user information and returns associated device info.
    * If username is not provided, returns an error code prompting input.
    */
-  @Post("user")
-  async registerUser(
-    @Body() userData: FigmaUserRequest,
-  ): Promise<DeviceInfoResponse> {
-    this.logger.log(
-      `[FIGMA_USER_REGISTER] Received user data: ${JSON.stringify(userData)}`,
-    );
+  @Post('user')
+  async registerUser(@Body() userData: FigmaUserRequest): Promise<DeviceInfoResponse> {
+    this.logger.log(`[FIGMA_USER_REGISTER] Received user data: ${JSON.stringify(userData)}`);
 
     try {
       if (!userData.username) {
-        this.logger.warn(
-          `[FIGMA_USER_REGISTER] Username required for userId=${userData.userId}`,
-        );
-        return { success: false, error: "username-required" };
+        this.logger.warn(`[FIGMA_USER_REGISTER] Username required for userId=${userData.userId}`);
+        return { success: false, error: 'username-required' };
       }
 
       const mockUser = {
         id: 1,
         name: `Test User (${userData.username})`,
         username: userData.username,
-        empNo: "EMP001",
+        empNo: 'EMP001',
         slackId: `U${userData.username.toUpperCase()}`,
-        jobType: "DEVELOPER" as const,
+        jobType: 'DEVELOPER' as const,
       };
 
       const mockDevices = [
         {
           id: 1,
-          deviceId: "device-001",
-          name: "Dev MacBook",
+          deviceId: 'device-001',
+          name: 'Dev MacBook',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
         {
           id: 2,
-          deviceId: "device-002",
-          name: "Test iPhone",
+          deviceId: 'device-002',
+          name: 'Test iPhone',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -153,24 +147,18 @@ export class FigmaController {
           };
         }
       } catch (dbError) {
-        const dbMessage =
-          dbError instanceof Error ? dbError.message : String(dbError);
+        const dbMessage = dbError instanceof Error ? dbError.message : String(dbError);
         this.logger.warn(
           `[FIGMA_USER_REGISTER] DB lookup failed, returning mock data: ${dbMessage}`,
         );
       }
 
       // Return mock data when DB lookup fails
-      this.logger.log(
-        `[FIGMA_USER_REGISTER] Returning mock data for: ${mockUser.name}`,
-      );
+      this.logger.log(`[FIGMA_USER_REGISTER] Returning mock data for: ${mockUser.name}`);
       return { success: true, user: mockUser, devices: mockDevices };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : JSON.stringify(error);
-      this.logger.error(
-        `[FIGMA_USER_REGISTER] Registration failed: ${errorMessage}`,
-      );
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`[FIGMA_USER_REGISTER] Registration failed: ${errorMessage}`);
       return {
         success: false,
         error: errorMessage,
@@ -181,37 +169,29 @@ export class FigmaController {
   /**
    * Saves selection information from the Figma plugin.
    */
-  @Post("selection")
-  async saveSelection(
-    @Body() selectionData: Record<string, unknown>,
-  ): Promise<SelectionResponse> {
-    this.logger.log(
-      `[FIGMA_SELECTION] Received selection: ${JSON.stringify(selectionData)}`,
-    );
-    return { success: true, message: "Selection data saved successfully" };
+  @Post('selection')
+  async saveSelection(@Body() selectionData: Record<string, unknown>): Promise<SelectionResponse> {
+    this.logger.log(`[FIGMA_SELECTION] Received selection: ${JSON.stringify(selectionData)}`);
+    return { success: true, message: 'Selection data saved successfully' };
   }
 
   /**
    * Saves page information from the Figma plugin.
    */
-  @Post("page")
-  async savePage(
-    @Body() pageData: Record<string, unknown>,
-  ): Promise<SelectionResponse> {
-    this.logger.log(
-      `[FIGMA_PAGE] Received page data: ${JSON.stringify(pageData)}`,
-    );
-    return { success: true, message: "Page data saved successfully" };
+  @Post('page')
+  async savePage(@Body() pageData: Record<string, unknown>): Promise<SelectionResponse> {
+    this.logger.log(`[FIGMA_PAGE] Received page data: ${JSON.stringify(pageData)}`);
+    return { success: true, message: 'Page data saved successfully' };
   }
 
   /**
    * Health check endpoint for the Figma API.
    */
-  @Get("health")
+  @Get('health')
   async healthCheck(): Promise<HealthCheckResponse> {
     return {
       success: true,
-      message: "Figma API is working",
+      message: 'Figma API is working',
       timestamp: new Date().toISOString(),
     };
   }

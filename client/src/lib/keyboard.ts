@@ -1,17 +1,12 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { useAppStore } from "./store";
+import { useAppStore } from './store';
 
 const isEditable = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    target.isContentEditable
-  );
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 };
 
 export function useGlobalShortcuts() {
@@ -35,7 +30,7 @@ export function useGlobalShortcuts() {
 
     const handler = (e: KeyboardEvent) => {
       // Cmd/Ctrl+K — command palette
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         toggleCommand();
         return;
@@ -47,7 +42,7 @@ export function useGlobalShortcuts() {
       // "?" — keyboard shortcut reference. Industry-standard hotkey
       // (Linear, GitHub, Slack, Notion). Arrives as Shift+/ on US layouts;
       // matching on `e.key === "?"` covers every modern layout.
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         toggleShortcuts();
         return;
@@ -55,14 +50,14 @@ export function useGlobalShortcuts() {
 
       // "[" — collapse / expand the sidebar. Notion / Linear / Slack
       // parity for the "give me more canvas" muscle memory.
-      if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.key === '[' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         toggleSidebarCollapsed();
         return;
       }
 
       // "g" then nav letter (Linear-style)
-      if (!pendingG && e.key === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (!pendingG && e.key === 'g' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         pendingG = true;
         pendingTimer = window.setTimeout(clearPending, 1000);
@@ -72,34 +67,28 @@ export function useGlobalShortcuts() {
       if (pendingG) {
         clearPending();
         const k = e.key.toLowerCase();
-        if (k === "d") {
+        if (k === 'd') {
           e.preventDefault();
-          navigate("/dashboard");
-        } else if (k === "s") {
+          navigate('/dashboard');
+        } else if (k === 's') {
           e.preventDefault();
-          navigate("/sessions");
-        } else if (k === "m") {
+          navigate('/sessions');
+        } else if (k === 'm') {
           e.preventDefault();
-          navigate("/sandbox/module");
-        } else if (k === "p") {
+          navigate('/sandbox/module');
+        } else if (k === 'p') {
           e.preventDefault();
-          navigate("/sandbox/script");
+          navigate('/sandbox/script');
         }
       }
     };
 
-    window.addEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
     return () => {
-      window.removeEventListener("keydown", handler);
+      window.removeEventListener('keydown', handler);
       clearPending();
     };
-  }, [
-    navigate,
-    setCommandOpen,
-    toggleCommand,
-    toggleShortcuts,
-    toggleSidebarCollapsed,
-  ]);
+  }, [navigate, setCommandOpen, toggleCommand, toggleShortcuts, toggleSidebarCollapsed]);
 }
 
 /**
@@ -120,72 +109,72 @@ export interface ShortcutGroup {
 
 export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
-    label: "General",
+    label: 'General',
     shortcuts: [
-      { keys: ["⌘", "K"], label: "Open command palette" },
-      { keys: ["?"], label: "Show keyboard shortcuts" },
-      { keys: ["["], label: "Collapse / expand sidebar" },
-      { keys: ["Esc"], label: "Close dialog / cancel" },
+      { keys: ['⌘', 'K'], label: 'Open command palette' },
+      { keys: ['?'], label: 'Show keyboard shortcuts' },
+      { keys: ['['], label: 'Collapse / expand sidebar' },
+      { keys: ['Esc'], label: 'Close dialog / cancel' },
     ],
   },
   {
-    label: "Navigation",
+    label: 'Navigation',
     shortcuts: [
-      { keys: ["G", "D"], label: "Go to Dashboard" },
-      { keys: ["G", "S"], label: "Go to Sessions" },
-      { keys: ["G", "M"], label: "Go to Module SDK" },
-      { keys: ["G", "P"], label: "Go to Script SDK" },
+      { keys: ['G', 'D'], label: 'Go to Dashboard' },
+      { keys: ['G', 'S'], label: 'Go to Sessions' },
+      { keys: ['G', 'M'], label: 'Go to Module SDK' },
+      { keys: ['G', 'P'], label: 'Go to Script SDK' },
     ],
   },
   {
-    label: "Sessions list",
+    label: 'Sessions list',
     shortcuts: [
-      { keys: ["J"], label: "Move cursor down", description: "↓ also works" },
-      { keys: ["K"], label: "Move cursor up", description: "↑ also works" },
-      { keys: ["Enter"], label: "Open focused session" },
+      { keys: ['J'], label: 'Move cursor down', description: '↓ also works' },
+      { keys: ['K'], label: 'Move cursor up', description: '↑ also works' },
+      { keys: ['Enter'], label: 'Open focused session' },
     ],
   },
   {
-    label: "Session detail",
+    label: 'Session detail',
     shortcuts: [
-      { keys: ["1"], label: "Overview tab" },
-      { keys: ["2"], label: "Replay tab" },
-      { keys: ["3"], label: "Timeline tab" },
-      { keys: ["4"], label: "Network tab" },
-      { keys: ["5"], label: "Console tab" },
-      { keys: ["6"], label: "Raw JSON tab" },
+      { keys: ['1'], label: 'Overview tab' },
+      { keys: ['2'], label: 'Replay tab' },
+      { keys: ['3'], label: 'Timeline tab' },
+      { keys: ['4'], label: 'Network tab' },
+      { keys: ['5'], label: 'Console tab' },
+      { keys: ['6'], label: 'Raw JSON tab' },
       {
-        keys: ["C"],
-        label: "Comment at playhead",
-        description: "Jumps to Replay and focuses the comment input",
+        keys: ['C'],
+        label: 'Comment at playhead',
+        description: 'Jumps to Replay and focuses the comment input',
       },
     ],
   },
   {
-    label: "Timeline tab",
+    label: 'Timeline tab',
     shortcuts: [
-      { keys: ["J"], label: "Next event", description: "↓ also works" },
-      { keys: ["K"], label: "Previous event", description: "↑ also works" },
-      { keys: ["Enter"], label: "Jump replay to this event" },
+      { keys: ['J'], label: 'Next event', description: '↓ also works' },
+      { keys: ['K'], label: 'Previous event', description: '↑ also works' },
+      { keys: ['Enter'], label: 'Jump replay to this event' },
     ],
   },
   {
-    label: "Replay player",
+    label: 'Replay player',
     shortcuts: [
       {
-        keys: ["Space"],
-        label: "Play / pause",
-        description: "K also pauses (YouTube-style)",
+        keys: ['Space'],
+        label: 'Play / pause',
+        description: 'K also pauses (YouTube-style)',
       },
-      { keys: ["←"], label: "Back 5 seconds" },
-      { keys: ["→"], label: "Forward 5 seconds" },
-      { keys: ["J"], label: "Back 10 seconds" },
-      { keys: ["L"], label: "Forward 10 seconds" },
-      { keys: ["Home"], label: "Restart from beginning" },
+      { keys: ['←'], label: 'Back 5 seconds' },
+      { keys: ['→'], label: 'Forward 5 seconds' },
+      { keys: ['J'], label: 'Back 10 seconds' },
+      { keys: ['L'], label: 'Forward 10 seconds' },
+      { keys: ['Home'], label: 'Restart from beginning' },
       {
-        keys: ["F"],
-        label: "Toggle fullscreen",
-        description: "Only on Replay tab",
+        keys: ['F'],
+        label: 'Toggle fullscreen',
+        description: 'Only on Replay tab',
       },
     ],
   },

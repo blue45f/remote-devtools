@@ -1,15 +1,12 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import {
-  BadRequestException,
-  InternalServerErrorException,
-} from "@nestjs/common";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { GoogleSheetsController } from "./google-sheets.controller";
-import { GoogleSheetsService } from "./google-sheets.service";
+import { GoogleSheetsController } from './google-sheets.controller';
+import { GoogleSheetsService } from './google-sheets.service';
 
-describe("GoogleSheetsController", () => {
+describe('GoogleSheetsController', () => {
   let controller: GoogleSheetsController;
   const mockService = {
     getSpreadsheetMetadata: vi.fn(),
@@ -25,19 +22,18 @@ describe("GoogleSheetsController", () => {
     controller = module.get<GoogleSheetsController>(GoogleSheetsController);
   });
 
-  describe("readTcSheetFromUrl", () => {
-    const validUrl =
-      "https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ/edit";
+  describe('readTcSheetFromUrl', () => {
+    const validUrl = 'https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ/edit';
 
-    it("should return sheet data successfully", async () => {
+    it('should return sheet data successfully', async () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({
-        title: "Test Sheet",
-        sheets: [{ properties: { title: "DebugTools" } }],
+        title: 'Test Sheet',
+        sheets: [{ properties: { title: 'DebugTools' } }],
       });
       mockService.getStructuredSheetData.mockResolvedValue({
         totalRows: 10,
         totalColumns: 5,
-        headers: ["A", "B", "C", "D", "E"],
+        headers: ['A', 'B', 'C', 'D', 'E'],
         rows: [],
       });
 
@@ -48,7 +44,7 @@ describe("GoogleSheetsController", () => {
       expect(result.time).toBeGreaterThanOrEqual(0);
     });
 
-    it("should use default sheet name DebugTools", async () => {
+    it('should use default sheet name DebugTools', async () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
       mockService.getStructuredSheetData.mockResolvedValue({
         totalRows: 0,
@@ -58,45 +54,41 @@ describe("GoogleSheetsController", () => {
       await controller.readTcSheetFromUrl(validUrl);
 
       expect(mockService.getStructuredSheetData).toHaveBeenCalledWith(
-        "1aBcDeFgHiJkLmNoPqRsTuVwXyZ",
-        "DebugTools",
+        '1aBcDeFgHiJkLmNoPqRsTuVwXyZ',
+        'DebugTools',
       );
     });
 
-    it("should use custom sheet name when provided", async () => {
+    it('should use custom sheet name when provided', async () => {
       mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
       mockService.getStructuredSheetData.mockResolvedValue({
         totalRows: 1,
         totalColumns: 1,
       });
 
-      await controller.readTcSheetFromUrl(validUrl, "CustomSheet");
+      await controller.readTcSheetFromUrl(validUrl, 'CustomSheet');
 
       expect(mockService.getStructuredSheetData).toHaveBeenCalledWith(
-        "1aBcDeFgHiJkLmNoPqRsTuVwXyZ",
-        "CustomSheet",
+        '1aBcDeFgHiJkLmNoPqRsTuVwXyZ',
+        'CustomSheet',
       );
     });
 
-    it("should throw BadRequestException for invalid URL", async () => {
-      await expect(
-        controller.readTcSheetFromUrl("https://not-google.com/sheet"),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("should throw BadRequestException when no data found", async () => {
-      mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
-      mockService.getStructuredSheetData.mockResolvedValue(null);
-
-      await expect(controller.readTcSheetFromUrl(validUrl)).rejects.toThrow(
+    it('should throw BadRequestException for invalid URL', async () => {
+      await expect(controller.readTcSheetFromUrl('https://not-google.com/sheet')).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it("should throw InternalServerErrorException for unexpected errors", async () => {
-      mockService.getSpreadsheetMetadata.mockRejectedValue(
-        new Error("Network error"),
-      );
+    it('should throw BadRequestException when no data found', async () => {
+      mockService.getSpreadsheetMetadata.mockResolvedValue({ sheets: [] });
+      mockService.getStructuredSheetData.mockResolvedValue(null);
+
+      await expect(controller.readTcSheetFromUrl(validUrl)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw InternalServerErrorException for unexpected errors', async () => {
+      mockService.getSpreadsheetMetadata.mockRejectedValue(new Error('Network error'));
 
       await expect(controller.readTcSheetFromUrl(validUrl)).rejects.toThrow(
         InternalServerErrorException,

@@ -1,4 +1,4 @@
-import { logger } from "../utils/logger";
+import { logger } from '../utils/logger';
 
 // Rewrite 규칙 타입 정의
 export interface RewriteRule {
@@ -52,7 +52,7 @@ export class NetworkRewrite {
       delete rule.response;
     }
 
-    logger.rewrite.debug("[NetworkRewrite.addRule] Adding rule:", {
+    logger.rewrite.debug('[NetworkRewrite.addRule] Adding rule:', {
       url,
       method: normalizedMethod,
       status,
@@ -60,21 +60,16 @@ export class NetworkRewrite {
       requestBody,
       response,
     });
-    logger.rewrite.debug("[NetworkRewrite.addRule] Full rule object:", rule);
+    logger.rewrite.debug('[NetworkRewrite.addRule] Full rule object:', rule);
 
     rewriteRules.set(ruleKey, rule);
     rewriteEnabled = true;
 
     // sessionStorage에 저장
-    sessionStorage.setItem(
-      "REMOTE_DEBUG_MOCK_RULES",
-      JSON.stringify(Array.from(rewriteRules)),
-    );
-    sessionStorage.setItem("REMOTE_DEBUG_MOCK_ENABLED", "true");
+    sessionStorage.setItem('REMOTE_DEBUG_MOCK_RULES', JSON.stringify(Array.from(rewriteRules)));
+    sessionStorage.setItem('REMOTE_DEBUG_MOCK_ENABLED', 'true');
 
-    logger.rewrite.info(
-      `Rule added: ${normalizedMethod} ${url} → HTTP ${status}`,
-    );
+    logger.rewrite.info(`Rule added: ${normalizedMethod} ${url} → HTTP ${status}`);
   }
 
   /**
@@ -88,13 +83,10 @@ export class NetworkRewrite {
 
     if (rewriteRules.size === 0) {
       rewriteEnabled = false;
-      sessionStorage.removeItem("REMOTE_DEBUG_MOCK_RULES");
-      sessionStorage.removeItem("REMOTE_DEBUG_MOCK_ENABLED");
+      sessionStorage.removeItem('REMOTE_DEBUG_MOCK_RULES');
+      sessionStorage.removeItem('REMOTE_DEBUG_MOCK_ENABLED');
     } else {
-      sessionStorage.setItem(
-        "REMOTE_DEBUG_MOCK_RULES",
-        JSON.stringify(Array.from(rewriteRules)),
-      );
+      sessionStorage.setItem('REMOTE_DEBUG_MOCK_RULES', JSON.stringify(Array.from(rewriteRules)));
     }
 
     logger.rewrite.info(`Rule removed: ${normalizedMethod} ${url}`);
@@ -106,8 +98,8 @@ export class NetworkRewrite {
   public static clearRules(): void {
     rewriteRules.clear();
     rewriteEnabled = false;
-    sessionStorage.removeItem("REMOTE_DEBUG_MOCK_RULES");
-    sessionStorage.removeItem("REMOTE_DEBUG_MOCK_ENABLED");
+    sessionStorage.removeItem('REMOTE_DEBUG_MOCK_RULES');
+    sessionStorage.removeItem('REMOTE_DEBUG_MOCK_ENABLED');
   }
 
   /**
@@ -121,13 +113,12 @@ export class NetworkRewrite {
    * Load rewrite rules from storage
    */
   public static loadRules(): void {
-    const stored = sessionStorage.getItem("REMOTE_DEBUG_MOCK_RULES");
+    const stored = sessionStorage.getItem('REMOTE_DEBUG_MOCK_RULES');
     if (stored) {
       const rules = JSON.parse(stored) as Array<[string, RewriteRule]>;
       rules.forEach(([key, rule]) => rewriteRules.set(key, rule));
     }
-    rewriteEnabled =
-      sessionStorage.getItem("REMOTE_DEBUG_MOCK_ENABLED") === "true";
+    rewriteEnabled = sessionStorage.getItem('REMOTE_DEBUG_MOCK_ENABLED') === 'true';
   }
 
   /**
@@ -136,7 +127,7 @@ export class NetworkRewrite {
    */
   public static getRule(method: string, url: string): RewriteRule | undefined {
     const normalizedMethod = method.toUpperCase();
-    const urlWithoutQuery = url.split("?")[0];
+    const urlWithoutQuery = url.split('?')[0];
     const ruleKey = `${normalizedMethod}:${urlWithoutQuery}`;
     const rule = rewriteRules.get(ruleKey);
 
@@ -160,7 +151,7 @@ export class NetworkRewrite {
     absoluteUrl: string,
   ): void {
     // readyState를 1로 설정 (OPENED)
-    Object.defineProperty(xhr, "readyState", {
+    Object.defineProperty(xhr, 'readyState', {
       value: 1,
       writable: true,
       configurable: true,
@@ -168,28 +159,28 @@ export class NetworkRewrite {
 
     setTimeout(() => {
       // readyState를 2로 변경 (HEADERS_RECEIVED)
-      Object.defineProperty(xhr, "readyState", {
+      Object.defineProperty(xhr, 'readyState', {
         value: 2,
         writable: true,
         configurable: true,
       });
-      Object.defineProperty(xhr, "status", {
+      Object.defineProperty(xhr, 'status', {
         value: rule.status,
         writable: false,
       });
-      Object.defineProperty(xhr, "statusText", {
-        value: rule.status >= 400 ? "Error" : "OK",
+      Object.defineProperty(xhr, 'statusText', {
+        value: rule.status >= 400 ? 'Error' : 'OK',
         writable: false,
       });
 
       // readystatechange 이벤트 (readyState = 2)
       if (xhr.onreadystatechange) {
-        xhr.onreadystatechange(new Event("readystatechange"));
+        xhr.onreadystatechange(new Event('readystatechange'));
       }
-      xhr.dispatchEvent(new Event("readystatechange"));
+      xhr.dispatchEvent(new Event('readystatechange'));
 
       // readyState를 3으로 변경 (LOADING)
-      Object.defineProperty(xhr, "readyState", {
+      Object.defineProperty(xhr, 'readyState', {
         value: 3,
         writable: true,
         configurable: true,
@@ -197,57 +188,55 @@ export class NetworkRewrite {
 
       // readystatechange 이벤트 (readyState = 3)
       if (xhr.onreadystatechange) {
-        xhr.onreadystatechange(new Event("readystatechange"));
+        xhr.onreadystatechange(new Event('readystatechange'));
       }
-      xhr.dispatchEvent(new Event("readystatechange"));
+      xhr.dispatchEvent(new Event('readystatechange'));
 
       // readyState를 4로 변경 (DONE)
-      Object.defineProperty(xhr, "readyState", { value: 4, writable: false });
+      Object.defineProperty(xhr, 'readyState', { value: 4, writable: false });
 
       // responseType에 따른 response 설정
-      const responseType = xhr.responseType || "text";
+      const responseType = xhr.responseType || 'text';
       let responseValue: unknown = JSON.stringify(rule.response);
 
-      if (responseType === "json") {
+      if (responseType === 'json') {
         responseValue = rule.response;
       }
 
-      Object.defineProperty(xhr, "responseText", {
+      Object.defineProperty(xhr, 'responseText', {
         value: JSON.stringify(rule.response),
         writable: false,
       });
-      Object.defineProperty(xhr, "response", {
+      Object.defineProperty(xhr, 'response', {
         value: responseValue,
         writable: false,
       });
-      Object.defineProperty(xhr, "responseURL", {
+      Object.defineProperty(xhr, 'responseURL', {
         value: absoluteUrl,
         writable: false,
       });
 
       // 응답 헤더 설정
-      const rewriteHeaders =
-        "Content-Type: application/json\r\nX-Rewrite-Response: true";
-      Object.defineProperty(xhr, "getAllResponseHeaders", {
+      const rewriteHeaders = 'Content-Type: application/json\r\nX-Rewrite-Response: true';
+      Object.defineProperty(xhr, 'getAllResponseHeaders', {
         value: () => rewriteHeaders,
         writable: false,
       });
-      Object.defineProperty(xhr, "getResponseHeader", {
+      Object.defineProperty(xhr, 'getResponseHeader', {
         value: (header: string) => {
-          if (header.toLowerCase() === "content-type")
-            return "application/json";
-          if (header.toLowerCase() === "x-rewrite-response") return "true";
+          if (header.toLowerCase() === 'content-type') return 'application/json';
+          if (header.toLowerCase() === 'x-rewrite-response') return 'true';
           return null;
         },
         writable: false,
       });
 
       // readystatechange 이벤트 (readyState = 4)
-      const readyStateEvent = new Event("readystatechange");
+      const readyStateEvent = new Event('readystatechange');
       xhr.dispatchEvent(readyStateEvent);
 
       // loadstart 이벤트
-      const loadStartEvent = new ProgressEvent("loadstart", {
+      const loadStartEvent = new ProgressEvent('loadstart', {
         lengthComputable: true,
         loaded: 0,
         total: JSON.stringify(rule.response).length,
@@ -256,7 +245,7 @@ export class NetworkRewrite {
 
       // XHR/axios 표준: 4xx/5xx는 error 이벤트 발생
       if (rule.status >= 400) {
-        const errorEvent = new ProgressEvent("error", {
+        const errorEvent = new ProgressEvent('error', {
           lengthComputable: false,
           loaded: 0,
           total: 0,
@@ -268,12 +257,10 @@ export class NetworkRewrite {
           xhr.onerror(errorEvent);
         }
 
-        logger.rewrite.debug(
-          `XHR Rewrite: status=${rule.status}, error event dispatched`,
-        );
+        logger.rewrite.debug(`XHR Rewrite: status=${rule.status}, error event dispatched`);
       } else {
         // 성공 응답인 경우만 load 이벤트 발생
-        const loadEvent = new ProgressEvent("load", {
+        const loadEvent = new ProgressEvent('load', {
           lengthComputable: true,
           loaded: JSON.stringify(rule.response).length,
           total: JSON.stringify(rule.response).length,
@@ -287,7 +274,7 @@ export class NetworkRewrite {
       }
 
       // loadend 이벤트
-      const loadEndEvent = new ProgressEvent("loadend", {
+      const loadEndEvent = new ProgressEvent('loadend', {
         lengthComputable: true,
         loaded: JSON.stringify(rule.response).length,
         total: JSON.stringify(rule.response).length,
@@ -312,24 +299,22 @@ export class NetworkRewrite {
   ): Response {
     // Rewrite 응답 상세 정보 출력
     logger.rewrite.info(`[Fetch] ${method} ${url} → ${rule.status}`);
-    logger.rewrite.debug("Response body:", rule.response);
+    logger.rewrite.debug('Response body:', rule.response);
 
     // Rewrite Response 생성
     const rewriteResponse = new Response(JSON.stringify(rule.response), {
       status: rule.status,
-      statusText: rule.status >= 400 ? "Error" : "OK",
+      statusText: rule.status >= 400 ? 'Error' : 'OK',
       headers: {
-        "Content-Type": "application/json",
-        "X-Rewriteed-Response": "true",
+        'Content-Type': 'application/json',
+        'X-Rewriteed-Response': 'true',
       },
     });
 
     // Fetch는 항상 resolve (4xx/5xx도 성공 응답)
     // 사용자가 response.ok를 체크해야 함
     if (rule.status >= 400) {
-      logger.rewrite.debug(
-        `Fetch Rewrite: status=${rule.status}, response.ok will be false`,
-      );
+      logger.rewrite.debug(`Fetch Rewrite: status=${rule.status}, response.ok will be false`);
     }
 
     return rewriteResponse;

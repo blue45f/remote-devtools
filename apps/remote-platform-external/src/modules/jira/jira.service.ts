@@ -1,10 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
-import axios, { AxiosInstance } from "axios";
-import FormData from "form-data";
+import { Injectable, Logger } from '@nestjs/common';
+import axios, { AxiosInstance } from 'axios';
+import FormData from 'form-data';
 
-import { convertRecordLink, createUserDataText } from "../../utils/utils";
-import { UserInfoService } from "../user-info/user-info.service";
-import { TicketFormData, UserData } from "../webview/webview.gateway";
+import { convertRecordLink, createUserDataText } from '../../utils/utils';
+import { UserInfoService } from '../user-info/user-info.service';
+import { TicketFormData, UserData } from '../webview/webview.gateway';
 
 /**
  * 네트워크 요청 업데이트 응답 본문을 나타내는 인터페이스.
@@ -41,7 +41,7 @@ interface AtlassianDocumentNode {
  */
 interface AtlassianDocumentFormat {
   /** 문서 타입 (항상 "doc") */
-  readonly type: "doc";
+  readonly type: 'doc';
   /** ADF 스키마 버전 */
   readonly version: number;
   /** 문서 본문을 구성하는 노드 배열 */
@@ -113,7 +113,7 @@ interface UploadedFile {
 }
 
 /** 기본 이슈 유형 ("버그") */
-const DEFAULT_ISSUE_TYPE = "\uBC84\uADF8";
+const DEFAULT_ISSUE_TYPE = '\uBC84\uADF8';
 
 /**
  * Jira REST API v3를 통해 티켓 생성 및 첨부파일 업로드를 처리하는 서비스.
@@ -136,18 +136,14 @@ export class JiraService {
     this.jiraClient = axios.create({
       baseURL: `${this.jiraHostUrl}/rest/api/3`,
       headers: {
-        Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
+        Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString('base64')}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
     });
 
-    const maskedEmail = email
-      ? `${email[0]}***@${email.split("@")[1] || "***"}`
-      : "undefined";
-    this.logger.log(
-      `JiraService initialized: Jira host=${this.jiraHostUrl}, email=${maskedEmail}`,
-    );
+    const maskedEmail = email ? `${email[0]}***@${email.split('@')[1] || '***'}` : 'undefined';
+    this.logger.log(`JiraService initialized: Jira host=${this.jiraHostUrl}, email=${maskedEmail}`);
   }
 
   /**
@@ -183,17 +179,14 @@ export class JiraService {
       );
 
       if (!userInfo?.jiraProjectKey) {
-        throw new Error(
-          "Ticket creation failed: Jira project key is not configured",
-        );
+        throw new Error('Ticket creation failed: Jira project key is not configured');
       }
 
       const requestBody: CreateTicketRequestBody = {
         username: userInfo.username,
         assignee: formData?.assignee ?? userInfo.username,
-        title:
-          formData?.title ?? "Auto-generated ticket from Remote Debug Tools",
-        priority: "3",
+        title: formData?.title ?? 'Auto-generated ticket from Remote Debug Tools',
+        priority: '3',
         description: this.buildTicketDescription({
           roomName,
           recordId,
@@ -228,9 +221,7 @@ export class JiraService {
       }
 
       // Try to resolve assignee account ID
-      const assigneeAccountId = await this.findUserAccountId(
-        requestBody.assignee,
-      );
+      const assigneeAccountId = await this.findUserAccountId(requestBody.assignee);
       if (assigneeAccountId) {
         jiraFields.assignee = { accountId: assigneeAccountId };
       }
@@ -238,7 +229,7 @@ export class JiraService {
       this.logger.log(
         `[JIRA_API_REQUEST] ${JSON.stringify({
           url: `${this.jiraHostUrl}/rest/api/3/issue`,
-          method: "POST",
+          method: 'POST',
           project: requestBody.project,
           summary: requestBody.title,
           assignee: requestBody.assignee,
@@ -249,10 +240,9 @@ export class JiraService {
         })}`,
       );
 
-      const response = await this.jiraClient.post<JiraCreateIssueResponse>(
-        "/issue",
-        { fields: jiraFields },
-      );
+      const response = await this.jiraClient.post<JiraCreateIssueResponse>('/issue', {
+        fields: jiraFields,
+      });
 
       const ticketUrl = `${this.jiraHostUrl}/browse/${response.data.key}`;
 
@@ -274,8 +264,7 @@ export class JiraService {
       };
     } catch (error: unknown) {
       const err = error as Record<string, unknown>;
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       const errorData: Record<string, unknown> = {
         message: errorMessage,
@@ -309,7 +298,7 @@ export class JiraService {
    */
   private async findUserAccountId(query: string): Promise<string | null> {
     try {
-      const response = await this.jiraClient.get<JiraUser[]>("/user/search", {
+      const response = await this.jiraClient.get<JiraUser[]>('/user/search', {
         params: { query, maxResults: 1 },
       });
       if (response.data.length > 0 && response.data[0].active) {
@@ -344,58 +333,56 @@ export class JiraService {
 
     // [Reproduction Environment] section - included for all job types
     content.push(
-      this.buildHeading("[Reproduction Environment]"),
+      this.buildHeading('[Reproduction Environment]'),
       {
-        type: "codeBlock",
-        attrs: { language: "java" },
-        content: [{ type: "text", text: createUserDataText(userData) }],
+        type: 'codeBlock',
+        attrs: { language: 'java' },
+        content: [{ type: 'text', text: createUserDataText(userData) }],
       },
       {
-        type: "paragraph",
+        type: 'paragraph',
         content: [
           {
-            type: "text",
-            text: "Recording Session Link",
+            type: 'text',
+            text: 'Recording Session Link',
             marks: [
               {
-                type: "link",
+                type: 'link',
                 attrs: {
                   href: convertRecordLink(roomName, recordId),
-                  title: "Link",
+                  title: 'Link',
                 },
               },
             ],
           },
         ],
       },
-      { type: "rule" },
+      { type: 'rule' },
     );
 
     // Additional sections for QA and PM roles
-    if (jobType === "QA" || jobType === "PM") {
+    if (jobType === 'QA' || jobType === 'PM') {
       content.push(
-        this.buildHeading("[Preconditions]"),
-        this.buildBulletList(" "),
-        this.buildHeading("[Findings]"),
+        this.buildHeading('[Preconditions]'),
+        this.buildBulletList(' '),
+        this.buildHeading('[Findings]'),
         {
-          type: "blockquote",
-          content: [
-            { type: "paragraph", content: [{ type: "text", text: "-" }] },
-          ],
+          type: 'blockquote',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: '-' }] }],
         },
-        this.buildHeading("[Expected Result]"),
-        this.buildBulletList("-"),
-        this.buildHeading("[Actual Result]"),
-        this.buildBulletList("-"),
-        this.buildHeading("[Reproduction Frequency]"),
-        this.buildBulletList("Always (10/10)"),
+        this.buildHeading('[Expected Result]'),
+        this.buildBulletList('-'),
+        this.buildHeading('[Actual Result]'),
+        this.buildBulletList('-'),
+        this.buildHeading('[Reproduction Frequency]'),
+        this.buildBulletList('Always (10/10)'),
       );
     }
 
     // [Notes] section - included for all job types
-    content.push(this.buildHeading("[Notes]"), this.buildBulletList("-"));
+    content.push(this.buildHeading('[Notes]'), this.buildBulletList('-'));
 
-    return { type: "doc", version: 1, content };
+    return { type: 'doc', version: 1, content };
   }
 
   /**
@@ -405,9 +392,9 @@ export class JiraService {
    */
   private buildHeading(text: string): AtlassianDocumentNode {
     return {
-      type: "heading",
+      type: 'heading',
       attrs: { level: 3 },
-      content: [{ type: "text", text }],
+      content: [{ type: 'text', text }],
     };
   }
 
@@ -418,11 +405,11 @@ export class JiraService {
    */
   private buildBulletList(text: string): AtlassianDocumentNode {
     return {
-      type: "bulletList",
+      type: 'bulletList',
       content: [
         {
-          type: "listItem",
-          content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
         },
       ],
     };
@@ -435,34 +422,27 @@ export class JiraService {
    * @returns Jira 첨부파일 업로드 API 응답 데이터
    * @throws Jira 첨부파일 API 호출 실패 시 에러
    */
-  public async uploadImageToJira(
-    issueId: string,
-    file: UploadedFile,
-  ): Promise<unknown> {
+  public async uploadImageToJira(issueId: string, file: UploadedFile): Promise<unknown> {
     if (!/^[A-Z]+-\d+$/.test(issueId)) {
       throw new Error(`Invalid issueId format: ${issueId}`);
     }
 
     const formData = new FormData();
-    formData.append("file", file.buffer, {
+    formData.append('file', file.buffer, {
       filename: file.originalname || `capture-${Date.now()}.png`,
       contentType: file.mimetype,
     });
 
-    const response = await this.jiraClient.post(
-      `/issue/${issueId}/attachments`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          "X-Atlassian-Token": "no-check",
-          // Override Content-Type from jiraClient default (multipart needed here)
-          "Content-Type": undefined,
-        },
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
+    const response = await this.jiraClient.post(`/issue/${issueId}/attachments`, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        'X-Atlassian-Token': 'no-check',
+        // Override Content-Type from jiraClient default (multipart needed here)
+        'Content-Type': undefined,
       },
-    );
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
 
     return response.data;
   }

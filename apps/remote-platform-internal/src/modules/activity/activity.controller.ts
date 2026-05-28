@@ -1,18 +1,14 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
-import { Auth } from "../auth/auth.decorator";
-import { AuthGuard } from "../auth/auth.guard";
-import type { AuthClaims } from "../auth/auth.service";
+import { Auth } from '../auth/auth.decorator';
+import { AuthGuard } from '../auth/auth.guard';
+import type { AuthClaims } from '../auth/auth.service';
 
-import {
-  ActivityEntry,
-  ActivityPage,
-  ActivityService,
-} from "./activity.service";
+import { ActivityEntry, ActivityPage, ActivityService } from './activity.service';
 
-@ApiTags("Activity")
-@Controller("api/activity")
+@ApiTags('Activity')
+@Controller('api/activity')
 @UseGuards(AuthGuard) // no-op when AUTH_JWT_SECRET / PUBLIC_KEY env are unset
 export class ActivityController {
   constructor(private readonly activityService: ActivityService) {}
@@ -32,23 +28,17 @@ export class ActivityController {
    *   2. `?orgId=` query param (operator override / dev tooling)
    *   3. unscoped — returns the global feed (self-host single-tenant)
    */
-  @Get("feed")
+  @Get('feed')
   public async getFeed(
     @Auth() auth: AuthClaims | null,
-    @Query("limit") limit?: string,
-    @Query("orgId") orgId?: string,
-    @Query("before") before?: string,
+    @Query('limit') limit?: string,
+    @Query('orgId') orgId?: string,
+    @Query('before') before?: string,
   ): Promise<ActivityEntry[] | ActivityPage> {
     const parsed = limit ? Number(limit) : 20;
-    const safeLimit = Number.isFinite(parsed)
-      ? Math.min(Math.max(parsed, 1), 100)
-      : 20;
+    const safeLimit = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 100) : 20;
     const scope = auth?.org ?? orgId ?? null;
-    const page = await this.activityService.getFeedPage(
-      safeLimit,
-      scope,
-      before ?? null,
-    );
+    const page = await this.activityService.getFeedPage(safeLimit, scope, before ?? null);
     if (!before) return page.rows; // back-compat
     return page;
   }

@@ -1,22 +1,22 @@
-import axios from "axios";
-import { CircuitBoard, ExternalLink, Terminal, Wifi } from "lucide-react";
-import { useEffect, useState } from "react";
+import axios from 'axios';
+import { CircuitBoard, ExternalLink, Terminal, Wifi } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import DebugPanel from "./webview/DebugPanel";
-import ExploreTab from "./webview/ExploreTab";
+import DebugPanel from './webview/DebugPanel';
+import ExploreTab from './webview/ExploreTab';
 
-export type SdkKind = "module" | "script";
+export type SdkKind = 'module' | 'script';
 
 const SAMPLE_ENDPOINTS = {
-  fetchTodo: "https://jsonplaceholder.typicode.com/todos/1?dd=1",
-  xhrTodo: "https://jsonplaceholder.typicode.com/todos/2",
-  axiosTodo: "https://jsonplaceholder.typicode.com/todos/3",
-  posts: "https://jsonplaceholder.typicode.com/posts",
-  post: "https://jsonplaceholder.typicode.com/posts/1",
+  fetchTodo: 'https://jsonplaceholder.typicode.com/todos/1?dd=1',
+  xhrTodo: 'https://jsonplaceholder.typicode.com/todos/2',
+  axiosTodo: 'https://jsonplaceholder.typicode.com/todos/3',
+  posts: 'https://jsonplaceholder.typicode.com/posts',
+  post: 'https://jsonplaceholder.typicode.com/posts/1',
 } as const;
 
 interface WebviewPageProps {
@@ -28,15 +28,15 @@ interface WebviewPageProps {
   kind?: SdkKind;
 }
 
-export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
+export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [node, setNode] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"explore" | "debug">("explore");
+  const [activeTab, setActiveTab] = useState<'explore' | 'debug'>('explore');
 
   // SDK init
   useEffect(() => {
-    if (kind === "script") {
-      if (import.meta.env.VITE_FORCE_DEMO === "true") {
+    if (kind === 'script') {
+      if (import.meta.env.VITE_FORCE_DEMO === 'true') {
         window.RemoteDebugSdk ??= {
           createDebugger: () => undefined,
         };
@@ -44,10 +44,10 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
         return;
       }
 
-      const script = document.createElement("script");
+      const script = document.createElement('script');
       // Same-origin path (Vite dev proxy forwards /sdk → external in dev;
       // production usually serves both apps behind the same reverse proxy).
-      script.src = "/sdk/index.umd.js";
+      script.src = '/sdk/index.umd.js';
       script.onload = () => {
         if (window.RemoteDebugSdk) {
           window.RemoteDebugSdk.createDebugger();
@@ -60,7 +60,7 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
         }
       };
     }
-    void import("remote-debug-sdk").then(({ createDebugger }) => {
+    void import('remote-debug-sdk').then(({ createDebugger }) => {
       createDebugger();
     });
   }, [kind]);
@@ -75,27 +75,26 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
   const handleApiRequest = () => {
     fetch(SAMPLE_ENDPOINTS.fetchTodo)
       .then((r) => r.json())
-      .then((data) => emitSampleLog("Fetch Response:", data))
-      .catch((e) => console.error("Fetch error:", e));
+      .then((data) => emitSampleLog('Fetch Response:', data))
+      .catch((e) => console.error('Fetch error:', e));
   };
 
   const handleXhrRequest = () => {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", SAMPLE_ENDPOINTS.xhrTodo, true);
+    xhr.open('GET', SAMPLE_ENDPOINTS.xhrTodo, true);
     xhr.onload = () => {
-      if (xhr.status === 200)
-        emitSampleLog("XHR Response:", JSON.parse(xhr.responseText));
+      if (xhr.status === 200) emitSampleLog('XHR Response:', JSON.parse(xhr.responseText));
     };
-    xhr.onerror = () => console.error("XHR error");
+    xhr.onerror = () => console.error('XHR error');
     xhr.send();
   };
 
   const handleAxiosRequest = async () => {
     try {
       const response = await axios.get(SAMPLE_ENDPOINTS.axiosTodo);
-      emitSampleLog("Axios Response:", response.data);
+      emitSampleLog('Axios Response:', response.data);
     } catch (error) {
-      console.error("Axios error:", error);
+      console.error('Axios error:', error);
     }
   };
 
@@ -103,12 +102,12 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
     try {
       const response = await fetch(url, {
         method,
-        headers: data ? { "Content-Type": "application/json" } : undefined,
+        headers: data ? { 'Content-Type': 'application/json' } : undefined,
         body: data ? JSON.stringify(data) : undefined,
       });
       emitSampleLog(
         `${method} response:`,
-        method === "DELETE" ? response.status : await response.json(),
+        method === 'DELETE' ? response.status : await response.json(),
       );
     } catch (error) {
       console.error(`${method} error:`, error);
@@ -121,10 +120,10 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
   };
 
   const handleConsoleLog = () => {
-    emitSampleLog("console click", { a: { b: { c: { d: 1 } } } });
-    console.error("console error", new Error("error test"));
-    console.warn("warn");
-    throw new Error("error throw");
+    emitSampleLog('console click', { a: { b: { c: { d: 1 } } } });
+    console.error('console error', new Error('error test'));
+    console.warn('warn');
+    throw new Error('error throw');
   };
 
   return (
@@ -132,10 +131,7 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
       <SdkBanner kind={kind} />
 
       <div className="mt-5">
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "explore" | "debug")}
-        >
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'explore' | 'debug')}>
           <TabsList>
             <TabsTrigger value="explore" className="gap-1.5">
               <CircuitBoard className="size-3.5" />
@@ -161,28 +157,26 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
               onXhrRequest={handleXhrRequest}
               onAxiosRequest={handleAxiosRequest}
               onPostRequest={() =>
-                makeRequest("POST", SAMPLE_ENDPOINTS.posts, {
-                  title: "New",
-                  body: "Test",
+                makeRequest('POST', SAMPLE_ENDPOINTS.posts, {
+                  title: 'New',
+                  body: 'Test',
                   userId: 1,
                 })
               }
               onPutRequest={() =>
-                makeRequest("PUT", SAMPLE_ENDPOINTS.post, {
+                makeRequest('PUT', SAMPLE_ENDPOINTS.post, {
                   id: 1,
-                  title: "Updated",
-                  body: "Test",
+                  title: 'Updated',
+                  body: 'Test',
                   userId: 1,
                 })
               }
               onPatchRequest={() =>
-                makeRequest("PATCH", SAMPLE_ENDPOINTS.post, {
-                  title: "Patched",
+                makeRequest('PATCH', SAMPLE_ENDPOINTS.post, {
+                  title: 'Patched',
                 })
               }
-              onDeleteRequest={() =>
-                makeRequest("DELETE", SAMPLE_ENDPOINTS.post)
-              }
+              onDeleteRequest={() => makeRequest('DELETE', SAMPLE_ENDPOINTS.post)}
             />
           </TabsContent>
         </Tabs>
@@ -194,7 +188,7 @@ export const WebviewPage = ({ kind = "module" }: WebviewPageProps) => {
 };
 
 function SdkBanner({ kind }: { kind: SdkKind }) {
-  const label = kind === "module" ? "Module SDK" : "Script SDK (UMD)";
+  const label = kind === 'module' ? 'Module SDK' : 'Script SDK (UMD)';
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-bg-subtle">
       <span className="size-8 rounded-md bg-accent-soft text-accent-soft-fg flex items-center justify-center shrink-0">
@@ -210,8 +204,8 @@ function SdkBanner({ kind }: { kind: SdkKind }) {
           <span className="text-[11px] text-fg-faint">connected</span>
         </div>
         <p className="text-xs text-fg-subtle mt-0.5">
-          A demo customer page that loads the Remote DevTools SDK and lets you
-          trigger sample events.
+          A demo customer page that loads the Remote DevTools SDK and lets you trigger sample
+          events.
         </p>
       </div>
     </div>
@@ -234,9 +228,7 @@ function BottomCta() {
     <div className="fixed bottom-4 right-4 z-20">
       <Button
         variant="primary"
-        onClick={() =>
-          window.open("http://localhost:3000/devtools/index.html", "_blank")
-        }
+        onClick={() => window.open('http://localhost:3000/devtools/index.html', '_blank')}
         className="shadow-lg"
       >
         <ExternalLink />

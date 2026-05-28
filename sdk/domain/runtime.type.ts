@@ -14,30 +14,30 @@ export type CallFrame = {
 
 export type DeepSerializedValue = {
   type:
-    | "undefined"
-    | "null"
-    | "string"
-    | "number"
-    | "boolean"
-    | "bigint"
-    | "regexp"
-    | "date"
-    | "symbol"
-    | "array"
-    | "object"
-    | "function"
-    | "map"
-    | "set"
-    | "weakmap"
-    | "weakset"
-    | "error"
-    | "proxy"
-    | "promise"
-    | "typedarray"
-    | "arraybuffer"
-    | "node"
-    | "window"
-    | "generator";
+    | 'undefined'
+    | 'null'
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'bigint'
+    | 'regexp'
+    | 'date'
+    | 'symbol'
+    | 'array'
+    | 'object'
+    | 'function'
+    | 'map'
+    | 'set'
+    | 'weakmap'
+    | 'weakset'
+    | 'error'
+    | 'proxy'
+    | 'promise'
+    | 'typedarray'
+    | 'arraybuffer'
+    | 'node'
+    | 'window'
+    | 'generator';
   value: unknown;
   objectId?: string;
   weakLocalObjectReference?: number; // Set if encountered more than once.
@@ -63,7 +63,7 @@ export type ExecutionContextDescription = {
   uniqueId?: string; // Unique identifier across processes, experimental.
   auxData?: {
     isDefault: boolean;
-    type: "default" | "isolated" | "worker";
+    type: 'default' | 'isolated' | 'worker';
     frameId: string;
   };
 };
@@ -87,15 +87,7 @@ export type PropertyDescriptor = {
 };
 
 export type RemoteObject = {
-  type:
-    | "object"
-    | "function"
-    | "undefined"
-    | "string"
-    | "number"
-    | "boolean"
-    | "symbol"
-    | "bigint";
+  type: 'object' | 'function' | 'undefined' | 'string' | 'number' | 'boolean' | 'symbol' | 'bigint';
   subtype?: Subtype;
   className?: string;
   value?: unknown;
@@ -108,7 +100,7 @@ export type RemoteObject = {
 };
 
 export type SerializationOptions = {
-  serialization: "deep" | "json" | "idOnly";
+  serialization: 'deep' | 'json' | 'idOnly';
   maxDepth?: number;
   additionalParameters?: Record<string, string | number>;
 };
@@ -133,15 +125,7 @@ export type EntryPreview = {
 };
 
 export type ObjectPreview = {
-  type:
-    | "object"
-    | "function"
-    | "undefined"
-    | "string"
-    | "number"
-    | "boolean"
-    | "symbol"
-    | "bigint";
+  type: 'object' | 'function' | 'undefined' | 'string' | 'number' | 'boolean' | 'symbol' | 'bigint';
   subtype?: Subtype;
   description?: string;
   overflow?: boolean;
@@ -152,15 +136,15 @@ export type ObjectPreview = {
 export type PropertyPreview = {
   name: string;
   type:
-    | "object"
-    | "function"
-    | "undefined"
-    | "string"
-    | "number"
-    | "boolean"
-    | "symbol"
-    | "accessor"
-    | "bigint";
+    | 'object'
+    | 'function'
+    | 'undefined'
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'symbol'
+    | 'accessor'
+    | 'bigint';
   value?: string;
   valuePreview?: ObjectPreview;
   subtype?: Subtype;
@@ -188,26 +172,26 @@ export type ScriptId = string;
 export type ExecutionContextId = number;
 
 export type Subtype =
-  | "array"
-  | "null"
-  | "node"
-  | "regexp"
-  | "date"
-  | "map"
-  | "set"
-  | "weakmap"
-  | "weakset"
-  | "iterator"
-  | "generator"
-  | "error"
-  | "proxy"
-  | "promise"
-  | "typedarray"
-  | "arraybuffer"
-  | "dataview"
-  | "webassemblymemory"
-  | "wasmvalue"
-  | "";
+  | 'array'
+  | 'null'
+  | 'node'
+  | 'regexp'
+  | 'date'
+  | 'map'
+  | 'set'
+  | 'weakmap'
+  | 'weakset'
+  | 'iterator'
+  | 'generator'
+  | 'error'
+  | 'proxy'
+  | 'promise'
+  | 'typedarray'
+  | 'arraybuffer'
+  | 'dataview'
+  | 'webassemblymemory'
+  | 'wasmvalue'
+  | '';
 
 ///
 

@@ -5,24 +5,18 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from "@nestjs/common";
-import { Request, Response } from "express";
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 
-import {
-  BusinessException,
-  BusinessErrorResponse,
-} from "../exceptions/business.exception";
-import { ErrorCode } from "../exceptions/error-codes.enum";
+import { BusinessException, BusinessErrorResponse } from '../exceptions/business.exception';
+import { ErrorCode } from '../exceptions/error-codes.enum';
 
-const getExceptionMessage = (
-  exceptionResponse: unknown,
-  fallback: string,
-): string => {
+const getExceptionMessage = (exceptionResponse: unknown, fallback: string): string => {
   if (
-    typeof exceptionResponse === "object" &&
+    typeof exceptionResponse === 'object' &&
     exceptionResponse !== null &&
-    "message" in exceptionResponse &&
-    typeof exceptionResponse.message === "string"
+    'message' in exceptionResponse &&
+    typeof exceptionResponse.message === 'string'
   ) {
     return exceptionResponse.message;
   }
@@ -45,8 +39,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof BusinessException) {
       // 커스텀 비즈니스 예외 처리
       status = exception.getStatus();
-      const exceptionResponse =
-        exception.getResponse() as BusinessErrorResponse;
+      const exceptionResponse = exception.getResponse() as BusinessErrorResponse;
       errorResponse = {
         ...exceptionResponse,
         path: request.url,
@@ -67,22 +60,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
-      if (
-        typeof exceptionResponse === "object" &&
-        "errorCode" in exceptionResponse
-      ) {
+      if (typeof exceptionResponse === 'object' && 'errorCode' in exceptionResponse) {
         // errorCode가 있는 HttpException (BusinessException으로 변환되지 않은 경우)
         errorResponse = exceptionResponse as BusinessErrorResponse;
         errorResponse.path = request.url;
       } else {
         // 일반 HttpException
         const message =
-          typeof exceptionResponse === "string"
+          typeof exceptionResponse === 'string'
             ? exceptionResponse
-            : getExceptionMessage(
-                exceptionResponse,
-                "요청 처리 중 오류가 발생했습니다.",
-              );
+            : getExceptionMessage(exceptionResponse, '요청 처리 중 오류가 발생했습니다.');
 
         errorResponse = {
           statusCode: status,
@@ -105,9 +92,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // 예상치 못한 에러 처리
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       const errorMessage =
-        exception instanceof Error
-          ? exception.message
-          : "알 수 없는 오류가 발생했습니다.";
+        exception instanceof Error ? exception.message : '알 수 없는 오류가 발생했습니다.';
 
       errorResponse = {
         statusCode: status,

@@ -1,10 +1,10 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { RecordService } from "@remote-platform/core";
+import { RecordService } from '@remote-platform/core';
 import {
   DomEntity,
   RecordEntity,
@@ -12,12 +12,12 @@ import {
   TicketComponentEntity,
   TicketLabelEntity,
   TicketLogEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
-import { S3Service } from "../s3/s3.service";
-import { WebviewController } from "./webview.controller";
+import { S3Service } from '../s3/s3.service';
+import { WebviewController } from './webview.controller';
 
-describe("WebviewController (External)", () => {
+describe('WebviewController (External)', () => {
   let controller: WebviewController;
 
   const mockRecordService = { findAll: vi.fn() };
@@ -80,103 +80,101 @@ describe("WebviewController (External)", () => {
     controller = module.get<WebviewController>(WebviewController);
   });
 
-  describe("getTicketStats", () => {
-    it("should return ticket statistics", async () => {
+  describe('getTicketStats', () => {
+    it('should return ticket statistics', async () => {
       mockTicketLogRepo.count.mockResolvedValue(100);
 
       const result = await controller.getTicketStats();
 
-      expect(result).toHaveProperty("totalTickets");
-      expect(result).toHaveProperty("todayTickets");
+      expect(result).toHaveProperty('totalTickets');
+      expect(result).toHaveProperty('todayTickets');
     });
   });
 
-  describe("getSessionDetail", () => {
-    it("should throw when sessionName is missing", async () => {
-      await expect(
-        controller.getSessionDetail(undefined as never),
-      ).rejects.toThrow(NotFoundException);
+  describe('getSessionDetail', () => {
+    it('should throw when sessionName is missing', async () => {
+      await expect(controller.getSessionDetail(undefined as never)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
-  describe("generateScreenshot", () => {
-    it("should throw when recordId is missing", async () => {
-      await expect(
-        controller.generateScreenshot(undefined as never),
-      ).rejects.toThrow(NotFoundException);
+  describe('generateScreenshot', () => {
+    it('should throw when recordId is missing', async () => {
+      await expect(controller.generateScreenshot(undefined as never)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it("should throw for non-numeric recordId", async () => {
-      await expect(controller.generateScreenshot("abc")).rejects.toThrow(
+    it('should throw for non-numeric recordId', async () => {
+      await expect(controller.generateScreenshot('abc')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getUserTickets', () => {
+    it('should throw when deviceId is missing', async () => {
+      await expect(controller.getUserTickets(undefined as never)).rejects.toThrow(
         BadRequestException,
       );
     });
   });
 
-  describe("getUserTickets", () => {
-    it("should throw when deviceId is missing", async () => {
-      await expect(
-        controller.getUserTickets(undefined as never),
-      ).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe("getSessionStats", () => {
-    it("should return session statistics", async () => {
+  describe('getSessionStats', () => {
+    it('should return session statistics', async () => {
       const result = await controller.getSessionStats();
 
-      expect(result).toHaveProperty("totalSessions");
-      expect(result).toHaveProperty("todaySessions");
+      expect(result).toHaveProperty('totalSessions');
+      expect(result).toHaveProperty('todaySessions');
     });
   });
 
-  describe("getUserSessions", () => {
-    it("should throw when deviceId is missing", async () => {
-      await expect(
-        controller.getUserSessions(undefined as never),
-      ).rejects.toThrow(BadRequestException);
+  describe('getUserSessions', () => {
+    it('should throw when deviceId is missing', async () => {
+      await expect(controller.getUserSessions(undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
-  describe("getDailyStats", () => {
-    it("should return daily ticket stats", async () => {
+  describe('getDailyStats', () => {
+    it('should return daily ticket stats', async () => {
       const result = await controller.getDailyStats();
       expect(result).toBeDefined();
     });
   });
 
-  describe("getComponentStats", () => {
-    it("should return component statistics", async () => {
+  describe('getComponentStats', () => {
+    it('should return component statistics', async () => {
       const result = await controller.getComponentStats();
       expect(result).toBeDefined();
     });
   });
 
-  describe("getLabelStats", () => {
-    it("should return label statistics", async () => {
+  describe('getLabelStats', () => {
+    it('should return label statistics', async () => {
       const result = await controller.getLabelStats();
       expect(result).toBeDefined();
     });
   });
 
-  describe("getTicketsByEpic", () => {
-    it("should throw when parentEpic is missing", async () => {
-      await expect(
-        controller.getTicketsByEpic(undefined as never),
-      ).rejects.toThrow(BadRequestException);
+  describe('getTicketsByEpic', () => {
+    it('should throw when parentEpic is missing', async () => {
+      await expect(controller.getTicketsByEpic(undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
-  describe("getTicketsByUrl", () => {
-    it("should throw when url is missing", async () => {
-      await expect(
-        controller.getTicketsByUrl(undefined as never),
-      ).rejects.toThrow(BadRequestException);
+  describe('getTicketsByUrl', () => {
+    it('should throw when url is missing', async () => {
+      await expect(controller.getTicketsByUrl(undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
-  describe("getSessionDailyStats", () => {
-    it("should return session daily statistics", async () => {
+  describe('getSessionDailyStats', () => {
+    it('should return session daily statistics', async () => {
       const result = await controller.getSessionDailyStats();
       expect(result).toBeDefined();
     });

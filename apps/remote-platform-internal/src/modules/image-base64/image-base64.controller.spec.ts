@@ -1,12 +1,12 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ImageBase64Service } from "@remote-platform/core";
+import { ImageBase64Service } from '@remote-platform/core';
 
-import { ImageBase64Controller } from "./image-base64.controller";
+import { ImageBase64Controller } from './image-base64.controller';
 
-describe("ImageBase64Controller (Internal)", () => {
+describe('ImageBase64Controller (Internal)', () => {
   let controller: ImageBase64Controller;
   const mockService = { imageToBase64: vi.fn() };
 
@@ -19,17 +19,15 @@ describe("ImageBase64Controller (Internal)", () => {
     controller = module.get<ImageBase64Controller>(ImageBase64Controller);
   });
 
-  it("should return base64 for image URL", async () => {
-    mockService.imageToBase64.mockResolvedValue("iVBOR");
-    const result = await controller.getImageBase64(
-      "https://cdn.example.com/logo.png",
-    );
-    expect(result).toEqual({ base64: "iVBOR" });
+  it('should return base64 for image URL', async () => {
+    mockService.imageToBase64.mockResolvedValue('iVBOR');
+    const result = await controller.getImageBase64('https://cdn.example.com/logo.png');
+    expect(result).toEqual({ base64: 'iVBOR' });
   });
 
-  it("should return empty on failure", async () => {
-    mockService.imageToBase64.mockRejectedValue(new Error("timeout"));
-    const result = await controller.getImageBase64("https://slow.example.com");
-    expect(result).toEqual({ base64: "" });
+  it('should return empty on failure', async () => {
+    mockService.imageToBase64.mockRejectedValue(new Error('timeout'));
+    const result = await controller.getImageBase64('https://slow.example.com');
+    expect(result).toEqual({ base64: '' });
   });
 });

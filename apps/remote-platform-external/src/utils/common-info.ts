@@ -1,34 +1,34 @@
-import type { CommonInfo } from "../modules/webview/webview.gateway";
+import type { CommonInfo } from '../modules/webview/webview.gateway';
 
 /**
  * Returns a CommonInfo object populated with safe default/unknown values.
  */
 export const getDefaultCommonInfo = (): CommonInfo => ({
   user: {
-    userAppData: "unknown",
-    authorization: "unknown",
-    memberId: "unknown",
-    memberNumber: "unknown",
+    userAppData: 'unknown',
+    authorization: 'unknown',
+    memberId: 'unknown',
+    memberNumber: 'unknown',
     perseusClientId: undefined,
     perseusSessionId: undefined,
   },
   device: {
     /** Advertising ID (Google ADID / Apple IDFA) */
-    adid: "unknown",
+    adid: 'unknown',
     att: undefined,
-    appsflyerId: "unknown",
+    appsflyerId: 'unknown',
     deviceAppData: undefined,
     deviceId: `unknown-device`,
     sessionId: `session-${Date.now()}`,
     actionTrackingKey: undefined,
-    osVersion: "unknown",
-    webUserAgent: "unknown",
-    deviceModel: "unknown",
-    carrier: "unknown",
+    osVersion: 'unknown',
+    webUserAgent: 'unknown',
+    deviceModel: 'unknown',
+    carrier: 'unknown',
     /** Identifier for Vendor (iOS) */
     idfv: undefined,
   },
-  supportData: "",
-  URL: "unknown-url",
-  userAgent: "unknown-useragent",
+  supportData: '',
+  URL: 'unknown-url',
+  userAgent: 'unknown-useragent',
 });

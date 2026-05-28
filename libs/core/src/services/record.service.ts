@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { RecordEntity } from "@remote-platform/entity";
+import { RecordEntity } from '@remote-platform/entity';
 
 /**
  * 녹화 세션의 생명주기를 관리하는 서비스.
@@ -67,37 +67,35 @@ export class RecordService {
   }): Promise<{ rows: RecordEntity[]; nextCursor: string | null }> {
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
     const qb = this.recordRepository
-      .createQueryBuilder("r")
-      .orderBy("r.timestamp", "DESC")
+      .createQueryBuilder('r')
+      .orderBy('r.timestamp', 'DESC')
       .limit(limit + 1); // peek one extra to know if there's another page
 
     if (opts.q?.trim()) {
       const term = `%${opts.q.trim().toLowerCase()}%`;
-      qb.andWhere("(LOWER(r.name) LIKE :q OR LOWER(r.url) LIKE :q)", {
+      qb.andWhere('(LOWER(r.name) LIKE :q OR LOWER(r.url) LIKE :q)', {
         q: term,
       });
     }
     if (opts.deviceId?.trim()) {
-      qb.andWhere("r.deviceId = :did", { did: opts.deviceId.trim() });
+      qb.andWhere('r.deviceId = :did', { did: opts.deviceId.trim() });
     }
-    if (typeof opts.recordMode === "boolean") {
-      qb.andWhere("r.record_mode = :rm", { rm: opts.recordMode });
+    if (typeof opts.recordMode === 'boolean') {
+      qb.andWhere('r.record_mode = :rm', { rm: opts.recordMode });
     }
     if (opts.orgId) {
-      qb.andWhere("r.org_id = :oid", { oid: opts.orgId });
+      qb.andWhere('r.org_id = :oid', { oid: opts.orgId });
     }
     if (opts.cursor) {
       // Cursor = ISO timestamp from the last row of the previous page.
       // Strict less-than for stable pagination.
-      qb.andWhere("r.timestamp < :cur", { cur: new Date(opts.cursor) });
+      qb.andWhere('r.timestamp < :cur', { cur: new Date(opts.cursor) });
     }
 
     const peek = await qb.getMany();
     const hasMore = peek.length > limit;
     const rows = hasMore ? peek.slice(0, limit) : peek;
-    const nextCursor = hasMore
-      ? rows[rows.length - 1].timestamp.toISOString()
-      : null;
+    const nextCursor = hasMore ? rows[rows.length - 1].timestamp.toISOString() : null;
     return { rows, nextCursor };
   }
 
@@ -121,12 +119,12 @@ export class RecordService {
     }
 
     return this.recordRepository
-      .createQueryBuilder("record")
-      .where("record.device_id = :deviceId", { deviceId })
-      .andWhere("record.timestamp < :currentTimestamp", {
+      .createQueryBuilder('record')
+      .where('record.device_id = :deviceId', { deviceId })
+      .andWhere('record.timestamp < :currentTimestamp', {
         currentTimestamp: currentRecord.timestamp,
       })
-      .orderBy("record.timestamp", "DESC")
+      .orderBy('record.timestamp', 'DESC')
       .getMany();
   }
 
@@ -149,9 +147,7 @@ export class RecordService {
    */
   public async updateDuration(id: number, duration: number): Promise<void> {
     await this.recordRepository.update(id, { duration });
-    this.logger.debug(
-      `Record duration updated: id=${id}, duration=${duration}`,
-    );
+    this.logger.debug(`Record duration updated: id=${id}, duration=${duration}`);
   }
 
   /**
@@ -170,10 +166,7 @@ export class RecordService {
    * @param tags  새 태그 배열
    * @returns     업데이트 후 RecordEntity 또는 null (해당 ID 없음)
    */
-  public async replaceTags(
-    id: number,
-    tags: string[],
-  ): Promise<RecordEntity | null> {
+  public async replaceTags(id: number, tags: string[]): Promise<RecordEntity | null> {
     const record = await this.recordRepository.findOne({ where: { id } });
     if (!record) return null;
     record.tags = tags;

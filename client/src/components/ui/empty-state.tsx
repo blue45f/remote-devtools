@@ -1,7 +1,7 @@
-import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -11,19 +11,10 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-  className,
-}: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div
-      className={cn(
-        "flex flex-col items-center justify-center text-center py-16 px-6",
-        className,
-      )}
+      className={cn('flex flex-col items-center justify-center text-center py-16 px-6', className)}
     >
       {Icon && (
         <div className="relative mb-4">
@@ -34,9 +25,7 @@ export function EmptyState({
         </div>
       )}
       <h3 className="text-sm font-semibold text-fg mb-1">{title}</h3>
-      {description && (
-        <p className="text-sm text-fg-subtle max-w-sm mb-4">{description}</p>
-      )}
+      {description && <p className="text-sm text-fg-subtle max-w-sm mb-4">{description}</p>}
       {action}
     </div>
   );

@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
+import { useQuery } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   Clapperboard,
@@ -8,29 +8,24 @@ import {
   Ticket,
   UserPlus,
   type LucideIcon,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiFetch } from "@/lib/api";
-import { formatTimeAgo, shortHash } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch } from '@/lib/api';
+import { formatTimeAgo, shortHash } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
-type ActivityKind =
-  | "session"
-  | "ticket"
-  | "error"
-  | "join"
-  | "comment";
+type ActivityKind = 'session' | 'ticket' | 'error' | 'join' | 'comment';
 
-const FILTER_STORAGE_KEY = "activity-prefs:v1";
+const FILTER_STORAGE_KEY = 'activity-prefs:v1';
 
 function readStoredKinds(): Set<ActivityKind> {
-  if (typeof window === "undefined") return new Set();
+  if (typeof window === 'undefined') return new Set();
   try {
     const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
     if (!raw) return new Set();
@@ -39,11 +34,7 @@ function readStoredKinds(): Set<ActivityKind> {
     const valid = new Set<ActivityKind>(
       parsed.kinds.filter(
         (k): k is ActivityKind =>
-          k === "session" ||
-          k === "ticket" ||
-          k === "error" ||
-          k === "join" ||
-          k === "comment",
+          k === 'session' || k === 'ticket' || k === 'error' || k === 'join' || k === 'comment',
       ),
     );
     return valid;
@@ -53,12 +44,9 @@ function readStoredKinds(): Set<ActivityKind> {
 }
 
 function persistKinds(kinds: Set<ActivityKind>) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(
-      FILTER_STORAGE_KEY,
-      JSON.stringify({ kinds: Array.from(kinds) }),
-    );
+    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ kinds: Array.from(kinds) }));
   } catch {
     /* quota / private mode — best effort */
   }
@@ -74,34 +62,31 @@ interface ActivityEntry {
   sessionId?: number;
 }
 
-const KIND_META: Record<
-  ActivityKind,
-  { icon: LucideIcon; tone: string; label: string }
-> = {
+const KIND_META: Record<ActivityKind, { icon: LucideIcon; tone: string; label: string }> = {
   session: {
     icon: Clapperboard,
-    tone: "bg-accent-soft text-accent-soft-fg",
-    label: "Session",
+    tone: 'bg-accent-soft text-accent-soft-fg',
+    label: 'Session',
   },
   ticket: {
     icon: Ticket,
-    tone: "bg-warning-soft text-warning",
-    label: "Ticket",
+    tone: 'bg-warning-soft text-warning',
+    label: 'Ticket',
   },
   error: {
     icon: AlertCircle,
-    tone: "bg-danger-soft text-danger",
-    label: "Error",
+    tone: 'bg-danger-soft text-danger',
+    label: 'Error',
   },
   join: {
     icon: UserPlus,
-    tone: "bg-success-soft text-success",
-    label: "Join",
+    tone: 'bg-success-soft text-success',
+    label: 'Join',
   },
   comment: {
     icon: MessageSquare,
-    tone: "bg-accent-soft text-accent-soft-fg",
-    label: "Comment",
+    tone: 'bg-accent-soft text-accent-soft-fg',
+    label: 'Comment',
   },
 };
 
@@ -118,16 +103,11 @@ interface ActivityPage {
   nextCursor: string | null;
 }
 
-export function ActivityFeed({
-  pollMs = 8_000,
-  limit = 12,
-  className,
-}: ActivityFeedProps) {
+export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: ActivityFeedProps) {
   // Top-of-feed: polling query (back-compat array shape).
   const { data, isLoading, error } = useQuery({
-    queryKey: ["activity-feed", limit],
-    queryFn: () =>
-      apiFetch<ActivityEntry[]>(`/api/activity/feed?limit=${limit}`),
+    queryKey: ['activity-feed', limit],
+    queryFn: () => apiFetch<ActivityEntry[]>(`/api/activity/feed?limit=${limit}`),
     refetchInterval: pollMs > 0 ? pollMs : false,
   });
 
@@ -158,17 +138,12 @@ export function ActivityFeed({
     }
   }
 
-  const allItems = useMemo(
-    () => [...top, ...olderPages.flatMap((p) => p.rows)],
-    [top, olderPages],
-  );
+  const allItems = useMemo(() => [...top, ...olderPages.flatMap((p) => p.rows)], [top, olderPages]);
 
   // Multi-select kind filter. Empty set means "show everything".
   // Hydrate from localStorage so the next visit reopens with the user's
   // last chosen filter set; write through whenever the set changes.
-  const [activeKinds, setActiveKinds] = useState<Set<ActivityKind>>(() =>
-    readStoredKinds(),
-  );
+  const [activeKinds, setActiveKinds] = useState<Set<ActivityKind>>(() => readStoredKinds());
   useEffect(() => {
     persistKinds(activeKinds);
   }, [activeKinds]);
@@ -205,16 +180,10 @@ export function ActivityFeed({
     });
   };
 
-  const allKinds: ActivityKind[] = [
-    "session",
-    "ticket",
-    "error",
-    "join",
-    "comment",
-  ];
+  const allKinds: ActivityKind[] = ['session', 'ticket', 'error', 'join', 'comment'];
 
   return (
-    <Card className={cn("p-5", className)}>
+    <Card className={cn('p-5', className)}>
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <h2 className="text-sm font-semibold text-fg flex items-center gap-1.5">
@@ -246,20 +215,20 @@ export function ActivityFeed({
                   aria-pressed={active}
                   data-testid={`activity-kind-chip-${k}`}
                   className={cn(
-                    "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0",
-                    "inline-flex items-center gap-1",
-                    empty && "opacity-50 cursor-not-allowed",
+                    'h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0',
+                    'inline-flex items-center gap-1',
+                    empty && 'opacity-50 cursor-not-allowed',
                     active
-                      ? "bg-fg text-bg border-fg"
-                      : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+                      ? 'bg-fg text-bg border-fg'
+                      : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
                   )}
                 >
                   <Icon className="size-3" />
                   <span>{meta.label}</span>
                   <span
                     className={cn(
-                      "font-mono tabular-nums text-[10px]",
-                      active ? "text-bg/80" : "text-fg-faint",
+                      'font-mono tabular-nums text-[10px]',
+                      active ? 'text-bg/80' : 'text-fg-faint',
                     )}
                   >
                     {count}
@@ -294,19 +263,12 @@ export function ActivityFeed({
             data-testid="activity-feed"
           >
             {/* spine — runs the full height of the feed */}
-            <span
-              aria-hidden
-              className="absolute left-[15px] top-1 bottom-1 w-px bg-border"
-            />
+            <span aria-hidden className="absolute left-[15px] top-1 bottom-1 w-px bg-border" />
             <AnimatePresence initial={false}>
               {grouped.map((group) => (
-                <section
-                  key={group.bucket}
-                  className="relative"
-                  data-bucket={group.bucket}
-                >
+                <section key={group.bucket} className="relative" data-bucket={group.bucket}>
                   <h3 className="sticky top-0 z-10 -ml-1 pl-2 pr-2 py-1 bg-surface/90 backdrop-blur-sm text-[10px] uppercase tracking-wider text-fg-faint font-semibold border-b border-border/60">
-                    {group.label}{" "}
+                    {group.label}{' '}
                     <span className="ml-1 text-fg-faint/80 normal-case tracking-normal font-mono tabular-nums">
                       {group.rows.length}
                     </span>
@@ -329,7 +291,7 @@ export function ActivityFeed({
                 disabled={loadingMore}
                 className="text-xs"
               >
-                {loadingMore ? "Loading…" : "Load older"}
+                {loadingMore ? 'Loading…' : 'Load older'}
               </Button>
             </div>
           )}
@@ -339,7 +301,7 @@ export function ActivityFeed({
   );
 }
 
-type BucketKey = "today" | "yesterday" | "thisWeek" | "older";
+type BucketKey = 'today' | 'yesterday' | 'thisWeek' | 'older';
 
 interface ActivityGroup {
   bucket: BucketKey;
@@ -355,11 +317,7 @@ interface ActivityGroup {
 function groupByBucket(items: ActivityEntry[]): ActivityGroup[] {
   if (items.length === 0) return [];
   const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfYesterday = startOfToday - 24 * 3600 * 1000;
   const startOfWeek = startOfToday - 7 * 24 * 3600 * 1000;
 
@@ -383,10 +341,10 @@ function groupByBucket(items: ActivityEntry[]): ActivityGroup[] {
   }
 
   const labels: Record<BucketKey, string> = {
-    today: "Today",
-    yesterday: "Yesterday",
-    thisWeek: "This week",
-    older: "Older",
+    today: 'Today',
+    yesterday: 'Yesterday',
+    thisWeek: 'This week',
+    older: 'Older',
   };
 
   return (Object.keys(labels) as BucketKey[])
@@ -402,7 +360,7 @@ function FeedRow({ item }: { item: ActivityEntry }) {
     <div className="relative flex items-start gap-3 py-2.5 group">
       <span
         className={cn(
-          "relative z-10 size-8 shrink-0 rounded-full flex items-center justify-center border border-border bg-surface",
+          'relative z-10 size-8 shrink-0 rounded-full flex items-center justify-center border border-border bg-surface',
           meta.tone,
         )}
       >
@@ -413,9 +371,7 @@ function FeedRow({ item }: { item: ActivityEntry }) {
           <span className="font-medium text-fg truncate">{item.title}</span>
         </div>
         {item.subtitle && (
-          <p className="text-[11px] text-fg-subtle truncate font-mono mt-0.5">
-            {item.subtitle}
-          </p>
+          <p className="text-[11px] text-fg-subtle truncate font-mono mt-0.5">{item.subtitle}</p>
         )}
         <div className="flex items-center gap-2 mt-1 text-[10px] uppercase tracking-wider text-fg-faint">
           <span className="font-semibold">{meta.label}</span>
@@ -441,7 +397,7 @@ function FeedRow({ item }: { item: ActivityEntry }) {
     // already enough since react-query keeps stable item identity.
     <motion.li
       initial={{ opacity: 0, height: 0, y: -4 }}
-      animate={{ opacity: 1, height: "auto", y: 0 }}
+      animate={{ opacity: 1, height: 'auto', y: 0 }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       className="border-b border-border last:border-0 overflow-hidden"
@@ -464,8 +420,8 @@ function LiveDot({ active }: { active: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold",
-        active ? "text-success" : "text-fg-faint",
+        'inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold',
+        active ? 'text-success' : 'text-fg-faint',
       )}
     >
       <span className="relative flex size-2">
@@ -474,12 +430,12 @@ function LiveDot({ active }: { active: boolean }) {
         )}
         <span
           className={cn(
-            "relative inline-flex size-2 rounded-full",
-            active ? "bg-success" : "bg-fg-faint",
+            'relative inline-flex size-2 rounded-full',
+            active ? 'bg-success' : 'bg-fg-faint',
           )}
         />
       </span>
-      {active ? "Live" : "Paused"}
+      {active ? 'Live' : 'Paused'}
     </span>
   );
 }

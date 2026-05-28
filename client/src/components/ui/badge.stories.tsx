@@ -1,30 +1,21 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { Activity, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import type { Meta, StoryObj } from '@storybook/react';
+import { Activity, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 
-import { Badge } from "./badge";
+import { Badge } from './badge';
 
 const meta = {
-  title: "UI/Badge",
+  title: 'UI/Badge',
   component: Badge,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   argTypes: {
     variant: {
-      control: "select",
-      options: [
-        "neutral",
-        "outline",
-        "accent",
-        "success",
-        "warning",
-        "danger",
-        "live",
-        "solid",
-      ],
+      control: 'select',
+      options: ['neutral', 'outline', 'accent', 'success', 'warning', 'danger', 'live', 'solid'],
     },
-    size: { control: "select", options: ["sm", "md", "lg"] },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
   },
-  args: { children: "Badge", variant: "neutral", size: "md" },
+  args: { children: 'Badge', variant: 'neutral', size: 'md' },
 } satisfies Meta<typeof Badge>;
 
 export default meta;
@@ -33,12 +24,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Accent: Story = {
-  args: { variant: "accent", children: "New" },
+  args: { variant: 'accent', children: 'New' },
 };
 
 export const Success: Story = {
   args: {
-    variant: "success",
+    variant: 'success',
     children: (
       <>
         <CheckCircle2 />
@@ -49,12 +40,12 @@ export const Success: Story = {
 };
 
 export const Warning: Story = {
-  args: { variant: "warning", children: "Pending" },
+  args: { variant: 'warning', children: 'Pending' },
 };
 
 export const Danger: Story = {
   args: {
-    variant: "danger",
+    variant: 'danger',
     children: (
       <>
         <AlertCircle />
@@ -66,7 +57,7 @@ export const Danger: Story = {
 
 export const Live: Story = {
   args: {
-    variant: "live",
+    variant: 'live',
     children: (
       <>
         <Activity />
@@ -77,12 +68,12 @@ export const Live: Story = {
 };
 
 export const Outline: Story = {
-  args: { variant: "outline", children: "Beta" },
+  args: { variant: 'outline', children: 'Beta' },
 };
 
 /** Compare every variant side-by-side. */
 export const AllVariants: Story = {
-  parameters: { layout: "padded" },
+  parameters: { layout: 'padded' },
   render: () => (
     <div className="flex flex-wrap gap-3">
       <Badge variant="neutral">Neutral</Badge>

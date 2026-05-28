@@ -1,6 +1,6 @@
-import { Loader2 } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface SpinnerProps {
   className?: string;
@@ -14,7 +14,7 @@ export function Spinner({ className, label }: SpinnerProps) {
       role="status"
       aria-live="polite"
     >
-      <Loader2 className={cn("size-4 animate-spin", className)} />
+      <Loader2 className={cn('size-4 animate-spin', className)} />
       {label && <span className="text-sm">{label}</span>}
       {!label && <span className="sr-only">Loading</span>}
     </span>

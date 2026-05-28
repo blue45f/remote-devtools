@@ -1,31 +1,22 @@
-import { tokens } from "../../theme";
-import { applyTextInputStyles } from "../styles";
-import {
-  DropdownOption,
-  SimpleColumnData,
-  SimpleStructuredSheetData,
-} from "../types";
-import { collectAllComponentOptions } from "../utils";
+import { tokens } from '../../theme';
+import { applyTextInputStyles } from '../styles';
+import { DropdownOption, SimpleColumnData, SimpleStructuredSheetData } from '../types';
+import { collectAllComponentOptions } from '../utils';
 
-import { createCustomDropdown } from "./dropdown";
+import { createCustomDropdown } from './dropdown';
 
 /**
  * Create form fields from sheet data
  */
-export function createFormFields(
-  form: HTMLFormElement,
-  sheetData: SimpleStructuredSheetData,
-) {
-  form.addEventListener("submit", (event) => {
+export function createFormFields(form: HTMLFormElement, sheetData: SimpleStructuredSheetData) {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
   });
 
   const assigneeColumn = sheetData.columns.find(
-    (c) => c.header.includes("담당자") && !c.header.includes("QA"),
+    (c) => c.header.includes('담당자') && !c.header.includes('QA'),
   );
-  const qaAssigneeColumn = sheetData.columns.find((c) =>
-    c.header.includes("QA 담당자"),
-  );
+  const qaAssigneeColumn = sheetData.columns.find((c) => c.header.includes('QA 담당자'));
 
   const componentCategories = collectAllComponentOptions(sheetData.columns);
   let componentFieldCreated = false;
@@ -33,16 +24,16 @@ export function createFormFields(
   sheetData.columns
     .filter((c) => c.header)
     .forEach((column) => {
-      if (column.header.includes("담당자") && !column.header.includes("QA")) {
+      if (column.header.includes('담당자') && !column.header.includes('QA')) {
         createAssigneeField(form, assigneeColumn, qaAssigneeColumn);
         return;
       }
 
-      if (column.header.includes("QA 담당자")) {
+      if (column.header.includes('QA 담당자')) {
         return;
       }
 
-      if (column.header.includes("컴포넌트")) {
+      if (column.header.includes('컴포넌트')) {
         if (!componentFieldCreated) {
           createUnifiedComponentField(form, componentCategories);
           componentFieldCreated = true;
@@ -50,31 +41,31 @@ export function createFormFields(
         return;
       }
 
-      if (column.header === "라벨" || column.header === "레이블") {
+      if (column.header === '라벨' || column.header === '레이블') {
         createLabelField(form, column);
         return;
       }
 
-      const fieldContainer = document.createElement("div");
-      fieldContainer.style.marginBottom = "16px";
+      const fieldContainer = document.createElement('div');
+      fieldContainer.style.marginBottom = '16px';
 
-      const label = document.createElement("label");
+      const label = document.createElement('label');
       label.textContent = column.header;
       Object.assign(label.style, {
-        fontWeight: "600",
-        marginBottom: "8px",
-        display: "block",
+        fontWeight: '600',
+        marginBottom: '8px',
+        display: 'block',
         color: tokens.color.text.muted,
-        fontSize: "13px",
+        fontSize: '13px',
         fontFamily: tokens.font.system,
-        textTransform: "uppercase" as const,
-        letterSpacing: "0.03em",
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.03em',
       });
 
-      if (column.header === "제목") {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.name = "title";
+      if (column.header === '제목') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'title';
         input.required = true;
         input.placeholder = `Enter ${column.header}`;
 
@@ -101,12 +92,12 @@ export function createFormFields(
         }
 
         const dropdown = createCustomDropdown({
-          name: column.header === "상위 Epic 티켓" ? "Epic" : column.header,
+          name: column.header === '상위 Epic 티켓' ? 'Epic' : column.header,
           placeholder: `Select ${column.header}`,
-          required: column.header === "상위 Epic 티켓",
+          required: column.header === '상위 Epic 티켓',
           multiple: false,
           defaultValue:
-            column.header === "상위 Epic 티켓" && column.values.length === 1
+            column.header === '상위 Epic 티켓' && column.values.length === 1
               ? column.values[0].text
               : undefined,
           options: dropdownOptions,
@@ -128,20 +119,20 @@ function createAssigneeField(
   assigneeColumn?: SimpleColumnData,
   qaAssigneeColumn?: SimpleColumnData,
 ) {
-  const fieldContainer = document.createElement("div");
-  fieldContainer.style.marginBottom = "16px";
+  const fieldContainer = document.createElement('div');
+  fieldContainer.style.marginBottom = '16px';
 
-  const label = document.createElement("label");
-  label.textContent = "Assignee";
+  const label = document.createElement('label');
+  label.textContent = 'Assignee';
   Object.assign(label.style, {
-    fontWeight: "600",
-    marginBottom: "8px",
-    display: "block",
+    fontWeight: '600',
+    marginBottom: '8px',
+    display: 'block',
     color: tokens.color.text.muted,
-    fontSize: "13px",
+    fontSize: '13px',
     fontFamily: tokens.font.system,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.03em",
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.03em',
   });
 
   const dropdownOptions: DropdownOption[] = [];
@@ -158,8 +149,8 @@ function createAssigneeField(
 
   if (qaAssigneeColumn && qaAssigneeColumn.values.length > 0) {
     dropdownOptions.push({
-      value: "",
-      label: "QA Assignees",
+      value: '',
+      label: 'QA Assignees',
       disabled: true,
     });
 
@@ -173,8 +164,8 @@ function createAssigneeField(
   }
 
   const dropdown = createCustomDropdown({
-    name: "assignee",
-    placeholder: "Select an assignee",
+    name: 'assignee',
+    placeholder: 'Select an assignee',
     required: true,
     multiple: false,
     options: dropdownOptions,
@@ -192,20 +183,20 @@ function createUnifiedComponentField(
   form: HTMLFormElement,
   componentCategories: Map<string, string[]>,
 ) {
-  const fieldContainer = document.createElement("div");
-  fieldContainer.style.marginBottom = "16px";
+  const fieldContainer = document.createElement('div');
+  fieldContainer.style.marginBottom = '16px';
 
-  const label = document.createElement("label");
-  label.textContent = "Component";
+  const label = document.createElement('label');
+  label.textContent = 'Component';
   Object.assign(label.style, {
-    fontWeight: "600",
-    marginBottom: "8px",
-    display: "block",
+    fontWeight: '600',
+    marginBottom: '8px',
+    display: 'block',
     color: tokens.color.text.muted,
-    fontSize: "13px",
+    fontSize: '13px',
     fontFamily: tokens.font.system,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.03em",
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.03em',
   });
 
   const dropdownOptions: DropdownOption[] = [];
@@ -221,8 +212,8 @@ function createUnifiedComponentField(
   });
 
   const dropdown = createCustomDropdown({
-    name: "components",
-    placeholder: "Select components",
+    name: 'components',
+    placeholder: 'Select components',
     required: false,
     multiple: true,
     options: dropdownOptions,
@@ -241,20 +232,20 @@ function createLabelField(form: HTMLFormElement, column: SimpleColumnData) {
     return;
   }
 
-  const fieldContainer = document.createElement("div");
-  fieldContainer.style.marginBottom = "16px";
+  const fieldContainer = document.createElement('div');
+  fieldContainer.style.marginBottom = '16px';
 
-  const label = document.createElement("label");
+  const label = document.createElement('label');
   label.textContent = column.header;
   Object.assign(label.style, {
-    fontWeight: "600",
-    marginBottom: "8px",
-    display: "block",
+    fontWeight: '600',
+    marginBottom: '8px',
+    display: 'block',
     color: tokens.color.text.muted,
-    fontSize: "13px",
+    fontSize: '13px',
     fontFamily: tokens.font.system,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.03em",
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.03em',
   });
 
   const dropdownOptions: DropdownOption[] = [];
@@ -269,7 +260,7 @@ function createLabelField(form: HTMLFormElement, column: SimpleColumnData) {
   }
 
   const dropdown = createCustomDropdown({
-    name: "labels",
+    name: 'labels',
     placeholder: `Select ${column.header}`,
     required: false,
     multiple: true,

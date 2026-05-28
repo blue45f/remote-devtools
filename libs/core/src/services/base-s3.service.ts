@@ -1,15 +1,15 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
 import {
   S3Client,
   PutObjectCommand,
   ListObjectsV2Command,
   GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import type { Logger } from "@nestjs/common";
-import { getLocalDateString } from "@remote-platform/constants";
-import { LRUCache } from "lru-cache";
+} from '@aws-sdk/client-s3';
+import type { Logger } from '@nestjs/common';
+import { getLocalDateString } from '@remote-platform/constants';
+import { LRUCache } from 'lru-cache';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -44,7 +44,7 @@ const MAX_OBJECT_CACHE_SIZE = 1000;
 const MAX_S3_RESULTS = 200;
 
 /** S3 호환 환경 목록 */
-const S3_ENABLED_ENVS = new Set(["beta", "production", "prod"]);
+const S3_ENABLED_ENVS = new Set(['beta', 'production', 'prod']);
 
 // ---------------------------------------------------------------------------
 // BaseS3Service -- 외부/내부 S3 서비스의 공통 기반
@@ -58,20 +58,14 @@ const S3_ENABLED_ENVS = new Set(["beta", "production", "prod"]);
  */
 export abstract class BaseS3Service {
   protected abstract readonly logger: Logger;
-  protected readonly backupDir = path.join(process.cwd(), "backups");
+  protected readonly backupDir = path.join(process.cwd(), 'backups');
   protected readonly s3Client: S3Client;
 
-  protected readonly runtimeEnv = (
-    process.env.APP_ENV ||
-    process.env.NODE_ENV ||
-    "development"
-  )
+  protected readonly runtimeEnv = (process.env.APP_ENV || process.env.NODE_ENV || 'development')
     .trim()
     .toLowerCase();
 
-  protected readonly isRemoteStorageEnabled = S3_ENABLED_ENVS.has(
-    this.runtimeEnv,
-  );
+  protected readonly isRemoteStorageEnabled = S3_ENABLED_ENVS.has(this.runtimeEnv);
 
   // -------------------------------------------------------------------------
   // Cache infrastructure (LRU with TTL)
@@ -85,14 +79,8 @@ export abstract class BaseS3Service {
     max: MAX_OBJECT_CACHE_SIZE,
     ttl: CACHE_TTL_MS,
   });
-  protected readonly listInFlight = new Map<
-    string,
-    Promise<BufferUploadData[]>
-  >();
-  protected readonly objectInFlight = new Map<
-    string,
-    Promise<BufferUploadData | null>
-  >();
+  protected readonly listInFlight = new Map<string, Promise<BufferUploadData[]>>();
+  protected readonly objectInFlight = new Map<string, Promise<BufferUploadData | null>>();
 
   constructor() {
     if (!fs.existsSync(this.backupDir)) {
@@ -100,7 +88,7 @@ export abstract class BaseS3Service {
     }
 
     this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || "ap-northeast-2",
+      region: process.env.AWS_REGION || 'ap-northeast-2',
     });
   }
 
@@ -121,10 +109,10 @@ export abstract class BaseS3Service {
     }
 
     const sanitized = value
-      .replace(/[\r\n]+/g, " ")
+      .replace(/[\r\n]+/g, ' ')
       // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x1F\x7F]/g, "")
-      .replace(/[\u0080-\uFFFF]/g, "")
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .replace(/[\u0080-\uFFFF]/g, '')
       .trim();
 
     if (!sanitized) {
@@ -139,11 +127,11 @@ export abstract class BaseS3Service {
   // -------------------------------------------------------------------------
 
   protected buildListCacheKey(deviceId: string, targetDate?: string): string {
-    return `${deviceId || "ALL"}|${targetDate || "ALL"}`;
+    return `${deviceId || 'ALL'}|${targetDate || 'ALL'}`;
   }
 
   protected buildObjectCacheKey(deviceId: string, timestamp: number): string {
-    return `${deviceId || "unknown-device"}|${timestamp}`;
+    return `${deviceId || 'unknown-device'}|${timestamp}`;
   }
 
   // -------------------------------------------------------------------------
@@ -196,15 +184,13 @@ export abstract class BaseS3Service {
     targetDate?: string,
   ): Promise<BufferUploadData[]> {
     try {
-      const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+      const bucketName = process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3';
       const results: BufferUploadData[] = [];
 
       const searchDates = this.buildSearchDates(targetDate);
 
       for (const searchDate of searchDates) {
-        const prefix = deviceId
-          ? `backups/${searchDate}/${deviceId}/`
-          : `backups/${searchDate}/`;
+        const prefix = deviceId ? `backups/${searchDate}/${deviceId}/` : `backups/${searchDate}/`;
 
         const listCommand = new ListObjectsV2Command({
           Bucket: bucketName,
@@ -233,18 +219,13 @@ export abstract class BaseS3Service {
               if (!deviceId || data.deviceId === deviceId) {
                 results.push(data);
                 this.setCachedObject(
-                  this.buildObjectCacheKey(
-                    data.deviceId || deviceId,
-                    data.timestamp,
-                  ),
+                  this.buildObjectCacheKey(data.deviceId || deviceId, data.timestamp),
                   data,
                 );
               }
             }
           } catch (parseError) {
-            this.logger.warn(
-              `[S3_CLOUD_QUERY] Failed to parse object ${obj.Key}: ${parseError}`,
-            );
+            this.logger.warn(`[S3_CLOUD_QUERY] Failed to parse object ${obj.Key}: ${parseError}`);
           }
 
           if (results.length >= MAX_S3_RESULTS) break;
@@ -269,16 +250,16 @@ export abstract class BaseS3Service {
       const { deviceId, timestamp, date } = data;
       const targetDate = date || getLocalDateString();
       const fileName = `session_${timestamp}.json`;
-      const s3Key = `backups/${targetDate}/${deviceId || "unknown-device"}/${fileName}`;
+      const s3Key = `backups/${targetDate}/${deviceId || 'unknown-device'}/${fileName}`;
 
       const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET || "remote-debug-tools-s3",
+        Bucket: process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3',
         Key: s3Key,
         Body: JSON.stringify(data, null, 2),
-        ContentType: "application/json",
+        ContentType: 'application/json',
         Metadata: ((sanitizedTitle) => ({
-          deviceId: deviceId || "unknown-device",
-          url: data.url || "",
+          deviceId: deviceId || 'unknown-device',
+          url: data.url || '',
           timestamp: timestamp.toString(),
           ...(sanitizedTitle ? { title: sanitizedTitle } : {}),
         }))(this.sanitizeMetadata(data.title)),
@@ -329,7 +310,7 @@ export abstract class BaseS3Service {
 
     const fetchPromise = (async (): Promise<BufferUploadData | null> => {
       if (this.isRemoteStorageEnabled) {
-        const bucketName = process.env.AWS_S3_BUCKET || "remote-debug-tools-s3";
+        const bucketName = process.env.AWS_S3_BUCKET || 'remote-debug-tools-s3';
 
         for (const date of candidateDates) {
           const key = `backups/${date}/${deviceId}/${fileName}`;
@@ -350,12 +331,10 @@ export abstract class BaseS3Service {
               message?: string;
             };
             const statusCode = s3Err?.$metadata?.httpStatusCode;
-            if (statusCode === 404 || s3Err?.name === "NoSuchKey") {
+            if (statusCode === 404 || s3Err?.name === 'NoSuchKey') {
               continue;
             }
-            this.logger.warn(
-              `[S3_LOOKUP_WARN] Failed to fetch ${key}: ${s3Err?.message || error}`,
-            );
+            this.logger.warn(`[S3_LOOKUP_WARN] Failed to fetch ${key}: ${s3Err?.message || error}`);
           }
         }
       } else {
@@ -366,7 +345,7 @@ export abstract class BaseS3Service {
           }
 
           try {
-            const content = await fs.promises.readFile(filePath, "utf-8");
+            const content = await fs.promises.readFile(filePath, 'utf-8');
             return JSON.parse(content) as BufferUploadData;
           } catch (error) {
             this.logger.warn(
@@ -401,9 +380,8 @@ export abstract class BaseS3Service {
    * 로컬 파일로 데이터를 저장한다.
    */
   protected async saveToLocalFile(data: BufferUploadData): Promise<string> {
-    const deviceId = data.deviceId || "unknown-device";
-    const sessionStartTime =
-      data.sessionStartTime || data.timestamp || Date.now();
+    const deviceId = data.deviceId || 'unknown-device';
+    const sessionStartTime = data.sessionStartTime || data.timestamp || Date.now();
 
     const recordDate = getLocalDateString(sessionStartTime);
 
@@ -447,10 +425,8 @@ export abstract class BaseS3Service {
    */
   protected buildSearchDates(targetDate?: string): string[] {
     const shiftDateString = (dateString: string, days: number): string => {
-      const [year, month, day] = dateString.split("-").map(Number);
-      return new Date(Date.UTC(year, month - 1, day + days))
-        .toISOString()
-        .split("T")[0];
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day + days)).toISOString().split('T')[0];
     };
 
     if (targetDate) {
@@ -464,10 +440,7 @@ export abstract class BaseS3Service {
   /**
    * 타임스탬프와 날짜 힌트로 후보 날짜를 생성한다.
    */
-  protected buildCandidateDates(
-    timestamp: number,
-    dateHint?: string,
-  ): string[] {
+  protected buildCandidateDates(timestamp: number, dateHint?: string): string[] {
     const candidates = new Set<string>();
 
     if (dateHint) {
@@ -475,7 +448,7 @@ export abstract class BaseS3Service {
     }
 
     if (Number.isFinite(timestamp)) {
-      const utcDate = new Date(timestamp).toISOString().split("T")[0];
+      const utcDate = new Date(timestamp).toISOString().split('T')[0];
       candidates.add(utcDate);
       candidates.add(getLocalDateString(timestamp));
     }
@@ -497,17 +470,13 @@ export abstract class BaseS3Service {
     try {
       const results: BufferUploadData[] = [];
 
-      const dateDirs = targetDate
-        ? [targetDate]
-        : await this.listDirectoryEntries(this.backupDir);
+      const dateDirs = targetDate ? [targetDate] : await this.listDirectoryEntries(this.backupDir);
 
       for (const dateDir of dateDirs) {
         const datePath = path.join(this.backupDir, dateDir);
         if (!fs.existsSync(datePath)) continue;
 
-        const deviceDirs = deviceId
-          ? [deviceId]
-          : await this.listDirectoryEntries(datePath);
+        const deviceDirs = deviceId ? [deviceId] : await this.listDirectoryEntries(datePath);
 
         for (const devDir of deviceDirs) {
           const devicePath = path.join(datePath, devDir);
@@ -515,13 +484,10 @@ export abstract class BaseS3Service {
 
           const files = await this.listDirectoryEntries(devicePath);
           for (const file of files) {
-            if (!file.endsWith(".json")) continue;
+            if (!file.endsWith('.json')) continue;
 
             try {
-              const content = await fs.promises.readFile(
-                path.join(devicePath, file),
-                "utf-8",
-              );
+              const content = await fs.promises.readFile(path.join(devicePath, file), 'utf-8');
               const data = JSON.parse(content) as BufferUploadData;
               results.push(data);
             } catch {
@@ -534,9 +500,7 @@ export abstract class BaseS3Service {
       results.sort((a, b) => b.timestamp - a.timestamp);
       return results;
     } catch (error) {
-      this.logger.error(
-        `[LOCAL_LIST_ERROR] Failed to list local files: ${error}`,
-      );
+      this.logger.error(`[LOCAL_LIST_ERROR] Failed to list local files: ${error}`);
       return [];
     }
   }
@@ -544,7 +508,7 @@ export abstract class BaseS3Service {
   private async listDirectoryEntries(dirPath: string): Promise<string[]> {
     try {
       const entries = await fs.promises.readdir(dirPath);
-      return entries.filter((e) => !e.startsWith("."));
+      return entries.filter((e) => !e.startsWith('.'));
     } catch {
       return [];
     }

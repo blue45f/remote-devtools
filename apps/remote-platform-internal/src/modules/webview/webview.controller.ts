@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from 'path';
 
 import {
   BadRequestException,
@@ -16,18 +16,18 @@ import {
   Query,
   Res,
   UseGuards,
-} from "@nestjs/common";
-import type { Response } from "express";
+} from '@nestjs/common';
+import type { Response } from 'express';
 
-import { getLocalDateString } from "@remote-platform/constants";
-import { RecordService, ReplayCommentService } from "@remote-platform/core";
-import { S3Service } from "../s3/s3.service";
+import { getLocalDateString } from '@remote-platform/constants';
+import { RecordService, ReplayCommentService } from '@remote-platform/core';
+import { S3Service } from '../s3/s3.service';
 
-import { Auth } from "../auth/auth.decorator";
-import { AuthGuard } from "../auth/auth.guard";
-import type { AuthClaims } from "../auth/auth.service";
+import { Auth } from '../auth/auth.decorator';
+import { AuthGuard } from '../auth/auth.guard';
+import type { AuthClaims } from '../auth/auth.service';
 
-import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve session list
+import { WebviewGateway } from './webview.gateway'; // Import Gateway to retrieve session list
 
 const MAX_TAG_LENGTH = 24;
 const MAX_TAGS_PER_RECORD = 16;
@@ -38,7 +38,7 @@ function normaliseTags(input: unknown[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of input) {
-    if (typeof raw !== "string") continue;
+    if (typeof raw !== 'string') continue;
     const trimmed = raw.trim().slice(0, MAX_TAG_LENGTH);
     if (!trimmed) continue;
     if (seen.has(trimmed)) continue;
@@ -49,7 +49,7 @@ function normaliseTags(input: unknown[]): string[] {
   return out;
 }
 
-@Controller("sessions")
+@Controller('sessions')
 @UseGuards(AuthGuard)
 export class WebviewController {
   private readonly logger = new Logger(WebviewController.name);
@@ -83,25 +83,24 @@ export class WebviewController {
    * For backwards compatibility, if no query params are present the response
    * is wrapped as a bare array so existing clients keep working.
    */
-  @Get("record")
+  @Get('record')
   public async getRecordSessionList(
     @Auth() auth: AuthClaims | null,
-    @Query("q") q?: string,
-    @Query("deviceId") deviceId?: string,
-    @Query("recordMode") recordMode?: string,
-    @Query("orgId") orgIdParam?: string,
-    @Query("limit") limit?: string,
-    @Query("cursor") cursor?: string,
+    @Query('q') q?: string,
+    @Query('deviceId') deviceId?: string,
+    @Query('recordMode') recordMode?: string,
+    @Query('orgId') orgIdParam?: string,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
   ) {
-    const noFilters =
-      !q && !deviceId && !recordMode && !orgIdParam && !limit && !cursor;
+    const noFilters = !q && !deviceId && !recordMode && !orgIdParam && !limit && !cursor;
 
     const parsedRecordMode =
-      recordMode === "true" ? true : recordMode === "false" ? false : undefined;
+      recordMode === 'true' ? true : recordMode === 'false' ? false : undefined;
 
     const limitNum = limit ? Number(limit) : undefined;
     if (limit && (Number.isNaN(limitNum) || (limitNum ?? 0) < 1)) {
-      throw new BadRequestException("Invalid limit");
+      throw new BadRequestException('Invalid limit');
     }
 
     // Multi-tenant scoping: when the caller is authenticated, force-filter by
@@ -136,14 +135,14 @@ export class WebviewController {
   }
 
   // GET /sessions/backups - List S3 backups (includes file content - slower)
-  @Get("backups")
+  @Get('backups')
   public async getBackupList(
-    @Query("deviceId") deviceId?: string,
-    @Query("date") date?: string, // YYYY-MM-DD
-    @Query("startDate") startDate?: string, // YYYY-MM-DD
-    @Query("endDate") endDate?: string, // YYYY-MM-DD
-    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
-    @Query("limit") limitParam?: string, // Number received as string
+    @Query('deviceId') deviceId?: string,
+    @Query('date') date?: string, // YYYY-MM-DD
+    @Query('startDate') startDate?: string, // YYYY-MM-DD
+    @Query('endDate') endDate?: string, // YYYY-MM-DD
+    @Query('beforeDate') beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
+    @Query('limit') limitParam?: string, // Number received as string
   ): Promise<
     Array<{
       fileName: string;
@@ -159,7 +158,7 @@ export class WebviewController {
   > {
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
     if (limit !== undefined && isNaN(limit)) {
-      throw new BadRequestException("Invalid limit parameter");
+      throw new BadRequestException('Invalid limit parameter');
     }
 
     return this.s3Service.listBackupFiles({
@@ -173,14 +172,14 @@ export class WebviewController {
   }
 
   // GET /sessions/backups-light - Lightweight S3 backup listing (no file content reading - faster)
-  @Get("backups-light")
+  @Get('backups-light')
   public async getBackupListLight(
-    @Query("deviceId") deviceId?: string,
-    @Query("date") date?: string, // YYYY-MM-DD
-    @Query("startDate") startDate?: string, // YYYY-MM-DD
-    @Query("endDate") endDate?: string, // YYYY-MM-DD
-    @Query("beforeDate") beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
-    @Query("limit") limitParam?: string, // Number received as string
+    @Query('deviceId') deviceId?: string,
+    @Query('date') date?: string, // YYYY-MM-DD
+    @Query('startDate') startDate?: string, // YYYY-MM-DD
+    @Query('endDate') endDate?: string, // YYYY-MM-DD
+    @Query('beforeDate') beforeDate?: string, // YYYY-MM-DD - Only return backups before this date
+    @Query('limit') limitParam?: string, // Number received as string
   ): Promise<
     Array<{
       fileName: string;
@@ -195,7 +194,7 @@ export class WebviewController {
   > {
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
     if (limit !== undefined && isNaN(limit)) {
-      throw new BadRequestException("Invalid limit parameter");
+      throw new BadRequestException('Invalid limit parameter');
     }
 
     return this.s3Service.listBackupFilesLight({
@@ -209,37 +208,37 @@ export class WebviewController {
   }
 
   // GET /sessions/backup-urls - Extract URL information from selected backup files
-  @Get("backup-urls")
-  public async getBackupUrls(@Query("filePaths") filePaths?: string) {
+  @Get('backup-urls')
+  public async getBackupUrls(@Query('filePaths') filePaths?: string) {
     if (!filePaths) {
       return { urlByFilePath: {}, primaryUrl: null };
     }
 
-    const pathArray = filePaths.split(",").filter((path) => path.trim());
+    const pathArray = filePaths.split(',').filter((path) => path.trim());
     return this.s3Service.getUrlsFromSelectedFiles(pathArray);
   }
 
   // GET /sessions/backup-viewer - Backup viewer UI
-  @Get("backup-viewer")
+  @Get('backup-viewer')
   public getBackupViewer(@Res() res: Response): void {
-    res.sendFile(path.join(__dirname, "backup-viewer.html"));
+    res.sendFile(path.join(__dirname, 'backup-viewer.html'));
   }
 
   // GET /sessions/record/:recordId/info - Retrieve info for a specific record
-  @Get("record/:recordId/info")
-  public async getRecordInfo(@Param("recordId") recordId: string) {
+  @Get('record/:recordId/info')
+  public async getRecordInfo(@Param('recordId') recordId: string) {
     const id = Number(recordId);
     if (isNaN(id)) {
-      throw new BadRequestException("Invalid recordId parameter");
+      throw new BadRequestException('Invalid recordId parameter');
     }
     const record = await this.recordService.findOne(id);
     if (!record) {
-      throw new NotFoundException("Record not found");
+      throw new NotFoundException('Record not found');
     }
 
     // deviceId priority: record.deviceId > commonInfo.deviceId > 'unknown-device'
-    const deviceId = record.deviceId || "unknown-device";
-    const url = record.url || "";
+    const deviceId = record.deviceId || 'unknown-device';
+    const url = record.url || '';
 
     // Convert creation date to local timezone
     const createdDate = record.createdAt
@@ -263,17 +262,17 @@ export class WebviewController {
    * and the server normalises each entry (trim, drop empties, dedupe,
    * cap at 24 chars × 16 tags) before saving.
    */
-  @Put("record/:recordId/tags")
+  @Put('record/:recordId/tags')
   public async putRecordTags(
-    @Param("recordId") recordId: string,
+    @Param('recordId') recordId: string,
     @Body() body: { tags?: unknown },
   ): Promise<{ id: number; tags: string[] }> {
     const id = Number(recordId);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new BadRequestException("Invalid recordId parameter");
+      throw new BadRequestException('Invalid recordId parameter');
     }
     if (!Array.isArray(body?.tags)) {
-      throw new BadRequestException("body.tags must be an array of strings");
+      throw new BadRequestException('body.tags must be an array of strings');
     }
 
     const normalised = normaliseTags(body.tags);
@@ -290,8 +289,8 @@ export class WebviewController {
    * List all comments on a record's replay, sorted by timestamp_ms ASC
    * (so they appear in playback order).
    */
-  @Get("record/:recordId/comments")
-  public async getRecordComments(@Param("recordId") recordId: string) {
+  @Get('record/:recordId/comments')
+  public async getRecordComments(@Param('recordId') recordId: string) {
     const id = this.parseRecordId(recordId);
     const rows = await this.replayCommentService.findByRecordId(id);
     return rows.map((c) => ({
@@ -308,26 +307,24 @@ export class WebviewController {
    * Body: { timestampMs: number; body: string; author?: string }
    * Creates a new comment anchored at `timestampMs` on the replay timeline.
    */
-  @Post("record/:recordId/comments")
+  @Post('record/:recordId/comments')
   public async postRecordComment(
     @Auth() auth: AuthClaims | null,
-    @Param("recordId") recordId: string,
+    @Param('recordId') recordId: string,
     @Body() body: { timestampMs?: unknown; body?: unknown; author?: unknown },
   ) {
     const id = this.parseRecordId(recordId);
     const ts = Number(body?.timestampMs);
     if (!Number.isFinite(ts) || ts < 0) {
-      throw new BadRequestException("timestampMs must be a non-negative number");
+      throw new BadRequestException('timestampMs must be a non-negative number');
     }
     const text =
-      typeof body?.body === "string"
-        ? body.body.trim().slice(0, MAX_COMMENT_BODY_LENGTH)
-        : "";
+      typeof body?.body === 'string' ? body.body.trim().slice(0, MAX_COMMENT_BODY_LENGTH) : '';
     if (!text) {
-      throw new BadRequestException("body must be a non-empty string");
+      throw new BadRequestException('body must be a non-empty string');
     }
     const author =
-      typeof body?.author === "string"
+      typeof body?.author === 'string'
         ? body.author.trim().slice(0, MAX_COMMENT_AUTHOR_LENGTH) || null
         : null;
 
@@ -357,16 +354,16 @@ export class WebviewController {
    * DELETE /sessions/record/:recordId/comments/:commentId
    * Removes one comment. 404 if the comment doesn't exist on that record.
    */
-  @Delete("record/:recordId/comments/:commentId")
+  @Delete('record/:recordId/comments/:commentId')
   @HttpCode(HttpStatus.NO_CONTENT)
   public async deleteRecordComment(
-    @Param("recordId") recordId: string,
-    @Param("commentId") commentId: string,
+    @Param('recordId') recordId: string,
+    @Param('commentId') commentId: string,
   ): Promise<void> {
     const id = this.parseRecordId(recordId);
     const cId = Number(commentId);
     if (!Number.isInteger(cId) || cId <= 0) {
-      throw new BadRequestException("Invalid commentId parameter");
+      throw new BadRequestException('Invalid commentId parameter');
     }
     const deleted = await this.replayCommentService.delete(cId, id);
     if (!deleted) {
@@ -377,26 +374,26 @@ export class WebviewController {
   private parseRecordId(recordId: string): number {
     const id = Number(recordId);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new BadRequestException("Invalid recordId parameter");
+      throw new BadRequestException('Invalid recordId parameter');
     }
     return id;
   }
 
   // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
-  @Get("record/:recordId/previous")
-  public async getPreviousRecords(@Param("recordId") recordId: string) {
+  @Get('record/:recordId/previous')
+  public async getPreviousRecords(@Param('recordId') recordId: string) {
     const id = Number(recordId);
     if (isNaN(id)) {
-      throw new BadRequestException("Invalid recordId parameter");
+      throw new BadRequestException('Invalid recordId parameter');
     }
     const currentRecord = await this.recordService.findOne(id);
     if (!currentRecord) {
-      throw new NotFoundException("Record not found");
+      throw new NotFoundException('Record not found');
     }
 
-    const deviceId = currentRecord.deviceId || "unknown-device";
+    const deviceId = currentRecord.deviceId || 'unknown-device';
     const currentTimestamp = currentRecord.createdAt.getTime(); // Actual creation time of the current recording session
-    const currentDate = currentRecord.createdAt.toISOString().split("T")[0]; // YYYY-MM-DD
+    const currentDate = currentRecord.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
 
     const allPreviousRecords = [];
 
@@ -416,11 +413,8 @@ export class WebviewController {
         const s3Date = new Date(s3Record.timestamp);
         // S3 Record: ${s3Date.toISOString()}
 
-        const sanitizedDeviceId = encodeURIComponent(
-          s3Record.deviceId || "unknown-device",
-        );
-        const orderingTimestamp =
-          s3Record.sessionStartTime ?? s3Record.timestamp;
+        const sanitizedDeviceId = encodeURIComponent(s3Record.deviceId || 'unknown-device');
+        const orderingTimestamp = s3Record.sessionStartTime ?? s3Record.timestamp;
 
         allPreviousRecords.push({
           id: `s3-${sanitizedDeviceId}-${s3Record.timestamp}-${index}`, // Unique ID for S3 backup
@@ -429,12 +423,12 @@ export class WebviewController {
           url: s3Record.url,
           title: s3Record.title,
           timestamp: orderingTimestamp,
-          source: "s3",
-          date: s3Date.toISOString().split("T")[0],
+          source: 's3',
+          date: s3Date.toISOString().split('T')[0],
           room: s3Record.room,
           bufferDataLength: s3Record.bufferData?.length || 0,
           fileName: `session_${s3Record.timestamp}.json`,
-          filePath: `${s3Date.toISOString().split("T")[0]}/${s3Record.deviceId}/session_${s3Record.timestamp}.json`,
+          filePath: `${s3Date.toISOString().split('T')[0]}/${s3Record.deviceId}/session_${s3Record.timestamp}.json`,
         });
       });
     } catch (error) {

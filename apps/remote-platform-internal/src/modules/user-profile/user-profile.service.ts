@@ -4,23 +4,23 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import axios from "axios";
-import { Repository } from "typeorm";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import axios from 'axios';
+import { Repository } from 'typeorm';
 
 import {
   DeviceInfoEntity,
   JobType,
   UserEntity,
   UserTicketTemplateEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
 import {
   CreateUserProfileDto,
   UpdateUserProfileDto,
   UserProfileResponseDto,
-} from "./user-profile.dto";
+} from './user-profile.dto';
 
 interface SlackUserWithExternalResponse {
   readonly code: string;
@@ -37,8 +37,7 @@ interface SlackUserWithExternalResponse {
 @Injectable()
 export class UserProfileService {
   private readonly logger = new Logger(UserProfileService.name);
-  private readonly proxyServerUrl =
-    process.env.WORKFLOW_API_URL || "http://localhost:3001";
+  private readonly proxyServerUrl = process.env.WORKFLOW_API_URL || 'http://localhost:3001';
 
   constructor(
     @InjectRepository(UserEntity)
@@ -50,17 +49,9 @@ export class UserProfileService {
   /**
    * Create a new user profile with devices and ticket templates.
    */
-  public async create(
-    createUserProfileDto: CreateUserProfileDto,
-  ): Promise<UserProfileResponseDto> {
-    const {
-      name,
-      jobType,
-      slackId,
-      empNo,
-      deviceInfoList,
-      ticketTemplateList,
-    } = createUserProfileDto;
+  public async create(createUserProfileDto: CreateUserProfileDto): Promise<UserProfileResponseDto> {
+    const { name, jobType, slackId, empNo, deviceInfoList, ticketTemplateList } =
+      createUserProfileDto;
 
     this.logger.log(`Creating user - empNo: ${empNo}, slackId: ${slackId}`);
 
@@ -88,10 +79,8 @@ export class UserProfileService {
 
     // Validate device IDs
     for (const device of deviceInfoList) {
-      if (!device.deviceId || device.deviceId.trim() === "") {
-        throw new BadRequestException(
-          `Device ID is required but got: '${device.deviceId}'`,
-        );
+      if (!device.deviceId || device.deviceId.trim() === '') {
+        throw new BadRequestException(`Device ID is required but got: '${device.deviceId}'`);
       }
 
       const existingDevice = await this.deviceRepository.findOne({
@@ -99,9 +88,7 @@ export class UserProfileService {
       });
       if (existingDevice) {
         this.logger.error(`Duplicate device ID: ${device.deviceId}`);
-        throw new ConflictException(
-          `Device ID '${device.deviceId}' already exists`,
-        );
+        throw new ConflictException(`Device ID '${device.deviceId}' already exists`);
       }
     }
 
@@ -187,11 +174,7 @@ export class UserProfileService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return this.formatResponse(
-      user,
-      user.deviceInfoList,
-      user.ticketTemplateList,
-    );
+    return this.formatResponse(user, user.deviceInfoList, user.ticketTemplateList);
   }
 
   /**
@@ -207,11 +190,7 @@ export class UserProfileService {
       throw new NotFoundException(`User with empNo '${empNo}' not found`);
     }
 
-    return this.formatResponse(
-      user,
-      user.deviceInfoList,
-      user.ticketTemplateList,
-    );
+    return this.formatResponse(user, user.deviceInfoList, user.ticketTemplateList);
   }
 
   /**
@@ -220,7 +199,7 @@ export class UserProfileService {
   public async findAll(): Promise<UserProfileResponseDto[]> {
     const users = await this.userRepository.find({
       relations: { deviceInfoList: true, ticketTemplateList: true },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
     });
 
     return users.map((user) =>
@@ -247,12 +226,8 @@ export class UserProfileService {
     empNo: string,
     updateUserProfileDto: UpdateUserProfileDto,
   ): Promise<UserProfileResponseDto> {
-    const {
-      deviceInfoList,
-      ticketTemplateList,
-      lastSelectedTemplateName,
-      ...updateData
-    } = updateUserProfileDto;
+    const { deviceInfoList, ticketTemplateList, lastSelectedTemplateName, ...updateData } =
+      updateUserProfileDto;
 
     const user = await this.userRepository.findOne({
       where: { empNo },
@@ -269,9 +244,7 @@ export class UserProfileService {
         where: { empNo },
       });
       if (existingEmpNo && existingEmpNo.id !== user.id) {
-        throw new ConflictException(
-          `User with empNo '${empNo}' already exists`,
-        );
+        throw new ConflictException(`User with empNo '${empNo}' already exists`);
       }
     }
 
@@ -281,9 +254,7 @@ export class UserProfileService {
         where: { username: updateData.username },
       });
       if (existingUsername && existingUsername.id !== user.id) {
-        throw new ConflictException(
-          `User with username '${updateData.username}' already exists`,
-        );
+        throw new ConflictException(`User with username '${updateData.username}' already exists`);
       }
     }
 
@@ -311,9 +282,7 @@ export class UserProfileService {
               where: { deviceId: deviceInfo.deviceId },
             });
             if (existingDevice) {
-              throw new ConflictException(
-                `Device ID '${deviceInfo.deviceId}' already exists`,
-              );
+              throw new ConflictException(`Device ID '${deviceInfo.deviceId}' already exists`);
             }
           }
         }
@@ -337,7 +306,7 @@ export class UserProfileService {
         const newTemplates = ticketTemplateList.map((templateData) =>
           manager.create(UserTicketTemplateEntity, {
             userId: user.id,
-            name: templateData.name || "Default Template",
+            name: templateData.name || 'Default Template',
             tcSheetLink: templateData.tcSheetLink,
             jiraProjectKey: templateData.jiraProjectKey,
             epicTicket: templateData.epicTicket,
@@ -402,16 +371,12 @@ export class UserProfileService {
     }
 
     // Create a new user
-    this.logger.log(
-      `Creating new user - empNo: ${empNo}, email: ${updateUserProfileDto.email}`,
-    );
+    this.logger.log(`Creating new user - empNo: ${empNo}, email: ${updateUserProfileDto.email}`);
 
-    let slackUserData: SlackUserWithExternalResponse["data"];
+    let slackUserData: SlackUserWithExternalResponse['data'];
     try {
       slackUserData = await this.getSlackUser(updateUserProfileDto.email);
-      this.logger.log(
-        `Slack user lookup succeeded - slackId: ${slackUserData.slackId}`,
-      );
+      this.logger.log(`Slack user lookup succeeded - slackId: ${slackUserData.slackId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Slack user lookup failed:`, message);
@@ -427,23 +392,19 @@ export class UserProfileService {
       slackId: slackUserData.slackId,
       empNo,
       deviceInfoList: updateUserProfileDto.deviceInfoList || [],
-      ticketTemplateList: updateUserProfileDto.ticketTemplateList.map(
-        (template) => ({
-          name: template.name || "Default Template",
-          tcSheetLink: template.tcSheetLink,
-          jiraProjectKey: template.jiraProjectKey,
-          epicTicket: template.epicTicket,
-          titlePrefix: template.titlePrefix,
-          assigneeInfoList: template.assigneeInfoList,
-          componentList: template.componentList,
-          labelList: template.labelList,
-        }),
-      ),
+      ticketTemplateList: updateUserProfileDto.ticketTemplateList.map((template) => ({
+        name: template.name || 'Default Template',
+        tcSheetLink: template.tcSheetLink,
+        jiraProjectKey: template.jiraProjectKey,
+        epicTicket: template.epicTicket,
+        titlePrefix: template.titlePrefix,
+        assigneeInfoList: template.assigneeInfoList,
+        componentList: template.componentList,
+        labelList: template.labelList,
+      })),
     };
 
-    this.logger.debug(
-      `Create DTO prepared: ${JSON.stringify(createDto, null, 2)}`,
-    );
+    this.logger.debug(`Create DTO prepared: ${JSON.stringify(createDto, null, 2)}`);
 
     let newUser: UserProfileResponseDto;
     try {
@@ -483,11 +444,11 @@ export class UserProfileService {
   private validateRequiredFields(dto: UpdateUserProfileDto): void {
     const errors: string[] = [];
 
-    if (!dto.name || dto.name.trim() === "") {
+    if (!dto.name || dto.name.trim() === '') {
       errors.push("'name' is required.");
     }
 
-    if (!dto.username || dto.username.trim() === "") {
+    if (!dto.username || dto.username.trim() === '') {
       errors.push("'username' is required.");
     }
 
@@ -496,10 +457,10 @@ export class UserProfileService {
     }
 
     if (!dto.deviceInfoList || dto.deviceInfoList.length === 0) {
-      errors.push("At least one device is required.");
+      errors.push('At least one device is required.');
     } else {
       dto.deviceInfoList.forEach((device, index) => {
-        if (!device.deviceId || device.deviceId.trim() === "") {
+        if (!device.deviceId || device.deviceId.trim() === '') {
           errors.push(`deviceInfoList[${index}].deviceId is required.`);
         }
       });
@@ -507,28 +468,24 @@ export class UserProfileService {
 
     if (dto.ticketTemplateList && dto.ticketTemplateList.length > 0) {
       dto.ticketTemplateList.forEach((template, index) => {
-        if (!template.name || template.name.trim() === "") {
+        if (!template.name || template.name.trim() === '') {
           errors.push(`ticketTemplateList[${index}].name is required.`);
         }
-        if (!template.jiraProjectKey || template.jiraProjectKey.trim() === "") {
-          errors.push(
-            `ticketTemplateList[${index}].jiraProjectKey is required.`,
-          );
+        if (!template.jiraProjectKey || template.jiraProjectKey.trim() === '') {
+          errors.push(`ticketTemplateList[${index}].jiraProjectKey is required.`);
         }
       });
     }
 
     if (errors.length > 0) {
-      throw new BadRequestException(`Validation failed: ${errors.join(", ")}`);
+      throw new BadRequestException(`Validation failed: ${errors.join(', ')}`);
     }
   }
 
   /**
    * Look up a Slack user by email via the Workflow API.
    */
-  private async getSlackUser(
-    email: string,
-  ): Promise<SlackUserWithExternalResponse["data"]> {
+  private async getSlackUser(email: string): Promise<SlackUserWithExternalResponse['data']> {
     return (
       await axios.get<SlackUserWithExternalResponse>(
         `${process.env.WORKFLOW_API_URL}/slack/user-with-external`,

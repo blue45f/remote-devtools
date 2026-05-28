@@ -1,12 +1,12 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import type { HealthCheckResult } from "@nestjs/terminus";
-import { HealthCheckService, TypeOrmHealthIndicator } from "@nestjs/terminus";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { HealthCheckResult } from '@nestjs/terminus';
+import { HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { HealthController } from "./health.controller";
+import { HealthController } from './health.controller';
 
-describe("HealthController", () => {
+describe('HealthController', () => {
   let controller: HealthController;
   const mockHealthCheck = { check: vi.fn() };
   const mockDbIndicator = { pingCheck: vi.fn() };
@@ -23,32 +23,32 @@ describe("HealthController", () => {
     controller = module.get<HealthController>(HealthController);
   });
 
-  it("should return healthy status when DB is up", async () => {
+  it('should return healthy status when DB is up', async () => {
     const healthy: HealthCheckResult = {
-      status: "ok",
-      info: { database: { status: "up" } },
+      status: 'ok',
+      info: { database: { status: 'up' } },
       error: {},
-      details: { database: { status: "up" } },
+      details: { database: { status: 'up' } },
     };
     mockHealthCheck.check.mockResolvedValue(healthy);
 
     const result = await controller.check();
 
-    expect(result.status).toBe("ok");
+    expect(result.status).toBe('ok');
     expect(mockHealthCheck.check).toHaveBeenCalled();
   });
 
-  it("should return error status when DB is down", async () => {
+  it('should return error status when DB is down', async () => {
     const unhealthy: HealthCheckResult = {
-      status: "error",
+      status: 'error',
       info: {},
-      error: { database: { status: "down", message: "Connection refused" } },
-      details: { database: { status: "down" } },
+      error: { database: { status: 'down', message: 'Connection refused' } },
+      details: { database: { status: 'down' } },
     };
     mockHealthCheck.check.mockResolvedValue(unhealthy);
 
     const result = await controller.check();
 
-    expect(result.status).toBe("error");
+    expect(result.status).toBe('error');
   });
 });

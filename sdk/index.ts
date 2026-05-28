@@ -1,19 +1,16 @@
-import { RemoteDebugger } from "./common/remoteDebugger";
-import { Network } from "./domain/network";
-import { CommonInfo } from "./types/common";
-import {
-  createDebuggerButtons,
-  createFloatingButton,
-} from "./ui/debuggerButtons";
-import { makeDraggable } from "./ui/draggable";
-import { createGuideButton } from "./ui/guideButton";
-import { injectKeyframeAnimations } from "./ui/theme";
-import { createGuideModal } from "./ui/guideModal";
-import { createNetworkRewriteModal } from "./ui/networkRewriteModal";
-import { createRecordingToast } from "./ui/recordingToast";
-import { createTicketModal, TicketFormData } from "./ui/ticketModal";
-import { getCommonInfo } from "./utils/helpers";
-import { logger } from "./utils/logger";
+import { RemoteDebugger } from './common/remoteDebugger';
+import { Network } from './domain/network';
+import { CommonInfo } from './types/common';
+import { createDebuggerButtons, createFloatingButton } from './ui/debuggerButtons';
+import { makeDraggable } from './ui/draggable';
+import { createGuideButton } from './ui/guideButton';
+import { injectKeyframeAnimations } from './ui/theme';
+import { createGuideModal } from './ui/guideModal';
+import { createNetworkRewriteModal } from './ui/networkRewriteModal';
+import { createRecordingToast } from './ui/recordingToast';
+import { createTicketModal, TicketFormData } from './ui/ticketModal';
+import { getCommonInfo } from './utils/helpers';
+import { logger } from './utils/logger';
 
 // 전역 타입 선언
 declare global {
@@ -27,9 +24,9 @@ let created = false;
 const addRewriteAnimationStyles = () => {
   injectKeyframeAnimations();
 
-  if (!document.getElementById("remote-debug-rewrite-styles")) {
-    const style = document.createElement("style");
-    style.id = "remote-debug-rewrite-styles";
+  if (!document.getElementById('remote-debug-rewrite-styles')) {
+    const style = document.createElement('style');
+    style.id = 'remote-debug-rewrite-styles';
     style.textContent = `
       @keyframes pulse {
         0% { transform: scale(1); opacity: 1; }
@@ -85,36 +82,33 @@ const addRewriteAnimationStyles = () => {
 
 // Rewrite 툴팁 생성 함수
 const createRewriteTooltip = () => {
-  const tooltip = document.createElement("div");
-  tooltip.className = "rewrite-tooltip";
-  tooltip.textContent = "Rewrite Active";
-  tooltip.id = "rewrite-tooltip";
+  const tooltip = document.createElement('div');
+  tooltip.className = 'rewrite-tooltip';
+  tooltip.textContent = 'Rewrite Active';
+  tooltip.id = 'rewrite-tooltip';
   return tooltip;
 };
 
-export const createDebugger = (
-  onClickDebugger?: () => void,
-  autoConnect = true,
-) => {
+export const createDebugger = (onClickDebugger?: () => void, autoConnect = true) => {
   // 중복 생성 방지
   if (created) return;
   created = true;
 
   const remoteDebugger = new RemoteDebugger();
-  const root = document.createElement("div");
-  root.id = "REMOTE_DEBUGGER";
-  root.style.position = "fixed";
-  root.style.bottom = "70px";
-  root.style.right = "20px";
-  root.style.zIndex = "9999";
+  const root = document.createElement('div');
+  root.id = 'REMOTE_DEBUGGER';
+  root.style.position = 'fixed';
+  root.style.bottom = '70px';
+  root.style.right = '20px';
+  root.style.zIndex = '9999';
   let isOpen = false;
   let commonInfo: CommonInfo | null;
-  let currentRoomType: "record" | "live" | null = null; // 현재 방 타입을 저장할 변수
+  let currentRoomType: 'record' | 'live' | null = null; // 현재 방 타입을 저장할 변수
 
   window.REMOTE_DEBUG_SDK_COMMON_INFO = async (r: string) => {
     try {
       commonInfo = JSON.parse(r);
-      logger.commonInfo.info("", commonInfo);
+      logger.commonInfo.info('', commonInfo);
     } catch {
       //
     }
@@ -140,7 +134,7 @@ export const createDebugger = (
         setTimeout(checkAndConnect, 100);
       } else {
         console.warn(
-          "[SDK] Could not load deviceId within 2 seconds, connecting with unknown-device",
+          '[SDK] Could not load deviceId within 2 seconds, connecting with unknown-device',
         );
         // 타임아웃 시에도 연결은 시작
         remoteDebugger.initSocket(true);
@@ -152,14 +146,14 @@ export const createDebugger = (
 
   const handleClickFloatingButton = () => {
     if (isOpen) {
-      floatingButton.style.transform = "rotate(0deg)";
+      floatingButton.style.transform = 'rotate(0deg)';
       root.removeChild(debuggerButton);
 
       // 메뉴 닫을 때 Screen Preview 재개
       remoteDebugger.resumeScreenPreview();
 
       // 메뉴 닫을 때 Rewrite 상태면 툴팁 다시 표시
-      const existingTooltip = root.querySelector("#rewrite-tooltip");
+      const existingTooltip = root.querySelector('#rewrite-tooltip');
       if (!existingTooltip) {
         if (Network.Rewrite.isEnabled()) {
           const tooltip = createRewriteTooltip();
@@ -167,14 +161,14 @@ export const createDebugger = (
         }
       }
     } else {
-      floatingButton.style.transform = "rotate(45deg)";
+      floatingButton.style.transform = 'rotate(45deg)';
       root.appendChild(debuggerButton);
 
       // 메뉴 열 때 Screen Preview 일시 중단
       remoteDebugger.pauseScreenPreview();
 
       // 메뉴 열 때 툴팁 숨기기
-      const tooltip = root.querySelector("#rewrite-tooltip");
+      const tooltip = root.querySelector('#rewrite-tooltip');
       if (tooltip) {
         tooltip.remove();
       }
@@ -195,12 +189,12 @@ export const createDebugger = (
   };
 
   const handleClickDebuggerButton = async (
-    type: "record" | "live" | "ticket" | "network-rewrite",
+    type: 'record' | 'live' | 'ticket' | 'network-rewrite',
   ) => {
     handleClickFloatingButton();
     onClickDebugger?.();
 
-    if (type === "network-rewrite") {
+    if (type === 'network-rewrite') {
       // 애니메이션 스타일 추가
       addRewriteAnimationStyles();
 
@@ -214,22 +208,15 @@ export const createDebugger = (
       const modal = createNetworkRewriteModal(
         globalNetworkData,
         (url, method, status, response, queryString, requestBody) => {
-          Network.Rewrite.addRule(
-            url,
-            method,
-            status,
-            response,
-            queryString,
-            requestBody,
-          );
+          Network.Rewrite.addRule(url, method, status, response, queryString, requestBody);
 
           // Rewrite 활성화 시 플로팅 버튼 색상 변경 및 툴팁 추가
           if (Network.Rewrite.isEnabled()) {
-            floatingButton.style.backgroundColor = "#f59e0b";
+            floatingButton.style.backgroundColor = '#f59e0b';
 
             // 메뉴가 열려있지 않을 때만 툴팁 표시
             if (!isOpen) {
-              const existingTooltip = root.querySelector("#rewrite-tooltip");
+              const existingTooltip = root.querySelector('#rewrite-tooltip');
               if (!existingTooltip) {
                 const tooltip = createRewriteTooltip();
                 root.appendChild(tooltip);
@@ -246,7 +233,7 @@ export const createDebugger = (
       return;
     }
 
-    if (type === "ticket") {
+    if (type === 'ticket') {
       // 모달 띄우기 전 Screen Preview 일시 중단
       remoteDebugger.pauseScreenPreview();
 
@@ -276,10 +263,10 @@ export const createDebugger = (
 
       // 새 연결인 경우 open 이벤트 리스너 추가
       remoteDebugger.addSocketEventListener(
-        "open",
+        'open',
         () => {
           // 연결 완료 후 room 생성
-          if (type === "record") {
+          if (type === 'record') {
             remoteDebugger.createRoom(true, commonInfo);
           } else {
             remoteDebugger.createRoom(false, commonInfo);
@@ -288,7 +275,7 @@ export const createDebugger = (
         { once: true },
       );
     } else {
-      if (type === "record") {
+      if (type === 'record') {
         remoteDebugger.createRoom(true, commonInfo);
       } else {
         remoteDebugger.createRoom(false, commonInfo);
@@ -296,20 +283,20 @@ export const createDebugger = (
     }
 
     // WebSocket 연결 종료 시 UI 복구
-    remoteDebugger.addSocketEventListener("close", () => {
+    remoteDebugger.addSocketEventListener('close', () => {
       if (root.contains(recordingToast.element)) {
         root.removeChild(recordingToast.element);
       }
       if (!root.contains(floatingButton)) {
         root.appendChild(floatingButton);
       }
-      root.style.bottom = "80px";
-      root.style.right = "10px";
+      root.style.bottom = '80px';
+      root.style.right = '10px';
     });
 
     // WebSocket 연결 오류 처리
-    remoteDebugger.addSocketEventListener("error", () => {
-      alert("Unable to connect to remote debugger.");
+    remoteDebugger.addSocketEventListener('error', () => {
+      alert('Unable to connect to remote debugger.');
     });
   };
 
@@ -341,8 +328,8 @@ export const createDebugger = (
         root.appendChild(recordingToast.element);
       }
 
-      root.style.bottom = "80px";
-      root.style.right = "10px";
+      root.style.bottom = '80px';
+      root.style.right = '10px';
     }
   });
 
@@ -355,14 +342,14 @@ export const createDebugger = (
       if (Network.Rewrite.isEnabled()) {
         // Rewrite이 활성화되어 있으면 플로팅 버튼을 주황색으로
         addRewriteAnimationStyles(); // 애니메이션 스타일 추가
-        floatingButton.style.backgroundColor = "#f59e0b";
+        floatingButton.style.backgroundColor = '#f59e0b';
 
         // 툴팁도 함께 표시
         const tooltip = createRewriteTooltip();
         root.appendChild(tooltip);
 
         logger.rewrite.debug(
-          "Rewrite state restored - floating button color and tooltip displayed",
+          'Rewrite state restored - floating button color and tooltip displayed',
         );
       }
     } catch {
@@ -379,8 +366,8 @@ export const createDebugger = (
       document.body.appendChild(root);
     } else {
       // body가 준비되지 않았으면 DOMContentLoaded 이벤트를 기다림
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
           if (document.body) {
             document.body.appendChild(root);
           }
@@ -418,7 +405,7 @@ export const createTicketDirect = (
 
     // 연결 완료 후 티켓 생성
     remoteDebugger.addSocketEventListener(
-      "open",
+      'open',
       () => {
         remoteDebugger.createTicket({
           commonInfo,

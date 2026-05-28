@@ -1,12 +1,7 @@
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from 'crypto';
 
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
-import type { Request } from "express";
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import type { Request } from 'express';
 
 /**
  * Optional admin token guard for self-hosted deployments.
@@ -29,10 +24,10 @@ export class AdminTokenGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const provided =
       extractBearer(req.headers.authorization) ??
-      (typeof req.query.admin_token === "string" ? req.query.admin_token : "");
+      (typeof req.query.admin_token === 'string' ? req.query.admin_token : '');
 
     if (!safeCompareTokens(provided, expected)) {
-      throw new UnauthorizedException("Invalid admin token");
+      throw new UnauthorizedException('Invalid admin token');
     }
     return true;
   }
@@ -46,13 +41,13 @@ export class AdminTokenGuard implements CanActivate {
  * information about the expected token's length or shared prefix.
  */
 function safeCompareTokens(provided: string, expected: string): boolean {
-  const providedHash = createHash("sha256").update(provided).digest();
-  const expectedHash = createHash("sha256").update(expected).digest();
+  const providedHash = createHash('sha256').update(provided).digest();
+  const expectedHash = createHash('sha256').update(expected).digest();
   return timingSafeEqual(providedHash, expectedHash);
 }
 
 function extractBearer(header: string | undefined): string | undefined {
   if (!header) return undefined;
-  const [scheme, token] = header.split(" ");
-  return scheme?.toLowerCase() === "bearer" ? token?.trim() : undefined;
+  const [scheme, token] = header.split(' ');
+  return scheme?.toLowerCase() === 'bearer' ? token?.trim() : undefined;
 }

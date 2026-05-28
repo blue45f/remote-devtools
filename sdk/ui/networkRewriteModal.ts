@@ -1,12 +1,7 @@
-import { Network } from "../domain/network";
-import type { RewriteRule } from "../domain/network-rewrite";
-import { logger } from "../utils/logger";
-import {
-  tokens,
-  injectKeyframeAnimations,
-  getStatusColor,
-  getMethodColor,
-} from "./theme";
+import { Network } from '../domain/network';
+import type { RewriteRule } from '../domain/network-rewrite';
+import { logger } from '../utils/logger';
+import { tokens, injectKeyframeAnimations, getStatusColor, getMethodColor } from './theme';
 
 interface NetworkRequest {
   requestId: number;
@@ -55,10 +50,9 @@ type NetworkCardItem = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-const isNetworkDataEntry = (value: unknown): value is NetworkDataEntry =>
-  isRecord(value);
+const isNetworkDataEntry = (value: unknown): value is NetworkDataEntry => isRecord(value);
 
 const isObjectWithKeys = (value: unknown): value is Record<string, unknown> =>
   isRecord(value) && Object.keys(value).length > 0;
@@ -71,8 +65,8 @@ export function createNetworkRewriteModal(
   injectKeyframeAnimations();
 
   // Modal overlay
-  const overlay = document.createElement("div");
-  overlay.setAttribute("data-remote-debugger-overlay", "true");
+  const overlay = document.createElement('div');
+  overlay.setAttribute('data-remote-debugger-overlay', 'true');
   overlay.style.cssText = `
     position: fixed;
     top: 0;
@@ -87,8 +81,8 @@ export function createNetworkRewriteModal(
   `;
 
   // Modal container
-  const modal = document.createElement("div");
-  modal.className = "remote-debug-network-rewrite-modal";
+  const modal = document.createElement('div');
+  modal.className = 'remote-debug-network-rewrite-modal';
   modal.style.cssText = `
     background-color: ${tokens.color.bg.surface};
     border: 1px solid ${tokens.color.border.subtle};
@@ -108,8 +102,8 @@ export function createNetworkRewriteModal(
   const header = createModalHeader();
 
   // Content container (scrollable)
-  const contentContainer = document.createElement("div");
-  contentContainer.id = "modal-content";
+  const contentContainer = document.createElement('div');
+  contentContainer.id = 'modal-content';
   contentContainer.style.cssText = `
     flex: 1;
     overflow-y: auto;
@@ -118,22 +112,22 @@ export function createNetworkRewriteModal(
 
   // View switching functions
   const showListView = () => {
-    const headerTitle = header.querySelector("h3");
-    if (headerTitle) headerTitle.textContent = "Network Rewrite";
+    const headerTitle = header.querySelector('h3');
+    if (headerTitle) headerTitle.textContent = 'Network Rewrite';
 
     // Remove back button when returning to list
-    const backBtn = header.querySelector("#header-back-btn");
+    const backBtn = header.querySelector('#header-back-btn');
     if (backBtn) {
       backBtn.remove();
     }
 
     // Remove bottom buttons area when returning to list
-    const buttonsContainer = modal.querySelector(".edit-buttons-container");
+    const buttonsContainer = modal.querySelector('.edit-buttons-container');
     if (buttonsContainer) {
       buttonsContainer.remove();
     }
 
-    contentContainer.innerHTML = "";
+    contentContainer.innerHTML = '';
     const listView = createNetworkList(networkData, (item) => {
       showEditView(item, onSaveRewrite);
     });
@@ -142,21 +136,21 @@ export function createNetworkRewriteModal(
 
   const showEditView = (item: NetworkCardItem, onSave: SaveRewriteHandler) => {
     // Debug: check item object
-    logger.rewrite.debug("[showEditView] Called with item:", item);
-    logger.rewrite.debug("[showEditView] item.rewriteRule:", item.rewriteRule);
+    logger.rewrite.debug('[showEditView] Called with item:', item);
+    logger.rewrite.debug('[showEditView] item.rewriteRule:', item.rewriteRule);
 
-    const headerTitle = header.querySelector("h3");
-    if (headerTitle) headerTitle.textContent = "Rewrite Configuration";
+    const headerTitle = header.querySelector('h3');
+    if (headerTitle) headerTitle.textContent = 'Rewrite Configuration';
 
     // Add back button to header
-    const existingBackBtn = header.querySelector("#header-back-btn");
+    const existingBackBtn = header.querySelector('#header-back-btn');
     if (existingBackBtn) {
       existingBackBtn.remove();
     }
 
-    const backBtn = document.createElement("button");
-    backBtn.id = "header-back-btn";
-    backBtn.textContent = "\u2190";
+    const backBtn = document.createElement('button');
+    backBtn.id = 'header-back-btn';
+    backBtn.textContent = '\u2190';
     backBtn.style.cssText = `
       background: none;
       border: none;
@@ -169,25 +163,25 @@ export function createNetworkRewriteModal(
       margin-right: 10px;
       transition: color ${tokens.transition.fast};
     `;
-    backBtn.addEventListener("mouseenter", () => {
+    backBtn.addEventListener('mouseenter', () => {
       backBtn.style.color = tokens.color.text.primary;
     });
-    backBtn.addEventListener("mouseleave", () => {
+    backBtn.addEventListener('mouseleave', () => {
       backBtn.style.color = tokens.color.text.dim;
     });
-    backBtn.addEventListener("click", showListView);
+    backBtn.addEventListener('click', showListView);
 
     if (headerTitle && headerTitle.parentElement) {
       headerTitle.parentElement.insertBefore(backBtn, headerTitle);
     }
 
-    contentContainer.innerHTML = "";
+    contentContainer.innerHTML = '';
     const { content, buttons } = createEditView(item, onSave, showListView);
     contentContainer.appendChild(content);
 
     // Fix buttons area at modal bottom
-    if (modal.querySelector(".edit-buttons-container")) {
-      modal.querySelector(".edit-buttons-container")?.remove();
+    if (modal.querySelector('.edit-buttons-container')) {
+      modal.querySelector('.edit-buttons-container')?.remove();
     }
     modal.appendChild(buttons);
   };
@@ -200,15 +194,15 @@ export function createNetworkRewriteModal(
   modal.appendChild(contentContainer);
 
   // Close modal on overlay click
-  overlay.addEventListener("click", (e) => {
+  overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       document.body.removeChild(overlay);
     }
   });
 
   // Close button event
-  const closeBtn = header.querySelector("#close-modal-btn");
-  closeBtn?.addEventListener("click", () => {
+  const closeBtn = header.querySelector('#close-modal-btn');
+  closeBtn?.addEventListener('click', () => {
     document.body.removeChild(overlay);
   });
 
@@ -217,52 +211,52 @@ export function createNetworkRewriteModal(
 }
 
 function createModalHeader() {
-  const header = document.createElement("div");
+  const header = document.createElement('div');
   Object.assign(header.style, {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "24px 24px 0",
-    position: "sticky",
-    top: "0",
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '24px 24px 0',
+    position: 'sticky',
+    top: '0',
     backgroundColor: tokens.color.bg.surface,
-    zIndex: "10",
+    zIndex: '10',
     borderTopLeftRadius: tokens.radius.lg,
     borderTopRightRadius: tokens.radius.lg,
-    marginBottom: "0",
+    marginBottom: '0',
   });
 
-  const title = document.createElement("h2");
-  title.textContent = "Network Rewrite";
+  const title = document.createElement('h2');
+  title.textContent = 'Network Rewrite';
   Object.assign(title.style, {
-    margin: "0",
-    fontSize: "18px",
-    fontWeight: "600",
+    margin: '0',
+    fontSize: '18px',
+    fontWeight: '600',
     color: tokens.color.text.primary,
   });
 
-  const closeBtn = document.createElement("button");
-  closeBtn.id = "close-modal-btn";
-  closeBtn.textContent = "\u2715";
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'close-modal-btn';
+  closeBtn.textContent = '\u2715';
   Object.assign(closeBtn.style, {
-    background: "none",
-    border: "none",
-    fontSize: "24px",
-    cursor: "pointer",
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
     color: tokens.color.text.dim,
-    padding: "0",
-    width: "30px",
-    height: "30px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: '0',
+    width: '30px',
+    height: '30px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transition: `color ${tokens.transition.fast}`,
   });
 
-  closeBtn.addEventListener("mouseenter", () => {
+  closeBtn.addEventListener('mouseenter', () => {
     closeBtn.style.color = tokens.color.text.primary;
   });
-  closeBtn.addEventListener("mouseleave", () => {
+  closeBtn.addEventListener('mouseleave', () => {
     closeBtn.style.color = tokens.color.text.dim;
   });
 
@@ -276,69 +270,67 @@ function createNetworkList(
   networkData: Map<number, unknown>,
   onEditClick: (item: NetworkCardItem) => void,
 ) {
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   Object.assign(container.style, {
-    padding: "0",
+    padding: '0',
   });
 
   // Filter section
-  const filterSection = document.createElement("div");
+  const filterSection = document.createElement('div');
   Object.assign(filterSection.style, {
-    marginBottom: "16px",
-    display: "flex",
-    gap: "8px",
+    marginBottom: '16px',
+    display: 'flex',
+    gap: '8px',
   });
 
-  const searchInput = document.createElement("input");
-  searchInput.type = "text";
-  searchInput.placeholder = "Search requests...";
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = 'Search requests...';
 
   Object.assign(searchInput.style, {
-    flex: "1",
-    padding: "10px 16px",
+    flex: '1',
+    padding: '10px 16px',
     border: `1px solid ${tokens.color.border.medium}`,
     borderRadius: tokens.radius.md,
-    fontSize: "14px",
+    fontSize: '14px',
     background: tokens.color.bg.elevated,
     color: tokens.color.text.primary,
-    boxSizing: "border-box",
-    WebkitAppearance: "none",
-    MozAppearance: "none",
-    appearance: "none",
+    boxSizing: 'border-box',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    appearance: 'none',
     transition: `border-color ${tokens.transition.normal}`,
-    outline: "none",
+    outline: 'none',
     fontFamily: tokens.font.system,
   });
 
-  searchInput.addEventListener("focus", () => {
+  searchInput.addEventListener('focus', () => {
     searchInput.style.borderColor = tokens.color.accent.violet;
   });
-  searchInput.addEventListener("blur", () => {
+  searchInput.addEventListener('blur', () => {
     searchInput.style.borderColor = tokens.color.border.medium;
   });
 
   filterSection.appendChild(searchInput);
 
   // Cards container
-  const cardsContainer = document.createElement("div");
+  const cardsContainer = document.createElement('div');
   Object.assign(cardsContainer.style, {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
   });
 
   // Convert network data to array and sort by most recent
   const allRequests: NetworkRequest[] = [];
 
   // Get rewrite rules from sessionStorage
-  const rewriteRulesData = sessionStorage.getItem("REMOTE_DEBUG_MOCK_RULES");
+  const rewriteRulesData = sessionStorage.getItem('REMOTE_DEBUG_MOCK_RULES');
   const rewriteRulesSet = new Set<string>(); // Dedup set
 
   if (rewriteRulesData) {
     try {
-      const rewriteRules = JSON.parse(rewriteRulesData) as Array<
-        [string, RewriteRule]
-      >;
+      const rewriteRules = JSON.parse(rewriteRulesData) as Array<[string, RewriteRule]>;
       rewriteRules.forEach(([_, rule]) => {
         if (rule && rule.enabled) {
           const rewriteRequest: NetworkRequest = {
@@ -350,28 +342,21 @@ function createNetworkList(
             responseData: rule.response,
             requestBody: rule.requestBody,
             queryString: rule.queryString,
-            hasRequestRewrite:
-              rule.queryString !== undefined || rule.requestBody !== undefined,
+            hasRequestRewrite: rule.queryString !== undefined || rule.requestBody !== undefined,
             hasResponseRewrite: rule.response !== undefined,
             rewriteRule: rule,
           };
 
           // Debug logs
-          logger.rewrite.debug(
-            "[createNetworkList] rule from sessionStorage:",
-            rule,
-          );
-          logger.rewrite.debug(
-            "[createNetworkList] rewriteRequest:",
-            rewriteRequest,
-          );
+          logger.rewrite.debug('[createNetworkList] rule from sessionStorage:', rule);
+          logger.rewrite.debug('[createNetworkList] rewriteRequest:', rewriteRequest);
 
           allRequests.push(rewriteRequest);
           rewriteRulesSet.add(`${rule.method}:${rule.url}`);
         }
       });
     } catch (e) {
-      logger.rewrite.error("Failed to load rewrite rules:", e);
+      logger.rewrite.error('Failed to load rewrite rules:', e);
     }
   }
 
@@ -381,11 +366,11 @@ function createNetworkList(
     if (isNetworkDataEntry(data)) {
       // Handle new data structure
       if (
-        typeof data.url === "string" &&
-        typeof data.method === "string" &&
+        typeof data.url === 'string' &&
+        typeof data.method === 'string' &&
         data.status !== undefined
       ) {
-        const key = `${data.method}:${data.url.split("?")[0]}`;
+        const key = `${data.method}:${data.url.split('?')[0]}`;
         // Only add if not in rewrite rules
         if (!rewriteRulesSet.has(key)) {
           const requestData = {
@@ -407,7 +392,7 @@ function createNetworkList(
   const uniqueRequestsMap = new Map<string, NetworkRequest>();
   allRequests.forEach((request) => {
     // Remove querystring from URL
-    const urlWithoutQuery = request.url.split("?")[0];
+    const urlWithoutQuery = request.url.split('?')[0];
     const key = `${request.method}:${urlWithoutQuery}`;
 
     // Replace with newer entry if same key exists
@@ -440,13 +425,13 @@ function createNetworkList(
 
   if (recentRequests.length === 0) {
     // Empty state message
-    const emptyMessage = document.createElement("div");
+    const emptyMessage = document.createElement('div');
     Object.assign(emptyMessage.style, {
-      textAlign: "center",
-      padding: "40px 20px",
+      textAlign: 'center',
+      padding: '40px 20px',
       color: tokens.color.text.dim,
-      fontSize: "14px",
-      lineHeight: "1.5",
+      fontSize: '14px',
+      lineHeight: '1.5',
       background: tokens.color.bg.elevated,
       borderRadius: tokens.radius.md,
       border: `1px solid ${tokens.color.border.subtle}`,
@@ -465,7 +450,7 @@ function createNetworkList(
         method: request.method,
         url: request.url,
         status: request.status || 200,
-        type: "Fetch",
+        type: 'Fetch',
         responseData: request.responseData,
         requestBody: request.requestBody,
         isRewriteed: request.requestId < 0, // Negative ID = rewrite rule
@@ -482,17 +467,17 @@ function createNetworkList(
   container.appendChild(cardsContainer);
 
   // Search functionality
-  searchInput.addEventListener("input", () => {
+  searchInput.addEventListener('input', () => {
     const searchTerm = searchInput.value.toLowerCase();
-    const cards = cardsContainer.querySelectorAll(".network-card");
+    const cards = cardsContainer.querySelectorAll('.network-card');
 
     cards.forEach((card) => {
-      const text = card.textContent?.toLowerCase() || "";
+      const text = card.textContent?.toLowerCase() || '';
       const htmlCard = card as HTMLElement;
       if (text.includes(searchTerm)) {
-        htmlCard.style.display = "";
+        htmlCard.style.display = '';
       } else {
-        htmlCard.style.display = "none";
+        htmlCard.style.display = 'none';
       }
     });
   });
@@ -500,32 +485,29 @@ function createNetworkList(
   return container;
 }
 
-function createCardItem(
-  item: NetworkCardItem,
-  onEditClick: (item: NetworkCardItem) => void,
-) {
-  const card = document.createElement("div");
-  card.className = "network-card";
+function createCardItem(item: NetworkCardItem, onEditClick: (item: NetworkCardItem) => void) {
+  const card = document.createElement('div');
+  card.className = 'network-card';
   card.style.cssText = `
     padding: 16px;
-    background: ${item.isRewriteed ? "rgba(245, 158, 11, 0.08)" : tokens.color.bg.elevated};
-    border: 1px solid ${item.isRewriteed ? "rgba(245, 158, 11, 0.25)" : tokens.color.border.subtle};
+    background: ${item.isRewriteed ? 'rgba(245, 158, 11, 0.08)' : tokens.color.bg.elevated};
+    border: 1px solid ${item.isRewriteed ? 'rgba(245, 158, 11, 0.25)' : tokens.color.border.subtle};
     border-radius: ${tokens.radius.md};
     transition: all ${tokens.transition.normal};
     cursor: pointer;
   `;
 
   // Hover effect
-  card.addEventListener("mouseenter", () => {
+  card.addEventListener('mouseenter', () => {
     card.style.boxShadow = tokens.shadow.sm;
     if (!item.isRewriteed) {
       card.style.backgroundColor = tokens.color.bg.hover;
     }
   });
-  card.addEventListener("mouseleave", () => {
-    card.style.boxShadow = "";
+  card.addEventListener('mouseleave', () => {
+    card.style.boxShadow = '';
     card.style.backgroundColor = item.isRewriteed
-      ? "rgba(245, 158, 11, 0.08)"
+      ? 'rgba(245, 158, 11, 0.08)'
       : tokens.color.bg.elevated;
   });
 
@@ -570,7 +552,7 @@ function createCardItem(
               font-weight: 600;
             ">REQ</span>
           `
-              : ""
+              : ''
           }
           ${
             item.hasResponseRewrite
@@ -584,7 +566,7 @@ function createCardItem(
               font-weight: 600;
             ">RES</span>
           `
-              : ""
+              : ''
           }
           ${
             !item.hasRequestRewrite && !item.hasResponseRewrite
@@ -598,10 +580,10 @@ function createCardItem(
               font-weight: 600;
             ">REWRITE</span>
           `
-              : ""
+              : ''
           }
         `
-            : ""
+            : ''
         }
       </div>
 
@@ -616,7 +598,7 @@ function createCardItem(
           font-size: 13px;
           font-weight: 500;
           transition: opacity ${tokens.transition.fast};
-        ">${item.isRewriteed ? "Edit" : "Configure"}</button>
+        ">${item.isRewriteed ? 'Edit' : 'Configure'}</button>
 
         ${
           item.isRewriteed
@@ -633,7 +615,7 @@ function createCardItem(
             transition: all ${tokens.transition.fast};
           ">Disable</button>
         `
-            : ""
+            : ''
         }
       </div>
     </div>
@@ -649,21 +631,21 @@ function createCardItem(
   `;
 
   // Edit button event (prevent event bubbling)
-  const editBtn = card.querySelector(".edit-btn");
-  editBtn?.addEventListener("click", (e) => {
+  const editBtn = card.querySelector('.edit-btn');
+  editBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     onEditClick(item);
   });
 
   // Disable button event (prevent event bubbling)
-  const disableBtn = card.querySelector(".disable-btn");
-  disableBtn?.addEventListener("click", (e) => {
+  const disableBtn = card.querySelector('.disable-btn');
+  disableBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (confirm(`Disable rewrite for "${item.url}"?`)) {
       Network.Rewrite.removeRule(item.url, item.method);
 
       // Show success message
-      const successMsg = document.createElement("div");
+      const successMsg = document.createElement('div');
       successMsg.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -681,7 +663,7 @@ function createCardItem(
         max-width: 90%;
         font-family: ${tokens.font.system};
       `;
-      successMsg.textContent = "Rewrite rule disabled";
+      successMsg.textContent = 'Rewrite rule disabled';
       document.body.appendChild(successMsg);
 
       setTimeout(() => {
@@ -693,20 +675,16 @@ function createCardItem(
   });
 
   // Click card to edit
-  card.addEventListener("click", () => {
+  card.addEventListener('click', () => {
     onEditClick(item);
   });
 
   return card;
 }
 
-function createEditView(
-  item: NetworkCardItem,
-  onSave: SaveRewriteHandler,
-  onBack: () => void,
-) {
+function createEditView(item: NetworkCardItem, onSave: SaveRewriteHandler, onBack: () => void) {
   // Content container
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   container.style.cssText = `
     padding: 0 0 80px 0;
     display: flex;
@@ -715,8 +693,8 @@ function createEditView(
   `;
 
   // Buttons container (separated)
-  const buttonsContainer = document.createElement("div");
-  buttonsContainer.className = "edit-buttons-container";
+  const buttonsContainer = document.createElement('div');
+  buttonsContainer.className = 'edit-buttons-container';
   buttonsContainer.style.cssText = `
     position: sticky;
     bottom: 0;
@@ -736,7 +714,7 @@ function createEditView(
   let defaultResponse: unknown = {};
   if (item.responseData) {
     // Parse if responseData is a string
-    if (typeof item.responseData === "string") {
+    if (typeof item.responseData === 'string') {
       try {
         defaultResponse = JSON.parse(item.responseData);
       } catch {
@@ -751,10 +729,10 @@ function createEditView(
   if (!isObjectWithKeys(defaultResponse)) {
     defaultResponse = {
       success: true,
-      message: "Rewrite response example",
+      message: 'Rewrite response example',
       data: {
         id: 1,
-        name: "Example",
+        name: 'Example',
       },
     };
   }
@@ -764,14 +742,10 @@ function createEditView(
   if (!existingRule) {
     // If item doesn't have rewriteRule, check sessionStorage directly
     try {
-      const rewriteRulesData = sessionStorage.getItem(
-        "REMOTE_DEBUG_MOCK_RULES",
-      );
+      const rewriteRulesData = sessionStorage.getItem('REMOTE_DEBUG_MOCK_RULES');
       if (rewriteRulesData) {
-        const rewriteRules = JSON.parse(rewriteRulesData) as Array<
-          [string, RewriteRule]
-        >;
-        const urlWithoutQuery = item.url.split("?")[0];
+        const rewriteRules = JSON.parse(rewriteRulesData) as Array<[string, RewriteRule]>;
+        const urlWithoutQuery = item.url.split('?')[0];
         const ruleKey = `${item.method.toUpperCase()}:${urlWithoutQuery}`;
 
         // Find the rule
@@ -780,23 +754,16 @@ function createEditView(
           existingRule = foundRule[1];
         }
 
-        logger.rewrite.debug(
-          "[createEditView] Checking existing rule for:",
-          ruleKey,
-        );
-        logger.rewrite.debug(
-          "[createEditView] Found existing rule:",
-          existingRule,
-        );
+        logger.rewrite.debug('[createEditView] Checking existing rule for:', ruleKey);
+        logger.rewrite.debug('[createEditView] Found existing rule:', existingRule);
       }
     } catch (e) {
-      console.error("[createEditView] Error loading existing rule:", e);
+      console.error('[createEditView] Error loading existing rule:', e);
     }
   }
 
   // Default request body value
-  const defaultRequestBody =
-    item.requestBody || existingRule?.requestBody || {};
+  const defaultRequestBody = item.requestBody || existingRule?.requestBody || {};
 
   const methodColors = getMethodColor(item.method);
 
@@ -915,82 +882,62 @@ function createEditView(
   `;
 
   // Programmatically create Query String input
-  const queryStringContainer = container.querySelector(
-    "#querystring-container",
-  );
-  logger.rewrite.debug(
-    "[Query String Container] Found:",
-    !!queryStringContainer,
-  );
+  const queryStringContainer = container.querySelector('#querystring-container');
+  logger.rewrite.debug('[Query String Container] Found:', !!queryStringContainer);
 
   if (queryStringContainer) {
-    const queryStringInput = document.createElement("input");
-    queryStringInput.type = "text";
-    queryStringInput.id = "querystring-editor";
-    queryStringInput.placeholder = "e.g. ?param1=value1&param2=value2";
+    const queryStringInput = document.createElement('input');
+    queryStringInput.type = 'text';
+    queryStringInput.id = 'querystring-editor';
+    queryStringInput.placeholder = 'e.g. ?param1=value1&param2=value2';
 
     // Set default value - check by priority
-    let defaultQueryString = "";
+    let defaultQueryString = '';
 
     // 1. Get from existing rule
-    if (
-      existingRule?.queryString !== undefined &&
-      existingRule.queryString !== null
-    ) {
+    if (existingRule?.queryString !== undefined && existingRule.queryString !== null) {
       defaultQueryString = existingRule.queryString;
-      logger.rewrite.debug(
-        "[Query String] Using existingRule.queryString:",
-        defaultQueryString,
-      );
+      logger.rewrite.debug('[Query String] Using existingRule.queryString:', defaultQueryString);
     }
     // 2. Get from item
     else if (item.queryString !== undefined && item.queryString !== null) {
       defaultQueryString = item.queryString;
-      logger.rewrite.debug(
-        "[Query String] Using item.queryString:",
-        defaultQueryString,
-      );
+      logger.rewrite.debug('[Query String] Using item.queryString:', defaultQueryString);
     }
     // 3. Extract from URL
-    else if (item.url.includes("?")) {
-      defaultQueryString = item.url.substring(item.url.indexOf("?"));
-      logger.rewrite.debug(
-        "[Query String] Using URL query:",
-        defaultQueryString,
-      );
+    else if (item.url.includes('?')) {
+      defaultQueryString = item.url.substring(item.url.indexOf('?'));
+      logger.rewrite.debug('[Query String] Using URL query:', defaultQueryString);
     }
 
     // Debug logs
-    logger.rewrite.debug("[Query String] item:", item);
-    logger.rewrite.debug("[Query String] existingRule:", existingRule);
-    logger.rewrite.debug(
-      "[Query String] Final defaultQueryString:",
-      defaultQueryString,
-    );
+    logger.rewrite.debug('[Query String] item:', item);
+    logger.rewrite.debug('[Query String] existingRule:', existingRule);
+    logger.rewrite.debug('[Query String] Final defaultQueryString:', defaultQueryString);
 
     queryStringInput.value = defaultQueryString;
 
     Object.assign(queryStringInput.style, {
-      width: "100%",
-      padding: "10px 12px",
+      width: '100%',
+      padding: '10px 12px',
       border: `1px solid ${tokens.color.border.medium}`,
       borderRadius: tokens.radius.sm,
-      fontSize: "14px",
+      fontSize: '14px',
       fontFamily: tokens.font.mono,
       transition: `border-color ${tokens.transition.normal}`,
-      outline: "none",
+      outline: 'none',
       background: tokens.color.bg.elevated,
       color: tokens.color.text.primary,
-      boxSizing: "border-box",
-      WebkitAppearance: "none",
-      MozAppearance: "none",
-      appearance: "none",
+      boxSizing: 'border-box',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+      appearance: 'none',
     });
 
-    queryStringInput.addEventListener("focus", () => {
+    queryStringInput.addEventListener('focus', () => {
       queryStringInput.style.borderColor = tokens.color.accent.violet;
     });
-    queryStringInput.addEventListener("blur", () => {
+    queryStringInput.addEventListener('blur', () => {
       queryStringInput.style.borderColor = tokens.color.border.medium;
     });
 
@@ -998,64 +945,58 @@ function createEditView(
   }
 
   // Tab switching logic
-  const tabButtons = container.querySelectorAll(".tab-btn");
-  const requestSection = container.querySelector("#request-section");
-  const responseSection = container.querySelector("#response-section");
+  const tabButtons = container.querySelectorAll('.tab-btn');
+  const requestSection = container.querySelector('#request-section');
+  const responseSection = container.querySelector('#response-section');
 
   tabButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener('click', () => {
       const targetTab = (btn as HTMLElement).dataset.tab;
-      logger.rewrite.debug("[Tab Switch] Switching to:", targetTab);
+      logger.rewrite.debug('[Tab Switch] Switching to:', targetTab);
 
       // Deactivate all tab buttons
       tabButtons.forEach((b) => {
         (b as HTMLElement).style.color = tokens.color.text.dim;
-        (b as HTMLElement).style.borderBottomColor = "transparent";
-        b.classList.remove("active");
+        (b as HTMLElement).style.borderBottomColor = 'transparent';
+        b.classList.remove('active');
       });
 
       // Activate clicked tab
       (btn as HTMLElement).style.color = tokens.color.accent.violet;
       (btn as HTMLElement).style.borderBottomColor = tokens.color.accent.violet;
-      btn.classList.add("active");
+      btn.classList.add('active');
 
       // Update save button text
-      const saveBtn = document.querySelector("#save-edit");
+      const saveBtn = document.querySelector('#save-edit');
       if (saveBtn) {
-        if (targetTab === "request") {
-          saveBtn.textContent = "Enable Request Rewrite";
+        if (targetTab === 'request') {
+          saveBtn.textContent = 'Enable Request Rewrite';
         } else {
-          saveBtn.textContent = "Enable Response Rewrite";
+          saveBtn.textContent = 'Enable Response Rewrite';
         }
       }
 
       // Show/hide sections
-      if (targetTab === "request" && requestSection && responseSection) {
-        (requestSection as HTMLElement).style.display = "block";
-        (responseSection as HTMLElement).style.display = "none";
-        logger.rewrite.debug("[Tab Switch] Request section displayed");
-      } else if (
-        targetTab === "response" &&
-        requestSection &&
-        responseSection
-      ) {
-        (requestSection as HTMLElement).style.display = "none";
-        (responseSection as HTMLElement).style.display = "block";
-        logger.rewrite.debug("[Tab Switch] Response section displayed");
+      if (targetTab === 'request' && requestSection && responseSection) {
+        (requestSection as HTMLElement).style.display = 'block';
+        (responseSection as HTMLElement).style.display = 'none';
+        logger.rewrite.debug('[Tab Switch] Request section displayed');
+      } else if (targetTab === 'response' && requestSection && responseSection) {
+        (requestSection as HTMLElement).style.display = 'none';
+        (responseSection as HTMLElement).style.display = 'block';
+        logger.rewrite.debug('[Tab Switch] Response section displayed');
       }
     });
   });
 
   // Request Body textarea
-  const requestBodyContainer = container.querySelector(
-    "#request-body-container",
-  );
+  const requestBodyContainer = container.querySelector('#request-body-container');
   if (requestBodyContainer) {
-    const requestBodyTextarea = document.createElement("textarea");
-    requestBodyTextarea.id = "request-body-editor";
+    const requestBodyTextarea = document.createElement('textarea');
+    requestBodyTextarea.id = 'request-body-editor';
 
     // Set Request Body value
-    let requestBodyValue = "";
+    let requestBodyValue = '';
 
     // Get Request Body from existing rule or item
     let actualRequestBody: unknown = null;
@@ -1069,54 +1010,45 @@ function createEditView(
 
     // Convert Request Body to string
     if (actualRequestBody !== null && actualRequestBody !== undefined) {
-      if (typeof actualRequestBody === "string") {
+      if (typeof actualRequestBody === 'string') {
         requestBodyValue = actualRequestBody;
-      } else if (typeof actualRequestBody === "object") {
+      } else if (typeof actualRequestBody === 'object') {
         requestBodyValue = JSON.stringify(actualRequestBody, null, 2);
       }
     }
 
-    logger.rewrite.debug("[Request Body] item.requestBody:", item.requestBody);
-    logger.rewrite.debug(
-      "[Request Body] existingRule?.requestBody:",
-      existingRule?.requestBody,
-    );
-    logger.rewrite.debug(
-      "[Request Body] defaultRequestBody:",
-      defaultRequestBody,
-    );
-    logger.rewrite.debug(
-      "[Request Body] actualRequestBody:",
-      actualRequestBody,
-    );
-    logger.rewrite.debug("[Request Body] requestBodyValue:", requestBodyValue);
+    logger.rewrite.debug('[Request Body] item.requestBody:', item.requestBody);
+    logger.rewrite.debug('[Request Body] existingRule?.requestBody:', existingRule?.requestBody);
+    logger.rewrite.debug('[Request Body] defaultRequestBody:', defaultRequestBody);
+    logger.rewrite.debug('[Request Body] actualRequestBody:', actualRequestBody);
+    logger.rewrite.debug('[Request Body] requestBodyValue:', requestBodyValue);
 
     requestBodyTextarea.value = requestBodyValue;
 
     Object.assign(requestBodyTextarea.style, {
-      width: "100%",
-      height: "200px",
-      padding: "12px",
+      width: '100%',
+      height: '200px',
+      padding: '12px',
       border: `1px solid ${tokens.color.border.medium}`,
       borderRadius: tokens.radius.sm,
-      fontSize: "13px",
+      fontSize: '13px',
       fontFamily: tokens.font.mono,
-      lineHeight: "1.5",
-      resize: "vertical",
-      boxSizing: "border-box",
-      WebkitAppearance: "none",
-      MozAppearance: "none",
-      appearance: "none",
+      lineHeight: '1.5',
+      resize: 'vertical',
+      boxSizing: 'border-box',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+      appearance: 'none',
       transition: `border-color ${tokens.transition.normal}`,
-      outline: "none",
+      outline: 'none',
       background: tokens.color.bg.elevated,
       color: tokens.color.text.primary,
     });
 
-    requestBodyTextarea.addEventListener("focus", () => {
+    requestBodyTextarea.addEventListener('focus', () => {
       requestBodyTextarea.style.borderColor = tokens.color.accent.violet;
     });
-    requestBodyTextarea.addEventListener("blur", () => {
+    requestBodyTextarea.addEventListener('blur', () => {
       requestBodyTextarea.style.borderColor = tokens.color.border.medium;
     });
 
@@ -1124,80 +1056,80 @@ function createEditView(
   }
 
   // Programmatically create select element - find within container
-  const selectContainer = container.querySelector("#select-container");
+  const selectContainer = container.querySelector('#select-container');
   if (selectContainer) {
-    const select = document.createElement("select");
-    select.id = "status-editor";
+    const select = document.createElement('select');
+    select.id = 'status-editor';
 
     // Apply styles
     Object.assign(select.style, {
-      width: "100%",
-      padding: "10px 12px",
+      width: '100%',
+      padding: '10px 12px',
       border: `1px solid ${tokens.color.border.medium}`,
       borderRadius: tokens.radius.sm,
-      fontSize: "14px",
+      fontSize: '14px',
       background: tokens.color.bg.elevated,
       color: tokens.color.text.primary,
-      cursor: "pointer",
+      cursor: 'pointer',
       transition: `border-color ${tokens.transition.normal}`,
-      outline: "none",
+      outline: 'none',
       fontFamily: tokens.font.system,
     });
 
-    select.addEventListener("focus", () => {
+    select.addEventListener('focus', () => {
       select.style.borderColor = tokens.color.accent.violet;
     });
-    select.addEventListener("blur", () => {
+    select.addEventListener('blur', () => {
       select.style.borderColor = tokens.color.border.medium;
     });
 
     // Option data
     const optionGroups = [
       {
-        label: "Success (2xx)",
+        label: 'Success (2xx)',
         options: [
-          { value: 200, text: "200 OK" },
-          { value: 201, text: "201 Created" },
-          { value: 204, text: "204 No Content" },
+          { value: 200, text: '200 OK' },
+          { value: 201, text: '201 Created' },
+          { value: 204, text: '204 No Content' },
         ],
       },
       {
-        label: "Redirect (3xx)",
+        label: 'Redirect (3xx)',
         options: [
-          { value: 301, text: "301 Moved Permanently" },
-          { value: 302, text: "302 Found" },
-          { value: 304, text: "304 Not Modified" },
+          { value: 301, text: '301 Moved Permanently' },
+          { value: 302, text: '302 Found' },
+          { value: 304, text: '304 Not Modified' },
         ],
       },
       {
-        label: "Client Error (4xx)",
+        label: 'Client Error (4xx)',
         options: [
-          { value: 400, text: "400 Bad Request" },
-          { value: 401, text: "401 Unauthorized" },
-          { value: 403, text: "403 Forbidden" },
-          { value: 404, text: "404 Not Found" },
-          { value: 409, text: "409 Conflict" },
-          { value: 422, text: "422 Unprocessable Entity" },
+          { value: 400, text: '400 Bad Request' },
+          { value: 401, text: '401 Unauthorized' },
+          { value: 403, text: '403 Forbidden' },
+          { value: 404, text: '404 Not Found' },
+          { value: 409, text: '409 Conflict' },
+          { value: 422, text: '422 Unprocessable Entity' },
         ],
       },
       {
-        label: "Server Error (5xx)",
+        label: 'Server Error (5xx)',
         options: [
-          { value: 500, text: "500 Internal Server Error" },
-          { value: 502, text: "502 Bad Gateway" },
-          { value: 503, text: "503 Service Unavailable" },
-          { value: 504, text: "504 Gateway Timeout" },
+          { value: 500, text: '500 Internal Server Error' },
+          { value: 502, text: '502 Bad Gateway' },
+          { value: 503, text: '503 Service Unavailable' },
+          { value: 504, text: '504 Gateway Timeout' },
         ],
       },
     ];
 
     // Create option groups and options
     optionGroups.forEach((group) => {
-      const optgroup = document.createElement("optgroup");
+      const optgroup = document.createElement('optgroup');
       optgroup.label = group.label;
 
       group.options.forEach((optData) => {
-        const option = document.createElement("option");
+        const option = document.createElement('option');
         option.value = String(optData.value);
         option.textContent = optData.text;
 
@@ -1220,37 +1152,37 @@ function createEditView(
   }
 
   // Programmatically create textarea for response editor - find within container
-  const textareaContainer = container.querySelector("#textarea-container");
+  const textareaContainer = container.querySelector('#textarea-container');
   if (textareaContainer) {
     // Create textarea element
-    const textarea = document.createElement("textarea");
-    textarea.id = "response-editor";
+    const textarea = document.createElement('textarea');
+    textarea.id = 'response-editor';
 
     // Apply styles
     Object.assign(textarea.style, {
-      width: "100%",
-      height: "250px",
+      width: '100%',
+      height: '250px',
       fontFamily: tokens.font.mono,
-      fontSize: "13px",
+      fontSize: '13px',
       border: `1px solid ${tokens.color.border.medium}`,
       borderRadius: tokens.radius.sm,
-      padding: "12px",
+      padding: '12px',
       background: tokens.color.bg.elevated,
       color: tokens.color.text.primary,
-      lineHeight: "1.5",
-      resize: "vertical",
-      boxSizing: "border-box",
-      WebkitAppearance: "none",
-      MozAppearance: "none",
-      appearance: "none",
+      lineHeight: '1.5',
+      resize: 'vertical',
+      boxSizing: 'border-box',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+      appearance: 'none',
       transition: `border-color ${tokens.transition.normal}`,
-      outline: "none",
+      outline: 'none',
     });
 
-    textarea.addEventListener("focus", () => {
+    textarea.addEventListener('focus', () => {
       textarea.style.borderColor = tokens.color.accent.violet;
     });
-    textarea.addEventListener("blur", () => {
+    textarea.addEventListener('blur', () => {
       textarea.style.borderColor = tokens.color.border.medium;
     });
 
@@ -1264,96 +1196,79 @@ function createEditView(
 
   // Event handlers (run after DOM is ready)
   setTimeout(() => {
-    buttonsContainer
-      .querySelector("#cancel-edit")
-      ?.addEventListener("click", onBack);
+    buttonsContainer.querySelector('#cancel-edit')?.addEventListener('click', onBack);
 
-    buttonsContainer
-      .querySelector("#save-edit")
-      ?.addEventListener("click", () => {
-        const textarea =
-          container.querySelector<HTMLTextAreaElement>("#response-editor");
-        const selectElement =
-          container.querySelector<HTMLSelectElement>("#status-editor");
-        const queryStringInput = container.querySelector<HTMLInputElement>(
-          "#querystring-editor",
-        );
-        const requestBodyTextarea =
-          container.querySelector<HTMLTextAreaElement>("#request-body-editor");
+    buttonsContainer.querySelector('#save-edit')?.addEventListener('click', () => {
+      const textarea = container.querySelector<HTMLTextAreaElement>('#response-editor');
+      const selectElement = container.querySelector<HTMLSelectElement>('#status-editor');
+      const queryStringInput = container.querySelector<HTMLInputElement>('#querystring-editor');
+      const requestBodyTextarea =
+        container.querySelector<HTMLTextAreaElement>('#request-body-editor');
 
-        if (!textarea || !selectElement) {
-          alert("Editor not found.");
-          return;
-        }
+      if (!textarea || !selectElement) {
+        alert('Editor not found.');
+        return;
+      }
 
-        // Get status code
-        const statusCode = parseInt(selectElement.value);
+      // Get status code
+      const statusCode = parseInt(selectElement.value);
 
-        try {
-          // Check which tab is active
-          const isRequestTabActive =
-            container
-              .querySelector(".tab-btn.active")
-              ?.getAttribute("data-tab") === "request";
+      try {
+        // Check which tab is active
+        const isRequestTabActive =
+          container.querySelector('.tab-btn.active')?.getAttribute('data-tab') === 'request';
 
-          // Remove querystring from URL for saving (handle all querystring variations)
-          const urlWithoutQuery = item.url.split("?")[0];
+        // Remove querystring from URL for saving (handle all querystring variations)
+        const urlWithoutQuery = item.url.split('?')[0];
 
-          let queryString: string | undefined = undefined;
-          let requestBody: unknown = undefined;
-          let responseData: unknown = undefined;
+        let queryString: string | undefined = undefined;
+        let requestBody: unknown = undefined;
+        let responseData: unknown = undefined;
 
-          if (isRequestTabActive) {
-            // Request tab active - rewrite request only
-            queryString = queryStringInput?.value || "";
-            if (queryString && !queryString.startsWith("?")) {
-              queryString = "?" + queryString;
-            }
-
-            // Parse Request Body
-            if (requestBodyTextarea && requestBodyTextarea.value.trim()) {
-              try {
-                requestBody = JSON.parse(requestBodyTextarea.value);
-              } catch {
-                // Use as string if not valid JSON
-                requestBody = requestBodyTextarea.value;
-              }
-            }
-
-            // Check if there is actual request rewrite content
-            if (!queryString && !requestBody) {
-              alert("Enter rewrite content (Query String or Request Body)");
-              return;
-            }
-
-            logger.rewrite.debug("[Save] Mode: Request Rewrite");
-            logger.rewrite.debug("[Save] Query String:", queryString);
-            logger.rewrite.debug("[Save] Request Body:", requestBody);
-          } else {
-            // Response tab active - rewrite response only
-            if (!textarea.value.trim()) {
-              alert("Enter response data");
-              return;
-            }
-
-            responseData = JSON.parse(textarea.value);
-
-            logger.rewrite.debug("[Save] Mode: Response Rewrite");
-            logger.rewrite.debug("[Save] Response Data:", responseData);
+        if (isRequestTabActive) {
+          // Request tab active - rewrite request only
+          queryString = queryStringInput?.value || '';
+          if (queryString && !queryString.startsWith('?')) {
+            queryString = '?' + queryString;
           }
 
-          onSave(
-            urlWithoutQuery,
-            item.method,
-            statusCode,
-            responseData,
-            queryString,
-            requestBody,
-          );
+          // Parse Request Body
+          if (requestBodyTextarea && requestBodyTextarea.value.trim()) {
+            try {
+              requestBody = JSON.parse(requestBodyTextarea.value);
+            } catch {
+              // Use as string if not valid JSON
+              requestBody = requestBodyTextarea.value;
+            }
+          }
 
-          // Success message (toast style)
-          const successMsg = document.createElement("div");
-          successMsg.style.cssText = `
+          // Check if there is actual request rewrite content
+          if (!queryString && !requestBody) {
+            alert('Enter rewrite content (Query String or Request Body)');
+            return;
+          }
+
+          logger.rewrite.debug('[Save] Mode: Request Rewrite');
+          logger.rewrite.debug('[Save] Query String:', queryString);
+          logger.rewrite.debug('[Save] Request Body:', requestBody);
+        } else {
+          // Response tab active - rewrite response only
+          if (!textarea.value.trim()) {
+            alert('Enter response data');
+            return;
+          }
+
+          responseData = JSON.parse(textarea.value);
+
+          logger.rewrite.debug('[Save] Mode: Response Rewrite');
+          logger.rewrite.debug('[Save] Response Data:', responseData);
+        }
+
+        onSave(urlWithoutQuery, item.method, statusCode, responseData, queryString, requestBody);
+
+        // Success message (toast style)
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = `
         position: fixed;
         bottom: 20px;
         left: 50%;
@@ -1370,28 +1285,28 @@ function createEditView(
         max-width: 90%;
         font-family: ${tokens.font.system};
       `;
-          const modeText = isRequestTabActive
-            ? "Request rewrite enabled"
-            : "Response rewrite enabled";
-          successMsg.textContent = modeText;
-          document.body.appendChild(successMsg);
+        const modeText = isRequestTabActive
+          ? 'Request rewrite enabled'
+          : 'Response rewrite enabled';
+        successMsg.textContent = modeText;
+        document.body.appendChild(successMsg);
 
-          setTimeout(() => {
-            document.body.removeChild(successMsg);
-            // Close modal
-            const overlay = document.querySelector(
-              ".remote-debug-network-rewrite-modal",
-            )?.parentElement;
-            if (overlay) {
-              overlay.remove();
-            }
-            // Reload page to apply rewrite
-            window.location.reload();
-          }, 1500);
-        } catch {
-          alert("Invalid JSON format.");
-        }
-      });
+        setTimeout(() => {
+          document.body.removeChild(successMsg);
+          // Close modal
+          const overlay = document.querySelector(
+            '.remote-debug-network-rewrite-modal',
+          )?.parentElement;
+          if (overlay) {
+            overlay.remove();
+          }
+          // Reload page to apply rewrite
+          window.location.reload();
+        }, 1500);
+      } catch {
+        alert('Invalid JSON format.');
+      }
+    });
   }, 0);
 
   return { content: container, buttons: buttonsContainer };

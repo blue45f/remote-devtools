@@ -1,12 +1,12 @@
-import { Body, Controller, Get, Logger, Put, Query } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Body, Controller, Get, Logger, Put, Query } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { DeviceInfoEntity, UserEntity } from "@remote-platform/entity";
+import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
 
-import { BusinessException } from "@remote-platform/common";
-import { UserInfoService } from "../user-info/user-info.service";
+import { BusinessException } from '@remote-platform/common';
+import { UserInfoService } from '../user-info/user-info.service';
 
 /** Standard API response wrapper */
 interface ApiResponse<T = unknown> {
@@ -34,8 +34,8 @@ interface UserTemplatesResponse {
   readonly lastSelectedTemplate?: TicketTemplate;
 }
 
-@ApiTags("Ticket Form")
-@Controller("api")
+@ApiTags('Ticket Form')
+@Controller('api')
 export class TicketFormController {
   private readonly logger = new Logger(TicketFormController.name);
 
@@ -49,12 +49,9 @@ export class TicketFormController {
    * Resolve the actual device ID, falling back to LOCAL_DEVICE_ID in local dev environments.
    */
   private getActualDeviceId(deviceId: string): string {
-    if (!deviceId || deviceId === "test") {
+    if (!deviceId || deviceId === 'test') {
       this.logger.log(`Using LOCAL_DEVICE_ID: ${process.env.LOCAL_DEVICE_ID}`);
-      return (
-        process.env.LOCAL_DEVICE_ID ||
-        "OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1"
-      );
+      return process.env.LOCAL_DEVICE_ID || 'OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1';
     }
 
     return deviceId;
@@ -63,10 +60,8 @@ export class TicketFormController {
   /**
    * Retrieve ticket form data based on the last selected template.
    */
-  @Get("ticket-form-data")
-  public async getTicketFormData(
-    @Query("deviceId") deviceId: string,
-  ): Promise<ApiResponse> {
+  @Get('ticket-form-data')
+  public async getTicketFormData(@Query('deviceId') deviceId: string): Promise<ApiResponse> {
     const actualDeviceId = this.getActualDeviceId(deviceId);
 
     this.logger.log(`Retrieving ticket form data: ${actualDeviceId}`);
@@ -87,9 +82,9 @@ export class TicketFormController {
         throw error;
       }
 
-      this.logger.error("Failed to retrieve ticket form data:", error);
+      this.logger.error('Failed to retrieve ticket form data:', error);
       throw BusinessException.internalError(
-        "An error occurred while retrieving ticket form data.",
+        'An error occurred while retrieving ticket form data.',
         {
           originalError: error instanceof Error ? error.message : String(error),
         },
@@ -100,9 +95,9 @@ export class TicketFormController {
   /**
    * Retrieve all ticket templates for a user.
    */
-  @Get("user-templates")
+  @Get('user-templates')
   public async getUserTemplates(
-    @Query("deviceId") deviceId: string,
+    @Query('deviceId') deviceId: string,
   ): Promise<ApiResponse<UserTemplatesResponse>> {
     const actualDeviceId = this.getActualDeviceId(deviceId);
 
@@ -129,9 +124,7 @@ export class TicketFormController {
       const ticketTemplateList = user.ticketTemplateList || [];
 
       const lastSelectedTemplate = user.lastSelectedTemplateName
-        ? ticketTemplateList.find(
-            (t) => t.name === user.lastSelectedTemplateName,
-          )
+        ? ticketTemplateList.find((t) => t.name === user.lastSelectedTemplateName)
         : undefined;
 
       const response: UserTemplatesResponse = {
@@ -174,23 +167,20 @@ export class TicketFormController {
         throw error;
       }
 
-      this.logger.error("Failed to retrieve user templates:", error);
-      throw BusinessException.internalError(
-        "An error occurred while retrieving user templates.",
-        {
-          originalError: error instanceof Error ? error.message : String(error),
-        },
-      );
+      this.logger.error('Failed to retrieve user templates:', error);
+      throw BusinessException.internalError('An error occurred while retrieving user templates.', {
+        originalError: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
   /**
    * Retrieve ticket form data for a specific template and update the last selected template.
    */
-  @Get("ticket-form-data-by-template")
+  @Get('ticket-form-data-by-template')
   public async getTicketFormDataByTemplate(
-    @Query("deviceId") deviceId: string,
-    @Query("templateName") templateName: string,
+    @Query('deviceId') deviceId: string,
+    @Query('templateName') templateName: string,
   ): Promise<ApiResponse> {
     const actualDeviceId = this.getActualDeviceId(deviceId);
 
@@ -219,9 +209,7 @@ export class TicketFormController {
       }
 
       const time = Date.now() - timeStart;
-      this.logger.log(
-        `Template-specific form data retrieved and selection updated: ${time}ms`,
-      );
+      this.logger.log(`Template-specific form data retrieved and selection updated: ${time}ms`);
 
       return {
         success: true,
@@ -233,12 +221,9 @@ export class TicketFormController {
         throw error;
       }
 
-      this.logger.error(
-        "Failed to retrieve template-specific ticket form data:",
-        error,
-      );
+      this.logger.error('Failed to retrieve template-specific ticket form data:', error);
       throw BusinessException.internalError(
-        "An error occurred while retrieving ticket form data.",
+        'An error occurred while retrieving ticket form data.',
         {
           originalError: error instanceof Error ? error.message : String(error),
         },
@@ -249,16 +234,14 @@ export class TicketFormController {
   /**
    * Update the last selected template for a user (called when the SDK changes templates).
    */
-  @Put("select-template")
+  @Put('select-template')
   public async selectTemplate(
     @Body() body: { deviceId: string; templateName: string },
   ): Promise<ApiResponse<{ message: string }>> {
     const { deviceId, templateName } = body;
     const actualDeviceId = this.getActualDeviceId(deviceId);
 
-    this.logger.log(
-      `Template selection update: ${actualDeviceId}, template: ${templateName}`,
-    );
+    this.logger.log(`Template selection update: ${actualDeviceId}, template: ${templateName}`);
 
     try {
       const device = await this.deviceRepository.findOne({
@@ -278,9 +261,7 @@ export class TicketFormController {
 
       const user = device.user;
 
-      const template = user.ticketTemplateList?.find(
-        (t) => t.name === templateName,
-      );
+      const template = user.ticketTemplateList?.find((t) => t.name === templateName);
       if (!template) {
         throw BusinessException.templateNotFound(templateName, {
           userId: user.id,
@@ -305,9 +286,9 @@ export class TicketFormController {
         throw error;
       }
 
-      this.logger.error("Failed to update template selection:", error);
+      this.logger.error('Failed to update template selection:', error);
       throw BusinessException.internalError(
-        "An error occurred while updating the template selection.",
+        'An error occurred while updating the template selection.',
         {
           originalError: error instanceof Error ? error.message : String(error),
         },

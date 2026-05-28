@@ -1,6 +1,6 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get } from '@nestjs/common';
 
-import { AppService } from "./app.service";
+import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
@@ -9,7 +9,7 @@ export class AppController {
   /**
    * Root endpoint - returns health check status.
    */
-  @Get("/")
+  @Get('/')
   public getRoot(): string {
     return this.appService.getHealthCheck();
   }
@@ -17,7 +17,7 @@ export class AppController {
   /**
    * Health check endpoint.
    */
-  @Get("/health")
+  @Get('/health')
   public getHealth(): string {
     return this.appService.getHealthCheck();
   }

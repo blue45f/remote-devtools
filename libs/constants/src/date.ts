@@ -1,6 +1,6 @@
-import { toZonedTime, format } from "date-fns-tz";
+import { toZonedTime, format } from 'date-fns-tz';
 
-const TIMEZONE = process.env.TZ || "Asia/Seoul";
+const TIMEZONE = process.env.TZ || 'Asia/Seoul';
 
 /**
  * Returns the current date string in YYYY-MM-DD format for the configured timezone.
@@ -8,7 +8,7 @@ const TIMEZONE = process.env.TZ || "Asia/Seoul";
 export function getLocalDateString(timestamp?: number): string {
   const date = timestamp ? new Date(timestamp) : new Date();
   const zonedDate = toZonedTime(date, TIMEZONE);
-  return format(zonedDate, "yyyy-MM-dd", { timeZone: TIMEZONE });
+  return format(zonedDate, 'yyyy-MM-dd', { timeZone: TIMEZONE });
 }
 
 /**

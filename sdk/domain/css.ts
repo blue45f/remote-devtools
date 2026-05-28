@@ -1,24 +1,24 @@
-import { calculate, compare } from "specificity";
+import { calculate, compare } from 'specificity';
 
 // specificity@1.0 doesn't re-export its types from the package root, so
 // derive the Specificity shape from `calculate`'s return type rather than
 // reaching into the package's internal paths.
 type Specificity = ReturnType<typeof calculate>;
 
-import { DEVTOOL_STYLESHEET } from "../common/constant";
-import nodes from "../common/nodes";
-import * as stylesheet from "../common/stylesheet";
+import { DEVTOOL_STYLESHEET } from '../common/constant';
+import nodes from '../common/nodes';
+import * as stylesheet from '../common/stylesheet';
 import {
   escapeRegString,
   getAbsolutePath,
   isMatches,
   isElement,
   isHTMLElement,
-} from "../common/utils";
+} from '../common/utils';
 
-import { BaseDomain } from "./base";
-import { Page } from "./page";
-import { Events } from "./protocol";
+import { BaseDomain } from './base';
+import { Page } from './page';
+import { Events } from './protocol';
 
 interface StyleRule {
   selectorText: string;
@@ -60,7 +60,7 @@ interface FormattedCssRule {
       cssText?: string;
       cssProperties: FormattedCssProperty[];
       shorthandEntries: never[];
-      range: StyleRule["range"];
+      range: StyleRule['range'];
     };
     selectorList: {
       selectors: { text: string }[];
@@ -84,7 +84,7 @@ declare global {
 }
 
 export class CSS extends BaseDomain {
-  public namespace = "CSS";
+  public namespace = 'CSS';
 
   // css style collection
   private styles = new Map<string, string>();
@@ -97,11 +97,7 @@ export class CSS extends BaseDomain {
   /**
    * Formatting css rules
    */
-  public static formatCssRule(
-    styleSheetId: string,
-    rule: StyleRule,
-    node: Node,
-  ): FormattedCssRule {
+  public static formatCssRule(styleSheetId: string, rule: StyleRule, node: Node): FormattedCssRule {
     let index = 0;
     // specificity@1.0 returns a Specificity object keyed by A/B/C (id /
     // class+attr+pseudo-class / element+pseudo-element). The old [0,0,0,0]
@@ -109,17 +105,15 @@ export class CSS extends BaseDomain {
     let specificityArray: Specificity = { A: 0, B: 0, C: 0 };
 
     const selectors = rule.selectorText
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split(",")
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split(',')
       .map((item, i) => {
         const text = item.trim();
         if (isElement(node) && isMatches(node, text)) {
           specificityArray = calculate(text);
           index = i;
-        } else if (
-          ["::before", "::after"].includes(node.nodeName?.toLowerCase())
-        ) {
-          const [selectorText, pseudoType] = text.split(":").filter(Boolean);
+        } else if (['::before', '::after'].includes(node.nodeName?.toLowerCase())) {
+          const [selectorText, pseudoType] = text.split(':').filter(Boolean);
           if (
             pseudoType &&
             node.nodeName.toLowerCase() === `::${pseudoType}` &&
@@ -163,17 +157,13 @@ export class CSS extends BaseDomain {
    * @param {String} value css value
    * @param {String} cssText cssText
    */
-  private static getInlineStyleRange(
-    name: string,
-    value: string,
-    cssText: string,
-  ) {
-    const lines = cssText.split("\n");
+  private static getInlineStyleRange(name: string, value: string, cssText: string) {
+    const lines = cssText.split('\n');
     let startLine = 0;
     let endLine = 0;
     let startColumn = 0;
     let endColumn = 0;
-    let text = "";
+    let text = '';
 
     const reg = new RegExp(
       `(\\/\\*)?\\s*${escapeRegString(name)}:\\s*${escapeRegString(value)};?\\s*(\\*\\/)?`,
@@ -209,7 +199,7 @@ export class CSS extends BaseDomain {
    * @param {Object} cssRange css text range，eg: {startLine,startColumn,endLine,endColumn}
    */
   private static formatCssProperties(
-    cssText = "",
+    cssText = '',
     cssRange: {
       startLine?: number;
       startColumn?: number;
@@ -234,13 +224,13 @@ export class CSS extends BaseDomain {
   } | null)[] {
     const isValidProp = (text: string) => /[\s\S]+?:[\s\S]+?;/.test(text);
     const splitProps = (text: string) =>
-      text.split(";").map((v, i, a) => (i < a.length - 1 ? `${v};` : v));
+      text.split(';').map((v, i, a) => (i < a.length - 1 ? `${v};` : v));
     const splited = cssText
       .split(/\/\*/)
       .map((text) => text.split(/\*\//))
       .map((item) => {
         if (item.length === 1) return item;
-        if (item[0].split("\n").length > 1) return [item[1]];
+        if (item[0].split('\n').length > 1) return [item[1]];
         return item;
       })
       .reduce((pre, cur) => {
@@ -259,24 +249,20 @@ export class CSS extends BaseDomain {
      * NOTE: devtools에서 css수정시 에러가 있음.
      * @see https://github.com/Nice-PLQ/devtools-remote-debugger/issues/32#issuecomment-2338621885
      * */
-    const formatVal = (text: string) => text.trim().replace(/\/\*.*?\*\//g, "");
+    const formatVal = (text: string) => text.trim().replace(/\/\*.*?\*\//g, '');
     return splited
       .map((style) => {
-        const [name, ...values] = style
-          .replace(/^\/\*|;?\s*\*\/$|;$/g, "")
-          .split(":");
-        const value = values.join(":");
+        const [name, ...values] = style.replace(/^\/\*|;?\s*\*\/$|;$/g, '').split(':');
+        const value = values.join(':');
         if (value) {
           let range;
           if (cssRange) {
             const match = cssText.match(
-              new RegExp(
-                `(^|[{/;\\s\n])${style.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}`,
-              ),
+              new RegExp(`(^|[{/;\\s\n])${style.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`),
             );
             const index = (match?.index ?? 0) + (match?.[1]?.length ?? 0) || 0;
-            const leftExcludes = cssText.substring(0, index).split("\n");
-            const leftIncludes = (leftExcludes.join("\n") + style).split("\n");
+            const leftExcludes = cssText.substring(0, index).split('\n');
+            const leftIncludes = (leftExcludes.join('\n') + style).split('\n');
             range = {
               startLine: (cssRange.startLine ?? 0) + leftExcludes.length - 1,
               startColumn:
@@ -292,8 +278,8 @@ export class CSS extends BaseDomain {
             name: formatVal(name),
             value: formatVal(value),
             text: style,
-            important: value.includes("important"),
-            disabled: style.includes("/*"),
+            important: value.includes('important'),
+            disabled: style.includes('/*'),
             implicit: false,
             shorthandEntries: [],
             range,
@@ -335,17 +321,16 @@ export class CSS extends BaseDomain {
               frameId: Page.MAINFRAME_ID,
               styleSheetId,
               sourceURL,
-              origin: "regular",
+              origin: 'regular',
               disabled: false,
               isConstructed: false,
               isInline: false,
               isMutable: true,
               length: content.length,
               startLine: 0,
-              endLine: content.split("\n").length - 1,
+              endLine: content.split('\n').length - 1,
               startColumn: 0,
-              endColumn:
-                content.split("\n").length - content.lastIndexOf("\n") - 1 - 1,
+              endColumn: content.split('\n').length - content.lastIndexOf('\n') - 1 - 1,
               title: style?.title,
             },
           },
@@ -364,17 +349,14 @@ export class CSS extends BaseDomain {
         style.styleSheetId = styleSheetId;
         if (sourceURL) {
           this.fetchStyleSource(styleSheetId, sourceURL);
-        } else if (
-          isHTMLElement(style.ownerNode) &&
-          style.ownerNode.innerHTML
-        ) {
+        } else if (isHTMLElement(style.ownerNode) && style.ownerNode.innerHTML) {
           const content = style.ownerNode.innerHTML;
           this.styles.set(styleSheetId, content);
           this.styleRules.set(styleSheetId, this.parseStyleRules(content));
           const htmlContent = document.documentElement.outerHTML;
           const index = htmlContent.indexOf(content);
-          const leftExcludes = htmlContent.substring(0, index).split("\n");
-          const leftIncludes = (leftExcludes.join("\n") + content).split("\n");
+          const leftExcludes = htmlContent.substring(0, index).split('\n');
+          const leftIncludes = (leftExcludes.join('\n') + content).split('\n');
           this.sendProtocol({
             method: Events.styleSheetAdded,
             params: {
@@ -382,7 +364,7 @@ export class CSS extends BaseDomain {
                 frameId: Page.MAINFRAME_ID,
                 styleSheetId,
                 sourceURL: location.href,
-                origin: "regular",
+                origin: 'regular',
                 disabled: false,
                 isConstructed: false,
                 isInline: true,
@@ -406,7 +388,7 @@ export class CSS extends BaseDomain {
    */
   private fetchStyleSource(styleSheetId: string, url: string) {
     const xhr = new XMLHttpRequest();
-    xhr.$$requestType = "Stylesheet";
+    xhr.$$requestType = 'Stylesheet';
     xhr.onload = () => {
       const content = xhr.responseText;
       this.styles.set(styleSheetId, content);
@@ -418,27 +400,26 @@ export class CSS extends BaseDomain {
             frameId: Page.MAINFRAME_ID,
             styleSheetId,
             sourceURL: url,
-            origin: "regular",
+            origin: 'regular',
             disabled: false,
             isConstructed: false,
             isInline: false,
             isMutable: false,
             length: content.length,
             startLine: 0,
-            endLine: content.split("\n").length - 1,
+            endLine: content.split('\n').length - 1,
             startColumn: 0,
-            endColumn:
-              content.split("\n").length - content.lastIndexOf("\n") - 1 - 1,
+            endColumn: content.split('\n').length - content.lastIndexOf('\n') - 1 - 1,
           },
         },
       });
     };
     xhr.onerror = () => {
-      this.styles.set(styleSheetId, "Cannot get style source code");
-      this.styleRules.set(styleSheetId, this.parseStyleRules(""));
+      this.styles.set(styleSheetId, 'Cannot get style source code');
+      this.styleRules.set(styleSheetId, this.parseStyleRules(''));
     };
 
-    xhr.open("GET", url);
+    xhr.open('GET', url);
     xhr.send();
   }
 
@@ -453,18 +434,18 @@ export class CSS extends BaseDomain {
       column: number;
     }[] = [];
     for (
-      let i = 0, line = 0, column = 0, brackets = 0, media = "", token = "";
+      let i = 0, line = 0, column = 0, brackets = 0, media = '', token = '';
       i < content.length;
       i++
     ) {
       const pointer = content[i];
       switch (pointer) {
-        case "{": {
+        case '{': {
           brackets += 1;
           column += 1;
           if ((!media && brackets === 1) || (media && brackets === 2)) {
             tokenList.push({ token, media, line, column });
-            token = "";
+            token = '';
           } else if (media && brackets === 1) {
             // nothing to do
           } else {
@@ -472,30 +453,30 @@ export class CSS extends BaseDomain {
           }
           break;
         }
-        case "}": {
+        case '}': {
           brackets -= 1;
           if ((!media && brackets === 0) || (media && brackets === 1)) {
             tokenList.push({ token, media, line, column });
-            token = "";
+            token = '';
           } else if (media && brackets === 0) {
-            media = "";
+            media = '';
           } else {
             token += pointer;
           }
           column += 1;
           break;
         }
-        case "@": {
-          if (content.substring(i, i + 7) === "@media ") {
+        case '@': {
+          if (content.substring(i, i + 7) === '@media ') {
             media += token + pointer;
-            token = "";
+            token = '';
           } else {
             token += pointer;
           }
           column += 1;
           break;
         }
-        case "\n": {
+        case '\n': {
           if (media && brackets === 0) {
             media += pointer;
           } else {
@@ -531,10 +512,8 @@ export class CSS extends BaseDomain {
       if (tokenList[j].media) {
         rule.media = [
           {
-            source: "mediaRule",
-            text: tokenList[j].media
-              .substring(tokenList[j].media.indexOf(" "))
-              .trim(),
+            source: 'mediaRule',
+            text: tokenList[j].media.substring(tokenList[j].media.indexOf(' ')).trim(),
           },
         ];
       }
@@ -554,7 +533,7 @@ export class CSS extends BaseDomain {
     if (styleSheet.ownerNode?.parentNode) {
       if (!styleSheet.devToolsOverrideStyle) {
         styleSheet.disabled = true;
-        styleSheet.devToolsOverrideStyle = document.createElement("style");
+        styleSheet.devToolsOverrideStyle = document.createElement('style');
         styleSheet.devToolsOverrideStyle.className = DEVTOOL_STYLESHEET;
         styleSheet.ownerNode.parentNode.insertBefore(
           styleSheet.devToolsOverrideStyle,
@@ -586,15 +565,11 @@ export class CSS extends BaseDomain {
    */
   public getMatchedStylesForNode({ nodeId }: { nodeId: number }) {
     const node = nodes.getNodeById(nodeId);
-    if (
-      !isElement(node) &&
-      !["::before", "::after"].includes(node.nodeName?.toLowerCase())
-    )
-      return;
+    if (!isElement(node) && !['::before', '::after'].includes(node.nodeName?.toLowerCase())) return;
 
     const matchedCSSRules: {
       matchingSelectors: number[];
-      rule: FormattedCssRule["cssRule"];
+      rule: FormattedCssRule['cssRule'];
       specificityArray: Specificity;
     }[] = [];
     const styleSheets = Array.from(document.styleSheets);
@@ -607,16 +582,10 @@ export class CSS extends BaseDomain {
         return;
       if (
         (isElement(node) && isMatches(node, rule.selectorText)) ||
-        (node.nodeName?.toLowerCase() === "::before" &&
-          rule.selectorText.includes(":before")) ||
-        (node.nodeName?.toLowerCase() === "::after" &&
-          rule.selectorText.includes(":after"))
+        (node.nodeName?.toLowerCase() === '::before' && rule.selectorText.includes(':before')) ||
+        (node.nodeName?.toLowerCase() === '::after' && rule.selectorText.includes(':after'))
       ) {
-        const { index, specificityArray, cssRule } = CSS.formatCssRule(
-          styleSheetId,
-          rule,
-          node,
-        );
+        const { index, specificityArray, cssRule } = CSS.formatCssRule(styleSheetId, rule, node);
         matchedCSSRules.push({
           matchingSelectors: [index],
           rule: cssRule,
@@ -654,9 +623,9 @@ export class CSS extends BaseDomain {
     if (!isHTMLElement(node)) return;
 
     const { style } = node || {};
-    const cssText = node.getAttribute("style") || "";
+    const cssText = node.getAttribute('style') || '';
 
-    const cssTextLines = cssText.split("\n");
+    const cssTextLines = cssText.split('\n');
     const cssProperties = CSS.formatCssProperties(cssText);
 
     cssProperties.forEach((css) => {
@@ -667,7 +636,7 @@ export class CSS extends BaseDomain {
       css.text = text;
       css.range = range;
 
-      if (text.startsWith("/*")) {
+      if (text.startsWith('/*')) {
         css.disabled = true;
       } else {
         css.disabled = false;
@@ -700,11 +669,7 @@ export class CSS extends BaseDomain {
    */
   public getComputedStyleForNode({ nodeId }: { nodeId: number }) {
     const node = nodes.getNodeById(nodeId);
-    if (
-      !isElement(node) &&
-      !["::before", "::after"].includes(node.nodeName?.toLowerCase())
-    )
-      return;
+    if (!isElement(node) && !['::before', '::after'].includes(node.nodeName?.toLowerCase())) return;
 
     const _computedStyle = isElement(node)
       ? window.getComputedStyle(node)
@@ -746,25 +711,25 @@ export class CSS extends BaseDomain {
   }) {
     const styles = edits.map((edit) => {
       const { styleSheetId, range } = edit;
-      const text = edit.text.replace(/;+/g, ";");
+      const text = edit.text.replace(/;+/g, ';');
       const nodeId = stylesheet.getInlineStyleNodeId(styleSheetId);
       if (nodeId) {
         const node = nodes.getNodeById(nodeId);
-        if (isElement(node)) node.setAttribute("style", text);
+        if (isElement(node)) node.setAttribute('style', text);
         return this.getInlineStylesForNode({ nodeId })?.inlineStyle;
       }
 
       const styleSheet = stylesheet.getStyleSheetById(styleSheetId);
       const content = this.styles.get(styleSheetId);
       if (styleSheet && content) {
-        const lines = content.split("\n");
+        const lines = content.split('\n');
         const newContent = [
           ...lines.slice(0, range.startLine),
           lines[range.startLine].substring(0, range.startColumn) +
             text +
             lines[range.endLine].substring(range.endColumn),
           ...lines.slice(range.endLine + 1),
-        ].join("\n");
+        ].join('\n');
 
         this.styles.set(styleSheetId, newContent);
         this.styleRules.set(styleSheetId, this.parseStyleRules(newContent));
@@ -815,18 +780,18 @@ export class CSS extends BaseDomain {
         header: {
           styleSheetId: newStyleSheetId,
           frameId,
-          origin: "inspector",
+          origin: 'inspector',
           disabled: false,
           isConstructed: false,
           isInline: false,
           isMutable: false,
           length: 0,
-          sourceURL: "",
+          sourceURL: '',
           startLine: 0,
           endLine: 0,
           startColumn: 0,
           endColumn: 0,
-          title: "",
+          title: '',
         },
       },
     });
@@ -855,31 +820,28 @@ export class CSS extends BaseDomain {
     const styleSheet = stylesheet.getStyleSheetById(styleSheetId);
     const content = this.styles.get(styleSheetId);
     if (styleSheet && content) {
-      const lines = content.split("\n");
+      const lines = content.split('\n');
       const newContent = [
         ...lines.slice(0, location.startLine),
         lines[location.startLine].substring(0, location.startColumn) +
           ruleText +
           lines[location.endLine].substring(location.endColumn),
         ...lines.slice(location.endLine + 1),
-      ].join("\n");
+      ].join('\n');
 
       this.styles.set(styleSheetId, newContent);
       this.styleRules.set(styleSheetId, this.parseStyleRules(newContent));
 
       const rules = this.styleRules.get(styleSheetId);
       if (rules) {
-        const selectorText = ruleText.slice(0, ruleText.indexOf("{"));
-        const selectorLines = selectorText.split("\n");
+        const selectorText = ruleText.slice(0, ruleText.indexOf('{'));
+        const selectorLines = selectorText.split('\n');
         const newRule = rules.find((rule) =>
           selectorLines.length === 1
             ? rule.range.startLine === location.startLine &&
-              rule.range.startColumn ===
-                location.startColumn - selectorText.length
-            : rule.range.startLine ===
-                location.startLine + selectorLines.length - 1 &&
-              rule.range.startColumn ===
-                selectorLines[selectorLines.length - 1].length + 1,
+              rule.range.startColumn === location.startColumn - selectorText.length
+            : rule.range.startLine === location.startLine + selectorLines.length - 1 &&
+              rule.range.startColumn === selectorLines[selectorLines.length - 1].length + 1,
         );
 
         if (newRule) {
@@ -901,9 +863,7 @@ export class CSS extends BaseDomain {
                 range: newRule.range,
               },
               selectorList: {
-                selectors: selectorText
-                  .split(",")
-                  .map((item) => ({ text: item.trim() })),
+                selectors: selectorText.split(',').map((item) => ({ text: item.trim() })),
                 text: newRule.selectorText.trim(),
               },
             },

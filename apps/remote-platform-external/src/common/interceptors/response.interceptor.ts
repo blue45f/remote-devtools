@@ -1,12 +1,6 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from "@nestjs/common";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Response<T> {
   success: boolean;
@@ -49,10 +43,7 @@ export interface Response<T> {
 export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
   private readonly logger = new Logger(ResponseInterceptor.name);
 
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<Response<T>> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
     const request = context.switchToHttp().getRequest();
     const startTime = Date.now();
 
@@ -61,7 +52,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         const elapsedTime = Date.now() - startTime;
 
         // 이미 우리 형식인 경우 (controller에서 직접 반환)
-        if (data && typeof data === "object" && "success" in data) {
+        if (data && typeof data === 'object' && 'success' in data) {
           return {
             ...data,
             timestamp: new Date().toISOString(),
