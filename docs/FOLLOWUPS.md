@@ -174,7 +174,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the speed you last picked. ReplayPlayer accepts a `speed` prop and
   re-applies via `setSpeed()` on change. PostHog / OpenReplay /
   Sentry replay parity for "I just want this to go faster".
-- **Replay "Skip idle" toggle** — current commit — A toggle button
+- **Replay "Skip idle" toggle** — `72c9f7d2` — A toggle button
   next to the speed picker turns on rrweb-player's `skipInactive`
   mode, fast-forwarding through idle stretches. Persists alongside
   the speed in `replay-prefs:v1`. ReplayPlayer passes `skipInactive`
