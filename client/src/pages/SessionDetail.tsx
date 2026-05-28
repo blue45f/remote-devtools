@@ -616,6 +616,12 @@ export default function SessionDetailPage() {
               onJumpToConsole={() => setTab('console')}
             />
           )}
+          {(networkRows ?? []).some((r) => r.status !== undefined && r.status >= 400) && (
+            <FailedRequestsCard
+              rows={(networkRows ?? []).filter((r) => r.status !== undefined && r.status >= 400)}
+              onJumpToNetwork={() => setTab('network')}
+            />
+          )}
           <OverviewTab loading={eventsLoading} counts={eventTypeCounts} total={totalEvents} />
         </TabsContent>
 
@@ -3239,6 +3245,57 @@ function TopErrorsCard({
               {formatTimestampWithMillis(r.timestamp)}
             </span>
             <span className="text-danger truncate">{r.text}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+function FailedRequestsCard({
+  rows,
+  onJumpToNetwork,
+}: {
+  rows: NetworkRow[];
+  onJumpToNetwork: () => void;
+}) {
+  const recent = useMemo(
+    () => [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3),
+    [rows],
+  );
+
+  return (
+    <Card
+      className="p-4 border-danger-soft bg-danger-soft/40"
+      data-testid="overview-failed-requests"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Globe className="size-4 text-danger" />
+          <h3 className="text-sm font-semibold text-fg">
+            Failed requests
+            <span className="ml-2 text-fg-faint font-normal">({rows.length} total)</span>
+          </h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onJumpToNetwork}
+          data-testid="overview-failed-requests-jump"
+        >
+          See all
+        </Button>
+      </div>
+      <ul className="space-y-1.5">
+        {recent.map((r) => (
+          <li
+            key={r.id}
+            className="flex items-center gap-2 text-[12px] font-mono"
+            data-testid="overview-failed-request-row"
+          >
+            <span className="text-danger shrink-0 tabular-nums w-9">{r.status}</span>
+            <span className="text-fg-faint shrink-0">{r.method}</span>
+            <span className="text-fg-subtle truncate">{r.url}</span>
           </li>
         ))}
       </ul>
