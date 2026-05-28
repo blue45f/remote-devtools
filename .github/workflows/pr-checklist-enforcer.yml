@@ -58,11 +58,18 @@ jobs:
             );
 
             const body = pr.body || "";
-            const checklistMatch = body.match(
-              /^##\s*검증 체크리스트\s*([\s\S]*?)(?=^##\s+|\s*$)/m
-            );
-            const checklistSection = checklistMatch ? checklistMatch[1] : "";
-            const isChecklistMissing = !checklistMatch;
+            // Extract the body of the "## 검증 체크리스트" section by
+            // splitting on H2 headings. The previous regex used `\s*$`
+            // inside a non-greedy lookahead, which the m-flagged engine
+            // satisfied at the end of the very first line — leaving the
+            // section as a one-line slice. Splitting on `^##\s+` and
+            // picking the section whose body starts with the heading
+            // text is both readable and robust to trailing-blank-line
+            // tomfoolery.
+            const sections = body.split(/^##\s+/m);
+            const checklistSection =
+              sections.find((s) => /^검증 체크리스트(?:\s|$)/.test(s.trim())) || "";
+            const isChecklistMissing = checklistSection === "";
 
             const checkedItems = new Set(
               (checklistSection.match(/^\s*-\s*\[[xX]\]\s*([^\n]+)/gm) || [])
