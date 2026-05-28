@@ -579,6 +579,14 @@ limit)` extracts hostname directly in SQL
   tags: tags are short labels, note is long-form context
   (repro steps). Sentry/Linear issue-note parity.
 
+- **Sortable network columns** — `9282546a` — Status and
+  Size headers are click-to-sort (desc → asc → clear) with
+  a direction caret. Sort derives from the filtered rows so
+  it composes with type/status/text filters; default stays
+  capture order. Surfaces biggest payloads / groups error
+  statuses without scrolling. Chrome DevTools column-sort
+  parity.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
