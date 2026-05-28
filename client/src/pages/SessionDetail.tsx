@@ -200,6 +200,36 @@ export default function SessionDetailPage() {
     enabled: !!id,
   });
 
+  // Pre-fetch the network + console summaries so the tab triggers can
+  // render error-count badges before the user clicks into either panel.
+  // Same query key as NetworkTab / ConsoleTab — TanStack Query shares the
+  // cache, so the panel queries become free reads.
+  const { data: networkRows } = useQuery<NetworkRow[]>({
+    queryKey: ["session-network", id],
+    queryFn: () =>
+      apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${id}/network`),
+    enabled: !!id && recordId !== null,
+  });
+  const { data: consoleRows } = useQuery<ConsoleRow[]>({
+    queryKey: ["session-console", id],
+    queryFn: () =>
+      apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${id}/console`),
+    enabled: !!id && recordId !== null,
+  });
+
+  const networkErrorCount = useMemo(
+    () =>
+      (networkRows ?? []).reduce(
+        (acc, r) => acc + (r.status !== undefined && r.status >= 400 ? 1 : 0),
+        0,
+      ),
+    [networkRows],
+  );
+  const consoleErrorCount = useMemo(
+    () => (consoleRows ?? []).reduce((acc, r) => acc + (r.level === "error" ? 1 : 0), 0),
+    [consoleRows],
+  );
+
   const events = useMemo<ReplayEvent[]>(
     () => (rawEvents ?? []).map(normaliseEvent),
     [rawEvents],
@@ -421,10 +451,30 @@ export default function SessionDetailPage() {
             <TabsTrigger value="network" className="gap-1.5">
               <Globe className="size-3.5" />
               Network
+              {networkErrorCount > 0 && (
+                <Badge
+                  variant="danger"
+                  size="sm"
+                  className="ml-1 h-4 px-1 text-[10px]"
+                  data-testid="network-error-badge"
+                >
+                  {networkErrorCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="console" className="gap-1.5">
               <Terminal className="size-3.5" />
               Console
+              {consoleErrorCount > 0 && (
+                <Badge
+                  variant="danger"
+                  size="sm"
+                  className="ml-1 h-4 px-1 text-[10px]"
+                  data-testid="console-error-badge"
+                >
+                  {consoleErrorCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="raw" className="gap-1.5">
               <FileJson className="size-3.5" />

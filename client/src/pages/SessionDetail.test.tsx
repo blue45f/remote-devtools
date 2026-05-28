@@ -224,6 +224,23 @@ describe("SessionDetail page", () => {
     );
   });
 
+  it("surfaces error count badges on Network and Console tabs", async () => {
+    renderAt(1000);
+
+    // The Network tab badge picks up the 401 + 500 from the seed fixture.
+    await waitFor(() => {
+      expect(screen.getByTestId("network-error-badge")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("network-error-badge").textContent).toBe("2");
+
+    // The Console tab badge picks up the two error-level entries in the
+    // seed fixture (TypeError + 500 Internal Server Error).
+    await waitFor(() => {
+      expect(screen.getByTestId("console-error-badge")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("console-error-badge").textContent).toBe("2");
+  });
+
   it("renders captured console messages on the Console tab", async () => {
     const user = userEvent.setup();
     renderAt(1000);
