@@ -88,7 +88,7 @@ describe('SessionDetail page', () => {
       .find((c) => c.textContent?.includes('checkout'));
     expect(checkoutChip).toBeDefined();
 
-    const removeBtn = checkoutChip!.querySelector('button');
+    const removeBtn = checkoutChip?.querySelector('button');
     expect(removeBtn).not.toBeNull();
     await user.click(removeBtn as HTMLButtonElement);
 
