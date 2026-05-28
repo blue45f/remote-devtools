@@ -25,6 +25,15 @@ interface DemoComment {
 const demoCommentStore = new Map<number, DemoComment[]>();
 const demoCommentSeeded = new Set<number>();
 
+/**
+ * Test-only: clear the module-level demo comment state so the in-memory
+ * store doesn't leak across test cases. No-op effect in production.
+ */
+export function __resetDemoComments(): void {
+  demoCommentStore.clear();
+  demoCommentSeeded.clear();
+}
+
 function seedDemoComments(recordId: number): DemoComment[] {
   // First time a session opens its comments panel in demo mode, drop in
   // a couple of representative comments so the UI isn't empty.
