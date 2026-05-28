@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,7 @@ function persistPrefs(prefs: SessionsPrefs) {
 }
 
 export default function SessionsPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<SessionTab>("record");
   const [search, setSearch] = useState("");
   const [regexMode, setRegexMode] = useState(false);
@@ -151,6 +152,10 @@ export default function SessionsPage() {
   );
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
   const [hostFilter, setHostFilter] = useState<string | null>(null);
+  // Index of the currently-focused row in the filtered list. -1 means
+  // "no row selected" — the cursor reveals only after the user presses
+  // a navigation key so it doesn't visually compete with the toolbar.
+  const [cursorIdx, setCursorIdx] = useState<number>(-1);
 
   // Persist view+sort whenever they change so the next visit reopens
   // with the same shape. Search, host, duration are intentionally NOT
@@ -158,6 +163,12 @@ export default function SessionsPage() {
   useEffect(() => {
     persistPrefs({ view, sort });
   }, [view, sort]);
+
+  // Reset the cursor whenever the filter result changes — the row at
+  // cursorIdx might not exist any more.
+  useEffect(() => {
+    setCursorIdx(-1);
+  }, [tab, search, sort, durationFilter, hostFilter]);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -282,6 +293,69 @@ export default function SessionsPage() {
 
   const filtersActive =
     search.trim() !== "" || durationFilter !== "all" || hostFilter !== null;
+
+  // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
+  // while typing in inputs, while modifier keys are held, and while
+  // live tab is active (the live tab has no detail route).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (filtered.length === 0) return;
+
+      const move = (delta: number) => {
+        e.preventDefault();
+        setCursorIdx((idx) => {
+          const next = idx < 0 ? (delta > 0 ? 0 : filtered.length - 1) : idx + delta;
+          const clamped = Math.max(0, Math.min(filtered.length - 1, next));
+          // Bring the focused row into view on the next paint
+          requestAnimationFrame(() => {
+            const id = filtered[clamped]?.id;
+            if (id == null) return;
+            const el = document.querySelector<HTMLElement>(
+              `[data-session-row="${id}"]`,
+            );
+            el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          });
+          return clamped;
+        });
+      };
+
+      switch (e.key) {
+        case "j":
+        case "ArrowDown":
+          move(1);
+          return;
+        case "k":
+        case "ArrowUp":
+          move(-1);
+          return;
+        case "Enter": {
+          if (tab !== "record") return;
+          if (cursorIdx < 0) return;
+          const id = filtered[cursorIdx]?.id;
+          if (id == null) return;
+          e.preventDefault();
+          navigate(`/sessions/${id}`);
+          return;
+        }
+        default:
+          return;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [filtered, cursorIdx, navigate, tab]);
+
   const SortIcon = SORT_ICONS[sort];
   // On phones / small tablets the row-based table is illegible — force the
   // card grid below `lg`. Users who explicitly opt into a table on a small
@@ -504,9 +578,17 @@ export default function SessionsPage() {
       ) : (
         <>
           {effectiveView === "table" ? (
-            <SessionTable sessions={filtered} tab={tab} />
+            <SessionTable
+              sessions={filtered}
+              tab={tab}
+              cursorIdx={cursorIdx}
+            />
           ) : (
-            <SessionGrid sessions={filtered} tab={tab} />
+            <SessionGrid
+              sessions={filtered}
+              tab={tab}
+              cursorIdx={cursorIdx}
+            />
           )}
           {tab === "record" && hasNextPage && (
             <div className="flex justify-center mt-4">
@@ -728,9 +810,11 @@ function FilterChips({
 function SessionTable({
   sessions,
   tab,
+  cursorIdx,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
+  cursorIdx: number;
 }) {
   return (
     <Card className="overflow-hidden p-0">
@@ -748,8 +832,13 @@ function SessionTable({
             </tr>
           </thead>
           <tbody>
-            {sessions.map((session) => (
-              <SessionRow key={session.id} session={session} tab={tab} />
+            {sessions.map((session, idx) => (
+              <SessionRow
+                key={session.id}
+                session={session}
+                tab={tab}
+                active={idx === cursorIdx}
+              />
             ))}
           </tbody>
         </table>
@@ -781,15 +870,22 @@ function Th({
 function SessionRow({
   session,
   tab,
+  active,
 }: {
   session: SessionRecord;
   tab: SessionTab;
+  active?: boolean;
 }) {
   const isLive = tab === "live";
   const isRecording = session.recordMode ?? !isLive;
 
   return (
-    <tr className="group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors">
+    <tr
+      data-session-row={session.id}
+      className={cn(
+        "group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors",
+        active && "bg-accent-soft/40",
+      )}>
       <td className="pl-4 pr-2 py-3 align-middle">
         <StatusDot isLive={isLive} isRecording={isRecording} />
       </td>
@@ -905,14 +1001,21 @@ function StatusDot({
 function SessionGrid({
   sessions,
   tab,
+  cursorIdx,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
+  cursorIdx: number;
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
-      {sessions.map((session) => (
-        <SessionCard key={session.id} session={session} tab={tab} />
+      {sessions.map((session, idx) => (
+        <SessionCard
+          key={session.id}
+          session={session}
+          tab={tab}
+          active={idx === cursorIdx}
+        />
       ))}
     </div>
   );
@@ -921,13 +1024,21 @@ function SessionGrid({
 function SessionCard({
   session,
   tab,
+  active,
 }: {
   session: SessionRecord;
   tab: SessionTab;
+  active?: boolean;
 }) {
   const isLive = tab === "live";
   return (
-    <Card className="group p-3.5 sm:p-4 transition-all hover:border-border-strong hover:shadow-sm">
+    <Card
+      data-session-row={session.id}
+      className={cn(
+        "group p-3.5 sm:p-4 transition-all hover:border-border-strong hover:shadow-sm",
+        active && "border-accent ring-1 ring-accent",
+      )}
+    >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <StatusDot

@@ -47,10 +47,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   long list scrolls. View + sort preferences write to `localStorage`
   under `sessions-prefs:v1` so the page reopens with the user's last
   shape. Linear / Notion / Vercel parity for table-shaped views.
-- **Replay fullscreen toggle** — current commit — `F` key or button on
+- **Replay fullscreen toggle** — `df2418e7` — `F` key or button on
   the Replay tab puts the player + minimap + share row into native
   fullscreen via `requestFullscreen()`. Button auto-hides where the
   Fullscreen API isn't available. OpenReplay / FullStory parity.
+- **Sessions keyboard navigation** — current commit — j/↓ next, k/↑
+  prev, Enter opens detail. Active row gets an accent ring (grid) or
+  accent-soft bg (table) and `scrollIntoView` keeps it visible. Linear
+  / Gmail parity for high-velocity triage.
 
 ## Next obvious candidates
 
