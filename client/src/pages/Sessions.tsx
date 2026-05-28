@@ -167,36 +167,80 @@ function persistPrefs(prefs: SessionsPrefs) {
 export default function SessionsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read initial state from URL params. Falls back to stored prefs /
+  // sensible defaults so an empty URL still produces the right shape.
   const initialTab: SessionTab =
     searchParams.get("tab") === "live" ? "live" : "record";
+  const initialSearch = searchParams.get("q") ?? "";
+  const initialRegexMode = searchParams.get("re") === "1";
+  const urlSort = searchParams.get("sort");
+  const initialSort: SortKey =
+    urlSort === "newest" || urlSort === "oldest" || urlSort === "name"
+      ? urlSort
+      : (readStoredPrefs().sort ?? "newest");
+  const urlDuration = searchParams.get("dur");
+  const initialDuration: DurationFilter =
+    urlDuration === "short" ||
+    urlDuration === "medium" ||
+    urlDuration === "long" ||
+    urlDuration === "all"
+      ? urlDuration
+      : "all";
+  const urlAge = searchParams.get("age");
+  const initialAge: AgeFilter =
+    urlAge === "24h" || urlAge === "7d" || urlAge === "30d" || urlAge === "all"
+      ? urlAge
+      : "all";
+  const initialHost = searchParams.get("host");
+
   const [tab, setTab] = useState<SessionTab>(initialTab);
-
-  // Keep ?tab=live in the URL in sync with the tab state — round-trips
-  // to Dashboard's "Live now" card and back work without losing tab.
-  useEffect(() => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (tab === "live") next.set("tab", "live");
-        else next.delete("tab");
-        return next;
-      },
-      { replace: true },
-    );
-  }, [tab, setSearchParams]);
-
-  const [search, setSearch] = useState("");
-  const [regexMode, setRegexMode] = useState(false);
-  const [sort, setSort] = useState<SortKey>(() => readStoredPrefs().sort ?? "newest");
+  const [search, setSearch] = useState(initialSearch);
+  const [regexMode, setRegexMode] = useState(initialRegexMode);
+  const [sort, setSort] = useState<SortKey>(initialSort);
   const [view, setView] = useState<ViewMode>(
     () => readStoredPrefs().view ?? pickDefaultView(),
   );
   const [pageSize, setPageSize] = useState<PageSize>(
     () => readStoredPrefs().pageSize ?? DEFAULT_PAGE_SIZE,
   );
-  const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
-  const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
-  const [hostFilter, setHostFilter] = useState<string | null>(null);
+  const [durationFilter, setDurationFilter] =
+    useState<DurationFilter>(initialDuration);
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
+  const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
+
+  // Mirror the whole filter shape into the URL — this makes the address
+  // bar itself a shareable view. Replace, not push, so each keystroke
+  // doesn't pollute browser history.
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const writeOrDelete = (key: string, value: string, def: string) => {
+          if (value && value !== def) next.set(key, value);
+          else next.delete(key);
+        };
+        writeOrDelete("tab", tab, "record");
+        writeOrDelete("q", search.trim(), "");
+        writeOrDelete("re", regexMode ? "1" : "", "");
+        writeOrDelete("sort", sort, "newest");
+        writeOrDelete("dur", durationFilter, "all");
+        writeOrDelete("age", ageFilter, "all");
+        writeOrDelete("host", hostFilter ?? "", "");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [
+    tab,
+    search,
+    regexMode,
+    sort,
+    durationFilter,
+    ageFilter,
+    hostFilter,
+    setSearchParams,
+  ]);
   // Index of the currently-focused row in the filtered list. -1 means
   // "no row selected" — the cursor reveals only after the user presses
   // a navigation key so it doesn't visually compete with the toolbar.

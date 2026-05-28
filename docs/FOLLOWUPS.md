@@ -102,11 +102,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Sessions "No sessions yet" empty offers Module / Script SDK sandbox
   buttons; Dashboard ChartEmpty offers "Enable demo mode" inline.
   Removes the dead-end first-run experience.
-- **Dashboard freshness badge + manual refresh** — current commit —
+- **Dashboard freshness badge + manual refresh** — `1527c74d` —
   Header now shows "Updated Xs ago" (relative time, ticks every 5s)
   next to the period tabs; clicking it spins the icon and invalidates
   every dashboard query. Datadog / PostHog / Grafana parity for
   long-lived auto-refresh dashboards.
+- **Sessions filter URL serialization** — current commit — search,
+  regex, sort, duration, age, host (plus existing tab) now round-trip
+  through the URL via `q`/`re`/`sort`/`dur`/`age`/`host` params. The
+  address bar IS the shareable filter view; defaults are omitted from
+  the URL so it stays clean. PostHog / Datadog list-view parity.
 
 ## Next obvious candidates
 
