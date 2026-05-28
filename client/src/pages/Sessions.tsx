@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Clock,
+  Download,
   ExternalLink,
   Filter,
   Globe,
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -191,6 +193,48 @@ function persistPinnedIds(ids: Set<number>) {
   } catch {
     /* best effort */
   }
+}
+
+function csvCell(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function sessionsToCsv(rows: SessionRecord[]): string {
+  const header = [
+    'id',
+    'name',
+    'url',
+    'host',
+    'deviceId',
+    'mode',
+    'durationMs',
+    'timestamp',
+    'tags',
+    'userAgent',
+  ];
+  const lines = [header.join(',')];
+  for (const r of rows) {
+    const host = getHostname(r.url) ?? '';
+    const durMs = r.duration ? Math.round(Number(r.duration) / 1_000_000) : '';
+    const tags = Array.isArray(r.tags) ? r.tags.join(' ') : '';
+    const cells = [
+      r.id,
+      r.name,
+      r.url ?? '',
+      host,
+      r.deviceId ?? '',
+      r.recordMode ? 'recorded' : 'live',
+      durMs,
+      r.timestamp ?? '',
+      tags,
+      r.userAgent ?? '',
+    ];
+    lines.push(cells.map(csvCell).join(','));
+  }
+  return lines.join('\n') + '\n';
 }
 
 export default function SessionsPage() {
@@ -433,6 +477,22 @@ export default function SessionsPage() {
     });
   }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
 
+  const exportCsv = () => {
+    const csv = sessionsToCsv(filtered);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `sessions-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Sessions CSV downloaded', {
+      description: `${filtered.length} row${filtered.length === 1 ? '' : 's'}`,
+    });
+  };
+
   // Build the host strip from the *currently loaded* sessions so it
   // reflects what's on screen. Sort by hit count descending so the
   // dominant host floats to the front.
@@ -566,6 +626,22 @@ export default function SessionsPage() {
 
           <ViewModeToggle value={view} onChange={setView} />
           <DensityToggle value={density} onChange={setDensity} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={exportCsv}
+                disabled={filtered.length === 0}
+                aria-label="Export filtered sessions as CSV"
+                data-testid="sessions-export-csv"
+                className="touch-target"
+              >
+                <Download />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export CSV</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
