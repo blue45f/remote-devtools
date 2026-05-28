@@ -506,6 +506,12 @@ export default function SessionDetailPage() {
               onJump={jumpToReplay}
             />
           )}
+          {(consoleRows ?? []).some((r) => r.level === 'error') && (
+            <TopErrorsCard
+              rows={(consoleRows ?? []).filter((r) => r.level === 'error')}
+              onJumpToConsole={() => setTab('console')}
+            />
+          )}
           <OverviewTab loading={eventsLoading} counts={eventTypeCounts} total={totalEvents} />
         </TabsContent>
 
@@ -2119,6 +2125,58 @@ function CopyChip({
         <Copy className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
     </button>
+  );
+}
+
+/* ───────── Overview: top errors card ───────── */
+
+function TopErrorsCard({
+  rows,
+  onJumpToConsole,
+}: {
+  rows: ConsoleRow[];
+  onJumpToConsole: () => void;
+}) {
+  // Show the most recent 3 — sort by timestamp desc, slice.
+  const recent = useMemo(
+    () => [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3),
+    [rows],
+  );
+
+  return (
+    <Card className="p-4 border-danger-soft bg-danger-soft/40" data-testid="overview-top-errors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Bug className="size-4 text-danger" />
+          <h3 className="text-sm font-semibold text-fg">
+            Console errors
+            <span className="ml-2 text-fg-faint font-normal">({rows.length} total)</span>
+          </h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onJumpToConsole}
+          data-testid="overview-top-errors-jump"
+        >
+          See all
+        </Button>
+      </div>
+      <ul className="space-y-1.5">
+        {recent.map((r) => (
+          <li
+            key={r.id}
+            className="flex items-start gap-2 text-[12px] font-mono"
+            data-testid="overview-top-error-row"
+          >
+            <span className="text-fg-faint shrink-0 tabular-nums">
+              {formatTimestampWithMillis(r.timestamp)}
+            </span>
+            <span className="text-danger truncate">{r.text}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 
