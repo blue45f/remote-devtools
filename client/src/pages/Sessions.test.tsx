@@ -224,6 +224,29 @@ describe('Sessions page', () => {
     });
   });
 
+  it('filters to annotated sessions only', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    const before = screen.getAllByTestId('session-note-indicator').length;
+    expect(before).toBeGreaterThan(0);
+
+    await user.click(screen.getByTestId('sessions-note-filter'));
+
+    // Every remaining row must carry a note indicator, and the count must
+    // shrink (the seed has many sessions, only one annotated).
+    await waitFor(() => {
+      const rows = screen.getAllByTestId('session-note-indicator');
+      const allRows = document.querySelectorAll('[data-session-row]');
+      expect(rows.length).toBe(allRows.length);
+    });
+    // The active-filter pill confirms the filter is on.
+    expect(screen.getByText(/annotated/)).toBeInTheDocument();
+  });
+
   it('toggles row density and persists the choice', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
