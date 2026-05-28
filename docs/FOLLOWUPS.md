@@ -432,7 +432,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   timeline view — reviewers can scan the entire session for
   annotated moments at a glance. Figma comments / Loom
   timestamp-pin parity.
-- **Network/Console row → seek replay** — current commit —
+- **Network/Console row → seek replay** — `8e253eb4` —
   Each Network row and Console row gains a hover-revealed
   `PlayCircle` icon button that jumps to the Replay tab and
   seeks the player to that event's timestamp. The seek uses
