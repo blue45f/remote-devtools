@@ -108,4 +108,31 @@ describe("Sessions page", () => {
     });
     expect(detail.getAttribute("href")).toMatch(/^\/sessions\/\d+$/);
   });
+
+  it("toggles row density and persists the choice", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    const toggle = screen.getByTestId("sessions-density-toggle");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(toggle);
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+
+    // The visible row should pick up the new density data attribute so
+    // CSS-only selectors (e.g. story screenshots) can target either state.
+    const row = screen
+      .getByText(/checkout-flow-test/)
+      .closest("[data-session-row]") as HTMLElement;
+    expect(row.getAttribute("data-density")).toBe("compact");
+
+    await waitFor(() => {
+      expect(localStorage.getItem("sessions-prefs:v1")).toContain(
+        '"density":"compact"',
+      );
+    });
+  });
 });

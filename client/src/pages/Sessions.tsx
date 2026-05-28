@@ -16,6 +16,8 @@ import {
   RadioTower,
   Regex,
   RefreshCw,
+  Rows3,
+  Rows4,
   Search,
   Smartphone,
   Table as TableIcon,
@@ -66,6 +68,9 @@ interface SessionRecord {
 type SessionTab = "record" | "live";
 type SortKey = "newest" | "oldest" | "name";
 type ViewMode = "table" | "grid";
+type Density = "comfortable" | "compact";
+
+const DEFAULT_DENSITY: Density = "comfortable";
 
 type DurationFilter = "all" | "short" | "medium" | "long";
 type AgeFilter = "all" | "24h" | "7d" | "30d";
@@ -131,6 +136,7 @@ interface SessionsPrefs {
   view?: ViewMode;
   sort?: SortKey;
   pageSize?: PageSize;
+  density?: Density;
 }
 
 function readStoredPrefs(): SessionsPrefs {
@@ -151,7 +157,11 @@ function readStoredPrefs(): SessionsPrefs {
     )
       ? (parsed.pageSize as PageSize)
       : undefined;
-    return { view, sort, pageSize };
+    const density: Density | undefined =
+      parsed.density === "comfortable" || parsed.density === "compact"
+        ? parsed.density
+        : undefined;
+    return { view, sort, pageSize, density };
   } catch {
     return {};
   }
@@ -235,6 +245,9 @@ export default function SessionsPage() {
   const [pageSize, setPageSize] = useState<PageSize>(
     () => readStoredPrefs().pageSize ?? DEFAULT_PAGE_SIZE,
   );
+  const [density, setDensity] = useState<Density>(
+    () => readStoredPrefs().density ?? DEFAULT_DENSITY,
+  );
   const [durationFilter, setDurationFilter] =
     useState<DurationFilter>(initialDuration);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
@@ -301,8 +314,8 @@ export default function SessionsPage() {
   // with the same shape. Search, host, duration are intentionally NOT
   // persisted — they're query-bound state, not preferences.
   useEffect(() => {
-    persistPrefs({ view, sort, pageSize });
-  }, [view, sort, pageSize]);
+    persistPrefs({ view, sort, pageSize, density });
+  }, [view, sort, pageSize, density]);
 
   // Reset the cursor whenever the filter result changes — the row at
   // cursorIdx might not exist any more.
@@ -555,6 +568,7 @@ export default function SessionsPage() {
           </Tooltip>
 
           <ViewModeToggle value={view} onChange={setView} />
+          <DensityToggle value={density} onChange={setDensity} />
         </div>
       </div>
 
@@ -856,6 +870,7 @@ export default function SessionsPage() {
                   cursorIdx={cursorIdx - (rows === otherRows ? pinnedRows.length : 0)}
                   pinned={pinned}
                   onTogglePin={togglePin}
+                  density={density}
                 />
               ) : (
                 <SessionGrid
@@ -864,6 +879,7 @@ export default function SessionsPage() {
                   cursorIdx={cursorIdx - (rows === otherRows ? pinnedRows.length : 0)}
                   pinned={pinned}
                   onTogglePin={togglePin}
+                  density={density}
                 />
               );
             return (
@@ -913,6 +929,48 @@ export default function SessionsPage() {
 }
 
 /* ───────── Toolbar ───────── */
+
+function DensityToggle({
+  value,
+  onChange,
+}: {
+  value: Density;
+  onChange: (next: Density) => void;
+}) {
+  const next: Density = value === "comfortable" ? "compact" : "comfortable";
+  const isCompact = value === "compact";
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => onChange(next)}
+          aria-pressed={isCompact}
+          aria-label={isCompact ? "Comfortable density" : "Compact density"}
+          data-testid="sessions-density-toggle"
+          className={cn(
+            "inline-flex h-8 items-center gap-1 rounded-md border border-border bg-bg-muted px-2 text-[11px] font-medium transition-colors",
+            isCompact
+              ? "bg-surface text-fg shadow-xs"
+              : "text-fg-subtle hover:text-fg",
+          )}
+        >
+          {isCompact ? (
+            <Rows4 className="size-3.5" />
+          ) : (
+            <Rows3 className="size-3.5" />
+          )}
+          <span className="hidden md:inline">
+            {isCompact ? "Compact" : "Comfortable"}
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        Toggle row density ({isCompact ? "→ comfortable" : "→ compact"})
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 function ViewModeToggle({
   value,
@@ -1170,12 +1228,14 @@ function SessionTable({
   cursorIdx,
   pinned,
   onTogglePin,
+  density,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
   cursorIdx: number;
   pinned: Set<number>;
   onTogglePin: (id: number) => void;
+  density: Density;
 }) {
   return (
     <Card className="overflow-hidden p-0">
@@ -1201,6 +1261,7 @@ function SessionTable({
                 active={idx === cursorIdx}
                 pinned={pinned.has(session.id)}
                 onTogglePin={onTogglePin}
+                density={density}
               />
             ))}
           </tbody>
@@ -1236,37 +1297,43 @@ function SessionRow({
   active,
   pinned,
   onTogglePin,
+  density,
 }: {
   session: SessionRecord;
   tab: SessionTab;
   active?: boolean;
   pinned?: boolean;
   onTogglePin?: (id: number) => void;
+  density: Density;
 }) {
   const isLive = tab === "live";
   const isRecording = session.recordMode ?? !isLive;
+  const cellY = density === "compact" ? "py-1.5" : "py-3";
 
   return (
     <tr
       data-session-row={session.id}
+      data-density={density}
       className={cn(
         "group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors",
         active && "bg-accent-soft/40",
       )}>
-      <td className="pl-4 pr-2 py-3 align-middle">
+      <td className={cn("pl-4 pr-2 align-middle", cellY)}>
         <StatusDot isLive={isLive} isRecording={isRecording} />
       </td>
-      <td className="px-3 py-3 align-middle">
+      <td className={cn("px-3 align-middle", cellY)}>
         <div className="flex flex-col min-w-0">
           <span className="font-medium text-fg truncate max-w-[280px]">
             {session.name || `Session #${session.id}`}
           </span>
-          <span className="text-[11px] text-fg-faint">
-            ID {shortHash(String(session.id), 10)}
-          </span>
+          {density === "comfortable" && (
+            <span className="text-[11px] text-fg-faint">
+              ID {shortHash(String(session.id), 10)}
+            </span>
+          )}
         </div>
       </td>
-      <td className="px-3 py-3 align-middle">
+      <td className={cn("px-3 align-middle", cellY)}>
         {session.url ? (
           <span className="font-mono text-xs text-fg-subtle truncate block max-w-[260px]">
             {session.url}
@@ -1275,7 +1342,7 @@ function SessionRow({
           <span className="text-fg-faint">—</span>
         )}
       </td>
-      <td className="px-3 py-3 align-middle">
+      <td className={cn("px-3 align-middle", cellY)}>
         {session.deviceId ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
             <Smartphone className="size-3.5" />
@@ -1285,17 +1352,17 @@ function SessionRow({
           <span className="text-fg-faint">—</span>
         )}
       </td>
-      <td className="px-3 py-3 align-middle text-right">
+      <td className={cn("px-3 align-middle text-right", cellY)}>
         <span className="font-mono text-xs text-fg-subtle">
           {formatDurationFromNanos(session.duration)}
         </span>
       </td>
-      <td className="px-3 py-3 align-middle text-right">
+      <td className={cn("px-3 align-middle text-right", cellY)}>
         <span className="text-xs text-fg-subtle">
           {formatTimeAgo(session.timestamp)}
         </span>
       </td>
-      <td className="pl-3 pr-4 py-3 align-middle text-right">
+      <td className={cn("pl-3 pr-4 align-middle text-right", cellY)}>
         <div className="inline-flex items-center gap-1">
           {onTogglePin && tab === "record" && (
             <Tooltip>
@@ -1400,15 +1467,22 @@ function SessionGrid({
   cursorIdx,
   pinned,
   onTogglePin,
+  density,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
   cursorIdx: number;
   pinned: Set<number>;
   onTogglePin: (id: number) => void;
+  density: Density;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
+    <div
+      className={cn(
+        "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+        density === "compact" ? "gap-1.5 sm:gap-2" : "gap-2.5 sm:gap-3",
+      )}
+    >
       {sessions.map((session, idx) => (
         <SessionCard
           key={session.id}
@@ -1417,6 +1491,7 @@ function SessionGrid({
           active={idx === cursorIdx}
           pinned={pinned.has(session.id)}
           onTogglePin={onTogglePin}
+          density={density}
         />
       ))}
     </div>
@@ -1429,19 +1504,23 @@ function SessionCard({
   active,
   pinned,
   onTogglePin,
+  density,
 }: {
   session: SessionRecord;
   tab: SessionTab;
   active?: boolean;
   pinned?: boolean;
   onTogglePin?: (id: number) => void;
+  density: Density;
 }) {
   const isLive = tab === "live";
   return (
     <Card
       data-session-row={session.id}
+      data-density={density}
       className={cn(
-        "group p-3.5 sm:p-4 transition-all hover:border-border-strong hover:shadow-sm",
+        "group transition-all hover:border-border-strong hover:shadow-sm",
+        density === "compact" ? "p-2 sm:p-2.5" : "p-3.5 sm:p-4",
         active && "border-accent ring-1 ring-accent",
       )}
     >
