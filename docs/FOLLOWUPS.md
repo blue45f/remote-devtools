@@ -470,6 +470,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   anchors share one base — eliminates a 1ms drift that broke
   the Network-row-to-replay-offset test.
 
+- **Network status-class filter chips** — `0f90aaf0` — Adds
+  a 2xx/3xx/4xx/5xx/pending chip strip to the Network panel.
+  Toggling a chip filters the table by HTTP status class.
+  Mirrors the resource-type chip pattern (counts inline,
+  empty classes disabled). 4xx tints warning, 5xx tints
+  danger so the failing buckets pop. Collapses the request
+  list down to just the broken ones in one click — primary
+  triage flow upgrade.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
