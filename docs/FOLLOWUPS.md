@@ -445,7 +445,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   SessionDetail. Chrome DevTools / OpenReplay / Highlight.io
   network/console-to-replay parity.
 
-- **CommandPalette: Recent comments group** — current commit —
+- **CommandPalette: Recent comments group** — `61e51be2` —
   ActivityEntry now carries `timestampMs` on `comment` kind
   entries so the palette can deep-link to the exact playhead.
   CommandPalette pulls `/api/activity/feed?limit=20` while
