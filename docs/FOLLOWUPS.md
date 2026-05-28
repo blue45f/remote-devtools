@@ -642,6 +642,12 @@ limit)` extracts hostname directly in SQL
   the playhead, wrapping at the ends. Step through failures
   hands-free instead of hunting the minimap visually.
 
+- **Failed-requests card on Overview** — `687db0fe` —
+  Mirrors the console-errors card: lists the 3 most recent
+  4xx/5xx network responses (status, method, URL) with a
+  See-all button that jumps to the Network tab. Triage
+  starts on the landing tab without clicking around.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
