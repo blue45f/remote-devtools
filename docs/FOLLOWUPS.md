@@ -129,11 +129,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   "Reset Sessions preferences" entry in the CommandPalette wipes
   `sessions-prefs:v1` + `sessions-pins:v1` from localStorage. The
   escape hatch for when stored prefs end up in a weird state.
-- **ErrorBoundary copy/forward/escape hatch** — current commit —
+- **ErrorBoundary copy/forward/escape hatch** — `b24e3cd3` —
   Fallback UI adds a collapsible stack-trace, "Copy error details"
   (clipboard with message + URL + UA + stacks + componentStack),
   "Go to dashboard" escape link, and `Sentry.captureException` with
   componentStack context. Linear / Sentry / Vercel error page parity.
+- **NotFound: attempted path + did-you-mean + search shortcut** —
+  current commit — 404 page surfaces the attempted pathname in mono
+  font, suggests the closest nav route (Levenshtein ≤ 3) as a
+  Did-you-mean link, and adds a "Search" button that opens the
+  CommandPalette. Vercel / Linear 404 parity.
 
 ## Next obvious candidates
 
