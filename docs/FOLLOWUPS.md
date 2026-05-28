@@ -349,6 +349,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   working. Lets the user pick the dominant tag without
   scanning every row. Linear / Notion / Datadog list-tag
   parity.
+- **Comments badge + `C` shortcut on Replay** — current commit —
+  Mirrors the Network / Console error-badge pattern: the
+  Replay tab trigger shows a neutral badge with the comment
+  count, pre-fetched from `/sessions/record/:id/comments` so it
+  appears before the user opens the Replay tab. Pressing `C`
+  from any tab (outside text inputs) jumps to Replay and
+  focuses the comment input via a `commentFocusSignal` counter
+  — bypasses the setTimeout/race-condition trap a naïve focus
+  attempt would hit during the tab transition. Documented in
+  the Session detail shortcuts group.
 
 Listed in rough order of value × ease:
 

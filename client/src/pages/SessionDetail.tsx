@@ -230,6 +230,16 @@ export default function SessionDetailPage() {
     [consoleRows],
   );
 
+  // Pre-fetch comment count so the Replay-tab badge appears without
+  // forcing the user to click into Replay first.
+  const { data: commentRows } = useQuery<ReplayComment[]>({
+    queryKey: ["session-comments", recordId],
+    queryFn: () =>
+      apiFetch<ReplayComment[]>(`/sessions/record/${recordId}/comments`),
+    enabled: recordId !== null,
+  });
+  const commentCount = commentRows?.length ?? 0;
+
   const events = useMemo<ReplayEvent[]>(
     () => (rawEvents ?? []).map(normaliseEvent),
     [rawEvents],
@@ -339,6 +349,35 @@ export default function SessionDetailPage() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // `C` jumps to the Replay tab and focuses the comment input. Works
+  // from any tab so a reviewer can drop a note without breaking flow.
+  // The signal counter triggers a focus effect inside CommentsPanel after
+  // the Replay tab has actually mounted — bypasses the timing race that
+  // a `setTimeout(0)` would lose against React's tab transition.
+  const [commentFocusSignal, setCommentFocusSignal] = useState(0);
+  useEffect(() => {
+    if (recordId === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (e.key !== "c" && e.key !== "C") return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setTab("replay");
+      setCommentFocusSignal((s) => s + 1);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [recordId]);
+
   return (
     <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
       {/* Back link */}
@@ -434,6 +473,16 @@ export default function SessionDetailPage() {
             <TabsTrigger value="replay" className="gap-1.5">
               <PlayCircle className="size-3.5" />
               Replay
+              {commentCount > 0 && (
+                <Badge
+                  variant="neutral"
+                  size="sm"
+                  className="ml-1 h-4 px-1 text-[10px]"
+                  data-testid="replay-comments-badge"
+                >
+                  {commentCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="timeline" className="gap-1.5">
               <ListTree className="size-3.5" />
@@ -511,6 +560,7 @@ export default function SessionDetailPage() {
               playheadMsRef={playheadMsRef}
               onJumpToReplay={jumpToReplay}
               recordId={recordId}
+              commentFocusSignal={commentFocusSignal}
             />
           )}
         </TabsContent>
@@ -1383,6 +1433,8 @@ interface ReplayPanelProps {
   onJumpToReplay: (offsetMs: number) => void;
   /** Numeric record id when this is a DB session (vs. an S3 backup). */
   recordId: number | null;
+  /** Bumped by the page's `C` shortcut — CommentsPanel focuses its input. */
+  commentFocusSignal: number;
 }
 
 function ReplayPanel({
@@ -1392,6 +1444,7 @@ function ReplayPanel({
   playheadMsRef,
   onJumpToReplay,
   recordId,
+  commentFocusSignal,
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1530,6 +1583,7 @@ function ReplayPanel({
           recordId={recordId}
           playheadMsRef={playheadMsRef}
           onSeek={onJumpToReplay}
+          focusSignal={commentFocusSignal}
         />
       )}
     </div>
@@ -1557,10 +1611,12 @@ function CommentsPanel({
   recordId,
   playheadMsRef,
   onSeek,
+  focusSignal,
 }: {
   recordId: number;
   playheadMsRef: React.MutableRefObject<number>;
   onSeek: (offsetMs: number) => void;
+  focusSignal: number;
 }) {
   const queryClient = useQueryClient();
   const queryKey = useMemo(
@@ -1578,6 +1634,14 @@ function CommentsPanel({
 
   const [draft, setDraft] = useState("");
   const comments = data ?? [];
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Focus the input whenever the page's `C` shortcut fires. Skip the
+  // initial-mount signal (focusSignal === 0).
+  useEffect(() => {
+    if (focusSignal === 0) return;
+    inputRef.current?.focus();
+  }, [focusSignal]);
 
   const addMutation = useMutation({
     mutationFn: async (input: { timestampMs: number; body: string }) => {
@@ -1690,6 +1754,7 @@ function CommentsPanel({
         className="flex items-center gap-2"
       >
         <Input
+          ref={inputRef}
           placeholder="Add a comment at the current playhead…"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
