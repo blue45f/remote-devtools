@@ -253,8 +253,8 @@ importers:
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@sentry/react':
-        specifier: ^10.53.1
-        version: 10.53.1(react@19.2.6)
+        specifier: ^10.54.0
+        version: 10.54.0(react@19.2.6)
       '@tanstack/react-query':
         specifier: ^5.100.11
         version: 5.100.11(react@19.2.6)
@@ -526,8 +526,8 @@ importers:
         specifier: 2.0.0-alpha.4
         version: 2.0.0-alpha.4
       specificity:
-        specifier: 0.4.1
-        version: 0.4.1
+        specifier: 1.0.0
+        version: 1.0.0
       ua-parser-js:
         specifier: ^2.0.9
         version: 2.0.9
@@ -548,8 +548,8 @@ importers:
         specifier: ^29.1.1
         version: 29.1.1(@noble/hashes@2.2.0)
       vite:
-        specifier: ^6.4.2
-        version: 6.4.2(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)
+        specifier: ^8.0.14
+        version: 8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@25.9.1)(happy-dom@20.9.0)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)
@@ -3310,28 +3310,24 @@ packages:
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
 
-  '@sentry-internal/browser-utils@10.53.1':
-    resolution: {integrity: sha512-X4d6y8sBMjmNhcDW4eMBU3ASsNIMz8dqaFkhyIMN/dkYr/yZKnbRZPaVuVUGvHKjnlficPpIH0/HK9KBjrYxPw==}
+  '@sentry-internal/browser-utils@10.54.0':
+    resolution: {integrity: sha512-Cz6NzYFmWJlHh1tvtltKsmLl+1jlseQaPXk18Z0P1g6lXAwhT3aJ99x7vDm4jwCzcJ12qAa8Oga8T3C23Ihijw==}
     engines: {node: '>=18'}
 
-  '@sentry-internal/feedback@10.53.1':
-    resolution: {integrity: sha512-vVpTI/aEYN5d9IgZeYJWMqVaN0+iFgidSrYNAsZTh1US5sJUzF/wrl+68KdpmCtFROrN3jiAn1oPSwL5CKvEJA==}
+  '@sentry-internal/feedback@10.54.0':
+    resolution: {integrity: sha512-14D+TPgi75zogGQ/EWwtIm34FVWP34gso4SfJZRAoHiQrRfd907q8/7MTXNItxi81x79cH9vweu/o55LBml6MA==}
     engines: {node: '>=18'}
 
-  '@sentry-internal/replay-canvas@10.53.1':
-    resolution: {integrity: sha512-aueLaf/2prExwA76BGU5/bOXCKWqtt6jQXWA6WJQNrmKpPEtZJB4ypnpsou0McXQCF8tur2Y8U0TEkwQP13yJQ==}
+  '@sentry-internal/replay-canvas@10.54.0':
+    resolution: {integrity: sha512-CGsH019npxnU5cocVDoZKod7JaQtaM6JiR6e2fI8tDwssohJAxP616UQTmoTtBLe3yLG18P4e1BxMxYZFalZEQ==}
     engines: {node: '>=18'}
 
-  '@sentry-internal/replay@10.53.1':
-    resolution: {integrity: sha512-wZNzTBYkgGUPWMuUQv7L64+OJmoCnz7GQNiTrTFK6EVAjJXFBCSsPp/nhif0bLhbk8+0g4xz633uOhpXuQbFdw==}
+  '@sentry-internal/replay@10.54.0':
+    resolution: {integrity: sha512-B7eicNhAomJ7bGihJO7mCw7pZ8FFo/THQgGPo85VR3FaJVCCot20WxVgvhjc7IVBQVlaaxSrnlUFvA+yHjszqQ==}
     engines: {node: '>=18'}
 
-  '@sentry/browser@10.53.1':
-    resolution: {integrity: sha512-zXF373hzUOGzUOrqd8xb1U3LQi5uYC3mwv+z5OMKUUinQlu30tTWBs7ypy6YTchtix9QlYaHWlayUF8vBZ5UjA==}
-    engines: {node: '>=18'}
-
-  '@sentry/core@10.53.1':
-    resolution: {integrity: sha512-XG4ezlkyuAPjBC5+9kXC94rXXuqYTw9NRhfaDHssbTFaGnqBR8vQX2UUgZfY7ucbeelRDGfBu1sywoU+mB04uA==}
+  '@sentry/browser@10.54.0':
+    resolution: {integrity: sha512-XYuAA2E4Hf6NOJiP3PqczPgBhFUEsEAh+avgxcYTjTwYdr+Nh5XmDxXATr6RxXUvRASTiYN9zNWyK2o9kEDloA==}
     engines: {node: '>=18'}
 
   '@sentry/core@10.54.0':
@@ -3382,8 +3378,8 @@ packages:
       '@opentelemetry/sdk-trace-base': ^1.30.1 || ^2.1.0
       '@opentelemetry/semantic-conventions': ^1.39.0
 
-  '@sentry/react@10.53.1':
-    resolution: {integrity: sha512-lrwNq5T/zW84l60894TpKHPcvFuc1I/Hnohecc0TfYVpIcYYuw2orCHoU4v4wgkFaJUpegVetbgdOphViyLVjA==}
+  '@sentry/react@10.54.0':
+    resolution: {integrity: sha512-P9x2oJwm0LpJC3HUFfvFMcMZt3qW+PFznDk0hl+QI3BO/In07IvzpdQ/nWO81SHt0uwglwGs3bAjnN84YVzXIw==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^16.14.0 || 17.x || 18.x || 19.x
@@ -4945,6 +4941,10 @@ packages:
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
 
+  css-tree@2.3.1:
+    resolution: {integrity: sha512-6Fv1DV/TYw//QF5IzQdqsNDjx/wc8TrMBZsqjL9eW01tWb7R7k/mq+/VXfJCl7SoD5emsJop9cOByJZfs8hYIw==}
+    engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
+
   css-tree@3.2.1:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
@@ -6487,6 +6487,9 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
+  mdn-data@2.0.30:
+    resolution: {integrity: sha512-GaqWWShW4kv/G9IEucWScBx9G1/vsFZZJUO+tD26M8J8z3Kw5RDQjaoZe03YAClgeS/SWPOcb4nkFBTEi5DUEA==}
+
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
@@ -7453,9 +7456,8 @@ packages:
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
-  specificity@0.4.1:
-    resolution: {integrity: sha512-1klA3Gi5PD1Wv9Q0wUoOQN1IWAuPu0D1U03ThXTr0cJ20+/iq2tHSDnK7Kk/0LXJ1ztUB2/1Os0wKmfyNgUQfg==}
-    hasBin: true
+  specificity@1.0.0:
+    resolution: {integrity: sha512-nCtHb5/MTfZ1D36EpLLz03AcUf1v+PxWFFieW4O721MaJUo/anSMckB94Ylj5VQPrjdlx+4BXcKD+s1N0yT+ww==}
 
   split2@4.2.0:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
@@ -11106,33 +11108,31 @@ snapshots:
 
   '@scarf/scarf@1.4.0': {}
 
-  '@sentry-internal/browser-utils@10.53.1':
+  '@sentry-internal/browser-utils@10.54.0':
     dependencies:
-      '@sentry/core': 10.53.1
+      '@sentry/core': 10.54.0
 
-  '@sentry-internal/feedback@10.53.1':
+  '@sentry-internal/feedback@10.54.0':
     dependencies:
-      '@sentry/core': 10.53.1
+      '@sentry/core': 10.54.0
 
-  '@sentry-internal/replay-canvas@10.53.1':
+  '@sentry-internal/replay-canvas@10.54.0':
     dependencies:
-      '@sentry-internal/replay': 10.53.1
-      '@sentry/core': 10.53.1
+      '@sentry-internal/replay': 10.54.0
+      '@sentry/core': 10.54.0
 
-  '@sentry-internal/replay@10.53.1':
+  '@sentry-internal/replay@10.54.0':
     dependencies:
-      '@sentry-internal/browser-utils': 10.53.1
-      '@sentry/core': 10.53.1
+      '@sentry-internal/browser-utils': 10.54.0
+      '@sentry/core': 10.54.0
 
-  '@sentry/browser@10.53.1':
+  '@sentry/browser@10.54.0':
     dependencies:
-      '@sentry-internal/browser-utils': 10.53.1
-      '@sentry-internal/feedback': 10.53.1
-      '@sentry-internal/replay': 10.53.1
-      '@sentry-internal/replay-canvas': 10.53.1
-      '@sentry/core': 10.53.1
-
-  '@sentry/core@10.53.1': {}
+      '@sentry-internal/browser-utils': 10.54.0
+      '@sentry-internal/feedback': 10.54.0
+      '@sentry-internal/replay': 10.54.0
+      '@sentry-internal/replay-canvas': 10.54.0
+      '@sentry/core': 10.54.0
 
   '@sentry/core@10.54.0': {}
 
@@ -11185,10 +11185,10 @@ snapshots:
       '@opentelemetry/semantic-conventions': 1.41.1
       '@sentry/core': 10.54.0
 
-  '@sentry/react@10.53.1(react@19.2.6)':
+  '@sentry/react@10.54.0(react@19.2.6)':
     dependencies:
-      '@sentry/browser': 10.53.1
-      '@sentry/core': 10.53.1
+      '@sentry/browser': 10.54.0
+      '@sentry/core': 10.54.0
       react: 19.2.6
 
   '@smithy/core@3.24.4':
@@ -13134,6 +13134,11 @@ snapshots:
 
   crypto-js@4.2.0: {}
 
+  css-tree@2.3.1:
+    dependencies:
+      mdn-data: 2.0.30
+      source-map-js: 1.2.1
+
   css-tree@3.2.1:
     dependencies:
       mdn-data: 2.27.1
@@ -14991,6 +14996,8 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
+  mdn-data@2.0.30: {}
+
   mdn-data@2.27.1: {}
 
   media-typer@0.3.0: {}
@@ -16147,7 +16154,9 @@ snapshots:
 
   space-separated-tokens@2.0.2: {}
 
-  specificity@0.4.1: {}
+  specificity@1.0.0:
+    dependencies:
+      css-tree: 2.3.1
 
   split2@4.2.0: {}
 
@@ -16713,7 +16722,7 @@ snapshots:
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.3(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -16784,22 +16793,6 @@ snapshots:
       tinyglobby: 0.2.16
     optionalDependencies:
       '@types/node': 22.19.19
-      fsevents: 2.3.3
-      jiti: 2.7.0
-      lightningcss: 1.32.0
-      terser: 5.48.0
-      yaml: 2.9.0
-
-  vite@6.4.2(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0):
-    dependencies:
-      esbuild: 0.25.12
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
-      postcss: 8.5.15
-      rollup: 4.60.4
-      tinyglobby: 0.2.16
-    optionalDependencies:
-      '@types/node': 25.9.1
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.32.0
