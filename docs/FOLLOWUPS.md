@@ -595,6 +595,13 @@ limit)` extracts hostname directly in SQL
   without opening each. Seed session 1000 flags hasNote to
   match its detail-view note.
 
+- **Annotated-only filter** — `f485cf7e` — "Annotated"
+  toggle in the Sessions toolbar narrows the list to rows
+  with a note (uses hasNote). Round-trips as `note=1` in the
+  URL, shows an active-filter pill, and clears with the
+  Clear-filters action. Closes the notes loop — find every
+  annotated session in one click.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
