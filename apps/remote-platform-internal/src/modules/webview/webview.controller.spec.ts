@@ -19,6 +19,7 @@ describe('WebviewController (Internal)', () => {
     findPaginated: vi.fn(),
     replaceTags: vi.fn(),
     findAllTags: vi.fn(),
+    updateNote: vi.fn(),
   };
   const mockReplayCommentService = {
     findByRecordId: vi.fn(),
@@ -227,6 +228,50 @@ describe('WebviewController (Internal)', () => {
       const out = await controller.listAllRecordTags(null);
       expect(out).toEqual(['a', 'b']);
       expect(mockRecordService.findAllTags).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('patchRecordNote', () => {
+    it('trims and persists the note', async () => {
+      mockRecordService.updateNote.mockResolvedValue({ id: 7, note: 'repro: empty cart' });
+      const res = await controller.patchRecordNote('7', { note: '  repro: empty cart  ' });
+      expect(res).toEqual({ id: 7, note: 'repro: empty cart' });
+      expect(mockRecordService.updateNote).toHaveBeenCalledWith(7, 'repro: empty cart');
+    });
+
+    it('caps the note at 4000 chars', async () => {
+      const long = 'x'.repeat(5000);
+      mockRecordService.updateNote.mockImplementation((_id, note) =>
+        Promise.resolve({ id: 1, note }),
+      );
+      await controller.patchRecordNote('1', { note: long });
+      expect(mockRecordService.updateNote.mock.calls[0][1]).toHaveLength(4000);
+    });
+
+    it('clears the note (null) when given an empty string', async () => {
+      mockRecordService.updateNote.mockResolvedValue({ id: 1, note: null });
+      const res = await controller.patchRecordNote('1', { note: '   ' });
+      expect(res).toEqual({ id: 1, note: null });
+      expect(mockRecordService.updateNote).toHaveBeenCalledWith(1, null);
+    });
+
+    it('rejects a non-string note', async () => {
+      await expect(
+        controller.patchRecordNote('1', { note: 123 as unknown as string }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects non-integer recordId', async () => {
+      await expect(controller.patchRecordNote('abc', { note: 'x' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('404s when record does not exist', async () => {
+      mockRecordService.updateNote.mockResolvedValue(null);
+      await expect(controller.patchRecordNote('999', { note: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

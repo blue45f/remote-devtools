@@ -33,6 +33,7 @@ import { WebviewGateway } from './webview.gateway'; // Import Gateway to retriev
 const MAX_TAG_LENGTH = 24;
 const MAX_TAGS_PER_RECORD = 16;
 const MAX_COMMENT_BODY_LENGTH = 2000;
+const MAX_NOTE_LENGTH = 4000;
 const MAX_COMMENT_AUTHOR_LENGTH = 80;
 
 function normaliseTags(input: unknown[]): string[] {
@@ -295,6 +296,35 @@ export class WebviewController {
       throw new NotFoundException(`Record ${id} not found`);
     }
     return { id: updated.id, tags: updated.tags };
+  }
+
+  /**
+   * PATCH /sessions/record/:recordId/note
+   *
+   * Replace the free-form note on a record. Body shape is `{ note: string }`.
+   * The server trims and caps at MAX_NOTE_LENGTH; an empty result clears the
+   * note (stored as NULL).
+   */
+  @Patch('record/:recordId/note')
+  public async patchRecordNote(
+    @Param('recordId') recordId: string,
+    @Body() body: { note?: unknown },
+  ): Promise<{ id: number; note: string | null }> {
+    const id = Number(recordId);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new BadRequestException('Invalid recordId parameter');
+    }
+    if (body?.note !== undefined && body?.note !== null && typeof body?.note !== 'string') {
+      throw new BadRequestException('body.note must be a string');
+    }
+    const note =
+      typeof body?.note === 'string' ? body.note.trim().slice(0, MAX_NOTE_LENGTH) || null : null;
+
+    const updated = await this.recordService.updateNote(id, note);
+    if (!updated) {
+      throw new NotFoundException(`Record ${id} not found`);
+    }
+    return { id: updated.id, note: updated.note ?? null };
   }
 
   /**
