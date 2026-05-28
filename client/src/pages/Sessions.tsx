@@ -106,14 +106,58 @@ function getHostname(url?: string): string | null {
   }
 }
 
+const PREFS_STORAGE_KEY = "sessions-prefs:v1";
+
+interface SessionsPrefs {
+  view?: ViewMode;
+  sort?: SortKey;
+}
+
+function readStoredPrefs(): SessionsPrefs {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PREFS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as SessionsPrefs;
+    // Defend against future-version garbage by only allowing known values.
+    const view: ViewMode | undefined =
+      parsed.view === "table" || parsed.view === "grid" ? parsed.view : undefined;
+    const sort: SortKey | undefined =
+      parsed.sort === "newest" || parsed.sort === "oldest" || parsed.sort === "name"
+        ? parsed.sort
+        : undefined;
+    return { view, sort };
+  } catch {
+    return {};
+  }
+}
+
+function persistPrefs(prefs: SessionsPrefs) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
+  } catch {
+    /* quota or private-mode — best effort */
+  }
+}
+
 export default function SessionsPage() {
   const [tab, setTab] = useState<SessionTab>("record");
   const [search, setSearch] = useState("");
   const [regexMode, setRegexMode] = useState(false);
-  const [sort, setSort] = useState<SortKey>("newest");
-  const [view, setView] = useState<ViewMode>(pickDefaultView);
+  const [sort, setSort] = useState<SortKey>(() => readStoredPrefs().sort ?? "newest");
+  const [view, setView] = useState<ViewMode>(
+    () => readStoredPrefs().view ?? pickDefaultView(),
+  );
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
   const [hostFilter, setHostFilter] = useState<string | null>(null);
+
+  // Persist view+sort whenever they change so the next visit reopens
+  // with the same shape. Search, host, duration are intentionally NOT
+  // persisted — they're query-bound state, not preferences.
+  useEffect(() => {
+    persistPrefs({ view, sort });
+  }, [view, sort]);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -279,8 +323,9 @@ export default function SessionsPage() {
         </div>
       </div>
 
-      {/* Toolbar — vertical on phone, single row on tablet+ */}
-      <div className="flex flex-col gap-3 mb-4">
+      {/* Toolbar — sticks to the top of the scroll container while a long
+          session list scrolls underneath. */}
+      <div className="sticky top-0 z-20 pb-3 mb-3 -mt-2 pt-2 bg-bg/85 backdrop-blur-xl border-b border-border flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Tabs value={tab} onValueChange={(v) => setTab(v as SessionTab)}>
             <TabsList>
