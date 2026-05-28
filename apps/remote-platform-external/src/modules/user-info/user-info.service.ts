@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { DeviceInfoEntity } from "@remote-platform/entity";
+import { DeviceInfoEntity } from '@remote-platform/entity';
 
 /** User information compatible with the legacy UserInfo interface. */
 interface UserInfo {
@@ -30,13 +30,9 @@ export class UserInfoService {
    * Looks up user information by device ID from the admin database.
    * Used primarily when creating Jira tickets.
    */
-  public async getUserInfoByDeviceId(
-    deviceId: string,
-  ): Promise<UserInfo | null> {
+  public async getUserInfoByDeviceId(deviceId: string): Promise<UserInfo | null> {
     const startTime = Date.now();
-    this.logger.log(
-      `[USER_INFO_LOOKUP] Looking up user info for deviceId="${deviceId}"`,
-    );
+    this.logger.log(`[USER_INFO_LOOKUP] Looking up user info for deviceId="${deviceId}"`);
 
     try {
       const device = await this.deviceRepository.findOne({
@@ -45,9 +41,7 @@ export class UserInfoService {
       });
 
       if (!device || !device.user) {
-        this.logger.warn(
-          `[USER_INFO_LOOKUP] No user found for deviceId=${deviceId}`,
-        );
+        this.logger.warn(`[USER_INFO_LOOKUP] No user found for deviceId=${deviceId}`);
         return null;
       }
 
@@ -68,15 +62,13 @@ export class UserInfoService {
 
       const elapsed = Date.now() - startTime;
       this.logger.log(
-        `[USER_INFO_LOOKUP] User info retrieved in ${elapsed}ms: ${JSON.stringify(
-          {
-            deviceId,
-            username: userInfo.username,
-            slackUserId: userInfo.slackUserId,
-            jiraProjectKey: userInfo.jiraProjectKey,
-            empNo: user.empNo,
-          },
-        )}`,
+        `[USER_INFO_LOOKUP] User info retrieved in ${elapsed}ms: ${JSON.stringify({
+          deviceId,
+          username: userInfo.username,
+          slackUserId: userInfo.slackUserId,
+          jiraProjectKey: userInfo.jiraProjectKey,
+          empNo: user.empNo,
+        })}`,
       );
 
       return userInfo;

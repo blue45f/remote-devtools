@@ -1,22 +1,21 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
-import { getLocalDateString } from "@remote-platform/constants";
-import { ScreenService } from "@remote-platform/core";
+import { getLocalDateString } from '@remote-platform/constants';
+import { ScreenService } from '@remote-platform/core';
 
-import { BufferService, type BufferEvent } from "../buffer/buffer.service";
-import { S3Service } from "../s3/s3.service";
+import { BufferService, type BufferEvent } from '../buffer/buffer.service';
+import { S3Service } from '../s3/s3.service';
 
-import { CdpEventPersistenceService } from "./cdp-event-persistence.service";
-import type { BufferRoomInfo, LastBufferInfo } from "./webview.types";
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+import type { BufferRoomInfo, LastBufferInfo } from './webview.types';
 
 /** 최소 의미 있는 이벤트 수 */
 const MIN_MEANINGFUL_EVENTS = 5;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-const isFullSnapshotEvent = (value: unknown): boolean =>
-  isRecord(value) && value.type === 2;
+const isFullSnapshotEvent = (value: unknown): boolean => isRecord(value) && value.type === 2;
 
 /**
  * 버퍼 데이터를 S3에 플러시하고, 버퍼 → 레코드 이전을 오케스트레이션하는 서비스.
@@ -55,7 +54,7 @@ export class BufferFlushService {
     visibilityExitSavedRooms: Set<string>,
   ): Promise<boolean> {
     if (!deviceId) {
-      this.logger.warn("[SAVE_BUFFER_TRIGGER_INVALID] deviceId is required");
+      this.logger.warn('[SAVE_BUFFER_TRIGGER_INVALID] deviceId is required');
       return false;
     }
 
@@ -159,11 +158,7 @@ export class BufferFlushService {
         return false;
       }
 
-      const flushedBuffer = this.bufferService.flushBufferForce(
-        room,
-        recordId,
-        deviceId,
-      );
+      const flushedBuffer = this.bufferService.flushBufferForce(room, recordId, deviceId);
 
       if (!flushedBuffer || flushedBuffer.events.length === 0) {
         return false;
@@ -215,11 +210,7 @@ export class BufferFlushService {
         return false;
       }
 
-      const flushedBuffer = this.bufferService.flushBuffer(
-        room,
-        recordId,
-        deviceId,
-      );
+      const flushedBuffer = this.bufferService.flushBuffer(room, recordId, deviceId);
 
       if (!flushedBuffer || flushedBuffer.events.length === 0) {
         return false;
@@ -274,28 +265,19 @@ export class BufferFlushService {
         lastBufferInfoByDevice,
       );
       if (!bufferRoom) {
-        this.logger.log(
-          `[BUFFER_TRANSFER] No buffer room found for deviceId: ${deviceId}`,
-        );
+        this.logger.log(`[BUFFER_TRANSFER] No buffer room found for deviceId: ${deviceId}`);
         return;
       }
 
-      const sessionBuffers = this.bufferService.getSessionBuffers(
-        bufferRoom,
-        0,
-      );
+      const sessionBuffers = this.bufferService.getSessionBuffers(bufferRoom, 0);
       if (!sessionBuffers || sessionBuffers.length === 0) {
-        this.logger.log(
-          `[BUFFER_TRANSFER] No buffer data found for room: ${bufferRoom}`,
-        );
+        this.logger.log(`[BUFFER_TRANSFER] No buffer data found for room: ${bufferRoom}`);
         return;
       }
 
       const events = sessionBuffers.flatMap((buffer) => buffer.events);
       if (events.length === 0) {
-        this.logger.log(
-          `[BUFFER_TRANSFER] Buffer events empty for room: ${bufferRoom}`,
-        );
+        this.logger.log(`[BUFFER_TRANSFER] Buffer events empty for room: ${bufferRoom}`);
         return;
       }
 
@@ -304,7 +286,7 @@ export class BufferFlushService {
       for (const event of events) {
         if (!event?.method) continue;
 
-        if (event.method === "ScreenPreview.captured") {
+        if (event.method === 'ScreenPreview.captured') {
           if (
             !latestScreenPreview ||
             (event.timestamp || 0) > (latestScreenPreview.timestamp || 0)
@@ -368,14 +350,8 @@ export class BufferFlushService {
       lastBufferInfoByDevice: Map<string, LastBufferInfo>;
     },
   ): Array<{ room: string; info: BufferRoomInfo }> {
-    const {
-      referenceTimestamp,
-      roomName,
-      url,
-      bufferRooms,
-      deviceToRoom,
-      lastBufferInfoByDevice,
-    } = options;
+    const { referenceTimestamp, roomName, url, bufferRooms, deviceToRoom, lastBufferInfoByDevice } =
+      options;
     const normalizedRequestedPath = this.normalizeUrlPath(url);
 
     const rooms = new Map<string, { room: string; info: BufferRoomInfo }>();
@@ -418,8 +394,7 @@ export class BufferFlushService {
 
     const directRoom = deviceToRoom.get(deviceId);
     if (directRoom) {
-      const info =
-        bufferRooms.get(directRoom) || lastBufferInfoByDevice.get(deviceId);
+      const info = bufferRooms.get(directRoom) || lastBufferInfoByDevice.get(deviceId);
       maybeIncludeRoom(directRoom, info);
     }
 
@@ -498,20 +473,16 @@ export class BufferFlushService {
     }
 
     const nonScreenPreviewEvents = events.filter(
-      (event) => !event.method.startsWith("ScreenPreview."),
+      (event) => !event.method.startsWith('ScreenPreview.'),
     );
-    const screenPreviewEvents = events.filter((event) =>
-      event.method.startsWith("ScreenPreview."),
-    );
+    const screenPreviewEvents = events.filter((event) => event.method.startsWith('ScreenPreview.'));
 
     if (nonScreenPreviewEvents.length === 0) {
-      return screenPreviewEvents.some(
-        (event) => event.method === "ScreenPreview.captured",
-      );
+      return screenPreviewEvents.some((event) => event.method === 'ScreenPreview.captured');
     }
 
     const rrwebEvents = nonScreenPreviewEvents.filter((event) =>
-      event.method.startsWith("SessionReplay.rrweb"),
+      event.method.startsWith('SessionReplay.rrweb'),
     );
 
     const hasFullSnapshot = rrwebEvents.some((event) => {
@@ -571,7 +542,7 @@ export class BufferFlushService {
       return `${parsed.origin}${parsed.pathname}`;
     } catch {
       try {
-        const [base] = url.split("?");
+        const [base] = url.split('?');
         return base || null;
       } catch {
         return null;

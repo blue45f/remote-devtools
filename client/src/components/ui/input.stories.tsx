@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { Lock, Mail, Search } from "lucide-react";
+import type { Meta, StoryObj } from '@storybook/react';
+import { Lock, Mail, Search } from 'lucide-react';
 
-import { Input } from "./input";
+import { Input } from './input';
 
 const meta = {
-  title: "UI/Input",
+  title: 'UI/Input',
   component: Input,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   args: {
-    placeholder: "Type something…",
+    placeholder: 'Type something…',
   },
   decorators: [
     (Story) => (
@@ -28,34 +28,34 @@ export const Default: Story = {};
 export const WithLeadingIcon: Story = {
   args: {
     leadingIcon: <Search />,
-    placeholder: "Search sessions…",
+    placeholder: 'Search sessions…',
   },
 };
 
 export const WithTrailingIcon: Story = {
   args: {
     trailingIcon: <Lock />,
-    placeholder: "Locked field",
+    placeholder: 'Locked field',
   },
 };
 
 export const Email: Story = {
   args: {
-    type: "email",
+    type: 'email',
     leadingIcon: <Mail />,
-    placeholder: "you@company.com",
+    placeholder: 'you@company.com',
   },
 };
 
 export const Disabled: Story = {
   args: {
     disabled: true,
-    placeholder: "Cannot edit",
+    placeholder: 'Cannot edit',
   },
 };
 
 export const Filled: Story = {
   args: {
-    defaultValue: "remote-devtools",
+    defaultValue: 'remote-devtools',
   },
 };

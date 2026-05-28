@@ -1,10 +1,7 @@
-import { DynamicModule, Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { DynamicModule, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import {
-  createDatabaseConfig,
-  DatabaseConfigOptions,
-} from "../config/database.config";
+import { createDatabaseConfig, DatabaseConfigOptions } from '../config/database.config';
 
 /**
  * Dynamic module that bootstraps the TypeORM database connection.

@@ -1,14 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import {
-  endOfDay,
-  format,
-  startOfDay,
-  subDays,
-  subMonths,
-  subWeeks,
-} from "date-fns";
-import { Between, MoreThanOrEqual, Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { endOfDay, format, startOfDay, subDays, subMonths, subWeeks } from 'date-fns';
+import { Between, MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
   DeviceInfoEntity,
@@ -16,13 +9,13 @@ import {
   RecordEntity,
   TicketLogEntity,
   UserEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
-import { DashboardStatsData } from "./dto/dashboard-stats.dto";
-import { RecordSessionTrendItem } from "./dto/record-session-trend.dto";
-import { TicketTrendItem } from "./dto/ticket-trend.dto";
+import { DashboardStatsData } from './dto/dashboard-stats.dto';
+import { RecordSessionTrendItem } from './dto/record-session-trend.dto';
+import { TicketTrendItem } from './dto/ticket-trend.dto';
 
-type PeriodType = "day" | "week" | "month";
+type PeriodType = 'day' | 'week' | 'month';
 
 interface DateRange {
   readonly start: Date;
@@ -172,15 +165,11 @@ export class DashboardService {
   /**
    * Build date ranges for the given period granularity.
    */
-  private buildDateRanges(
-    period: PeriodType,
-    startDate?: string,
-    endDate?: string,
-  ): DateRange[] {
+  private buildDateRanges(period: PeriodType, startDate?: string, endDate?: string): DateRange[] {
     const now = new Date();
     const ranges: DateRange[] = [];
 
-    if (period === "day") {
+    if (period === 'day') {
       // Last 7 days
       for (let i = 6; i >= 0; i--) {
         const date = subDays(now, i);
@@ -189,7 +178,7 @@ export class DashboardService {
           end: endOfDay(date),
         });
       }
-    } else if (period === "week") {
+    } else if (period === 'week') {
       // Last 8 weeks
       for (let i = 7; i >= 0; i--) {
         const weekStart = subWeeks(now, i);
@@ -200,7 +189,7 @@ export class DashboardService {
           end: endOfDay(weekEnd),
         });
       }
-    } else if (period === "month") {
+    } else if (period === 'month') {
       // Last 6 months
       for (let i = 5; i >= 0; i--) {
         const monthStart = subMonths(now, i);
@@ -229,24 +218,21 @@ export class DashboardService {
    * Format a date label according to the period granularity.
    */
   private formatDateByPeriod(date: Date, period: PeriodType): string {
-    if (period === "day") {
-      return format(date, "MM-dd");
-    } else if (period === "week") {
+    if (period === 'day') {
+      return format(date, 'MM-dd');
+    } else if (period === 'week') {
       const weekEnd = new Date(date);
       weekEnd.setDate(weekEnd.getDate() + 6);
-      return `${format(date, "M/d")}-${format(weekEnd, "M/d")}`;
+      return `${format(date, 'M/d')}-${format(weekEnd, 'M/d')}`;
     } else {
-      return format(date, "yyyy-MM");
+      return format(date, 'yyyy-MM');
     }
   }
 
   /**
    * Compute ticket counts per job type within a date range.
    */
-  private async getTicketJobStats(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<JobCounts> {
+  private async getTicketJobStats(startDate: Date, endDate: Date): Promise<JobCounts> {
     const tickets = await this.ticketLogRepository.find({
       where: {
         createdAt: Between(startDate, endDate),
@@ -299,10 +285,7 @@ export class DashboardService {
   /**
    * Compute recording session counts per job type within a date range.
    */
-  private async getRoomJobStats(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<JobCounts> {
+  private async getRoomJobStats(startDate: Date, endDate: Date): Promise<JobCounts> {
     const records = await this.recordRepository.find({
       where: {
         timestamp: Between(startDate, endDate),

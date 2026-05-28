@@ -1,9 +1,9 @@
-import { BaseDomain } from "./base";
+import { BaseDomain } from './base';
 
 export class Page extends BaseDomain {
   public static MAINFRAME_ID = 1;
 
-  public namespace = "Page";
+  public namespace = 'Page';
 
   private frame = new Map();
 
@@ -11,15 +11,15 @@ export class Page extends BaseDomain {
 
   public enable() {
     const xhr = new XMLHttpRequest();
-    xhr.$$requestType = "Document";
+    xhr.$$requestType = 'Document';
     xhr.onload = () => {
       this.frame.set(location.href, xhr.responseText);
     };
     xhr.onerror = () => {
-      this.frame.set(location.href, "Cannot get script source code");
+      this.frame.set(location.href, 'Cannot get script source code');
     };
 
-    xhr.open("GET", location.href);
+    xhr.open('GET', location.href);
     xhr.send();
   }
 
@@ -28,7 +28,7 @@ export class Page extends BaseDomain {
       frameTree: {
         frame: {
           id: 1,
-          mimeType: "text/html",
+          mimeType: 'text/html',
           securityOrigin: location.origin,
           url: location.href,
         },

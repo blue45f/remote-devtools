@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from '@playwright/test';
 
 if (process.env.FORCE_COLOR) {
   delete process.env.NO_COLOR;
@@ -14,42 +14,41 @@ if (process.env.FORCE_COLOR) {
  * static assets.
  */
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: './e2e',
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI ? "github" : "list",
+  reporter: process.env.CI ? 'github' : 'list',
 
   use: {
-    baseURL: "http://localhost:4173",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    baseURL: 'http://localhost:4173',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
 
   projects: [
     {
-      name: "chromium",
+      name: 'chromium',
       testIgnore: /mobile\.spec\.ts/,
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices['Desktop Chrome'] },
     },
     // Mobile profile gets a single smoke test so we don't double the runtime.
     {
-      name: "mobile",
+      name: 'mobile',
       testMatch: /mobile\.spec\.ts/,
-      use: { ...devices["iPhone 14"] },
+      use: { ...devices['iPhone 14'] },
     },
   ],
 
   webServer: {
-    command:
-      "VITE_FORCE_DEMO=true pnpm build && pnpm preview --host 127.0.0.1 --port 4173",
-    url: "http://localhost:4173",
+    command: 'VITE_FORCE_DEMO=true pnpm build && pnpm preview --host 127.0.0.1 --port 4173',
+    url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    stdout: "ignore",
-    stderr: "pipe",
+    stdout: 'ignore',
+    stderr: 'pipe',
   },
 });

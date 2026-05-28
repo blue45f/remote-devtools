@@ -1,6 +1,6 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,18 +8,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useAppStore, type Theme } from "@/lib/store";
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAppStore, type Theme } from '@/lib/store';
 
 const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
 ];
 
 export function ThemeMenu({ collapsed }: { collapsed?: boolean }) {
@@ -37,11 +33,9 @@ export function ThemeMenu({ collapsed }: { collapsed?: boolean }) {
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        {collapsed && (
-          <TooltipContent side="right">Theme: {theme}</TooltipContent>
-        )}
+        {collapsed && <TooltipContent side="right">Theme: {theme}</TooltipContent>}
       </Tooltip>
-      <DropdownMenuContent align={collapsed ? "start" : "end"} side="top">
+      <DropdownMenuContent align={collapsed ? 'start' : 'end'} side="top">
         <DropdownMenuLabel>Theme</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {themes.map((t) => {

@@ -1,6 +1,6 @@
 // Types
-export * from "./types/common.types";
+export * from './types/common.types';
 
 // DTOs
-export * from "./dto/record.dto";
-export * from "./dto/network.dto";
+export * from './dto/record.dto';
+export * from './dto/network.dto';

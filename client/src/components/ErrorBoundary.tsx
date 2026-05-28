@@ -1,8 +1,8 @@
-import * as Sentry from "@sentry/react";
-import { AlertTriangle, Check, Copy, Home, RotateCw } from "lucide-react";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import * as Sentry from '@sentry/react';
+import { AlertTriangle, Check, Copy, Home, RotateCw } from 'lucide-react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -29,32 +29,32 @@ export default class ErrorBoundary extends Component<Props, State> {
     try {
       Sentry.captureException(error, {
         contexts: {
-          react: { componentStack: info.componentStack ?? "" },
+          react: { componentStack: info.componentStack ?? '' },
         },
       });
     } catch {
       /* SDK not initialised — fine */
     }
     // Always log to the dev console too so local debugging stays simple.
-    console.error("[ErrorBoundary]", error, info);
+    console.error('[ErrorBoundary]', error, info);
   }
 
   copyDetails = async () => {
     const { error, componentStack } = this.state;
     const lines = [
-      `Message: ${error?.message ?? "(no message)"}`,
-      `URL: ${typeof window !== "undefined" ? window.location.href : ""}`,
-      `User-Agent: ${typeof navigator !== "undefined" ? navigator.userAgent : ""}`,
+      `Message: ${error?.message ?? '(no message)'}`,
+      `URL: ${typeof window !== 'undefined' ? window.location.href : ''}`,
+      `User-Agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`,
       `Time: ${new Date().toISOString()}`,
-      "",
-      "Stack:",
-      error?.stack ?? "(no stack)",
-      "",
-      "Component stack:",
-      componentStack ?? "(unavailable)",
+      '',
+      'Stack:',
+      error?.stack ?? '(no stack)',
+      '',
+      'Component stack:',
+      componentStack ?? '(unavailable)',
     ];
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await navigator.clipboard.writeText(lines.join('\n'));
       this.setState({ copied: true });
       window.setTimeout(() => this.setState({ copied: false }), 1500);
     } catch {
@@ -74,12 +74,9 @@ export default class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="size-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-fg">
-              Something went wrong
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight text-fg">Something went wrong</h2>
             <p className="mt-1 text-sm text-fg-subtle">
-              {error?.message ??
-                "The interface hit an unexpected error and could not continue."}
+              {error?.message ?? 'The interface hit an unexpected error and could not continue.'}
             </p>
           </div>
 
@@ -107,7 +104,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </Button>
             <Button variant="ghost" onClick={() => void this.copyDetails()}>
               {copied ? <Check /> : <Copy />}
-              {copied ? "Copied" : "Copy error details"}
+              {copied ? 'Copied' : 'Copy error details'}
             </Button>
           </div>
         </div>

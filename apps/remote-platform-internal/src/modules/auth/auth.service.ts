@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import jwt, { type JwtPayload } from "jsonwebtoken";
+import { Injectable, Logger } from '@nestjs/common';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 /**
  * Provider-agnostic JWT signing/verification helper.
@@ -20,7 +20,7 @@ import jwt, { type JwtPayload } from "jsonwebtoken";
 export interface AuthClaims extends JwtPayload {
   sub: string;
   org?: string;
-  plan?: "free" | "starter" | "pro";
+  plan?: 'free' | 'starter' | 'pro';
   email?: string;
 }
 
@@ -39,9 +39,7 @@ export class AuthService {
 
   private get publicKey(): string | undefined {
     // PEM-formatted RS256 public key from a real provider (e.g. Clerk).
-    return (
-      process.env.AUTH_JWT_PUBLIC_KEY?.replace(/\\n/g, "\n").trim() || undefined
-    );
+    return process.env.AUTH_JWT_PUBLIC_KEY?.replace(/\\n/g, '\n').trim() || undefined;
   }
 
   private get issuer(): string | undefined {
@@ -55,15 +53,13 @@ export class AuthService {
   public verify(token: string): AuthClaims {
     if (!this.enabled) {
       throw new Error(
-        "Auth is disabled (no AUTH_JWT_SECRET / AUTH_JWT_PUBLIC_KEY). " +
-          "Set one to enable verification.",
+        'Auth is disabled (no AUTH_JWT_SECRET / AUTH_JWT_PUBLIC_KEY). ' +
+          'Set one to enable verification.',
       );
     }
     const key = this.publicKey ?? this.secret;
-    if (!key) throw new Error("No JWT key configured");
-    const algorithms = this.publicKey
-      ? (["RS256"] as const)
-      : (["HS256"] as const);
+    if (!key) throw new Error('No JWT key configured');
+    const algorithms = this.publicKey ? (['RS256'] as const) : (['HS256'] as const);
     return jwt.verify(token, key, {
       algorithms: [...algorithms],
       ...(this.issuer ? { issuer: this.issuer } : {}),
@@ -76,18 +72,16 @@ export class AuthService {
    * Real SaaS deployments should issue tokens through the chosen identity
    * provider, not this endpoint.
    */
-  public issueDevToken(claims: Omit<AuthClaims, "iat" | "exp">): string {
+  public issueDevToken(claims: Omit<AuthClaims, 'iat' | 'exp'>): string {
     if (!this.secret) {
-      throw new Error("Dev tokens require AUTH_JWT_SECRET");
+      throw new Error('Dev tokens require AUTH_JWT_SECRET');
     }
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "Dev token endpoint is disabled when NODE_ENV=production",
-      );
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Dev token endpoint is disabled when NODE_ENV=production');
     }
     return jwt.sign(claims, this.secret, {
-      algorithm: "HS256",
-      expiresIn: "12h",
+      algorithm: 'HS256',
+      expiresIn: '12h',
       ...(this.issuer ? { issuer: this.issuer } : {}),
     });
   }

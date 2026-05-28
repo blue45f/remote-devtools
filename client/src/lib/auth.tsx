@@ -6,9 +6,9 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
+} from 'react';
 
-const TOKEN_KEY = "auth-token";
+const TOKEN_KEY = 'auth-token';
 
 /**
  * Provider-agnostic auth context.
@@ -63,7 +63,7 @@ const TOKEN_KEY = "auth-token";
 export interface AuthClaims {
   sub: string;
   org?: string;
-  plan?: "free" | "starter" | "pro";
+  plan?: 'free' | 'starter' | 'pro';
   email?: string;
   exp?: number;
 }
@@ -78,16 +78,16 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function readToken(): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
 function decodeClaims(token: string | null): AuthClaims | null {
   if (!token) return null;
   try {
-    const [, payload] = token.split(".");
+    const [, payload] = token.split('.');
     if (!payload) return null;
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
     return JSON.parse(json) as AuthClaims;
   } catch {
     return null;
@@ -99,12 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Keep multiple tabs in sync.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     const onStorage = (e: StorageEvent) => {
       if (e.key === TOKEN_KEY) setToken(readToken());
     };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const signIn = useCallback((next: string) => {
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth() must be used inside <AuthProvider>");
+    throw new Error('useAuth() must be used inside <AuthProvider>');
   }
   return ctx;
 }

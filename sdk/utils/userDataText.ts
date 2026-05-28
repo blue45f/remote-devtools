@@ -1,12 +1,9 @@
-import * as CryptoJS from "crypto-js";
-import { UAParser } from "ua-parser-js";
+import * as CryptoJS from 'crypto-js';
+import { UAParser } from 'ua-parser-js';
 
-import { CommonInfo } from "../types/common";
+import { CommonInfo } from '../types/common';
 
-const key = CryptoJS.lib.WordArray.create(
-  [1935828585, 1734898793, 1852243968],
-  32,
-);
+const key = CryptoJS.lib.WordArray.create([1935828585, 1734898793, 1852243968], 32);
 
 const pref = {
   mode: CryptoJS.mode.CBC,
@@ -27,42 +24,40 @@ interface UserAppInfo {
 }
 
 const decryptUserAppData = (userAppData: string): UserAppInfo => {
-  const decoded = CryptoJS.AES.decrypt(userAppData, key, pref).toString(
-    CryptoJS.enc.Utf8,
-  );
+  const decoded = CryptoJS.AES.decrypt(userAppData, key, pref).toString(CryptoJS.enc.Utf8);
 
-  const splittedValue = decoded.split("|");
+  const splittedValue = decoded.split('|');
   return {
     appVersion: {
-      label: "앱 버전",
+      label: '앱 버전',
       value: splittedValue[0],
     },
     osVersion: {
-      label: "OS 버전",
+      label: 'OS 버전',
       value: splittedValue[1],
     },
     platform: {
-      label: "플랫폼",
+      label: '플랫폼',
       value: splittedValue[2],
     },
     latitude: {
-      label: "위도",
+      label: '위도',
       value: splittedValue[4],
     },
     longitude: {
-      label: "경도",
+      label: '경도',
       value: splittedValue[5],
     },
     deviceId: {
-      label: "디바이스 ID",
+      label: '디바이스 ID',
       value: splittedValue[6],
     },
     memberNo: {
-      label: "멤버 번호",
+      label: '멤버 번호',
       value: splittedValue[7],
     },
     address: {
-      label: "주소",
+      label: '주소',
       value: `${splittedValue[9]} ${splittedValue[10]} ${splittedValue[11]}`,
     },
   };
@@ -84,15 +79,13 @@ function parseUserAgent(userAgentString: string): {
   const result = parser.getResult();
 
   // OS 정보 포맷팅
-  let formattedOs = "Unknown";
+  let formattedOs = 'Unknown';
   if (result.os.name) {
-    formattedOs = result.os.version
-      ? `${result.os.name} / ${result.os.version}`
-      : result.os.name;
+    formattedOs = result.os.version ? `${result.os.name} / ${result.os.version}` : result.os.name;
   }
 
   // 브라우저 정보 포맷팅
-  let formattedBrowser = "Unknown";
+  let formattedBrowser = 'Unknown';
   if (result.browser.name) {
     formattedBrowser = result.browser.version
       ? `${result.browser.name} / ${result.browser.version}`
@@ -118,19 +111,12 @@ export const createUserDataText = (userData: UserData): string => {
   // commonInfo가 없거나 userAppData가 없으면 기본 정보만 반환
   if (!commonInfo || !commonInfo.user?.userAppData) {
     const { os, browser } = parseUserAgent(userAgent);
-    return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ""}${URL} \nOS: ${os} \n브라우저: ${browser}`;
+    return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ''}${URL} \nOS: ${os} \n브라우저: ${browser}`;
   }
 
-  const {
-    appVersion,
-    platform,
-    deviceId,
-    memberNo,
-    latitude,
-    longitude,
-    address,
-  } = decryptUserAppData(commonInfo.user.userAppData);
+  const { appVersion, platform, deviceId, memberNo, latitude, longitude, address } =
+    decryptUserAppData(commonInfo.user.userAppData);
   const { os, browser } = parseUserAgent(userAgent);
 
-  return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ""}${decodeURIComponent(URL)} \n앱 버전: ${appVersion.value.split("_")[1]} \n디바이스 모델: ${platform.value} \nOS: ${os} \n브라우저: ${browser} \n디바이스 ID: ${deviceId.value} \n멤버 번호: ${memberNo.value} \n위도: ${latitude.value} \n경도: ${longitude.value} \n앱 설정 주소: ${address.value}`;
+  return `서버: Beta \nURL: ${webTitle ? `[${webTitle}] ` : ''}${decodeURIComponent(URL)} \n앱 버전: ${appVersion.value.split('_')[1]} \n디바이스 모델: ${platform.value} \nOS: ${os} \n브라우저: ${browser} \n디바이스 ID: ${deviceId.value} \n멤버 번호: ${memberNo.value} \n위도: ${latitude.value} \n경도: ${longitude.value} \n앱 설정 주소: ${address.value}`;
 };

@@ -1,7 +1,7 @@
-import { join } from "path";
+import { join } from 'path';
 
-import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
-import * as dotenv from "dotenv";
+import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as dotenv from 'dotenv';
 
 import {
   DomEntity,
@@ -17,7 +17,7 @@ import {
   UserEntity,
   DeviceInfoEntity,
   UserTicketTemplateEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
 dotenv.config();
 
@@ -46,7 +46,7 @@ export const ALL_ENTITIES = [
 ] as const;
 
 /** Environments where schema synchronization is allowed. */
-const SYNCHRONIZE_ALLOWED_ENVS = new Set(["local", "development", "dev"]);
+const SYNCHRONIZE_ALLOWED_ENVS = new Set(['local', 'development', 'dev']);
 
 /**
  * Build a TypeORM configuration from environment variables.
@@ -54,30 +54,23 @@ const SYNCHRONIZE_ALLOWED_ENVS = new Set(["local", "development", "dev"]);
  * (local, development, dev). All other environments (beta, production, etc.)
  * must use migrations to prevent accidental data loss.
  */
-export function createDatabaseConfig(
-  options: DatabaseConfigOptions = {},
-): TypeOrmModuleOptions {
-  const appEnv = (process.env.APP_ENV ?? "local").toLowerCase();
+export function createDatabaseConfig(options: DatabaseConfigOptions = {}): TypeOrmModuleOptions {
+  const appEnv = (process.env.APP_ENV ?? 'local').toLowerCase();
   const isDevelopment = SYNCHRONIZE_ALLOWED_ENVS.has(appEnv);
 
   return {
-    type: "postgres",
-    host: process.env.DB_WRITER_HOST ?? "postgres",
-    port: parseInt(process.env.DB_PORT ?? "", 10) || 5432,
-    password:
-      process.env.DB_PASSWORD ??
-      process.env.DB_SVC_USER_PASSWORD ??
-      "mypassword",
-    username: process.env.DB_USER ?? process.env.DB_SVC_USER ?? "myuser",
-    database: process.env.DB_NAME ?? "mydb",
-    schema: "public",
+    type: 'postgres',
+    host: process.env.DB_WRITER_HOST ?? 'postgres',
+    port: parseInt(process.env.DB_PORT ?? '', 10) || 5432,
+    password: process.env.DB_PASSWORD ?? process.env.DB_SVC_USER_PASSWORD ?? 'mypassword',
+    username: process.env.DB_USER ?? process.env.DB_SVC_USER ?? 'myuser',
+    database: process.env.DB_NAME ?? 'mydb',
+    schema: 'public',
     entities: [...ALL_ENTITIES],
     synchronize: options.synchronize ?? isDevelopment,
     dropSchema: options.dropSchema ?? false,
     logging: options.logging ?? false,
-    migrations: [
-      join(__dirname, "..", "..", "..", "..", "migrations", "*.{ts,js}"),
-    ],
-    migrationsRun: process.env.RUN_MIGRATIONS === "true",
+    migrations: [join(__dirname, '..', '..', '..', '..', 'migrations', '*.{ts,js}')],
+    migrationsRun: process.env.RUN_MIGRATIONS === 'true',
   };
 }

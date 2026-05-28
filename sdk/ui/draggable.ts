@@ -31,8 +31,7 @@ export const makeDraggable = (element: HTMLElement) => {
   };
 
   // 터치 디바이스 감지
-  const isTouchDevice =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   if (isTouchDevice) {
     // 터치 이벤트 핸들러
@@ -45,9 +44,9 @@ export const makeDraggable = (element: HTMLElement) => {
       handleMove(e.touches[0].clientX, e.touches[0].clientY);
     };
 
-    element.addEventListener("touchstart", handleTouchStart);
-    element.addEventListener("touchmove", handleTouchMove);
-    element.addEventListener("touchend", handleEnd);
+    element.addEventListener('touchstart', handleTouchStart);
+    element.addEventListener('touchmove', handleTouchMove);
+    element.addEventListener('touchend', handleEnd);
   } else {
     // 마우스 이벤트 핸들러
     let initialClientX = 0;
@@ -57,8 +56,8 @@ export const makeDraggable = (element: HTMLElement) => {
       initialClientX = e.clientX;
       initialClientY = e.clientY;
       handleStart(e.clientX, e.clientY);
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseEnd);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseEnd);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -69,20 +68,16 @@ export const makeDraggable = (element: HTMLElement) => {
       )
         return;
       handleMove(e.clientX, e.clientY);
-      element
-        .querySelectorAll("button")
-        .forEach((button) => (button.style.pointerEvents = "none"));
+      element.querySelectorAll('button').forEach((button) => (button.style.pointerEvents = 'none'));
     };
 
     const handleMouseEnd = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseEnd);
-      element
-        .querySelectorAll("button")
-        .forEach((button) => (button.style.pointerEvents = ""));
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseEnd);
+      element.querySelectorAll('button').forEach((button) => (button.style.pointerEvents = ''));
       handleEnd();
     };
 
-    element.addEventListener("mousedown", handleMouseDown);
+    element.addEventListener('mousedown', handleMouseDown);
   }
 };

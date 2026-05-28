@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Button } from "./button";
+import { Button } from './button';
 import {
   Dialog,
   DialogContent,
@@ -8,13 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./dialog";
+} from './dialog';
 
 const meta = {
-  title: "UI/Dialog",
+  title: 'UI/Dialog',
   component: Dialog,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
 } satisfies Meta<typeof Dialog>;
 
 export default meta;
@@ -30,8 +30,8 @@ export const Default: Story = {
         <DialogHeader>
           <DialogTitle>Delete session?</DialogTitle>
           <DialogDescription>
-            This permanently removes the captured CDP timeline and all rrweb
-            events. This action cannot be undone.
+            This permanently removes the captured CDP timeline and all rrweb events. This action
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-end gap-2">
@@ -48,7 +48,7 @@ export const InitiallyOpen: Story = {
     docs: {
       description: {
         story:
-          "Opens on mount — useful for visual diff tooling that cannot drive the open trigger.",
+          'Opens on mount — useful for visual diff tooling that cannot drive the open trigger.',
       },
     },
   },

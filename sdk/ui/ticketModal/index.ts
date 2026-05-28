@@ -1,7 +1,7 @@
-import { CommonInfo } from "../../types/common";
+import { CommonInfo } from '../../types/common';
 
-import { createTicketModal } from "./components/modal";
-import { TicketFormData } from "./types";
+import { createTicketModal } from './components/modal';
+import { TicketFormData } from './types';
 
 /**
  * 티켓 모달 생성 및 표시
@@ -9,9 +9,7 @@ import { TicketFormData } from "./types";
  * @param commonInfo - 사용자 정보
  * @returns 폼 데이터 또는 null
  */
-export async function openTicketModal(
-  commonInfo: CommonInfo,
-): Promise<TicketFormData | null> {
+export async function openTicketModal(commonInfo: CommonInfo): Promise<TicketFormData | null> {
   return new Promise((resolve) => {
     createTicketModal(
       (_commonInfo: CommonInfo | null, formData?: TicketFormData) => {
@@ -27,7 +25,7 @@ export async function openTicketModal(
 }
 
 // 타입 재수출
-export type { TicketFormData } from "./types";
+export type { TicketFormData } from './types';
 
 // 기존 호환성을 위해 createTicketModal도 export
-export { createTicketModal } from "./components/modal";
+export { createTicketModal } from './components/modal';

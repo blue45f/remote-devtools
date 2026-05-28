@@ -9,19 +9,19 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-} from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
-import { FileInterceptor } from "@nestjs/platform-express";
-import axios from "axios";
-import FormData from "form-data";
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import axios from 'axios';
+import FormData from 'form-data';
 
 /**
  * Workflow API proxy controller.
  * Jira image uploads go directly to the Jira REST API.
  * Member search uses the WORKFLOW_API_URL proxy.
  */
-@ApiTags("Workflow")
-@Controller("workflow")
+@ApiTags('Workflow')
+@Controller('workflow')
 export class WorkflowController {
   private readonly logger = new Logger(WorkflowController.name);
   private readonly workflowAPIURL = process.env.WORKFLOW_API_URL;
@@ -30,10 +30,8 @@ export class WorkflowController {
   /**
    * GET /workflow/members - Search internal organization members by name.
    */
-  @Get("members")
-  public getMembers(
-    @Query("name") name: string,
-  ): Promise<WorkflowResponse<MemberDTO>> {
+  @Get('members')
+  public getMembers(@Query('name') name: string): Promise<WorkflowResponse<MemberDTO>> {
     return axios
       .get<WorkflowResponse<MemberDTO>>(`${this.workflowAPIURL}/members`, {
         params: { name },
@@ -45,14 +43,14 @@ export class WorkflowController {
   /**
    * Upload an image to a Jira issue as an attachment (direct Jira REST API v3).
    */
-  @Post("jira/issues/:issueId/image")
-  @UseInterceptors(FileInterceptor("image"))
+  @Post('jira/issues/:issueId/image')
+  @UseInterceptors(FileInterceptor('image'))
   public async uploadImageToJira(
-    @Param("issueId") issueId: string,
+    @Param('issueId') issueId: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<unknown> {
     if (!file) {
-      throw new BadRequestException("An image file is required");
+      throw new BadRequestException('An image file is required');
     }
 
     const email = process.env.JIRA_API_EMAIL;
@@ -60,14 +58,14 @@ export class WorkflowController {
 
     if (!this.jiraHostUrl || !email || !token) {
       throw new BadRequestException(
-        "Jira API credentials are not configured (JIRA_HOST_URL, JIRA_API_EMAIL, JIRA_API_TOKEN)",
+        'Jira API credentials are not configured (JIRA_HOST_URL, JIRA_API_EMAIL, JIRA_API_TOKEN)',
       );
     }
 
     this.logger.log(`Uploading image to Jira issue: ${issueId}`);
 
     const formData = new FormData();
-    formData.append("file", file.buffer, {
+    formData.append('file', file.buffer, {
       filename: file.originalname || `capture-${Date.now()}.png`,
       contentType: file.mimetype,
     });
@@ -79,8 +77,8 @@ export class WorkflowController {
         {
           headers: {
             ...formData.getHeaders(),
-            Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`,
-            "X-Atlassian-Token": "no-check",
+            Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString('base64')}`,
+            'X-Atlassian-Token': 'no-check',
           },
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
@@ -100,7 +98,7 @@ export class WorkflowController {
         data: axiosError.response?.data,
       });
       throw new BadRequestException(
-        `Failed to upload attachment to Jira issue ${issueId}: ${axiosError.response?.statusText || "Unknown error"}`,
+        `Failed to upload attachment to Jira issue ${issueId}: ${axiosError.response?.statusText || 'Unknown error'}`,
       );
     }
   }

@@ -16,7 +16,7 @@ export interface Point {
  * append `L x y L x y Z` to make an area fill.
  */
 export function buildSmoothPath(points: Point[]): string {
-  if (points.length === 0) return "";
+  if (points.length === 0) return '';
   if (points.length === 1) {
     const p = points[0];
     return `M ${p.x} ${p.y}`;
@@ -42,5 +42,5 @@ export function buildSmoothPath(points: Point[]): string {
     segments.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`);
   }
 
-  return segments.join(" ");
+  return segments.join(' ');
 }

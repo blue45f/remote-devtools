@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { Camera, EyeOff, ImageOff, MousePointerClick } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { Camera, EyeOff, ImageOff, MousePointerClick } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiFetch } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface SessionPreview {
   head: string;
@@ -37,18 +37,12 @@ interface SessionPreviewCardProps {
  * transform shrinks it to the card's actual width via ResizeObserver so the
  * mini-page always fills the card without distortion.
  */
-export function SessionPreviewCard({
-  sessionId,
-  className,
-  clickPoints,
-}: SessionPreviewCardProps) {
+export function SessionPreviewCard({ sessionId, className, clickPoints }: SessionPreviewCardProps) {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const { data, isLoading, error } = useQuery({
-    queryKey: ["session-preview", sessionId],
+    queryKey: ['session-preview', sessionId],
     queryFn: () =>
-      apiFetch<SessionPreview | null>(
-        `/api/session-replay/sessions/${sessionId}/preview`,
-      ),
+      apiFetch<SessionPreview | null>(`/api/session-replay/sessions/${sessionId}/preview`),
     enabled: Boolean(sessionId),
     retry: 0,
   });
@@ -71,16 +65,16 @@ export function SessionPreviewCard({
   }, [nativeWidth]);
 
   const srcDoc = useMemo(() => {
-    if (!data) return "";
-    const base = data.baseHref ? `<base href="${data.baseHref}">` : "";
-    const head = data.head ?? "";
-    const bodyClass = data.bodyClass ? ` class="${data.bodyClass}"` : "";
-    return `<!doctype html><html><head>${base}<meta name="referrer" content="no-referrer">${head}</head><body${bodyClass}>${data.body ?? ""}</body></html>`;
+    if (!data) return '';
+    const base = data.baseHref ? `<base href="${data.baseHref}">` : '';
+    const head = data.head ?? '';
+    const bodyClass = data.bodyClass ? ` class="${data.bodyClass}"` : '';
+    return `<!doctype html><html><head>${base}<meta name="referrer" content="no-referrer">${head}</head><body${bodyClass}>${data.body ?? ''}</body></html>`;
   }, [data]);
 
   if (isLoading) {
     return (
-      <Card className={cn("overflow-hidden p-0", className)}>
+      <Card className={cn('overflow-hidden p-0', className)}>
         <Skeleton className="aspect-[16/10] w-full" />
       </Card>
     );
@@ -90,8 +84,8 @@ export function SessionPreviewCard({
     return (
       <Card
         className={cn(
-          "overflow-hidden p-0 flex flex-col items-center justify-center",
-          "aspect-[16/10] text-fg-faint gap-2 text-xs bg-bg-subtle",
+          'overflow-hidden p-0 flex flex-col items-center justify-center',
+          'aspect-[16/10] text-fg-faint gap-2 text-xs bg-bg-subtle',
           className,
         )}
       >
@@ -102,12 +96,7 @@ export function SessionPreviewCard({
   }
 
   return (
-    <Card
-      className={cn(
-        "relative overflow-hidden p-0 group bg-bg-subtle",
-        className,
-      )}
-    >
+    <Card className={cn('relative overflow-hidden p-0 group bg-bg-subtle', className)}>
       <div ref={containerRef} className="aspect-[16/10] w-full relative">
         <iframe
           title="Session preview"
@@ -134,9 +123,9 @@ export function SessionPreviewCard({
       </div>
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 px-3 py-2",
-          "flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold",
-          "text-bg bg-fg/85 backdrop-blur-sm",
+          'absolute inset-x-0 bottom-0 px-3 py-2',
+          'flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold',
+          'text-bg bg-fg/85 backdrop-blur-sm',
         )}
       >
         <Camera className="size-3" />
@@ -149,14 +138,8 @@ export function SessionPreviewCard({
             className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-bg/80"
             data-testid="preview-heatmap-toggle"
           >
-            {showHeatmap ? (
-              <EyeOff className="size-3" />
-            ) : (
-              <MousePointerClick className="size-3" />
-            )}
-            <span className="font-mono normal-case tracking-normal">
-              {clickPoints.length}
-            </span>
+            {showHeatmap ? <EyeOff className="size-3" /> : <MousePointerClick className="size-3" />}
+            <span className="font-mono normal-case tracking-normal">{clickPoints.length}</span>
           </button>
         )}
       </div>
@@ -191,18 +174,18 @@ function HeatmapCanvas({
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.clearRect(0, 0, width, height);
-    ctx.globalCompositeOperation = "lighter";
+    ctx.globalCompositeOperation = 'lighter';
 
     const radius = 40; // ~thumb-print sized blob in native coordinates
     for (const p of points) {
       const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
-      grad.addColorStop(0, "rgba(255, 80, 80, 0.55)");
-      grad.addColorStop(0.4, "rgba(255, 200, 80, 0.3)");
-      grad.addColorStop(1, "rgba(255, 200, 80, 0)");
+      grad.addColorStop(0, 'rgba(255, 80, 80, 0.55)');
+      grad.addColorStop(0.4, 'rgba(255, 200, 80, 0.3)');
+      grad.addColorStop(1, 'rgba(255, 200, 80, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);

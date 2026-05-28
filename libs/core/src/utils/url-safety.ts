@@ -6,9 +6,9 @@
 
 /** Hostnames that resolve to internal infrastructure and must never be fetched. */
 const BLOCKED_HOSTNAMES = new Set<string>([
-  "localhost",
-  "metadata.google.internal",
-  "169.254.169.254",
+  'localhost',
+  'metadata.google.internal',
+  '169.254.169.254',
 ]);
 
 const IPV4_CIDRS: ReadonlyArray<readonly [number, number]> = [
@@ -30,7 +30,7 @@ function ipv4ToInt(a: number, b: number, c: number, d: number): number {
 }
 
 function parseIpv4(host: string): number | null {
-  const parts = host.split(".");
+  const parts = host.split('.');
   if (parts.length !== 4) return null;
   const nums: number[] = [];
   for (const part of parts) {
@@ -55,13 +55,10 @@ function isPrivateIpv4(host: string): boolean {
 function isPrivateIpv6(host: string): boolean {
   // Strip enclosing brackets if present (URL.hostname does this for us,
   // but be defensive).
-  const normalized = host.replace(/^\[|\]$/g, "").toLowerCase();
-  if (normalized === "::1" || normalized === "0:0:0:0:0:0:0:1") return true;
+  const normalized = host.replace(/^\[|\]$/g, '').toLowerCase();
+  if (normalized === '::1' || normalized === '0:0:0:0:0:0:0:1') return true;
   // fc00::/7 — Unique local addresses (covers fc.. and fd..)
-  if (
-    /^fc[0-9a-f]{2}:/.test(normalized) ||
-    /^fd[0-9a-f]{2}:/.test(normalized)
-  ) {
+  if (/^fc[0-9a-f]{2}:/.test(normalized) || /^fd[0-9a-f]{2}:/.test(normalized)) {
     return true;
   }
   // fe80::/10 — Link-local
@@ -88,7 +85,7 @@ export function assertSafePublicUrl(rawUrl: string): URL {
     throw new Error(`Invalid URL: ${rawUrl}`);
   }
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw new Error(`Disallowed URL scheme: ${parsed.protocol}`);
   }
 
@@ -102,7 +99,7 @@ export function assertSafePublicUrl(rawUrl: string): URL {
     throw new Error(`Blocked private IPv4 address: ${hostname}`);
   }
 
-  if (hostname.includes(":") && isPrivateIpv6(hostname)) {
+  if (hostname.includes(':') && isPrivateIpv6(hostname)) {
     throw new Error(`Blocked private IPv6 address: ${hostname}`);
   }
 

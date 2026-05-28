@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
-import { buildSmoothPath, type Point } from "./path";
+import { buildSmoothPath, type Point } from './path';
 
 interface SparklineProps {
   /** Numeric series (already in chronological order). */
@@ -10,7 +10,7 @@ interface SparklineProps {
   /** Render area beneath the line. */
   area?: boolean;
   /** Stroke opacity. */
-  intensity?: "fg" | "muted";
+  intensity?: 'fg' | 'muted';
   className?: string;
 }
 
@@ -19,17 +19,12 @@ interface SparklineProps {
  * if you need any of that, reach for AreaChart instead. Replaces the recharts
  * dependency for the dashboard's hero tiles.
  */
-export function Sparkline({
-  data,
-  area = true,
-  intensity = "fg",
-  className,
-}: SparklineProps) {
+export function Sparkline({ data, area = true, intensity = 'fg', className }: SparklineProps) {
   const W = 100; // viewBox width — scales freely
   const H = 28;
 
   const { linePath, areaPath } = useMemo(() => {
-    if (data.length === 0) return { linePath: "", areaPath: "" };
+    if (data.length === 0) return { linePath: '', areaPath: '' };
     const min = Math.min(...data);
     const max = Math.max(...data);
     const range = max - min || 1;
@@ -40,21 +35,16 @@ export function Sparkline({
     }));
 
     const linePath = buildSmoothPath(points);
-    const areaPath = `${linePath} L ${points[points.length - 1].x} ${H} L ${
-      points[0].x
-    } ${H} Z`;
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`;
     return { linePath, areaPath };
   }, [data]);
 
-  const opacity = intensity === "fg" ? 0.18 : 0.08;
-  const gradId = useMemo(
-    () => `spark-${Math.random().toString(36).slice(2, 9)}`,
-    [],
-  );
+  const opacity = intensity === 'fg' ? 0.18 : 0.08;
+  const gradId = useMemo(() => `spark-${Math.random().toString(36).slice(2, 9)}`, []);
 
   return (
     <svg
-      className={cn("h-full w-full", className)}
+      className={cn('h-full w-full', className)}
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       aria-hidden

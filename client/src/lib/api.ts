@@ -5,9 +5,9 @@
  * the fetch helper short-circuits to seed data instead of the network —
  * the seed router is lazy-loaded so it is not paid for in normal builds.
  */
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from '@tanstack/react-query';
 
-export const API_HOST = import.meta.env.VITE_HOST || "http://localhost:3000";
+export const API_HOST = import.meta.env.VITE_HOST || 'http://localhost:3000';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,26 +20,23 @@ export const queryClient = new QueryClient({
 });
 
 function isDemoMode() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === 'undefined') return false;
   // Public demo build flips demo on for everybody — there is no backend.
-  if (import.meta.env.VITE_FORCE_DEMO === "true") return true;
-  return localStorage.getItem("demo-mode") === "1";
+  if (import.meta.env.VITE_FORCE_DEMO === 'true') return true;
+  return localStorage.getItem('demo-mode') === '1';
 }
 
-let seedRouterPromise: Promise<typeof import("./seed-router")> | undefined;
+let seedRouterPromise: Promise<typeof import('./seed-router')> | undefined;
 
 function loadSeedRouter() {
   if (!seedRouterPromise) {
-    seedRouterPromise = import("./seed-router");
+    seedRouterPromise = import('./seed-router');
   }
   return seedRouterPromise;
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const method = (init?.method ?? "GET").toUpperCase();
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? 'GET').toUpperCase();
 
   if (isDemoMode()) {
     const { resolveSeed } = await loadSeedRouter();
@@ -52,7 +49,7 @@ export async function apiFetch<T>(
     // In demo mode, mutations that have no seed router entry resolve to a
     // best-effort echo of the request body so optimistic UI keeps working
     // offline.
-    if (method !== "GET" && init?.body) {
+    if (method !== 'GET' && init?.body) {
       try {
         return JSON.parse(init.body as string) as T;
       } catch {
@@ -63,8 +60,7 @@ export async function apiFetch<T>(
 
   // Forward the auth token if one is present. Production swaps the
   // localStorage source for Clerk / Supabase / Auth0 — see auth.tsx.
-  const token =
-    typeof window === "undefined" ? null : localStorage.getItem("auth-token");
+  const token = typeof window === 'undefined' ? null : localStorage.getItem('auth-token');
   const headers: HeadersInit = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init?.headers as Record<string, string> | undefined),

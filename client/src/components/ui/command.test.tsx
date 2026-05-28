@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   Command,
@@ -9,10 +9,10 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "./command";
+} from './command';
 
-describe("Command (cmdk)", () => {
-  it("filters items by typed query", async () => {
+describe('Command (cmdk)', () => {
+  it('filters items by typed query', async () => {
     const user = userEvent.setup();
     render(
       <Command>
@@ -27,12 +27,12 @@ describe("Command (cmdk)", () => {
       </Command>,
     );
 
-    await user.type(screen.getByPlaceholderText("search"), "banan");
-    expect(screen.queryByText("apple")).not.toBeInTheDocument();
-    expect(screen.getByText("banana")).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('search'), 'banan');
+    expect(screen.queryByText('apple')).not.toBeInTheDocument();
+    expect(screen.getByText('banana')).toBeInTheDocument();
   });
 
-  it("shows the empty state when nothing matches", async () => {
+  it('shows the empty state when nothing matches', async () => {
     const user = userEvent.setup();
     render(
       <Command>
@@ -46,11 +46,11 @@ describe("Command (cmdk)", () => {
       </Command>,
     );
 
-    await user.type(screen.getByPlaceholderText("search"), "zzzzz");
-    expect(screen.getByText("no matches")).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('search'), 'zzzzz');
+    expect(screen.getByText('no matches')).toBeInTheDocument();
   });
 
-  it("invokes onSelect on Enter", async () => {
+  it('invokes onSelect on Enter', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
     render(
@@ -66,8 +66,8 @@ describe("Command (cmdk)", () => {
       </Command>,
     );
 
-    await user.type(screen.getByPlaceholderText("search"), "apple");
-    await user.keyboard("{Enter}");
+    await user.type(screen.getByPlaceholderText('search'), 'apple');
+    await user.keyboard('{Enter}');
     expect(onSelect).toHaveBeenCalled();
   });
 });

@@ -1,14 +1,14 @@
-import { Mail, User } from "lucide-react";
-import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Mail, User } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/toaster";
-import { useAppStore } from "@/lib/store";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/toaster';
+import { useAppStore } from '@/lib/store';
 
-import { AuthShell } from "./SignIn";
+import { AuthShell } from './SignIn';
 
 /**
  * Sign-up scaffold. Captures form intent (plan from `?plan=`) and sends a
@@ -18,11 +18,11 @@ export default function SignUpPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [pending, setPending] = useState(false);
 
-  const plan = params.get("plan") ?? "free";
+  const plan = params.get('plan') ?? 'free';
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +34,7 @@ export default function SignUpPage() {
       });
       // Drop the visitor into the demo so they can keep exploring.
       setDemoMode(true);
-      navigate("/dashboard");
+      navigate('/dashboard');
     }, 800);
   };
 
@@ -44,20 +44,15 @@ export default function SignUpPage() {
         <Badge variant="accent" size="sm" className="mb-3 capitalize">
           {plan} plan
         </Badge>
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">
-          Create your workspace
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-1">Create your workspace</h1>
         <p className="text-sm text-fg-subtle">
-          Sign-ups are gated to the waitlist for now — drop your email and we'll
-          let you in.
+          Sign-ups are gated to the waitlist for now — drop your email and we'll let you in.
         </p>
       </div>
 
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
-          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
-            Full name
-          </span>
+          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">Full name</span>
           <Input
             type="text"
             required
@@ -69,9 +64,7 @@ export default function SignUpPage() {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
-            Work email
-          </span>
+          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">Work email</span>
           <Input
             type="email"
             required
@@ -82,25 +75,20 @@ export default function SignUpPage() {
             autoComplete="email"
           />
         </label>
-        <Button
-          type="submit"
-          variant="primary"
-          className="w-full"
-          disabled={pending}
-        >
-          {pending ? "Reserving your spot…" : "Join the waitlist"}
+        <Button type="submit" variant="primary" className="w-full" disabled={pending}>
+          {pending ? 'Reserving your spot…' : 'Join the waitlist'}
         </Button>
       </form>
 
       <p className="mt-7 text-center text-xs text-fg-subtle">
-        Already have an account?{" "}
+        Already have an account?{' '}
         <Link to="/sign-in" className="text-fg underline underline-offset-2">
           Sign in
         </Link>
       </p>
 
       <p className="mt-4 text-center text-[11px] text-fg-faint">
-        Or skip the wait — the open-source release is{" "}
+        Or skip the wait — the open-source release is{' '}
         <a
           href="https://github.com/blue45f/remote-devtools"
           target="_blank"

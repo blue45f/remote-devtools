@@ -1,11 +1,11 @@
-import type { CallHandler, ExecutionContext } from "@nestjs/common";
-import { of, firstValueFrom } from "rxjs";
-import { describe, it, expect, beforeEach } from "vitest";
+import type { CallHandler, ExecutionContext } from '@nestjs/common';
+import { of, firstValueFrom } from 'rxjs';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-import type { StandardResponse } from "./response.interceptor";
-import { ResponseInterceptor } from "./response.interceptor";
+import type { StandardResponse } from './response.interceptor';
+import { ResponseInterceptor } from './response.interceptor';
 
-describe("ResponseInterceptor", () => {
+describe('ResponseInterceptor', () => {
   let interceptor: ResponseInterceptor<unknown>;
   let mockExecutionContext: ExecutionContext;
 
@@ -14,13 +14,13 @@ describe("ResponseInterceptor", () => {
 
     mockExecutionContext = {
       switchToHttp: () => ({
-        getRequest: () => ({ url: "/api/test" }),
+        getRequest: () => ({ url: '/api/test' }),
       }),
     } as unknown as ExecutionContext;
   });
 
-  it("should wrap plain data in StandardResponse", async () => {
-    const data = { id: 1, name: "test" };
+  it('should wrap plain data in StandardResponse', async () => {
+    const data = { id: 1, name: 'test' };
     const mockCallHandler: CallHandler = { handle: () => of(data) };
 
     const result = await firstValueFrom(
@@ -29,13 +29,13 @@ describe("ResponseInterceptor", () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual(data);
-    expect(result.path).toBe("/api/test");
+    expect(result.path).toBe('/api/test');
     expect(result.timestamp).toBeDefined();
-    expect(typeof result.time).toBe("number");
+    expect(typeof result.time).toBe('number');
   });
 
-  it("should pass through data that already has success property", async () => {
-    const data = { success: true, customField: "value" };
+  it('should pass through data that already has success property', async () => {
+    const data = { success: true, customField: 'value' };
     const mockCallHandler: CallHandler = { handle: () => of(data) };
 
     const result = (await firstValueFrom(
@@ -43,13 +43,13 @@ describe("ResponseInterceptor", () => {
     )) as StandardResponse<unknown> & { customField?: string };
 
     expect(result.success).toBe(true);
-    expect(result.customField).toBe("value");
+    expect(result.customField).toBe('value');
     expect(result.timestamp).toBeDefined();
-    expect(result.path).toBe("/api/test");
+    expect(result.path).toBe('/api/test');
     expect(result.time).toBeUndefined();
   });
 
-  it("should handle null data", async () => {
+  it('should handle null data', async () => {
     const mockCallHandler: CallHandler = { handle: () => of(null) };
 
     const result = await firstValueFrom(

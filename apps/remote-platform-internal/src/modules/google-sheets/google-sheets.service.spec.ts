@@ -1,19 +1,19 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { GoogleSheetsService } from "./google-sheets.service";
+import { GoogleSheetsService } from './google-sheets.service';
 
 // Mock googleapis
-vi.mock("googleapis", () => ({
+vi.mock('googleapis', () => ({
   google: {
     options: vi.fn(),
     sheets: vi.fn().mockReturnValue({
       spreadsheets: {
         get: vi.fn().mockResolvedValue({
           data: {
-            properties: { title: "Test Sheet" },
-            sheets: [{ properties: { title: "Sheet1" } }],
+            properties: { title: 'Test Sheet' },
+            sheets: [{ properties: { title: 'Sheet1' } }],
           },
         }),
       },
@@ -21,18 +21,17 @@ vi.mock("googleapis", () => ({
   },
 }));
 
-vi.mock("google-auth-library", () => ({
+vi.mock('google-auth-library', () => ({
   GoogleAuth: class GoogleAuth {},
 }));
 
-describe("GoogleSheetsService", () => {
+describe('GoogleSheetsService', () => {
   let service: GoogleSheetsService;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL =
-      "test@test.iam.gserviceaccount.com";
-    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = btoa("fake-private-key");
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'test@test.iam.gserviceaccount.com';
+    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = btoa('fake-private-key');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [GoogleSheetsService],
@@ -40,32 +39,31 @@ describe("GoogleSheetsService", () => {
     service = module.get<GoogleSheetsService>(GoogleSheetsService);
   });
 
-  describe("getSpreadsheetMetadata", () => {
-    it("should return spreadsheet metadata", async () => {
-      const result = await service.getSpreadsheetMetadata("spreadsheet-123");
+  describe('getSpreadsheetMetadata', () => {
+    it('should return spreadsheet metadata', async () => {
+      const result = await service.getSpreadsheetMetadata('spreadsheet-123');
 
       expect(result).toBeDefined();
-      expect(result?.title).toBe("Test Sheet");
+      expect(result?.title).toBe('Test Sheet');
     });
 
-    it("should return null on error", async () => {
+    it('should return null on error', async () => {
       // Force an error by clearing env
       delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 
       const freshModule = await Test.createTestingModule({
         providers: [GoogleSheetsService],
       }).compile();
-      const freshService =
-        freshModule.get<GoogleSheetsService>(GoogleSheetsService);
+      const freshService = freshModule.get<GoogleSheetsService>(GoogleSheetsService);
 
-      const result = await freshService.getSpreadsheetMetadata("bad-id");
+      const result = await freshService.getSpreadsheetMetadata('bad-id');
       // Service catches errors and returns null
       expect(result === null || result?.title).toBeTruthy();
     });
   });
 
-  describe("getStructuredSheetData", () => {
-    it("should be a public method", () => {
+  describe('getStructuredSheetData', () => {
+    it('should be a public method', () => {
       expect(service.getStructuredSheetData).toBeDefined();
     });
   });

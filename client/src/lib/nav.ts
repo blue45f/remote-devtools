@@ -4,7 +4,7 @@ import {
   Sparkles,
   TerminalSquare,
   type LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 export interface NavItem {
   to: string;
@@ -24,30 +24,30 @@ export const navSections: NavSection[] = [
   {
     items: [
       {
-        to: "/dashboard",
-        label: "Dashboard",
+        to: '/dashboard',
+        label: 'Dashboard',
         icon: LayoutDashboard,
-        shortcut: "G D",
+        shortcut: 'G D',
       },
       {
-        to: "/sessions",
-        label: "Sessions",
+        to: '/sessions',
+        label: 'Sessions',
         icon: PlaySquare,
-        shortcut: "G S",
+        shortcut: 'G S',
       },
     ],
   },
   {
-    label: "SDK Playground",
+    label: 'SDK Playground',
     items: [
       {
-        to: "/sandbox/module",
-        label: "Module SDK",
+        to: '/sandbox/module',
+        label: 'Module SDK',
         icon: Sparkles,
       },
       {
-        to: "/sandbox/script",
-        label: "Script SDK",
+        to: '/sandbox/script',
+        label: 'Script SDK',
         icon: TerminalSquare,
       },
     ],

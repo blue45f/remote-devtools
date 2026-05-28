@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
-import { convertRecordLink, createUserDataText } from "../../utils/utils";
-import { CreateTicketRequestBody } from "../jira/jira.service";
-import { UserData } from "../webview/webview.gateway";
+import { convertRecordLink, createUserDataText } from '../../utils/utils';
+import { CreateTicketRequestBody } from '../jira/jira.service';
+import { UserData } from '../webview/webview.gateway';
 
 interface SlackMessage {
   readonly text?: string;
@@ -45,15 +45,13 @@ export class SlackService {
         `[SLACK_TICKET_DM_START] ${JSON.stringify({
           slackUserId,
           ticketUrl,
-          messageType: "ticket_notification",
+          messageType: 'ticket_notification',
         })}`,
       );
 
       await this.sendDirectMessage(slackUserId, message);
 
-      this.logger.log(
-        `[SLACK_TICKET_DM_SUCCESS] ${JSON.stringify({ slackUserId, ticketUrl })}`,
-      );
+      this.logger.log(`[SLACK_TICKET_DM_SUCCESS] ${JSON.stringify({ slackUserId, ticketUrl })}`);
     } catch (error) {
       this.logger.error(
         `[SLACK_TICKET_DM_ERROR] ${JSON.stringify({
@@ -134,16 +132,16 @@ export class SlackService {
     return {
       blocks: [
         {
-          type: "header",
+          type: 'header',
           text: {
-            type: "plain_text",
-            text: "Recording Session & User Info",
+            type: 'plain_text',
+            text: 'Recording Session & User Info',
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `\`\`\`Recording Session Link: ${recordLink}\n\n${userDataText}\`\`\``,
           },
         },
@@ -164,32 +162,32 @@ export class SlackService {
     ticketKey: string;
   }): SlackMessage {
     return {
-      text: "A remote support ticket has been created",
+      text: 'A remote support ticket has been created',
       blocks: [
         {
-          type: "header",
+          type: 'header',
           text: {
-            type: "plain_text",
-            text: "Ticket Created",
+            type: 'plain_text',
+            text: 'Ticket Created',
           },
         },
         {
-          type: "section",
+          type: 'section',
           text: {
-            type: "mrkdwn",
+            type: 'mrkdwn',
             text: `\`\`\`[${ticketKey}] ${requestBody.title}\`\`\``,
           },
         },
         {
-          type: "actions",
+          type: 'actions',
           elements: [
             {
-              type: "button",
+              type: 'button',
               text: {
-                type: "plain_text",
-                text: "Go to Ticket",
+                type: 'plain_text',
+                text: 'Go to Ticket',
               },
-              style: "primary",
+              style: 'primary',
               url: ticketUrl,
             },
           ],
@@ -201,10 +199,7 @@ export class SlackService {
   /**
    * Sends a direct message to a Slack user via the Slack API.
    */
-  public async sendDirectMessage(
-    slackUserId: string,
-    message: SlackMessage,
-  ): Promise<void> {
+  public async sendDirectMessage(slackUserId: string, message: SlackMessage): Promise<void> {
     const authToken = process.env.SLACK_BOT_TOKEN;
 
     if (!authToken) {
@@ -214,7 +209,7 @@ export class SlackService {
           timestamp: new Date().toISOString(),
         })}`,
       );
-      throw new Error("SLACK_BOT_TOKEN environment variable is not set");
+      throw new Error('SLACK_BOT_TOKEN environment variable is not set');
     }
 
     try {
@@ -222,19 +217,19 @@ export class SlackService {
 
       this.logger.log(
         `[SLACK_API_REQUEST] ${JSON.stringify({
-          url: "https://slack.com/api/chat.postMessage",
-          method: "POST",
+          url: 'https://slack.com/api/chat.postMessage',
+          method: 'POST',
           slackUserId,
           messageBlocks: message.blocks?.length || 0,
           hasText: !!message.text,
         })}`,
       );
 
-      const response = await fetch("https://slack.com/api/chat.postMessage", {
-        method: "POST",
+      const response = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });

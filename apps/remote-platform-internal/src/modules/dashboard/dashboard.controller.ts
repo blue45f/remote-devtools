@@ -5,17 +5,17 @@ import {
   Logger,
   Query,
   BadRequestException,
-} from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-import { DashboardService } from "./dashboard.service";
-import { DashboardStatsDto } from "./dto/dashboard-stats.dto";
-import { PeriodQueryDto } from "./dto/period-query.dto";
-import { RecordSessionTrendDto } from "./dto/record-session-trend.dto";
-import { TicketTrendDto } from "./dto/ticket-trend.dto";
+import { DashboardService } from './dashboard.service';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { PeriodQueryDto } from './dto/period-query.dto';
+import { RecordSessionTrendDto } from './dto/record-session-trend.dto';
+import { TicketTrendDto } from './dto/ticket-trend.dto';
 
-@ApiTags("Dashboard")
-@Controller("api/dashboard")
+@ApiTags('Dashboard')
+@Controller('api/dashboard')
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
@@ -25,9 +25,9 @@ export class DashboardController {
    * Retrieve dashboard statistics.
    * GET /api/dashboard/stats
    */
-  @Get("stats")
-  @ApiOperation({ summary: "대시보드 통계 조회" })
-  @ApiResponse({ status: 200, description: "통계 데이터 반환" })
+  @Get('stats')
+  @ApiOperation({ summary: '대시보드 통계 조회' })
+  @ApiResponse({ status: 200, description: '통계 데이터 반환' })
   public async getStats(): Promise<DashboardStatsDto> {
     try {
       const data = await this.dashboardService.getDashboardStats();
@@ -36,15 +36,15 @@ export class DashboardController {
         data,
       };
     } catch (error) {
-      this.logger.error("Failed to retrieve dashboard statistics", error);
+      this.logger.error('Failed to retrieve dashboard statistics', error);
       throw new InternalServerErrorException({
         success: false,
         error: {
-          code: "DASHBOARD_STATS_ERROR",
+          code: 'DASHBOARD_STATS_ERROR',
           message:
             error instanceof Error
               ? error.message
-              : "An error occurred while retrieving dashboard statistics.",
+              : 'An error occurred while retrieving dashboard statistics.',
         },
       });
     }
@@ -54,19 +54,15 @@ export class DashboardController {
    * Retrieve ticket creation trend.
    * GET /api/dashboard/tickets/trend
    */
-  @Get("tickets/trend")
-  public async getTicketTrend(
-    @Query() query: PeriodQueryDto,
-  ): Promise<TicketTrendDto> {
+  @Get('tickets/trend')
+  public async getTicketTrend(@Query() query: PeriodQueryDto): Promise<TicketTrendDto> {
     try {
       if (!query.period) {
         throw new BadRequestException("The 'period' parameter is required.");
       }
 
-      if (!["day", "week", "month"].includes(query.period)) {
-        throw new BadRequestException(
-          "The 'period' parameter must be one of: day, week, month.",
-        );
+      if (!['day', 'week', 'month'].includes(query.period)) {
+        throw new BadRequestException("The 'period' parameter must be one of: day, week, month.");
       }
 
       const data = await this.dashboardService.getTicketTrend(
@@ -83,15 +79,15 @@ export class DashboardController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error("Failed to retrieve ticket trend", error);
+      this.logger.error('Failed to retrieve ticket trend', error);
       throw new InternalServerErrorException({
         success: false,
         error: {
-          code: "TICKET_TREND_ERROR",
+          code: 'TICKET_TREND_ERROR',
           message:
             error instanceof Error
               ? error.message
-              : "An error occurred while retrieving the ticket trend.",
+              : 'An error occurred while retrieving the ticket trend.',
         },
       });
     }
@@ -101,7 +97,7 @@ export class DashboardController {
    * Retrieve recording session creation trend.
    * GET /api/dashboard/record-sessions/trend
    */
-  @Get("record-sessions/trend")
+  @Get('record-sessions/trend')
   public async getRecordSessionTrend(
     @Query() query: PeriodQueryDto,
   ): Promise<RecordSessionTrendDto> {
@@ -110,10 +106,8 @@ export class DashboardController {
         throw new BadRequestException("The 'period' parameter is required.");
       }
 
-      if (!["day", "week", "month"].includes(query.period)) {
-        throw new BadRequestException(
-          "The 'period' parameter must be one of: day, week, month.",
-        );
+      if (!['day', 'week', 'month'].includes(query.period)) {
+        throw new BadRequestException("The 'period' parameter must be one of: day, week, month.");
       }
 
       const data = await this.dashboardService.getRecordSessionTrend(
@@ -130,15 +124,15 @@ export class DashboardController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error("Failed to retrieve record session trend", error);
+      this.logger.error('Failed to retrieve record session trend', error);
       throw new InternalServerErrorException({
         success: false,
         error: {
-          code: "RECORD_SESSION_TREND_ERROR",
+          code: 'RECORD_SESSION_TREND_ERROR',
           message:
             error instanceof Error
               ? error.message
-              : "An error occurred while retrieving the recording session trend.",
+              : 'An error occurred while retrieving the recording session trend.',
         },
       });
     }

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 import {
   LayoutDashboard,
   PlaySquare,
@@ -7,10 +7,10 @@ import {
   Sun,
   TerminalSquare,
   User,
-} from "lucide-react";
-import { useState } from "react";
+} from 'lucide-react';
+import { useState } from 'react';
 
-import { Button } from "./button";
+import { Button } from './button';
 import {
   Command,
   CommandDialog,
@@ -21,13 +21,13 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "./command";
+} from './command';
 
 const meta = {
-  title: "UI/Command",
+  title: 'UI/Command',
   component: Command,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
 } satisfies Meta<typeof Command>;
 
 export default meta;

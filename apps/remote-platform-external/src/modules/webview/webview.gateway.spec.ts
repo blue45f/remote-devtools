@@ -1,29 +1,20 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import {
-  DomService,
-  NetworkService,
-  RecordService,
-  ScreenService,
-} from "@remote-platform/core";
-import {
-  TicketComponentEntity,
-  TicketLabelEntity,
-  TicketLogEntity,
-} from "@remote-platform/entity";
+import { DomService, NetworkService, RecordService, ScreenService } from '@remote-platform/core';
+import { TicketComponentEntity, TicketLabelEntity, TicketLogEntity } from '@remote-platform/entity';
 
-import { BufferService } from "../buffer/buffer.service";
-import { JiraService } from "../jira/jira.service";
-import { SlackService } from "../slack/slack.service";
-import { UserInfoService } from "../user-info/user-info.service";
-import { BufferFlushService } from "./buffer-flush.service";
-import { CdpEventPersistenceService } from "./cdp-event-persistence.service";
-import { WebviewGateway } from "./webview.gateway";
+import { BufferService } from '../buffer/buffer.service';
+import { JiraService } from '../jira/jira.service';
+import { SlackService } from '../slack/slack.service';
+import { UserInfoService } from '../user-info/user-info.service';
+import { BufferFlushService } from './buffer-flush.service';
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+import { WebviewGateway } from './webview.gateway';
 
-describe("WebviewGateway (External)", () => {
+describe('WebviewGateway (External)', () => {
   let gateway: WebviewGateway;
 
   const mockRecordService = {
@@ -77,26 +68,26 @@ describe("WebviewGateway (External)", () => {
     gateway = module.get<WebviewGateway>(WebviewGateway);
   });
 
-  describe("initialization", () => {
-    it("should be defined", () => {
+  describe('initialization', () => {
+    it('should be defined', () => {
       expect(gateway).toBeDefined();
     });
   });
 
-  describe("handleConnection", () => {
-    it("should be defined", () => {
+  describe('handleConnection', () => {
+    it('should be defined', () => {
       expect(gateway.handleConnection).toBeDefined();
     });
   });
 
-  describe("handleDisconnect", () => {
-    it("should be defined", () => {
+  describe('handleDisconnect', () => {
+    it('should be defined', () => {
       expect(gateway.handleDisconnect).toBeDefined();
     });
   });
 
-  describe("triggerBufferSave", () => {
-    it("should be defined", () => {
+  describe('triggerBufferSave', () => {
+    it('should be defined', () => {
       expect(gateway.triggerBufferSave).toBeDefined();
     });
   });

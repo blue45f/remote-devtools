@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   ArrowDownRight,
@@ -10,22 +10,22 @@ import {
   RefreshCw,
   Ticket,
   TrendingUp,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-import { ActivityFeed } from "@/components/ActivityFeed";
-import { AreaChart, Sparkline } from "@/components/charts";
-import { AnimatedNumber } from "@/components/ui/animated-number";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiFetch } from "@/lib/api";
-import { formatNumber } from "@/lib/format";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { ActivityFeed } from '@/components/ActivityFeed';
+import { AreaChart, Sparkline } from '@/components/charts';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { apiFetch } from '@/lib/api';
+import { formatNumber } from '@/lib/format';
+import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 interface DashboardStats {
   totalTickets: number;
@@ -48,56 +48,49 @@ interface TrendItem {
   participants?: number;
 }
 
-type Period = "day" | "week" | "month";
+type Period = 'day' | 'week' | 'month';
 
-const DASHBOARD_PREFS_KEY = "dashboard-prefs:v1";
-const ALL_PERIODS: Period[] = ["day", "week", "month"];
+const DASHBOARD_PREFS_KEY = 'dashboard-prefs:v1';
+const ALL_PERIODS: Period[] = ['day', 'week', 'month'];
 
 function readStoredPeriod(): Period | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(DASHBOARD_PREFS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { period?: string };
-    return ALL_PERIODS.includes(parsed?.period as Period)
-      ? (parsed.period as Period)
-      : null;
+    return ALL_PERIODS.includes(parsed?.period as Period) ? (parsed.period as Period) : null;
   } catch {
     return null;
   }
 }
 
 function persistPeriod(period: Period) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(
-      DASHBOARD_PREFS_KEY,
-      JSON.stringify({ period }),
-    );
+    window.localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify({ period }));
   } catch {
     /* private mode / quota — the toggle still works in-session */
   }
 }
 
 const PERIODS: { value: Period; label: string }[] = [
-  { value: "day", label: "Daily" },
-  { value: "week", label: "Weekly" },
-  { value: "month", label: "Monthly" },
+  { value: 'day', label: 'Daily' },
+  { value: 'week', label: 'Weekly' },
+  { value: 'month', label: 'Monthly' },
 ];
 
-const ROLE_KEYS = ["developer", "designer", "pm", "qa", "other"] as const;
+const ROLE_KEYS = ['developer', 'designer', 'pm', 'qa', 'other'] as const;
 const ROLE_LABELS: Record<(typeof ROLE_KEYS)[number], string> = {
-  developer: "Developer",
-  designer: "Designer",
-  pm: "PM",
-  qa: "QA",
-  other: "Other",
+  developer: 'Developer',
+  designer: 'Designer',
+  pm: 'PM',
+  qa: 'QA',
+  other: 'Other',
 };
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<Period>(
-    () => readStoredPeriod() ?? "day",
-  );
+  const [period, setPeriod] = useState<Period>(() => readStoredPeriod() ?? 'day');
   const queryClient = useQueryClient();
   const [, forceTick] = useState(0);
 
@@ -115,29 +108,24 @@ export default function DashboardPage() {
   }, [period]);
 
   const statsQuery = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: () => apiFetch<{ data: DashboardStats }>("/api/dashboard/stats"),
+    queryKey: ['dashboard-stats'],
+    queryFn: () => apiFetch<{ data: DashboardStats }>('/api/dashboard/stats'),
   });
 
   const ticketTrendQuery = useQuery({
-    queryKey: ["ticket-trend", period],
-    queryFn: () =>
-      apiFetch<{ data: TrendItem[] }>(
-        `/api/dashboard/tickets/trend?period=${period}`,
-      ),
+    queryKey: ['ticket-trend', period],
+    queryFn: () => apiFetch<{ data: TrendItem[] }>(`/api/dashboard/tickets/trend?period=${period}`),
   });
 
   const recordTrendQuery = useQuery({
-    queryKey: ["record-trend", period],
+    queryKey: ['record-trend', period],
     queryFn: () =>
-      apiFetch<{ data: TrendItem[] }>(
-        `/api/dashboard/record-sessions/trend?period=${period}`,
-      ),
+      apiFetch<{ data: TrendItem[] }>(`/api/dashboard/record-sessions/trend?period=${period}`),
   });
 
   const liveQuery = useQuery({
-    queryKey: ["live-sessions"],
-    queryFn: () => apiFetch<unknown[]>("/sessions").catch(() => []),
+    queryKey: ['live-sessions'],
+    queryFn: () => apiFetch<unknown[]>('/sessions').catch(() => []),
     refetchInterval: 30_000,
   });
 
@@ -152,9 +140,7 @@ export default function DashboardPage() {
           eyebrow can breathe. */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between flex-wrap gap-3 sm:gap-4 mb-5 sm:mb-6">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
-            Dashboard
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">Dashboard</h1>
           <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
             Activity overview across all your debug sessions and tickets.
           </p>
@@ -174,10 +160,10 @@ export default function DashboardPage() {
               liveQuery.isFetching
             }
             onRefresh={() => {
-              void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-              void queryClient.invalidateQueries({ queryKey: ["ticket-trend"] });
-              void queryClient.invalidateQueries({ queryKey: ["record-trend"] });
-              void queryClient.invalidateQueries({ queryKey: ["live-sessions"] });
+              void queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+              void queryClient.invalidateQueries({ queryKey: ['ticket-trend'] });
+              void queryClient.invalidateQueries({ queryKey: ['record-trend'] });
+              void queryClient.invalidateQueries({ queryKey: ['live-sessions'] });
             }}
           />
           <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
@@ -315,25 +301,25 @@ function FreshnessBadge({
       onClick={onRefresh}
       disabled={fetching}
       className={cn(
-        "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px]",
-        "border border-border bg-surface text-fg-subtle",
-        "hover:border-border-strong hover:text-fg transition-colors",
-        "disabled:opacity-60 disabled:cursor-not-allowed",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        'inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px]',
+        'border border-border bg-surface text-fg-subtle',
+        'hover:border-border-strong hover:text-fg transition-colors',
+        'disabled:opacity-60 disabled:cursor-not-allowed',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       )}
       aria-label="Refresh dashboard data"
       data-testid="dashboard-refresh"
     >
-      <RefreshCw className={cn("size-3", fetching && "animate-spin")} />
-      <span>{fetching ? "Refreshing…" : `Updated ${label}`}</span>
+      <RefreshCw className={cn('size-3', fetching && 'animate-spin')} />
+      <span>{fetching ? 'Refreshing…' : `Updated ${label}`}</span>
     </button>
   );
 }
 
 function formatRelativeAge(updatedAt: number) {
-  if (!updatedAt) return "just now";
+  if (!updatedAt) return 'just now';
   const ms = Date.now() - updatedAt;
-  if (ms < 5_000) return "just now";
+  if (ms < 5_000) return 'just now';
   if (ms < 60_000) return `${Math.floor(ms / 1_000)}s ago`;
   if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
   return `${Math.floor(ms / 3_600_000)}h ago`;
@@ -346,9 +332,9 @@ function HeroLiveCard({ live, loading }: { live: number; loading: boolean }) {
   return (
     <Card
       className={cn(
-        "p-4 sm:p-5 relative overflow-hidden h-full",
-        "transition-colors hover:border-border-strong",
-        isActive && "border-danger/30",
+        'p-4 sm:p-5 relative overflow-hidden h-full',
+        'transition-colors hover:border-border-strong',
+        isActive && 'border-danger/30',
       )}
     >
       {isActive && (
@@ -366,13 +352,8 @@ function HeroLiveCard({ live, loading }: { live: number; loading: boolean }) {
           <Skeleton className="h-9 w-16" />
         ) : (
           <div className="flex items-baseline gap-2">
-            <AnimatedNumber
-              value={live}
-              className="text-3xl font-semibold text-fg"
-            />
-            <span className="text-sm text-fg-subtle">
-              session{live !== 1 && "s"}
-            </span>
+            <AnimatedNumber value={live} className="text-3xl font-semibold text-fg" />
+            <span className="text-sm text-fg-subtle">session{live !== 1 && 's'}</span>
           </div>
         )}
         <div className="flex items-center gap-2 mt-3">
@@ -401,7 +382,7 @@ interface HeroMetricCardProps {
   loading?: boolean;
   icon: typeof Activity;
   spark: TrendItem[];
-  accent: "fg" | "muted";
+  accent: 'fg' | 'muted';
 }
 
 function HeroMetricCard({
@@ -436,8 +417,7 @@ function HeroMetricCard({
         </div>
       )}
       <div className="text-[11px] text-fg-faint mt-1.5">
-        weekly avg{" "}
-        <span className="font-mono text-fg-subtle">{formatNumber(avg)}</span>
+        weekly avg <span className="font-mono text-fg-subtle">{formatNumber(avg)}</span>
       </div>
 
       {/* sparkline — pulls margin to bleed into the card edge */}
@@ -445,7 +425,7 @@ function HeroMetricCard({
         {spark.length > 0 ? (
           <Sparkline
             data={spark.map((d) => d.created ?? 0)}
-            intensity={accent === "fg" ? "fg" : "muted"}
+            intensity={accent === 'fg' ? 'fg' : 'muted'}
           />
         ) : null}
       </div>
@@ -464,16 +444,8 @@ function DeltaBadge({ delta }: { delta: number }) {
   }
   const positive = delta > 0;
   return (
-    <Badge
-      variant={positive ? "success" : "danger"}
-      size="sm"
-      className="gap-0.5"
-    >
-      {positive ? (
-        <ArrowUpRight className="size-2.5" />
-      ) : (
-        <ArrowDownRight className="size-2.5" />
-      )}
+    <Badge variant={positive ? 'success' : 'danger'} size="sm" className="gap-0.5">
+      {positive ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
       {Math.abs(delta).toFixed(0)}%
     </Badge>
   );
@@ -518,21 +490,13 @@ interface ChartPanelProps {
   children: React.ReactNode;
 }
 
-function ChartPanel({
-  title,
-  description,
-  loading,
-  empty,
-  children,
-}: ChartPanelProps) {
+function ChartPanel({ title, description, loading, empty, children }: ChartPanelProps) {
   return (
     <Card className="p-4 sm:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-1">
         <h2 className="text-sm font-semibold text-fg">{title}</h2>
       </div>
-      {description && (
-        <p className="text-xs text-fg-subtle mb-3 sm:mb-4">{description}</p>
-      )}
+      {description && <p className="text-xs text-fg-subtle mb-3 sm:mb-4">{description}</p>}
       {/* Chart bodies size down on tablet to keep two charts above the fold */}
       <div className="h-[200px] sm:h-[240px] lg:h-[260px]">
         {loading ? <ChartSkeleton /> : empty ? <ChartEmpty /> : children}
@@ -545,11 +509,7 @@ function ChartSkeleton() {
   return (
     <div className="h-full flex items-end gap-1.5">
       {Array.from({ length: 14 }).map((_, i) => (
-        <Skeleton
-          key={i}
-          className="flex-1"
-          style={{ height: `${30 + ((i * 7) % 70)}%` }}
-        />
+        <Skeleton key={i} className="flex-1" style={{ height: `${30 + ((i * 7) % 70)}%` }} />
       ))}
     </div>
   );
@@ -581,7 +541,7 @@ function SessionsAreaChart({ data }: { data: TrendItem[] }) {
   const chartData = useMemo(
     () =>
       data.map((d) => ({
-        label: d.date ?? "",
+        label: d.date ?? '',
         value: d.created ?? 0,
       })),
     [data],

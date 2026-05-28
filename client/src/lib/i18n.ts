@@ -1,9 +1,9 @@
-import i18n from "i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
-import { initReactI18next } from "react-i18next";
+import i18n from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import { initReactI18next } from 'react-i18next';
 
-import en from "@/locales/en.json";
-import ko from "@/locales/ko.json";
+import en from '@/locales/en.json';
+import ko from '@/locales/ko.json';
 
 /**
  * i18n setup.
@@ -27,15 +27,15 @@ void i18n
       en: { translation: en },
       ko: { translation: ko },
     },
-    fallbackLng: "en",
-    supportedLngs: ["en", "ko"],
+    fallbackLng: 'en',
+    supportedLngs: ['en', 'ko'],
     interpolation: { escapeValue: false }, // React already escapes
     detection: {
       // Persist explicit user choice in localStorage; otherwise infer from
       // navigator.language. Skip path/query/cookie detection — keeps URLs clean.
-      order: ["localStorage", "navigator"],
-      lookupLocalStorage: "rd-lang",
-      caches: ["localStorage"],
+      order: ['localStorage', 'navigator'],
+      lookupLocalStorage: 'rd-lang',
+      caches: ['localStorage'],
     },
   });
 

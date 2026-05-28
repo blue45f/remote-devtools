@@ -1,4 +1,4 @@
-import { logger } from "../utils/logger";
+import { logger } from '../utils/logger';
 
 export type Option = {
   socket: WebSocket | null;
@@ -24,12 +24,11 @@ export abstract class BaseDomain {
     this.socket = option.socket;
     this.interceptor = option.interceptor;
     this.recordMode = option.recordMode || false;
-    this.room = option.room || "";
-    this.deviceId = option.deviceId || "unknown-device";
-    this.url = option.url || "";
+    this.room = option.room || '';
+    this.deviceId = option.deviceId || 'unknown-device';
+    this.url = option.url || '';
     this.onBufferEvent = option.onBufferEvent;
-    this.title =
-      option.title || (typeof document !== "undefined" ? document.title : "");
+    this.title = option.title || (typeof document !== 'undefined' ? document.title : '');
   }
 
   // Domain 활성화 되었을 때 취할 행동 오버라이드
@@ -66,27 +65,26 @@ export abstract class BaseDomain {
     }
 
     // Buffer 모드인지 확인 (room이 Buffer-로 시작하는지)
-    const isBufferMode = this.room && this.room.startsWith("Buffer-");
+    const isBufferMode = this.room && this.room.startsWith('Buffer-');
 
     let payload: string;
 
     if (isBufferMode) {
       // Buffer 모드일 때는 bufferEvent로 전송
       this.onBufferEvent?.();
-      const latestTitle =
-        typeof document !== "undefined" ? document.title : this.title;
+      const latestTitle = typeof document !== 'undefined' ? document.title : this.title;
       if (latestTitle) {
         this.title = latestTitle;
       }
       payload = JSON.stringify({
-        event: "bufferEvent",
+        event: 'bufferEvent',
         data: {
           room: this.room,
           recordId: 0, // Buffer 모드에서는 recordId가 0
-          deviceId: this.deviceId || "unknown-device",
+          deviceId: this.deviceId || 'unknown-device',
           url: this.url || window.location.href,
           userAgent: navigator.userAgent,
-          title: this.title || latestTitle || "",
+          title: this.title || latestTitle || '',
           event: {
             method: data.method,
             params: data.params,
@@ -98,7 +96,7 @@ export abstract class BaseDomain {
     } else {
       // 일반 모드일 때는 기존 방식 사용
       payload = JSON.stringify({
-        event: "protocolToAllDevtools",
+        event: 'protocolToAllDevtools',
         data: {
           room: this.room,
           message: JSON.stringify(data),
@@ -110,8 +108,8 @@ export abstract class BaseDomain {
     try {
       this.socket.send(payload);
     } catch (error) {
-      logger.remote.error("Failed to send message:", error);
-      logger.remote.debug("Message was:", data.method);
+      logger.remote.error('Failed to send message:', error);
+      logger.remote.debug('Message was:', data.method);
     }
   }
 

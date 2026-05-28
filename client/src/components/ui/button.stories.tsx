@@ -1,40 +1,31 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ArrowRight, Plus, Trash2 } from "lucide-react";
+import type { Meta, StoryObj } from '@storybook/react';
+import { ArrowRight, Plus, Trash2 } from 'lucide-react';
 
-import { Button } from "./button";
+import { Button } from './button';
 
 const meta = {
-  title: "UI/Button",
+  title: 'UI/Button',
   component: Button,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   parameters: {
-    layout: "centered",
+    layout: 'centered',
   },
   argTypes: {
     variant: {
-      control: "select",
-      options: [
-        "primary",
-        "accent",
-        "secondary",
-        "outline",
-        "ghost",
-        "soft",
-        "danger",
-        "link",
-      ],
+      control: 'select',
+      options: ['primary', 'accent', 'secondary', 'outline', 'ghost', 'soft', 'danger', 'link'],
     },
     size: {
-      control: "select",
-      options: ["sm", "md", "lg", "icon", "icon-sm"],
+      control: 'select',
+      options: ['sm', 'md', 'lg', 'icon', 'icon-sm'],
     },
-    disabled: { control: "boolean" },
+    disabled: { control: 'boolean' },
     asChild: { control: false },
   },
   args: {
-    children: "Button",
-    variant: "secondary",
-    size: "md",
+    children: 'Button',
+    variant: 'secondary',
+    size: 'md',
     disabled: false,
   },
 } satisfies Meta<typeof Button>;
@@ -45,36 +36,36 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Primary: Story = {
-  args: { variant: "primary", children: "Continue" },
+  args: { variant: 'primary', children: 'Continue' },
 };
 
 export const Accent: Story = {
-  args: { variant: "accent", children: "Save changes" },
+  args: { variant: 'accent', children: 'Save changes' },
 };
 
 export const Outline: Story = {
-  args: { variant: "outline", children: "Cancel" },
+  args: { variant: 'outline', children: 'Cancel' },
 };
 
 export const Ghost: Story = {
-  args: { variant: "ghost", children: "Dismiss" },
+  args: { variant: 'ghost', children: 'Dismiss' },
 };
 
 export const Soft: Story = {
-  args: { variant: "soft", children: "Learn more" },
+  args: { variant: 'soft', children: 'Learn more' },
 };
 
 export const Danger: Story = {
-  args: { variant: "danger", children: "Delete" },
+  args: { variant: 'danger', children: 'Delete' },
 };
 
 export const LinkVariant: Story = {
-  args: { variant: "link", children: "Read the docs" },
+  args: { variant: 'link', children: 'Read the docs' },
 };
 
 export const WithIcon: Story = {
   args: {
-    variant: "accent",
+    variant: 'accent',
     children: (
       <>
         <Plus />
@@ -86,42 +77,40 @@ export const WithIcon: Story = {
 
 export const IconOnly: Story = {
   args: {
-    size: "icon",
-    variant: "outline",
+    size: 'icon',
+    variant: 'outline',
     children: <Trash2 />,
-    "aria-label": "Delete",
+    'aria-label': 'Delete',
   },
 };
 
 export const Disabled: Story = {
-  args: { disabled: true, children: "Unavailable" },
+  args: { disabled: true, children: 'Unavailable' },
 };
 
 /** Matrix view: every variant × every size combination in one frame. */
 export const Matrix: Story = {
-  parameters: { layout: "padded" },
+  parameters: { layout: 'padded' },
   render: () => {
     const variants = [
-      "primary",
-      "accent",
-      "secondary",
-      "outline",
-      "ghost",
-      "soft",
-      "danger",
+      'primary',
+      'accent',
+      'secondary',
+      'outline',
+      'ghost',
+      'soft',
+      'danger',
     ] as const;
-    const sizes = ["sm", "md", "lg"] as const;
+    const sizes = ['sm', 'md', 'lg'] as const;
     return (
       <div className="space-y-4">
         {variants.map((variant) => (
           <div key={variant} className="flex items-center gap-3">
-            <span className="w-24 text-xs uppercase tracking-wider text-fg-subtle">
-              {variant}
-            </span>
+            <span className="w-24 text-xs uppercase tracking-wider text-fg-subtle">{variant}</span>
             {sizes.map((size) => (
               <Button key={size} variant={variant} size={size}>
-                {variant === "danger" ? "Delete" : "Action"}
-                {size === "lg" && <ArrowRight />}
+                {variant === 'danger' ? 'Delete' : 'Action'}
+                {size === 'lg' && <ArrowRight />}
               </Button>
             ))}
           </div>

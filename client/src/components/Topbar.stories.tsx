@@ -1,20 +1,19 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { MemoryRouter } from "react-router-dom";
+import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAppStore } from "@/lib/store";
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { useAppStore } from '@/lib/store';
 
-import { Topbar } from "./Topbar";
+import { Topbar } from './Topbar';
 
 const meta = {
-  title: "Composed/Topbar",
+  title: 'Composed/Topbar',
   component: Topbar,
-  tags: ["autodocs"],
-  parameters: { layout: "fullscreen" },
+  tags: ['autodocs'],
+  parameters: { layout: 'fullscreen' },
   decorators: [
     (Story, ctx) => {
-      const route =
-        (ctx.parameters.route as string | undefined) ?? "/dashboard";
+      const route = (ctx.parameters.route as string | undefined) ?? '/dashboard';
       return (
         <MemoryRouter initialEntries={[route]}>
           <TooltipProvider delayDuration={150}>
@@ -32,21 +31,21 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Dashboard: Story = {
-  parameters: { route: "/dashboard" },
+  parameters: { route: '/dashboard' },
   beforeEach: () => {
     useAppStore.getState().setDemoMode(false);
   },
 };
 
 export const DemoMode: Story = {
-  parameters: { route: "/sessions" },
+  parameters: { route: '/sessions' },
   beforeEach: () => {
     useAppStore.getState().setDemoMode(true);
   },
 };
 
 export const DeepCrumbs: Story = {
-  parameters: { route: "/sessions/142" },
+  parameters: { route: '/sessions/142' },
   beforeEach: () => {
     useAppStore.getState().setDemoMode(false);
   },

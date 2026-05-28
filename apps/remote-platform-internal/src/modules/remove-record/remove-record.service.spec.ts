@@ -1,11 +1,11 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DataSource } from "typeorm";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DataSource } from 'typeorm';
 
-import { RemoveRecordService } from "./remove-record.service";
+import { RemoveRecordService } from './remove-record.service';
 
-describe("RemoveRecordService", () => {
+describe('RemoveRecordService', () => {
   let service: RemoveRecordService;
 
   const mockQueryRunner = {
@@ -25,33 +25,30 @@ describe("RemoveRecordService", () => {
     vi.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RemoveRecordService,
-        { provide: DataSource, useValue: mockDataSource },
-      ],
+      providers: [RemoveRecordService, { provide: DataSource, useValue: mockDataSource }],
     }).compile();
 
     service = module.get<RemoveRecordService>(RemoveRecordService);
   });
 
-  describe("removeRecordOldRecords", () => {
-    it("should delete old records and commit", async () => {
-      mockQueryRunner.query.mockResolvedValue([{ count: "42" }]);
+  describe('removeRecordOldRecords', () => {
+    it('should delete old records and commit', async () => {
+      mockQueryRunner.query.mockResolvedValue([{ count: '42' }]);
 
       await service.removeRecordOldRecords();
 
       expect(mockQueryRunner.connect).toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.stringContaining("DELETE FROM record"),
+        expect.stringContaining('DELETE FROM record'),
         expect.any(Array),
       );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
-    it("should rollback on error", async () => {
-      mockQueryRunner.query.mockRejectedValue(new Error("DB error"));
+    it('should rollback on error', async () => {
+      mockQueryRunner.query.mockRejectedValue(new Error('DB error'));
 
       await service.removeRecordOldRecords();
 
@@ -59,29 +56,26 @@ describe("RemoveRecordService", () => {
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
-    it("should pass retention days, protected id, and batch size as parameters", async () => {
-      mockQueryRunner.query.mockResolvedValue([{ count: "0" }]);
+    it('should pass retention days, protected id, and batch size as parameters', async () => {
+      mockQueryRunner.query.mockResolvedValue([{ count: '0' }]);
 
       await service.removeRecordOldRecords();
 
-      expect(mockQueryRunner.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [14, 3462, 1000],
-      );
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.any(String), [14, 3462, 1000]);
     });
 
-    it("should parameterize the SQL (no string interpolation of constants)", async () => {
-      mockQueryRunner.query.mockResolvedValue([{ count: "0" }]);
+    it('should parameterize the SQL (no string interpolation of constants)', async () => {
+      mockQueryRunner.query.mockResolvedValue([{ count: '0' }]);
 
       await service.removeRecordOldRecords();
 
       const [sql] = mockQueryRunner.query.mock.calls[0];
-      expect(sql).toContain("$1");
-      expect(sql).toContain("$2");
-      expect(sql).toContain("$3");
+      expect(sql).toContain('$1');
+      expect(sql).toContain('$2');
+      expect(sql).toContain('$3');
       // Constants must not appear literally in the SQL anymore.
-      expect(sql).not.toContain("3462");
-      expect(sql).not.toContain("1000");
+      expect(sql).not.toContain('3462');
+      expect(sql).not.toContain('1000');
       expect(sql).not.toContain("'14 days'");
     });
   });

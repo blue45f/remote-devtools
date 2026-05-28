@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { Copy, Download, LogOut, Settings, Trash2, User } from "lucide-react";
+import type { Meta, StoryObj } from '@storybook/react';
+import { Copy, Download, LogOut, Settings, Trash2, User } from 'lucide-react';
 
-import { Button } from "./button";
+import { Button } from './button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,13 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "./dropdown-menu";
+} from './dropdown-menu';
 
 const meta = {
-  title: "UI/DropdownMenu",
+  title: 'UI/DropdownMenu',
   component: DropdownMenu,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
 } satisfies Meta<typeof DropdownMenu>;
 
 export default meta;

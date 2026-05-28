@@ -9,16 +9,16 @@
  * @param recordId  Optional record ID; when present the URL opens replay mode
  * @param host      Override for testing; defaults to {@link API_HOST}
  */
-import { API_HOST } from "./api";
+import { API_HOST } from './api';
 
 export function buildDevToolsLink(
   room: string,
   recordId?: number,
   host: string = API_HOST,
 ): string {
-  const wsHost = host.replace(/^https?:\/\/(.+)$/, "$1");
-  const record = recordId ? `&recordMode=true&recordId=${recordId}` : "";
+  const wsHost = host.replace(/^https?:\/\/(.+)$/, '$1');
+  const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';
   const wsUrl = encodeURIComponent(`${wsHost}?room=${room}${record}`);
-  const protocol = host.startsWith("https") ? "wss" : "ws";
+  const protocol = host.startsWith('https') ? 'wss' : 'ws';
   return `${host}/tabbed-debug/?${protocol}=${wsUrl}`;
 }

@@ -1,10 +1,10 @@
-import "rrweb-player/dist/style.css";
+import 'rrweb-player/dist/style.css';
 
-import { AlertTriangle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface ReplayPlayerProps {
   events: unknown[];
@@ -35,17 +35,11 @@ interface RrwebPlayerInstance {
   setConfig?: (config: { speed?: number; skipInactive?: boolean }) => void;
   getMetaData?: () => { totalTime: number };
   getCurrentTime?: () => number;
-  addEventListener?: (
-    event: string,
-    cb: (payload: { payload: unknown }) => void,
-  ) => void;
+  addEventListener?: (event: string, cb: (payload: { payload: unknown }) => void) => void;
 }
 
 interface RrwebPlayerCtor {
-  new (opts: {
-    target: HTMLElement;
-    props: Record<string, unknown>;
-  }): RrwebPlayerInstance;
+  new (opts: { target: HTMLElement; props: Record<string, unknown> }): RrwebPlayerInstance;
 }
 
 interface RrwebShapedEvent {
@@ -59,18 +53,18 @@ interface RrwebShapedEvent {
  * by one FullSnapshot (type 2) with a non-empty node tree.
  */
 function getReplayProblem(events: unknown[]): string | null {
-  if (events.length < 2) return "no events to replay";
+  if (events.length < 2) return 'no events to replay';
   const meta = events.find((e) => (e as RrwebShapedEvent)?.type === 4);
   const snapshot = events.find((e) => (e as RrwebShapedEvent)?.type === 2);
-  if (!meta) return "missing Meta event";
-  if (!snapshot) return "missing FullSnapshot event";
+  if (!meta) return 'missing Meta event';
+  if (!snapshot) return 'missing FullSnapshot event';
 
   const data = (snapshot as RrwebShapedEvent).data as
     | { node?: { childNodes?: unknown[] } }
     | undefined;
   const nodes = data?.node?.childNodes;
   if (!nodes || nodes.length === 0) {
-    return "FullSnapshot has no DOM tree";
+    return 'FullSnapshot has no DOM tree';
   }
   return null;
 }
@@ -105,11 +99,11 @@ export function ReplayPlayer({
 
     setError(null);
 
-    void import("rrweb-player")
+    void import('rrweb-player')
       .then(({ default: rrwebPlayer }) => {
         if (disposed || !containerRef.current) return;
         // Clear any previous mount before re-rendering
-        containerRef.current.innerHTML = "";
+        containerRef.current.innerHTML = '';
         try {
           const instance = new (rrwebPlayer as unknown as RrwebPlayerCtor)({
             target: containerRef.current,
@@ -122,7 +116,7 @@ export function ReplayPlayer({
               speed: speed ?? 1,
               speedOption: [0.5, 1, 2, 4],
               skipInactive: skipInactive ?? false,
-              mouseTail: { strokeStyle: "#3b82f6", duration: 600 },
+              mouseTail: { strokeStyle: '#3b82f6', duration: 600 },
             },
           });
           instanceRef.current = instance;
@@ -143,9 +137,9 @@ export function ReplayPlayer({
           // Track playhead so callers can build "share link to current time"
           // and so keyboard controls can seek relative to the current moment.
           if (instance?.addEventListener) {
-            instance.addEventListener("ui-update-current-time", (e) => {
+            instance.addEventListener('ui-update-current-time', (e) => {
               const payload = e?.payload;
-              if (typeof payload === "number") {
+              if (typeof payload === 'number') {
                 currentTimeRef.current = payload;
                 onTimeUpdateRef.current?.(payload);
               }
@@ -171,7 +165,6 @@ export function ReplayPlayer({
     // `startTime` intentionally NOT in deps — initial seek only here.
     // A second effect (below) handles live re-seeking when the parent
     // changes `startTime` (e.g. Timeline → Jump to replay).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, validationError]);
 
   // Re-seek when `startTime` changes after mount. This drives the
@@ -260,9 +253,7 @@ export function ReplayPlayer({
     const target = e.target as HTMLElement | null;
     if (
       target &&
-      (target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable)
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
     ) {
       return;
     }
@@ -277,9 +268,9 @@ export function ReplayPlayer({
     };
 
     switch (e.key) {
-      case " ":
-      case "k":
-      case "K":
+      case ' ':
+      case 'k':
+      case 'K':
         e.preventDefault();
         try {
           instance.toggle?.();
@@ -288,25 +279,25 @@ export function ReplayPlayer({
           instance.play?.();
         }
         return;
-      case "ArrowLeft":
+      case 'ArrowLeft':
         e.preventDefault();
         seekBy(-5000);
         return;
-      case "ArrowRight":
+      case 'ArrowRight':
         e.preventDefault();
         seekBy(5000);
         return;
-      case "j":
-      case "J":
+      case 'j':
+      case 'J':
         e.preventDefault();
         seekBy(-10000);
         return;
-      case "l":
-      case "L":
+      case 'l':
+      case 'L':
         e.preventDefault();
         seekBy(10000);
         return;
-      case "Home":
+      case 'Home':
         e.preventDefault();
         try {
           instance.goto?.(0, false);
@@ -320,9 +311,7 @@ export function ReplayPlayer({
   };
 
   return (
-    <Card
-      className={cn("overflow-hidden p-3 [&_.rr-player]:mx-auto", className)}
-    >
+    <Card className={cn('overflow-hidden p-3 [&_.rr-player]:mx-auto', className)}>
       <div
         ref={containerRef}
         // The wrapper takes the keydown — rrweb-player itself doesn't
@@ -342,8 +331,8 @@ export function ReplayPlayer({
 
 function toErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (typeof err === "string") return err;
-  return "The replay player crashed unexpectedly.";
+  if (typeof err === 'string') return err;
+  return 'The replay player crashed unexpectedly.';
 }
 
 function ReplayMessage({
@@ -360,18 +349,14 @@ function ReplayMessage({
       <div className="flex flex-col items-center text-center py-12 px-6">
         <div
           className={cn(
-            "size-10 rounded-full flex items-center justify-center mb-3",
-            danger
-              ? "bg-danger-soft text-danger"
-              : "bg-bg-muted text-fg-subtle",
+            'size-10 rounded-full flex items-center justify-center mb-3',
+            danger ? 'bg-danger-soft text-danger' : 'bg-bg-muted text-fg-subtle',
           )}
         >
           <AlertTriangle className="size-5" />
         </div>
         <h3 className="text-sm font-semibold text-fg mb-1">{title}</h3>
-        {description && (
-          <p className="text-xs text-fg-subtle max-w-md">{description}</p>
-        )}
+        {description && <p className="text-xs text-fg-subtle max-w-md">{description}</p>}
       </div>
     </Card>
   );

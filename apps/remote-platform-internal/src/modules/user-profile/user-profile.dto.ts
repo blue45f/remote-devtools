@@ -7,9 +7,9 @@ import {
   Matches,
   ValidateNested,
   IsNumber,
-} from "class-validator";
-import { Type } from "class-transformer";
-import { JobType, AssigneeInfo, DeviceInfo } from "@remote-platform/entity";
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { JobType, AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
 
 class TicketTemplateDto {
   @IsOptional()
@@ -66,7 +66,7 @@ export class CreateUserProfileDto {
   readonly slackId: string;
 
   @IsString()
-  @Matches(/^\d{8}$/, { message: "empNo must be an 8-digit number" })
+  @Matches(/^\d{8}$/, { message: 'empNo must be an 8-digit number' })
   readonly empNo: string;
 
   @IsArray()
@@ -91,7 +91,7 @@ export class UpdateUserProfileDto {
   readonly jobType: JobType;
 
   @IsString()
-  @Matches(/^\d{8}$/, { message: "empNo must be an 8-digit number" })
+  @Matches(/^\d{8}$/, { message: 'empNo must be an 8-digit number' })
   readonly empNo: string;
 
   @IsString()

@@ -1,11 +1,11 @@
-import { act, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { useAppStore } from "@/lib/store";
-import { renderWithProviders } from "@/test/utils";
+import { useAppStore } from '@/lib/store';
+import { renderWithProviders } from '@/test/utils';
 
-import { Sidebar } from "./Sidebar";
+import { Sidebar } from './Sidebar';
 
 beforeEach(() => {
   act(() => {
@@ -20,49 +20,43 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe("Sidebar", () => {
-  it("renders the brand and every nav item", () => {
+describe('Sidebar', () => {
+  it('renders the brand and every nav item', () => {
     renderWithProviders(<Sidebar />);
-    expect(screen.getByText("Remote DevTools")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Dashboard/ })).toHaveAttribute(
-      "href",
-      "/dashboard",
+    expect(screen.getByText('Remote DevTools')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Dashboard/ })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /Sessions/ })).toHaveAttribute('href', '/sessions');
+    expect(screen.getByRole('link', { name: /Module SDK/ })).toHaveAttribute(
+      'href',
+      '/sandbox/module',
     );
-    expect(screen.getByRole("link", { name: /Sessions/ })).toHaveAttribute(
-      "href",
-      "/sessions",
-    );
-    expect(screen.getByRole("link", { name: /Module SDK/ })).toHaveAttribute(
-      "href",
-      "/sandbox/module",
-    );
-    expect(screen.getByRole("link", { name: /Script SDK/ })).toHaveAttribute(
-      "href",
-      "/sandbox/script",
+    expect(screen.getByRole('link', { name: /Script SDK/ })).toHaveAttribute(
+      'href',
+      '/sandbox/script',
     );
   });
 
-  it("shows the SDK Playground section heading", () => {
+  it('shows the SDK Playground section heading', () => {
     renderWithProviders(<Sidebar />);
-    expect(screen.getByText("SDK Playground")).toBeInTheDocument();
+    expect(screen.getByText('SDK Playground')).toBeInTheDocument();
   });
 
-  it("collapses to icon-only mode and persists to localStorage", async () => {
+  it('collapses to icon-only mode and persists to localStorage', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sidebar />);
 
-    await user.click(screen.getByRole("button", { name: /Collapse sidebar/ }));
+    await user.click(screen.getByRole('button', { name: /Collapse sidebar/ }));
     await waitFor(() => {
       expect(useAppStore.getState().sidebarCollapsed).toBe(true);
     });
-    expect(localStorage.getItem("sidebar-collapsed")).toBe("1");
+    expect(localStorage.getItem('sidebar-collapsed')).toBe('1');
   });
 
-  it("invokes onItemClick when a nav link is clicked", async () => {
+  it('invokes onItemClick when a nav link is clicked', async () => {
     const user = userEvent.setup();
     let called = 0;
     renderWithProviders(<Sidebar onItemClick={() => (called += 1)} />);
-    await user.click(screen.getByRole("link", { name: /Sessions/ }));
+    await user.click(screen.getByRole('link', { name: /Sessions/ }));
     expect(called).toBe(1);
   });
 });

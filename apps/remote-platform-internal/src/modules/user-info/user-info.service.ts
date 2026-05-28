@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { AssigneeInfo, DeviceInfoEntity } from "@remote-platform/entity";
+import { AssigneeInfo, DeviceInfoEntity } from '@remote-platform/entity';
 
 /** User information compatible with the legacy UserInfo interface */
 interface UserInfo {
@@ -51,9 +51,7 @@ export class UserInfoService {
   /**
    * Retrieve user information by device ID from the admin database.
    */
-  public async getUserInfoByDeviceId(
-    deviceId: string,
-  ): Promise<UserInfo | null> {
+  public async getUserInfoByDeviceId(deviceId: string): Promise<UserInfo | null> {
     const timeStart = Date.now();
     this.logger.log(`[UserInfo] getUserInfoByDeviceId called: "${deviceId}"`);
 
@@ -104,9 +102,7 @@ export class UserInfoService {
   /**
    * Retrieve ticket form data for a device, using the last selected template or falling back to the first.
    */
-  public async getTicketFormData(
-    deviceId: string,
-  ): Promise<SimpleStructuredSheetData> {
+  public async getTicketFormData(deviceId: string): Promise<SimpleStructuredSheetData> {
     const timeStart = Date.now();
     this.logger.log(`[UserInfo] getTicketFormData called: "${deviceId}"`);
 
@@ -118,7 +114,7 @@ export class UserInfoService {
 
       if (!device || !device.user) {
         this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
-        throw new Error("User information not found.");
+        throw new Error('User information not found.');
       }
 
       const user = device.user;
@@ -142,32 +138,26 @@ export class UserInfoService {
           );
         }
       } else {
-        this.logger.log(
-          `[UserInfo] No last selected template; using first template`,
-        );
+        this.logger.log(`[UserInfo] No last selected template; using first template`);
       }
 
       if (!template) {
-        this.logger.warn(
-          `[UserInfo] No ticket template found for device: ${deviceId}`,
-        );
-        throw new Error("No ticket template found.");
+        this.logger.warn(`[UserInfo] No ticket template found for device: ${deviceId}`);
+        throw new Error('No ticket template found.');
       }
 
       const result = this.buildStructuredSheetData(template);
 
       const duration = Date.now() - timeStart;
       this.logger.log(
-        `[UserInfo] Ticket form data retrieved (${duration}ms): ${JSON.stringify(
-          {
-            deviceId,
-            username: user.name,
-            empNo: user.empNo,
-            templateName: template.name,
-            columnsCount: result.columns.length,
-            totalRows: result.totalRows,
-          },
-        )}`,
+        `[UserInfo] Ticket form data retrieved (${duration}ms): ${JSON.stringify({
+          deviceId,
+          username: user.name,
+          empNo: user.empNo,
+          templateName: template.name,
+          columnsCount: result.columns.length,
+          totalRows: result.totalRows,
+        })}`,
       );
 
       return result;
@@ -197,14 +187,12 @@ export class UserInfoService {
 
       if (!device || !device.user) {
         this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
-        throw new Error("User information not found.");
+        throw new Error('User information not found.');
       }
 
       const user = device.user;
 
-      const template = user.ticketTemplateList?.find(
-        (t) => t.name === templateName,
-      );
+      const template = user.ticketTemplateList?.find((t) => t.name === templateName);
 
       if (!template) {
         this.logger.warn(`[UserInfo] Template not found: ${templateName}`);
@@ -215,24 +203,19 @@ export class UserInfoService {
 
       const duration = Date.now() - timeStart;
       this.logger.log(
-        `[UserInfo] Template-specific form data retrieved (${duration}ms): ${JSON.stringify(
-          {
-            deviceId,
-            username: user.name,
-            empNo: user.empNo,
-            templateName: template.name,
-            columnsCount: result.columns.length,
-            totalRows: result.totalRows,
-          },
-        )}`,
+        `[UserInfo] Template-specific form data retrieved (${duration}ms): ${JSON.stringify({
+          deviceId,
+          username: user.name,
+          empNo: user.empNo,
+          templateName: template.name,
+          columnsCount: result.columns.length,
+          totalRows: result.totalRows,
+        })}`,
       );
 
       return result;
     } catch (error) {
-      this.logger.error(
-        `[UserInfo] getTicketFormDataByTemplate failed:`,
-        error,
-      );
+      this.logger.error(`[UserInfo] getTicketFormDataByTemplate failed:`, error);
       throw error;
     }
   }
@@ -251,14 +234,14 @@ export class UserInfoService {
 
     // Title column using titlePrefix
     columns.push({
-      header: "Title",
+      header: 'Title',
       values: [{ text: template?.titlePrefix }],
     });
 
     // Epic ticket column
     if (template.epicTicket) {
       columns.push({
-        header: "Parent Epic Ticket",
+        header: 'Parent Epic Ticket',
         values: [{ text: template.epicTicket }],
       });
     }
@@ -271,13 +254,13 @@ export class UserInfoService {
 
     if (assigneeData.length > 0) {
       columns.push({
-        header: "Assignee",
+        header: 'Assignee',
         values: assigneeData.map((assignee) => ({
           text: assignee.displayName,
           userData: {
-            username: assignee.username || "",
+            username: assignee.username || '',
             userDisplayName: assignee.displayName,
-            email: assignee.email || "",
+            email: assignee.email || '',
           },
         })),
       });
@@ -286,7 +269,7 @@ export class UserInfoService {
     // Component column
     if (template.componentList && template.componentList.length > 0) {
       columns.push({
-        header: "Component",
+        header: 'Component',
         values: template.componentList.map((component) => ({
           text: component,
         })),
@@ -296,7 +279,7 @@ export class UserInfoService {
     // Label column
     if (template.labelList && template.labelList.length > 0) {
       columns.push({
-        header: "Label",
+        header: 'Label',
         values: template.labelList.map((label) => ({
           text: label,
         })),

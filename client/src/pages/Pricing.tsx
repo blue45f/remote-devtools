@@ -1,25 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { ArrowRight, Check, Search as SearchIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { ArrowRight, Check, Search as SearchIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
-import { Brand } from "@/components/Brand";
-import { SkipLink } from "@/components/a11y/SkipLink";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { apiFetch } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { Brand } from '@/components/Brand';
+import { SkipLink } from '@/components/a11y/SkipLink';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { apiFetch } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface BillingStatus {
   enabled: boolean;
   plans?: Array<{ id: string; name: string; monthly: number }>;
 }
 
-const GITHUB_URL = "https://github.com/blue45f/remote-devtools";
+const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 
 interface Plan {
   name: string;
@@ -35,56 +35,55 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
-    name: "Self-hosted",
-    price: "$0",
-    cadence: "forever",
-    description:
-      "MIT licensed. Bring your own infrastructure, keep all your data.",
-    cta: "Read the docs",
-    href: GITHUB_URL + "/blob/main/docs/SELF_HOSTING.md",
+    name: 'Self-hosted',
+    price: '$0',
+    cadence: 'forever',
+    description: 'MIT licensed. Bring your own infrastructure, keep all your data.',
+    cta: 'Read the docs',
+    href: GITHUB_URL + '/blob/main/docs/SELF_HOSTING.md',
     features: [
-      "Full source access (NestJS + React + SDK)",
-      "Docker Compose stack included",
-      "Postgres, S3, Jira, Slack integrations",
-      "Optional admin token authentication",
-      "Community support via GitHub issues",
+      'Full source access (NestJS + React + SDK)',
+      'Docker Compose stack included',
+      'Postgres, S3, Jira, Slack integrations',
+      'Optional admin token authentication',
+      'Community support via GitHub issues',
     ],
-    footnote: "Best for teams with existing platform engineering capacity.",
+    footnote: 'Best for teams with existing platform engineering capacity.',
   },
   {
-    name: "Starter",
-    price: "$29",
-    cadence: "team / month",
-    description: "Hosted by us. For small teams getting started with replay.",
-    cta: "Coming soon",
-    href: "/sign-up?plan=starter",
+    name: 'Starter',
+    price: '$29',
+    cadence: 'team / month',
+    description: 'Hosted by us. For small teams getting started with replay.',
+    cta: 'Coming soon',
+    href: '/sign-up?plan=starter',
     highlight: true,
     features: [
-      "Up to 5,000 sessions / month",
-      "30-day session retention",
-      "Up to 5 team members",
-      "Email support (24h response)",
-      "Slack & Jira integrations",
-      "All replay & timeline features",
+      'Up to 5,000 sessions / month',
+      '30-day session retention',
+      'Up to 5 team members',
+      'Email support (24h response)',
+      'Slack & Jira integrations',
+      'All replay & timeline features',
     ],
-    footnote: "Hosted SaaS — see roadmap below.",
+    footnote: 'Hosted SaaS — see roadmap below.',
   },
   {
-    name: "Pro",
-    price: "$99",
-    cadence: "team / month",
-    description: "For growing teams that need scale, retention, and SSO.",
-    cta: "Coming soon",
-    href: "/sign-up?plan=pro",
+    name: 'Pro',
+    price: '$99',
+    cadence: 'team / month',
+    description: 'For growing teams that need scale, retention, and SSO.',
+    cta: 'Coming soon',
+    href: '/sign-up?plan=pro',
     features: [
-      "Up to 50,000 sessions / month",
-      "90-day session retention",
-      "Unlimited seats",
-      "SSO (SAML / OIDC)",
-      "Audit log + role-based access",
-      "Priority support (4h response)",
+      'Up to 50,000 sessions / month',
+      '90-day session retention',
+      'Unlimited seats',
+      'SSO (SAML / OIDC)',
+      'Audit log + role-based access',
+      'Priority support (4h response)',
     ],
-    footnote: "Hosted SaaS — see roadmap below.",
+    footnote: 'Hosted SaaS — see roadmap below.',
   },
 ];
 
@@ -93,9 +92,9 @@ export default function PricingPage() {
   // Probe the backend so we can adapt CTAs / show a status pill. The query
   // never throws — a missing/disabled backend just resolves to enabled:false.
   const { data: billing } = useQuery({
-    queryKey: ["billing-status"],
+    queryKey: ['billing-status'],
     queryFn: () =>
-      apiFetch<BillingStatus>("/api/billing/status").catch(
+      apiFetch<BillingStatus>('/api/billing/status').catch(
         () => ({ enabled: false }) as BillingStatus,
       ),
     staleTime: 60_000,
@@ -144,15 +143,15 @@ export default function PricingPage() {
         <div className="max-w-6xl mx-auto safe-px">
           <div className="text-center mb-10 sm:mb-12 lg:mb-16">
             <Badge variant="accent" size="md" className="mb-4">
-              {t("pricing.badge")}
+              {t('pricing.badge')}
             </Badge>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.02em] mb-3 sm:mb-4 text-balance">
-              {t("pricing.title")}
+              {t('pricing.title')}
               <br />
-              <span className="text-fg-subtle">{t("pricing.titleAccent")}</span>
+              <span className="text-fg-subtle">{t('pricing.titleAccent')}</span>
             </h1>
             <p className="text-sm sm:text-base text-fg-subtle max-w-xl mx-auto text-balance">
-              {t("pricing.subtitle")}
+              {t('pricing.subtitle')}
             </p>
           </div>
 
@@ -160,8 +159,8 @@ export default function PricingPage() {
             {PLANS.map((rawPlan, i) => {
               // When billing is wired up, flip "Coming soon" to a real CTA.
               const plan =
-                billingEnabled && rawPlan.cta === "Coming soon"
-                  ? { ...rawPlan, cta: "Get started" }
+                billingEnabled && rawPlan.cta === 'Coming soon'
+                  ? { ...rawPlan, cta: 'Get started' }
                   : rawPlan;
               return (
                 <motion.div
@@ -173,37 +172,31 @@ export default function PricingPage() {
                 >
                   <Card
                     className={cn(
-                      "p-5 sm:p-6 h-full flex flex-col gap-4 sm:gap-5 relative",
-                      plan.highlight && "border-fg shadow-md",
+                      'p-5 sm:p-6 h-full flex flex-col gap-4 sm:gap-5 relative',
+                      plan.highlight && 'border-fg shadow-md',
                     )}
                   >
                     {plan.highlight && (
                       <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-fg text-bg text-[10px] font-semibold uppercase tracking-wider">
-                        {t("pricing.mostPopular")}
+                        {t('pricing.mostPopular')}
                       </span>
                     )}
                     <div>
                       <h3 className="text-lg font-semibold">{plan.name}</h3>
-                      <p className="text-xs text-fg-subtle mt-1">
-                        {plan.description}
-                      </p>
+                      <p className="text-xs text-fg-subtle mt-1">{plan.description}</p>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-4xl font-semibold tracking-tight">
-                        {plan.price}
-                      </span>
+                      <span className="text-4xl font-semibold tracking-tight">{plan.price}</span>
                       {plan.cadence && (
-                        <span className="text-xs text-fg-subtle">
-                          / {plan.cadence}
-                        </span>
+                        <span className="text-xs text-fg-subtle">/ {plan.cadence}</span>
                       )}
                     </div>
                     <Button
                       asChild
-                      variant={plan.highlight ? "primary" : "outline"}
+                      variant={plan.highlight ? 'primary' : 'outline'}
                       className="w-full touch-target"
                     >
-                      {plan.href.startsWith("/") ? (
+                      {plan.href.startsWith('/') ? (
                         <Link to={plan.href}>{plan.cta}</Link>
                       ) : (
                         <a href={plan.href} target="_blank" rel="noreferrer">
@@ -213,10 +206,7 @@ export default function PricingPage() {
                     </Button>
                     <ul className="flex flex-col gap-2 text-sm">
                       {plan.features.map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-start gap-2 text-fg-subtle"
-                        >
+                        <li key={f} className="flex items-start gap-2 text-fg-subtle">
                           <Check className="size-4 text-fg-faint mt-0.5 shrink-0" />
                           <span>{f}</span>
                         </li>
@@ -236,20 +226,18 @@ export default function PricingPage() {
           <Card className="mt-10 p-6 bg-bg-subtle">
             <div className="flex flex-wrap items-start gap-4">
               <div className="flex-1 min-w-[280px]">
-                <h3 className="text-sm font-semibold mb-1">
-                  About the hosted plans
-                </h3>
+                <h3 className="text-sm font-semibold mb-1">About the hosted plans</h3>
                 <p className="text-xs text-fg-subtle leading-relaxed">
-                  The hosted Starter and Pro tiers are not yet live. The
-                  open-source release is fully functional today — see{" "}
+                  The hosted Starter and Pro tiers are not yet live. The open-source release is
+                  fully functional today — see{' '}
                   <a
-                    href={GITHUB_URL + "/blob/main/docs/LAUNCH.md"}
+                    href={GITHUB_URL + '/blob/main/docs/LAUNCH.md'}
                     className="underline-offset-2 hover:underline text-fg-subtle hover:text-fg"
                     target="_blank"
                     rel="noreferrer"
                   >
                     LAUNCH.md
-                  </a>{" "}
+                  </a>{' '}
                   for the SaaS roadmap.
                 </p>
               </div>
@@ -277,16 +265,10 @@ export default function PricingPage() {
           <a href={GITHUB_URL} className="hover:text-fg-subtle">
             GitHub
           </a>
-          <a
-            href={GITHUB_URL + "/blob/main/docs/SELF_HOSTING.md"}
-            className="hover:text-fg-subtle"
-          >
+          <a href={GITHUB_URL + '/blob/main/docs/SELF_HOSTING.md'} className="hover:text-fg-subtle">
             Self-host docs
           </a>
-          <a
-            href={GITHUB_URL + "/blob/main/docs/LAUNCH.md"}
-            className="hover:text-fg-subtle"
-          >
+          <a href={GITHUB_URL + '/blob/main/docs/LAUNCH.md'} className="hover:text-fg-subtle">
             Roadmap
           </a>
           <span className="ml-auto">MIT licensed · Built with CDP</span>
@@ -298,56 +280,47 @@ export default function PricingPage() {
 
 const FAQS: { q: string; a: string }[] = [
   {
-    q: "Is the public demo really free?",
-    a: "Yes — the demo at remote-devtools.vercel.app is fully free, no signup. It runs entirely in your browser with seed data; nothing leaves the page.",
+    q: 'Is the public demo really free?',
+    a: 'Yes — the demo at remote-devtools.vercel.app is fully free, no signup. It runs entirely in your browser with seed data; nothing leaves the page.',
   },
   {
     q: "What's the difference between self-hosted and Starter?",
-    a: "Self-hosted is the full open-source release on your own infrastructure — Postgres, S3, Jira, Slack integrations all work. Starter is the same product hosted by us with managed Postgres and 30-day session retention.",
+    a: 'Self-hosted is the full open-source release on your own infrastructure — Postgres, S3, Jira, Slack integrations all work. Starter is the same product hosted by us with managed Postgres and 30-day session retention.',
   },
   {
-    q: "When will Starter and Pro launch?",
-    a: "Hosted tiers are on the waitlist. The roadmap (LAUNCH.md) tracks the work needed to get there. Self-host is fully usable today.",
+    q: 'When will Starter and Pro launch?',
+    a: 'Hosted tiers are on the waitlist. The roadmap (LAUNCH.md) tracks the work needed to get there. Self-host is fully usable today.',
   },
   {
-    q: "Can I switch from self-host to hosted later?",
-    a: "Yes — sessions live in Postgres. Once we ship the hosted plans, an export/import path will be documented.",
+    q: 'Can I switch from self-host to hosted later?',
+    a: 'Yes — sessions live in Postgres. Once we ship the hosted plans, an export/import path will be documented.',
   },
   {
-    q: "Does it work behind a VPN / on-premise / air-gapped?",
+    q: 'Does it work behind a VPN / on-premise / air-gapped?',
     a: "Yes. Self-host has no external dependencies (S3, Jira, Slack, Google Sheets are all optional). Run docker compose on a single VM and you're done.",
   },
   {
-    q: "What about data privacy?",
-    a: "The SDK captures DOM and CDP events from the pages you opt into. Self-host means the data never leaves your servers. The hosted plan will include DPA, EU data residency, and per-org isolation.",
+    q: 'What about data privacy?',
+    a: 'The SDK captures DOM and CDP events from the pages you opt into. Self-host means the data never leaves your servers. The hosted plan will include DPA, EU data residency, and per-org isolation.',
   },
 ];
 
 function FAQ() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return FAQS;
-    return FAQS.filter(
-      (f) =>
-        f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q),
-    );
+    return FAQS.filter((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q));
   }, [query]);
 
   return (
     <section className="mt-16">
       <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <Badge
-            variant="neutral"
-            size="sm"
-            className="mb-3 uppercase tracking-wider"
-          >
+          <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
             FAQ
           </Badge>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Common questions
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Common questions</h2>
         </div>
         <div className="w-full sm:max-w-xs">
           <Input
@@ -362,9 +335,9 @@ function FAQ() {
       {filtered.length === 0 ? (
         <Card className="p-6 text-center bg-bg-subtle">
           <p className="text-sm text-fg-subtle">
-            No matches. Try a different keyword or reach out to{" "}
+            No matches. Try a different keyword or reach out to{' '}
             <a
-              href={GITHUB_URL + "/issues/new"}
+              href={GITHUB_URL + '/issues/new'}
               className="text-fg hover:underline underline-offset-2"
               target="_blank"
               rel="noreferrer"
@@ -387,9 +360,7 @@ function FAQ() {
                   ↓
                 </span>
               </summary>
-              <p className="mt-2 text-sm text-fg-subtle leading-relaxed">
-                {item.a}
-              </p>
+              <p className="mt-2 text-sm text-fg-subtle leading-relaxed">{item.a}</p>
             </details>
           ))}
         </div>

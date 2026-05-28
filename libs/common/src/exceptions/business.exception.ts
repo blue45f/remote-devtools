@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus } from '@nestjs/common';
 
-import { ErrorCode, ErrorMessages } from "./error-codes.enum";
+import { ErrorCode, ErrorMessages } from './error-codes.enum';
 
 /**
  * 비즈니스 예외 발생 시 클라이언트에 반환되는 표준 에러 응답 인터페이스.
@@ -43,8 +43,7 @@ export class BusinessException extends HttpException {
     httpStatus: HttpStatus = HttpStatus.BAD_REQUEST,
     details?: unknown,
   ) {
-    const message =
-      customMessage || ErrorMessages[errorCode] || "An unknown error occurred.";
+    const message = customMessage || ErrorMessages[errorCode] || 'An unknown error occurred.';
 
     const response: BusinessErrorResponse = {
       statusCode: httpStatus,
@@ -107,10 +106,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 401 상태의 BusinessException
    */
-  static unauthorized(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static unauthorized(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.AUTH_UNAUTHORIZED,
       customMessage,
@@ -125,10 +121,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 400 상태의 BusinessException
    */
-  static validationFailed(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static validationFailed(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.VALIDATION_FAILED,
       customMessage,
@@ -143,10 +136,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 404 상태의 BusinessException
    */
-  static resourceNotFound(
-    resourceName: string,
-    details?: unknown,
-  ): BusinessException {
+  static resourceNotFound(resourceName: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.RESOURCE_NOT_FOUND,
       `${resourceName} not found.`,
@@ -161,10 +151,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 404 상태의 BusinessException
    */
-  static templateNotFound(
-    templateName: string,
-    details?: unknown,
-  ): BusinessException {
+  static templateNotFound(templateName: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.TEMPLATE_NOT_FOUND,
       `Template '${templateName}' not found.`,
@@ -185,12 +172,7 @@ export class BusinessException extends HttpException {
     customMessage?: string,
     details?: unknown,
   ): BusinessException {
-    return new BusinessException(
-      errorCode,
-      customMessage,
-      HttpStatus.SERVICE_UNAVAILABLE,
-      details,
-    );
+    return new BusinessException(errorCode, customMessage, HttpStatus.SERVICE_UNAVAILABLE, details);
   }
 
   /**
@@ -205,12 +187,7 @@ export class BusinessException extends HttpException {
     customMessage?: string,
     details?: unknown,
   ): BusinessException {
-    return new BusinessException(
-      errorCode,
-      customMessage,
-      HttpStatus.SERVICE_UNAVAILABLE,
-      details,
-    );
+    return new BusinessException(errorCode, customMessage, HttpStatus.SERVICE_UNAVAILABLE, details);
   }
 
   /**
@@ -219,10 +196,7 @@ export class BusinessException extends HttpException {
    * @param details - 추가 에러 상세 정보 (선택)
    * @returns HTTP 500 상태의 BusinessException
    */
-  static internalError(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static internalError(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.INTERNAL_SERVER_ERROR,
       customMessage,

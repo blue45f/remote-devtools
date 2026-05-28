@@ -1,16 +1,16 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { RecordService, ReplayCommentService } from "@remote-platform/core";
+import { RecordService, ReplayCommentService } from '@remote-platform/core';
 
-import { AuthService } from "../auth/auth.service";
-import { S3Service } from "../s3/s3.service";
-import { WebviewGateway } from "./webview.gateway";
-import { WebviewController } from "./webview.controller";
+import { AuthService } from '../auth/auth.service';
+import { S3Service } from '../s3/s3.service';
+import { WebviewGateway } from './webview.gateway';
+import { WebviewController } from './webview.controller';
 
-describe("WebviewController (Internal)", () => {
+describe('WebviewController (Internal)', () => {
   let controller: WebviewController;
   const mockGateway = { getLiveRoomList: vi.fn() };
   const mockRecordService = {
@@ -54,35 +54,33 @@ describe("WebviewController (Internal)", () => {
     controller = module.get<WebviewController>(WebviewController);
   });
 
-  describe("getSessionList", () => {
-    it("should return live room list", () => {
-      mockGateway.getLiveRoomList.mockReturnValue([
-        { id: 0, name: "Live-abc" },
-      ]);
+  describe('getSessionList', () => {
+    it('should return live room list', () => {
+      mockGateway.getLiveRoomList.mockReturnValue([{ id: 0, name: 'Live-abc' }]);
 
       const result = controller.getSessionList();
 
-      expect(result).toEqual([{ id: 0, name: "Live-abc" }]);
+      expect(result).toEqual([{ id: 0, name: 'Live-abc' }]);
     });
 
-    it("should return empty array when no live rooms", () => {
+    it('should return empty array when no live rooms', () => {
       mockGateway.getLiveRoomList.mockReturnValue([]);
       expect(controller.getSessionList()).toEqual([]);
     });
   });
 
-  describe("getRecordSessionList", () => {
-    it("should return record sessions as a bare array when no query params are present (back-compat)", async () => {
+  describe('getRecordSessionList', () => {
+    it('should return record sessions as a bare array when no query params are present (back-compat)', async () => {
       mockRecordService.findPaginated.mockResolvedValue({
         rows: [
           {
             id: 1,
-            name: "Session-1",
-            url: "https://example.com",
-            deviceId: "dev-1",
+            name: 'Session-1',
+            url: 'https://example.com',
+            deviceId: 'dev-1',
             duration: 5000000000,
             recordMode: true,
-            timestamp: new Date("2026-01-01"),
+            timestamp: new Date('2026-01-01'),
           },
         ],
         nextCursor: null,
@@ -92,76 +90,62 @@ describe("WebviewController (Internal)", () => {
 
       expect(Array.isArray(result)).toBe(true);
       expect(result as unknown as { id: number }[]).toHaveLength(1);
-      expect(
-        (result as unknown as { id: number; recordMode: boolean }[])[0],
-      ).toEqual(
+      expect((result as unknown as { id: number; recordMode: boolean }[])[0]).toEqual(
         expect.objectContaining({
           id: 1,
-          name: "Session-1",
-          url: "https://example.com",
-          deviceId: "dev-1",
+          name: 'Session-1',
+          url: 'https://example.com',
+          deviceId: 'dev-1',
           recordMode: true,
         }),
       );
     });
 
-    it("returns the paginated envelope when filters are present", async () => {
+    it('returns the paginated envelope when filters are present', async () => {
       mockRecordService.findPaginated.mockResolvedValue({
-        rows: [
-          { id: 7, name: "checkout", recordMode: true, timestamp: new Date() },
-        ],
-        nextCursor: "2026-04-27T00:00:00.000Z",
+        rows: [{ id: 7, name: 'checkout', recordMode: true, timestamp: new Date() }],
+        nextCursor: '2026-04-27T00:00:00.000Z',
       });
 
-      const result = (await controller.getRecordSessionList(
-        null,
-        "checkout",
-      )) as {
+      const result = (await controller.getRecordSessionList(null, 'checkout')) as {
         rows: unknown[];
         nextCursor: string | null;
       };
 
       expect(result.rows).toHaveLength(1);
-      expect(result.nextCursor).toBe("2026-04-27T00:00:00.000Z");
+      expect(result.nextCursor).toBe('2026-04-27T00:00:00.000Z');
       expect(mockRecordService.findPaginated).toHaveBeenCalledWith(
-        expect.objectContaining({ q: "checkout" }),
+        expect.objectContaining({ q: 'checkout' }),
       );
     });
 
-    it("rejects an invalid limit", async () => {
+    it('rejects an invalid limit', async () => {
       await expect(
-        controller.getRecordSessionList(
-          null,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          "abc",
-        ),
+        controller.getRecordSessionList(null, undefined, undefined, undefined, undefined, 'abc'),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it("forces orgId from auth claims, ignoring an explicit orgId param", async () => {
+    it('forces orgId from auth claims, ignoring an explicit orgId param', async () => {
       mockRecordService.findPaginated.mockResolvedValue({
         rows: [],
         nextCursor: null,
       });
-      const auth = { sub: "u1", org: "org-trusted", plan: "pro" } as const;
+      const auth = { sub: 'u1', org: 'org-trusted', plan: 'pro' } as const;
       // Caller tries to peek at another tenant via ?orgId=other
       await controller.getRecordSessionList(
         auth,
         undefined,
         undefined,
         undefined,
-        "org-other",
-        "10",
+        'org-other',
+        '10',
       );
       expect(mockRecordService.findPaginated).toHaveBeenCalledWith(
-        expect.objectContaining({ orgId: "org-trusted" }),
+        expect.objectContaining({ orgId: 'org-trusted' }),
       );
     });
 
-    it("falls back to the explicit orgId param when no auth claims (self-host)", async () => {
+    it('falls back to the explicit orgId param when no auth claims (self-host)', async () => {
       mockRecordService.findPaginated.mockResolvedValue({
         rows: [],
         nextCursor: null,
@@ -171,87 +155,84 @@ describe("WebviewController (Internal)", () => {
         undefined,
         undefined,
         undefined,
-        "org-explicit",
-        "10",
+        'org-explicit',
+        '10',
       );
       expect(mockRecordService.findPaginated).toHaveBeenCalledWith(
-        expect.objectContaining({ orgId: "org-explicit" }),
+        expect.objectContaining({ orgId: 'org-explicit' }),
       );
     });
   });
 
-  describe("putRecordTags", () => {
-    it("normalises, dedupes and trims tags before persisting", async () => {
+  describe('putRecordTags', () => {
+    it('normalises, dedupes and trims tags before persisting', async () => {
       mockRecordService.replaceTags.mockResolvedValue({
         id: 42,
-        tags: ["bug", "checkout"],
+        tags: ['bug', 'checkout'],
       });
-      const res = await controller.putRecordTags("42", {
-        tags: ["  bug ", "bug", "checkout", "", null as unknown as string],
+      const res = await controller.putRecordTags('42', {
+        tags: ['  bug ', 'bug', 'checkout', '', null as unknown as string],
       });
-      expect(res).toEqual({ id: 42, tags: ["bug", "checkout"] });
-      expect(mockRecordService.replaceTags).toHaveBeenCalledWith(42, [
-        "bug",
-        "checkout",
-      ]);
+      expect(res).toEqual({ id: 42, tags: ['bug', 'checkout'] });
+      expect(mockRecordService.replaceTags).toHaveBeenCalledWith(42, ['bug', 'checkout']);
     });
 
-    it("caps at 16 tags and 24 chars each", async () => {
-      const long = "x".repeat(50);
+    it('caps at 16 tags and 24 chars each', async () => {
+      const long = 'x'.repeat(50);
       const many = Array.from({ length: 30 }, (_, i) => `t${i}`);
       mockRecordService.replaceTags.mockImplementation((_id, tags) =>
         Promise.resolve({ id: 1, tags }),
       );
-      const res = await controller.putRecordTags("1", {
+      const res = await controller.putRecordTags('1', {
         tags: [long, ...many],
       });
-      expect(res.tags[0]).toBe("x".repeat(24));
+      expect(res.tags[0]).toBe('x'.repeat(24));
       expect(res.tags.length).toBe(16);
     });
 
-    it("rejects non-integer recordId", async () => {
+    it('rejects non-integer recordId', async () => {
+      await expect(controller.putRecordTags('abc', { tags: [] })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rejects non-array body.tags', async () => {
       await expect(
-        controller.putRecordTags("abc", { tags: [] }),
+        controller.putRecordTags('1', { tags: 'nope' as unknown as string[] }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("rejects non-array body.tags", async () => {
-      await expect(
-        controller.putRecordTags("1", { tags: "nope" as unknown as string[] }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("404s when record does not exist", async () => {
+    it('404s when record does not exist', async () => {
       mockRecordService.replaceTags.mockResolvedValue(null);
-      await expect(
-        controller.putRecordTags("999", { tags: ["bug"] }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.putRecordTags('999', { tags: ['bug'] })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
-  describe("replay comments", () => {
-    it("getRecordComments returns rows sorted by service", async () => {
+  describe('replay comments', () => {
+    it('getRecordComments returns rows sorted by service', async () => {
       mockReplayCommentService.findByRecordId.mockResolvedValue([
         {
           id: 1,
           timestampMs: 5000,
-          body: "checkout failed",
-          author: "qa",
-          createdAt: new Date("2026-04-27"),
+          body: 'checkout failed',
+          author: 'qa',
+          createdAt: new Date('2026-04-27'),
         },
       ]);
-      const out = await controller.getRecordComments("42");
+      const out = await controller.getRecordComments('42');
       expect(out).toHaveLength(1);
       expect(out[0]).toMatchObject({
         id: 1,
         timestampMs: 5000,
-        body: "checkout failed",
-        author: "qa",
+        body: 'checkout failed',
+        author: 'qa',
       });
       expect(mockReplayCommentService.findByRecordId).toHaveBeenCalledWith(42);
     });
 
-    it("postRecordComment validates, trims and persists", async () => {
+    it('postRecordComment validates, trims and persists', async () => {
       mockRecordService.findOne.mockResolvedValue({ id: 42 });
       mockReplayCommentService.create.mockImplementation((data) =>
         Promise.resolve({
@@ -263,92 +244,81 @@ describe("WebviewController (Internal)", () => {
         }),
       );
 
-      const out = await controller.postRecordComment(null, "42", {
+      const out = await controller.postRecordComment(null, '42', {
         timestampMs: 1234,
-        body: "  the checkout button is broken  ",
-        author: "  jane  ",
+        body: '  the checkout button is broken  ',
+        author: '  jane  ',
       });
 
       expect(out.id).toBe(9);
       expect(out.timestampMs).toBe(1234);
-      expect(out.body).toBe("the checkout button is broken");
-      expect(out.author).toBe("jane");
+      expect(out.body).toBe('the checkout button is broken');
+      expect(out.author).toBe('jane');
     });
 
-    it("postRecordComment rejects negative timestampMs", async () => {
+    it('postRecordComment rejects negative timestampMs', async () => {
       await expect(
-        controller.postRecordComment(null, "42", {
+        controller.postRecordComment(null, '42', {
           timestampMs: -1,
-          body: "x",
+          body: 'x',
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("postRecordComment rejects blank / non-string body", async () => {
+    it('postRecordComment rejects blank / non-string body', async () => {
       await expect(
-        controller.postRecordComment(null, "42", {
+        controller.postRecordComment(null, '42', {
           timestampMs: 0,
-          body: "   ",
+          body: '   ',
         }),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.postRecordComment(null, "42", {
+        controller.postRecordComment(null, '42', {
           timestampMs: 0,
           body: 123 as unknown as string,
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("postRecordComment 404s on unknown recordId", async () => {
+    it('postRecordComment 404s on unknown recordId', async () => {
       mockRecordService.findOne.mockResolvedValue(null);
       await expect(
-        controller.postRecordComment(null, "404", {
+        controller.postRecordComment(null, '404', {
           timestampMs: 0,
-          body: "x",
+          body: 'x',
         }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("deleteRecordComment returns 204 on success", async () => {
+    it('deleteRecordComment returns 204 on success', async () => {
       mockReplayCommentService.delete.mockResolvedValue(true);
-      await expect(
-        controller.deleteRecordComment("42", "7"),
-      ).resolves.toBeUndefined();
+      await expect(controller.deleteRecordComment('42', '7')).resolves.toBeUndefined();
       expect(mockReplayCommentService.delete).toHaveBeenCalledWith(7, 42);
     });
 
-    it("deleteRecordComment 404s when no row was deleted", async () => {
+    it('deleteRecordComment 404s when no row was deleted', async () => {
       mockReplayCommentService.delete.mockResolvedValue(false);
-      await expect(
-        controller.deleteRecordComment("42", "7"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.deleteRecordComment('42', '7')).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe("getBackupList", () => {
-    it("should return backup files", async () => {
+  describe('getBackupList', () => {
+    it('should return backup files', async () => {
       mockS3Service.listBackupFiles.mockResolvedValue([
-        { fileName: "session_123.json", deviceId: "dev-1" },
+        { fileName: 'session_123.json', deviceId: 'dev-1' },
       ]);
 
-      const result = await controller.getBackupList("dev-1");
+      const result = await controller.getBackupList('dev-1');
 
       expect(result).toHaveLength(1);
       expect(mockS3Service.listBackupFiles).toHaveBeenCalledWith(
-        expect.objectContaining({ deviceId: "dev-1" }),
+        expect.objectContaining({ deviceId: 'dev-1' }),
       );
     });
 
-    it("should throw on invalid limit param", async () => {
+    it('should throw on invalid limit param', async () => {
       await expect(
-        controller.getBackupList(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          "abc",
-        ),
+        controller.getBackupList(undefined, undefined, undefined, undefined, undefined, 'abc'),
       ).rejects.toThrow(BadRequestException);
     });
   });

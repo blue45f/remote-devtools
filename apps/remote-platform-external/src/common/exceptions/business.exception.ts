@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus } from '@nestjs/common';
 
-import { ErrorCode, ErrorMessages } from "./error-codes.enum";
+import { ErrorCode, ErrorMessages } from './error-codes.enum';
 
 export interface BusinessErrorResponse {
   statusCode: number;
@@ -21,10 +21,7 @@ export class BusinessException extends HttpException {
     httpStatus: HttpStatus = HttpStatus.BAD_REQUEST,
     details?: unknown,
   ) {
-    const message =
-      customMessage ||
-      ErrorMessages[errorCode] ||
-      "알 수 없는 오류가 발생했습니다.";
+    const message = customMessage || ErrorMessages[errorCode] || '알 수 없는 오류가 발생했습니다.';
 
     const response: BusinessErrorResponse = {
       statusCode: httpStatus,
@@ -67,10 +64,7 @@ export class BusinessException extends HttpException {
     );
   }
 
-  static unauthorized(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static unauthorized(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.AUTH_UNAUTHORIZED,
       customMessage,
@@ -79,10 +73,7 @@ export class BusinessException extends HttpException {
     );
   }
 
-  static validationFailed(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static validationFailed(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.VALIDATION_FAILED,
       customMessage,
@@ -91,10 +82,7 @@ export class BusinessException extends HttpException {
     );
   }
 
-  static resourceNotFound(
-    resourceName: string,
-    details?: unknown,
-  ): BusinessException {
+  static resourceNotFound(resourceName: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.RESOURCE_NOT_FOUND,
       `${resourceName}을(를) 찾을 수 없습니다.`,
@@ -103,10 +91,7 @@ export class BusinessException extends HttpException {
     );
   }
 
-  static templateNotFound(
-    templateName: string,
-    details?: unknown,
-  ): BusinessException {
+  static templateNotFound(templateName: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.TEMPLATE_NOT_FOUND,
       `템플릿 '${templateName}'을 찾을 수 없습니다.`,
@@ -120,12 +105,7 @@ export class BusinessException extends HttpException {
     customMessage?: string,
     details?: unknown,
   ): BusinessException {
-    return new BusinessException(
-      errorCode,
-      customMessage,
-      HttpStatus.SERVICE_UNAVAILABLE,
-      details,
-    );
+    return new BusinessException(errorCode, customMessage, HttpStatus.SERVICE_UNAVAILABLE, details);
   }
 
   static slackError(
@@ -133,18 +113,10 @@ export class BusinessException extends HttpException {
     customMessage?: string,
     details?: unknown,
   ): BusinessException {
-    return new BusinessException(
-      errorCode,
-      customMessage,
-      HttpStatus.SERVICE_UNAVAILABLE,
-      details,
-    );
+    return new BusinessException(errorCode, customMessage, HttpStatus.SERVICE_UNAVAILABLE, details);
   }
 
-  static internalError(
-    customMessage?: string,
-    details?: unknown,
-  ): BusinessException {
+  static internalError(customMessage?: string, details?: unknown): BusinessException {
     return new BusinessException(
       ErrorCode.INTERNAL_SERVER_ERROR,
       customMessage,

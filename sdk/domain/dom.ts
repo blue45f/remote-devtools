@@ -1,11 +1,11 @@
-import { DEVTOOL_OVERLAY, IGNORE_NODE } from "../common/constant";
-import nodes from "../common/nodes";
-import { getObjectById } from "../common/remoteObject";
-import { isElement } from "../common/utils";
+import { DEVTOOL_OVERLAY, IGNORE_NODE } from '../common/constant';
+import nodes from '../common/nodes';
+import { getObjectById } from '../common/remoteObject';
+import { isElement } from '../common/utils';
 
-import { BaseDomain } from "./base";
-import { Overlay } from "./overlay";
-import { Events } from "./protocol";
+import { BaseDomain } from './base';
+import { Overlay } from './overlay';
+import { Events } from './protocol';
 
 declare global {
   interface Window {
@@ -18,34 +18,30 @@ declare global {
 }
 
 export class Dom extends BaseDomain {
-  public readonly namespace = "DOM";
+  public readonly namespace = 'DOM';
   private searchId = 0;
   private searchRet = new Map<number, Element[]>();
-  private currentSearchKey = "";
+  private currentSearchKey = '';
 
   /**
    * set $, $$ and $x methods
    * @static
    */
   private static set$Function() {
-    if (typeof window.$ !== "function") {
+    if (typeof window.$ !== 'function') {
       window.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelector(selector);
       };
     }
 
-    if (typeof window.$$ !== "function") {
-      window.$$ = function <K extends keyof HTMLElementTagNameMap>(
-        selector: K,
-      ) {
+    if (typeof window.$$ !== 'function') {
+      window.$$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelectorAll(selector);
       };
     }
 
-    if (typeof window.$x !== "function") {
-      window.$x = function <K extends keyof HTMLElementTagNameMap>(
-        selector: K,
-      ) {
+    if (typeof window.$x !== 'function') {
+      window.$x = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         const xpathResult = document.evaluate(
           selector,
           document,
@@ -90,10 +86,7 @@ export class Dom extends BaseDomain {
       method: Events.setChildNodes,
       params: {
         parentId: nodeId,
-        nodes: nodes.getChildNodes(
-          nodes.getNodeById(nodeId),
-          this.recordMode ? Infinity : 2,
-        ),
+        nodes: nodes.getChildNodes(nodes.getNodeById(nodeId), this.recordMode ? Infinity : 2),
       },
     });
   }
@@ -104,13 +97,7 @@ export class Dom extends BaseDomain {
     };
   }
 
-  public setOuterHTML({
-    nodeId,
-    outerHTML,
-  }: {
-    nodeId: number;
-    outerHTML: string;
-  }) {
+  public setOuterHTML({ nodeId, outerHTML }: { nodeId: number; outerHTML: string }) {
     (nodes.getNodeById(nodeId) as HTMLElement).outerHTML = outerHTML;
   }
 
@@ -119,33 +106,25 @@ export class Dom extends BaseDomain {
    * @param {Number} nodeId DOM Node Id
    * @param {String} text attribute text，eg: class="test" style="color:red;" data-index="1"
    */
-  public setAttributesAsText({
-    nodeId,
-    text,
-  }: {
-    nodeId: number;
-    text: string;
-  }) {
+  public setAttributesAsText({ nodeId, text }: { nodeId: number; text: string }) {
     const node = nodes.getNodeById(nodeId);
     if (!isElement(node)) return;
     if (text) {
       text
-        .split(" ")
+        .split(' ')
         .filter((item) => item)
         .forEach((item) => {
-          const [name, value] = item.split("=");
-          node.setAttribute(name, value.replace(/["']/g, ""));
+          const [name, value] = item.split('=');
+          node.setAttribute(name, value.replace(/["']/g, ''));
         });
     } else {
-      Array.from(node.attributes).forEach((attr) =>
-        node.removeAttribute(attr.name),
-      );
+      Array.from(node.attributes).forEach((attr) => node.removeAttribute(attr.name));
     }
   }
 
   public requestNode({ objectId }: { objectId: string }) {
     const node = getObjectById(objectId);
-    if (!(node instanceof Node)) throw new Error("Node not found");
+    if (!(node instanceof Node)) throw new Error('Node not found');
     const nodeId = nodes.getIdByNode(node);
     return { nodeId };
   }
@@ -159,11 +138,7 @@ export class Dom extends BaseDomain {
     node?.parentNode?.removeChild(node);
   }
 
-  public pushNodesByBackendIdsToFrontend({
-    backendNodeIds,
-  }: {
-    backendNodeIds: number[];
-  }) {
+  public pushNodesByBackendIdsToFrontend({ backendNodeIds }: { backendNodeIds: number[] }) {
     return {
       nodeIds: backendNodeIds,
     };
@@ -174,15 +149,12 @@ export class Dom extends BaseDomain {
 
     if (this.currentSearchKey !== query) {
       this.currentSearchKey = query;
-      const allNodes = document.querySelectorAll("*");
+      const allNodes = document.querySelectorAll('*');
       ret = Array.from(allNodes).filter((node) => {
         if (!nodes.isNode(node)) return false;
 
         // element node
-        if (
-          node.nodeType === Node.ELEMENT_NODE &&
-          node.tagName.toLowerCase().includes(query)
-        ) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase().includes(query)) {
           return true;
         }
 
@@ -255,25 +227,19 @@ export class Dom extends BaseDomain {
     const styles = window.getComputedStyle(node);
 
     const margin = Overlay.getStylePropertyValue(
-      ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+      ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
       styles,
     );
     const padding = Overlay.getStylePropertyValue(
-      ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+      ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'],
       styles,
     );
     const border = Overlay.getStylePropertyValue(
-      [
-        "border-top-width",
-        "border-right-width",
-        "border-bottom-width",
-        "border-left-width",
-      ],
+      ['border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width'],
       styles,
     );
 
-    const { left, right, top, bottom, width, height } =
-      node.getBoundingClientRect();
+    const { left, right, top, bottom, width, height } = node.getBoundingClientRect();
 
     return {
       model: {
@@ -331,9 +297,9 @@ export class Dom extends BaseDomain {
 
   private setDomInspect() {
     document.addEventListener(
-      "click",
+      'click',
       (e) => {
-        if (window.$$inspectMode !== "searchForNode") return;
+        if (window.$$inspectMode !== 'searchForNode') return;
 
         e.stopPropagation();
         e.preventDefault();
@@ -357,33 +323,26 @@ export class Dom extends BaseDomain {
           },
         });
         const element = document.getElementById(DEVTOOL_OVERLAY);
-        if (element) element.style.display = "none";
+        if (element) element.style.display = 'none';
       },
       true,
     );
   }
 
   private nodeObserver() {
-    const isDevtoolMutation = ({
-      target,
-      addedNodes,
-      removedNodes,
-    }: MutationRecord) => {
-      if (
-        isElement(target) &&
-        IGNORE_NODE.includes(target.getAttribute?.("class") ?? "")
-      )
+    const isDevtoolMutation = ({ target, addedNodes, removedNodes }: MutationRecord) => {
+      if (isElement(target) && IGNORE_NODE.includes(target.getAttribute?.('class') ?? ''))
         return true;
       if (
         addedNodes[0] &&
         isElement(addedNodes[0]) &&
-        IGNORE_NODE.includes(addedNodes[0].getAttribute?.("class") ?? "")
+        IGNORE_NODE.includes(addedNodes[0].getAttribute?.('class') ?? '')
       )
         return true;
       if (
         removedNodes[0] &&
         isElement(removedNodes[0]) &&
-        IGNORE_NODE.includes(removedNodes[0].getAttribute?.("class") ?? "")
+        IGNORE_NODE.includes(removedNodes[0].getAttribute?.('class') ?? '')
       )
         return true;
       return false;
@@ -391,13 +350,12 @@ export class Dom extends BaseDomain {
 
     const callbackForRealtime = (mutationList: MutationRecord[]) => {
       mutationList.forEach((mutation) => {
-        const { attributeName, target, type, addedNodes, removedNodes } =
-          mutation;
+        const { attributeName, target, type, addedNodes, removedNodes } = mutation;
 
         // Ignore devtool dom changes
         if (isDevtoolMutation(mutation)) return;
         // svg 내부의 요소가 변경되는 경우는 무시 (로딩 스피너 등)
-        if (isElement(target) && !!target.closest("svg")) return;
+        if (isElement(target) && !!target.closest('svg')) return;
 
         const parentNodeId = nodes.getIdByNode(target);
 
@@ -412,7 +370,7 @@ export class Dom extends BaseDomain {
         };
 
         switch (type) {
-          case "childList":
+          case 'childList':
             addedNodes.forEach((node) => {
               const prevNode = nodes.getPreviousNode(node);
               updateChildNodeCount();
@@ -422,10 +380,7 @@ export class Dom extends BaseDomain {
               this.sendProtocol({
                 method: Events.childNodeInserted,
                 params: {
-                  node: nodes.collectNodes(
-                    node,
-                    this.recordMode ? Infinity : 1,
-                  ),
+                  node: nodes.collectNodes(node, this.recordMode ? Infinity : 1),
                   parentNodeId,
                   previousNodeId: nodes.getIdByNode(prevNode),
                 },
@@ -445,15 +400,11 @@ export class Dom extends BaseDomain {
             });
 
             break;
-          case "attributes":
+          case 'attributes':
             // eslint-disable-next-line
-            const value = isElement(target)
-              ? target.getAttribute(attributeName ?? "")
-              : "";
+            const value = isElement(target) ? target.getAttribute(attributeName ?? '') : '';
             this.sendProtocol({
-              method: value
-                ? Events.attributeModified
-                : Events.attributeRemoved,
+              method: value ? Events.attributeModified : Events.attributeRemoved,
               params: {
                 nodeId: parentNodeId,
                 value: value || undefined,
@@ -462,7 +413,7 @@ export class Dom extends BaseDomain {
             });
             break;
 
-          case "characterData":
+          case 'characterData':
             this.sendProtocol({
               method: Events.characterDataModified,
               params: {
@@ -484,9 +435,7 @@ export class Dom extends BaseDomain {
 
     const callback = (mutationList: MutationRecord[]) => {
       if (this.socket?.readyState === WebSocket.CLOSED) return;
-      return this.recordMode
-        ? callbackForRecord()
-        : callbackForRealtime(mutationList);
+      return this.recordMode ? callbackForRecord() : callbackForRealtime(mutationList);
     };
 
     const observer = new MutationObserver(callback);

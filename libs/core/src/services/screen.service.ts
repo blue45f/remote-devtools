@@ -1,10 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { ScreenEntity } from "@remote-platform/entity";
+import { ScreenEntity } from '@remote-platform/entity';
 
-import { RecordService } from "./record.service";
+import { RecordService } from './record.service';
 
 /**
  * 녹화 세션 중 캡처된 화면 스냅샷을 저장하고 조회하는 서비스.
@@ -30,27 +30,25 @@ export class ScreenService {
   ): Promise<ScreenEntity | null> {
     const { recordId, ...screenInfo } = data;
     if (!recordId) {
-      this.logger.warn("Skipping screen upsert: recordId is missing");
+      this.logger.warn('Skipping screen upsert: recordId is missing');
       return null;
     }
 
     const record = await this.recordService.findOne(recordId);
 
     if (!record) {
-      this.logger.warn(
-        `Skipping screen upsert: record not found for id=${recordId}`,
-      );
+      this.logger.warn(`Skipping screen upsert: record not found for id=${recordId}`);
       return null;
     }
 
     await this.screenRepository.upsert(
-      { record: { id: recordId }, type: "screenPreview", ...screenInfo },
+      { record: { id: recordId }, type: 'screenPreview', ...screenInfo },
       { conflictPaths: { record: true, type: true } },
     );
 
     this.logger.debug(`Screen upserted: recordId=${recordId}`);
     return this.screenRepository.findOne({
-      where: { record: { id: recordId }, type: "screenPreview" },
+      where: { record: { id: recordId }, type: 'screenPreview' },
     });
   }
 
@@ -62,7 +60,7 @@ export class ScreenService {
   public async findByRecordId(recordId: number): Promise<ScreenEntity[]> {
     return this.screenRepository.find({
       where: { record: { id: recordId }, type: null },
-      order: { timestamp: "ASC" },
+      order: { timestamp: 'ASC' },
     });
   }
 
@@ -73,8 +71,8 @@ export class ScreenService {
    */
   public async findLatest(recordId: number): Promise<ScreenEntity | null> {
     return this.screenRepository.findOne({
-      where: { record: { id: recordId }, type: "screenPreview" },
-      order: { timestamp: "DESC" },
+      where: { record: { id: recordId }, type: 'screenPreview' },
+      order: { timestamp: 'DESC' },
     });
   }
 
@@ -92,9 +90,7 @@ export class ScreenService {
    * @param recordId - 녹화 레코드 ID
    * @returns 최신 ScreenEntity 또는 null
    */
-  public async findLatestScreen(
-    recordId: number,
-  ): Promise<ScreenEntity | null> {
+  public async findLatestScreen(recordId: number): Promise<ScreenEntity | null> {
     return this.findLatest(recordId);
   }
 }

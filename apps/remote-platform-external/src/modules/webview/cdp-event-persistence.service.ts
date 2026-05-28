@@ -1,13 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
-import {
-  DomService,
-  NetworkService,
-  RuntimeService,
-  ScreenService,
-} from "@remote-platform/core";
+import { DomService, NetworkService, RuntimeService, ScreenService } from '@remote-platform/core';
 
-import type { BufferEvent } from "../buffer/buffer.service";
+import type { BufferEvent } from '../buffer/buffer.service';
 
 type RrwebEventData = {
   timestamp?: number;
@@ -35,10 +30,9 @@ type CdpProtocol = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === 'object' && value !== null;
 
-const toCdpParams = (value: unknown): CdpParams =>
-  isRecord(value) ? (value as CdpParams) : {};
+const toCdpParams = (value: unknown): CdpParams => (isRecord(value) ? (value as CdpParams) : {});
 
 /**
  * CDP 이벤트를 도메인별로 DB에 저장하는 서비스.
@@ -70,17 +64,17 @@ export class CdpEventPersistenceService {
   mapRrwebEventType(rrwebType: number): string {
     switch (rrwebType) {
       case 0:
-        return "dom_loaded";
+        return 'dom_loaded';
       case 1:
-        return "page_loaded";
+        return 'page_loaded';
       case 2:
-        return "full_snapshot";
+        return 'full_snapshot';
       case 3:
-        return "incremental_snapshot";
+        return 'incremental_snapshot';
       case 4:
-        return "meta";
+        return 'meta';
       case 5:
-        return "custom";
+        return 'custom';
       default:
         return `rrweb_${rrwebType}`;
     }
@@ -94,7 +88,7 @@ export class CdpEventPersistenceService {
    * 밀리초 타임스탬프를 나노초로 변환한다.
    */
   toTimestampNs(value?: number | string): number {
-    const parsed = typeof value === "string" ? Number(value) : value;
+    const parsed = typeof value === 'string' ? Number(value) : value;
     if (parsed === undefined || !Number.isFinite(parsed)) {
       const [seconds, nanoseconds] = process.hrtime();
       return seconds * 1e9 + nanoseconds;
@@ -109,15 +103,12 @@ export class CdpEventPersistenceService {
   /**
    * 프로토콜 메시지를 도메인별로 DB에 저장한다.
    */
-  async persistProtocolEvent(
-    protocol: CdpProtocol,
-    recordId: number,
-  ): Promise<void> {
+  async persistProtocolEvent(protocol: CdpProtocol, recordId: number): Promise<void> {
     const timestamp = Date.now() * 1_000_000;
 
     if (protocol.params?.requestId) {
       const requestId =
-        typeof protocol.params.requestId === "number"
+        typeof protocol.params.requestId === 'number'
           ? protocol.params.requestId
           : Number(protocol.params.requestId);
       await this.networkService.create({
@@ -128,16 +119,16 @@ export class CdpEventPersistenceService {
       });
     }
 
-    if (protocol.method.startsWith("DOM.updated")) {
+    if (protocol.method.startsWith('DOM.updated')) {
       await this.domService.upsert({
         recordId,
         protocol: { root: protocol.params },
         timestamp,
-        type: "entireDom",
+        type: 'entireDom',
       });
     }
 
-    if (protocol.method.startsWith("Runtime.")) {
+    if (protocol.method.startsWith('Runtime.')) {
       await this.runtimeService.create({
         recordId,
         protocol,
@@ -145,39 +136,38 @@ export class CdpEventPersistenceService {
       });
     }
 
-    if (protocol.method.startsWith("ScreenPreview.captured")) {
-      let eventType: "full_snapshot" | "incremental_snapshot" =
-        "incremental_snapshot";
+    if (protocol.method.startsWith('ScreenPreview.captured')) {
+      let eventType: 'full_snapshot' | 'incremental_snapshot' = 'incremental_snapshot';
       if (protocol.params?.isFirstSnapshot) {
-        eventType = "full_snapshot";
+        eventType = 'full_snapshot';
       }
 
       await this.screenService.upsert({
         recordId,
         protocol,
         timestamp,
-        type: "screenPreview",
+        type: 'screenPreview',
         eventType,
       });
     }
 
-    if (protocol.method === "user.interaction") {
+    if (protocol.method === 'user.interaction') {
       await this.screenService.upsert({
         recordId,
         protocol,
         timestamp,
         type: null,
-        eventType: "user_interaction",
+        eventType: 'user_interaction',
       });
     }
 
-    if (protocol.method === "user.scroll") {
+    if (protocol.method === 'user.scroll') {
       await this.screenService.upsert({
         recordId,
         protocol,
         timestamp,
         type: null,
-        eventType: "viewport_change",
+        eventType: 'viewport_change',
       });
     }
   }
@@ -199,8 +189,7 @@ export class CdpEventPersistenceService {
     const event = protocol.params?.event;
     if (!event) return null;
 
-    const sessionTimestamp =
-      BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
+    const sessionTimestamp = BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
     const eventType = this.mapRrwebEventType(event.type);
 
     await this.screenService.upsert({
@@ -222,22 +211,19 @@ export class CdpEventPersistenceService {
     protocol: CdpProtocol,
     recordId: number | null,
   ): Promise<Array<{ event: unknown; sessionTimestamp: bigint }>> {
-    const events = Array.isArray(protocol.params?.events)
-      ? protocol.params.events
-      : [];
+    const events = Array.isArray(protocol.params?.events) ? protocol.params.events : [];
     this.logger.log(`[SessionReplay] Saving batch of ${events.length} events`);
 
     const results: Array<{ event: unknown; sessionTimestamp: bigint }> = [];
 
     for (const event of events) {
-      const sessionTimestamp =
-        BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
+      const sessionTimestamp = BigInt(event.timestamp || Date.now()) * BigInt(1_000_000);
       const eventType = this.mapRrwebEventType(event.type);
 
       await this.screenService.upsert({
         recordId,
         protocol: {
-          method: "SessionReplay.rrwebEvent",
+          method: 'SessionReplay.rrwebEvent',
           params: { event },
         },
         timestamp: sessionTimestamp.toString(),
@@ -272,13 +258,11 @@ export class CdpEventPersistenceService {
     }
 
     let eventType: string | null = null;
-    if (protocol.method === "SessionReplay.snapshot") {
+    if (protocol.method === 'SessionReplay.snapshot') {
       eventType =
-        protocol.params?.type === "full_snapshot"
-          ? "full_snapshot"
-          : "incremental_snapshot";
-    } else if (protocol.method === "SessionReplay.interaction") {
-      eventType = "interaction";
+        protocol.params?.type === 'full_snapshot' ? 'full_snapshot' : 'incremental_snapshot';
+    } else if (protocol.method === 'SessionReplay.interaction') {
+      eventType = 'interaction';
     }
 
     await this.screenService.upsert({
@@ -298,20 +282,16 @@ export class CdpEventPersistenceService {
   /**
    * 단일 버퍼 이벤트를 메서드 종류에 따라 적절한 서비스로 DB에 저장한다.
    */
-  async persistBufferedEvent(
-    recordId: number,
-    event: BufferEvent,
-  ): Promise<void> {
+  async persistBufferedEvent(recordId: number, event: BufferEvent): Promise<void> {
     const method = event.method;
     const params = toCdpParams(event.params);
     const protocol = { method, params };
     const timestampNs = this.toTimestampNs(event.timestamp);
 
-    if (method.startsWith("Network.")) {
+    if (method.startsWith('Network.')) {
       const requestId = params?.requestId;
       if (requestId !== undefined && requestId !== null) {
-        const numericRequestId =
-          typeof requestId === "number" ? requestId : Number(requestId);
+        const numericRequestId = typeof requestId === 'number' ? requestId : Number(requestId);
         await this.networkService.create({
           recordId,
           protocol,
@@ -322,29 +302,29 @@ export class CdpEventPersistenceService {
       return;
     }
 
-    if (method === "updateResponseBody") {
+    if (method === 'updateResponseBody') {
       if (params?.requestId !== undefined) {
         await this.networkService.updateResponseBody({
           recordId,
           requestId: Number(params.requestId),
-          body: typeof params.body === "string" ? params.body : "",
+          body: typeof params.body === 'string' ? params.body : '',
           base64Encoded: Boolean(params.base64Encoded),
         });
       }
       return;
     }
 
-    if (method.startsWith("DOM.updated")) {
+    if (method.startsWith('DOM.updated')) {
       await this.domService.upsert({
         recordId,
         protocol: { root: params },
         timestamp: timestampNs,
-        type: "entireDom",
+        type: 'entireDom',
       });
       return;
     }
 
-    if (method.startsWith("Runtime.")) {
+    if (method.startsWith('Runtime.')) {
       await this.runtimeService.create({
         recordId,
         protocol,
@@ -353,42 +333,39 @@ export class CdpEventPersistenceService {
       return;
     }
 
-    if (method === "user.interaction") {
+    if (method === 'user.interaction') {
       await this.screenService.upsert({
         recordId,
         protocol,
         timestamp: timestampNs,
         type: null,
-        eventType: "user_interaction",
+        eventType: 'user_interaction',
       });
       return;
     }
 
-    if (method === "user.scroll") {
+    if (method === 'user.scroll') {
       await this.screenService.upsert({
         recordId,
         protocol,
         timestamp: timestampNs,
         type: null,
-        eventType: "viewport_change",
+        eventType: 'viewport_change',
       });
       return;
     }
 
-    if (method === "SessionReplay.rrwebEvent") {
+    if (method === 'SessionReplay.rrwebEvent') {
       await this.persistBufferedSingleRrwebEvent(recordId, params);
       return;
     }
 
-    if (method === "SessionReplay.rrwebEvents") {
+    if (method === 'SessionReplay.rrwebEvents') {
       await this.persistBufferedBatchRrwebEvents(recordId, params);
       return;
     }
 
-    if (
-      method === "SessionReplay.snapshot" ||
-      method === "SessionReplay.interaction"
-    ) {
+    if (method === 'SessionReplay.snapshot' || method === 'SessionReplay.interaction') {
       await this.persistBufferedLegacySessionReplay(recordId, method, params);
       return;
     }
@@ -406,14 +383,13 @@ export class CdpEventPersistenceService {
       isFirstSnapshot?: boolean;
     } & Record<string, unknown>;
 
-    let eventType: "full_snapshot" | "incremental_snapshot" =
-      "incremental_snapshot";
+    let eventType: 'full_snapshot' | 'incremental_snapshot' = 'incremental_snapshot';
     if (previewParams.isFirstSnapshot) {
-      eventType = "full_snapshot";
+      eventType = 'full_snapshot';
     }
 
     const previewTimestampMs =
-      typeof latestScreenPreview.timestamp === "number"
+      typeof latestScreenPreview.timestamp === 'number'
         ? latestScreenPreview.timestamp
         : Number(latestScreenPreview.timestamp);
 
@@ -424,7 +400,7 @@ export class CdpEventPersistenceService {
         params: previewParams,
       },
       timestamp: this.toTimestampNs(previewTimestampMs),
-      type: "screenPreview",
+      type: 'screenPreview',
       eventType,
     });
 
@@ -444,14 +420,13 @@ export class CdpEventPersistenceService {
     const eventData = params?.event;
     if (!eventData) return;
 
-    const sessionTimestamp =
-      BigInt(eventData.timestamp || Date.now()) * BigInt(1_000_000);
+    const sessionTimestamp = BigInt(eventData.timestamp || Date.now()) * BigInt(1_000_000);
     const eventType = this.mapRrwebEventType(eventData.type);
 
     await this.screenService.upsert({
       recordId,
       protocol: {
-        method: "SessionReplay.rrwebEvent",
+        method: 'SessionReplay.rrwebEvent',
         params: { event: eventData },
       },
       timestamp: sessionTimestamp.toString(),
@@ -468,14 +443,13 @@ export class CdpEventPersistenceService {
     const events = Array.isArray(params?.events) ? params.events : [];
 
     for (const rrEvent of events) {
-      const sessionTimestamp =
-        BigInt(rrEvent.timestamp || Date.now()) * BigInt(1_000_000);
+      const sessionTimestamp = BigInt(rrEvent.timestamp || Date.now()) * BigInt(1_000_000);
       const eventType = this.mapRrwebEventType(rrEvent.type);
 
       await this.screenService.upsert({
         recordId,
         protocol: {
-          method: "SessionReplay.rrwebEvent",
+          method: 'SessionReplay.rrwebEvent',
           params: { event: rrEvent },
         },
         timestamp: sessionTimestamp.toString(),
@@ -502,13 +476,10 @@ export class CdpEventPersistenceService {
     }
 
     let eventType: string | null = null;
-    if (method === "SessionReplay.snapshot") {
-      eventType =
-        params?.type === "full_snapshot"
-          ? "full_snapshot"
-          : "incremental_snapshot";
-    } else if (method === "SessionReplay.interaction") {
-      eventType = "interaction";
+    if (method === 'SessionReplay.snapshot') {
+      eventType = params?.type === 'full_snapshot' ? 'full_snapshot' : 'incremental_snapshot';
+    } else if (method === 'SessionReplay.interaction') {
+      eventType = 'interaction';
     }
 
     await this.screenService.upsert({

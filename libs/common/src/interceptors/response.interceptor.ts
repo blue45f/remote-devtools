@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from "@nestjs/common";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 /**
  * API 응답의 표준 형식을 정의하는 인터페이스.
@@ -40,20 +35,14 @@ export interface StandardResponse<T> {
  * @template T - 응답 데이터의 타입
  */
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<
-  T,
-  StandardResponse<T>
-> {
+export class ResponseInterceptor<T> implements NestInterceptor<T, StandardResponse<T>> {
   /**
    * 요청을 가로채어 응답을 표준 형식으로 변환한다.
    * @param context - 실행 컨텍스트 (HTTP 요청 정보 접근용)
    * @param next - 다음 핸들러를 호출하기 위한 CallHandler
    * @returns 표준 형식으로 래핑된 응답 Observable
    */
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<StandardResponse<T>> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<StandardResponse<T>> {
     const request = context.switchToHttp().getRequest();
     const startTime = Date.now();
 
@@ -61,7 +50,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
       map((data) => {
         const elapsedTime = Date.now() - startTime;
 
-        if (data && typeof data === "object" && "success" in data) {
+        if (data && typeof data === 'object' && 'success' in data) {
           return {
             ...data,
             timestamp: new Date().toISOString(),

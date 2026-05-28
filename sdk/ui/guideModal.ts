@@ -4,7 +4,7 @@ import {
   applyModalContainerStyles,
   applyButtonStyles,
   injectKeyframeAnimations,
-} from "./theme";
+} from './theme';
 
 /**
  * Create guide modal
@@ -12,53 +12,53 @@ import {
 export function createGuideModal(onClose: () => void) {
   injectKeyframeAnimations();
 
-  const overlay = document.createElement("div");
-  overlay.setAttribute("data-remote-debugger-overlay", "true");
+  const overlay = document.createElement('div');
+  overlay.setAttribute('data-remote-debugger-overlay', 'true');
   applyModalOverlayStyles(overlay);
 
-  const modal = document.createElement("div");
-  applyModalContainerStyles(modal, { maxWidth: "560px" });
+  const modal = document.createElement('div');
+  applyModalContainerStyles(modal, { maxWidth: '560px' });
 
   // Header
-  const header = document.createElement("div");
+  const header = document.createElement('div');
   Object.assign(header.style, {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "20px 24px",
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px',
     borderBottom: `1px solid ${tokens.color.border.subtle}`,
   });
 
-  const title = document.createElement("h2");
-  title.textContent = "Quick Guide";
+  const title = document.createElement('h2');
+  title.textContent = 'Quick Guide';
   Object.assign(title.style, {
-    margin: "0",
-    fontSize: "18px",
-    fontWeight: "600",
+    margin: '0',
+    fontSize: '18px',
+    fontWeight: '600',
     color: tokens.color.text.primary,
     fontFamily: tokens.font.system,
   });
 
-  const closeButton = document.createElement("button");
+  const closeButton = document.createElement('button');
   closeButton.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   Object.assign(closeButton.style, {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "6px",
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '6px',
     borderRadius: tokens.radius.sm,
     color: tokens.color.text.dim,
     transition: `all ${tokens.transition.fast}`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   });
-  closeButton.addEventListener("mouseenter", () => {
+  closeButton.addEventListener('mouseenter', () => {
     closeButton.style.backgroundColor = tokens.color.bg.hover;
     closeButton.style.color = tokens.color.text.primary;
   });
-  closeButton.addEventListener("mouseleave", () => {
-    closeButton.style.backgroundColor = "transparent";
+  closeButton.addEventListener('mouseleave', () => {
+    closeButton.style.backgroundColor = 'transparent';
     closeButton.style.color = tokens.color.text.dim;
   });
 
@@ -66,11 +66,11 @@ export function createGuideModal(onClose: () => void) {
   header.appendChild(closeButton);
 
   // Content
-  const content = document.createElement("div");
+  const content = document.createElement('div');
   Object.assign(content.style, {
-    padding: "24px",
-    overflowY: "auto",
-    flex: "1",
+    padding: '24px',
+    overflowY: 'auto',
+    flex: '1',
   });
 
   content.innerHTML = `
@@ -102,18 +102,18 @@ export function createGuideModal(onClose: () => void) {
   `;
 
   // Footer
-  const footer = document.createElement("div");
+  const footer = document.createElement('div');
   Object.assign(footer.style, {
-    padding: "16px 24px",
+    padding: '16px 24px',
     borderTop: `1px solid ${tokens.color.border.subtle}`,
-    display: "flex",
-    justifyContent: "center",
+    display: 'flex',
+    justifyContent: 'center',
   });
 
-  const confirmButton = document.createElement("button");
-  confirmButton.textContent = "Got it";
-  applyButtonStyles(confirmButton, "primary");
-  confirmButton.style.padding = "10px 24px";
+  const confirmButton = document.createElement('button');
+  confirmButton.textContent = 'Got it';
+  applyButtonStyles(confirmButton, 'primary');
+  confirmButton.style.padding = '10px 24px';
 
   footer.appendChild(confirmButton);
 
@@ -125,22 +125,22 @@ export function createGuideModal(onClose: () => void) {
     onClose();
   };
 
-  closeButton.addEventListener("click", handleClose);
-  confirmButton.addEventListener("click", handleClose);
+  closeButton.addEventListener('click', handleClose);
+  confirmButton.addEventListener('click', handleClose);
 
-  overlay.addEventListener("click", (e) => {
+  overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       handleClose();
     }
   });
 
   const handleEsc = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
+    if (e.key === 'Escape') {
       handleClose();
-      document.removeEventListener("keydown", handleEsc);
+      document.removeEventListener('keydown', handleEsc);
     }
   };
-  document.addEventListener("keydown", handleEsc);
+  document.addEventListener('keydown', handleEsc);
 
   modal.appendChild(header);
   modal.appendChild(content);

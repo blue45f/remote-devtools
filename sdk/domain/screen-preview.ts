@@ -1,15 +1,12 @@
-import { isElement, isMobile } from "../common/utils";
-import { logger } from "../utils/logger";
+import { isElement, isMobile } from '../common/utils';
+import { logger } from '../utils/logger';
 
-import { BaseDomain } from "./base";
-import { Events } from "./protocol";
+import { BaseDomain } from './base';
+import { Events } from './protocol';
 
 declare global {
   interface Window {
-    html2canvas?: (
-      element: HTMLElement,
-      options: object,
-    ) => Promise<HTMLCanvasElement>;
+    html2canvas?: (element: HTMLElement, options: object) => Promise<HTMLCanvasElement>;
   }
 }
 
@@ -18,7 +15,7 @@ declare global {
  * 버퍼링 없이 즉시 전송
  */
 export class ScreenPreview extends BaseDomain {
-  public namespace = "ScreenPreview";
+  public namespace = 'ScreenPreview';
 
   private observerInst: MutationObserver | null = null;
   private lastSendTime = 0;
@@ -36,11 +33,11 @@ export class ScreenPreview extends BaseDomain {
         } else {
           const cssRules = Array.from(styleSheet.cssRules)
             .map((rule) => rule.cssText)
-            .join("\n");
+            .join('\n');
           return `<style>${cssRules}</style>`;
         }
       } catch {
-        return "";
+        return '';
       }
     });
   }
@@ -49,13 +46,11 @@ export class ScreenPreview extends BaseDomain {
    * 디버거 UI가 표시되어 있는지 확인
    */
   private isDebuggerUIVisible(): boolean {
-    const debuggerElement = document.getElementById("REMOTE_DEBUGGER");
+    const debuggerElement = document.getElementById('REMOTE_DEBUGGER');
     if (!debuggerElement) return false;
 
     // 원격 디버거에서 띄운 오버레이(모달)가 있는지 확인
-    const debuggerOverlay = document.querySelector(
-      '[data-remote-debugger-overlay="true"]',
-    );
+    const debuggerOverlay = document.querySelector('[data-remote-debugger-overlay="true"]');
 
     return !!debuggerOverlay;
   }
@@ -108,9 +103,7 @@ export class ScreenPreview extends BaseDomain {
       if (this.isDebuggerUIVisible()) {
         if (!this.isPaused) {
           this.isPaused = true;
-          logger.remote.debug(
-            "[ScreenPreview] Paused - debugger UI is visible",
-          );
+          logger.remote.debug('[ScreenPreview] Paused - debugger UI is visible');
         }
         return;
       } else {
@@ -133,11 +126,7 @@ export class ScreenPreview extends BaseDomain {
       }
 
       // svg 변경은 무시
-      if (
-        mutations.every(
-          ({ target }) => isElement(target) && !!target.closest("svg"),
-        )
-      ) {
+      if (mutations.every(({ target }) => isElement(target) && !!target.closest('svg'))) {
         return;
       }
 
@@ -172,17 +161,12 @@ export class ScreenPreview extends BaseDomain {
     });
 
     // 마우스/스크롤 이벤트 동기화
-    window.addEventListener("scroll", this.syncScroll);
-    [
-      "mousemove",
-      "mousedown",
-      "mouseup",
-      "touchmove",
-      "touchstart",
-      "touchend",
-    ].forEach((event) => {
-      window.addEventListener(event, this.syncMouse as EventListener);
-    });
+    window.addEventListener('scroll', this.syncScroll);
+    ['mousemove', 'mousedown', 'mouseup', 'touchmove', 'touchstart', 'touchend'].forEach(
+      (event) => {
+        window.addEventListener(event, this.syncMouse as EventListener);
+      },
+    );
   }
 
   /**
@@ -231,27 +215,20 @@ export class ScreenPreview extends BaseDomain {
     }
 
     this.isPaused = false;
-    window.removeEventListener("scroll", this.syncScroll);
-    [
-      "mousemove",
-      "mousedown",
-      "mouseup",
-      "touchmove",
-      "touchstart",
-      "touchend",
-    ].forEach((event) => {
-      window.removeEventListener(event, this.syncMouse as EventListener);
-    });
+    window.removeEventListener('scroll', this.syncScroll);
+    ['mousemove', 'mousedown', 'mouseup', 'touchmove', 'touchstart', 'touchend'].forEach(
+      (event) => {
+        window.removeEventListener(event, this.syncMouse as EventListener);
+      },
+    );
   }
 
   /**
    * 스크롤 동기화
    */
   public syncScroll = throttle(() => {
-    const scrollTop =
-      document.body.scrollTop || document.documentElement.scrollTop;
-    const scrollLeft =
-      document.body.scrollLeft || document.documentElement.scrollLeft;
+    const scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
+    const scrollLeft = document.body.scrollLeft || document.documentElement.scrollLeft;
     this.sendProtocol({
       method: Events.syncScroll,
       params: {
@@ -265,15 +242,15 @@ export class ScreenPreview extends BaseDomain {
    * 마우스 동기화
    */
   public syncMouse = throttle((e: MouseEvent | TouchEvent) => {
-    const type = e.type || "mousemove";
+    const type = e.type || 'mousemove';
     let left: number;
     let top: number;
 
-    if (type.includes("touch") && "touches" in e) {
+    if (type.includes('touch') && 'touches' in e) {
       const touch = e.touches[0] || e.changedTouches[0];
       left = touch.clientX;
       top = touch.clientY;
-    } else if ("clientX" in e) {
+    } else if ('clientX' in e) {
       left = e.clientX;
       top = e.clientY;
     } else {

@@ -4,7 +4,7 @@ import {
   PropertyDescriptor,
   RemoteObject,
   Subtype,
-} from "../domain/runtime.type";
+} from '../domain/runtime.type';
 
 const objectIds = new Map<unknown, string>();
 const objects = new Map<string, unknown>();
@@ -36,48 +36,45 @@ const getIdByObject = (object: unknown, origin: unknown) => {
 const getRealType = (val: unknown): string => {
   const reg = /\[object\s+(.*)\]/;
   const res = reg.exec(Object.prototype.toString.call(val));
-  return res ? res[1] : "";
+  return res ? res[1] : '';
 };
 
-const getSubType = (val: unknown): RemoteObject["subtype"] => {
+const getSubType = (val: unknown): RemoteObject['subtype'] => {
   // DOM node type
   try {
     const maybeNode = val as { nodeType?: unknown };
-    if (
-      typeof maybeNode.nodeType === "number" &&
-      [1, 8, 9].includes(maybeNode.nodeType)
-    )
-      return "node";
+    if (typeof maybeNode.nodeType === 'number' && [1, 8, 9].includes(maybeNode.nodeType))
+      return 'node';
   } catch {
     //
   }
 
   const realType = getRealType(val).toLowerCase() as Subtype;
   return [
-    "array",
-    "null",
-    "regexp",
-    "date",
-    "map",
-    "set",
-    "weakmap",
-    "weakset",
-    "error",
-    "proxy",
-    "promise",
-    "arraybuffer",
-    "iterator",
-    "generator",
+    'array',
+    'null',
+    'regexp',
+    'date',
+    'map',
+    'set',
+    'weakmap',
+    'weakset',
+    'error',
+    'proxy',
+    'promise',
+    'arraybuffer',
+    'iterator',
+    'generator',
   ].includes(realType)
     ? realType
-    : "";
+    : '';
 };
 
 const getType = (
   val: unknown,
 ): {
-  type: RemoteObject["type"];
-  subtype: RemoteObject["subtype"];
+  type: RemoteObject['type'];
+  subtype: RemoteObject['subtype'];
 } => ({
   type: typeof val,
   subtype: getSubType(val),
@@ -86,12 +83,12 @@ const getType = (
 const getPreview = (
   val: unknown,
   others: PreviewOptions = {},
-): Pick<ObjectPreview, "overflow" | "properties"> => {
+): Pick<ObjectPreview, 'overflow' | 'properties'> => {
   const { length = 5, origin = val } = others;
 
   const keys = Object.keys(Object(val));
   const originRecord = asIndexable(origin);
-  const properties: ObjectPreview["properties"] = [];
+  const properties: ObjectPreview['properties'] = [];
   keys.slice(0, length).forEach((key) => {
     let subVal: unknown;
     try {
@@ -101,22 +98,20 @@ const getPreview = (
     }
 
     const { type, subtype } = getType(subVal);
-    if (type === "object") {
-      if (subtype === "array") {
+    if (type === 'object') {
+      if (subtype === 'array') {
         subVal = `Array(${Array.isArray(subVal) ? subVal.length : 0})`;
-      } else if (subtype === "null") {
-        subVal = "null";
-      } else if (["date", "regexp"].includes(subtype ?? "")) {
+      } else if (subtype === 'null') {
+        subVal = 'null';
+      } else if (['date', 'regexp'].includes(subtype ?? '')) {
         subVal = String(subVal);
-      } else if (subtype === "node") {
-        subVal = `#${String((subVal as { nodeName?: unknown }).nodeName ?? "")}`;
+      } else if (subtype === 'node') {
+        subVal = `#${String((subVal as { nodeName?: unknown }).nodeName ?? '')}`;
       } else {
-        subVal =
-          (subVal as { constructor?: { name?: string } }).constructor?.name ??
-          "";
+        subVal = (subVal as { constructor?: { name?: string } }).constructor?.name ?? '';
       }
     } else {
-      subVal = subVal === undefined ? "undefined" : String(subVal);
+      subVal = subVal === undefined ? 'undefined' : String(subVal);
     }
     properties.push({
       name: key,
@@ -140,13 +135,13 @@ export function objectFormat(
 
   const { type, subtype } = getType(val);
 
-  if (type === "undefined") return { type };
+  if (type === 'undefined') return { type };
 
-  if (type === "number") return { type, value: val, description: String(val) };
+  if (type === 'number') return { type, value: val, description: String(val) };
 
-  if (type === "string" || type === "boolean") return { type, value: val };
+  if (type === 'string' || type === 'boolean') return { type, value: val };
 
-  if (type === "symbol") {
+  if (type === 'symbol') {
     return {
       type,
       objectId: getIdByObject(val, origin),
@@ -154,7 +149,7 @@ export function objectFormat(
     };
   }
 
-  if (subtype === "null") return { type, subtype, value: val };
+  if (subtype === 'null') return { type, subtype, value: val };
 
   const res: RemoteObject = {
     type,
@@ -162,8 +157,8 @@ export function objectFormat(
     objectId: getIdByObject(val, origin),
   };
   // Some different data types need to be processed separately
-  if (type === "function") {
-    res.className = "Function";
+  if (type === 'function') {
+    res.className = 'Function';
     res.description = String(val);
     if (preview) {
       res.preview = {
@@ -174,9 +169,9 @@ export function objectFormat(
       };
     }
     // Array
-  } else if (subtype === "array") {
+  } else if (subtype === 'array') {
     const arrayLength = Array.isArray(val) ? val.length : 0;
-    res.className = "Array";
+    res.className = 'Array';
     res.description = `Array(${arrayLength})`;
     if (preview) {
       res.preview = {
@@ -187,11 +182,11 @@ export function objectFormat(
       };
     }
     // Error - 녹화 세션 재생을 위해 objectId 없이 description만으로 표시
-  } else if (subtype === "error") {
+  } else if (subtype === 'error') {
     // try-catch로 안전하게 Error 프로퍼티 접근
-    let errorName = "Error";
-    let errorMessage = "";
-    let errorStack = "";
+    let errorName = 'Error';
+    let errorMessage = '';
+    let errorStack = '';
     const errorLike = val as {
       name?: string;
       constructor?: { name?: string };
@@ -200,19 +195,19 @@ export function objectFormat(
     };
 
     try {
-      errorName = errorLike.name || errorLike.constructor?.name || "Error";
+      errorName = errorLike.name || errorLike.constructor?.name || 'Error';
     } catch {
       // 접근 실패 시 기본값 유지
     }
 
     try {
-      errorMessage = errorLike.message || "";
+      errorMessage = errorLike.message || '';
     } catch {
       // 접근 실패 시 기본값 유지
     }
 
     try {
-      errorStack = errorLike.stack || "";
+      errorStack = errorLike.stack || '';
     } catch {
       // 접근 실패 시 기본값 유지
     }
@@ -241,8 +236,8 @@ export function objectFormat(
               ...(errorMessage
                 ? [
                     {
-                      name: "message",
-                      type: "string" as const,
+                      name: 'message',
+                      type: 'string' as const,
                       value: errorMessage,
                     },
                   ]
@@ -250,12 +245,10 @@ export function objectFormat(
               ...(errorStack
                 ? [
                     {
-                      name: "stack",
-                      type: "string" as const,
+                      name: 'stack',
+                      type: 'string' as const,
                       value:
-                        errorStack.length > 100
-                          ? errorStack.substring(0, 100) + "..."
-                          : errorStack,
+                        errorStack.length > 100 ? errorStack.substring(0, 100) + '...' : errorStack,
                     },
                   ]
                 : []),
@@ -264,18 +257,16 @@ export function objectFormat(
         : undefined,
     };
     // HTML Element
-  } else if (subtype === "node") {
-    const className =
-      (val as { constructor?: { name?: string } }).constructor?.name ?? "";
+  } else if (subtype === 'node') {
+    const className = (val as { constructor?: { name?: string } }).constructor?.name ?? '';
     res.className = res.description = className;
     // Others
   } else {
     try {
-      const className =
-        (val as { constructor?: { name?: string } }).constructor?.name ?? "";
+      const className = (val as { constructor?: { name?: string } }).constructor?.name ?? '';
       res.className = res.description = className;
     } catch {
-      res.className = res.description = "";
+      res.className = res.description = '';
     }
     if (preview) {
       res.preview = {
@@ -291,12 +282,9 @@ export function objectFormat(
 }
 
 // Get object properties, the level can be infinitely deep
-export function getObjectProperties(
-  params: GetObjectPropertiesParams,
-): PropertyDescriptor[] {
+export function getObjectProperties(params: GetObjectPropertiesParams): PropertyDescriptor[] {
   // ownProperties identifies whether it is a property of the object itself
-  const { accessorPropertiesOnly, generatePreview, objectId, ownProperties } =
-    params;
+  const { accessorPropertiesOnly, generatePreview, objectId, ownProperties } = params;
 
   // 먼저 저장된 스냅샷에서 찾기 (녹화 세션 재생용)
   const snapshotKey = `${objectId}-${ownProperties}`;
@@ -325,7 +313,7 @@ export function getObjectProperties(
 
   for (const key of keys) {
     // Skip key is an attribute of __proto__
-    if (key === "__proto__") continue;
+    if (key === '__proto__') continue;
     const property: PropertyDescriptor = { name: key };
 
     let propVal: unknown;
@@ -337,15 +325,12 @@ export function getObjectProperties(
 
     const descriptor = Object.getOwnPropertyDescriptor(nextObject, key);
 
-    if (accessorPropertiesOnly && !descriptor?.get && !descriptor?.set)
-      continue;
+    if (accessorPropertiesOnly && !descriptor?.get && !descriptor?.set) continue;
 
     property.configurable = descriptor?.configurable;
     property.enumerable = descriptor?.enumerable;
     property.writable = descriptor?.writable;
-    property.isOwn = ownProperties
-      ? true
-      : Object.prototype.hasOwnProperty.call(proto, key);
+    property.isOwn = ownProperties ? true : Object.prototype.hasOwnProperty.call(proto, key);
     property.value = objectFormat(propVal, { preview: generatePreview });
 
     result.push(property);
@@ -354,7 +339,7 @@ export function getObjectProperties(
   // Append __proto__ prototype
   if (proto) {
     result.push({
-      name: "__proto__",
+      name: '__proto__',
       configurable: true,
       enumerable: false,
       isOwn: ownProperties,
@@ -415,33 +400,33 @@ export function createPropertySnapshot(
     if (curObject instanceof Error) {
       // name 프로퍼티 (프로토타입에 있으므로 명시적으로 추가)
       result.push({
-        name: "name",
+        name: 'name',
         configurable: true,
         enumerable: false,
         writable: true,
         isOwn: true,
-        value: { type: "string", value: curObject.name || "Error" },
+        value: { type: 'string', value: curObject.name || 'Error' },
       });
 
       // message 프로퍼티
       result.push({
-        name: "message",
+        name: 'message',
         configurable: true,
         enumerable: false,
         writable: true,
         isOwn: true,
-        value: { type: "string", value: curObject.message || "" },
+        value: { type: 'string', value: curObject.message || '' },
       });
 
       // stack 프로퍼티
       if (curObject.stack) {
         result.push({
-          name: "stack",
+          name: 'stack',
           configurable: true,
           enumerable: false,
           writable: true,
           isOwn: true,
-          value: { type: "string", value: curObject.stack },
+          value: { type: 'string', value: curObject.stack },
         });
       }
 
@@ -470,7 +455,7 @@ export function createPropertySnapshot(
     const limitedKeys = keys.slice(0, maxKeys);
 
     for (const key of limitedKeys) {
-      if (key === "__proto__") continue;
+      if (key === '__proto__') continue;
 
       const property: PropertyDescriptor = { name: key };
 
@@ -500,11 +485,7 @@ export function createPropertySnapshot(
         property.value = objectFormat(propVal, { preview: true });
 
         // 하위 객체에 대해서도 스냅샷 생성 (재귀)
-        if (
-          maxDepth > 0 &&
-          property.value?.objectId &&
-          !visited.has(property.value.objectId)
-        ) {
+        if (maxDepth > 0 && property.value?.objectId && !visited.has(property.value.objectId)) {
           createPropertySnapshot(
             property.value.objectId,
             maxDepth - 1,
@@ -513,7 +494,7 @@ export function createPropertySnapshot(
           );
         }
       } catch {
-        property.value = { type: "undefined" };
+        property.value = { type: 'undefined' };
       }
 
       result.push(property);
@@ -524,7 +505,7 @@ export function createPropertySnapshot(
       try {
         const protoValue = objectFormat(proto, { preview: true });
         result.push({
-          name: "__proto__",
+          name: '__proto__',
           configurable: true,
           enumerable: false,
           writable: false,
@@ -534,12 +515,7 @@ export function createPropertySnapshot(
 
         // __proto__의 프로퍼티도 수집 (선택적)
         if (protoValue.objectId && !visited.has(protoValue.objectId)) {
-          createPropertySnapshot(
-            protoValue.objectId,
-            maxDepth - 1,
-            collectedSnapshots,
-            visited,
-          );
+          createPropertySnapshot(protoValue.objectId, maxDepth - 1, collectedSnapshots, visited);
         }
       } catch {
         // __proto__ 포맷 실패 시 무시

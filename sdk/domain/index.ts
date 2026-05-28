@@ -1,13 +1,13 @@
-import { BaseDomain, Option } from "./base";
-import { CSS } from "./css";
-import { Dom } from "./dom";
-import { Network } from "./network";
-import { Overlay } from "./overlay";
-import { Page } from "./page";
-import protocol from "./protocol";
-import { Runtime } from "./runtime";
-import { ScreenPreview } from "./screen-preview";
-import { SessionReplay } from "./session-replay";
+import { BaseDomain, Option } from './base';
+import { CSS } from './css';
+import { Dom } from './dom';
+import { Network } from './network';
+import { Overlay } from './overlay';
+import { Page } from './page';
+import protocol from './protocol';
+import { Runtime } from './runtime';
+import { ScreenPreview } from './screen-preview';
+import { SessionReplay } from './session-replay';
 
 type ProtocolCommand = (params?: unknown) => unknown;
 type ProtocolCommandHost = BaseDomain & Record<string, unknown>;
@@ -40,11 +40,8 @@ export class ChromeDomain {
       if (commands && Array.isArray(commands)) {
         commands.forEach((cmd) => {
           const command = (domain as ProtocolCommandHost)[cmd];
-          if (typeof command === "function") {
-            this.protocol.set(
-              `${name}.${cmd}`,
-              command.bind(domain) as ProtocolCommand,
-            );
+          if (typeof command === 'function') {
+            this.protocol.set(`${name}.${cmd}`, command.bind(domain) as ProtocolCommand);
           }
         });
       }
@@ -70,7 +67,7 @@ export class ChromeDomain {
     const { id, method, params } = message;
     if (!method) return { id: id || null };
     const methodCall = this.protocol.get(method);
-    if (typeof methodCall !== "function") return { id: id || null };
+    if (typeof methodCall !== 'function') return { id: id || null };
 
     return { id: id || null, result: methodCall(params) };
   }
@@ -87,15 +84,15 @@ export class ChromeDomain {
       domain.updateRoomInfo(roomInfo);
 
       // SessionReplay는 연결 시 버퍼 플러시
-      if (domain.namespace === "SessionReplay") {
+      if (domain.namespace === 'SessionReplay') {
         const sessionReplay = domain as SessionReplay;
         sessionReplay.onRoomConnected();
       }
       // ScreenPreview는 모든 모드에서 화면 캡처 (버퍼 모드, 녹화 모드 모두)
-      else if (domain.namespace === "ScreenPreview") {
+      else if (domain.namespace === 'ScreenPreview') {
         const screenPreview = domain as ScreenPreview;
         screenPreview.startPreview();
-      } else if (typeof domain.enable === "function") {
+      } else if (typeof domain.enable === 'function') {
         // 다른 도메인들은 일반 enable
         domain.enable();
       }
@@ -107,12 +104,12 @@ export class ChromeDomain {
    */
   public startImmediateCapture(): void {
     const sessionReplayDomain = this.domains.find(
-      (d) => d.namespace === "SessionReplay",
+      (d) => d.namespace === 'SessionReplay',
     ) as SessionReplay;
     if (sessionReplayDomain) {
       sessionReplayDomain.startRecording();
     } else {
-      console.warn("[SDK ChromeDomain] SessionReplay domain not found!");
+      console.warn('[SDK ChromeDomain] SessionReplay domain not found!');
     }
   }
 
@@ -122,7 +119,7 @@ export class ChromeDomain {
   public resetForNewRecording(): void {
     // SessionReplay 리셋 및 재시작
     const sessionReplayDomain = this.domains.find(
-      (d) => d.namespace === "SessionReplay",
+      (d) => d.namespace === 'SessionReplay',
     ) as SessionReplay;
     if (sessionReplayDomain) {
       sessionReplayDomain.stopRecording();
@@ -133,12 +130,9 @@ export class ChromeDomain {
 
     // ScreenPreview는 리셋만 (실시간이므로 자동으로 계속됨)
     const screenPreviewDomain = this.domains.find(
-      (d) => d.namespace === "ScreenPreview",
+      (d) => d.namespace === 'ScreenPreview',
     ) as ScreenPreview;
-    if (
-      screenPreviewDomain &&
-      typeof screenPreviewDomain.stopPreview === "function"
-    ) {
+    if (screenPreviewDomain && typeof screenPreviewDomain.stopPreview === 'function') {
       screenPreviewDomain.stopPreview();
     }
   }
@@ -148,9 +142,7 @@ export class ChromeDomain {
    */
   public getScreenPreview(): ScreenPreview | null {
     return (
-      (this.domains.find(
-        (domain) => domain.namespace === "ScreenPreview",
-      ) as ScreenPreview) || null
+      (this.domains.find((domain) => domain.namespace === 'ScreenPreview') as ScreenPreview) || null
     );
   }
 
@@ -198,37 +190,28 @@ export class ChromeDomain {
   }
 
   public flushNetworkCacheForRecord(): void {
-    const networkDomain = this.domains.find(
-      (domain) => domain.namespace === "Network",
-    ) as Network | undefined;
-    if (
-      networkDomain &&
-      typeof networkDomain.flushCachedEventsForRecord === "function"
-    ) {
+    const networkDomain = this.domains.find((domain) => domain.namespace === 'Network') as
+      | Network
+      | undefined;
+    if (networkDomain && typeof networkDomain.flushCachedEventsForRecord === 'function') {
       networkDomain.flushCachedEventsForRecord();
     }
   }
 
   public flushConsoleCacheForRecord(): void {
-    const runtimeDomain = this.domains.find(
-      (domain) => domain.namespace === "Runtime",
-    ) as Runtime | undefined;
-    if (
-      runtimeDomain &&
-      typeof runtimeDomain.flushCachedConsoleForRecord === "function"
-    ) {
+    const runtimeDomain = this.domains.find((domain) => domain.namespace === 'Runtime') as
+      | Runtime
+      | undefined;
+    if (runtimeDomain && typeof runtimeDomain.flushCachedConsoleForRecord === 'function') {
       runtimeDomain.flushCachedConsoleForRecord();
     }
   }
 
   public flushSessionReplayForRecord(): void {
     const sessionReplayDomain = this.domains.find(
-      (domain) => domain.namespace === "SessionReplay",
+      (domain) => domain.namespace === 'SessionReplay',
     ) as SessionReplay | undefined;
-    if (
-      sessionReplayDomain &&
-      typeof sessionReplayDomain.onRoomConnected === "function"
-    ) {
+    if (sessionReplayDomain && typeof sessionReplayDomain.onRoomConnected === 'function') {
       sessionReplayDomain.onRoomConnected();
     }
   }

@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import { resolve } from "path";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { resolve } from 'path';
 
 // React Compiler was previously wired through plugin-react v4's `babel`
 // option. v6 dropped that escape hatch in favour of `@rolldown/plugin-babel`
@@ -12,7 +12,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      '@': resolve(__dirname, './src'),
     },
   },
   server: {
@@ -22,31 +22,31 @@ export default defineConfig(({ command }) => ({
     // on the backend. Only attached for `vite dev` — `vite preview` serves
     // a frozen production build that should not pretend to have a backend.
     proxy:
-      command === "serve"
+      command === 'serve'
         ? {
-            "/sdk": {
-              target: "http://localhost:3001",
+            '/sdk': {
+              target: 'http://localhost:3001',
               changeOrigin: true,
             },
-            "/buffer": {
-              target: "http://localhost:3001",
+            '/buffer': {
+              target: 'http://localhost:3001',
               changeOrigin: true,
             },
-            "/api": {
-              target: "http://localhost:3000",
+            '/api': {
+              target: 'http://localhost:3000',
               changeOrigin: true,
             },
-            "/sessions": {
-              target: "http://localhost:3000",
+            '/sessions': {
+              target: 'http://localhost:3000',
               changeOrigin: true,
               // SPA route `/sessions/*` collides with the API path of the same
               // name. Skip the proxy when the browser is asking for HTML.
               bypass(req) {
-                if (req.headers.accept?.includes("text/html")) return req.url;
+                if (req.headers.accept?.includes('text/html')) return req.url;
               },
             },
-            "/socket.io": {
-              target: "http://localhost:3001",
+            '/socket.io': {
+              target: 'http://localhost:3001',
               ws: true,
               changeOrigin: true,
             },
@@ -57,18 +57,18 @@ export default defineConfig(({ command }) => ({
     port: 4173,
   },
   build: {
-    outDir: "dist",
+    outDir: 'dist',
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/react-router")) return "router";
-          if (id.includes("node_modules/framer-motion")) return "motion";
-          if (id.includes("node_modules/@radix-ui")) return "radix";
-          if (id.includes("node_modules/cmdk")) return "cmdk";
-          if (id.includes("node_modules/lucide-react")) return "icons";
-          if (id.includes("node_modules/sonner")) return "toast";
-          if (id.includes("node_modules/@tanstack/react-query")) return "query";
+          if (id.includes('node_modules/react-router')) return 'router';
+          if (id.includes('node_modules/framer-motion')) return 'motion';
+          if (id.includes('node_modules/@radix-ui')) return 'radix';
+          if (id.includes('node_modules/cmdk')) return 'cmdk';
+          if (id.includes('node_modules/lucide-react')) return 'icons';
+          if (id.includes('node_modules/sonner')) return 'toast';
+          if (id.includes('node_modules/@tanstack/react-query')) return 'query';
           return undefined;
         },
       },

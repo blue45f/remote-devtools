@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 
-import { Spinner } from "@/components/ui/spinner";
-import { API_HOST } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
-import { useAppStore } from "@/lib/store";
+import { Spinner } from '@/components/ui/spinner';
+import { API_HOST } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useAppStore } from '@/lib/store';
 
 /**
  * Protects an outlet behind authentication when the backend has it enabled.
@@ -27,19 +27,17 @@ interface AuthStatus {
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { token } = useAuth();
   const isDemo = useAppStore((s) => s.demoMode);
-  const isForcedDemo = import.meta.env.VITE_FORCE_DEMO === "true";
+  const isForcedDemo = import.meta.env.VITE_FORCE_DEMO === 'true';
   const location = useLocation();
-  const [status, setStatus] = useState<"checking" | "open" | "locked">(
-    "checking",
-  );
+  const [status, setStatus] = useState<'checking' | 'open' | 'locked'>('checking');
 
   useEffect(() => {
     if (isDemo || isForcedDemo) {
-      setStatus("open");
+      setStatus('open');
       return;
     }
     if (token) {
-      setStatus("open");
+      setStatus('open');
       return;
     }
 
@@ -49,10 +47,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     fetch(`${API_HOST}/api/auth/status`, { signal: ctrl.signal })
       .then((res) => (res.ok ? (res.json() as Promise<AuthStatus>) : null))
       .then((body) => {
-        if (body?.enabled) setStatus("locked");
-        else setStatus("open");
+        if (body?.enabled) setStatus('locked');
+        else setStatus('open');
       })
-      .catch(() => setStatus("open")) // backend unreachable → don't strand the user
+      .catch(() => setStatus('open')) // backend unreachable → don't strand the user
       .finally(() => clearTimeout(timer));
 
     return () => {
@@ -61,14 +59,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     };
   }, [token, isDemo, isForcedDemo]);
 
-  if (status === "checking") {
+  if (status === 'checking') {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <Spinner label="Checking sign-in…" />
       </div>
     );
   }
-  if (status === "locked") {
+  if (status === 'locked') {
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/sign-in?next=${next}`} replace />;
   }

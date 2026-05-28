@@ -1,13 +1,7 @@
-import {
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "framer-motion";
-import { useEffect } from "react";
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { useEffect } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface AnimatedNumberProps {
   value: number;
@@ -36,14 +30,8 @@ export function AnimatedNumber({
   }, [value, motionValue]);
 
   if (prefersReducedMotion) {
-    return (
-      <span className={cn("tabular-nums", className)}>{format(value)}</span>
-    );
+    return <span className={cn('tabular-nums', className)}>{format(value)}</span>;
   }
 
-  return (
-    <motion.span className={cn("tabular-nums", className)}>
-      {display}
-    </motion.span>
-  );
+  return <motion.span className={cn('tabular-nums', className)}>{display}</motion.span>;
 }

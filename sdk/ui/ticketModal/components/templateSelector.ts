@@ -1,11 +1,7 @@
-import { tokens } from "../../theme";
-import {
-  TicketTemplate,
-  CustomDropdownConfig,
-  SimpleStructuredSheetData,
-} from "../types";
+import { tokens } from '../../theme';
+import { TicketTemplate, CustomDropdownConfig, SimpleStructuredSheetData } from '../types';
 
-import { createCustomDropdown } from "./dropdown";
+import { createCustomDropdown } from './dropdown';
 
 /**
  * Create template selector UI (prevents duplicate creation)
@@ -20,15 +16,13 @@ export function createTemplateSelector(
     return null;
   }
 
-  const existingSelectors = document.querySelectorAll(
-    ".template-selector-container",
-  );
+  const existingSelectors = document.querySelectorAll('.template-selector-container');
   if (existingSelectors.length > 0) {
     existingSelectors.forEach((selector) => selector.remove());
   }
 
-  const selectorContainer = document.createElement("div");
-  selectorContainer.className = "template-selector-container";
+  const selectorContainer = document.createElement('div');
+  selectorContainer.className = 'template-selector-container';
   selectorContainer.style.cssText = `
     margin: 0 0 24px 0;
     padding: 0;
@@ -36,8 +30,8 @@ export function createTemplateSelector(
     position: relative;
   `;
 
-  const label = document.createElement("label");
-  label.textContent = "Template *";
+  const label = document.createElement('label');
+  label.textContent = 'Template *';
   label.style.cssText = `
     display: block;
     margin-bottom: 8px;
@@ -57,8 +51,8 @@ export function createTemplateSelector(
   }));
 
   const dropdownConfig: CustomDropdownConfig = {
-    name: "template",
-    placeholder: "Select a template",
+    name: 'template',
+    placeholder: 'Select a template',
     required: true,
     multiple: false,
     defaultValue: selectedTemplate?.name,
@@ -68,15 +62,12 @@ export function createTemplateSelector(
   let customDropdown;
   try {
     customDropdown = createCustomDropdown(dropdownConfig);
-    customDropdown.container.className = "template-selector-dropdown";
+    customDropdown.container.className = 'template-selector-dropdown';
   } catch (error) {
-    console.error("[RemoteDebug-SDK] customDropdown creation failed:", error);
-    throw Object.assign(
-      new Error(`Template selector creation failed: ${error}`),
-      {
-        cause: error,
-      },
-    );
+    console.error('[RemoteDebug-SDK] customDropdown creation failed:', error);
+    throw Object.assign(new Error(`Template selector creation failed: ${error}`), {
+      cause: error,
+    });
   }
 
   const hiddenInput = customDropdown.container.querySelector(
@@ -86,7 +77,7 @@ export function createTemplateSelector(
   if (hiddenInput) {
     let lastProcessedValue = hiddenInput.value;
 
-    hiddenInput.addEventListener("customValueChange", async (event) => {
+    hiddenInput.addEventListener('customValueChange', async (event) => {
       const target = event.target as HTMLInputElement;
       const newValue = target.value;
 
@@ -99,21 +90,21 @@ export function createTemplateSelector(
       try {
         await onTemplateChange(newValue);
       } catch (error) {
-        console.error("[RemoteDebug-SDK] onTemplateChange failed:", error);
+        console.error('[RemoteDebug-SDK] onTemplateChange failed:', error);
         lastProcessedValue = target.value;
       }
     });
   } else {
-    console.error("[RemoteDebug-SDK] hiddenInput not found!");
+    console.error('[RemoteDebug-SDK] hiddenInput not found!');
   }
 
   selectorContainer.appendChild(label);
   selectorContainer.appendChild(customDropdown.container);
 
-  const formElement = container.querySelector("form");
+  const formElement = container.querySelector('form');
   if (formElement && formElement.parentElement) {
     formElement.parentElement.insertBefore(selectorContainer, formElement);
-  } else if (container.tagName === "FORM") {
+  } else if (container.tagName === 'FORM') {
     container.insertBefore(selectorContainer, container.firstChild);
   } else {
     container.insertBefore(selectorContainer, container.firstChild);
@@ -126,12 +117,10 @@ export function createTemplateSelector(
  * Update existing template selector display
  */
 export function updateTemplateSelection(templateName: string): void {
-  const dropdownContainer = document.querySelector(
-    ".template-selector-dropdown",
-  );
+  const dropdownContainer = document.querySelector('.template-selector-dropdown');
 
   if (dropdownContainer) {
-    const displayButton = dropdownContainer.querySelector("button");
+    const displayButton = dropdownContainer.querySelector('button');
 
     if (displayButton) {
       const textNodes = Array.from(displayButton.childNodes).filter(
@@ -158,15 +147,12 @@ export async function reloadFormWithTemplate(
     deviceId: string,
     templateName: string,
   ) => Promise<SimpleStructuredSheetData | null>,
-  createFormFields: (
-    form: HTMLFormElement,
-    data: SimpleStructuredSheetData,
-  ) => void,
+  createFormFields: (form: HTMLFormElement, data: SimpleStructuredSheetData) => void,
 ): Promise<void> {
   try {
     updateTemplateSelection(templateName);
 
-    const tempLoadingDiv = document.createElement("div");
+    const tempLoadingDiv = document.createElement('div');
     tempLoadingDiv.style.cssText = `
       position: absolute;
       top: 0;
@@ -187,26 +173,18 @@ export async function reloadFormWithTemplate(
       </div>
     `;
 
-    form.style.position = "relative";
+    form.style.position = 'relative';
     form.appendChild(tempLoadingDiv);
 
-    const newFormData = await getTicketFormDataByTemplate(
-      deviceId,
-      templateName,
-    );
+    const newFormData = await getTicketFormDataByTemplate(deviceId, templateName);
 
     if (!newFormData) {
       throw new Error(`Could not load data for template '${templateName}'.`);
     }
 
-    const fieldsToRemove = form.querySelectorAll(
-      "*:not(.template-selector-container)",
-    );
+    const fieldsToRemove = form.querySelectorAll('*:not(.template-selector-container)');
     fieldsToRemove.forEach((field) => {
-      if (
-        !field.classList.contains("template-selector-container") &&
-        field !== tempLoadingDiv
-      ) {
+      if (!field.classList.contains('template-selector-container') && field !== tempLoadingDiv) {
         field.remove();
       }
     });
@@ -217,7 +195,7 @@ export async function reloadFormWithTemplate(
       tempLoadingDiv.parentElement.removeChild(tempLoadingDiv);
     }
   } catch (error) {
-    console.error("[RemoteDebug-SDK] Template change failed:", error);
+    console.error('[RemoteDebug-SDK] Template change failed:', error);
 
     loadingDiv.innerHTML = `
       <div style="color: ${tokens.color.accent.red}; padding: 20px; text-align: center; font-family: ${tokens.font.system};">

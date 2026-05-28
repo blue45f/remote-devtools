@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Separator } from "./separator";
+import { Separator } from './separator';
 
 const meta = {
-  title: "UI/Separator",
+  title: 'UI/Separator',
   component: Separator,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
 } satisfies Meta<typeof Separator>;
 
 export default meta;

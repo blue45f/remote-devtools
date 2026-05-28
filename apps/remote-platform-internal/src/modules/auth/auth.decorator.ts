@@ -1,7 +1,7 @@
-import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
-import type { Request } from "express";
+import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
+import type { Request } from 'express';
 
-import type { AuthClaims } from "./auth.service";
+import type { AuthClaims } from './auth.service';
 
 interface RequestWithAuth extends Request {
   auth?: AuthClaims;
@@ -16,9 +16,7 @@ interface RequestWithAuth extends Request {
  *     return this.svc.list({ orgId: auth?.org ?? null });
  *   }
  */
-export const Auth = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext): AuthClaims | null => {
-    const req = ctx.switchToHttp().getRequest<RequestWithAuth>();
-    return req.auth ?? null;
-  },
-);
+export const Auth = createParamDecorator((_: unknown, ctx: ExecutionContext): AuthClaims | null => {
+  const req = ctx.switchToHttp().getRequest<RequestWithAuth>();
+  return req.auth ?? null;
+});

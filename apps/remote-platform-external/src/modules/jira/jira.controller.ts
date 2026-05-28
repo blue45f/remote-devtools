@@ -9,18 +9,18 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
-import { ApiTags } from "@nestjs/swagger";
-import { JiraService } from "./jira.service";
+import { ApiTags } from '@nestjs/swagger';
+import { JiraService } from './jira.service';
 
 /**
  * Jira integration controller.
  * Routes: Figma plugin -> External (here) -> Internal -> Workflow
  */
-@ApiTags("Jira")
-@Controller("jira")
+@ApiTags('Jira')
+@Controller('jira')
 export class JiraController {
   private readonly logger = new Logger(JiraController.name);
 
@@ -30,30 +30,28 @@ export class JiraController {
    * Uploads an image to a Jira issue by proxying through the internal server.
    * Flow: Figma plugin -> External (here) -> Internal -> Workflow
    */
-  @Post("issues/:issueId/image")
+  @Post('issues/:issueId/image')
   @UseInterceptors(
-    FileInterceptor("image", {
+    FileInterceptor('image', {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     }),
   )
   public async uploadImageToJira(
-    @Param("issueId") issueId: string,
+    @Param('issueId') issueId: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ success: boolean; message: string; data: unknown }> {
     if (!file) {
-      throw new BadRequestException("An image file is required");
+      throw new BadRequestException('An image file is required');
     }
 
     try {
-      this.logger.log(
-        `[JIRA_IMAGE_UPLOAD] Uploading image for issue: ${issueId}`,
-      );
+      this.logger.log(`[JIRA_IMAGE_UPLOAD] Uploading image for issue: ${issueId}`);
 
       const result = await this.jiraService.uploadImageToJira(issueId, file);
 
       return {
         success: true,
-        message: "Image uploaded successfully",
+        message: 'Image uploaded successfully',
         data: result,
       };
     } catch (error: unknown) {
@@ -61,19 +59,17 @@ export class JiraController {
         message?: string;
         response?: { status?: number; data?: unknown };
       };
-      this.logger.error(
-        `[JIRA_IMAGE_UPLOAD] Upload failed: ${axiosError.message}`,
-      );
+      this.logger.error(`[JIRA_IMAGE_UPLOAD] Upload failed: ${axiosError.message}`);
 
       if (axiosError.response?.status) {
         throw new HttpException(
-          axiosError.response.data || axiosError.message || "Upload failed",
+          axiosError.response.data || axiosError.message || 'Upload failed',
           axiosError.response.status,
         );
       }
 
       throw new HttpException(
-        "An error occurred while uploading the image",
+        'An error occurred while uploading the image',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

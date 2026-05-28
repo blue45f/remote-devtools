@@ -1,16 +1,14 @@
-import { motion } from "framer-motion";
-import { ArrowLeft, Compass, Home, Search } from "lucide-react";
-import { useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { motion } from 'framer-motion';
+import { ArrowLeft, Compass, Home, Search } from 'lucide-react';
+import { useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
-import { allNavItems } from "@/lib/nav";
-import { useAppStore } from "@/lib/store";
+import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
+import { allNavItems } from '@/lib/nav';
+import { useAppStore } from '@/lib/store';
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
+const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
  * Cheap Levenshtein for ≤32-char paths. Used to surface the closest
@@ -26,11 +24,7 @@ function distance(a: string, b: string): number {
     curr[0] = i;
     for (let j = 1; j <= b.length; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(
-        curr[j - 1] + 1,
-        prev[j] + 1,
-        prev[j - 1] + cost,
-      );
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
     }
     [prev, curr] = [curr, prev];
   }
@@ -46,7 +40,7 @@ export default function NotFound() {
   // don't suggest nonsense for genuinely random paths.
   const suggestion = useMemo(() => {
     const target = location.pathname.toLowerCase();
-    if (!target || target === "/") return null;
+    if (!target || target === '/') return null;
     let best: { item: (typeof allNavItems)[number]; d: number } | null = null;
     for (const item of allNavItems) {
       const d = distance(target, item.to.toLowerCase());
@@ -80,13 +74,11 @@ export default function NotFound() {
           <span className="h-px w-6 bg-border" />
         </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight text-fg mb-2">
-          Lost in the network
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg mb-2">Lost in the network</h1>
         <p className="text-sm text-fg-subtle max-w-sm mb-1 mx-auto">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        {location.pathname && location.pathname !== "/" && (
+        {location.pathname && location.pathname !== '/' && (
           <p
             className="text-[11px] text-fg-faint font-mono mb-5"
             data-testid="notfound-attempted-path"
@@ -97,7 +89,7 @@ export default function NotFound() {
 
         {suggestion && (
           <div className="mb-5 text-sm text-fg-subtle">
-            Did you mean{" "}
+            Did you mean{' '}
             <Link
               to={suggestion.to}
               className="text-fg hover:underline underline-offset-2 font-medium"
@@ -129,7 +121,7 @@ export default function NotFound() {
           >
             <Search />
             Search
-            <Kbd className="ml-1">{isMac ? "⌘" : "Ctrl"}</Kbd>
+            <Kbd className="ml-1">{isMac ? '⌘' : 'Ctrl'}</Kbd>
             <Kbd>K</Kbd>
           </Button>
         </div>

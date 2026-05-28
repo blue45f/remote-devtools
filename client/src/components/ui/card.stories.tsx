@@ -1,20 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Button } from "./button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./card";
+import { Button } from './button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
 
 const meta = {
-  title: "UI/Card",
+  title: 'UI/Card',
   component: Card,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
 } satisfies Meta<typeof Card>;
 
 export default meta;
@@ -29,8 +22,7 @@ export const Default: Story = {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-fg-muted">
-          The current page contains a CDP-instrumented preview of the active
-          tab.
+          The current page contains a CDP-instrumented preview of the active tab.
         </p>
       </CardContent>
       <CardFooter>
@@ -56,12 +48,8 @@ export const Minimal: Story = {
 export const Stat: Story = {
   render: () => (
     <Card className="w-64 p-5">
-      <div className="text-xs uppercase tracking-wider text-fg-faint">
-        Active sessions
-      </div>
-      <div className="mt-2 text-3xl font-semibold tabular-nums text-fg">
-        128
-      </div>
+      <div className="text-xs uppercase tracking-wider text-fg-faint">Active sessions</div>
+      <div className="mt-2 text-3xl font-semibold tabular-nums text-fg">128</div>
       <div className="mt-1 text-xs text-success">+12.4% vs last week</div>
     </Card>
   ),

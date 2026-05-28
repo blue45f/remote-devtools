@@ -1,8 +1,8 @@
-import type { ExecutionContext } from "@nestjs/common";
-import { describe, expect, it } from "vitest";
+import type { ExecutionContext } from '@nestjs/common';
+import { describe, expect, it } from 'vitest';
 
-import { Auth } from "./auth.decorator";
-import type { AuthClaims } from "./auth.service";
+import { Auth } from './auth.decorator';
+import type { AuthClaims } from './auth.service';
 
 /**
  * Param decorators register their factory under a non-enumerable key. We can
@@ -18,9 +18,8 @@ function factory(_: unknown, c: ExecutionContext): AuthClaims | null {
 function callDecoratorFactory(req: { auth?: AuthClaims }): AuthClaims | null {
   // The factory is stored on the decorator metadata — invoke it directly
   // by reaching into Nest's internal symbol when present.
-  const fn = (Auth as unknown as { __nest_pd_factory?: typeof factory })
-    .__nest_pd_factory;
-  if (typeof fn === "function") return fn(undefined, ctx(req));
+  const fn = (Auth as unknown as { __nest_pd_factory?: typeof factory }).__nest_pd_factory;
+  if (typeof fn === 'function') return fn(undefined, ctx(req));
   // Fallback for nest versions that don't expose the symbol — call our mirror.
   return factory(undefined, ctx(req));
 }
@@ -31,17 +30,17 @@ function ctx(req: { auth?: AuthClaims }): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-describe("@Auth() param decorator", () => {
-  it("returns the verified claims from req.auth", () => {
-    const claims: AuthClaims = { sub: "u1", org: "o1", plan: "starter" };
+describe('@Auth() param decorator', () => {
+  it('returns the verified claims from req.auth', () => {
+    const claims: AuthClaims = { sub: 'u1', org: 'o1', plan: 'starter' };
     expect(callDecoratorFactory({ auth: claims })).toEqual(claims);
   });
 
-  it("returns null when req.auth is undefined (auth disabled)", () => {
+  it('returns null when req.auth is undefined (auth disabled)', () => {
     expect(callDecoratorFactory({})).toBeNull();
   });
 
-  it("safely handles a missing auth property", () => {
+  it('safely handles a missing auth property', () => {
     expect(callDecoratorFactory({ auth: undefined })).toBeNull();
   });
 });

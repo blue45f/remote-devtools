@@ -6,20 +6,20 @@ import {
   HttpCode,
   Post,
   ServiceUnavailableException,
-} from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
-import { AuthService } from "./auth.service";
+import { AuthService } from './auth.service';
 
 interface DevTokenBody {
   sub?: string;
   org?: string;
-  plan?: "free" | "starter" | "pro";
+  plan?: 'free' | 'starter' | 'pro';
   email?: string;
 }
 
-@ApiTags("Auth")
-@Controller("api/auth")
+@ApiTags('Auth')
+@Controller('api/auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
@@ -30,7 +30,7 @@ export class AuthController {
    *   { enabled: boolean }
    * No claims are leaked here — it's just a feature flag.
    */
-  @Get("status")
+  @Get('status')
   public status() {
     return { enabled: this.auth.enabled };
   }
@@ -46,23 +46,23 @@ export class AuthController {
    *   plan:  free|starter|pro (default: "free")
    *   email: string
    */
-  @Post("dev-token")
+  @Post('dev-token')
   @HttpCode(200)
   public issueDevToken(@Body() body: DevTokenBody) {
     if (!this.auth.enabled) {
       throw new ServiceUnavailableException(
-        "Auth is disabled. Set AUTH_JWT_SECRET to enable dev tokens.",
+        'Auth is disabled. Set AUTH_JWT_SECRET to enable dev tokens.',
       );
     }
-    if (process.env.NODE_ENV === "production") {
-      throw new BadRequestException("Dev tokens are not issued in production");
+    if (process.env.NODE_ENV === 'production') {
+      throw new BadRequestException('Dev tokens are not issued in production');
     }
     const token = this.auth.issueDevToken({
-      sub: body.sub ?? "dev-user",
-      org: body.org ?? "dev-org",
-      plan: body.plan ?? "free",
+      sub: body.sub ?? 'dev-user',
+      org: body.org ?? 'dev-org',
+      plan: body.plan ?? 'free',
       email: body.email,
     });
-    return { token, type: "Bearer" };
+    return { token, type: 'Bearer' };
   }
 }

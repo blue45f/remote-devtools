@@ -1,4 +1,4 @@
-import ErrorStackParser from "error-stack-parser";
+import ErrorStackParser from 'error-stack-parser';
 
 import {
   createPropertySnapshot,
@@ -6,15 +6,11 @@ import {
   getObjectProperties,
   objectFormat,
   objectRelease,
-} from "../common/remoteObject";
+} from '../common/remoteObject';
 
-import { BaseDomain, Option } from "./base";
-import { Events } from "./protocol";
-import {
-  GetObjectPropertiesParams,
-  PropertyDescriptor,
-  RemoteObject,
-} from "./runtime.type";
+import { BaseDomain, Option } from './base';
+import { Events } from './protocol';
+import { GetObjectPropertiesParams, PropertyDescriptor, RemoteObject } from './runtime.type';
 
 declare global {
   interface Window {
@@ -43,7 +39,7 @@ type RuntimeProtocolEvent = {
 };
 
 export class Runtime extends BaseDomain {
-  public readonly namespace = "Runtime";
+  public readonly namespace = 'Runtime';
   private cacheConsole: RuntimeProtocolEvent[] = [];
   private cacheError: RuntimeProtocolEvent[] = [];
   private isEnable = false;
@@ -52,9 +48,9 @@ export class Runtime extends BaseDomain {
   private sentErrorCache: RuntimeProtocolEvent[] = [];
 
   private socketSend = (type: string, data: RuntimeProtocolEvent) => {
-    if (type === "console") {
+    if (type === 'console') {
       this.cacheConsole.push(data);
-    } else if (type === "error") {
+    } else if (type === 'error') {
       this.cacheError.push(data);
     }
     if (this.isEnable) {
@@ -75,49 +71,47 @@ export class Runtime extends BaseDomain {
    */
 
   private static setCommandLineApi() {
-    if (typeof window.$ !== "function") {
+    if (typeof window.$ !== 'function') {
       window.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelector(selector);
       };
     }
 
-    if (typeof window.clear !== "function") {
+    if (typeof window.clear !== 'function') {
       window.clear = () => window.console.clear();
     }
 
-    if (typeof window.copy !== "function") {
+    if (typeof window.copy !== 'function') {
       window.copy = (object) => {
         function fallbackCopyTextToClipboard(text: string) {
-          if (typeof document !== "object") {
-            console.error(
-              "Copy text failed, running environment is not a browser",
-            );
+          if (typeof document !== 'object') {
+            console.error('Copy text failed, running environment is not a browser');
           }
-          const textArea = document.createElement("textarea");
+          const textArea = document.createElement('textarea');
           textArea.value = text;
-          textArea.style.position = "fixed";
-          textArea.style.top = "0";
-          textArea.style.left = "0";
-          textArea.style.width = "1px";
-          textArea.style.height = "1px";
-          textArea.style.padding = "0";
-          textArea.style.border = "none";
-          textArea.style.outline = "none";
-          textArea.style.boxShadow = "none";
-          textArea.style.background = "transparent";
+          textArea.style.position = 'fixed';
+          textArea.style.top = '0';
+          textArea.style.left = '0';
+          textArea.style.width = '1px';
+          textArea.style.height = '1px';
+          textArea.style.padding = '0';
+          textArea.style.border = 'none';
+          textArea.style.outline = 'none';
+          textArea.style.boxShadow = 'none';
+          textArea.style.background = 'transparent';
           document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
           try {
-            const successful = document.execCommand("copy");
-            if (!successful) console.error("Unable to copy using execCommand");
+            const successful = document.execCommand('copy');
+            if (!successful) console.error('Unable to copy using execCommand');
           } catch (err) {
-            console.error("Unable to copy using execCommand:", err);
+            console.error('Unable to copy using execCommand:', err);
           }
           document.body.removeChild(textArea);
         }
         const str = String(object);
-        if ("clipboard" in navigator) {
+        if ('clipboard' in navigator) {
           navigator.clipboard.writeText(str).catch(() => {
             fallbackCopyTextToClipboard(str);
           });
@@ -127,23 +121,23 @@ export class Runtime extends BaseDomain {
       };
     }
 
-    if (typeof window.dir !== "function") {
+    if (typeof window.dir !== 'function') {
       window.dir = (object) => window.console.dir(object);
     }
 
-    if (typeof window.dirxml !== "function") {
+    if (typeof window.dirxml !== 'function') {
       window.dirxml = (object) => window.console.dirxml(object);
     }
 
-    if (typeof window.keys !== "function") {
+    if (typeof window.keys !== 'function') {
       window.keys = (object) => Object.keys(object);
     }
 
-    if (typeof window.values !== "function") {
+    if (typeof window.values !== 'function') {
       window.values = (object: object) => Object.values(object);
     }
 
-    if (typeof window.table !== "function") {
+    if (typeof window.table !== 'function') {
       window.table = (object) => window.console.table(object);
     }
   }
@@ -202,23 +196,22 @@ export class Runtime extends BaseDomain {
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
     // Runtime이 여러 번 생성되어도 항상 최신 인스턴스로 전달됨
-    const getRuntimeInstance = (): Runtime =>
-      window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
+    const getRuntimeInstance = (): Runtime => window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
     const methods: Record<ConsoleKeys, string> = {
-      info: "info",
-      log: "log",
-      debug: "debug",
-      error: "error",
-      warn: "warning",
-      dir: "dir",
-      dirxml: "dirxml",
-      table: "table",
-      trace: "trace",
-      clear: "clear",
-      group: "startGroup",
-      groupCollapsed: "startGroupCollapsed",
-      groupEnd: "endGroup",
+      info: 'info',
+      log: 'log',
+      debug: 'debug',
+      error: 'error',
+      warn: 'warning',
+      dir: 'dir',
+      dirxml: 'dirxml',
+      table: 'table',
+      trace: 'trace',
+      clear: 'clear',
+      group: 'startGroup',
+      groupCollapsed: 'startGroupCollapsed',
+      groupEnd: 'endGroup',
     };
 
     Object.keys(methods).forEach((_key) => {
@@ -246,13 +239,10 @@ export class Runtime extends BaseDomain {
               // 단, 안전하게 try-catch로 감싸서 실패해도 계속 진행
               if (
                 formatted.objectId &&
-                (formatted.type === "object" || formatted.type === "function")
+                (formatted.type === 'object' || formatted.type === 'function')
               ) {
                 try {
-                  const snapshotMap = createPropertySnapshot(
-                    formatted.objectId,
-                    2,
-                  ); // 2단계 깊이로 제한
+                  const snapshotMap = createPropertySnapshot(formatted.objectId, 2); // 2단계 깊이로 제한
                   // Record<string, PropertyDescriptor[]> 형태를 배열로 변환
                   for (const [objId, props] of Object.entries(snapshotMap)) {
                     if (Array.isArray(props) && props.length > 0) {
@@ -271,7 +261,7 @@ export class Runtime extends BaseDomain {
               return formatted;
             } catch {
               // objectFormat 실패 시 기본값 반환
-              return { type: "undefined" as const };
+              return { type: 'undefined' as const };
             }
           });
 
@@ -284,16 +274,15 @@ export class Runtime extends BaseDomain {
               timestamp: Date.now(),
               stackTrace: {
                 // processing call stack
-                callFrames: ["error", "warn", "trace", "assert"].includes(key)
+                callFrames: ['error', 'warn', 'trace', 'assert'].includes(key)
                   ? Runtime.getCallFrames()
                   : [],
               },
               // 프로퍼티 스냅샷 포함 (녹화 세션 재생용)
-              _propertySnapshots:
-                propertySnapshots.length > 0 ? propertySnapshots : undefined,
+              _propertySnapshots: propertySnapshots.length > 0 ? propertySnapshots : undefined,
             },
           };
-          getRuntimeInstance().socketSend("console", data);
+          getRuntimeInstance().socketSend('console', data);
         } catch {
           // 전체 처리 실패해도 무시 (원본 console은 이미 호출됨)
         }
@@ -313,8 +302,7 @@ export class Runtime extends BaseDomain {
     window.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__ = true;
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
-    const getRuntimeInstance = (): Runtime =>
-      window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
+    const getRuntimeInstance = (): Runtime => window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
     const exceptionThrown = (error: unknown) => {
       const exception =
@@ -329,27 +317,24 @@ export class Runtime extends BaseDomain {
         params: {
           timestamp: Date.now(),
           exceptionDetails: {
-            text: "Uncaught",
+            text: 'Uncaught',
             exception: {
-              type: "object",
-              subtype: "error",
-              className: exception?.name ?? "Error",
-              description: exception?.stack ?? "Script error.",
+              type: 'object',
+              subtype: 'error',
+              className: exception?.name ?? 'Error',
+              description: exception?.stack ?? 'Script error.',
             },
             stackTrace: {
-              callFrames:
-                error instanceof Error ? Runtime.getCallFrames(error) : [],
+              callFrames: error instanceof Error ? Runtime.getCallFrames(error) : [],
             },
           },
         },
       };
-      getRuntimeInstance().socketSend("error", data);
+      getRuntimeInstance().socketSend('error', data);
     };
 
-    window.addEventListener("error", (e) => exceptionThrown(e.error));
-    window.addEventListener("unhandledrejection", (e) =>
-      exceptionThrown(e.reason),
-    );
+    window.addEventListener('error', (e) => exceptionThrown(e.error));
+    window.addEventListener('unhandledrejection', (e) => exceptionThrown(e.reason));
   }
 
   // Runtime Domain methods
@@ -380,7 +365,7 @@ export class Runtime extends BaseDomain {
       params: {
         context: {
           id: 1,
-          name: "top",
+          name: 'top',
           origin: location.origin,
         },
       },
@@ -400,7 +385,7 @@ export class Runtime extends BaseDomain {
     }
 
     // Buffer 룸이면 스킵 (실제 녹화 세션일 때만 재전송)
-    if (!this.recordMode || !this.room || this.room.startsWith("Buffer-")) {
+    if (!this.recordMode || !this.room || this.room.startsWith('Buffer-')) {
       return;
     }
 
@@ -479,12 +464,12 @@ export class Runtime extends BaseDomain {
     }[];
     silent: boolean;
   }): unknown | undefined {
-    const fun = Function(
-      `"use strict"; return (${functionDeclaration});`,
-    )() as (...args: unknown[]) => unknown;
+    const fun = Function(`"use strict"; return (${functionDeclaration});`)() as (
+      ...args: unknown[]
+    ) => unknown;
     const callArgs = Array.isArray(args)
       ? args.map((v) => {
-          if (Object.prototype.hasOwnProperty.call(v, "value")) return v.value;
+          if (Object.prototype.hasOwnProperty.call(v, 'value')) return v.value;
           if (v.objectId) return getObjectById(v.objectId);
 
           return undefined;
@@ -504,16 +489,16 @@ export class Runtime extends BaseDomain {
 
 type ConsoleKeys = keyof Omit<
   Console,
-  | "assert"
-  | "Console"
-  | "count"
-  | "countReset"
-  | "profile"
-  | "profileEnd"
-  | "time"
-  | "timeEnd"
-  | "timeStamp"
-  | "timeLog"
+  | 'assert'
+  | 'Console'
+  | 'count'
+  | 'countReset'
+  | 'profile'
+  | 'profileEnd'
+  | 'time'
+  | 'timeEnd'
+  | 'timeStamp'
+  | 'timeLog'
 >;
 
 // callsites 를 참고함 (https://github.com/sindresorhus/callsites/blob/main/index.js)

@@ -5,7 +5,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
 /**
  * Tenant boundary for multi-tenant deployments.
@@ -16,47 +16,47 @@ import {
  * (see Phase 1 of LAUNCH.md). For self-hosted single-tenant deployments
  * the table can stay empty.
  */
-export type OrganizationPlan = "free" | "starter" | "pro";
+export type OrganizationPlan = 'free' | 'starter' | 'pro';
 export type OrganizationSubscriptionStatus =
-  | "incomplete"
-  | "incomplete_expired"
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "canceled"
-  | "unpaid"
-  | "paused";
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'unpaid'
+  | 'paused';
 
-@Entity("organizations")
-@Index(["slug"], { unique: true })
+@Entity('organizations')
+@Index(['slug'], { unique: true })
 export class OrganizationEntity {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   public id: string;
 
   /** URL-friendly stable identifier — e.g. used in subdomain routing. */
-  @Column({ type: "varchar", length: 64 })
+  @Column({ type: 'varchar', length: 64 })
   public slug: string;
 
   /** Human-readable display name. */
-  @Column({ type: "varchar", length: 200 })
+  @Column({ type: 'varchar', length: 200 })
   public name: string;
 
   /** Subscription tier. Free is the default for new sign-ups. */
   @Column({
-    type: "varchar",
+    type: 'varchar',
     length: 32,
-    default: "free",
+    default: 'free',
   })
   public plan: OrganizationPlan;
 
   /** Billing-side identifier when Stripe is connected. */
-  @Column({ name: "stripe_customer_id", type: "varchar", nullable: true })
+  @Column({ name: 'stripe_customer_id', type: 'varchar', nullable: true })
   public stripeCustomerId?: string | null;
 
   /** Billing provider that owns the subscription state. */
   @Column({
-    name: "billing_provider",
-    type: "varchar",
+    name: 'billing_provider',
+    type: 'varchar',
     length: 32,
     nullable: true,
   })
@@ -64,8 +64,8 @@ export class OrganizationEntity {
 
   /** Provider-side subscription identifier. */
   @Column({
-    name: "billing_subscription_id",
-    type: "varchar",
+    name: 'billing_subscription_id',
+    type: 'varchar',
     length: 128,
     nullable: true,
   })
@@ -73,8 +73,8 @@ export class OrganizationEntity {
 
   /** Last normalized provider subscription status. */
   @Column({
-    name: "subscription_status",
-    type: "varchar",
+    name: 'subscription_status',
+    type: 'varchar',
     length: 32,
     nullable: true,
   })
@@ -82,15 +82,15 @@ export class OrganizationEntity {
 
   /** End of the current paid period, when supplied by the provider. */
   @Column({
-    name: "subscription_current_period_end",
-    type: "timestamp",
+    name: 'subscription_current_period_end',
+    type: 'timestamp',
     nullable: true,
   })
   public subscriptionCurrentPeriodEnd?: Date | null;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({ name: 'updated_at' })
   public updatedAt: Date;
 }

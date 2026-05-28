@@ -1,16 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { LessThan } from "typeorm";
+import { LessThan } from 'typeorm';
 
-import {
-  RecordEntity,
-  ReplayCommentEntity,
-  TicketLogEntity,
-} from "@remote-platform/entity";
+import { RecordEntity, ReplayCommentEntity, TicketLogEntity } from '@remote-platform/entity';
 
-export type ActivityKind = "session" | "ticket" | "error" | "join" | "comment";
+export type ActivityKind = 'session' | 'ticket' | 'error' | 'join' | 'comment';
 
 export interface ActivityEntry {
   id: string;
@@ -75,16 +71,13 @@ export class ActivityService {
     const commentsLimit = Math.ceil(limit * 0.4);
 
     const beforeDate = before ? new Date(before) : null;
-    const validBefore =
-      beforeDate && !Number.isNaN(beforeDate.getTime()) ? beforeDate : null;
+    const validBefore = beforeDate && !Number.isNaN(beforeDate.getTime()) ? beforeDate : null;
 
     const recordWhere = {
       ...(orgId ? { orgId } : {}),
       ...(validBefore ? { timestamp: LessThan(validBefore) } : {}),
     };
-    const ticketWhere = validBefore
-      ? { createdAt: LessThan(validBefore) }
-      : undefined;
+    const ticketWhere = validBefore ? { createdAt: LessThan(validBefore) } : undefined;
     const commentWhere = {
       ...(orgId ? { orgId } : {}),
       ...(validBefore ? { createdAt: LessThan(validBefore) } : {}),
@@ -93,13 +86,13 @@ export class ActivityService {
     const [records, tickets, comments] = await Promise.all([
       this.recordRepo.find({
         ...(Object.keys(recordWhere).length ? { where: recordWhere } : {}),
-        order: { timestamp: "DESC" },
+        order: { timestamp: 'DESC' },
         take: sessionsLimit,
       }),
       this.ticketRepo
         .find({
           ...(ticketWhere ? { where: ticketWhere } : {}),
-          order: { id: "DESC" },
+          order: { id: 'DESC' },
           take: ticketsLimit,
         })
         .catch(() => [] as TicketLogEntity[]),
@@ -107,7 +100,7 @@ export class ActivityService {
         .find({
           ...(Object.keys(commentWhere).length ? { where: commentWhere } : {}),
           relations: { record: true },
-          order: { createdAt: "DESC" },
+          order: { createdAt: 'DESC' },
           take: commentsLimit,
         })
         .catch(() => [] as ReplayCommentEntity[]),
@@ -118,10 +111,8 @@ export class ActivityService {
     for (const r of records) {
       entries.push({
         id: `session-${r.id}`,
-        kind: "session",
-        title: r.recordMode
-          ? `Recorded session · ${r.name}`
-          : `Live session · ${r.name}`,
+        kind: 'session',
+        title: r.recordMode ? `Recorded session · ${r.name}` : `Live session · ${r.name}`,
         subtitle: r.url ?? undefined,
         at: (r.timestamp instanceof Date
           ? r.timestamp
@@ -140,33 +131,27 @@ export class ActivityService {
         createdAt?: Date;
       };
       const createdAt =
-        row.createdAt instanceof Date
-          ? row.createdAt.toISOString()
-          : new Date().toISOString();
+        row.createdAt instanceof Date ? row.createdAt.toISOString() : new Date().toISOString();
 
       entries.push({
         id: `ticket-${row.id}`,
-        kind: "ticket",
-        title: row.name ? `Ticket created · ${row.name}` : "Ticket created",
+        kind: 'ticket',
+        title: row.name ? `Ticket created · ${row.name}` : 'Ticket created',
         subtitle: row.ticketUrl,
         at: createdAt,
       });
     }
 
     for (const c of comments) {
-      const sessionName = c.record?.name ?? `Session #${c.record?.id ?? "?"}`;
-      const author = c.author ?? "anonymous";
-      const truncated =
-        c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body;
+      const sessionName = c.record?.name ?? `Session #${c.record?.id ?? '?'}`;
+      const author = c.author ?? 'anonymous';
+      const truncated = c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body;
       entries.push({
         id: `comment-${c.id}`,
-        kind: "comment",
+        kind: 'comment',
         title: `Comment by ${author} on ${sessionName}`,
         subtitle: truncated,
-        at: (c.createdAt instanceof Date
-          ? c.createdAt
-          : new Date(c.createdAt)
-        ).toISOString(),
+        at: (c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt)).toISOString(),
         sessionId: c.record?.id,
       });
     }
@@ -174,9 +159,7 @@ export class ActivityService {
     entries.sort((a, b) => b.at.localeCompare(a.at));
     const rows = entries.slice(0, limit);
     const nextCursor =
-      rows.length === limit && rows.length > 0
-        ? (rows[rows.length - 1]?.at ?? null)
-        : null;
+      rows.length === limit && rows.length > 0 ? (rows[rows.length - 1]?.at ?? null) : null;
     return { rows, nextCursor };
   }
 }

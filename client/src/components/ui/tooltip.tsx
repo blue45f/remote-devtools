@@ -1,7 +1,7 @@
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { forwardRef, type ComponentPropsWithoutRef } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 export const TooltipProvider = TooltipPrimitive.Provider;
 export const Tooltip = TooltipPrimitive.Root;
@@ -16,10 +16,10 @@ export const TooltipContent = forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 overflow-hidden rounded-md border border-border bg-surface-overlay px-2.5 py-1.5",
-        "text-xs text-fg shadow-md",
-        "data-[state=delayed-open]:animate-fade-in",
-        "data-[side=bottom]:translate-y-0 data-[side=top]:-translate-y-0",
+        'z-50 overflow-hidden rounded-md border border-border bg-surface-overlay px-2.5 py-1.5',
+        'text-xs text-fg shadow-md',
+        'data-[state=delayed-open]:animate-fade-in',
+        'data-[side=bottom]:translate-y-0 data-[side=top]:-translate-y-0',
         className,
       )}
       {...props}

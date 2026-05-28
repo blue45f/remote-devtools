@@ -1,23 +1,23 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
-import { Badge } from "./badge";
+import { Badge } from './badge';
 
-describe("Badge", () => {
-  it("renders text content", () => {
+describe('Badge', () => {
+  it('renders text content', () => {
     render(<Badge>New</Badge>);
-    expect(screen.getByText("New")).toBeInTheDocument();
+    expect(screen.getByText('New')).toBeInTheDocument();
   });
 
-  it("applies variant styles", () => {
+  it('applies variant styles', () => {
     const { rerender } = render(<Badge variant="success">ok</Badge>);
-    expect(screen.getByText("ok").className).toMatch(/bg-success-soft/);
+    expect(screen.getByText('ok').className).toMatch(/bg-success-soft/);
     rerender(<Badge variant="danger">no</Badge>);
-    expect(screen.getByText("no").className).toMatch(/bg-danger-soft/);
+    expect(screen.getByText('no').className).toMatch(/bg-danger-soft/);
   });
 
-  it("applies size styles", () => {
+  it('applies size styles', () => {
     render(<Badge size="sm">x</Badge>);
-    expect(screen.getByText("x").className).toMatch(/h-5/);
+    expect(screen.getByText('x').className).toMatch(/h-5/);
   });
 });

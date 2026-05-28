@@ -1,12 +1,12 @@
-import * as matchers from "@testing-library/jest-dom/matchers";
+import * as matchers from '@testing-library/jest-dom/matchers';
 
 // Side-effect: initialise i18n synchronously before any component test mounts.
 // Components under test use `useTranslation`, which would fall through to the
 // raw key string ("topbar.openCommandPalette") if i18n hadn't booted yet.
-import "@/lib/i18n";
+import '@/lib/i18n';
 
-import { cleanup } from "@testing-library/react";
-import { afterEach, expect, vi } from "vitest";
+import { cleanup } from '@testing-library/react';
+import { afterEach, expect, vi } from 'vitest';
 
 expect.extend(matchers);
 
@@ -14,12 +14,12 @@ expect.extend(matchers);
 afterEach(() => {
   cleanup();
   localStorage.clear();
-  document.documentElement.classList.remove("dark");
+  document.documentElement.classList.remove('dark');
 });
 
 // jsdom polyfills
 if (!window.matchMedia) {
-  Object.defineProperty(window, "matchMedia", {
+  Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
       matches: false,
@@ -43,12 +43,12 @@ if (!window.ResizeObserver) {
 }
 
 // Radix Dialog needs scrollIntoView
-if (typeof Element.prototype.scrollIntoView !== "function") {
+if (typeof Element.prototype.scrollIntoView !== 'function') {
   Element.prototype.scrollIntoView = vi.fn();
 }
 
 // hasPointerCapture for Radix Select / DropdownMenu in jsdom
-if (typeof Element.prototype.hasPointerCapture !== "function") {
+if (typeof Element.prototype.hasPointerCapture !== 'function') {
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.releasePointerCapture = () => undefined;
   Element.prototype.setPointerCapture = () => undefined;
@@ -58,8 +58,8 @@ if (typeof Element.prototype.hasPointerCapture !== "function") {
 if (!window.IntersectionObserver) {
   window.IntersectionObserver = class implements IntersectionObserver {
     readonly root = null;
-    readonly rootMargin = "";
-    readonly scrollMargin = "";
+    readonly rootMargin = '';
+    readonly scrollMargin = '';
     readonly thresholds = [];
 
     observe() {}

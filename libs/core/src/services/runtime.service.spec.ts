@@ -1,15 +1,15 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import type { Repository } from "typeorm";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { RuntimeEntity } from "@remote-platform/entity";
+import { RuntimeEntity } from '@remote-platform/entity';
 
-import { RecordService } from "./record.service";
-import { RuntimeService } from "./runtime.service";
+import { RecordService } from './record.service';
+import { RuntimeService } from './runtime.service';
 
-describe("RuntimeService", () => {
+describe('RuntimeService', () => {
   let service: RuntimeService;
   let runtimeRepository: Repository<RuntimeEntity>;
   let recordService: RecordService;
@@ -36,15 +36,13 @@ describe("RuntimeService", () => {
     }).compile();
 
     service = module.get<RuntimeService>(RuntimeService);
-    runtimeRepository = module.get<Repository<RuntimeEntity>>(
-      getRepositoryToken(RuntimeEntity),
-    );
+    runtimeRepository = module.get<Repository<RuntimeEntity>>(getRepositoryToken(RuntimeEntity));
     recordService = module.get<RecordService>(RecordService);
   });
 
-  describe("create", () => {
-    it("should return null when record not found", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue(null);
+  describe('create', () => {
+    it('should return null when record not found', async () => {
+      vi.spyOn(recordService, 'findOne').mockResolvedValue(null);
 
       const result = await service.create({
         recordId: 999,
@@ -55,27 +53,27 @@ describe("RuntimeService", () => {
       expect(result).toBeNull();
     });
 
-    it("should create and save runtime entry", async () => {
+    it('should create and save runtime entry', async () => {
       const mockRecord = {
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>;
-      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord);
-      vi.spyOn(runtimeRepository, "create").mockReturnValue({
+      } as Awaited<ReturnType<RecordService['findOne']>>;
+      vi.spyOn(recordService, 'findOne').mockResolvedValue(mockRecord);
+      vi.spyOn(runtimeRepository, 'create').mockReturnValue({
         id: 5,
       } as RuntimeEntity);
-      vi.spyOn(runtimeRepository, "save").mockResolvedValue({
+      vi.spyOn(runtimeRepository, 'save').mockResolvedValue({
         id: 5,
       } as RuntimeEntity);
 
       const result = await service.create({
         recordId: 1,
-        protocol: { type: "log" },
+        protocol: { type: 'log' },
         timestamp: 12345,
       });
 
       expect(runtimeRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          protocol: { type: "log" },
+          protocol: { type: 'log' },
           timestamp: 12345,
           record: mockRecord,
         }),
@@ -84,28 +82,28 @@ describe("RuntimeService", () => {
     });
   });
 
-  describe("findByRecordId", () => {
-    it("should find runtime entries ordered by timestamp ASC", async () => {
-      vi.spyOn(runtimeRepository, "find").mockResolvedValue([]);
+  describe('findByRecordId', () => {
+    it('should find runtime entries ordered by timestamp ASC', async () => {
+      vi.spyOn(runtimeRepository, 'find').mockResolvedValue([]);
 
       await service.findByRecordId(1);
 
       expect(runtimeRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
-        order: { timestamp: "ASC" },
+        order: { timestamp: 'ASC' },
       });
     });
   });
 
-  describe("findRuntimes", () => {
-    it("should be an alias for findByRecordId", async () => {
-      vi.spyOn(runtimeRepository, "find").mockResolvedValue([]);
+  describe('findRuntimes', () => {
+    it('should be an alias for findByRecordId', async () => {
+      vi.spyOn(runtimeRepository, 'find').mockResolvedValue([]);
 
       await service.findRuntimes(1);
 
       expect(runtimeRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
-        order: { timestamp: "ASC" },
+        order: { timestamp: 'ASC' },
       });
     });
   });

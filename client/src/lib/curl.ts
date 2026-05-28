@@ -15,14 +15,14 @@ export interface CurlRow {
  * round-trips through bash/zsh.
  */
 export function buildCurlCommand(row: CurlRow): string {
-  const parts: string[] = ["curl"];
-  if (row.method && row.method.toUpperCase() !== "GET") {
-    parts.push("-X", row.method.toUpperCase());
+  const parts: string[] = ['curl'];
+  if (row.method && row.method.toUpperCase() !== 'GET') {
+    parts.push('-X', row.method.toUpperCase());
   }
-  const escapedUrl = (row.url ?? "").replace(/'/g, "'\\''");
+  const escapedUrl = (row.url ?? '').replace(/'/g, "'\\''");
   parts.push(`'${escapedUrl}'`);
   if (row.mimeType) {
-    parts.push("-H", `'Accept: ${row.mimeType}'`);
+    parts.push('-H', `'Accept: ${row.mimeType}'`);
   }
-  return parts.join(" ");
+  return parts.join(' ');
 }

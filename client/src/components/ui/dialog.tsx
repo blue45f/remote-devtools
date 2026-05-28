@@ -1,12 +1,8 @@
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
-import {
-  forwardRef,
-  type ComponentPropsWithoutRef,
-  type HTMLAttributes,
-} from "react";
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import { forwardRef, type ComponentPropsWithoutRef, type HTMLAttributes } from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -20,8 +16,8 @@ export const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-fg/40 backdrop-blur-sm",
-      "data-[state=open]:animate-fade-in",
+      'fixed inset-0 z-50 bg-fg/40 backdrop-blur-sm',
+      'data-[state=open]:animate-fade-in',
       className,
     )}
     {...props}
@@ -38,9 +34,9 @@ export const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%]",
-        "rounded-xl border border-border bg-surface-overlay p-6 shadow-lg",
-        "data-[state=open]:animate-slide-up",
+        'fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%]',
+        'rounded-xl border border-border bg-surface-overlay p-6 shadow-lg',
+        'data-[state=open]:animate-slide-up',
         className,
       )}
       {...props}
@@ -48,8 +44,8 @@ export const DialogContent = forwardRef<
       {children}
       <DialogPrimitive.Close
         className={cn(
-          "absolute right-4 top-4 rounded-sm text-fg-subtle opacity-70",
-          "transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          'absolute right-4 top-4 rounded-sm text-fg-subtle opacity-70',
+          'transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         )}
       >
         <X className="size-4" />
@@ -60,16 +56,8 @@ export const DialogContent = forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
-export function DialogHeader({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("flex flex-col gap-1 text-left mb-4", className)}
-      {...props}
-    />
-  );
+export function DialogHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex flex-col gap-1 text-left mb-4', className)} {...props} />;
 }
 
 export const DialogTitle = forwardRef<
@@ -78,7 +66,7 @@ export const DialogTitle = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-base font-semibold leading-tight", className)}
+    className={cn('text-base font-semibold leading-tight', className)}
     {...props}
   />
 ));
@@ -90,7 +78,7 @@ export const DialogDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-fg-subtle", className)}
+    className={cn('text-sm text-fg-subtle', className)}
     {...props}
   />
 ));

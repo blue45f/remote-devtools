@@ -7,24 +7,18 @@ import {
   Logger,
   Inject,
   Optional,
-} from "@nestjs/common";
-import { Request, Response } from "express";
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 
-import {
-  BusinessException,
-  BusinessErrorResponse,
-} from "../exceptions/business.exception";
-import { ErrorCode } from "../exceptions/error-codes.enum";
+import { BusinessException, BusinessErrorResponse } from '../exceptions/business.exception';
+import { ErrorCode } from '../exceptions/error-codes.enum';
 
-const getExceptionMessage = (
-  exceptionResponse: unknown,
-  fallback: string,
-): string => {
+const getExceptionMessage = (exceptionResponse: unknown, fallback: string): string => {
   if (
-    typeof exceptionResponse === "object" &&
+    typeof exceptionResponse === 'object' &&
     exceptionResponse !== null &&
-    "message" in exceptionResponse &&
-    typeof exceptionResponse.message === "string"
+    'message' in exceptionResponse &&
+    typeof exceptionResponse.message === 'string'
   ) {
     return exceptionResponse.message;
   }
@@ -35,7 +29,7 @@ const getExceptionMessage = (
 /**
  * 예외 필터 옵션을 주입하기 위한 프로바이더 토큰.
  */
-export const EXCEPTION_FILTER_OPTIONS = "EXCEPTION_FILTER_OPTIONS";
+export const EXCEPTION_FILTER_OPTIONS = 'EXCEPTION_FILTER_OPTIONS';
 
 /**
  * 예외 필터의 동작을 설정하는 옵션 인터페이스.
@@ -80,11 +74,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
    * @param host - NestJS ArgumentsHost (HTTP 컨텍스트 접근용)
    */
   catch(exception: unknown, host: ArgumentsHost) {
-    if (host.getType() === "ws") {
+    if (host.getType() === 'ws') {
       const errorMessage =
-        exception instanceof Error
-          ? exception.message
-          : "An unknown error occurred.";
+        exception instanceof Error ? exception.message : 'An unknown error occurred.';
       this.logger.error(
         `WebSocket Exception: ${JSON.stringify({
           message: errorMessage,
@@ -103,8 +95,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof BusinessException) {
       status = exception.getStatus();
-      const exceptionResponse =
-        exception.getResponse() as BusinessErrorResponse;
+      const exceptionResponse = exception.getResponse() as BusinessErrorResponse;
       errorResponse = {
         ...exceptionResponse,
         path: request.url,
@@ -123,19 +114,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
-      if (
-        typeof exceptionResponse === "object" &&
-        "errorCode" in exceptionResponse
-      ) {
+      if (typeof exceptionResponse === 'object' && 'errorCode' in exceptionResponse) {
         errorResponse = exceptionResponse as BusinessErrorResponse;
         errorResponse.path = request.url;
       } else {
         const message =
-          typeof exceptionResponse === "string"
+          typeof exceptionResponse === 'string'
             ? exceptionResponse
             : getExceptionMessage(
                 exceptionResponse,
-                "An error occurred while processing the request.",
+                'An error occurred while processing the request.',
               );
 
         errorResponse = {
@@ -158,9 +146,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       const errorMessage =
-        exception instanceof Error
-          ? exception.message
-          : "An unknown error occurred.";
+        exception instanceof Error ? exception.message : 'An unknown error occurred.';
 
       errorResponse = {
         statusCode: status,

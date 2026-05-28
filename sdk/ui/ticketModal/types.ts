@@ -1,4 +1,4 @@
-import { CommonInfo } from "../../types/common";
+import { CommonInfo } from '../../types/common';
 
 /**
  * 티켓 폼 데이터 인터페이스

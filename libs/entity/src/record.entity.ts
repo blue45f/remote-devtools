@@ -5,18 +5,18 @@ import {
   Index,
   OneToMany,
   PrimaryGeneratedColumn,
-} from "typeorm";
+} from 'typeorm';
 
-import { DomEntity } from "./dom.entity";
-import { NetworkEntity } from "./network.entity";
-import { RuntimeEntity } from "./runtime.entity";
-import { ScreenEntity } from "./screen.entity";
+import { DomEntity } from './dom.entity';
+import { NetworkEntity } from './network.entity';
+import { RuntimeEntity } from './runtime.entity';
+import { ScreenEntity } from './screen.entity';
 
 /** 녹화 세션 하나를 나타내는 엔티티. */
-@Entity("record")
-@Index(["deviceId", "timestamp"])
-@Index(["timestamp"])
-@Index(["orgId", "timestamp"])
+@Entity('record')
+@Index(['deviceId', 'timestamp'])
+@Index(['timestamp'])
+@Index(['orgId', 'timestamp'])
 export class RecordEntity {
   /** 자동 생성되는 기본 키. */
   @PrimaryGeneratedColumn()
@@ -28,31 +28,31 @@ export class RecordEntity {
    * SaaS launch path (docs/LAUNCH.md Phase 1)에서는 모든 행에 NOT NULL로
    * 백필 후 NOT NULL 제약 추가. 현재는 nullable이라 기존 데이터 호환.
    */
-  @Column({ name: "org_id", type: "uuid", nullable: true })
+  @Column({ name: 'org_id', type: 'uuid', nullable: true })
   public orgId?: string | null;
 
   /** 세션 이름 (짧은 라벨). */
-  @Column({ type: "varchar" })
+  @Column({ type: 'varchar' })
   public name: string;
 
   /** 세션 지속 시간 (나노초 단위). */
-  @Column({ type: "bigint", nullable: true })
+  @Column({ type: 'bigint', nullable: true })
   public duration: string | number;
 
   /** 녹화 중 캡처된 페이지 URL. */
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   public url?: string;
 
   /** 이 녹화를 생성한 디바이스의 고유 식별자. */
-  @Column({ name: "device_id", nullable: true, length: 255 })
+  @Column({ name: 'device_id', nullable: true, length: 255 })
   public deviceId: string;
 
   /** 녹화 모드 여부 (true: 녹화, false: 실시간 캡처). */
-  @Column({ name: "record_mode", type: "boolean", default: false })
+  @Column({ name: 'record_mode', type: 'boolean', default: false })
   public recordMode: boolean;
 
   /** 참조 페이지 URL (쿼리 파라미터 제외). */
-  @Column({ name: "referrer", length: 500, nullable: true })
+  @Column({ name: 'referrer', length: 500, nullable: true })
   public referrer: string;
 
   /**
@@ -60,7 +60,7 @@ export class RecordEntity {
    * 데이터 또는 (b) SDK가 UA를 보내지 않은 케이스. 프론트엔드에서 브라우저/OS
    * 배지 렌더링용으로만 사용한다.
    */
-  @Column({ name: "user_agent", type: "text", nullable: true })
+  @Column({ name: 'user_agent', type: 'text', nullable: true })
   public userAgent?: string | null;
 
   /**
@@ -69,8 +69,8 @@ export class RecordEntity {
    * tag dictionary 테이블로 정규화한다.
    */
   @Column({
-    name: "tags",
-    type: "text",
+    name: 'tags',
+    type: 'text',
     array: true,
     nullable: false,
     default: () => "'{}'::text[]",
@@ -98,7 +98,7 @@ export class RecordEntity {
   public screens: ScreenEntity[];
 
   /** 레코드 생성 타임스탬프. */
-  @CreateDateColumn({ type: "timestamp" })
+  @CreateDateColumn({ type: 'timestamp' })
   public timestamp: Date;
 
   /**

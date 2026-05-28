@@ -7,10 +7,10 @@ import {
   RotateCcw,
   Sparkles,
   Sun,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-import { toast } from "@/components/ui/toaster";
+import { toast } from '@/components/ui/toaster';
 import {
   CommandDialog,
   CommandEmpty,
@@ -20,16 +20,13 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "@/components/ui/command";
-import { queryClient } from "@/lib/api";
-import { allNavItems } from "@/lib/nav";
-import { shortHash } from "@/lib/format";
-import {
-  clearRecentSessions,
-  useRecentSessions,
-} from "@/lib/recent-sessions";
-import { useReplayPrefs } from "@/lib/replay-prefs";
-import { useAppStore } from "@/lib/store";
+} from '@/components/ui/command';
+import { queryClient } from '@/lib/api';
+import { allNavItems } from '@/lib/nav';
+import { shortHash } from '@/lib/format';
+import { clearRecentSessions, useRecentSessions } from '@/lib/recent-sessions';
+import { useReplayPrefs } from '@/lib/replay-prefs';
+import { useAppStore } from '@/lib/store';
 
 export function CommandPalette() {
   const navigate = useNavigate();
@@ -59,13 +56,11 @@ export function CommandPalette() {
               {recentSessions.map((s) => (
                 <CommandItem
                   key={s.id}
-                  value={`recent session ${s.id} ${s.name ?? ""} ${s.url ?? ""}`}
+                  value={`recent session ${s.id} ${s.name ?? ''} ${s.url ?? ''}`}
                   onSelect={() => run(() => navigate(`/sessions/${s.id}`))}
                 >
                   <History />
-                  <span className="truncate">
-                    {s.name ?? `Session ${shortHash(s.id, 10)}`}
-                  </span>
+                  <span className="truncate">{s.name ?? `Session ${shortHash(s.id, 10)}`}</span>
                   {s.url && (
                     <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
                       {prettyHost(s.url)}
@@ -89,9 +84,7 @@ export function CommandPalette() {
               >
                 <Icon />
                 <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
+                {item.shortcut && <CommandShortcut>{item.shortcut}</CommandShortcut>}
               </CommandItem>
             );
           })}
@@ -100,24 +93,15 @@ export function CommandPalette() {
         <CommandSeparator />
 
         <CommandGroup heading="Appearance">
-          <CommandItem
-            value="theme light"
-            onSelect={() => run(() => setTheme("light"))}
-          >
+          <CommandItem value="theme light" onSelect={() => run(() => setTheme('light'))}>
             <Sun />
             <span>Light theme</span>
           </CommandItem>
-          <CommandItem
-            value="theme dark"
-            onSelect={() => run(() => setTheme("dark"))}
-          >
+          <CommandItem value="theme dark" onSelect={() => run(() => setTheme('dark'))}>
             <Moon />
             <span>Dark theme</span>
           </CommandItem>
-          <CommandItem
-            value="theme system"
-            onSelect={() => run(() => setTheme("system"))}
-          >
+          <CommandItem value="theme system" onSelect={() => run(() => setTheme('system'))}>
             <Monitor />
             <span>System theme</span>
           </CommandItem>
@@ -132,20 +116,17 @@ export function CommandPalette() {
               run(() => {
                 toggleDemoMode();
                 queryClient.invalidateQueries();
-                toast.success(
-                  demoMode ? "Demo mode disabled" : "Demo mode enabled",
-                  {
-                    description: demoMode
-                      ? "Returning to live network requests."
-                      : "Showing rich seed data while the backend is offline.",
-                  },
-                );
+                toast.success(demoMode ? 'Demo mode disabled' : 'Demo mode enabled', {
+                  description: demoMode
+                    ? 'Returning to live network requests.'
+                    : 'Showing rich seed data while the backend is offline.',
+                });
               })
             }
           >
             <Sparkles />
-            <span>{demoMode ? "Disable demo mode" : "Enable demo mode"}</span>
-            <CommandShortcut>{demoMode ? "ON" : "OFF"}</CommandShortcut>
+            <span>{demoMode ? 'Disable demo mode' : 'Enable demo mode'}</span>
+            <CommandShortcut>{demoMode ? 'ON' : 'OFF'}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
@@ -157,25 +138,18 @@ export function CommandPalette() {
             onSelect={() =>
               run(() => {
                 setReplayPrefs({ skipInactive: !skipInactive });
-                toast.success(
-                  skipInactive
-                    ? "Skip idle disabled"
-                    : "Skip idle enabled",
-                  {
-                    description: skipInactive
-                      ? "Replay will play idle stretches at normal speed."
-                      : "Replay will fast-forward through idle stretches.",
-                  },
-                );
+                toast.success(skipInactive ? 'Skip idle disabled' : 'Skip idle enabled', {
+                  description: skipInactive
+                    ? 'Replay will play idle stretches at normal speed.'
+                    : 'Replay will fast-forward through idle stretches.',
+                });
               })
             }
             data-testid="cmd-toggle-skip-idle"
           >
             <FastForward />
-            <span>
-              {skipInactive ? "Disable Replay skip idle" : "Enable Replay skip idle"}
-            </span>
-            <CommandShortcut>{skipInactive ? "ON" : "OFF"}</CommandShortcut>
+            <span>{skipInactive ? 'Disable Replay skip idle' : 'Enable Replay skip idle'}</span>
+            <CommandShortcut>{skipInactive ? 'ON' : 'OFF'}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
@@ -195,12 +169,12 @@ export function CommandPalette() {
             onSelect={() =>
               run(() => {
                 try {
-                  window.localStorage.removeItem("sessions-prefs:v1");
-                  window.localStorage.removeItem("sessions-pins:v1");
+                  window.localStorage.removeItem('sessions-prefs:v1');
+                  window.localStorage.removeItem('sessions-pins:v1');
                   clearRecentSessions();
-                  toast.success("Sessions data cleared", {
+                  toast.success('Sessions data cleared', {
                     description:
-                      "View / sort / pins / recent history reset. Reload the Sessions page to see the change.",
+                      'View / sort / pins / recent history reset. Reload the Sessions page to see the change.',
                   });
                 } catch {
                   toast.error("Couldn't clear preferences");

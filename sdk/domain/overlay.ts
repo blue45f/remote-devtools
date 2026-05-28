@@ -1,12 +1,12 @@
-import { DEVTOOL_OVERLAY } from "../common/constant";
-import nodes from "../common/nodes";
-import { isElement } from "../common/utils";
+import { DEVTOOL_OVERLAY } from '../common/constant';
+import nodes from '../common/nodes';
+import { isElement } from '../common/utils';
 
-import { BaseDomain } from "./base";
-import { Events } from "./protocol";
+import { BaseDomain } from './base';
+import { Events } from './protocol';
 
 export class Overlay extends BaseDomain {
-  public namespace = "Overlay";
+  public namespace = 'Overlay';
 
   private highlightConfig: HighlightConfig | object = {};
   private highlightBox: {
@@ -20,34 +20,24 @@ export class Overlay extends BaseDomain {
     if (num % 1 === 0) return num;
 
     const fixed = num.toFixed(2);
-    const numArr = fixed.split(".");
-    if (numArr[1] === "00") return numArr[0];
+    const numArr = fixed.split('.');
+    if (numArr[1] === '00') return numArr[0];
     return fixed;
   }
 
-  public static getStylePropertyValue(
-    properties: string,
-    style: CSSStyleDeclaration,
-  ): number;
-  public static getStylePropertyValue(
-    properties: string[],
-    style: CSSStyleDeclaration,
-  ): number[];
+  public static getStylePropertyValue(properties: string, style: CSSStyleDeclaration): number;
+  public static getStylePropertyValue(properties: string[], style: CSSStyleDeclaration): number[];
   public static getStylePropertyValue(
     properties: string | string[],
     styles: CSSStyleDeclaration,
   ): number | number[] {
     if (Array.isArray(properties)) {
       return properties.map((key) =>
-        Number(
-          String(styles[key as keyof CSSStyleDeclaration]).replace("px", ""),
-        ),
+        Number(String(styles[key as keyof CSSStyleDeclaration]).replace('px', '')),
       );
     }
 
-    return Number(
-      String(styles[properties as keyof CSSStyleDeclaration]).replace("px", ""),
-    );
+    return Number(String(styles[properties as keyof CSSStyleDeclaration]).replace('px', ''));
   }
 
   private static rgba(
@@ -91,12 +81,12 @@ export class Overlay extends BaseDomain {
     const node = nodeElement || nodes.getNodeById(nodeId);
     if (
       !node ||
-      (
-        [Node.TEXT_NODE, Node.COMMENT_NODE, Node.DOCUMENT_TYPE_NODE] as number[]
-      ).includes(node.nodeType) ||
-      ["LINK", "SCRIPT", "HEAD"].includes(node.nodeName) ||
+      ([Node.TEXT_NODE, Node.COMMENT_NODE, Node.DOCUMENT_TYPE_NODE] as number[]).includes(
+        node.nodeType,
+      ) ||
+      ['LINK', 'SCRIPT', 'HEAD'].includes(node.nodeName) ||
       !(node instanceof HTMLElement) ||
-      window.getComputedStyle(node).display === "none" ||
+      window.getComputedStyle(node).display === 'none' ||
       Object.values(highlightConfig).length === 0
     ) {
       return;
@@ -107,7 +97,7 @@ export class Overlay extends BaseDomain {
 
   public hideHighlight() {
     if (this.highlightBox.containerBox) {
-      this.highlightBox.containerBox.style.display = "none";
+      this.highlightBox.containerBox.style.display = 'none';
     }
   }
 
@@ -153,18 +143,15 @@ export class Overlay extends BaseDomain {
 
   private nodeHighlightRequested() {
     const highlight = (e: MouseEvent | TouchEvent) => {
-      if (window.$$inspectMode !== "searchForNode") return;
+      if (window.$$inspectMode !== 'searchForNode') return;
       e.stopPropagation();
       e.preventDefault();
 
       let target = e.target instanceof HTMLElement ? e.target : null;
 
-      if ("touches" in e) {
+      if ('touches' in e) {
         const touch = e.touches[0];
-        target = document.elementFromPoint(
-          touch.clientX,
-          touch.clientY,
-        ) as HTMLElement | null;
+        target = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
       }
 
       if (!target) return;
@@ -184,33 +171,33 @@ export class Overlay extends BaseDomain {
       });
     };
 
-    document.addEventListener("mousemove", highlight, true);
-    document.addEventListener("touchmove", highlight, { passive: false });
+    document.addEventListener('mousemove', highlight, true);
+    document.addEventListener('touchmove', highlight, { passive: false });
   }
 
   private createHighlightBox() {
-    const containerBox = document.createElement("div");
-    const contentBox = document.createElement("div");
-    const marginBox = document.createElement("div");
-    const tooltipsBox = document.createElement("div");
+    const containerBox = document.createElement('div');
+    const contentBox = document.createElement('div');
+    const marginBox = document.createElement('div');
+    const tooltipsBox = document.createElement('div');
 
     [marginBox, contentBox, tooltipsBox].forEach((item) => {
       Object.assign(item.style, {
         padding: 0,
         margin: 0,
-        position: "fixed",
-        boxSizing: "content-box",
+        position: 'fixed',
+        boxSizing: 'content-box',
       });
       item.className = DEVTOOL_OVERLAY;
       containerBox.appendChild(item);
     });
 
     Object.assign(containerBox.style, {
-      display: "none",
-      position: "fixed",
+      display: 'none',
+      position: 'fixed',
       zIndex: 99999,
-      pointerEvents: "none",
-      textShadow: "none",
+      pointerEvents: 'none',
+      textShadow: 'none',
     });
 
     containerBox.className = DEVTOOL_OVERLAY;
@@ -221,29 +208,23 @@ export class Overlay extends BaseDomain {
   }
 
   private updateHighlightBox(highlightConfig: HighlightConfig, node: Node) {
-    if (!isElement(node)) throw new Error("node is not an element");
+    if (!isElement(node)) throw new Error('node is not an element');
     const styles = window.getComputedStyle(node);
     const margin = Overlay.getStylePropertyValue(
-      ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+      ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
       styles,
     );
     const padding = Overlay.getStylePropertyValue(
-      ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+      ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'],
       styles,
     );
     const border = Overlay.getStylePropertyValue(
-      [
-        "border-top-width",
-        "border-right-width",
-        "border-bottom-width",
-        "border-left-width",
-      ],
+      ['border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width'],
       styles,
     );
-    const width = Overlay.getStylePropertyValue("width", styles);
-    const height = Overlay.getStylePropertyValue("height", styles);
-    const isBorderBox =
-      window.getComputedStyle(node).boxSizing === "border-box";
+    const width = Overlay.getStylePropertyValue('width', styles);
+    const height = Overlay.getStylePropertyValue('height', styles);
+    const isBorderBox = window.getComputedStyle(node).boxSizing === 'border-box';
     const { left, top } = node.getBoundingClientRect();
 
     const contentWidth = isBorderBox
@@ -260,10 +241,9 @@ export class Overlay extends BaseDomain {
       : height + padding[0] + padding[2] + border[0] + border[2];
 
     const { contentColor, paddingColor, marginColor } = highlightConfig;
-    const { containerBox, contentBox, marginBox, tooltipsBox } =
-      this.highlightBox;
+    const { containerBox, contentBox, marginBox, tooltipsBox } = this.highlightBox;
 
-    if (containerBox) containerBox.style.display = "block";
+    if (containerBox) containerBox.style.display = 'block';
     if (contentBox) {
       Object.assign(contentBox.style, {
         left: `${left}px`,
@@ -272,7 +252,7 @@ export class Overlay extends BaseDomain {
         height: `${contentHeight}px`,
         background: Overlay.rgba(contentColor),
         borderColor: Overlay.rgba(paddingColor),
-        borderStyle: "solid",
+        borderStyle: 'solid',
         borderWidth: `${padding[0]}px ${padding[1]}px ${padding[2]}px ${padding[3]}px`,
       });
     }
@@ -284,33 +264,31 @@ export class Overlay extends BaseDomain {
         width: `${marginWidth}px`,
         height: `${marginHeight}px`,
         borderColor: Overlay.rgba(marginColor),
-        borderStyle: "solid",
+        borderStyle: 'solid',
         borderWidth: `${margin[0]}px ${margin[1]}px ${margin[2]}px ${margin[3]}px`,
       });
     }
 
     const isTopPosition = top - margin[0] > 25;
     const cls = DEVTOOL_OVERLAY;
-    const currentClassName = node.getAttribute("class");
+    const currentClassName = node.getAttribute('class');
     if (tooltipsBox) {
       tooltipsBox.innerHTML = `
       <span class="${cls}" style="color:#973090;font-weight:bold">${node.nodeName.toLowerCase()}</span>
-      <span class="${cls}" style="color:#3434B0;font-weight:bold">${currentClassName ? `.${currentClassName}` : ""}</span>
-      <span class="${cls}" style="position:absolute;top:${isTopPosition ? "auto" : "-4px"};bottom:${isTopPosition ? "-4px" : "auto"};left:10px;width:8px;height:8px;background:#fff;transform:rotate(45deg);"></span>
+      <span class="${cls}" style="color:#3434B0;font-weight:bold">${currentClassName ? `.${currentClassName}` : ''}</span>
+      <span class="${cls}" style="position:absolute;top:${isTopPosition ? 'auto' : '-4px'};bottom:${isTopPosition ? '-4px' : 'auto'};left:10px;width:8px;height:8px;background:#fff;transform:rotate(45deg);"></span>
       ${Overlay.formatNumber(contentWidth)} x ${Overlay.formatNumber(contentHeight)}
     `;
 
       Object.assign(tooltipsBox.style, {
-        background: "#fff",
+        background: '#fff',
         left: `${left - margin[3]}px`,
-        top: isTopPosition
-          ? `${top - margin[0] - 30}px`
-          : `${top + marginHeight + 10}px`,
-        filter: "drop-shadow(0 0 3px rgba(0,0,0,0.3))",
-        "border-radius": "2px",
-        "font-size": "12px",
-        padding: "2px 4px",
-        color: "#8d8d8d",
+        top: isTopPosition ? `${top - margin[0] - 30}px` : `${top + marginHeight + 10}px`,
+        filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.3))',
+        'border-radius': '2px',
+        'font-size': '12px',
+        padding: '2px 4px',
+        color: '#8d8d8d',
       });
     }
   }

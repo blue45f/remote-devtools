@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   DropdownMenu,
@@ -9,10 +9,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdown-menu";
+} from './dropdown-menu';
 
-describe("DropdownMenu", () => {
-  it("renders items, label and separator after opening", async () => {
+describe('DropdownMenu', () => {
+  it('renders items, label and separator after opening', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
     render(
@@ -29,14 +29,14 @@ describe("DropdownMenu", () => {
       </DropdownMenu>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole('button', { name: 'Open' }));
     await waitFor(() => {
-      expect(screen.getByText("Section")).toBeInTheDocument();
+      expect(screen.getByText('Section')).toBeInTheDocument();
     });
-    expect(screen.getByText("One")).toBeInTheDocument();
-    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.getByText('One')).toBeInTheDocument();
+    expect(screen.getByText('Two')).toBeInTheDocument();
 
-    await user.click(screen.getByText("One"));
+    await user.click(screen.getByText('One'));
     expect(onSelect).toHaveBeenCalled();
   });
 });

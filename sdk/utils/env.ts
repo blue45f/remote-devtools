@@ -1,8 +1,8 @@
 export type SdkEnvKey =
-  | "VITE_INTERNAL_HOST"
-  | "VITE_INTERNAL_WS"
-  | "VITE_EXTERNAL_HOST"
-  | "VITE_EXTERNAL_WS";
+  | 'VITE_INTERNAL_HOST'
+  | 'VITE_INTERNAL_WS'
+  | 'VITE_EXTERNAL_HOST'
+  | 'VITE_EXTERNAL_WS';
 
 type ImportMetaWithOptionalEnv = ImportMeta & {
   readonly env?: Partial<Record<SdkEnvKey, string | undefined>>;

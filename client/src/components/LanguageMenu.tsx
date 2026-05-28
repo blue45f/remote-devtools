@@ -1,7 +1,7 @@
-import { Languages } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,24 +9,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const LANGUAGES: {
-  code: "en" | "ko";
-  labelKey: "common.english" | "common.korean";
+  code: 'en' | 'ko';
+  labelKey: 'common.english' | 'common.korean';
 }[] = [
-  { code: "en", labelKey: "common.english" },
-  { code: "ko", labelKey: "common.korean" },
+  { code: 'en', labelKey: 'common.english' },
+  { code: 'ko', labelKey: 'common.korean' },
 ];
 
 export function LanguageMenu({ collapsed }: { collapsed?: boolean }) {
   const { i18n, t } = useTranslation();
-  const current = i18n.resolvedLanguage ?? "en";
+  const current = i18n.resolvedLanguage ?? 'en';
 
   return (
     <DropdownMenu>
@@ -36,7 +32,7 @@ export function LanguageMenu({ collapsed }: { collapsed?: boolean }) {
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={t("common.language")}
+              aria-label={t('common.language')}
               data-testid="language-menu-trigger"
             >
               <Languages />
@@ -45,12 +41,12 @@ export function LanguageMenu({ collapsed }: { collapsed?: boolean }) {
         </TooltipTrigger>
         {collapsed && (
           <TooltipContent side="right">
-            {t("common.language")}: {current.toUpperCase()}
+            {t('common.language')}: {current.toUpperCase()}
           </TooltipContent>
         )}
       </Tooltip>
-      <DropdownMenuContent align={collapsed ? "start" : "end"} side="top">
-        <DropdownMenuLabel>{t("common.language")}</DropdownMenuLabel>
+      <DropdownMenuContent align={collapsed ? 'start' : 'end'} side="top">
+        <DropdownMenuLabel>{t('common.language')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {LANGUAGES.map((lang) => (
           <DropdownMenuItem

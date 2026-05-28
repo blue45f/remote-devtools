@@ -1,12 +1,7 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
-import type { Request } from "express";
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import type { Request } from 'express';
 
-import { AuthService, type AuthClaims } from "./auth.service";
+import { AuthService, type AuthClaims } from './auth.service';
 
 /**
  * Provider-agnostic JWT guard.
@@ -33,15 +28,13 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<RequestWithAuth>();
     const token = extractBearer(req.headers.authorization);
     if (!token) {
-      throw new UnauthorizedException("Missing bearer token");
+      throw new UnauthorizedException('Missing bearer token');
     }
     try {
       req.auth = this.auth.verify(token);
       return true;
     } catch (err) {
-      throw new UnauthorizedException(
-        err instanceof Error ? err.message : "Invalid token",
-      );
+      throw new UnauthorizedException(err instanceof Error ? err.message : 'Invalid token');
     }
   }
 }
@@ -52,6 +45,6 @@ interface RequestWithAuth extends Request {
 
 function extractBearer(header: string | undefined): string | undefined {
   if (!header) return undefined;
-  const [scheme, token] = header.split(" ");
-  return scheme?.toLowerCase() === "bearer" ? token?.trim() : undefined;
+  const [scheme, token] = header.split(' ');
+  return scheme?.toLowerCase() === 'bearer' ? token?.trim() : undefined;
 }

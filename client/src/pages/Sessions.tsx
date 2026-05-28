@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import {
   Activity,
   ArrowDown,
@@ -23,39 +23,30 @@ import {
   Table as TableIcon,
   Tag,
   X,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Kbd } from "@/components/ui/kbd";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { apiFetch } from "@/lib/api";
-import { formatUserAgentBadge } from "@/lib/user-agent";
-import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
-import {
-  formatDurationFromNanos,
-  formatTimeAgo,
-  shortHash,
-} from "@/lib/format";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { apiFetch } from '@/lib/api';
+import { formatUserAgentBadge } from '@/lib/user-agent';
+import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
+import { formatDurationFromNanos, formatTimeAgo, shortHash } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 interface SessionRecord {
   id: number;
@@ -69,34 +60,34 @@ interface SessionRecord {
   tags?: string[];
 }
 
-type SessionTab = "record" | "live";
-type SortKey = "newest" | "oldest" | "name";
-type ViewMode = "table" | "grid";
-type Density = "comfortable" | "compact";
+type SessionTab = 'record' | 'live';
+type SortKey = 'newest' | 'oldest' | 'name';
+type ViewMode = 'table' | 'grid';
+type Density = 'comfortable' | 'compact';
 
-const DEFAULT_DENSITY: Density = "comfortable";
+const DEFAULT_DENSITY: Density = 'comfortable';
 
-type DurationFilter = "all" | "short" | "medium" | "long";
-type AgeFilter = "all" | "24h" | "7d" | "30d";
+type DurationFilter = 'all' | 'short' | 'medium' | 'long';
+type AgeFilter = 'all' | '24h' | '7d' | '30d';
 
 const AGE_LABELS: Record<AgeFilter, string> = {
-  all: "All time",
-  "24h": "Last 24h",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
+  all: 'All time',
+  '24h': 'Last 24h',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
 };
 
 const AGE_LIMITS_MS: Record<AgeFilter, number> = {
   all: 0,
-  "24h": 24 * 3600 * 1000,
-  "7d": 7 * 24 * 3600 * 1000,
-  "30d": 30 * 24 * 3600 * 1000,
+  '24h': 24 * 3600 * 1000,
+  '7d': 7 * 24 * 3600 * 1000,
+  '30d': 30 * 24 * 3600 * 1000,
 };
 
 const SORT_LABELS: Record<SortKey, string> = {
-  newest: "Newest first",
-  oldest: "Oldest first",
-  name: "Name A → Z",
+  newest: 'Newest first',
+  oldest: 'Oldest first',
+  name: 'Name A → Z',
 };
 
 const SORT_ICONS: Record<SortKey, typeof ArrowDown> = {
@@ -121,8 +112,8 @@ const DEFAULT_PAGE_SIZE: PageSize = 50;
  * during SSR / first paint we fall back to the desktop default.
  */
 function pickDefaultView(): ViewMode {
-  if (typeof window === "undefined") return "table";
-  return window.innerWidth >= 1024 ? "table" : "grid";
+  if (typeof window === 'undefined') return 'table';
+  return window.innerWidth >= 1024 ? 'table' : 'grid';
 }
 
 function getHostname(url?: string): string | null {
@@ -134,7 +125,7 @@ function getHostname(url?: string): string | null {
   }
 }
 
-const PREFS_STORAGE_KEY = "sessions-prefs:v1";
+const PREFS_STORAGE_KEY = 'sessions-prefs:v1';
 
 interface SessionsPrefs {
   view?: ViewMode;
@@ -144,16 +135,16 @@ interface SessionsPrefs {
 }
 
 function readStoredPrefs(): SessionsPrefs {
-  if (typeof window === "undefined") return {};
+  if (typeof window === 'undefined') return {};
   try {
     const raw = window.localStorage.getItem(PREFS_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as SessionsPrefs;
     // Defend against future-version garbage by only allowing known values.
     const view: ViewMode | undefined =
-      parsed.view === "table" || parsed.view === "grid" ? parsed.view : undefined;
+      parsed.view === 'table' || parsed.view === 'grid' ? parsed.view : undefined;
     const sort: SortKey | undefined =
-      parsed.sort === "newest" || parsed.sort === "oldest" || parsed.sort === "name"
+      parsed.sort === 'newest' || parsed.sort === 'oldest' || parsed.sort === 'name'
         ? parsed.sort
         : undefined;
     const pageSize: PageSize | undefined = (PAGE_SIZES as readonly number[]).includes(
@@ -162,9 +153,7 @@ function readStoredPrefs(): SessionsPrefs {
       ? (parsed.pageSize as PageSize)
       : undefined;
     const density: Density | undefined =
-      parsed.density === "comfortable" || parsed.density === "compact"
-        ? parsed.density
-        : undefined;
+      parsed.density === 'comfortable' || parsed.density === 'compact' ? parsed.density : undefined;
     return { view, sort, pageSize, density };
   } catch {
     return {};
@@ -172,7 +161,7 @@ function readStoredPrefs(): SessionsPrefs {
 }
 
 function persistPrefs(prefs: SessionsPrefs) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
   } catch {
@@ -180,30 +169,25 @@ function persistPrefs(prefs: SessionsPrefs) {
   }
 }
 
-const PINS_STORAGE_KEY = "sessions-pins:v1";
+const PINS_STORAGE_KEY = 'sessions-pins:v1';
 
 function readPinnedIds(): Set<number> {
-  if (typeof window === "undefined") return new Set();
+  if (typeof window === 'undefined') return new Set();
   try {
     const raw = window.localStorage.getItem(PINS_STORAGE_KEY);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return new Set();
-    return new Set(
-      parsed.filter((x): x is number => typeof x === "number"),
-    );
+    return new Set(parsed.filter((x): x is number => typeof x === 'number'));
   } catch {
     return new Set();
   }
 }
 
 function persistPinnedIds(ids: Set<number>) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(
-      PINS_STORAGE_KEY,
-      JSON.stringify(Array.from(ids)),
-    );
+    window.localStorage.setItem(PINS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
   } catch {
     /* best effort */
   }
@@ -215,46 +199,40 @@ export default function SessionsPage() {
 
   // Read initial state from URL params. Falls back to stored prefs /
   // sensible defaults so an empty URL still produces the right shape.
-  const initialTab: SessionTab =
-    searchParams.get("tab") === "live" ? "live" : "record";
-  const initialSearch = searchParams.get("q") ?? "";
-  const initialRegexMode = searchParams.get("re") === "1";
-  const urlSort = searchParams.get("sort");
+  const initialTab: SessionTab = searchParams.get('tab') === 'live' ? 'live' : 'record';
+  const initialSearch = searchParams.get('q') ?? '';
+  const initialRegexMode = searchParams.get('re') === '1';
+  const urlSort = searchParams.get('sort');
   const initialSort: SortKey =
-    urlSort === "newest" || urlSort === "oldest" || urlSort === "name"
+    urlSort === 'newest' || urlSort === 'oldest' || urlSort === 'name'
       ? urlSort
-      : (readStoredPrefs().sort ?? "newest");
-  const urlDuration = searchParams.get("dur");
+      : (readStoredPrefs().sort ?? 'newest');
+  const urlDuration = searchParams.get('dur');
   const initialDuration: DurationFilter =
-    urlDuration === "short" ||
-    urlDuration === "medium" ||
-    urlDuration === "long" ||
-    urlDuration === "all"
+    urlDuration === 'short' ||
+    urlDuration === 'medium' ||
+    urlDuration === 'long' ||
+    urlDuration === 'all'
       ? urlDuration
-      : "all";
-  const urlAge = searchParams.get("age");
+      : 'all';
+  const urlAge = searchParams.get('age');
   const initialAge: AgeFilter =
-    urlAge === "24h" || urlAge === "7d" || urlAge === "30d" || urlAge === "all"
-      ? urlAge
-      : "all";
-  const initialHost = searchParams.get("host");
-  const initialTag = searchParams.get("tag");
+    urlAge === '24h' || urlAge === '7d' || urlAge === '30d' || urlAge === 'all' ? urlAge : 'all';
+  const initialHost = searchParams.get('host');
+  const initialTag = searchParams.get('tag');
 
   const [tab, setTab] = useState<SessionTab>(initialTab);
   const [search, setSearch] = useState(initialSearch);
   const [regexMode, setRegexMode] = useState(initialRegexMode);
   const [sort, setSort] = useState<SortKey>(initialSort);
-  const [view, setView] = useState<ViewMode>(
-    () => readStoredPrefs().view ?? pickDefaultView(),
-  );
+  const [view, setView] = useState<ViewMode>(() => readStoredPrefs().view ?? pickDefaultView());
   const [pageSize, setPageSize] = useState<PageSize>(
     () => readStoredPrefs().pageSize ?? DEFAULT_PAGE_SIZE,
   );
   const [density, setDensity] = useState<Density>(
     () => readStoredPrefs().density ?? DEFAULT_DENSITY,
   );
-  const [durationFilter, setDurationFilter] =
-    useState<DurationFilter>(initialDuration);
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>(initialDuration);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
   const [tagFilter, setTagFilter] = useState<string | null>(initialTag);
@@ -262,9 +240,7 @@ export default function SessionsPage() {
   // Live tab polling: 5s default, 15s / 30s slower, "off" pauses.
   // Stored in component state only — most sessions are short-lived
   // enough that persisting this would just confuse the next visit.
-  const [liveInterval, setLiveInterval] = useState<
-    "5s" | "15s" | "30s" | "off"
-  >("5s");
+  const [liveInterval, setLiveInterval] = useState<'5s' | '15s' | '30s' | 'off'>('5s');
 
   const [pinned, setPinned] = useState<Set<number>>(() => readPinnedIds());
   useEffect(() => {
@@ -290,14 +266,14 @@ export default function SessionsPage() {
           if (value && value !== def) next.set(key, value);
           else next.delete(key);
         };
-        writeOrDelete("tab", tab, "record");
-        writeOrDelete("q", search.trim(), "");
-        writeOrDelete("re", regexMode ? "1" : "", "");
-        writeOrDelete("sort", sort, "newest");
-        writeOrDelete("dur", durationFilter, "all");
-        writeOrDelete("age", ageFilter, "all");
-        writeOrDelete("host", hostFilter ?? "", "");
-        writeOrDelete("tag", tagFilter ?? "", "");
+        writeOrDelete('tab', tab, 'record');
+        writeOrDelete('q', search.trim(), '');
+        writeOrDelete('re', regexMode ? '1' : '', '');
+        writeOrDelete('sort', sort, 'newest');
+        writeOrDelete('dur', durationFilter, 'all');
+        writeOrDelete('age', ageFilter, 'all');
+        writeOrDelete('host', hostFilter ?? '', '');
+        writeOrDelete('tag', tagFilter ?? '', '');
         return next;
       },
       { replace: true },
@@ -340,7 +316,7 @@ export default function SessionsPage() {
 
     if (regexMode) {
       try {
-        const re = new RegExp(trimmed, "i");
+        const re = new RegExp(trimmed, 'i');
         return (v) => re.test(v);
       } catch {
         return null;
@@ -356,13 +332,13 @@ export default function SessionsPage() {
       new RegExp(search.trim());
       return null;
     } catch (err) {
-      return err instanceof Error ? err.message : "Invalid pattern";
+      return err instanceof Error ? err.message : 'Invalid pattern';
     }
   }, [regexMode, search]);
 
   // Debounce the search term that gets sent to the server. The local input
   // updates instantly so the field stays responsive.
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(t);
@@ -378,18 +354,18 @@ export default function SessionsPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["sessions", tab, debouncedSearch, pageSize],
+    queryKey: ['sessions', tab, debouncedSearch, pageSize],
     queryFn: async ({ pageParam }) => {
-      if (tab === "live") {
-        const live = await apiFetch<SessionRecord[]>("/sessions");
+      if (tab === 'live') {
+        const live = await apiFetch<SessionRecord[]>('/sessions');
         return { rows: live, nextCursor: null as string | null };
       }
       const params = new URLSearchParams();
-      if (debouncedSearch) params.set("q", debouncedSearch);
-      if (debouncedSearch || pageParam) params.set("limit", String(pageSize));
-      if (pageParam) params.set("cursor", pageParam);
+      if (debouncedSearch) params.set('q', debouncedSearch);
+      if (debouncedSearch || pageParam) params.set('limit', String(pageSize));
+      if (pageParam) params.set('cursor', pageParam);
       const qs = params.toString();
-      const path = qs ? `/sessions/record?${qs}` : "/sessions/record";
+      const path = qs ? `/sessions/record?${qs}` : '/sessions/record';
       const res = await apiFetch<PaginatedRecordResponse>(path);
       if (Array.isArray(res)) return { rows: res, nextCursor: null };
       return res;
@@ -398,21 +374,18 @@ export default function SessionsPage() {
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     placeholderData: keepPreviousData,
     refetchInterval:
-      tab === "live"
-        ? liveInterval === "off"
+      tab === 'live'
+        ? liveInterval === 'off'
           ? false
-          : liveInterval === "15s"
+          : liveInterval === '15s'
             ? 15_000
-            : liveInterval === "30s"
+            : liveInterval === '30s'
               ? 30_000
               : 5_000
         : false,
   });
 
-  const sessions = useMemo<SessionRecord[]>(
-    () => data?.pages.flatMap((p) => p.rows) ?? [],
-    [data],
-  );
+  const sessions = useMemo<SessionRecord[]>(() => data?.pages.flatMap((p) => p.rows) ?? [], [data]);
 
   const filtered = useMemo(() => {
     let result = sessions;
@@ -426,16 +399,16 @@ export default function SessionsPage() {
       );
     }
 
-    if (durationFilter !== "all") {
+    if (durationFilter !== 'all') {
       result = result.filter((s) => {
         const ms = Number(s.duration || 0) / 1_000_000;
-        if (durationFilter === "short") return ms > 0 && ms < 30_000;
-        if (durationFilter === "medium") return ms >= 30_000 && ms < 300_000;
+        if (durationFilter === 'short') return ms > 0 && ms < 30_000;
+        if (durationFilter === 'medium') return ms >= 30_000 && ms < 300_000;
         return ms >= 300_000;
       });
     }
 
-    if (ageFilter !== "all") {
+    if (ageFilter !== 'all') {
       const cutoff = Date.now() - AGE_LIMITS_MS[ageFilter];
       result = result.filter((s) => {
         if (!s.timestamp) return false;
@@ -449,26 +422,16 @@ export default function SessionsPage() {
     }
 
     if (tagFilter) {
-      result = result.filter(
-        (s) => Array.isArray(s.tags) && s.tags.includes(tagFilter),
-      );
+      result = result.filter((s) => Array.isArray(s.tags) && s.tags.includes(tagFilter));
     }
 
     return [...result].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === 'name') return a.name.localeCompare(b.name);
       const ta = new Date(a.timestamp ?? 0).getTime();
       const tb = new Date(b.timestamp ?? 0).getTime();
-      return sort === "newest" ? tb - ta : ta - tb;
+      return sort === 'newest' ? tb - ta : ta - tb;
     });
-  }, [
-    sessions,
-    matcher,
-    sort,
-    durationFilter,
-    ageFilter,
-    hostFilter,
-    tagFilter,
-  ]);
+  }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
 
   // Build the host strip from the *currently loaded* sessions so it
   // reflects what's on screen. Sort by hit count descending so the
@@ -500,9 +463,9 @@ export default function SessionsPage() {
   }, [sessions]);
 
   const filtersActive =
-    search.trim() !== "" ||
-    durationFilter !== "all" ||
-    ageFilter !== "all" ||
+    search.trim() !== '' ||
+    durationFilter !== 'all' ||
+    ageFilter !== 'all' ||
     hostFilter !== null ||
     tagFilter !== null;
 
@@ -515,9 +478,9 @@ export default function SessionsPage() {
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable)
       ) {
         return;
@@ -532,30 +495,28 @@ export default function SessionsPage() {
           // Bring the focused row into view on the next paint
           requestAnimationFrame(() => {
             const id = filtered[clamped]?.id;
-            if (id == null) return;
-            const el = document.querySelector<HTMLElement>(
-              `[data-session-row="${id}"]`,
-            );
-            el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            if (id === undefined || id === null) return;
+            const el = document.querySelector<HTMLElement>(`[data-session-row="${id}"]`);
+            el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           });
           return clamped;
         });
       };
 
       switch (e.key) {
-        case "j":
-        case "ArrowDown":
+        case 'j':
+        case 'ArrowDown':
           move(1);
           return;
-        case "k":
-        case "ArrowUp":
+        case 'k':
+        case 'ArrowUp':
           move(-1);
           return;
-        case "Enter": {
-          if (tab !== "record") return;
+        case 'Enter': {
+          if (tab !== 'record') return;
           if (cursorIdx < 0) return;
           const id = filtered[cursorIdx]?.id;
-          if (id == null) return;
+          if (id === undefined || id === null) return;
           e.preventDefault();
           navigate(`/sessions/${id}`);
           return;
@@ -564,8 +525,8 @@ export default function SessionsPage() {
           return;
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [filtered, cursorIdx, navigate, tab]);
 
   const SortIcon = SORT_ICONS[sort];
@@ -580,9 +541,7 @@ export default function SessionsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-4 sm:mb-5 gap-3 sm:gap-4 flex-wrap">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
-            Sessions
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">Sessions</h1>
           <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
             Recorded and live debugging sessions across all devices.
           </p>
@@ -599,7 +558,7 @@ export default function SessionsPage() {
                 aria-label="Refresh"
                 className="touch-target"
               >
-                <RefreshCw className={cn(isFetching && "animate-spin")} />
+                <RefreshCw className={cn(isFetching && 'animate-spin')} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
@@ -635,19 +594,19 @@ export default function SessionsPage() {
               <Input
                 placeholder={
                   regexMode
-                    ? "/regex/ — match name, URL, or device"
-                    : "Search by name, URL, or device…"
+                    ? '/regex/ — match name, URL, or device'
+                    : 'Search by name, URL, or device…'
                 }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 leadingIcon={<Search />}
-                aria-invalid={regexError ? "true" : undefined}
+                aria-invalid={regexError ? 'true' : undefined}
                 trailingIcon={
                   <div className="flex items-center gap-0.5 pointer-events-auto">
                     {search && (
                       <button
                         type="button"
-                        onClick={() => setSearch("")}
+                        onClick={() => setSearch('')}
                         aria-label="Clear search"
                         className="text-fg-faint hover:text-fg"
                       >
@@ -662,28 +621,23 @@ export default function SessionsPage() {
                           aria-pressed={regexMode}
                           aria-label="Toggle regular-expression search"
                           className={cn(
-                            "inline-flex items-center justify-center size-5 rounded transition-colors",
+                            'inline-flex items-center justify-center size-5 rounded transition-colors',
                             regexMode
-                              ? "bg-fg text-bg"
-                              : "text-fg-faint hover:text-fg hover:bg-bg-muted",
+                              ? 'bg-fg text-bg'
+                              : 'text-fg-faint hover:text-fg hover:bg-bg-muted',
                           )}
                           data-testid="sessions-regex-toggle"
                         >
                           <Regex className="size-3" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {regexMode ? "Regex on" : "Regex off"}
-                      </TooltipContent>
+                      <TooltipContent>{regexMode ? 'Regex on' : 'Regex off'}</TooltipContent>
                     </Tooltip>
                   </div>
                 }
               />
               {regexError && (
-                <p
-                  className="mt-1 text-[11px] text-danger"
-                  data-testid="sessions-regex-error"
-                >
+                <p className="mt-1 text-[11px] text-danger" data-testid="sessions-regex-error">
                   Regex error: {regexError}
                 </p>
               )}
@@ -718,9 +672,9 @@ export default function SessionsPage() {
           age={ageFilter}
           onAgeChange={setAgeFilter}
           onClear={() => {
-            setSearch("");
-            setDurationFilter("all");
-            setAgeFilter("all");
+            setSearch('');
+            setDurationFilter('all');
+            setAgeFilter('all');
             setHostFilter(null);
             setTagFilter(null);
           }}
@@ -728,19 +682,11 @@ export default function SessionsPage() {
         />
 
         {hostCounts.length > 1 && (
-          <HostChips
-            hosts={hostCounts}
-            active={hostFilter}
-            onChange={setHostFilter}
-          />
+          <HostChips hosts={hostCounts} active={hostFilter} onChange={setHostFilter} />
         )}
 
         {tagCounts.length > 0 && (
-          <TopTagChips
-            tags={tagCounts}
-            active={tagFilter}
-            onChange={setTagFilter}
-          />
+          <TopTagChips tags={tagCounts} active={tagFilter} onChange={setTagFilter} />
         )}
       </div>
 
@@ -751,39 +697,33 @@ export default function SessionsPage() {
           </span>
           {search.trim() && (
             <FilterPill
-              label={`${regexMode ? "regex" : "search"}: "${search.trim()}"`}
-              onRemove={() => setSearch("")}
+              label={`${regexMode ? 'regex' : 'search'}: "${search.trim()}"`}
+              onRemove={() => setSearch('')}
             />
           )}
-          {durationFilter !== "all" && (
+          {durationFilter !== 'all' && (
             <FilterPill
               label={`duration: ${
-                durationFilter === "short"
-                  ? "< 30s"
-                  : durationFilter === "medium"
-                    ? "30s – 5m"
-                    : "> 5m"
+                durationFilter === 'short'
+                  ? '< 30s'
+                  : durationFilter === 'medium'
+                    ? '30s – 5m'
+                    : '> 5m'
               }`}
-              onRemove={() => setDurationFilter("all")}
+              onRemove={() => setDurationFilter('all')}
             />
           )}
-          {ageFilter !== "all" && (
+          {ageFilter !== 'all' && (
             <FilterPill
               label={`time: ${AGE_LABELS[ageFilter].toLowerCase()}`}
-              onRemove={() => setAgeFilter("all")}
+              onRemove={() => setAgeFilter('all')}
             />
           )}
           {hostFilter && (
-            <FilterPill
-              label={`host: ${hostFilter}`}
-              onRemove={() => setHostFilter(null)}
-            />
+            <FilterPill label={`host: ${hostFilter}`} onRemove={() => setHostFilter(null)} />
           )}
           {tagFilter && (
-            <FilterPill
-              label={`tag: ${tagFilter}`}
-              onRemove={() => setTagFilter(null)}
-            />
+            <FilterPill label={`tag: ${tagFilter}`} onRemove={() => setTagFilter(null)} />
           )}
         </div>
       )}
@@ -795,20 +735,19 @@ export default function SessionsPage() {
             <Skeleton className="h-4 w-24" />
           ) : (
             <>
-              <span className="font-medium text-fg">{filtered.length}</span>{" "}
-              session{filtered.length !== 1 && "s"}
+              <span className="font-medium text-fg">{filtered.length}</span> session
+              {filtered.length !== 1 && 's'}
               {filtersActive && (
                 <>
-                  {" "}
-                  matching filters{" "}
-                  <span className="text-fg-faint">(of {sessions.length})</span>
+                  {' '}
+                  matching filters <span className="text-fg-faint">(of {sessions.length})</span>
                 </>
               )}
             </>
           )}
         </div>
 
-        {tab === "record" && (
+        {tab === 'record' && (
           <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
             <span className="hidden sm:inline">Per page</span>
             <Select
@@ -832,14 +771,12 @@ export default function SessionsPage() {
           </div>
         )}
 
-        {tab === "live" && (
+        {tab === 'live' && (
           <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
             <span className="hidden sm:inline">Refresh</span>
             <Select
               value={liveInterval}
-              onValueChange={(v) =>
-                setLiveInterval(v as typeof liveInterval)
-              }
+              onValueChange={(v) => setLiveInterval(v as typeof liveInterval)}
             >
               <SelectTrigger
                 className="h-7 px-2 text-[11px] font-mono"
@@ -865,7 +802,7 @@ export default function SessionsPage() {
       {error ? (
         <ErrorState onRetry={() => void refetch()} />
       ) : isLoading ? (
-        effectiveView === "table" ? (
+        effectiveView === 'table' ? (
           <SessionTableSkeleton />
         ) : (
           <SessionGridSkeleton />
@@ -873,20 +810,20 @@ export default function SessionsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Activity}
-          title={filtersActive ? "No matches" : "No sessions yet"}
+          title={filtersActive ? 'No matches' : 'No sessions yet'}
           description={
             filtersActive
-              ? "Try clearing some filters or expanding the date range."
-              : "Sessions will appear here as your SDK starts capturing traffic. The Module / Script sandbox pages generate live events to test the pipeline end-to-end."
+              ? 'Try clearing some filters or expanding the date range.'
+              : 'Sessions will appear here as your SDK starts capturing traffic. The Module / Script sandbox pages generate live events to test the pipeline end-to-end.'
           }
           action={
             filtersActive ? (
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearch("");
-                  setDurationFilter("all");
-                  setAgeFilter("all");
+                  setSearch('');
+                  setDurationFilter('all');
+                  setAgeFilter('all');
                   setHostFilter(null);
                 }}
               >
@@ -916,7 +853,7 @@ export default function SessionsPage() {
             const pinnedRows = filtered.filter((s) => pinned.has(s.id));
             const otherRows = filtered.filter((s) => !pinned.has(s.id));
             const renderBody = (rows: SessionRecord[]) =>
-              effectiveView === "table" ? (
+              effectiveView === 'table' ? (
                 <SessionTable
                   sessions={rows}
                   tab={tab}
@@ -942,10 +879,7 @@ export default function SessionsPage() {
             return (
               <div className="space-y-4">
                 {pinnedRows.length > 0 && (
-                  <section
-                    aria-label="Pinned sessions"
-                    data-testid="sessions-pinned-group"
-                  >
+                  <section aria-label="Pinned sessions" data-testid="sessions-pinned-group">
                     <h3 className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-2 inline-flex items-center gap-1.5">
                       <Pin className="size-3" />
                       Pinned
@@ -960,7 +894,7 @@ export default function SessionsPage() {
               </div>
             );
           })()}
-          {tab === "record" && hasNextPage && (
+          {tab === 'record' && hasNextPage && (
             <div className="flex justify-center mt-4">
               <Button
                 variant="outline"
@@ -974,7 +908,7 @@ export default function SessionsPage() {
                     Loading…
                   </>
                 ) : (
-                  "Load more"
+                  'Load more'
                 )}
               </Button>
             </div>
@@ -1007,10 +941,10 @@ function SessionRowTagChip({
       aria-pressed={!!active}
       data-testid="session-tag-chip"
       className={cn(
-        "inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-medium border transition-colors",
+        'inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-medium border transition-colors',
         active
-          ? "bg-fg text-bg border-fg"
-          : "bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong",
+          ? 'bg-fg text-bg border-fg'
+          : 'bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong',
       )}
     >
       {tag}
@@ -1018,15 +952,9 @@ function SessionRowTagChip({
   );
 }
 
-function DensityToggle({
-  value,
-  onChange,
-}: {
-  value: Density;
-  onChange: (next: Density) => void;
-}) {
-  const next: Density = value === "comfortable" ? "compact" : "comfortable";
-  const isCompact = value === "compact";
+function DensityToggle({ value, onChange }: { value: Density; onChange: (next: Density) => void }) {
+  const next: Density = value === 'comfortable' ? 'compact' : 'comfortable';
+  const isCompact = value === 'compact';
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -1034,39 +962,25 @@ function DensityToggle({
           type="button"
           onClick={() => onChange(next)}
           aria-pressed={isCompact}
-          aria-label={isCompact ? "Comfortable density" : "Compact density"}
+          aria-label={isCompact ? 'Comfortable density' : 'Compact density'}
           data-testid="sessions-density-toggle"
           className={cn(
-            "inline-flex h-8 items-center gap-1 rounded-md border border-border bg-bg-muted px-2 text-[11px] font-medium transition-colors",
-            isCompact
-              ? "bg-surface text-fg shadow-xs"
-              : "text-fg-subtle hover:text-fg",
+            'inline-flex h-8 items-center gap-1 rounded-md border border-border bg-bg-muted px-2 text-[11px] font-medium transition-colors',
+            isCompact ? 'bg-surface text-fg shadow-xs' : 'text-fg-subtle hover:text-fg',
           )}
         >
-          {isCompact ? (
-            <Rows4 className="size-3.5" />
-          ) : (
-            <Rows3 className="size-3.5" />
-          )}
-          <span className="hidden md:inline">
-            {isCompact ? "Compact" : "Comfortable"}
-          </span>
+          {isCompact ? <Rows4 className="size-3.5" /> : <Rows3 className="size-3.5" />}
+          <span className="hidden md:inline">{isCompact ? 'Compact' : 'Comfortable'}</span>
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        Toggle row density ({isCompact ? "→ comfortable" : "→ compact"})
+        Toggle row density ({isCompact ? '→ comfortable' : '→ compact'})
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function ViewModeToggle({
-  value,
-  onChange,
-}: {
-  value: ViewMode;
-  onChange: (v: ViewMode) => void;
-}) {
+function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
   return (
     <div
       role="radiogroup"
@@ -1074,15 +988,15 @@ function ViewModeToggle({
       className="inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-bg-muted p-0.5"
     >
       <ViewToggleButton
-        active={value === "table"}
-        onClick={() => onChange("table")}
+        active={value === 'table'}
+        onClick={() => onChange('table')}
         label="Table view"
       >
         <TableIcon className="size-3.5" />
       </ViewToggleButton>
       <ViewToggleButton
-        active={value === "grid"}
-        onClick={() => onChange("grid")}
+        active={value === 'grid'}
+        onClick={() => onChange('grid')}
         label="Grid view"
       >
         <LayoutGrid className="size-3.5" />
@@ -1112,10 +1026,8 @@ function ViewToggleButton({
           aria-label={label}
           onClick={onClick}
           className={cn(
-            "size-7 rounded-sm flex items-center justify-center transition-colors",
-            active
-              ? "bg-surface text-fg shadow-xs"
-              : "text-fg-subtle hover:text-fg",
+            'size-7 rounded-sm flex items-center justify-center transition-colors',
+            active ? 'bg-surface text-fg shadow-xs' : 'text-fg-subtle hover:text-fg',
           )}
         >
           {children}
@@ -1126,13 +1038,7 @@ function ViewToggleButton({
   );
 }
 
-function FilterPill({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}) {
+function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span
       className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-accent-soft text-accent-soft-fg border border-accent-soft text-[11px] font-medium"
@@ -1171,10 +1077,10 @@ function HostChips({
           type="button"
           onClick={() => onChange(null)}
           className={cn(
-            "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+            'h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0',
             active === null
-              ? "bg-fg text-bg border-fg"
-              : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+              ? 'bg-fg text-bg border-fg'
+              : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
           )}
           aria-pressed={active === null}
         >
@@ -1188,10 +1094,10 @@ function HostChips({
               type="button"
               onClick={() => onChange(isActive ? null : host)}
               className={cn(
-                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5",
+                'h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5',
                 isActive
-                  ? "bg-fg text-bg border-fg"
-                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+                  ? 'bg-fg text-bg border-fg'
+                  : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
               )}
               aria-pressed={isActive}
               data-testid={`sessions-host-chip-${host}`}
@@ -1199,8 +1105,8 @@ function HostChips({
               <span className="font-mono">{host}</span>
               <span
                 className={cn(
-                  "font-mono tabular-nums text-[10px]",
-                  isActive ? "text-bg/80" : "text-fg-faint",
+                  'font-mono tabular-nums text-[10px]',
+                  isActive ? 'text-bg/80' : 'text-fg-faint',
                 )}
               >
                 {count}
@@ -1240,10 +1146,10 @@ function TopTagChips({
               type="button"
               onClick={() => onChange(isActive ? null : tag)}
               className={cn(
-                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5",
+                'h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5',
                 isActive
-                  ? "bg-fg text-bg border-fg"
-                  : "bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong",
+                  ? 'bg-fg text-bg border-fg'
+                  : 'bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong',
               )}
               aria-pressed={isActive}
               data-testid={`sessions-top-tag-${tag}`}
@@ -1251,8 +1157,8 @@ function TopTagChips({
               <span>{tag}</span>
               <span
                 className={cn(
-                  "font-mono tabular-nums text-[10px]",
-                  isActive ? "text-bg/80" : "text-fg-faint",
+                  'font-mono tabular-nums text-[10px]',
+                  isActive ? 'text-bg/80' : 'text-fg-faint',
                 )}
               >
                 {count}
@@ -1281,17 +1187,17 @@ function FilterChips({
   showClear: boolean;
 }) {
   const durationOptions: { value: DurationFilter; label: string }[] = [
-    { value: "all", label: "Any duration" },
-    { value: "short", label: "< 30s" },
-    { value: "medium", label: "30s – 5m" },
-    { value: "long", label: "> 5m" },
+    { value: 'all', label: 'Any duration' },
+    { value: 'short', label: '< 30s' },
+    { value: 'medium', label: '30s – 5m' },
+    { value: 'long', label: '> 5m' },
   ];
 
   const ageOptions: { value: AgeFilter; label: string }[] = (
     Object.keys(AGE_LABELS) as AgeFilter[]
   ).map((k) => ({
     value: k,
-    label: k === "all" ? "Any time" : AGE_LABELS[k].replace("Last ", ""),
+    label: k === 'all' ? 'Any time' : AGE_LABELS[k].replace('Last ', ''),
   }));
 
   return (
@@ -1309,10 +1215,10 @@ function FilterChips({
               type="button"
               onClick={() => onAgeChange(opt.value)}
               className={cn(
-                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+                'h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0',
                 active
-                  ? "bg-fg text-bg border-fg"
-                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+                  ? 'bg-fg text-bg border-fg'
+                  : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
               )}
               aria-pressed={active}
               data-testid={`sessions-age-chip-${opt.value}`}
@@ -1333,10 +1239,10 @@ function FilterChips({
               type="button"
               onClick={() => onDurationChange(opt.value)}
               className={cn(
-                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+                'h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0',
                 active
-                  ? "bg-fg text-bg border-fg"
-                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+                  ? 'bg-fg text-bg border-fg'
+                  : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
               )}
               aria-pressed={active}
             >
@@ -1417,20 +1323,11 @@ function SessionTable({
   );
 }
 
-function Th({
-  className,
-  children,
-}: {
-  className?: string;
-  children?: React.ReactNode;
-}) {
+function Th({ className, children }: { className?: string; children?: React.ReactNode }) {
   return (
     <th
       scope="col"
-      className={cn(
-        "h-9 px-3 text-left font-semibold first:pl-4 last:pr-4",
-        className,
-      )}
+      className={cn('h-9 px-3 text-left font-semibold first:pl-4 last:pr-4', className)}
     >
       {children}
     </th>
@@ -1456,48 +1353,42 @@ function SessionRow({
   onTagClick?: (tag: string | null) => void;
   activeTag?: string | null;
 }) {
-  const isLive = tab === "live";
+  const isLive = tab === 'live';
   const isRecording = session.recordMode ?? !isLive;
-  const cellY = density === "compact" ? "py-1.5" : "py-3";
+  const cellY = density === 'compact' ? 'py-1.5' : 'py-3';
 
   return (
     <tr
       data-session-row={session.id}
       data-density={density}
       className={cn(
-        "group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors",
-        active && "bg-accent-soft/40",
-      )}>
-      <td className={cn("pl-4 pr-2 align-middle", cellY)}>
+        'group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors',
+        active && 'bg-accent-soft/40',
+      )}
+    >
+      <td className={cn('pl-4 pr-2 align-middle', cellY)}>
         <StatusDot isLive={isLive} isRecording={isRecording} />
       </td>
-      <td className={cn("px-3 align-middle", cellY)}>
+      <td className={cn('px-3 align-middle', cellY)}>
         <div className="flex flex-col min-w-0">
           <span className="font-medium text-fg truncate max-w-[280px]">
             {session.name || `Session #${session.id}`}
           </span>
-          {density === "comfortable" && (
+          {density === 'comfortable' && (
             <span className="text-[11px] text-fg-faint">
               ID {shortHash(String(session.id), 10)}
             </span>
           )}
-          {density === "comfortable" &&
-            session.tags &&
-            session.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {session.tags.map((t) => (
-                  <SessionRowTagChip
-                    key={t}
-                    tag={t}
-                    active={activeTag === t}
-                    onClick={onTagClick}
-                  />
-                ))}
-              </div>
-            )}
+          {density === 'comfortable' && session.tags && session.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {session.tags.map((t) => (
+                <SessionRowTagChip key={t} tag={t} active={activeTag === t} onClick={onTagClick} />
+              ))}
+            </div>
+          )}
         </div>
       </td>
-      <td className={cn("px-3 align-middle", cellY)}>
+      <td className={cn('px-3 align-middle', cellY)}>
         {session.url ? (
           <span className="font-mono text-xs text-fg-subtle truncate block max-w-[260px]">
             {session.url}
@@ -1506,81 +1397,71 @@ function SessionRow({
           <span className="text-fg-faint">—</span>
         )}
       </td>
-      <td className={cn("px-3 align-middle", cellY)}>
+      <td className={cn('px-3 align-middle', cellY)}>
         {session.deviceId ? (
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
               <Smartphone className="size-3.5" />
-              <span className="font-mono">
-                {shortHash(session.deviceId, 12)}
-              </span>
+              <span className="font-mono">{shortHash(session.deviceId, 12)}</span>
             </span>
-            {density === "comfortable" && (() => {
-              const badge = formatUserAgentBadge(session.userAgent);
-              if (!badge) return null;
-              return (
-                <span
-                  className="text-[10px] text-fg-faint truncate"
-                  data-testid="session-row-ua"
-                  title={session.userAgent}
-                >
-                  {badge}
-                </span>
-              );
-            })()}
+            {density === 'comfortable' &&
+              (() => {
+                const badge = formatUserAgentBadge(session.userAgent);
+                if (!badge) return null;
+                return (
+                  <span
+                    className="text-[10px] text-fg-faint truncate"
+                    data-testid="session-row-ua"
+                    title={session.userAgent}
+                  >
+                    {badge}
+                  </span>
+                );
+              })()}
           </div>
         ) : (
           <span className="text-fg-faint">—</span>
         )}
       </td>
-      <td className={cn("px-3 align-middle text-right", cellY)}>
+      <td className={cn('px-3 align-middle text-right', cellY)}>
         <span className="font-mono text-xs text-fg-subtle">
           {formatDurationFromNanos(session.duration)}
         </span>
       </td>
-      <td className={cn("px-3 align-middle text-right", cellY)}>
-        <span className="text-xs text-fg-subtle">
-          {formatTimeAgo(session.timestamp)}
-        </span>
+      <td className={cn('px-3 align-middle text-right', cellY)}>
+        <span className="text-xs text-fg-subtle">{formatTimeAgo(session.timestamp)}</span>
       </td>
-      <td className={cn("pl-3 pr-4 align-middle text-right", cellY)}>
+      <td className={cn('pl-3 pr-4 align-middle text-right', cellY)}>
         <div className="inline-flex items-center gap-1">
-          {onTogglePin && tab === "record" && (
+          {onTogglePin && tab === 'record' && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => onTogglePin(session.id)}
-                  aria-label={pinned ? "Unpin session" : "Pin session"}
+                  aria-label={pinned ? 'Unpin session' : 'Pin session'}
                   aria-pressed={pinned}
                   data-testid="session-pin-button"
                   className={cn(
-                    "transition-opacity",
+                    'transition-opacity',
                     pinned
-                      ? "opacity-100 text-fg"
-                      : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle",
+                      ? 'opacity-100 text-fg'
+                      : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle',
                   )}
                 >
-                  {pinned ? (
-                    <Pin className="size-3.5" />
-                  ) : (
-                    <PinOff className="size-3.5" />
-                  )}
+                  {pinned ? <Pin className="size-3.5" /> : <PinOff className="size-3.5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{pinned ? "Unpin" : "Pin"}</TooltipContent>
+              <TooltipContent>{pinned ? 'Unpin' : 'Pin'}</TooltipContent>
             </Tooltip>
           )}
           <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-            {tab === "record" && (
+            {tab === 'record' && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon-sm">
-                    <Link
-                      to={`/sessions/${session.id}`}
-                      aria-label="View session details"
-                    >
+                    <Link to={`/sessions/${session.id}`} aria-label="View session details">
                       <Activity className="size-3.5" />
                     </Link>
                   </Button>
@@ -1592,7 +1473,7 @@ function SessionRow({
               variant="ghost"
               size="icon-sm"
               room={session.name}
-              recordId={tab === "record" ? session.id : undefined}
+              recordId={tab === 'record' ? session.id : undefined}
               label="Open in DevTools"
               title="Open DevTools"
             >
@@ -1605,13 +1486,7 @@ function SessionRow({
   );
 }
 
-function StatusDot({
-  isLive,
-  isRecording,
-}: {
-  isLive: boolean;
-  isRecording: boolean;
-}) {
+function StatusDot({ isLive, isRecording }: { isLive: boolean; isRecording: boolean }) {
   if (isLive) {
     return (
       <Tooltip>
@@ -1630,12 +1505,12 @@ function StatusDot({
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "inline-block size-2 rounded-full",
-            isRecording ? "bg-fg-faint" : "bg-success",
+            'inline-block size-2 rounded-full',
+            isRecording ? 'bg-fg-faint' : 'bg-success',
           )}
         />
       </TooltipTrigger>
-      <TooltipContent>{isRecording ? "Recorded" : "Completed"}</TooltipContent>
+      <TooltipContent>{isRecording ? 'Recorded' : 'Completed'}</TooltipContent>
     </Tooltip>
   );
 }
@@ -1664,8 +1539,8 @@ function SessionGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
-        density === "compact" ? "gap-1.5 sm:gap-2" : "gap-2.5 sm:gap-3",
+        'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3',
+        density === 'compact' ? 'gap-1.5 sm:gap-2' : 'gap-2.5 sm:gap-3',
       )}
     >
       {sessions.map((session, idx) => (
@@ -1704,29 +1579,26 @@ function SessionCard({
   onTagClick?: (tag: string | null) => void;
   activeTag?: string | null;
 }) {
-  const isLive = tab === "live";
+  const isLive = tab === 'live';
   return (
     <Card
       data-session-row={session.id}
       data-density={density}
       className={cn(
-        "group transition-all hover:border-border-strong hover:shadow-sm",
-        density === "compact" ? "p-2 sm:p-2.5" : "p-3.5 sm:p-4",
-        active && "border-accent ring-1 ring-accent",
+        'group transition-all hover:border-border-strong hover:shadow-sm',
+        density === 'compact' ? 'p-2 sm:p-2.5' : 'p-3.5 sm:p-4',
+        active && 'border-accent ring-1 ring-accent',
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <StatusDot
-            isLive={isLive}
-            isRecording={session.recordMode ?? !isLive}
-          />
+          <StatusDot isLive={isLive} isRecording={session.recordMode ?? !isLive} />
           <span className="font-medium text-[15px] sm:text-sm text-fg truncate">
             {session.name || `Session #${session.id}`}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {onTogglePin && tab === "record" && (
+          {onTogglePin && tab === 'record' && (
             <button
               type="button"
               onClick={(e) => {
@@ -1734,21 +1606,17 @@ function SessionCard({
                 e.stopPropagation();
                 onTogglePin(session.id);
               }}
-              aria-label={pinned ? "Unpin session" : "Pin session"}
+              aria-label={pinned ? 'Unpin session' : 'Pin session'}
               aria-pressed={pinned}
               data-testid="session-pin-button"
               className={cn(
-                "inline-flex items-center justify-center size-6 rounded-md transition-opacity hover:bg-bg-muted",
+                'inline-flex items-center justify-center size-6 rounded-md transition-opacity hover:bg-bg-muted',
                 pinned
-                  ? "opacity-100 text-fg"
-                  : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle",
+                  ? 'opacity-100 text-fg'
+                  : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle',
               )}
             >
-              {pinned ? (
-                <Pin className="size-3.5" />
-              ) : (
-                <PinOff className="size-3.5" />
-              )}
+              {pinned ? <Pin className="size-3.5" /> : <PinOff className="size-3.5" />}
             </button>
           )}
           {isLive ? (
@@ -1765,20 +1633,13 @@ function SessionCard({
       </div>
 
       {session.url && (
-        <p className="font-mono text-[11px] text-fg-faint truncate mb-3">
-          {session.url}
-        </p>
+        <p className="font-mono text-[11px] text-fg-faint truncate mb-3">{session.url}</p>
       )}
 
       {session.tags && session.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {session.tags.map((t) => (
-            <SessionRowTagChip
-              key={t}
-              tag={t}
-              active={activeTag === t}
-              onClick={onTagClick}
-            />
+            <SessionRowTagChip key={t} tag={t} active={activeTag === t} onClick={onTagClick} />
           ))}
         </div>
       )}
@@ -1808,15 +1669,13 @@ function SessionCard({
           );
         })()}
         {session.timestamp && (
-          <span className="ml-auto text-fg-faint">
-            {formatTimeAgo(session.timestamp)}
-          </span>
+          <span className="ml-auto text-fg-faint">{formatTimeAgo(session.timestamp)}</span>
         )}
       </div>
 
       {/* Action row — full-width on mobile so thumbs hit easy targets */}
       <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
-        {tab === "record" && (
+        {tab === 'record' && (
           <Button asChild variant="secondary" size="sm" className="flex-1 touch-target">
             <Link to={`/sessions/${session.id}`}>
               <Activity />
@@ -1829,7 +1688,7 @@ function SessionCard({
           size="sm"
           className="flex-1 touch-target"
           room={session.name}
-          recordId={tab === "record" ? session.id : undefined}
+          recordId={tab === 'record' ? session.id : undefined}
         >
           <ExternalLink />
           DevTools
@@ -1904,9 +1763,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         <div className="size-10 rounded-full bg-danger-soft flex items-center justify-center mb-3">
           <X className="size-5 text-danger" />
         </div>
-        <h3 className="text-sm font-semibold text-fg mb-1">
-          Failed to load sessions
-        </h3>
+        <h3 className="text-sm font-semibold text-fg mb-1">Failed to load sessions</h3>
         <p className="text-sm text-fg-subtle max-w-sm mb-4">
           The server didn't respond. Check your connection or try again.
         </p>

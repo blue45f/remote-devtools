@@ -1,15 +1,15 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import type { Repository } from "typeorm";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { NetworkEntity } from "@remote-platform/entity";
+import { NetworkEntity } from '@remote-platform/entity';
 
-import { NetworkService } from "./network.service";
-import { RecordService } from "./record.service";
+import { NetworkService } from './network.service';
+import { RecordService } from './record.service';
 
-describe("NetworkService", () => {
+describe('NetworkService', () => {
   let service: NetworkService;
   let networkRepository: Repository<NetworkEntity>;
   let recordService: RecordService;
@@ -38,20 +38,18 @@ describe("NetworkService", () => {
     }).compile();
 
     service = module.get<NetworkService>(NetworkService);
-    networkRepository = module.get<Repository<NetworkEntity>>(
-      getRepositoryToken(NetworkEntity),
-    );
+    networkRepository = module.get<Repository<NetworkEntity>>(getRepositoryToken(NetworkEntity));
     recordService = module.get<RecordService>(RecordService);
   });
 
-  describe("create", () => {
-    it("should return null when recordId is missing", async () => {
+  describe('create', () => {
+    it('should return null when recordId is missing', async () => {
       const result = await service.create({ requestId: 1, timestamp: 123 });
       expect(result).toBeNull();
     });
 
-    it("should return null when record not found", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue(null);
+    it('should return null when record not found', async () => {
+      vi.spyOn(recordService, 'findOne').mockResolvedValue(null);
 
       const result = await service.create({
         recordId: 999,
@@ -62,10 +60,10 @@ describe("NetworkService", () => {
       expect(result).toBeNull();
     });
 
-    it("should return null when requestId is not a valid number", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({
+    it('should return null when requestId is not a valid number', async () => {
+      vi.spyOn(recordService, 'findOne').mockResolvedValue({
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>);
+      } as Awaited<ReturnType<RecordService['findOne']>>);
 
       const result = await service.create({
         recordId: 1,
@@ -76,15 +74,15 @@ describe("NetworkService", () => {
       expect(result).toBeNull();
     });
 
-    it("should create and save a network entry", async () => {
+    it('should create and save a network entry', async () => {
       const mockRecord = {
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>;
-      vi.spyOn(recordService, "findOne").mockResolvedValue(mockRecord);
-      vi.spyOn(networkRepository, "create").mockReturnValue({
+      } as Awaited<ReturnType<RecordService['findOne']>>;
+      vi.spyOn(recordService, 'findOne').mockResolvedValue(mockRecord);
+      vi.spyOn(networkRepository, 'create').mockReturnValue({
         id: 10,
       } as NetworkEntity);
-      vi.spyOn(networkRepository, "save").mockResolvedValue({
+      vi.spyOn(networkRepository, 'save').mockResolvedValue({
         id: 10,
       } as NetworkEntity);
 
@@ -100,53 +98,53 @@ describe("NetworkService", () => {
     });
   });
 
-  describe("findByRecordId", () => {
-    it("should find network entries ordered by timestamp ASC", async () => {
-      vi.spyOn(networkRepository, "find").mockResolvedValue([]);
+  describe('findByRecordId', () => {
+    it('should find network entries ordered by timestamp ASC', async () => {
+      vi.spyOn(networkRepository, 'find').mockResolvedValue([]);
 
       await service.findByRecordId(1);
 
       expect(networkRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
-        order: { timestamp: "ASC" },
+        order: { timestamp: 'ASC' },
       });
     });
   });
 
-  describe("findNetworks", () => {
-    it("should be an alias for findByRecordId", async () => {
-      vi.spyOn(networkRepository, "find").mockResolvedValue([]);
+  describe('findNetworks', () => {
+    it('should be an alias for findByRecordId', async () => {
+      vi.spyOn(networkRepository, 'find').mockResolvedValue([]);
 
       await service.findNetworks(1);
 
       expect(networkRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
-        order: { timestamp: "ASC" },
+        order: { timestamp: 'ASC' },
       });
     });
   });
 
-  describe("updateResponseBody", () => {
-    it("should throw when record not found", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue(null);
+  describe('updateResponseBody', () => {
+    it('should throw when record not found', async () => {
+      vi.spyOn(recordService, 'findOne').mockResolvedValue(null);
 
       await expect(
         service.updateResponseBody({
           recordId: 999,
           requestId: 1,
-          body: "test",
+          body: 'test',
           base64Encoded: false,
         }),
       ).rejects.toThrow();
     });
 
-    it("should find existing network entry and update its body", async () => {
+    it('should find existing network entry and update its body', async () => {
       const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({
+      vi.spyOn(recordService, 'findOne').mockResolvedValue({
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>);
-      vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
-      vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
+      } as Awaited<ReturnType<RecordService['findOne']>>);
+      vi.spyOn(networkRepository, 'findOne').mockResolvedValue(mockNetwork);
+      vi.spyOn(networkRepository, 'save').mockResolvedValue(mockNetwork);
 
       await service.updateResponseBody({
         recordId: 1,
@@ -160,55 +158,55 @@ describe("NetworkService", () => {
       expect(networkRepository.save).toHaveBeenCalledWith(mockNetwork);
     });
 
-    it("should keep base64 body as-is", async () => {
+    it('should keep base64 body as-is', async () => {
       const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({
+      vi.spyOn(recordService, 'findOne').mockResolvedValue({
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>);
-      vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
-      vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
+      } as Awaited<ReturnType<RecordService['findOne']>>);
+      vi.spyOn(networkRepository, 'findOne').mockResolvedValue(mockNetwork);
+      vi.spyOn(networkRepository, 'save').mockResolvedValue(mockNetwork);
 
       await service.updateResponseBody({
         recordId: 1,
         requestId: 42,
-        body: "SGVsbG8=",
+        body: 'SGVsbG8=',
         base64Encoded: true,
       });
 
-      expect(mockNetwork.responseBody).toBe("SGVsbG8=");
+      expect(mockNetwork.responseBody).toBe('SGVsbG8=');
       expect(mockNetwork.base64Encoded).toBe(true);
       expect(networkRepository.save).toHaveBeenCalledWith(mockNetwork);
     });
 
-    it("should keep non-JSON body as-is", async () => {
+    it('should keep non-JSON body as-is', async () => {
       const mockNetwork = { id: 10, requestId: 42 } as NetworkEntity;
-      vi.spyOn(recordService, "findOne").mockResolvedValue({
+      vi.spyOn(recordService, 'findOne').mockResolvedValue({
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>);
-      vi.spyOn(networkRepository, "findOne").mockResolvedValue(mockNetwork);
-      vi.spyOn(networkRepository, "save").mockResolvedValue(mockNetwork);
+      } as Awaited<ReturnType<RecordService['findOne']>>);
+      vi.spyOn(networkRepository, 'findOne').mockResolvedValue(mockNetwork);
+      vi.spyOn(networkRepository, 'save').mockResolvedValue(mockNetwork);
 
       await service.updateResponseBody({
         recordId: 1,
         requestId: 42,
-        body: "<html>not json</html>",
+        body: '<html>not json</html>',
         base64Encoded: false,
       });
 
-      expect(mockNetwork.responseBody).toBe("<html>not json</html>");
+      expect(mockNetwork.responseBody).toBe('<html>not json</html>');
       expect(networkRepository.save).toHaveBeenCalledWith(mockNetwork);
     });
 
-    it("should return without saving when network entry not found after retries", async () => {
-      vi.spyOn(recordService, "findOne").mockResolvedValue({
+    it('should return without saving when network entry not found after retries', async () => {
+      vi.spyOn(recordService, 'findOne').mockResolvedValue({
         id: 1,
-      } as Awaited<ReturnType<RecordService["findOne"]>>);
-      vi.spyOn(networkRepository, "findOne").mockResolvedValue(null);
+      } as Awaited<ReturnType<RecordService['findOne']>>);
+      vi.spyOn(networkRepository, 'findOne').mockResolvedValue(null);
 
       await service.updateResponseBody({
         recordId: 1,
         requestId: 42,
-        body: "test",
+        body: 'test',
         base64Encoded: false,
       });
 

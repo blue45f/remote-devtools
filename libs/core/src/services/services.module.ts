@@ -1,5 +1,5 @@
-import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
   DomEntity,
@@ -8,15 +8,15 @@ import {
   ReplayCommentEntity,
   RuntimeEntity,
   ScreenEntity,
-} from "@remote-platform/entity";
+} from '@remote-platform/entity';
 
-import { DomService } from "./dom.service";
-import { ImageBase64Service } from "./image-base64.service";
-import { NetworkService } from "./network.service";
-import { RecordService } from "./record.service";
-import { ReplayCommentService } from "./replay-comment.service";
-import { RuntimeService } from "./runtime.service";
-import { ScreenService } from "./screen.service";
+import { DomService } from './dom.service';
+import { ImageBase64Service } from './image-base64.service';
+import { NetworkService } from './network.service';
+import { RecordService } from './record.service';
+import { ReplayCommentService } from './replay-comment.service';
+import { RuntimeService } from './runtime.service';
+import { ScreenService } from './screen.service';
 
 @Module({
   imports: [

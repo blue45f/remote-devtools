@@ -1,18 +1,18 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { MemoryRouter } from "react-router-dom";
+import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 
-import { useAppStore } from "@/lib/store";
+import { useAppStore } from '@/lib/store';
 
-import { Sidebar } from "./Sidebar";
+import { Sidebar } from './Sidebar';
 
 const meta = {
-  title: "Composed/Sidebar",
+  title: 'Composed/Sidebar',
   component: Sidebar,
-  tags: ["autodocs"],
-  parameters: { layout: "fullscreen" },
+  tags: ['autodocs'],
+  parameters: { layout: 'fullscreen' },
   decorators: [
     (Story) => (
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter initialEntries={['/dashboard']}>
         <div className="h-screen flex bg-bg">
           <Story />
           <main className="flex-1" />

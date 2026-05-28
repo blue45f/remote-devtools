@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Brand, BrandMark } from "./Brand";
+import { Brand, BrandMark } from './Brand';
 
 const meta = {
-  title: "Composed/Brand",
+  title: 'Composed/Brand',
   component: Brand,
-  tags: ["autodocs"],
-  parameters: { layout: "centered" },
+  tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   args: { collapsed: false },
 } satisfies Meta<typeof Brand>;
 

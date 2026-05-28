@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 import {
   buildRecordTrend,
@@ -8,10 +8,10 @@ import {
   buildTicketTrend,
   liveSeedSessions,
   recordSeedSessions,
-} from "./seed";
+} from './seed';
 
-describe("buildSeedSessions", () => {
-  it("returns at least 12 entries with stable shape", () => {
+describe('buildSeedSessions', () => {
+  it('returns at least 12 entries with stable shape', () => {
     const sessions = buildSeedSessions();
     expect(sessions.length).toBeGreaterThanOrEqual(12);
     for (const s of sessions) {
@@ -26,7 +26,7 @@ describe("buildSeedSessions", () => {
     }
   });
 
-  it("partitions live and record sessions", () => {
+  it('partitions live and record sessions', () => {
     const all = buildSeedSessions();
     const live = liveSeedSessions();
     const recorded = recordSeedSessions();
@@ -36,8 +36,8 @@ describe("buildSeedSessions", () => {
   });
 });
 
-describe("buildSeedStats", () => {
-  it("provides finite numbers for every field", () => {
+describe('buildSeedStats', () => {
+  it('provides finite numbers for every field', () => {
     const stats = buildSeedStats();
     Object.values(stats).forEach((v) => {
       expect(Number.isFinite(v)).toBe(true);
@@ -46,39 +46,38 @@ describe("buildSeedStats", () => {
   });
 });
 
-describe("buildTicketTrend / buildRecordTrend", () => {
-  it("returns 14 daily entries by default", () => {
-    expect(buildTicketTrend("day")).toHaveLength(14);
-    expect(buildRecordTrend("day")).toHaveLength(14);
+describe('buildTicketTrend / buildRecordTrend', () => {
+  it('returns 14 daily entries by default', () => {
+    expect(buildTicketTrend('day')).toHaveLength(14);
+    expect(buildRecordTrend('day')).toHaveLength(14);
   });
 
-  it("varies length by period", () => {
-    expect(buildTicketTrend("week")).toHaveLength(8);
-    expect(buildTicketTrend("month")).toHaveLength(12);
+  it('varies length by period', () => {
+    expect(buildTicketTrend('week')).toHaveLength(8);
+    expect(buildTicketTrend('month')).toHaveLength(12);
   });
 
   it("each ticket trend item sums roles into 'created' total", () => {
-    const trend = buildTicketTrend("day");
+    const trend = buildTicketTrend('day');
     for (const item of trend) {
-      const sum =
-        item.developer + item.designer + item.pm + item.qa + item.other;
+      const sum = item.developer + item.designer + item.pm + item.qa + item.other;
       expect(sum).toBe(item.created);
     }
   });
 });
 
-describe("buildSeedSessionMeta + buildSeedEvents", () => {
-  it("returns a metadata record for known seed ids", () => {
+describe('buildSeedSessionMeta + buildSeedEvents', () => {
+  it('returns a metadata record for known seed ids', () => {
     const sessions = buildSeedSessions();
     const firstSession = sessions[0];
     expect(firstSession).toBeDefined();
-    if (!firstSession) throw new Error("Expected at least one seeded session");
+    if (!firstSession) throw new Error('Expected at least one seeded session');
     const meta = buildSeedSessionMeta(firstSession.id);
     expect(meta.id).toBe(firstSession.id);
     expect(meta.url).toBe(firstSession.url);
   });
 
-  it("falls back gracefully for unknown ids", () => {
+  it('falls back gracefully for unknown ids', () => {
     const meta = buildSeedSessionMeta(999_999);
     expect(meta.id).toBe(999_999);
     expect(meta.recordMode).toBe(true);
