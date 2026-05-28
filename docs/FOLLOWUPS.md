@@ -667,6 +667,13 @@ limit)` extracts hostname directly in SQL
   (GitHub / Linear convention), unless already typing in a
   field. Power-user navigation polish.
 
+- **Copy-link on session rows** — `97732ea2` — Hover
+  copy-link button on each recorded-session row puts the
+  absolute `/sessions/:id` URL on the clipboard for sharing.
+  Matches the app-wide copy-affordance pattern. (Also fixed
+  `1d9508cc`: dashboard manual refresh now invalidates the
+  Top-hosts and Recently-annotated panels too.)
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
