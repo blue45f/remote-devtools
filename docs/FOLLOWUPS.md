@@ -617,6 +617,16 @@ limit)` extracts hostname directly in SQL
   search without exporting the whole console. Matches the
   network-row copy interaction.
 
+- **Recently annotated panel** — `fc8b9fe3` (server) +
+  `18267ac4` (client) — Thirteenth backend cycle.
+  `DashboardService.getRecentlyAnnotated(limit)` returns the
+  newest records with a non-empty note via
+  `GET /api/dashboard/recent-notes`; the dashboard renders a
+  panel under the charts listing them (link + note preview +
+  relative age). Extends the notes feature to the dashboard
+  for team triage. Demo seed-router serves annotated seed
+  sessions.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
