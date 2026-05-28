@@ -35,6 +35,12 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -200,6 +206,22 @@ function csvCell(v: unknown): string {
   const s = String(v);
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+function sessionsToJson(rows: SessionRecord[]): string {
+  const payload = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    url: r.url ?? null,
+    host: getHostname(r.url) ?? null,
+    deviceId: r.deviceId ?? null,
+    mode: r.recordMode ? 'recorded' : 'live',
+    durationMs: r.duration ? Math.round(Number(r.duration) / 1_000_000) : null,
+    timestamp: r.timestamp ?? null,
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    userAgent: r.userAgent ?? null,
+  }));
+  return JSON.stringify(payload, null, 2) + '\n';
 }
 
 function sessionsToCsv(rows: SessionRecord[]): string {
@@ -477,21 +499,25 @@ export default function SessionsPage() {
     });
   }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter, tagFilter]);
 
-  const exportCsv = () => {
-    const csv = sessionsToCsv(filtered);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const downloadExport = (format: 'csv' | 'json') => {
+    const filename = `sessions-${new Date().toISOString().slice(0, 10)}.${format}`;
+    const payload = format === 'csv' ? sessionsToCsv(filtered) : sessionsToJson(filtered);
+    const mime = format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json';
+    const blob = new Blob([payload], { type: mime });
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
     a.href = url;
-    a.download = `sessions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Sessions CSV downloaded', {
+    toast.success(`Sessions ${format.toUpperCase()} downloaded`, {
       description: `${filtered.length} row${filtered.length === 1 ? '' : 's'}`,
     });
   };
+  const exportCsv = () => downloadExport('csv');
+  const exportJson = () => downloadExport('json');
 
   // Build the host strip from the *currently loaded* sessions so it
   // reflects what's on screen. Sort by hit count descending so the
@@ -626,22 +652,28 @@ export default function SessionsPage() {
 
           <ViewModeToggle value={view} onChange={setView} />
           <DensityToggle value={density} onChange={setDensity} />
-          <Tooltip>
-            <TooltipTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={exportCsv}
                 disabled={filtered.length === 0}
-                aria-label="Export filtered sessions as CSV"
-                data-testid="sessions-export-csv"
+                aria-label="Export filtered sessions"
+                data-testid="sessions-export"
                 className="touch-target"
               >
                 <Download />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Export CSV</TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={exportCsv} data-testid="sessions-export-csv">
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={exportJson} data-testid="sessions-export-json">
+                Export JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

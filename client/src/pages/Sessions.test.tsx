@@ -177,12 +177,40 @@ describe('Sessions page', () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByTestId('sessions-export-csv'));
+    await user.click(screen.getByTestId('sessions-export'));
+    await user.click(await screen.findByTestId('sessions-export-csv'));
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     const blob = createObjectURL.mock.calls[0][0] as Blob;
     expect(blob.type).toContain('text/csv');
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+  });
+
+  it('exports the filtered sessions list as JSON', async () => {
+    const user = userEvent.setup();
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:json');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('sessions-export'));
+    await user.click(await screen.findByTestId('sessions-export-json'));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toContain('application/json');
   });
 
   it('toggles row density and persists the choice', async () => {
