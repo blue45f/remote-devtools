@@ -224,7 +224,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   table row's device cell (comfortable density only), and in the
   grid card meta row. PostHog / Sentry / Datadog session-row UA
   badge parity.
-- **Session tags** — current commit — Second backend cycle. New
+- **Session tags** — `f4f7cd34` — Second backend cycle. New
   `tags text[]` column on RecordEntity (NOT NULL, default `{}`)
   + migration `1777800000000-AddTagsToRecord`. New
   `RecordService.replaceTags(id, tags)` and
@@ -243,10 +243,10 @@ the next obvious candidates. Each entry: what shipped, what's next.
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
+- ~~**Session tags** — done above.~~
 - **Network HAR / "Copy as cURL"** — depends on shaping network events
   with method/url/headers; check `libs/core` to see if SDK already
   captures these.
-- **Session tags** — needs DB column + endpoint; defer until backend cycle.
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
   across the session; needs decent event shape.
