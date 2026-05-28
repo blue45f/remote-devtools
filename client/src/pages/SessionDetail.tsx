@@ -2618,7 +2618,13 @@ function CommentRow({
   onEditCommit,
   onToggleResolved,
 }: {
-  comment: { id: number; timestampMs: number; body: string; resolved?: boolean };
+  comment: {
+    id: number;
+    timestampMs: number;
+    body: string;
+    resolved?: boolean;
+    author?: string | null;
+  };
   onSeek: (offsetMs: number) => void;
   onDelete: () => void;
   onEditCommit: (body: string) => void;
@@ -2707,18 +2713,28 @@ function CommentRow({
           data-testid="replay-comment-edit-input"
         />
       ) : (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className={cn(
-            'flex-1 text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1',
-            resolved && 'line-through',
+        <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className={cn(
+              'w-full text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1',
+              resolved && 'line-through',
+            )}
+            data-testid="replay-comment-body"
+            title="Click to edit"
+          >
+            {comment.body}
+          </button>
+          {comment.author && (
+            <span
+              className="block px-1 -mx-1 text-[10px] text-fg-faint"
+              data-testid="replay-comment-author"
+            >
+              — {comment.author}
+            </span>
           )}
-          data-testid="replay-comment-body"
-          title="Click to edit"
-        >
-          {comment.body}
-        </button>
+        </div>
       )}
       <button
         type="button"
