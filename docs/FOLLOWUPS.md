@@ -340,6 +340,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   TanStack Query cache (same key as the in-tab fetches) so the
   pre-fetch is free for the panels. Chrome DevTools tab-badge
   parity.
+- **Top tags quick-filter strip on Sessions** — current commit —
+  Mirrors the host-chips pattern: above the Sessions list, a
+  strip surfaces the top 8 tags across currently-loaded
+  sessions with hit counts. Clicking a chip toggles it as the
+  list-wide `tagFilter` (same state as the in-row chips), so
+  the `?tag=` URL round-trip and active-filter pill keep
+  working. Lets the user pick the dominant tag without
+  scanning every row. Linear / Notion / Datadog list-tag
+  parity.
 
 Listed in rough order of value × ease:
 
