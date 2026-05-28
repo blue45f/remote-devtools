@@ -359,6 +359,18 @@ the next obvious candidates. Each entry: what shipped, what's next.
   — bypasses the setTimeout/race-condition trap a naïve focus
   attempt would hit during the tab transition. Documented in
   the Session detail shortcuts group.
+- **ActivityFeed surfaces recent replay comments** — current
+  commit — Connects the comments feature to the Dashboard.
+  `ActivityService.getFeedPage` now pulls from the
+  `replay_comment` table too, merges into the chronological
+  feed, and a `comment` kind ships with a 80-char truncated
+  body subtitle so reviewers see what was said without
+  navigating. Anonymous author + missing session name both
+  fall back gracefully. Frontend gains a 5th chip
+  ("Comment") with its own MessageSquare icon. The
+  `activity-prefs:v1` storage parser accepts the new kind
+  without breaking older saved sets. Linear / Slack /
+  Discourse activity-stream parity.
 
 Listed in rough order of value × ease:
 

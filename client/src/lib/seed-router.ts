@@ -400,7 +400,7 @@ function buildSeedPreview(id: number) {
 
 interface ActivityEntry {
   id: string;
-  kind: "session" | "ticket" | "error" | "join";
+  kind: "session" | "ticket" | "error" | "join" | "comment";
   title: string;
   subtitle?: string;
   at: string;
@@ -413,22 +413,35 @@ function buildActivityFeed(): ActivityEntry[] {
   const sessions = buildSeedSessions();
   const events: ActivityEntry[] = [];
 
-  for (let i = 0; i < 14; i++) {
+  const kinds = ["session", "ticket", "error", "join", "comment"] as const;
+
+  for (let i = 0; i < 15; i++) {
     const s = sessions[i % sessions.length];
     const offset = i * 11_000 + Math.floor(Math.random() * 5_000);
     const at = new Date(now - offset).toISOString();
-    const kind = (["session", "ticket", "error", "join"] as const)[i % 4];
+    const kind = kinds[i % kinds.length];
     const titleByKind = {
       session: `Recorded session · ${s.name}`,
       ticket: `Ticket created on ${s.name}`,
       error: `Console error in ${s.url.split("/")[2]}`,
       join: `Engineer joined ${s.name}`,
+      comment: `Comment by qa on ${s.name}`,
+    };
+    const subtitleByKind = {
+      session: s.url,
+      ticket: s.url,
+      error: s.url,
+      join: s.url,
+      comment:
+        i % 2 === 0
+          ? "The checkout button is offset to the right on iPhone SE."
+          : "Confirmed reproducible: spinner never resolves after 3s.",
     };
     events.push({
       id: `${kind}-${i}-${s.id}`,
       kind,
       title: titleByKind[kind],
-      subtitle: s.url,
+      subtitle: subtitleByKind[kind],
       at,
       device: s.deviceId,
       sessionId: s.recordMode ? s.id : undefined,

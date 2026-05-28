@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   Clapperboard,
+  MessageSquare,
   Sparkles,
   Ticket,
   UserPlus,
@@ -19,7 +20,12 @@ import { apiFetch } from "@/lib/api";
 import { formatTimeAgo, shortHash } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type ActivityKind = "session" | "ticket" | "error" | "join";
+type ActivityKind =
+  | "session"
+  | "ticket"
+  | "error"
+  | "join"
+  | "comment";
 
 const FILTER_STORAGE_KEY = "activity-prefs:v1";
 
@@ -33,7 +39,11 @@ function readStoredKinds(): Set<ActivityKind> {
     const valid = new Set<ActivityKind>(
       parsed.kinds.filter(
         (k): k is ActivityKind =>
-          k === "session" || k === "ticket" || k === "error" || k === "join",
+          k === "session" ||
+          k === "ticket" ||
+          k === "error" ||
+          k === "join" ||
+          k === "comment",
       ),
     );
     return valid;
@@ -87,6 +97,11 @@ const KIND_META: Record<
     icon: UserPlus,
     tone: "bg-success-soft text-success",
     label: "Join",
+  },
+  comment: {
+    icon: MessageSquare,
+    tone: "bg-accent-soft text-accent-soft-fg",
+    label: "Comment",
   },
 };
 
@@ -171,6 +186,7 @@ export function ActivityFeed({
       ticket: 0,
       error: 0,
       join: 0,
+      comment: 0,
     };
     for (const it of allItems) {
       counts[it.kind] = (counts[it.kind] ?? 0) + 1;
@@ -189,7 +205,13 @@ export function ActivityFeed({
     });
   };
 
-  const allKinds: ActivityKind[] = ["session", "ticket", "error", "join"];
+  const allKinds: ActivityKind[] = [
+    "session",
+    "ticket",
+    "error",
+    "join",
+    "comment",
+  ];
 
   return (
     <Card className={cn("p-5", className)}>

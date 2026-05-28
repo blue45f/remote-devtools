@@ -80,7 +80,13 @@ describe("resolveSeed", () => {
     if (!feed) throw new Error("Expected seeded feed entries");
     for (const item of feed) {
       expect(item.id).toMatch(/^[a-z]+-\d+-\d+$/);
-      expect(["session", "ticket", "error", "join"]).toContain(item.kind);
+      expect([
+        "session",
+        "ticket",
+        "error",
+        "join",
+        "comment",
+      ]).toContain(item.kind);
       expect(item.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     }
   });
