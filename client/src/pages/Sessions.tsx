@@ -26,7 +26,7 @@ import {
   Tag,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -306,6 +306,7 @@ export default function SessionsPage() {
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
   const [tagFilter, setTagFilter] = useState<string | null>(initialTag);
   const [noteOnly, setNoteOnly] = useState<boolean>(initialNoteOnly);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Live tab polling: 5s default, 15s / 30s slower, "off" pauses.
   // Stored in component state only — most sessions are short-lived
@@ -566,6 +567,29 @@ export default function SessionsPage() {
     tagFilter !== null ||
     noteOnly;
 
+  // `/` focuses the search box (GitHub / Linear convention). Ignored
+  // while already typing so it doesn't hijack a literal slash.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
   // while typing in inputs, while modifier keys are held, and while
   // live tab is active (the live tab has no detail route).
@@ -711,6 +735,7 @@ export default function SessionsPage() {
           <div className="order-3 sm:order-none w-full sm:flex-1 sm:min-w-[220px]">
             <div className="relative">
               <Input
+                ref={searchInputRef}
                 placeholder={
                   regexMode
                     ? '/regex/ — match name, URL, or device'

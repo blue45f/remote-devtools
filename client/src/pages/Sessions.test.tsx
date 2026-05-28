@@ -247,6 +247,20 @@ describe('Sessions page', () => {
     expect(screen.getByText(/annotated/)).toBeInTheDocument();
   });
 
+  it('focuses the search input when "/" is pressed', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText(/Search by name/);
+    expect(input).not.toHaveFocus();
+
+    await user.keyboard('/');
+    expect(input).toHaveFocus();
+  });
+
   it('toggles row density and persists the choice', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
