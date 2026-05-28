@@ -278,6 +278,28 @@ describe('SessionDetail page', () => {
     expect(screen.getByTestId('console-error-badge').textContent).toBe('2');
   });
 
+  it('surfaces a top-errors card on the Overview tab when console errors exist', async () => {
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId('overview-top-errors')).toBeInTheDocument();
+    });
+    // Seed has 2 error-level console rows.
+    const rows = screen.getAllByTestId('overview-top-error-row');
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('Top errors "See all" jumps to the Console tab', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId('overview-top-errors-jump')).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId('overview-top-errors-jump'));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Console/, selected: true })).toBeInTheDocument();
+    });
+  });
+
   it('renders captured console messages on the Console tab', async () => {
     const user = userEvent.setup();
     renderAt(1000);

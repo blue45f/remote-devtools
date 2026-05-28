@@ -379,13 +379,35 @@ the next obvious candidates. Each entry: what shipped, what's next.
   default flow is unchanged. Free-text + type filters
   compose. Mirrors the Console level-chip pattern. Chrome
   DevTools Network "Fetch/XHR" filter parity.
-- **Network row Open URL button** — current commit — Tiny UX
+- **Network row Open URL button** — `232d5db0` — Tiny UX
   polish: each Network row exposes an `ExternalLink` icon
   next to the Copy-cURL button. Hover-revealed (same
   pattern), opens the captured URL in a new tab with
   `rel="noreferrer"`. The row-click → response body modal
   still fires when clicking the row body — the link sits
   in the existing stopPropagation cell.
+- **Codebase prettier reformat** — `b7d73670` — Chore. The
+  user's tooling rollout (commitlint + husky pre-push +
+  eslint-plugin-prettier + `.prettierrc` `singleQuote: true`)
+  was blocking every push with 5928 lint violations across
+  the existing double-quote codebase. Ran `eslint --fix`
+  across apps / libs / client / sdk / debug-recorder-admin
+  to normalise quote style + trailing commas + wrap-at-100.
+  Also cleaned up: unused `Kbd` import in Sessions.tsx, two
+  `== null` → `=== undefined || === null` checks for the
+  eqeqeq rule, two stale eslint-disable comments referencing
+  the now-unregistered react-hooks/exhaustive-deps rule, and
+  added a scripts/\*_/_.mjs block to debug-recorder-admin's
+  eslint config so the build-budget script has Node globals.
+  CI green again.
+- **Overview top-errors card** — current commit — When a
+  session has captured console errors, the Overview tab
+  surfaces the most recent 3 as a danger-toned card at the
+  top (above the event-type counts). Each entry shows
+  timestamp + truncated message. A "See all" button jumps
+  to the Console tab. Reuses the pre-fetched consoleRows
+  query so no extra network hit. PostHog / Sentry / Datadog
+  session-overview "what went wrong" parity.
 
 Listed in rough order of value × ease:
 
