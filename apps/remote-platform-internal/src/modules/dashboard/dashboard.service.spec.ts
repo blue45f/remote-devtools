@@ -182,4 +182,45 @@ describe('DashboardService', () => {
       expect(qb.limit).toHaveBeenCalledWith(1);
     });
   });
+
+  describe('getRecentlyAnnotated', () => {
+    it('maps annotated records, normalising the timestamp to ISO', async () => {
+      const when = new Date('2026-05-01T10:00:00.000Z');
+      const getMany = vi
+        .fn()
+        .mockResolvedValue([{ id: 5, name: 'broken-checkout', note: 'repro', timestamp: when }]);
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        getMany,
+      };
+      mockRecordRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await service.getRecentlyAnnotated(5);
+      expect(rows).toEqual([
+        { id: 5, name: 'broken-checkout', note: 'repro', timestamp: when.toISOString() },
+      ]);
+      expect(qb.limit).toHaveBeenCalledWith(5);
+    });
+
+    it('clamps the limit to [1, 25]', async () => {
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        getMany: vi.fn().mockResolvedValue([]),
+      };
+      mockRecordRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.getRecentlyAnnotated(0);
+      expect(qb.limit).toHaveBeenCalledWith(1);
+      await service.getRecentlyAnnotated(9999);
+      expect(qb.limit).toHaveBeenCalledWith(25);
+    });
+  });
 });
