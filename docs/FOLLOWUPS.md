@@ -560,6 +560,12 @@ limit)` extracts hostname directly in SQL
   updates them live. Failed counter renders in danger color
   only when ≥1 4xx/5xx is present.
 
+- **Network detail copy actions** — `ff19a89f` — Copy URL /
+  Copy cURL / Open buttons in the NetworkRowDetail header.
+  Once a request's detail is open the user can grab its URL
+  or a runnable cURL without closing the dialog to hunt for
+  the row-hover affordance. Reuses buildCurlCommand.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
