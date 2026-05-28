@@ -165,6 +165,21 @@ describe('SessionDetail page', () => {
     expect(dialog).toHaveTextContent('Jump to Replay and focus a new comment');
   });
 
+  it('shows the Network summary bar with transferred bytes and failed count', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const summary = screen.getByTestId('session-network-summary');
+    expect(summary).toHaveTextContent(/transferred/);
+    // Seed has one 401 and one 500 → at least one failed request.
+    expect(screen.getByTestId('session-network-failed')).toHaveTextContent(/failed/);
+  });
+
   it('filters the Network tab by HTTP status class chip', async () => {
     const user = userEvent.setup();
     renderAt(1000);

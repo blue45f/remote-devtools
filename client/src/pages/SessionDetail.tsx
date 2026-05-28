@@ -769,6 +769,17 @@ function NetworkTab({
     });
   }, [rows, filter, activeTypes, activeStatusClasses]);
 
+  const summary = useMemo(() => {
+    let transferred = 0;
+    let failed = 0;
+    for (const r of filtered) {
+      transferred += Number(r.encodedDataLength) || 0;
+      const cls = statusClassOf(r.status);
+      if (cls === '4xx' || cls === '5xx') failed += 1;
+    }
+    return { transferred, failed };
+  }, [filtered]);
+
   if (isLoading) {
     return (
       <Card className="p-3 space-y-2">
@@ -920,11 +931,24 @@ function NetworkTab({
         })}
       </div>
       <Card className="overflow-hidden p-0">
-        <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
+        <div
+          className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between gap-2"
+          data-testid="session-network-summary"
+        >
           <span>
             <span className="font-medium text-fg-subtle">{filtered.length}</span> requests
             {filtered.length !== rows.length && (
               <span className="text-fg-faint ml-1">(of {rows.length})</span>
+            )}
+          </span>
+          <span className="flex items-center gap-3 shrink-0">
+            <span data-testid="session-network-transferred">
+              {formatBytes(summary.transferred)} transferred
+            </span>
+            {summary.failed > 0 && (
+              <span className="text-danger" data-testid="session-network-failed">
+                {summary.failed} failed
+              </span>
             )}
           </span>
         </div>
