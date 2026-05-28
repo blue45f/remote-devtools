@@ -1,4 +1,5 @@
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { renderWithProviders } from "@/test/utils";
@@ -29,6 +30,35 @@ describe("ActivityFeed", () => {
     await waitFor(() => {
       const items = document.querySelectorAll("ol > li");
       expect(items.length).toBeLessThanOrEqual(3);
+    });
+  });
+
+  it("persists chip filter selection to localStorage", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ActivityFeed pollMs={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("activity-kind-chip-session")).toBeEnabled();
+    });
+    await user.click(screen.getByTestId("activity-kind-chip-session"));
+
+    await waitFor(() => {
+      const raw = localStorage.getItem("activity-prefs:v1");
+      expect(raw).not.toBeNull();
+      expect(JSON.parse(raw as string).kinds).toContain("session");
+    });
+  });
+
+  it("hydrates chip filter from localStorage on mount", async () => {
+    localStorage.setItem(
+      "activity-prefs:v1",
+      JSON.stringify({ kinds: ["error"] }),
+    );
+    renderWithProviders(<ActivityFeed pollMs={0} />);
+
+    await waitFor(() => {
+      const chip = screen.getByTestId("activity-kind-chip-error");
+      expect(chip.getAttribute("aria-pressed")).toBe("true");
     });
   });
 });
