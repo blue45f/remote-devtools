@@ -224,6 +224,19 @@ the next obvious candidates. Each entry: what shipped, what's next.
   table row's device cell (comfortable density only), and in the
   grid card meta row. PostHog / Sentry / Datadog session-row UA
   badge parity.
+- **Session tags** — current commit — Second backend cycle. New
+  `tags text[]` column on RecordEntity (NOT NULL, default `{}`)
+  + migration `1777800000000-AddTagsToRecord`. New
+  `RecordService.replaceTags(id, tags)` and
+  `PUT /sessions/record/:id/tags` endpoint with server-side
+  normalisation (trim, dedupe, cap at 16 × 24 chars). Tags ride
+  along on `/sessions/record` list responses + session-replay
+  metadata. Frontend: inline `TagsEditor` chip strip on
+  SessionDetail header — add via input + Enter, remove via the X
+  on each chip, optimistic UI with rollback on failure. The
+  `apiFetch` helper now accepts a `RequestInit` and the demo seed
+  router echoes the PUT body so offline edits feel live. Linear
+  / Notion / GitHub issue-tag parity.
 
 ## Next obvious candidates
 

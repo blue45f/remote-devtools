@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   ArrowLeft,
@@ -21,7 +21,9 @@ import {
   Minimize2,
   Monitor as MonitorIcon,
   PlayCircle,
+  Plus,
   RotateCcw,
+  Tag,
   RadioTower,
   Smartphone,
   X,
@@ -74,6 +76,7 @@ interface SessionMetadata {
   createdAt?: string;
   eventCount?: number;
   userAgent?: string;
+  tags?: string[];
 }
 
 /**
@@ -141,6 +144,15 @@ function formatTimestampWithMillis(ts: number) {
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // S3-backed sessions can't be edited (no DB row to update). Only DB
+  // sessions get an integer recordId that the tags-editor mutation can
+  // target.
+  const recordId = useMemo<number | null>(() => {
+    if (!id || id.startsWith("s3-")) return null;
+    const n = Number(id);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }, [id]);
 
   // Deep link to a specific moment in the replay: `?t=12345` (ms from
   // session start). Parity with PostHog / Sentry / Highlight.io share
@@ -297,7 +309,19 @@ export default function SessionDetailPage() {
       </Button>
 
       {/* Header */}
-      <SessionHeader id={id ?? ""} metadata={metadata} loading={metaLoading} />
+      <SessionHeader
+        id={id ?? ""}
+        metadata={metadata}
+        loading={metaLoading}
+        recordId={recordId}
+      />
+      {recordId !== null && (
+        <TagsEditor
+          recordId={recordId}
+          loading={metaLoading}
+          tags={metadata?.tags ?? []}
+        />
+      )}
 
       <Separator className="my-5 sm:my-6" />
 
@@ -433,6 +457,147 @@ export default function SessionDetailPage() {
   );
 }
 
+/* ───────── Tags editor ───────── */
+
+const MAX_TAG_LENGTH = 24;
+const MAX_TAGS = 16;
+
+function normaliseTags(input: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input) {
+    const trimmed = raw.trim().slice(0, MAX_TAG_LENGTH);
+    if (!trimmed) continue;
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+    if (out.length >= MAX_TAGS) break;
+  }
+  return out;
+}
+
+function TagsEditor({
+  recordId,
+  loading,
+  tags,
+}: {
+  recordId: number;
+  loading: boolean;
+  tags: string[];
+}) {
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState<string[] | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async (next: string[]) => {
+      const res = await apiFetch<{ id: number; tags: string[] }>(
+        `/sessions/record/${recordId}/tags`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tags: next }),
+        },
+      );
+      return res.tags;
+    },
+    onSuccess: (saved) => {
+      // Round-trip the server's normalised result back into the cache so
+      // the optimistic value is replaced even if the server trimmed more.
+      queryClient.setQueryData<SessionMetadata | undefined>(
+        ["session-metadata", String(recordId)],
+        (prev) => (prev ? { ...prev, tags: saved } : prev),
+      );
+      setPending(null);
+    },
+    onError: () => {
+      setPending(null);
+      toast.error("Couldn't save tags");
+    },
+  });
+
+  const visible = pending ?? tags;
+
+  const submit = () => {
+    const next = normaliseTags([...visible, draft]);
+    if (next.length === visible.length && draft.trim()) {
+      // Duplicate or normalised-to-empty — clear the input but don't fire.
+      setDraft("");
+      return;
+    }
+    setDraft("");
+    setPending(next);
+    mutation.mutate(next);
+  };
+
+  const remove = (t: string) => {
+    const next = visible.filter((x) => x !== t);
+    setPending(next);
+    mutation.mutate(next);
+  };
+
+  if (loading) return null;
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-1.5 mt-3"
+      data-testid="session-tags-editor"
+    >
+      <Tag className="size-3.5 text-fg-faint shrink-0" />
+      {visible.length === 0 && (
+        <span className="text-[11px] text-fg-faint">No tags yet.</span>
+      )}
+      {visible.map((t) => (
+        <span
+          key={t}
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-accent-soft text-accent-soft-fg border border-accent-soft text-[11px] font-medium"
+          data-testid="session-tag-chip"
+        >
+          {t}
+          <button
+            type="button"
+            onClick={() => remove(t)}
+            disabled={mutation.isPending}
+            aria-label={`Remove tag ${t}`}
+            className="opacity-60 hover:opacity-100 disabled:opacity-30"
+          >
+            <X className="size-3" />
+          </button>
+        </span>
+      ))}
+      {visible.length < MAX_TAGS && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="inline-flex items-center gap-1"
+        >
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={MAX_TAG_LENGTH}
+            placeholder="Add tag…"
+            aria-label="Add tag"
+            data-testid="session-tag-input"
+            className="h-6 px-2 rounded-full border border-border bg-surface text-[11px] placeholder:text-fg-faint focus:outline-none focus:ring-2 focus:ring-ring w-24"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || mutation.isPending}
+            aria-label="Save tag"
+            data-testid="session-tag-add"
+            className="inline-flex items-center justify-center size-6 rounded-full border border-border bg-surface text-fg-subtle hover:text-fg disabled:opacity-40"
+          >
+            <Plus className="size-3" />
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 /* ───────── Header ───────── */
 
 function SessionHeader({
@@ -443,6 +608,8 @@ function SessionHeader({
   id: string;
   metadata?: SessionMetadata;
   loading: boolean;
+  /** Numeric record id when this is a DB session (vs. an S3 backup). */
+  recordId?: number | null;
 }) {
   const isRecording = metadata?.recordMode;
   return (

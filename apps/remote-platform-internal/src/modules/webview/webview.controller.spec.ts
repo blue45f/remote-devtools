@@ -1,6 +1,6 @@
 import type { TestingModule } from "@nestjs/testing";
 import { Test } from "@nestjs/testing";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 import { RecordService } from "@remote-platform/core";
@@ -17,6 +17,7 @@ describe("WebviewController (Internal)", () => {
     findAll: vi.fn(),
     findOne: vi.fn(),
     findPaginated: vi.fn(),
+    replaceTags: vi.fn(),
   };
   const mockS3Service = {
     listBackupFiles: vi.fn(),
@@ -167,6 +168,55 @@ describe("WebviewController (Internal)", () => {
       expect(mockRecordService.findPaginated).toHaveBeenCalledWith(
         expect.objectContaining({ orgId: "org-explicit" }),
       );
+    });
+  });
+
+  describe("putRecordTags", () => {
+    it("normalises, dedupes and trims tags before persisting", async () => {
+      mockRecordService.replaceTags.mockResolvedValue({
+        id: 42,
+        tags: ["bug", "checkout"],
+      });
+      const res = await controller.putRecordTags("42", {
+        tags: ["  bug ", "bug", "checkout", "", null as unknown as string],
+      });
+      expect(res).toEqual({ id: 42, tags: ["bug", "checkout"] });
+      expect(mockRecordService.replaceTags).toHaveBeenCalledWith(42, [
+        "bug",
+        "checkout",
+      ]);
+    });
+
+    it("caps at 16 tags and 24 chars each", async () => {
+      const long = "x".repeat(50);
+      const many = Array.from({ length: 30 }, (_, i) => `t${i}`);
+      mockRecordService.replaceTags.mockImplementation((_id, tags) =>
+        Promise.resolve({ id: 1, tags }),
+      );
+      const res = await controller.putRecordTags("1", {
+        tags: [long, ...many],
+      });
+      expect(res.tags[0]).toBe("x".repeat(24));
+      expect(res.tags.length).toBe(16);
+    });
+
+    it("rejects non-integer recordId", async () => {
+      await expect(
+        controller.putRecordTags("abc", { tags: [] }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects non-array body.tags", async () => {
+      await expect(
+        controller.putRecordTags("1", { tags: "nope" as unknown as string[] }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("404s when record does not exist", async () => {
+      mockRecordService.replaceTags.mockResolvedValue(null);
+      await expect(
+        controller.putRecordTags("999", { tags: ["bug"] }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

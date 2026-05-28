@@ -48,7 +48,17 @@ export interface SeedSession {
   recordMode: boolean;
   timestamp: string;
   userAgent: string;
+  tags: string[];
 }
+
+const SEED_TAGS: string[][] = [
+  ["checkout", "bug"],
+  ["pricing"],
+  [],
+  ["mobile", "verified"],
+  ["error"],
+  [],
+];
 
 const USER_AGENTS: string[] = [
   // Chrome / macOS
@@ -78,6 +88,7 @@ export function buildSeedSessions(): SeedSession[] {
       recordMode: !isLive,
       timestamp: new Date(now - i * 17 * 60_000).toISOString(),
       userAgent: USER_AGENTS[i % USER_AGENTS.length],
+      tags: SEED_TAGS[i % SEED_TAGS.length],
     };
   });
 }
@@ -192,6 +203,7 @@ export function buildSeedSessionMeta(id: number) {
       createdAt: new Date(Date.now() - 5 * 60_000).toISOString(),
       eventCount: 0,
       userAgent: USER_AGENTS[0],
+      tags: [] as string[],
     };
   }
   return {
@@ -204,6 +216,7 @@ export function buildSeedSessionMeta(id: number) {
     createdAt: found.timestamp,
     eventCount: 0,
     userAgent: found.userAgent,
+    tags: found.tags,
   };
 }
 
