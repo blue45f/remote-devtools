@@ -15,6 +15,12 @@ interface ReplayPlayerProps {
   speed?: number;
   /** Whether the player should fast-forward through idle stretches. */
   skipInactive?: boolean;
+  /**
+   * Restart trigger — when this value changes (any change), the player
+   * seeks back to t=0. Parent maintains a monotonic counter; the player
+   * doesn't care about the value, only its identity change.
+   */
+  restartToken?: number;
   /** Fired whenever the player's playhead moves. */
   onTimeUpdate?: (currentTimeMs: number) => void;
 }
@@ -75,6 +81,7 @@ export function ReplayPlayer({
   startTime,
   speed,
   skipInactive,
+  restartToken,
   onTimeUpdate,
 }: ReplayPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -210,6 +217,27 @@ export function ReplayPlayer({
       /* ignore — older builds without setConfig */
     }
   }, [skipInactive, validationError]);
+
+  // Restart trigger — any change to restartToken seeks back to t=0. The
+  // initial undefined / 0 mount is ignored so we don't restart the player
+  // before the user has had a chance to do anything.
+  const hasRestartedRef = useRef(false);
+  useEffect(() => {
+    if (validationError) return;
+    if (restartToken === undefined) return;
+    if (!hasRestartedRef.current) {
+      hasRestartedRef.current = true;
+      return;
+    }
+    const instance = instanceRef.current;
+    if (!instance?.goto) return;
+    try {
+      instance.goto(0, false);
+      currentTimeRef.current = 0;
+    } catch {
+      /* ignore */
+    }
+  }, [restartToken, validationError]);
 
   if (validationError) {
     return (

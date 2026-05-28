@@ -83,6 +83,19 @@ describe("SessionDetail page", () => {
     expect(localStorage.getItem("replay-prefs:v1")).toContain('"speed":2');
   });
 
+  it("renders the Restart button on the Replay tab", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("2");
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-restart")).toBeInTheDocument();
+    });
+
+    // Click is a no-op against the mocked player but should not throw.
+    await user.click(screen.getByTestId("replay-restart"));
+  });
+
   it("toggles skip-inactive and persists the choice", async () => {
     const user = userEvent.setup();
     renderAt(1000);
