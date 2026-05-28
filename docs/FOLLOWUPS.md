@@ -553,6 +553,13 @@ limit)` extracts hostname directly in SQL
   structured payload — useful for jq pipelines or pasting
   into a scratch script. Same filter-respecting behaviour.
 
+- **Network panel summary bar** — `2d6954e2` — Transferred-
+  bytes and failed-request counters in the Network tab's
+  count bar (Chrome DevTools status-bar parity). Both track
+  the filtered view, so narrowing by type/status/text
+  updates them live. Failed counter renders in danger color
+  only when ≥1 4xx/5xx is present.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
