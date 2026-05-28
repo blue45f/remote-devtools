@@ -6,11 +6,13 @@ import {
   Bug,
   Calendar,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
   ChevronUp,
+  Circle,
   Clock,
   Copy,
   Download,
@@ -2612,11 +2614,13 @@ function CommentRow({
   onSeek,
   onDelete,
   onEditCommit,
+  onToggleResolved,
 }: {
-  comment: { id: number; timestampMs: number; body: string };
+  comment: { id: number; timestampMs: number; body: string; resolved?: boolean };
   onSeek: (offsetMs: number) => void;
   onDelete: () => void;
   onEditCommit: (body: string) => void;
+  onToggleResolved: (resolved: boolean) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.body);
@@ -2650,8 +2654,27 @@ function CommentRow({
     setEditing(false);
   };
 
+  const resolved = comment.resolved ?? false;
+
   return (
-    <li className="flex items-start gap-2 text-xs" data-testid="replay-comment">
+    <li
+      className={cn('flex items-start gap-2 text-xs', resolved && 'opacity-55')}
+      data-testid="replay-comment"
+      data-resolved={resolved ? 'true' : 'false'}
+    >
+      <button
+        type="button"
+        onClick={() => onToggleResolved(!resolved)}
+        aria-label={resolved ? 'Reopen comment' : 'Mark comment resolved'}
+        aria-pressed={resolved}
+        data-testid="replay-comment-resolve"
+        className={cn(
+          'shrink-0 mt-0.5 transition-colors',
+          resolved ? 'text-success' : 'text-fg-faint hover:text-fg',
+        )}
+      >
+        {resolved ? <CheckCircle2 className="size-3.5" /> : <Circle className="size-3.5" />}
+      </button>
       <button
         type="button"
         onClick={() => onSeek(comment.timestampMs)}
@@ -2685,7 +2708,10 @@ function CommentRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex-1 text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1"
+          className={cn(
+            'flex-1 text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1',
+            resolved && 'line-through',
+          )}
           data-testid="replay-comment-body"
           title="Click to edit"
         >
@@ -2711,6 +2737,7 @@ interface ReplayComment {
   body: string;
   author: string | null;
   createdAt: string;
+  resolved?: boolean;
 }
 
 function formatReplayTimestamp(ms: number): string {
@@ -2810,6 +2837,28 @@ function CommentsPanel({
     },
   });
 
+  const resolveMutation = useMutation({
+    mutationFn: async (input: { id: number; resolved: boolean }) => {
+      return apiFetch<ReplayComment>(`/sessions/record/${recordId}/comments/${input.id}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolved: input.resolved }),
+      });
+    },
+    onMutate: async ({ id, resolved }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<ReplayComment[]>(queryKey);
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (p) =>
+        (p ?? []).map((c) => (c.id === id ? { ...c, resolved } : c)),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast.error("Couldn't update comment");
+    },
+  });
+
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
@@ -2848,6 +2897,7 @@ function CommentsPanel({
               onSeek={onSeek}
               onDelete={() => deleteMutation.mutate(c.id)}
               onEditCommit={(body) => editMutation.mutate({ id: c.id, body })}
+              onToggleResolved={(resolved) => resolveMutation.mutate({ id: c.id, resolved })}
             />
           ))}
         </ol>
