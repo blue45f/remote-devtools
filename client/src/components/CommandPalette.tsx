@@ -1,4 +1,4 @@
-import { Keyboard, Monitor, Moon, Sparkles, Sun } from "lucide-react";
+import { Keyboard, Monitor, Moon, RotateCcw, Sparkles, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { toast } from "@/components/ui/toaster";
@@ -117,6 +117,26 @@ export function CommandPalette() {
             <Keyboard />
             <span>Keyboard shortcuts</span>
             <CommandShortcut>?</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            value="reset sessions preferences"
+            onSelect={() =>
+              run(() => {
+                try {
+                  window.localStorage.removeItem("sessions-prefs:v1");
+                  window.localStorage.removeItem("sessions-pins:v1");
+                  toast.success("Sessions preferences cleared", {
+                    description:
+                      "Reload the Sessions page for view / sort / pins to reset.",
+                  });
+                } catch {
+                  toast.error("Couldn't clear preferences");
+                }
+              })
+            }
+          >
+            <RotateCcw />
+            <span>Reset Sessions preferences</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>
