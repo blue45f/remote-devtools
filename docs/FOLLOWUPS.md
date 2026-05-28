@@ -73,10 +73,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
 - **Pricing FAQ search** — `5145105a` — Live filter input over
   questions + answers, with a helpful "no matches" CTA that links to
   GitHub issues. Stripe / Vercel / Linear pricing parity.
-- **Sessions time-range filter** — current commit — Sessions filter
+- **Sessions time-range filter** — `3a643931` — Sessions filter
   chips gain a "Time" group (24h / 7d / 30d / all time) ahead of the
   Duration group. Filters by `s.timestamp`. Datadog / PostHog parity
   for "show me what happened recently" triage flows.
+- **SessionDetail copy-to-clipboard chips** — current commit — Session
+  ID eyebrow and Device metric tile become hover-to-copy. Copy icon
+  flips to a Check on success and a toast confirms. Linear / Vercel /
+  Stripe metadata block parity.
 
 ## Next obvious candidates
 
