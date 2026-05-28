@@ -22,7 +22,8 @@
     "build": "pnpm run build:all",
     "build:internal": "nest build remote-platform-internal",
     "build:external": "nest build remote-platform-external",
-    "build:all": "pnpm run build:internal && pnpm run build:external",
+    "build:react": "pnpm --filter client build && pnpm --filter sdk build && pnpm --filter debug-recorder-admin build && pnpm --filter figma-plugin build",
+    "build:all": "pnpm run build:internal && pnpm run build:external && pnpm run build:react",
     "start:container": "pm2-runtime start ecosystem.config.js",
     "start:internal": "nest start remote-platform-internal",
     "start:internal:dev": "nest start remote-platform-internal --watch",
@@ -40,6 +41,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "prepare": "husky",
     "lint": "eslint apps/ libs/",
     "lint:fix": "eslint apps/ libs/ --fix",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
@@ -95,6 +97,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@nestjs/cli": "^11.0.21",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.24",
@@ -119,8 +123,18 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "unplugin-swc": "^1.5.9",
     "vitest": "^4.1.7"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=22",

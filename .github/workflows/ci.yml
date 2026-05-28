@@ -151,7 +151,7 @@ jobs:
       - run: pnpm --filter figma-plugin build
 
   build:
-    name: Build (backend + SDK + client + admin)
+    name: Build (backend + React apps + plugins + SDK + admin)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
@@ -171,14 +171,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build:all
-      - name: Build SDK
-        working-directory: sdk
-        run: pnpm build
-      - name: Build client
-        working-directory: client
-        run: pnpm build
-      - name: Build Debug Recorder Admin
-        run: pnpm --filter debug-recorder-admin build
 
   ci-pass-gate:
     name: CI pass gate
