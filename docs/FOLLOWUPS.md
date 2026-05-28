@@ -422,7 +422,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Backend tests cover trim, blank rejection, non-string
   rejection, 404 when missing. Linear / Notion / Figma
   comment-edit parity.
-- **Comment markers on Replay minimap** — current commit —
+- **Comment markers on Replay minimap** — `ddb91c6e` —
   Captured comments render as small accent-colored vertical
   pins on the existing ReplayMinimap, positioned by
   `timestampMs / totalSessionMs`. Clicking a pin jumps the
