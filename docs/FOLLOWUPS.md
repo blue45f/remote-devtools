@@ -627,6 +627,14 @@ limit)` extracts hostname directly in SQL
   for team triage. Demo seed-router serves annotated seed
   sessions.
 
+- **Error markers on replay minimap** — `7aac1bf5` — The
+  replay minimap renders red ticks for console errors and
+  4xx/5xx network responses (from rows the page already
+  fetches). Click a tick to seek the player to that moment —
+  jump straight to where something broke. Sits alongside the
+  accent comment markers on the same strip. OpenReplay /
+  Sentry error-timeline parity.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
