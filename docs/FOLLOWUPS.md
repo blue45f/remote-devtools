@@ -566,6 +566,19 @@ limit)` extracts hostname directly in SQL
   or a runnable cURL without closing the dialog to hunt for
   the row-hover affordance. Reuses buildCurlCommand.
 
+- **Per-session note** — `a25bd284` (server) + `7d4ed97f`
+  (client) — Twelfth backend cycle. Nullable `note text`
+  column on RecordEntity (migration 1778000000000), carried
+  through SessionMetadata, written via
+  `PATCH /sessions/record/:id/note` (trim, cap 4000, empty →
+  NULL). SessionDetail renders a NoteEditor textarea under
+  the tags row with Save/Cancel that appears only when the
+  draft diverges; Save round-trips the server-trimmed value
+  into the metadata cache. Demo seed-router handles the
+  PATCH and session 1000 ships a sample note. Distinct from
+  tags: tags are short labels, note is long-form context
+  (repro steps). Sentry/Linear issue-note parity.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
