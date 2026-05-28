@@ -504,6 +504,27 @@ describe('SessionDetail page', () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it('copies a Markdown session summary from the header', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    const btn = await screen.findByTestId('session-header-copy-summary');
+    await user.click(btn);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const md = writeText.mock.calls[0][0] as string;
+    // Markdown heading + at least one metadata bullet.
+    expect(md).toMatch(/^### /);
+    expect(md).toMatch(/- \*\*Session ID:\*\*/);
+  });
+
   it('copies the session URL via the header Copy URL button', async () => {
     const user = userEvent.setup();
 
