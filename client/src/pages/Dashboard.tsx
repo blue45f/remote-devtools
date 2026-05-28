@@ -50,6 +50,35 @@ interface TrendItem {
 
 type Period = "day" | "week" | "month";
 
+const DASHBOARD_PREFS_KEY = "dashboard-prefs:v1";
+const ALL_PERIODS: Period[] = ["day", "week", "month"];
+
+function readStoredPeriod(): Period | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_PREFS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { period?: string };
+    return ALL_PERIODS.includes(parsed?.period as Period)
+      ? (parsed.period as Period)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistPeriod(period: Period) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      DASHBOARD_PREFS_KEY,
+      JSON.stringify({ period }),
+    );
+  } catch {
+    /* private mode / quota — the toggle still works in-session */
+  }
+}
+
 const PERIODS: { value: Period; label: string }[] = [
   { value: "day", label: "Daily" },
   { value: "week", label: "Weekly" },
@@ -66,7 +95,9 @@ const ROLE_LABELS: Record<(typeof ROLE_KEYS)[number], string> = {
 };
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<Period>("day");
+  const [period, setPeriod] = useState<Period>(
+    () => readStoredPeriod() ?? "day",
+  );
   const queryClient = useQueryClient();
   const [, forceTick] = useState(0);
 
@@ -76,6 +107,12 @@ export default function DashboardPage() {
     const i = window.setInterval(() => forceTick((n) => n + 1), 5_000);
     return () => window.clearInterval(i);
   }, []);
+
+  // Persist the period preference so reopens land on the user's last
+  // chosen range.
+  useEffect(() => {
+    persistPeriod(period);
+  }, [period]);
 
   const statsQuery = useQuery({
     queryKey: ["dashboard-stats"],
