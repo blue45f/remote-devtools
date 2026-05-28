@@ -611,6 +611,12 @@ limit)` extracts hostname directly in SQL
   into a Linear/GitHub/Jira ticket. Sentry "copy issue
   details" parity.
 
+- **Console row copy button** — `4745c457` — Hover copy
+  affordance on each console row grabs the single message
+  text — quick for pasting one error line into a ticket or
+  search without exporting the whole console. Matches the
+  network-row copy interaction.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
