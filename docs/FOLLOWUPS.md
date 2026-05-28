@@ -181,7 +181,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   on init and re-applies via `setConfig({skipInactive})` when the
   prop changes. PostHog "Skip inactivity" / OpenReplay "Skip idle"
   parity — long sessions become bearable.
-- **Dashboard period preference** — current commit — The
+- **Dashboard period preference** — `fb688d20` — The
   daily / weekly / monthly tab choice persists to
   `dashboard-prefs:v1` and hydrates on next visit. Stops the
   back-and-forth tax of users who live on the monthly view.
