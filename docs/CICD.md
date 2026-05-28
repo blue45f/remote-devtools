@@ -106,6 +106,19 @@ gh api -X PUT \
 `required_approving_review_count=0`은 사람 리뷰 강제는 별도 정책에 맡기고
 필수 체크만 게이트로 사용한다는 의미입니다(필요 시 1 이상으로 올리세요).
 
+#### 게이트 동작 검증 절차
+
+설정이 실제로 작동하는지 확인하려면 작은 PR 한 번으로 단계별 동작을 관찰할 수 있습니다.
+
+1. 임의의 작은 브랜치를 푸시한 뒤 `gh pr create --draft`로 PR 생성
+   → `CodeRabbit review gate`는 draft에서는 skip (`if` 조건으로 차단)
+2. `gh pr ready <number>`로 ready for review 전환
+   → 워크플로우가 실행되어 초기에는 `CHANGES_REQUESTED` 가능성 (CodeRabbit이 첫 리뷰를 게시하기 전 또는 이슈가 있을 때) → 게이트 실패
+3. CodeRabbit이 자동으로 PR을 리뷰
+   → `APPROVED` 또는 `CHANGES_REQUESTED` 상태로 PR review가 등록됨
+4. `pull_request_review` 이벤트 → 워크플로우 재실행
+5. 최신 리뷰 state가 `APPROVED` 일 때만 `CodeRabbit review gate ✅`
+
 ## 원격 푸시 후 CI 확인 루틴
 
 원격 `push`가 발생하면 CI는 자동 실행됩니다. 병합/배포 전 최종 확인용으로 다음 순서를 추천합니다.
