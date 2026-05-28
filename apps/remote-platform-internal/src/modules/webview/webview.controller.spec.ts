@@ -26,6 +26,7 @@ describe('WebviewController (Internal)', () => {
     create: vi.fn(),
     delete: vi.fn(),
     updateBody: vi.fn(),
+    setResolved: vi.fn(),
   };
   const mockS3Service = {
     listBackupFiles: vi.fn(),
@@ -416,6 +417,33 @@ describe('WebviewController (Internal)', () => {
       await expect(controller.patchRecordComment('42', '999', { body: 'x' })).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('patchRecordCommentResolved sets the flag and echoes it', async () => {
+      mockReplayCommentService.setResolved.mockResolvedValue({
+        id: 7,
+        timestampMs: 1000,
+        body: 'x',
+        author: null,
+        createdAt: new Date(),
+        resolved: true,
+      });
+      const out = await controller.patchRecordCommentResolved('42', '7', { resolved: true });
+      expect(out.resolved).toBe(true);
+      expect(mockReplayCommentService.setResolved).toHaveBeenCalledWith(7, 42, true);
+    });
+
+    it('patchRecordCommentResolved rejects a non-boolean resolved', async () => {
+      await expect(
+        controller.patchRecordCommentResolved('42', '7', { resolved: 'yes' as unknown as boolean }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('patchRecordCommentResolved 404s when service returns null', async () => {
+      mockReplayCommentService.setResolved.mockResolvedValue(null);
+      await expect(
+        controller.patchRecordCommentResolved('42', '999', { resolved: false }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

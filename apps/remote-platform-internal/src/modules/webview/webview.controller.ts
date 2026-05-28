@@ -344,6 +344,7 @@ export class WebviewController {
       body: c.body,
       author: c.author ?? null,
       createdAt: c.createdAt,
+      resolved: c.resolved ?? false,
     }));
   }
 
@@ -392,6 +393,7 @@ export class WebviewController {
       body: saved.body,
       author: saved.author,
       createdAt: saved.createdAt,
+      resolved: saved.resolved ?? false,
     };
   }
 
@@ -428,6 +430,42 @@ export class WebviewController {
       body: updated.body,
       author: updated.author,
       createdAt: updated.createdAt,
+      resolved: updated.resolved ?? false,
+    };
+  }
+
+  /**
+   * PATCH /sessions/record/:recordId/comments/:commentId/resolve
+   * Body: { resolved: boolean }
+   * Marks a shared annotation as addressed (or reopens it) for triage.
+   */
+  @Patch('record/:recordId/comments/:commentId/resolve')
+  public async patchRecordCommentResolved(
+    @Param('recordId') recordId: string,
+    @Param('commentId') commentId: string,
+    @Body() body: { resolved?: unknown },
+  ) {
+    const id = this.parseRecordId(recordId);
+    const cId = Number(commentId);
+    if (!Number.isInteger(cId) || cId <= 0) {
+      throw new BadRequestException('Invalid commentId parameter');
+    }
+    if (typeof body?.resolved !== 'boolean') {
+      throw new BadRequestException('body.resolved must be a boolean');
+    }
+
+    const updated = await this.replayCommentService.setResolved(cId, id, body.resolved);
+    if (!updated) {
+      throw new NotFoundException(`Comment ${cId} not found on record ${id}`);
+    }
+
+    return {
+      id: updated.id,
+      timestampMs: updated.timestampMs,
+      body: updated.body,
+      author: updated.author,
+      createdAt: updated.createdAt,
+      resolved: updated.resolved ?? false,
     };
   }
 

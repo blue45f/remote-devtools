@@ -78,4 +78,22 @@ export class ReplayCommentService {
     row.body = body;
     return this.repo.save(row);
   }
+
+  /**
+   * Toggle the resolved flag on a comment scoped to a record. Returns the
+   * updated entity, or null when the comment doesn't exist on that record.
+   */
+  public async setResolved(
+    commentId: number,
+    recordId: number,
+    resolved: boolean,
+  ): Promise<ReplayCommentEntity | null> {
+    const row = await this.repo.findOne({
+      where: { id: commentId, record: { id: recordId } },
+      relations: { record: true },
+    });
+    if (!row) return null;
+    row.resolved = resolved;
+    return this.repo.save(row);
+  }
 }

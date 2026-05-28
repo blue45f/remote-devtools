@@ -45,6 +45,10 @@ export class ReplayCommentEntity {
   @Column({ type: 'varchar', length: 80, nullable: true })
   public author: string | null;
 
+  /** triage 워크플로우용 해결 여부. 팀이 처리 완료한 주석을 표시한다. */
+  @Column({ type: 'boolean', default: false })
+  public resolved: boolean;
+
   /** 코멘트 작성 시각. */
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   public createdAt: Date;
