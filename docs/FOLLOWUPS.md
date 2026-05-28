@@ -296,8 +296,25 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the canvas keeps the underlying preview readable. Closes
   FOLLOWUPS #5. FullStory / Microsoft Clarity / LogRocket
   heatmap parity.
-
-## Next obvious candidates
+- **Replay comments / annotations** — current commit — Fourth
+  backend cycle and the last open FOLLOWUPS candidate. New
+  `replay_comment` table (id PK, record_id FK CASCADE,
+  timestamp_ms int, body text, author varchar(80) NULL,
+  org_id uuid NULL, created_at timestamp); migration
+  `1777900000000-AddReplayComments` creates the table + indexes
+  on (record_id, created_at) and (org_id, created_at).
+  `ReplayCommentService` (libs/core) handles CRUD;
+  WebviewController exposes
+  `GET/POST/DELETE /sessions/record/:id/comments[/:commentId]`
+  with server-side trim, body length cap (2000), author length
+  cap (80), and negative-timestampMs rejection. Frontend:
+  `CommentsPanel` on the Replay tab — chronological list
+  (sorted by timestampMs), click the m:ss prefix to seek the
+  replay, X to delete, inline form to add at the current
+  playhead. apiFetch's RequestInit support carries POST/DELETE.
+  Demo seed router holds an in-memory store with two starter
+  comments per session so the UI demos out of the box. PostHog
+  / Sentry / OpenReplay collaborative-review parity.
 
 Listed in rough order of value × ease:
 
@@ -305,8 +322,12 @@ Listed in rough order of value × ease:
 - ~~**Session tags** — done above.~~
 - ~~**Network HAR / "Copy as cURL"** — Network list, cURL copy
   and HAR export all shipped above.~~
-- **Comments / annotations on a replay** — needs DB + auth; defer.
+- ~~**Comments / annotations on a replay** — done above.~~
 - ~~**Heatmap overlay on Captured Preview** — done above.~~
+
+The original FOLLOWUPS candidates are all shipped. Future cycles
+should look at next-level features (real-time collab, replay
+search, AI summarization, etc.).
 
 ## Conventions
 

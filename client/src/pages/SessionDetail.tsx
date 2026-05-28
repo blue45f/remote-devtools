@@ -20,10 +20,12 @@ import {
   Maximize2,
   Minimize2,
   Monitor as MonitorIcon,
+  MessageSquare,
   PlayCircle,
   Plus,
   RotateCcw,
   Tag,
+  Trash2,
   RadioTower,
   Smartphone,
   X,
@@ -451,6 +453,7 @@ export default function SessionDetailPage() {
               initialReplayOffset={initialReplayOffset}
               playheadMsRef={playheadMsRef}
               onJumpToReplay={jumpToReplay}
+              recordId={recordId}
             />
           )}
         </TabsContent>
@@ -1108,6 +1111,8 @@ interface ReplayPanelProps {
   initialReplayOffset: number;
   playheadMsRef: React.MutableRefObject<number>;
   onJumpToReplay: (offsetMs: number) => void;
+  /** Numeric record id when this is a DB session (vs. an S3 backup). */
+  recordId: number | null;
 }
 
 function ReplayPanel({
@@ -1116,6 +1121,7 @@ function ReplayPanel({
   initialReplayOffset,
   playheadMsRef,
   onJumpToReplay,
+  recordId,
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1249,7 +1255,190 @@ function ReplayPanel({
           }}
         />
       </Suspense>
+      {recordId !== null && (
+        <CommentsPanel
+          recordId={recordId}
+          playheadMsRef={playheadMsRef}
+          onSeek={onJumpToReplay}
+        />
+      )}
     </div>
+  );
+}
+
+/* ───────── Replay comments ───────── */
+
+interface ReplayComment {
+  id: number;
+  timestampMs: number;
+  body: string;
+  author: string | null;
+  createdAt: string;
+}
+
+function formatReplayTimestamp(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function CommentsPanel({
+  recordId,
+  playheadMsRef,
+  onSeek,
+}: {
+  recordId: number;
+  playheadMsRef: React.MutableRefObject<number>;
+  onSeek: (offsetMs: number) => void;
+}) {
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(
+    () => ["session-comments", recordId] as const,
+    [recordId],
+  );
+
+  const { data, isLoading } = useQuery<ReplayComment[]>({
+    queryKey,
+    queryFn: () =>
+      apiFetch<ReplayComment[]>(
+        `/sessions/record/${recordId}/comments`,
+      ),
+  });
+
+  const [draft, setDraft] = useState("");
+  const comments = data ?? [];
+
+  const addMutation = useMutation({
+    mutationFn: async (input: { timestampMs: number; body: string }) => {
+      return apiFetch<ReplayComment>(
+        `/sessions/record/${recordId}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        },
+      );
+    },
+    onSuccess: (saved) => {
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (prev) =>
+        [...(prev ?? []), saved].sort((a, b) => a.timestampMs - b.timestampMs),
+      );
+      setDraft("");
+    },
+    onError: () => toast.error("Couldn't save comment"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await apiFetch<void>(
+        `/sessions/record/${recordId}/comments/${commentId}`,
+        { method: "DELETE" },
+      );
+      return commentId;
+    },
+    onMutate: async (commentId) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<ReplayComment[]>(queryKey);
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (p) =>
+        (p ?? []).filter((c) => c.id !== commentId),
+      );
+      return { prev };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast.error("Couldn't delete comment");
+    },
+  });
+
+  const submit = () => {
+    const text = draft.trim();
+    if (!text) return;
+    addMutation.mutate({
+      timestampMs: Math.max(0, Math.round(playheadMsRef.current)),
+      body: text,
+    });
+  };
+
+  return (
+    <Card className="p-4" data-testid="replay-comments-panel">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+          <MessageSquare className="size-3.5 text-fg-faint" />
+          Comments
+          {comments.length > 0 && (
+            <Badge variant="neutral" size="sm" className="ml-1">
+              {comments.length}
+            </Badge>
+          )}
+        </h3>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-8 w-full" />
+      ) : comments.length === 0 ? (
+        <p className="text-xs text-fg-faint mb-3">
+          No comments yet — add one anchored to the current playhead.
+        </p>
+      ) : (
+        <ol className="space-y-2 mb-3">
+          {comments.map((c) => (
+            <li
+              key={c.id}
+              className="flex items-start gap-2 text-xs"
+              data-testid="replay-comment"
+            >
+              <button
+                type="button"
+                onClick={() => onSeek(c.timestampMs)}
+                className="font-mono tabular-nums text-accent hover:underline shrink-0 mt-0.5"
+                data-testid="replay-comment-seek"
+                aria-label={`Seek to ${formatReplayTimestamp(c.timestampMs)}`}
+              >
+                {formatReplayTimestamp(c.timestampMs)}
+              </button>
+              <p className="flex-1 text-fg break-words">{c.body}</p>
+              <button
+                type="button"
+                onClick={() => deleteMutation.mutate(c.id)}
+                aria-label="Delete comment"
+                data-testid="replay-comment-delete"
+                className="opacity-40 hover:opacity-100 text-fg-faint hover:text-danger"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="flex items-center gap-2"
+      >
+        <Input
+          placeholder="Add a comment at the current playhead…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={2000}
+          data-testid="replay-comment-input"
+          leadingIcon={<MessageSquare />}
+        />
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          disabled={!draft.trim() || addMutation.isPending}
+          data-testid="replay-comment-add"
+        >
+          <Plus />
+          <span className="hidden sm:inline">Add</span>
+        </Button>
+      </form>
+    </Card>
   );
 }
 

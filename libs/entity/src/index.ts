@@ -1,6 +1,7 @@
 export { DomEntity } from "./dom.entity";
 export { RecordEntity } from "./record.entity";
 export { NetworkEntity } from "./network.entity";
+export { ReplayCommentEntity } from "./replay-comment.entity";
 export { RuntimeEntity } from "./runtime.entity";
 export { ScreenEntity } from "./screen.entity";
 export { TicketLogEntity } from "./ticket-log.entity";
