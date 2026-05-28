@@ -370,6 +370,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `activity-prefs:v1` storage parser accepts the new kind
   without breaking older saved sets. Linear / Slack /
   Discourse activity-stream parity.
+- **Network tab resource type filter chips** — current commit —
+  Above the Network row table, a chip strip surfaces the
+  resource types (Document, Stylesheet, Fetch, Image, Script,
+  …) that appear in the captured rows, sorted by count
+  descending so the dominant type floats up. Multi-select
+  toggle — empty selection means "show everything" so the
+  default flow is unchanged. Free-text + type filters
+  compose. Mirrors the Console level-chip pattern. Chrome
+  DevTools Network "Fetch/XHR" filter parity.
 
 Listed in rough order of value × ease:
 
