@@ -538,6 +538,14 @@ limit)` extracts hostname directly in SQL
   posts, Postman, browser address bar. Same toast/Check
   flip pattern as the existing copy actions.
 
+- **Session header Copy URL** — `b600aca4` — Outline
+  "Copy URL" button next to Open URL in the SessionHeader
+  action cluster. Saves a trip into the Network tab when
+  the user just needs the captured page URL (Linear
+  tickets, repro recipes). Drive-by: Raw tab's Copy button
+  gets a `raw-copy` testid so the tab-switch tests don't
+  ambiguously match either Copy button.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
