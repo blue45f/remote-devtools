@@ -529,6 +529,10 @@ export default function SessionDetailPage() {
               onJumpToReplay={jumpToReplay}
               recordId={recordId}
               commentFocusSignal={commentFocusSignal}
+              commentMarkers={(commentRows ?? []).map((c) => ({
+                id: c.id,
+                timestampMs: c.timestampMs,
+              }))}
             />
           )}
         </TabsContent>
@@ -1398,6 +1402,8 @@ interface ReplayPanelProps {
   recordId: number | null;
   /** Bumped by the page's `C` shortcut — CommentsPanel focuses its input. */
   commentFocusSignal: number;
+  /** Comment positions (ms-from-session-start) drawn as minimap markers. */
+  commentMarkers?: { id: number; timestampMs: number }[];
 }
 
 function ReplayPanel({
@@ -1408,6 +1414,7 @@ function ReplayPanel({
   onJumpToReplay,
   recordId,
   commentFocusSignal,
+  commentMarkers,
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1511,7 +1518,12 @@ function ReplayPanel({
         )}
         <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
       </div>
-      <ReplayMinimap events={events} sessionStartMs={sessionStartMs} onSeek={onJumpToReplay} />
+      <ReplayMinimap
+        events={events}
+        sessionStartMs={sessionStartMs}
+        onSeek={onJumpToReplay}
+        commentMarkers={commentMarkers}
+      />
       <Suspense
         fallback={
           <Card className="p-6">
@@ -2002,10 +2014,13 @@ function ReplayMinimap({
   events,
   sessionStartMs,
   onSeek,
+  commentMarkers,
 }: {
   events: ReplayEvent[];
   sessionStartMs: number;
   onSeek: (offsetMs: number) => void;
+  /** Comment positions (ms-from-session-start) to render as marker pins. */
+  commentMarkers?: { id: number; timestampMs: number }[];
 }) {
   const BUCKETS = 96;
 
@@ -2050,7 +2065,7 @@ function ReplayMinimap({
             onSeek(totalMs / 2);
           }
         }}
-        className="flex h-10 items-end gap-px cursor-pointer rounded-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative flex h-10 items-end gap-px cursor-pointer rounded-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid="replay-minimap"
       >
         {buckets.map((count, i) => {
@@ -2067,6 +2082,23 @@ function ReplayMinimap({
                 height: `${heightPct}%`,
                 opacity: count === 0 ? 0.12 : 0.25 + intensity * 0.65,
               }}
+            />
+          );
+        })}
+        {(commentMarkers ?? []).map((m) => {
+          const ratio = Math.min(1, Math.max(0, m.timestampMs / totalMs));
+          return (
+            <button
+              key={m.id}
+              type="button"
+              aria-label="Jump to comment"
+              data-testid="replay-minimap-comment"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSeek(m.timestampMs);
+              }}
+              className="absolute top-0 bottom-0 w-0.5 bg-accent hover:w-1 transition-all"
+              style={{ left: `calc(${ratio * 100}% - 1px)` }}
             />
           );
         })}

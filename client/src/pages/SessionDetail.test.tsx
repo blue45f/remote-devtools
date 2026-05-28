@@ -148,6 +148,18 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('renders comment markers on the Replay minimap', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-minimap')).toBeInTheDocument();
+    });
+    // Seed router pre-seeds 2 starter comments per session.
+    const markers = screen.getAllByTestId('replay-minimap-comment');
+    expect(markers.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('edits a comment inline and the new body persists', async () => {
     const user = userEvent.setup();
     renderAt(1000);
