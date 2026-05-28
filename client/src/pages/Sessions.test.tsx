@@ -213,6 +213,17 @@ describe('Sessions page', () => {
     expect(blob.type).toContain('application/json');
   });
 
+  it('shows a note indicator on sessions that carry a note', async () => {
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+    // Seed session 1000 ships a note → at least one indicator renders.
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-note-indicator').length).toBeGreaterThan(0);
+    });
+  });
+
   it('toggles row density and persists the choice', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
