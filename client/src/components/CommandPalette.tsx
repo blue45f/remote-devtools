@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import {
   FastForward,
   History,
   Keyboard,
+  MessageSquare,
   Monitor,
   Moon,
   RotateCcw,
@@ -21,12 +23,22 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command';
-import { queryClient } from '@/lib/api';
+import { apiFetch, queryClient } from '@/lib/api';
 import { allNavItems } from '@/lib/nav';
 import { shortHash } from '@/lib/format';
 import { clearRecentSessions, useRecentSessions } from '@/lib/recent-sessions';
 import { useReplayPrefs } from '@/lib/replay-prefs';
 import { useAppStore } from '@/lib/store';
+
+interface ActivityEntry {
+  id: string;
+  kind: 'session' | 'ticket' | 'error' | 'join' | 'comment';
+  title: string;
+  subtitle?: string;
+  at: string;
+  sessionId?: number;
+  timestampMs?: number;
+}
 
 export function CommandPalette() {
   const navigate = useNavigate();
@@ -38,6 +50,21 @@ export function CommandPalette() {
   const setShortcutsOpen = useAppStore((s) => s.setShortcutsOpen);
   const recentSessions = useRecentSessions();
   const [{ skipInactive }, setReplayPrefs] = useReplayPrefs();
+
+  // Pull recent activity feed only while the palette is open so closed
+  // palettes don't poll. Filter for comment entries client-side.
+  const { data: activity } = useQuery<ActivityEntry[]>({
+    queryKey: ['palette-activity'],
+    queryFn: () => apiFetch<ActivityEntry[]>('/api/activity/feed?limit=20'),
+    enabled: commandOpen,
+    staleTime: 30_000,
+  });
+  const recentComments = (activity ?? [])
+    .filter(
+      (e): e is ActivityEntry & { sessionId: number } =>
+        e.kind === 'comment' && typeof e.sessionId === 'number',
+    )
+    .slice(0, 5);
 
   const run = (fn: () => void) => {
     fn();
@@ -68,6 +95,34 @@ export function CommandPalette() {
                   )}
                 </CommandItem>
               ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+
+        {recentComments.length > 0 && (
+          <>
+            <CommandGroup heading="Recent comments">
+              {recentComments.map((c) => {
+                const url =
+                  typeof c.timestampMs === 'number'
+                    ? `/sessions/${c.sessionId}?t=${c.timestampMs}`
+                    : `/sessions/${c.sessionId}`;
+                return (
+                  <CommandItem
+                    key={c.id}
+                    value={`recent comment ${c.id} ${c.title} ${c.subtitle ?? ''}`}
+                    onSelect={() => run(() => navigate(url))}
+                    data-testid="cmd-recent-comment"
+                  >
+                    <MessageSquare />
+                    <span className="truncate">{c.subtitle ?? c.title}</span>
+                    <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
+                      {c.title.replace(/^Comment by /, '')}
+                    </span>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
             <CommandSeparator />
           </>

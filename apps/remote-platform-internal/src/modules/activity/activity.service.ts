@@ -16,6 +16,8 @@ export interface ActivityEntry {
   at: string;
   device?: string;
   sessionId?: number;
+  /** Playhead offset (ms-from-session-start) for comment entries. */
+  timestampMs?: number;
 }
 
 export interface ActivityPage {
@@ -153,6 +155,7 @@ export class ActivityService {
         subtitle: truncated,
         at: (c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt)).toISOString(),
         sessionId: c.record?.id,
+        timestampMs: c.timestampMs,
       });
     }
 

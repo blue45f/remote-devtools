@@ -186,7 +186,7 @@ describe('ActivityService', () => {
   });
 
   describe('replay comments in the feed', () => {
-    it('surfaces recent replay comments with the truncated body subtitle', async () => {
+    it('surfaces recent replay comments with the truncated body subtitle and timestampMs', async () => {
       recordRepo.find.mockResolvedValue([]);
       ticketRepo.find.mockResolvedValue([]);
       const longBody =
@@ -197,6 +197,7 @@ describe('ActivityService', () => {
           createdAt: new Date('2026-05-29T00:00:00Z'),
           body: longBody,
           author: 'qa',
+          timestampMs: 4500,
           record: { id: 42, name: 'checkout' },
         },
       ]);
@@ -208,6 +209,7 @@ describe('ActivityService', () => {
         kind: 'comment',
         title: 'Comment by qa on checkout',
         sessionId: 42,
+        timestampMs: 4500,
       });
       expect(rows[0].subtitle).toMatch(/^this is a very long comment .{0,80}…$/);
     });

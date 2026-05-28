@@ -445,6 +445,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   SessionDetail. Chrome DevTools / OpenReplay / Highlight.io
   network/console-to-replay parity.
 
+- **CommandPalette: Recent comments group** — current commit —
+  ActivityEntry now carries `timestampMs` on `comment` kind
+  entries so the palette can deep-link to the exact playhead.
+  CommandPalette pulls `/api/activity/feed?limit=20` while
+  open (TanStack `enabled: commandOpen`) and surfaces the top
+  5 comment entries as a "Recent comments" group. Click
+  navigates to `/sessions/:id?t=<offset>` — picks up the
+  existing deep-link logic on SessionDetail. Demo-mode test
+  enables seed-mode so the offline run reaches the seeded
+  activity feed. ninth backend cycle.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~

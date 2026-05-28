@@ -74,6 +74,17 @@ describe('CommandPalette', () => {
     expect(screen.queryByText('Recent sessions')).not.toBeInTheDocument();
   });
 
+  it('surfaces recent comments group from the activity feed', async () => {
+    // The activity feed lives behind apiFetch; demo mode short-circuits to
+    // the seed router so the test runs offline.
+    localStorage.setItem('demo-mode', '1');
+    renderWithProviders(<CommandPalette />);
+    await waitFor(() => {
+      expect(screen.getByText('Recent comments')).toBeInTheDocument();
+    });
+    expect(screen.getAllByTestId('cmd-recent-comment').length).toBeGreaterThan(0);
+  });
+
   it('toggles replay skip-idle from the palette', async () => {
     const user = userEvent.setup();
     renderWithProviders(<CommandPalette />);
