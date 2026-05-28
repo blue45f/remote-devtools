@@ -22,6 +22,7 @@ import {
   Globe,
   Hash,
   Layers,
+  Lightbulb,
   Link2,
   ListTree,
   Maximize2,
@@ -194,6 +195,98 @@ function buildSessionSummary(
     lines.push('', '> ' + metadata.note.trim().replace(/\n/g, '\n> '));
   }
   return lines.join('\n') + '\n';
+}
+
+export interface SessionInsight {
+  text: string;
+  /** Offset (ms from session start) to seek the replay to, when relevant. */
+  jumpMs?: number;
+}
+
+/**
+ * Derive plain-language observations about a session from the data already
+ * on the page — errors, failed requests, response sizes, rage-clicks. This
+ * is deterministic ("AI-style" summarisation without a model): it surfaces
+ * the *narrative* (clustering, the single worst payload, a clean run) that
+ * the raw per-tab lists don't make obvious. Capped to keep it skimmable.
+ */
+export function buildSessionInsights(input: {
+  consoleErrors: { timestamp: number }[];
+  failedRequests: { timestamp: number; status?: number; method: string; url: string }[];
+  networkRows: { timestamp: number; encodedDataLength?: number; method: string; url: string }[];
+  rageClicks: { startMs: number; count: number }[];
+  sessionStartMs: number;
+}): SessionInsight[] {
+  const { consoleErrors, failedRequests, networkRows, rageClicks, sessionStartMs } = input;
+
+  const errorOffsets = [
+    ...consoleErrors.map((r) => normaliseOffsetMs(r.timestamp, sessionStartMs)),
+    ...failedRequests.map((r) => normaliseOffsetMs(r.timestamp, sessionStartMs)),
+  ].sort((a, b) => a - b);
+
+  if (errorOffsets.length === 0 && rageClicks.length === 0) {
+    return [{ text: 'Clean session — no errors, failed requests, or rage-clicks detected.' }];
+  }
+
+  const out: SessionInsight[] = [];
+
+  if (errorOffsets.length > 0) {
+    const ce = consoleErrors.length;
+    const fr = failedRequests.length;
+    const parts: string[] = [];
+    if (ce > 0) parts.push(`${ce} console error${ce === 1 ? '' : 's'}`);
+    if (fr > 0) parts.push(`${fr} failed request${fr === 1 ? '' : 's'}`);
+    out.push({ text: `${parts.join(' and ')} in this session.`, jumpMs: errorOffsets[0] });
+
+    // Densest 3s window across all error offsets — the "what blew up" moment.
+    const WINDOW = 3000;
+    let best = { start: errorOffsets[0], count: 0 };
+    for (let i = 0; i < errorOffsets.length; i++) {
+      let j = i;
+      while (j < errorOffsets.length && errorOffsets[j] - errorOffsets[i] <= WINDOW) j++;
+      const count = j - i;
+      if (count > best.count) best = { start: errorOffsets[i], count };
+    }
+    if (best.count >= 2) {
+      out.push({
+        text: `${best.count} errors cluster around ${formatPlayhead(best.start)}.`,
+        jumpMs: best.start,
+      });
+    }
+  }
+
+  const largest = networkRows.reduce<{
+    timestamp: number;
+    encodedDataLength?: number;
+    method: string;
+    url: string;
+  } | null>(
+    (max, r) => ((r.encodedDataLength ?? 0) > (max?.encodedDataLength ?? 0) ? r : max),
+    null,
+  );
+  if (largest && (largest.encodedDataLength ?? 0) > 0) {
+    let path = largest.url;
+    try {
+      path = new URL(largest.url).pathname || largest.url;
+    } catch {
+      /* keep raw url */
+    }
+    out.push({
+      text: `Largest response: ${formatBytes(largest.encodedDataLength)} — ${largest.method} ${path}.`,
+      jumpMs: normaliseOffsetMs(largest.timestamp, sessionStartMs),
+    });
+  }
+
+  if (rageClicks.length > 0) {
+    const worst = rageClicks.reduce((m, c) => (c.count > m.count ? c : m), rageClicks[0]);
+    const offset = Math.max(0, worst.startMs - sessionStartMs);
+    out.push({
+      text: `Rage-click burst at ${formatPlayhead(offset)} (×${worst.count}).`,
+      jumpMs: offset,
+    });
+  }
+
+  return out.slice(0, 4);
 }
 
 type TabValue = 'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw';
@@ -635,6 +728,20 @@ export default function SessionDetailPage() {
         </div>
 
         <TabsContent value="overview" className="mt-5 space-y-4">
+          {!eventsLoading && recordId !== null && (
+            <SessionInsightsCard
+              insights={buildSessionInsights({
+                consoleErrors: (consoleRows ?? []).filter((r) => r.level === 'error'),
+                failedRequests: (networkRows ?? []).filter(
+                  (r) => r.status !== undefined && r.status >= 400,
+                ),
+                networkRows: networkRows ?? [],
+                rageClicks,
+                sessionStartMs,
+              })}
+              onJump={jumpToReplay}
+            />
+          )}
           {!eventsLoading && rageClicks.length > 0 && (
             <RageClickCard
               clicks={rageClicks}
@@ -3413,6 +3520,47 @@ function FailedRequestsCard({
             </li>
           );
         })}
+      </ul>
+    </Card>
+  );
+}
+
+function SessionInsightsCard({
+  insights,
+  onJump,
+}: {
+  insights: SessionInsight[];
+  onJump: (offsetMs: number) => void;
+}) {
+  if (insights.length === 0) return null;
+  return (
+    <Card className="p-4" data-testid="session-insights">
+      <div className="flex items-center gap-2 mb-3">
+        <Lightbulb className="size-4 text-accent" />
+        <h3 className="text-sm font-semibold text-fg">Insights</h3>
+      </div>
+      <ul className="space-y-1.5">
+        {insights.map((insight, i) => (
+          <li key={i} data-testid="session-insight-row">
+            {insight.jumpMs !== undefined ? (
+              <button
+                type="button"
+                onClick={() => onJump(insight.jumpMs as number)}
+                data-testid="session-insight-jump"
+                className="flex items-start gap-2 text-xs text-fg-subtle w-full text-left rounded px-1 -mx-1 hover:bg-bg-muted/60 hover:text-fg cursor-pointer"
+                title="Jump to this moment in the replay"
+              >
+                <PlayCircle className="size-3.5 mt-0.5 shrink-0 text-fg-faint" />
+                <span>{insight.text}</span>
+              </button>
+            ) : (
+              <div className="flex items-start gap-2 text-xs text-fg-subtle px-1 -mx-1">
+                <Check className="size-3.5 mt-0.5 shrink-0 text-success" />
+                <span>{insight.text}</span>
+              </div>
+            )}
+          </li>
+        ))}
       </ul>
     </Card>
   );

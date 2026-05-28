@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/utils';
 
-import SessionDetail from './SessionDetail';
+import SessionDetail, { buildSessionInsights } from './SessionDetail';
 
 // Mock rrweb-player import — its DOM attach behaviour is not the subject under test.
 vi.mock('@/components/replay/ReplayPlayer', () => ({
@@ -1043,5 +1043,63 @@ describe('SessionDetail page', () => {
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Overview/, selected: true })).toBeInTheDocument();
     });
+  });
+
+  it('renders a Session insights card on the Overview tab', async () => {
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId('session-insights')).toBeInTheDocument();
+    });
+    expect(screen.getAllByTestId('session-insight-row').length).toBeGreaterThan(0);
+  });
+});
+
+describe('buildSessionInsights', () => {
+  const base = { consoleErrors: [], failedRequests: [], networkRows: [], rageClicks: [] };
+
+  it('reports a clean session when there is nothing notable', () => {
+    const out = buildSessionInsights({ ...base, sessionStartMs: 0 });
+    expect(out).toHaveLength(1);
+    expect(out[0].text).toMatch(/Clean session/);
+    expect(out[0].jumpMs).toBeUndefined();
+  });
+
+  it('counts errors and points the jump at the earliest one', () => {
+    const out = buildSessionInsights({
+      ...base,
+      consoleErrors: [{ timestamp: 5000 }, { timestamp: 9000 }],
+      failedRequests: [{ timestamp: 6000, status: 500, method: 'GET', url: 'https://x/api' }],
+      sessionStartMs: 0,
+    });
+    expect(out[0].text).toMatch(/2 console errors and 1 failed request/);
+    expect(out[0].jumpMs).toBe(5000);
+  });
+
+  it('detects an error cluster within a 3s window', () => {
+    const out = buildSessionInsights({
+      ...base,
+      consoleErrors: [{ timestamp: 10000 }, { timestamp: 11000 }, { timestamp: 12000 }],
+      sessionStartMs: 0,
+    });
+    const cluster = out.find((i) => /cluster/.test(i.text));
+    expect(cluster).toBeDefined();
+    expect(cluster?.jumpMs).toBe(10000);
+  });
+
+  it('surfaces the largest response with a jump', () => {
+    const out = buildSessionInsights({
+      ...base,
+      networkRows: [
+        { timestamp: 1000, encodedDataLength: 500, method: 'GET', url: 'https://x/a' },
+        { timestamp: 2000, encodedDataLength: 90000, method: 'GET', url: 'https://x/big.js' },
+      ],
+      rageClicks: [{ startMs: 3000, count: 4 }],
+      sessionStartMs: 0,
+    });
+    const largest = out.find((i) => /Largest response/.test(i.text));
+    expect(largest?.text).toMatch(/big\.js/);
+    expect(largest?.jumpMs).toBe(2000);
+    const rage = out.find((i) => /Rage-click/.test(i.text));
+    expect(rage?.jumpMs).toBe(3000);
   });
 });
