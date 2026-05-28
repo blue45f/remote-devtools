@@ -112,11 +112,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   through the URL via `q`/`re`/`sort`/`dur`/`age`/`host` params. The
   address bar IS the shareable filter view; defaults are omitted from
   the URL so it stays clean. PostHog / Datadog list-view parity.
-- **Pinned sessions (client-only)** — current commit — Per-row pin
+- **Pinned sessions (client-only)** — `44947206` — Per-row pin
   toggle on the Recorded tab; pinned sessions float to the top in a
   dedicated "Pinned (N)" section that survives across filters and
   reloads via `localStorage` (`sessions-pins:v1`). No backend change.
   Linear / Notion sidebar-pin parity.
+- **Live polling rate toggle** — current commit — Live tab gets a
+  Refresh selector (5s / 15s / 30s / Paused). Lets users dial down
+  the cadence of the polling react-query without code changes.
+  Datadog "Refresh interval" parity.
 
 ## Next obvious candidates
 
