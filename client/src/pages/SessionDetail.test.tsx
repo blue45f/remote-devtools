@@ -89,6 +89,37 @@ describe("SessionDetail page", () => {
     });
   });
 
+  it("triggers a HAR download from the Network tab", async () => {
+    const user = userEvent.setup();
+
+    // Stub URL.createObjectURL / revokeObjectURL so the click handler
+    // doesn't blow up in jsdom.
+    const createObjectURL = vi.fn().mockReturnValue("blob:fake");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    renderAt(1000);
+
+    await user.keyboard("4");
+    await waitFor(() => {
+      expect(screen.getByTestId("session-network-har")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("session-network-har"));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe("application/json");
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+  });
+
   it("exposes a Copy cURL button on Network rows", async () => {
     const user = userEvent.setup();
 

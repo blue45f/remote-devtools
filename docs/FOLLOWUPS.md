@@ -266,6 +266,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   summary. Card view places the chips between URL and meta row.
   Builds on the `record.tags` data shipped in the second backend
   cycle. Linear / Notion list-tag parity.
+- **Network tab HAR export** — current commit — New "Export HAR"
+  button in the Network tab serialises captured rows to HAR v1.2
+  (HTTP Archive) JSON and downloads as `<session-name>.har`.
+  `buildHar()` lives in a pure `lib/har.ts` (no React) so it's
+  unit-testable — splits query strings into HAR entries, carries
+  base64-encoded response bodies, falls back to safe defaults
+  (`-1` sizes, `0` timings, `x-unknown` mime) for missing fields.
+  Chrome DevTools / Charles / Insomnia accept the output. Closes
+  the HAR-export half of FOLLOWUPS #2.
 
 ## Next obvious candidates
 
@@ -273,8 +282,8 @@ Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
 - ~~**Session tags** — done above.~~
-- ~~**Network HAR / "Copy as cURL"** — Network list + cURL copy
-  shipped above; HAR export still pending.~~
+- ~~**Network HAR / "Copy as cURL"** — Network list, cURL copy
+  and HAR export all shipped above.~~
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
   across the session; needs decent event shape.
