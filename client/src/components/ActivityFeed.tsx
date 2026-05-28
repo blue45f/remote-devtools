@@ -8,7 +8,7 @@ import {
   UserPlus,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,7 @@ export function ActivityFeed({
   }
 
   const items = [...top, ...olderPages.flatMap((p) => p.rows)];
+  const grouped = useMemo(() => groupByBucket(items), [items]);
 
   return (
     <Card className={cn("p-5", className)}>
@@ -143,22 +144,39 @@ export function ActivityFeed({
         />
       ) : (
         <>
-          <ol
-            className="relative space-y-0"
+          <div
+            className="relative"
             aria-live="polite"
             aria-relevant="additions"
+            data-testid="activity-feed"
           >
-            {/* spine */}
+            {/* spine — runs the full height of the feed */}
             <span
               aria-hidden
               className="absolute left-[15px] top-1 bottom-1 w-px bg-border"
             />
             <AnimatePresence initial={false}>
-              {items.map((item) => (
-                <FeedRow key={item.id} item={item} />
+              {grouped.map((group) => (
+                <section
+                  key={group.bucket}
+                  className="relative"
+                  data-bucket={group.bucket}
+                >
+                  <h3 className="sticky top-0 z-10 -ml-1 pl-2 pr-2 py-1 bg-surface/90 backdrop-blur-sm text-[10px] uppercase tracking-wider text-fg-faint font-semibold border-b border-border/60">
+                    {group.label}{" "}
+                    <span className="ml-1 text-fg-faint/80 normal-case tracking-normal font-mono tabular-nums">
+                      {group.rows.length}
+                    </span>
+                  </h3>
+                  <ol className="space-y-0">
+                    {group.rows.map((item) => (
+                      <FeedRow key={item.id} item={item} />
+                    ))}
+                  </ol>
+                </section>
               ))}
             </AnimatePresence>
-          </ol>
+          </div>
           {!endReached && lastCursor && (
             <div className="flex justify-center mt-3">
               <Button
@@ -176,6 +194,61 @@ export function ActivityFeed({
       )}
     </Card>
   );
+}
+
+type BucketKey = "today" | "yesterday" | "thisWeek" | "older";
+
+interface ActivityGroup {
+  bucket: BucketKey;
+  label: string;
+  rows: ActivityEntry[];
+}
+
+/**
+ * Groups items into Today / Yesterday / This week / Older by the local
+ * day of their `at` timestamp. Order is preserved within each bucket
+ * (the feed arrives newest-first; we keep it that way).
+ */
+function groupByBucket(items: ActivityEntry[]): ActivityGroup[] {
+  if (items.length === 0) return [];
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const startOfYesterday = startOfToday - 24 * 3600 * 1000;
+  const startOfWeek = startOfToday - 7 * 24 * 3600 * 1000;
+
+  const buckets: Record<BucketKey, ActivityEntry[]> = {
+    today: [],
+    yesterday: [],
+    thisWeek: [],
+    older: [],
+  };
+
+  for (const item of items) {
+    const ts = new Date(item.at).getTime();
+    if (Number.isNaN(ts)) {
+      buckets.older.push(item);
+      continue;
+    }
+    if (ts >= startOfToday) buckets.today.push(item);
+    else if (ts >= startOfYesterday) buckets.yesterday.push(item);
+    else if (ts >= startOfWeek) buckets.thisWeek.push(item);
+    else buckets.older.push(item);
+  }
+
+  const labels: Record<BucketKey, string> = {
+    today: "Today",
+    yesterday: "Yesterday",
+    thisWeek: "This week",
+    older: "Older",
+  };
+
+  return (Object.keys(labels) as BucketKey[])
+    .filter((b) => buckets[b].length > 0)
+    .map((b) => ({ bucket: b, label: labels[b], rows: buckets[b] }));
 }
 
 function FeedRow({ item }: { item: ActivityEntry }) {
