@@ -89,6 +89,35 @@ describe("SessionDetail page", () => {
     });
   });
 
+  it("exposes a Copy cURL button on Network rows", async () => {
+    const user = userEvent.setup();
+
+    // Mock clipboard for jsdom — userEvent.setup() in this project doesn't
+    // configure one automatically, and `navigator.clipboard` is a getter
+    // so plain Object.assign won't take.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    await user.keyboard("4"); // Network tab
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("session-network-table"),
+      ).toBeInTheDocument();
+    });
+
+    const buttons = screen.getAllByTestId("session-network-curl");
+    expect(buttons.length).toBeGreaterThan(0);
+    await user.click(buttons[0]);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0][0]).toMatch(/^curl /);
+  });
+
   it("renders the parsed userAgent badge in the header", async () => {
     renderAt(1000);
     await waitFor(() => {
