@@ -11,6 +11,8 @@ import {
   LayoutGrid,
   Monitor,
   PlaySquare,
+  Pin,
+  PinOff,
   RadioTower,
   Regex,
   RefreshCw,
@@ -164,6 +166,35 @@ function persistPrefs(prefs: SessionsPrefs) {
   }
 }
 
+const PINS_STORAGE_KEY = "sessions-pins:v1";
+
+function readPinnedIds(): Set<number> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(PINS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(
+      parsed.filter((x): x is number => typeof x === "number"),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function persistPinnedIds(ids: Set<number>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      PINS_STORAGE_KEY,
+      JSON.stringify(Array.from(ids)),
+    );
+  } catch {
+    /* best effort */
+  }
+}
+
 export default function SessionsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -208,6 +239,19 @@ export default function SessionsPage() {
     useState<DurationFilter>(initialDuration);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
+
+  const [pinned, setPinned] = useState<Set<number>>(() => readPinnedIds());
+  useEffect(() => {
+    persistPinnedIds(pinned);
+  }, [pinned]);
+  const togglePin = (id: number) => {
+    setPinned((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Mirror the whole filter shape into the URL — this makes the address
   // bar itself a shareable view. Replace, not push, so each keystroke
@@ -722,19 +766,48 @@ export default function SessionsPage() {
         />
       ) : (
         <>
-          {effectiveView === "table" ? (
-            <SessionTable
-              sessions={filtered}
-              tab={tab}
-              cursorIdx={cursorIdx}
-            />
-          ) : (
-            <SessionGrid
-              sessions={filtered}
-              tab={tab}
-              cursorIdx={cursorIdx}
-            />
-          )}
+          {(() => {
+            const pinnedRows = filtered.filter((s) => pinned.has(s.id));
+            const otherRows = filtered.filter((s) => !pinned.has(s.id));
+            const renderBody = (rows: SessionRecord[]) =>
+              effectiveView === "table" ? (
+                <SessionTable
+                  sessions={rows}
+                  tab={tab}
+                  cursorIdx={cursorIdx - (rows === otherRows ? pinnedRows.length : 0)}
+                  pinned={pinned}
+                  onTogglePin={togglePin}
+                />
+              ) : (
+                <SessionGrid
+                  sessions={rows}
+                  tab={tab}
+                  cursorIdx={cursorIdx - (rows === otherRows ? pinnedRows.length : 0)}
+                  pinned={pinned}
+                  onTogglePin={togglePin}
+                />
+              );
+            return (
+              <div className="space-y-4">
+                {pinnedRows.length > 0 && (
+                  <section
+                    aria-label="Pinned sessions"
+                    data-testid="sessions-pinned-group"
+                  >
+                    <h3 className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-2 inline-flex items-center gap-1.5">
+                      <Pin className="size-3" />
+                      Pinned
+                      <span className="font-mono normal-case tracking-normal">
+                        {pinnedRows.length}
+                      </span>
+                    </h3>
+                    {renderBody(pinnedRows)}
+                  </section>
+                )}
+                {renderBody(otherRows)}
+              </div>
+            );
+          })()}
           {tab === "record" && hasNextPage && (
             <div className="flex justify-center mt-4">
               <Button
@@ -991,10 +1064,14 @@ function SessionTable({
   sessions,
   tab,
   cursorIdx,
+  pinned,
+  onTogglePin,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
   cursorIdx: number;
+  pinned: Set<number>;
+  onTogglePin: (id: number) => void;
 }) {
   return (
     <Card className="overflow-hidden p-0">
@@ -1018,6 +1095,8 @@ function SessionTable({
                 session={session}
                 tab={tab}
                 active={idx === cursorIdx}
+                pinned={pinned.has(session.id)}
+                onTogglePin={onTogglePin}
               />
             ))}
           </tbody>
@@ -1051,10 +1130,14 @@ function SessionRow({
   session,
   tab,
   active,
+  pinned,
+  onTogglePin,
 }: {
   session: SessionRecord;
   tab: SessionTab;
   active?: boolean;
+  pinned?: boolean;
+  onTogglePin?: (id: number) => void;
 }) {
   const isLive = tab === "live";
   const isRecording = session.recordMode ?? !isLive;
@@ -1109,32 +1192,61 @@ function SessionRow({
         </span>
       </td>
       <td className="pl-3 pr-4 py-3 align-middle text-right">
-        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-          {tab === "record" && (
+        <div className="inline-flex items-center gap-1">
+          {onTogglePin && tab === "record" && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button asChild variant="ghost" size="icon-sm">
-                  <Link
-                    to={`/sessions/${session.id}`}
-                    aria-label="View session details"
-                  >
-                    <Activity className="size-3.5" />
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onTogglePin(session.id)}
+                  aria-label={pinned ? "Unpin session" : "Pin session"}
+                  aria-pressed={pinned}
+                  data-testid="session-pin-button"
+                  className={cn(
+                    "transition-opacity",
+                    pinned
+                      ? "opacity-100 text-fg"
+                      : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle",
+                  )}
+                >
+                  {pinned ? (
+                    <Pin className="size-3.5" />
+                  ) : (
+                    <PinOff className="size-3.5" />
+                  )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Detail</TooltipContent>
+              <TooltipContent>{pinned ? "Unpin" : "Pin"}</TooltipContent>
             </Tooltip>
           )}
-          <DevToolsLinkButton
-            variant="ghost"
-            size="icon-sm"
-            room={session.name}
-            recordId={tab === "record" ? session.id : undefined}
-            label="Open in DevTools"
-            title="Open DevTools"
-          >
-            <ExternalLink className="size-3.5" />
-          </DevToolsLinkButton>
+          <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+            {tab === "record" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon-sm">
+                    <Link
+                      to={`/sessions/${session.id}`}
+                      aria-label="View session details"
+                    >
+                      <Activity className="size-3.5" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Detail</TooltipContent>
+              </Tooltip>
+            )}
+            <DevToolsLinkButton
+              variant="ghost"
+              size="icon-sm"
+              room={session.name}
+              recordId={tab === "record" ? session.id : undefined}
+              label="Open in DevTools"
+              title="Open DevTools"
+            >
+              <ExternalLink className="size-3.5" />
+            </DevToolsLinkButton>
+          </div>
         </div>
       </td>
     </tr>
@@ -1182,10 +1294,14 @@ function SessionGrid({
   sessions,
   tab,
   cursorIdx,
+  pinned,
+  onTogglePin,
 }: {
   sessions: SessionRecord[];
   tab: SessionTab;
   cursorIdx: number;
+  pinned: Set<number>;
+  onTogglePin: (id: number) => void;
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
@@ -1195,6 +1311,8 @@ function SessionGrid({
           session={session}
           tab={tab}
           active={idx === cursorIdx}
+          pinned={pinned.has(session.id)}
+          onTogglePin={onTogglePin}
         />
       ))}
     </div>
@@ -1205,10 +1323,14 @@ function SessionCard({
   session,
   tab,
   active,
+  pinned,
+  onTogglePin,
 }: {
   session: SessionRecord;
   tab: SessionTab;
   active?: boolean;
+  pinned?: boolean;
+  onTogglePin?: (id: number) => void;
 }) {
   const isLive = tab === "live";
   return (
@@ -1229,16 +1351,43 @@ function SessionCard({
             {session.name || `Session #${session.id}`}
           </span>
         </div>
-        {isLive ? (
-          <Badge variant="live" size="sm" className="gap-1 shrink-0">
-            <RadioTower className="size-2.5" />
-            LIVE
-          </Badge>
-        ) : (
-          <Badge variant="neutral" size="sm" className="shrink-0">
-            REC
-          </Badge>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {onTogglePin && tab === "record" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onTogglePin(session.id);
+              }}
+              aria-label={pinned ? "Unpin session" : "Pin session"}
+              aria-pressed={pinned}
+              data-testid="session-pin-button"
+              className={cn(
+                "inline-flex items-center justify-center size-6 rounded-md transition-opacity hover:bg-bg-muted",
+                pinned
+                  ? "opacity-100 text-fg"
+                  : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-fg-subtle",
+              )}
+            >
+              {pinned ? (
+                <Pin className="size-3.5" />
+              ) : (
+                <PinOff className="size-3.5" />
+              )}
+            </button>
+          )}
+          {isLive ? (
+            <Badge variant="live" size="sm" className="gap-1">
+              <RadioTower className="size-2.5" />
+              LIVE
+            </Badge>
+          ) : (
+            <Badge variant="neutral" size="sm">
+              REC
+            </Badge>
+          )}
+        </div>
       </div>
 
       {session.url && (
