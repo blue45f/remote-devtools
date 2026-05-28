@@ -32,12 +32,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   slice of session time; opacity scales with event count. Click anywhere
   to seek. OpenReplay / FullStory parity for "where's the action in a
   long session?".
-- **Rage-click detection** — current commit — Overview tab surfaces a
+- **Rage-click detection** — `281ca413` — Overview tab surfaces a
   yellow card listing detected rage-click moments (≥3 clicks within
   1.5s and 50px). Each gets a Jump button that lands the replay on the
   first click. Demo seed now includes a 5-click burst so it's visible
   out of the box. FullStory / Microsoft Clarity / LogRocket frustration
   signal parity.
+- **Replay keyboard controls** — current commit — Space/K toggle, J/L
+  ±10s, ←/→ ±5s, Home restart. Player wrapper takes focus on click and
+  the shortcut help dialog gains a "Replay player" section. YouTube /
+  OpenReplay parity.
 
 ## Next obvious candidates
 
