@@ -1163,10 +1163,40 @@ function NetworkRowView({
               <ExternalLink className="size-3" />
             </a>
           )}
+          {row.url && <NetworkRowCopyUrl url={row.url} />}
           <NetworkRowCopyCurl row={row} />
         </div>
       </td>
     </tr>
+  );
+}
+
+function NetworkRowCopyUrl({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('URL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label="Copy URL"
+      data-testid="session-network-copy-url"
+      className={cn(
+        'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
+        'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+        'hover:bg-bg-muted text-fg-subtle hover:text-fg',
+      )}
+    >
+      {copied ? <Check className="size-3" /> : <Link2 className="size-3" />}
+    </button>
   );
 }
 

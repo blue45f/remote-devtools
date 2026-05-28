@@ -409,6 +409,30 @@ describe('SessionDetail page', () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it('copies a Network row URL via the Copy URL button', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const buttons = screen.getAllByTestId('session-network-copy-url');
+    expect(buttons.length).toBeGreaterThan(0);
+    await user.click(buttons[0]);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0][0]).toMatch(/^https?:\/\//);
+  });
+
   it('exposes a Copy cURL button on Network rows', async () => {
     const user = userEvent.setup();
 
