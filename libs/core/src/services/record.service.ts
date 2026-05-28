@@ -162,4 +162,21 @@ export class RecordService {
     await this.recordRepository.delete(id);
     this.logger.debug(`Record deleted: id=${id}`);
   }
+
+  /**
+   * 세션 태그를 교체한다. 정규화(trim, lowercase 불변, 중복 제거, 빈 문자열
+   * 제거)는 호출자가 책임진다 — 컨트롤러에서 한 번만 수행.
+   * @param id    레코드 PK
+   * @param tags  새 태그 배열
+   * @returns     업데이트 후 RecordEntity 또는 null (해당 ID 없음)
+   */
+  public async replaceTags(
+    id: number,
+    tags: string[],
+  ): Promise<RecordEntity | null> {
+    const record = await this.recordRepository.findOne({ where: { id } });
+    if (!record) return null;
+    record.tags = tags;
+    return this.recordRepository.save(record);
+  }
 }

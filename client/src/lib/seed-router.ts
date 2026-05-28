@@ -13,7 +13,27 @@ import {
 } from "./seed";
 import { buildSeedRrwebEvents } from "./seed-rrweb";
 
-export function resolveSeed<T>(path: string): T | undefined {
+export function resolveSeed<T>(
+  path: string,
+  init?: RequestInit,
+): T | undefined {
+  // Demo-mode mutations don't hit a backend. Echo the parsed body back
+  // as the result so optimistic UI keeps working offline. The api layer
+  // also has this fallback but reaching it here keeps the test surface
+  // visible.
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method === "PUT" && /^\/sessions\/record\/\d+\/tags$/.test(path)) {
+    const id = Number(path.split("/")[3]);
+    try {
+      const body = init?.body ? JSON.parse(init.body as string) : { tags: [] };
+      const tags = Array.isArray(body?.tags)
+        ? (body.tags as unknown[]).filter((t) => typeof t === "string")
+        : [];
+      return { id, tags } as T;
+    } catch {
+      return { id, tags: [] } as T;
+    }
+  }
   // /api/dashboard/stats
   if (path === "/api/dashboard/stats") {
     return { data: buildSeedStats() } as T;

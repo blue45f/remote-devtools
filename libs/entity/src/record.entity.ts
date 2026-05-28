@@ -63,6 +63,20 @@ export class RecordEntity {
   @Column({ name: "user_agent", type: "text", nullable: true })
   public userAgent?: string | null;
 
+  /**
+   * 사용자가 세션에 붙인 자유 형식 태그 목록. 단일 사용자 편집 모델이라
+   * Postgres text[]로 충분하다. 검색/필터 빈도가 늘면 GIN 인덱스를 추가하고
+   * tag dictionary 테이블로 정규화한다.
+   */
+  @Column({
+    name: "tags",
+    type: "text",
+    array: true,
+    nullable: false,
+    default: () => "'{}'::text[]",
+  })
+  public tags: string[];
+
   /** 이 녹화에 속한 네트워크 요청 목록. */
   @OneToMany(() => NetworkEntity, (network) => network.record, {
     cascade: true,

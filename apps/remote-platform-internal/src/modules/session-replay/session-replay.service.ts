@@ -53,6 +53,8 @@ export interface SessionMetadata {
   readonly createdAt?: string;
   /** Raw navigator.userAgent captured at SDK init time, if available. */
   readonly userAgent?: string;
+  /** Free-form labels set via PUT /sessions/record/:id/tags. */
+  readonly tags?: string[];
 }
 
 interface ParsedS3SessionDevice {
@@ -363,6 +365,7 @@ export class SessionReplayService {
             ? new Date(record.timestamp).toISOString()
             : undefined,
       userAgent: record.userAgent ?? undefined,
+      tags: record.tags ?? [],
     };
   }
 

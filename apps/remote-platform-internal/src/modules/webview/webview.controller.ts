@@ -2,11 +2,13 @@ import * as path from "path";
 
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Logger,
   NotFoundException,
   Param,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -22,6 +24,24 @@ import { AuthGuard } from "../auth/auth.guard";
 import type { AuthClaims } from "../auth/auth.service";
 
 import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retrieve session list
+
+const MAX_TAG_LENGTH = 24;
+const MAX_TAGS_PER_RECORD = 16;
+
+function normaliseTags(input: unknown[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input) {
+    if (typeof raw !== "string") continue;
+    const trimmed = raw.trim().slice(0, MAX_TAG_LENGTH);
+    if (!trimmed) continue;
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+    if (out.length >= MAX_TAGS_PER_RECORD) break;
+  }
+  return out;
+}
 
 @Controller("sessions")
 @UseGuards(AuthGuard)
@@ -101,6 +121,7 @@ export class WebviewController {
       recordMode: record.recordMode,
       timestamp: record.timestamp,
       userAgent: record.userAgent || undefined,
+      tags: record.tags ?? [],
     }));
 
     if (noFilters) return items; // back-compat
@@ -226,6 +247,35 @@ export class WebviewController {
       date: createdDate,
       createdAt: record.createdAt, // Also return the original timestamp
     };
+  }
+
+  /**
+   * PUT /sessions/record/:recordId/tags
+   *
+   * Replace the tag set on a record. The body shape is `{ tags: string[] }`
+   * and the server normalises each entry (trim, drop empties, dedupe,
+   * cap at 24 chars × 16 tags) before saving.
+   */
+  @Put("record/:recordId/tags")
+  public async putRecordTags(
+    @Param("recordId") recordId: string,
+    @Body() body: { tags?: unknown },
+  ): Promise<{ id: number; tags: string[] }> {
+    const id = Number(recordId);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new BadRequestException("Invalid recordId parameter");
+    }
+    if (!Array.isArray(body?.tags)) {
+      throw new BadRequestException("body.tags must be an array of strings");
+    }
+
+    const normalised = normaliseTags(body.tags);
+
+    const updated = await this.recordService.replaceTags(id, normalised);
+    if (!updated) {
+      throw new NotFoundException(`Record ${id} not found`);
+    }
+    return { id: updated.id, tags: updated.tags };
   }
 
   // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)

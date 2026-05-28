@@ -38,6 +38,57 @@ describe("SessionDetail page", () => {
     ).toBeInTheDocument();
   });
 
+  it("adds a new tag via the inline editor", async () => {
+    const user = userEvent.setup();
+    // Session 1002 has tags=[] in the seed (index 2), so the input is empty.
+    renderWithProviders(
+      <Routes>
+        <Route path="/sessions/:id" element={<SessionDetail />} />
+      </Routes>,
+      { routerProps: { initialEntries: [`/sessions/1002`] } },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-tag-input")).toBeInTheDocument();
+    });
+    await user.type(screen.getByTestId("session-tag-input"), "regression");
+    await user.click(screen.getByTestId("session-tag-add"));
+
+    await waitFor(() => {
+      const chips = screen.getAllByTestId("session-tag-chip");
+      expect(chips.some((c) => c.textContent?.includes("regression"))).toBe(
+        true,
+      );
+    });
+  });
+
+  it("removes a tag via the chip's X button", async () => {
+    const user = userEvent.setup();
+    // Session 1000 has tags=["checkout", "bug"] in the seed.
+    renderAt(1000);
+    await waitFor(() => {
+      expect(
+        screen.getAllByTestId("session-tag-chip").length,
+      ).toBeGreaterThanOrEqual(1);
+    });
+
+    const checkoutChip = screen
+      .getAllByTestId("session-tag-chip")
+      .find((c) => c.textContent?.includes("checkout"));
+    expect(checkoutChip).toBeDefined();
+
+    const removeBtn = checkoutChip!.querySelector("button");
+    expect(removeBtn).not.toBeNull();
+    await user.click(removeBtn as HTMLButtonElement);
+
+    await waitFor(() => {
+      const remaining = screen.getAllByTestId("session-tag-chip");
+      expect(remaining.some((c) => c.textContent?.includes("checkout"))).toBe(
+        false,
+      );
+    });
+  });
+
   it("renders the parsed userAgent badge in the header", async () => {
     renderAt(1000);
     await waitFor(() => {
