@@ -213,7 +213,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   from `activity-prefs:v1` on mount and writes back on every
   change. Users who only care about errors stop having to re-click
   on every visit. Linear / Slack feed-filter parity.
-- **Browser/OS badge on Session row + detail** — current commit —
+- **Browser/OS badge on Session row + detail** — `aacd39e7` —
   First backend cycle. New `user_agent text NULL` column on
   RecordEntity captures `commonInfo.userAgent` at `createRoom`
   time; migration `1777700000000-AddUserAgentToRecord` adds it
