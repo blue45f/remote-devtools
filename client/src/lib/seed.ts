@@ -47,7 +47,21 @@ export interface SeedSession {
   duration: number; // nanoseconds
   recordMode: boolean;
   timestamp: string;
+  userAgent: string;
 }
+
+const USER_AGENTS: string[] = [
+  // Chrome / macOS
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+  // Safari / iOS
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+  // Firefox / Linux
+  "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+  // Edge / Windows
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
+  // Chrome / Android
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+];
 
 export function buildSeedSessions(): SeedSession[] {
   const now = Date.now();
@@ -63,6 +77,7 @@ export function buildSeedSessions(): SeedSession[] {
       duration: isLive ? 0 : seconds * 1000 * MS_TO_NANOS,
       recordMode: !isLive,
       timestamp: new Date(now - i * 17 * 60_000).toISOString(),
+      userAgent: USER_AGENTS[i % USER_AGENTS.length],
     };
   });
 }
@@ -176,6 +191,7 @@ export function buildSeedSessionMeta(id: number) {
       recordMode: true,
       createdAt: new Date(Date.now() - 5 * 60_000).toISOString(),
       eventCount: 0,
+      userAgent: USER_AGENTS[0],
     };
   }
   return {
@@ -187,6 +203,7 @@ export function buildSeedSessionMeta(id: number) {
     recordMode: found.recordMode,
     createdAt: found.timestamp,
     eventCount: 0,
+    userAgent: found.userAgent,
   };
 }
 

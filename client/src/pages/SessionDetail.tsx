@@ -19,6 +19,7 @@ import {
   ListTree,
   Maximize2,
   Minimize2,
+  Monitor as MonitorIcon,
   PlayCircle,
   RotateCcw,
   RadioTower,
@@ -58,6 +59,7 @@ import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import { formatDurationFromNanos, shortHash } from "@/lib/format";
 import { recordSessionVisit } from "@/lib/recent-sessions";
 import { REPLAY_SPEEDS, useReplayPrefs } from "@/lib/replay-prefs";
+import { formatUserAgentBadge } from "@/lib/user-agent";
 import { cn } from "@/lib/utils";
 
 interface SessionMetadata {
@@ -71,6 +73,7 @@ interface SessionMetadata {
   recordMode?: boolean;
   createdAt?: string;
   eventCount?: number;
+  userAgent?: string;
 }
 
 /**
@@ -476,6 +479,21 @@ function SessionHeader({
             )}
           </div>
         )}
+        {!loading && metadata?.userAgent &&
+          (() => {
+            const label = formatUserAgentBadge(metadata.userAgent);
+            if (!label) return null;
+            return (
+              <div
+                className="flex items-center gap-1.5 mt-1.5 text-[11px] text-fg-faint"
+                data-testid="session-user-agent"
+                title={metadata.userAgent}
+              >
+                <MonitorIcon className="size-3 shrink-0" />
+                <span className="truncate">{label}</span>
+              </div>
+            );
+          })()}
       </div>
 
       {/* Action cluster — wraps on tablet, stacks-then-grid on phone */}

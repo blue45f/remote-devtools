@@ -9,7 +9,7 @@ import {
   Filter,
   Globe,
   LayoutGrid,
-  Monitor,
+  Monitor as MonitorIcon,
   PlaySquare,
   Pin,
   PinOff,
@@ -47,6 +47,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { apiFetch } from "@/lib/api";
+import { formatUserAgentBadge } from "@/lib/user-agent";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import {
   formatDurationFromNanos,
@@ -63,6 +64,7 @@ interface SessionRecord {
   duration?: string | number;
   recordMode?: boolean;
   timestamp?: string;
+  userAgent?: string;
 }
 
 type SessionTab = "record" | "live";
@@ -1344,10 +1346,27 @@ function SessionRow({
       </td>
       <td className={cn("px-3 align-middle", cellY)}>
         {session.deviceId ? (
-          <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
-            <Smartphone className="size-3.5" />
-            <span className="font-mono">{shortHash(session.deviceId, 12)}</span>
-          </span>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="inline-flex items-center gap-1.5 text-xs text-fg-subtle">
+              <Smartphone className="size-3.5" />
+              <span className="font-mono">
+                {shortHash(session.deviceId, 12)}
+              </span>
+            </span>
+            {density === "comfortable" && (() => {
+              const badge = formatUserAgentBadge(session.userAgent);
+              if (!badge) return null;
+              return (
+                <span
+                  className="text-[10px] text-fg-faint truncate"
+                  data-testid="session-row-ua"
+                  title={session.userAgent}
+                >
+                  {badge}
+                </span>
+              );
+            })()}
+          </div>
         ) : (
           <span className="text-fg-faint">—</span>
         )}
@@ -1586,10 +1605,23 @@ function SessionCard({
         </span>
         {session.deviceId && (
           <span className="inline-flex items-center gap-1">
-            <Monitor className="size-3" />
+            <MonitorIcon className="size-3" />
             <span className="font-mono">{shortHash(session.deviceId, 10)}</span>
           </span>
         )}
+        {(() => {
+          const badge = formatUserAgentBadge(session.userAgent);
+          if (!badge) return null;
+          return (
+            <span
+              className="inline-flex items-center gap-1 text-fg-faint"
+              data-testid="session-card-ua"
+              title={session.userAgent}
+            >
+              {badge}
+            </span>
+          );
+        })()}
         {session.timestamp && (
           <span className="ml-auto text-fg-faint">
             {formatTimeAgo(session.timestamp)}

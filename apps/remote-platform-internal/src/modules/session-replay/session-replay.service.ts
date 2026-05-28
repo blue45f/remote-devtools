@@ -51,6 +51,8 @@ export interface SessionMetadata {
   readonly url?: string;
   readonly recordMode?: boolean;
   readonly createdAt?: string;
+  /** Raw navigator.userAgent captured at SDK init time, if available. */
+  readonly userAgent?: string;
 }
 
 interface ParsedS3SessionDevice {
@@ -360,6 +362,7 @@ export class SessionReplayService {
           : record.timestamp
             ? new Date(record.timestamp).toISOString()
             : undefined,
+      userAgent: record.userAgent ?? undefined,
     };
   }
 

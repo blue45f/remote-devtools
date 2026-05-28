@@ -168,6 +168,7 @@ export class WebviewGateway
     url,
     deviceId,
     referrer,
+    userAgent,
   }: {
     roomName: string;
     client: WebSocket;
@@ -175,6 +176,7 @@ export class WebviewGateway
     url?: string;
     deviceId: string;
     referrer?: string;
+    userAgent?: string;
   }): Promise<number | null> {
     let recordId: number | null = null;
 
@@ -185,6 +187,7 @@ export class WebviewGateway
         deviceId,
         recordMode,
         referrer,
+        userAgent: userAgent ?? null,
       });
       recordId = id;
 
@@ -349,6 +352,7 @@ export class WebviewGateway
       url: commonInfo.URL,
       deviceId: commonInfo.device.deviceId,
       referrer: userData.URL?.split("?")[0],
+      userAgent: commonInfo.userAgent,
     });
 
     if (recordMode && recordId) {
@@ -916,6 +920,7 @@ export class WebviewGateway
         url: commonInfo.URL,
         deviceId: commonInfo.device.deviceId,
         referrer: URL?.split("?")[0],
+        userAgent: commonInfo.userAgent,
       });
 
       const { requestBody, ticketKey, ticketUrl } =

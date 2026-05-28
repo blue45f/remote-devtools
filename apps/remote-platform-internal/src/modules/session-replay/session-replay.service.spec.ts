@@ -43,7 +43,7 @@ describe("SessionReplayService.getSessionMetadata", () => {
     service = moduleRef.get(SessionReplayService);
   });
 
-  it("returns the new metadata fields (deviceId, url, recordMode, createdAt)", async () => {
+  it("returns the new metadata fields (deviceId, url, recordMode, createdAt, userAgent)", async () => {
     const createdAt = new Date("2026-04-27T10:00:00Z");
     recordRepo.findOne.mockResolvedValue({
       id: 42,
@@ -53,6 +53,7 @@ describe("SessionReplayService.getSessionMetadata", () => {
       url: "https://shop.example.com/cart",
       recordMode: true,
       timestamp: createdAt,
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/127",
     });
     screenRepo.createQueryBuilder.mockReturnValue(
       makeQueryBuilder({
@@ -73,12 +74,13 @@ describe("SessionReplayService.getSessionMetadata", () => {
       deviceId: "device-abc",
       url: "https://shop.example.com/cart",
       recordMode: true,
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/127",
     });
     // createdAt is serialised as ISO string
     expect(meta.createdAt).toBe(createdAt.toISOString());
   });
 
-  it("omits deviceId/url when the record has no values", async () => {
+  it("omits deviceId/url/userAgent when the record has no values", async () => {
     recordRepo.findOne.mockResolvedValue({
       id: 1,
       name: "headless",
@@ -87,6 +89,7 @@ describe("SessionReplayService.getSessionMetadata", () => {
       url: null,
       recordMode: false,
       timestamp: new Date("2026-04-27T00:00:00Z"),
+      userAgent: null,
     });
     screenRepo.createQueryBuilder.mockReturnValue(
       makeQueryBuilder({
@@ -100,6 +103,7 @@ describe("SessionReplayService.getSessionMetadata", () => {
     const meta = await service.getSessionMetadata(1);
     expect(meta.deviceId).toBeUndefined();
     expect(meta.url).toBeUndefined();
+    expect(meta.userAgent).toBeUndefined();
     expect(meta.recordMode).toBe(false);
     expect(meta.hasFullSnapshot).toBe(false);
   });

@@ -213,14 +213,23 @@ the next obvious candidates. Each entry: what shipped, what's next.
   from `activity-prefs:v1` on mount and writes back on every
   change. Users who only care about errors stop having to re-click
   on every visit. Linear / Slack feed-filter parity.
+- **Browser/OS badge on Session row + detail** — current commit —
+  First backend cycle. New `user_agent text NULL` column on
+  RecordEntity captures `commonInfo.userAgent` at `createRoom`
+  time; migration `1777700000000-AddUserAgentToRecord` adds it
+  idempotently. `/sessions/record` and
+  `/api/session-replay/sessions/:id` expose the value. Frontend
+  parses with a tiny `lib/user-agent.ts` (no dep) and renders a
+  "Chrome · macOS" badge in the SessionDetail header, in the
+  table row's device cell (comfortable density only), and in the
+  grid card meta row. PostHog / Sentry / Datadog session-row UA
+  badge parity.
 
 ## Next obvious candidates
 
 Listed in rough order of value × ease:
 
-- **Browser / OS badge on Session row** — requires capturing `userAgent`
-  on the backend (`libs/entity` + `SessionRecord` API). Skip until backend
-  is touched.
+- ~~**Browser / OS badge on Session row** — done above.~~
 - **Network HAR / "Copy as cURL"** — depends on shaping network events
   with method/url/headers; check `libs/core` to see if SDK already
   captures these.

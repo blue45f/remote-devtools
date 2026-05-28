@@ -100,6 +100,7 @@ export class WebviewController {
       duration: record.duration || undefined,
       recordMode: record.recordMode,
       timestamp: record.timestamp,
+      userAgent: record.userAgent || undefined,
     }));
 
     if (noFilters) return items; // back-compat
