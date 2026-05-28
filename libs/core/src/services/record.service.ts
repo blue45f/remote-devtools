@@ -187,4 +187,18 @@ export class RecordService {
     record.tags = tags;
     return this.recordRepository.save(record);
   }
+
+  /**
+   * 세션 메모를 교체한다. 빈 문자열은 NULL로 정규화하여 "메모 없음"과 동일하게
+   * 취급한다. trim은 호출자가 책임진다.
+   * @param id    레코드 PK
+   * @param note  새 메모 (null이면 메모 제거)
+   * @returns     업데이트 후 RecordEntity 또는 null (해당 ID 없음)
+   */
+  public async updateNote(id: number, note: string | null): Promise<RecordEntity | null> {
+    const record = await this.recordRepository.findOne({ where: { id } });
+    if (!record) return null;
+    record.note = note && note.length > 0 ? note : null;
+    return this.recordRepository.save(record);
+  }
 }

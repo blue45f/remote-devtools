@@ -77,6 +77,14 @@ export class RecordEntity {
   })
   public tags: string[];
 
+  /**
+   * 사용자가 세션에 남기는 자유 형식 메모. 태그가 짧은 라벨이라면 note는
+   * 재현 절차·맥락 같은 긴 설명용. 단일 사용자 편집 모델이라 단일 text
+   * 컬럼으로 충분하다.
+   */
+  @Column({ name: 'note', type: 'text', nullable: true })
+  public note?: string | null;
+
   /** 이 녹화에 속한 네트워크 요청 목록. */
   @OneToMany(() => NetworkEntity, (network) => network.record, {
     cascade: true,

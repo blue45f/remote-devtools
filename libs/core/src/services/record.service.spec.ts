@@ -145,6 +145,34 @@ describe('RecordService', () => {
     });
   });
 
+  describe('updateNote', () => {
+    it('saves a trimmed note and returns the record', async () => {
+      vi.spyOn(repository, 'findOne').mockResolvedValue({ ...mockRecord } as RecordEntity);
+      vi.spyOn(repository, 'save').mockImplementation((r) => Promise.resolve(r as RecordEntity));
+
+      const result = await service.updateNote(1, 'repro steps here');
+
+      expect(result?.note).toBe('repro steps here');
+    });
+
+    it('normalises an empty note to null', async () => {
+      vi.spyOn(repository, 'findOne').mockResolvedValue({ ...mockRecord } as RecordEntity);
+      vi.spyOn(repository, 'save').mockImplementation((r) => Promise.resolve(r as RecordEntity));
+
+      const result = await service.updateNote(1, '');
+
+      expect(result?.note).toBeNull();
+    });
+
+    it('returns null when the record is missing', async () => {
+      vi.spyOn(repository, 'findOne').mockResolvedValue(null);
+
+      const result = await service.updateNote(999, 'x');
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('findPaginated', () => {
     function makeQB(rows: Partial<RecordEntity>[]) {
       const calls: Record<string, unknown[]> = {};

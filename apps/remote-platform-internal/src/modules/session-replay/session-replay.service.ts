@@ -79,6 +79,8 @@ export interface SessionMetadata {
   readonly userAgent?: string;
   /** Free-form labels set via PUT /sessions/record/:id/tags. */
   readonly tags?: string[];
+  /** Free-form per-session memo set via PATCH /sessions/record/:id/note. */
+  readonly note?: string | null;
 }
 
 interface ParsedS3SessionDevice {
@@ -372,6 +374,7 @@ export class SessionReplayService {
             : undefined,
       userAgent: record.userAgent ?? undefined,
       tags: record.tags ?? [],
+      note: record.note ?? null,
     };
   }
 
