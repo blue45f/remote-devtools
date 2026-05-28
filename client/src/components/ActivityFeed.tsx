@@ -8,7 +8,7 @@ import {
   UserPlus,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,39 @@ import { formatTimeAgo, shortHash } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type ActivityKind = "session" | "ticket" | "error" | "join";
+
+const FILTER_STORAGE_KEY = "activity-prefs:v1";
+
+function readStoredKinds(): Set<ActivityKind> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as { kinds?: unknown };
+    if (!Array.isArray(parsed?.kinds)) return new Set();
+    const valid = new Set<ActivityKind>(
+      parsed.kinds.filter(
+        (k): k is ActivityKind =>
+          k === "session" || k === "ticket" || k === "error" || k === "join",
+      ),
+    );
+    return valid;
+  } catch {
+    return new Set();
+  }
+}
+
+function persistKinds(kinds: Set<ActivityKind>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      FILTER_STORAGE_KEY,
+      JSON.stringify({ kinds: Array.from(kinds) }),
+    );
+  } catch {
+    /* quota / private mode — best effort */
+  }
+}
 
 interface ActivityEntry {
   id: string;
@@ -116,7 +149,14 @@ export function ActivityFeed({
   );
 
   // Multi-select kind filter. Empty set means "show everything".
-  const [activeKinds, setActiveKinds] = useState<Set<ActivityKind>>(new Set());
+  // Hydrate from localStorage so the next visit reopens with the user's
+  // last chosen filter set; write through whenever the set changes.
+  const [activeKinds, setActiveKinds] = useState<Set<ActivityKind>>(() =>
+    readStoredKinds(),
+  );
+  useEffect(() => {
+    persistKinds(activeKinds);
+  }, [activeKinds]);
   const items = useMemo(() => {
     if (activeKinds.size === 0) return allItems;
     return allItems.filter((it) => activeKinds.has(it.kind));

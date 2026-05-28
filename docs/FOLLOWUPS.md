@@ -208,6 +208,11 @@ the next obvious candidates. Each entry: what shipped, what's next.
   reaches into the rrweb-player instance. Pairs the Home keyboard
   shortcut with a click target for mouse users. YouTube / Vimeo
   replay-control parity.
+- **ActivityFeed filter persistence** — current commit — The chip
+  filter selection (session / ticket / error / join) now hydrates
+  from `activity-prefs:v1` on mount and writes back on every
+  change. Users who only care about errors stop having to re-click
+  on every visit. Linear / Slack feed-filter parity.
 
 ## Next obvious candidates
 
