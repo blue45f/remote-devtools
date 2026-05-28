@@ -73,4 +73,23 @@ describe("CommandPalette", () => {
     renderWithProviders(<CommandPalette />);
     expect(screen.queryByText("Recent sessions")).not.toBeInTheDocument();
   });
+
+  it("Reset Sessions preferences also wipes recent-sessions", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("sessions-prefs:v1", '{"view":"table"}');
+    localStorage.setItem("sessions-pins:v1", '["abc"]');
+    localStorage.setItem(
+      "recent-sessions:v1",
+      JSON.stringify([{ id: "abc", visitedAt: 1 }]),
+    );
+
+    renderWithProviders(<CommandPalette />);
+    await user.click(screen.getByText("Reset Sessions preferences"));
+
+    await waitFor(() => {
+      expect(localStorage.getItem("sessions-prefs:v1")).toBeNull();
+    });
+    expect(localStorage.getItem("sessions-pins:v1")).toBeNull();
+    expect(localStorage.getItem("recent-sessions:v1")).toBeNull();
+  });
 });

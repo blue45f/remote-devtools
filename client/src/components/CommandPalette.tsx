@@ -23,7 +23,10 @@ import {
 import { queryClient } from "@/lib/api";
 import { allNavItems } from "@/lib/nav";
 import { shortHash } from "@/lib/format";
-import { useRecentSessions } from "@/lib/recent-sessions";
+import {
+  clearRecentSessions,
+  useRecentSessions,
+} from "@/lib/recent-sessions";
 import { useAppStore } from "@/lib/store";
 
 export function CommandPalette() {
@@ -161,9 +164,10 @@ export function CommandPalette() {
                 try {
                   window.localStorage.removeItem("sessions-prefs:v1");
                   window.localStorage.removeItem("sessions-pins:v1");
-                  toast.success("Sessions preferences cleared", {
+                  clearRecentSessions();
+                  toast.success("Sessions data cleared", {
                     description:
-                      "Reload the Sessions page for view / sort / pins to reset.",
+                      "View / sort / pins / recent history reset. Reload the Sessions page to see the change.",
                   });
                 } catch {
                   toast.error("Couldn't clear preferences");

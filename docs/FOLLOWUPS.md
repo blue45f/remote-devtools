@@ -156,12 +156,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   any type is active so users can reset without hunting through chips.
   ActivityFeed kind-filter parity — same toggle mental model across
   the app.
-- **Recent sessions in CommandPalette** — current commit — Visiting
+- **Recent sessions in CommandPalette** — `0f1051f8` — Visiting
   `/sessions/:id` records the metadata (id + name + url) to
   `recent-sessions:v1` (capped at 5, deduped by id, MRU on top). The
   palette surfaces them as a top-level "Recent sessions" group so a
   re-open is `⌘K → click`. Linear "Recent" / Vercel project switcher
   / GitHub repo-jumper parity.
+- **Reset Sessions also clears recent history** — current commit —
+  The CommandPalette "Reset Sessions preferences" command now also
+  wipes `recent-sessions:v1` so the privacy-conscious reset is a
+  single click. Toast copy updated to mention the recent history
+  alongside view / sort / pins.
 
 ## Next obvious candidates
 
