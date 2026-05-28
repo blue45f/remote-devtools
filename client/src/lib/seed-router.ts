@@ -98,6 +98,16 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       return { id, tags: [] } as T;
     }
   }
+  if (method === 'PATCH' && /^\/sessions\/record\/\d+\/note$/.test(path)) {
+    const id = Number(path.split('/')[3]);
+    try {
+      const body = init?.body ? JSON.parse(init.body as string) : { note: null };
+      const note = typeof body?.note === 'string' ? body.note.trim().slice(0, 4000) || null : null;
+      return { id, note } as T;
+    } catch {
+      return { id, note: null } as T;
+    }
+  }
   // Replay comments (in-memory demo store, lives for the page session).
   const commentListMatch = path.match(/^\/sessions\/record\/(\d+)\/comments$/);
   if (commentListMatch) {

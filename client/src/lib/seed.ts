@@ -206,6 +206,7 @@ export function buildSeedSessionMeta(id: number) {
       eventCount: 0,
       userAgent: USER_AGENTS[0],
       tags: [] as string[],
+      note: null as string | null,
     };
   }
   return {
@@ -219,6 +220,7 @@ export function buildSeedSessionMeta(id: number) {
     eventCount: 0,
     userAgent: found.userAgent,
     tags: found.tags,
+    note: found.id === 1000 ? 'Repro: add item, open cart, spinner never clears.' : null,
   };
 }
 

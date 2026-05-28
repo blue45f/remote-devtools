@@ -149,6 +149,32 @@ describe('SessionDetail page', () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it('renders the seeded session note and saves an edit', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    const textarea = await screen.findByTestId('session-note-input');
+    // Session 1000 ships with a seeded note.
+    await waitFor(() => {
+      expect((textarea as HTMLTextAreaElement).value).toMatch(/Repro:/);
+    });
+
+    // No Save button until the draft diverges from the saved note.
+    expect(screen.queryByTestId('session-note-save')).not.toBeInTheDocument();
+
+    await user.clear(textarea);
+    await user.type(textarea, 'Updated note body');
+    expect(screen.getByTestId('session-note-save')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('session-note-save'));
+
+    // After the demo PATCH round-trips, the cache updates and the Save
+    // button disappears (draft === saved).
+    await waitFor(() => {
+      expect(screen.queryByTestId('session-note-save')).not.toBeInTheDocument();
+    });
+  });
+
   it('opens the keyboard shortcuts overlay when ? is pressed', async () => {
     const user = userEvent.setup();
     renderAt(1000);
