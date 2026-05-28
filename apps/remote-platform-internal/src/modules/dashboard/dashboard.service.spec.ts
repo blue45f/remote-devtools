@@ -183,6 +183,33 @@ describe('DashboardService', () => {
     });
   });
 
+  describe('getTopTags', () => {
+    it('maps raw tag rows and clamps the limit', async () => {
+      const getRawMany = vi.fn().mockResolvedValue([
+        { tag: 'checkout', count: '9' },
+        { tag: 'bug', count: 4 },
+        { tag: '', count: 2 }, // empty filtered out
+      ]);
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        getRawMany,
+      };
+      mockRecordRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await service.getTopTags('day', 9999);
+      expect(rows).toEqual([
+        { tag: 'checkout', count: 9 },
+        { tag: 'bug', count: 4 },
+      ]);
+      expect(qb.limit).toHaveBeenCalledWith(25);
+    });
+  });
+
   describe('getRecentlyAnnotated', () => {
     it('maps annotated records, normalising the timestamp to ISO', async () => {
       const when = new Date('2026-05-01T10:00:00.000Z');

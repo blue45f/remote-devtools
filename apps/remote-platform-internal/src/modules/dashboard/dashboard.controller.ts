@@ -159,6 +159,26 @@ export class DashboardController {
   }
 
   /**
+   * Top tags by usage over the selected period.
+   * GET /api/dashboard/top-tags?period=day&limit=8
+   */
+  @Get('top-tags')
+  @ApiOperation({ summary: '기간 내 태그 사용 상위 N' })
+  @ApiResponse({ status: 200, description: '[{ tag, count }] 배열' })
+  public async getTopTags(
+    @Query() query: PeriodQueryDto,
+    @Query('limit') limitRaw?: string,
+  ): Promise<{ tag: string; count: number }[]> {
+    if (!query.period || !['day', 'week', 'month'].includes(query.period)) {
+      throw new BadRequestException(
+        "The 'period' parameter is required and must be one of: day, week, month.",
+      );
+    }
+    const limit = Number.parseInt(limitRaw ?? '8', 10);
+    return this.dashboardService.getTopTags(query.period, Number.isFinite(limit) ? limit : 8);
+  }
+
+  /**
    * Most recently annotated sessions.
    * GET /api/dashboard/recent-notes?limit=5
    */
