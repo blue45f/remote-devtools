@@ -13,6 +13,7 @@ describe('DashboardController', () => {
     getTicketTrend: vi.fn(),
     getRecordSessionTrend: vi.fn(),
     getTopHosts: vi.fn(),
+    getRecentlyAnnotated: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -154,6 +155,23 @@ describe('DashboardController', () => {
       await expect(controller.getTopHosts({ period: 'year' as never })).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('getRecentNotes', () => {
+    it('forwards the parsed limit and returns the service result', async () => {
+      const rows = [{ id: 1, name: 'x', note: 'n', timestamp: '2026-05-01T00:00:00.000Z' }];
+      mockDashboardService.getRecentlyAnnotated.mockResolvedValue(rows);
+
+      const result = await controller.getRecentNotes('3');
+      expect(result).toEqual(rows);
+      expect(mockDashboardService.getRecentlyAnnotated).toHaveBeenCalledWith(3);
+    });
+
+    it('defaults the limit to 5 when not provided', async () => {
+      mockDashboardService.getRecentlyAnnotated.mockResolvedValue([]);
+      await controller.getRecentNotes();
+      expect(mockDashboardService.getRecentlyAnnotated).toHaveBeenCalledWith(5);
     });
   });
 });

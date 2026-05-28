@@ -205,6 +205,34 @@ export class DashboardService {
   }
 
   /**
+   * Most recently annotated sessions (records with a non-empty note),
+   * newest first. Powers the dashboard "Recently annotated" panel so
+   * triage notes left by the team surface without digging into the list.
+   */
+  public async getRecentlyAnnotated(
+    limit: number,
+  ): Promise<{ id: number; name: string; note: string; timestamp: string }[]> {
+    const rows = await this.recordRepository
+      .createQueryBuilder('r')
+      .select(['r.id', 'r.name', 'r.note', 'r.timestamp'])
+      .where('r.note IS NOT NULL')
+      .andWhere("TRIM(r.note) <> ''")
+      .orderBy('r.timestamp', 'DESC')
+      .limit(Math.min(Math.max(limit, 1), 25))
+      .getMany();
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      note: r.note ?? '',
+      timestamp:
+        r.timestamp instanceof Date
+          ? r.timestamp.toISOString()
+          : new Date(r.timestamp).toISOString(),
+    }));
+  }
+
+  /**
    * Build date ranges for the given period granularity.
    */
   private buildDateRanges(period: PeriodType, startDate?: string, endDate?: string): DateRange[] {

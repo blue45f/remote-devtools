@@ -157,4 +157,18 @@ export class DashboardController {
     const limit = Number.parseInt(limitRaw ?? '8', 10);
     return this.dashboardService.getTopHosts(query.period, Number.isFinite(limit) ? limit : 8);
   }
+
+  /**
+   * Most recently annotated sessions.
+   * GET /api/dashboard/recent-notes?limit=5
+   */
+  @Get('recent-notes')
+  @ApiOperation({ summary: '최근 메모가 달린 세션' })
+  @ApiResponse({ status: 200, description: '[{ id, name, note, timestamp }] 배열' })
+  public async getRecentNotes(
+    @Query('limit') limitRaw?: string,
+  ): Promise<{ id: number; name: string; note: string; timestamp: string }[]> {
+    const limit = Number.parseInt(limitRaw ?? '5', 10);
+    return this.dashboardService.getRecentlyAnnotated(Number.isFinite(limit) ? limit : 5);
+  }
 }
