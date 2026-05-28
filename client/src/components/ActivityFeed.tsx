@@ -4,6 +4,8 @@ import {
   AlertCircle,
   Clapperboard,
   MessageSquare,
+  Pause,
+  Play,
   Sparkles,
   Ticket,
   UserPlus,
@@ -104,11 +106,16 @@ interface ActivityPage {
 }
 
 export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: ActivityFeedProps) {
+  // User-controllable pause. Polling never starts when `pollMs === 0` (the
+  // parent disabled it), or when the user clicks pause.
+  const [paused, setPaused] = useState(false);
+  const effectivePollMs = paused ? 0 : pollMs;
+
   // Top-of-feed: polling query (back-compat array shape).
   const { data, isLoading, error } = useQuery({
     queryKey: ['activity-feed', limit],
     queryFn: () => apiFetch<ActivityEntry[]>(`/api/activity/feed?limit=${limit}`),
-    refetchInterval: pollMs > 0 ? pollMs : false,
+    refetchInterval: effectivePollMs > 0 ? effectivePollMs : false,
   });
 
   // Older entries appended on demand. We don't fold them into `useInfiniteQuery`
@@ -194,7 +201,27 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
             Streaming session and ticket events from across the org.
           </p>
         </div>
-        <LiveDot active={pollMs > 0} />
+        <div className="flex items-center gap-2">
+          {pollMs > 0 && (
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-pressed={paused}
+              aria-label={paused ? 'Resume polling' : 'Pause polling'}
+              data-testid="activity-feed-pause"
+              className={cn(
+                'h-6 w-6 rounded-full border transition-colors inline-flex items-center justify-center shrink-0',
+                paused
+                  ? 'bg-fg text-bg border-fg'
+                  : 'bg-surface border-border text-fg-subtle hover:text-fg',
+              )}
+              title={paused ? 'Resume live updates' : 'Pause live updates'}
+            >
+              {paused ? <Play className="size-3" /> : <Pause className="size-3" />}
+            </button>
+          )}
+          <LiveDot active={effectivePollMs > 0} />
+        </div>
       </div>
 
       {allItems.length > 0 && (

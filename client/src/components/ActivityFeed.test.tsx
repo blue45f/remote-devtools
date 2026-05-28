@@ -67,4 +67,23 @@ describe('ActivityFeed', () => {
       expect(chip.getAttribute('aria-pressed')).toBe('true');
     });
   });
+
+  it('toggles the pause button when polling is enabled', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ActivityFeed pollMs={8000} />);
+
+    const btn = await screen.findByTestId('activity-feed-pause');
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+
+    await user.click(btn);
+    expect(btn.getAttribute('aria-pressed')).toBe('true');
+
+    await user.click(btn);
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('omits the pause button when polling is disabled', () => {
+    renderWithProviders(<ActivityFeed pollMs={0} />);
+    expect(screen.queryByTestId('activity-feed-pause')).not.toBeInTheDocument();
+  });
 });
