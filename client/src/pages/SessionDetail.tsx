@@ -5,6 +5,9 @@ import {
   Bug,
   Calendar,
   Check,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronUp,
   Clock,
   Copy,
   Download,
@@ -785,6 +788,28 @@ function NetworkTab({
     return { transferred, failed };
   }, [filtered]);
 
+  // null sortKey = capture order (the array's natural order).
+  const [sort, setSort] = useState<{ key: 'status' | 'size' | null; dir: 'asc' | 'desc' }>({
+    key: null,
+    dir: 'desc',
+  });
+
+  const toggleSort = (key: 'status' | 'size') => {
+    setSort((prev) => {
+      if (prev.key !== key) return { key, dir: 'desc' };
+      if (prev.dir === 'desc') return { key, dir: 'asc' };
+      return { key: null, dir: 'desc' }; // third click clears
+    });
+  };
+
+  const sorted = useMemo(() => {
+    if (!sort.key) return filtered;
+    const factor = sort.dir === 'asc' ? 1 : -1;
+    const value = (r: NetworkRow) =>
+      sort.key === 'size' ? Number(r.encodedDataLength) || 0 : Number(r.status) || 0;
+    return [...filtered].sort((a, b) => (value(a) - value(b)) * factor);
+  }, [filtered, sort]);
+
   if (isLoading) {
     return (
       <Card className="p-3 space-y-2">
@@ -963,14 +988,30 @@ function NetworkTab({
               <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
                 <th className="h-9 px-3 text-left font-semibold first:pl-4">Method</th>
                 <th className="h-9 px-3 text-left font-semibold">URL</th>
-                <th className="h-9 px-3 text-right font-semibold">Status</th>
+                <th className="h-9 px-3 text-right font-semibold">
+                  <NetworkSortHeader
+                    label="Status"
+                    active={sort.key === 'status'}
+                    dir={sort.dir}
+                    onClick={() => toggleSort('status')}
+                    testid="session-network-sort-status"
+                  />
+                </th>
                 <th className="h-9 px-3 text-left font-semibold">Type</th>
-                <th className="h-9 px-3 text-right font-semibold">Size</th>
+                <th className="h-9 px-3 text-right font-semibold">
+                  <NetworkSortHeader
+                    label="Size"
+                    active={sort.key === 'size'}
+                    dir={sort.dir}
+                    onClick={() => toggleSort('size')}
+                    testid="session-network-sort-size"
+                  />
+                </th>
                 <th className="h-9 pl-3 pr-4 text-right font-semibold w-[40px]" />
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {sorted.map((r) => (
                 <NetworkRowView
                   key={r.id}
                   row={r}
@@ -1160,6 +1201,37 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function NetworkSortHeader({
+  label,
+  active,
+  dir,
+  onClick,
+  testid,
+}: {
+  label: string;
+  active: boolean;
+  dir: 'asc' | 'desc';
+  onClick: () => void;
+  testid: string;
+}) {
+  const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ChevronUp : ChevronDown;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testid}
+      aria-label={`Sort by ${label}`}
+      className={cn(
+        'inline-flex items-center gap-1 uppercase tracking-wider transition-colors ml-auto',
+        active ? 'text-fg' : 'hover:text-fg',
+      )}
+    >
+      <span>{label}</span>
+      <Icon className="size-3" />
+    </button>
   );
 }
 

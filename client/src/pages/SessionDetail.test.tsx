@@ -206,6 +206,31 @@ describe('SessionDetail page', () => {
     expect(screen.getByTestId('session-network-failed')).toHaveTextContent(/failed/);
   });
 
+  it('sorts the Network table by size when the Size header is clicked', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const sizeText = () =>
+      screen
+        .getAllByTestId('session-network-row')
+        .map((row) => row.querySelector('td:nth-child(5)')?.textContent ?? '');
+
+    const before = sizeText();
+    // Click once → descending by size. The first row's size should be >=
+    // every other parseable size.
+    await user.click(screen.getByTestId('session-network-sort-size'));
+
+    await waitFor(() => {
+      const after = sizeText();
+      expect(after).not.toEqual(before);
+    });
+  });
+
   it('filters the Network tab by HTTP status class chip', async () => {
     const user = userEvent.setup();
     renderAt(1000);
