@@ -240,6 +240,13 @@ export default function SessionsPage() {
   const [ageFilter, setAgeFilter] = useState<AgeFilter>(initialAge);
   const [hostFilter, setHostFilter] = useState<string | null>(initialHost);
 
+  // Live tab polling: 5s default, 15s / 30s slower, "off" pauses.
+  // Stored in component state only — most sessions are short-lived
+  // enough that persisting this would just confuse the next visit.
+  const [liveInterval, setLiveInterval] = useState<
+    "5s" | "15s" | "30s" | "off"
+  >("5s");
+
   const [pinned, setPinned] = useState<Set<number>>(() => readPinnedIds());
   useEffect(() => {
     persistPinnedIds(pinned);
@@ -369,7 +376,16 @@ export default function SessionsPage() {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     placeholderData: keepPreviousData,
-    refetchInterval: tab === "live" ? 5000 : false,
+    refetchInterval:
+      tab === "live"
+        ? liveInterval === "off"
+          ? false
+          : liveInterval === "15s"
+            ? 15_000
+            : liveInterval === "30s"
+              ? 30_000
+              : 5_000
+        : false,
   });
 
   const sessions = useMemo<SessionRecord[]>(
@@ -706,6 +722,31 @@ export default function SessionsPage() {
                     {n}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {tab === "live" && (
+          <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
+            <span className="hidden sm:inline">Refresh</span>
+            <Select
+              value={liveInterval}
+              onValueChange={(v) =>
+                setLiveInterval(v as typeof liveInterval)
+              }
+            >
+              <SelectTrigger
+                className="h-7 px-2 text-[11px] font-mono"
+                data-testid="sessions-live-interval"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5s">5s</SelectItem>
+                <SelectItem value="15s">15s</SelectItem>
+                <SelectItem value="30s">30s</SelectItem>
+                <SelectItem value="off">Paused</SelectItem>
               </SelectContent>
             </Select>
           </div>
