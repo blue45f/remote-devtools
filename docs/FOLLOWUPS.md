@@ -340,7 +340,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   TanStack Query cache (same key as the in-tab fetches) so the
   pre-fetch is free for the panels. Chrome DevTools tab-badge
   parity.
-- **Top tags quick-filter strip on Sessions** — current commit —
+- **Top tags quick-filter strip on Sessions** — `fa866061` —
   Mirrors the host-chips pattern: above the Sessions list, a
   strip surfaces the top 8 tags across currently-loaded
   sessions with hit counts. Clicking a chip toggles it as the
