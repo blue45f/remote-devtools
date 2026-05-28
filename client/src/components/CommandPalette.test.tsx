@@ -74,6 +74,18 @@ describe("CommandPalette", () => {
     expect(screen.queryByText("Recent sessions")).not.toBeInTheDocument();
   });
 
+  it("toggles replay skip-idle from the palette", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<CommandPalette />);
+
+    await user.click(screen.getByTestId("cmd-toggle-skip-idle"));
+    await waitFor(() => {
+      expect(localStorage.getItem("replay-prefs:v1")).toContain(
+        '"skipInactive":true',
+      );
+    });
+  });
+
   it("Reset Sessions preferences also wipes recent-sessions", async () => {
     const user = userEvent.setup();
     localStorage.setItem("sessions-prefs:v1", '{"view":"table"}');

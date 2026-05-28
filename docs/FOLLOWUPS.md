@@ -186,11 +186,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `dashboard-prefs:v1` and hydrates on next visit. Stops the
   back-and-forth tax of users who live on the monthly view.
   Datadog / Grafana / PostHog dashboard parity.
-- **Sidebar collapse keyboard shortcut `[`** — current commit —
+- **Sidebar collapse keyboard shortcut `[`** — `9b1f1ea4` —
   Pressing `[` (no modifiers, outside text inputs) toggles
   `sidebarCollapsed`, giving power users the "more canvas" muscle
   memory from Notion / Linear / Slack without grabbing the mouse.
   Shortcut documented in the General group of the help dialog.
+- **CommandPalette toggle skip-idle** — current commit — A new
+  Replay group in the palette flips the `replay-prefs:v1`
+  skipInactive flag from anywhere in the app — no need to visit
+  a session first. Toast confirms the new state.
 
 ## Next obvious candidates
 

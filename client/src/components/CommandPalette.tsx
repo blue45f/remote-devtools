@@ -1,4 +1,5 @@
 import {
+  FastForward,
   History,
   Keyboard,
   Monitor,
@@ -27,6 +28,7 @@ import {
   clearRecentSessions,
   useRecentSessions,
 } from "@/lib/recent-sessions";
+import { useReplayPrefs } from "@/lib/replay-prefs";
 import { useAppStore } from "@/lib/store";
 
 export function CommandPalette() {
@@ -38,6 +40,7 @@ export function CommandPalette() {
   const toggleDemoMode = useAppStore((s) => s.toggleDemoMode);
   const setShortcutsOpen = useAppStore((s) => s.setShortcutsOpen);
   const recentSessions = useRecentSessions();
+  const [{ skipInactive }, setReplayPrefs] = useReplayPrefs();
 
   const run = (fn: () => void) => {
     fn();
@@ -143,6 +146,36 @@ export function CommandPalette() {
             <Sparkles />
             <span>{demoMode ? "Disable demo mode" : "Enable demo mode"}</span>
             <CommandShortcut>{demoMode ? "ON" : "OFF"}</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        <CommandGroup heading="Replay">
+          <CommandItem
+            value="toggle replay skip idle"
+            onSelect={() =>
+              run(() => {
+                setReplayPrefs({ skipInactive: !skipInactive });
+                toast.success(
+                  skipInactive
+                    ? "Skip idle disabled"
+                    : "Skip idle enabled",
+                  {
+                    description: skipInactive
+                      ? "Replay will play idle stretches at normal speed."
+                      : "Replay will fast-forward through idle stretches.",
+                  },
+                );
+              })
+            }
+            data-testid="cmd-toggle-skip-idle"
+          >
+            <FastForward />
+            <span>
+              {skipInactive ? "Disable Replay skip idle" : "Enable Replay skip idle"}
+            </span>
+            <CommandShortcut>{skipInactive ? "ON" : "OFF"}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
