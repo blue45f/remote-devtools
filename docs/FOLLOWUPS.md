@@ -408,7 +408,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   to the Console tab. Reuses the pre-fetched consoleRows
   query so no extra network hit. PostHog / Sentry / Datadog
   session-overview "what went wrong" parity.
-- **Comments inline edit (PATCH endpoint)** — current commit —
+- **Comments inline edit (PATCH endpoint)** — `a39c8b04` —
   Eighth backend cycle. Completes the CRUD on `replay_comment`.
   New `ReplayCommentService.updateBody(commentId, recordId, body)`
   loads with FK scope, mutates, saves. New
