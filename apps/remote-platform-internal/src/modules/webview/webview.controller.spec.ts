@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-import { RecordService } from "@remote-platform/core";
+import { RecordService, ReplayCommentService } from "@remote-platform/core";
 
 import { AuthService } from "../auth/auth.service";
 import { S3Service } from "../s3/s3.service";
@@ -19,6 +19,11 @@ describe("WebviewController (Internal)", () => {
     findPaginated: vi.fn(),
     replaceTags: vi.fn(),
   };
+  const mockReplayCommentService = {
+    findByRecordId: vi.fn(),
+    create: vi.fn(),
+    delete: vi.fn(),
+  };
   const mockS3Service = {
     listBackupFiles: vi.fn(),
     listBackupFilesLight: vi.fn(),
@@ -32,6 +37,10 @@ describe("WebviewController (Internal)", () => {
       providers: [
         { provide: WebviewGateway, useValue: mockGateway },
         { provide: RecordService, useValue: mockRecordService },
+        {
+          provide: ReplayCommentService,
+          useValue: mockReplayCommentService,
+        },
         { provide: S3Service, useValue: mockS3Service },
         // AuthGuard depends on AuthService — provide a stub so the test
         // module compiles. Auth is always disabled in tests, so the guard
@@ -216,6 +225,102 @@ describe("WebviewController (Internal)", () => {
       mockRecordService.replaceTags.mockResolvedValue(null);
       await expect(
         controller.putRecordTags("999", { tags: ["bug"] }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("replay comments", () => {
+    it("getRecordComments returns rows sorted by service", async () => {
+      mockReplayCommentService.findByRecordId.mockResolvedValue([
+        {
+          id: 1,
+          timestampMs: 5000,
+          body: "checkout failed",
+          author: "qa",
+          createdAt: new Date("2026-04-27"),
+        },
+      ]);
+      const out = await controller.getRecordComments("42");
+      expect(out).toHaveLength(1);
+      expect(out[0]).toMatchObject({
+        id: 1,
+        timestampMs: 5000,
+        body: "checkout failed",
+        author: "qa",
+      });
+      expect(mockReplayCommentService.findByRecordId).toHaveBeenCalledWith(42);
+    });
+
+    it("postRecordComment validates, trims and persists", async () => {
+      mockRecordService.findOne.mockResolvedValue({ id: 42 });
+      mockReplayCommentService.create.mockImplementation((data) =>
+        Promise.resolve({
+          id: 9,
+          timestampMs: data.timestampMs,
+          body: data.body,
+          author: data.author ?? null,
+          createdAt: new Date(),
+        }),
+      );
+
+      const out = await controller.postRecordComment(null, "42", {
+        timestampMs: 1234,
+        body: "  the checkout button is broken  ",
+        author: "  jane  ",
+      });
+
+      expect(out.id).toBe(9);
+      expect(out.timestampMs).toBe(1234);
+      expect(out.body).toBe("the checkout button is broken");
+      expect(out.author).toBe("jane");
+    });
+
+    it("postRecordComment rejects negative timestampMs", async () => {
+      await expect(
+        controller.postRecordComment(null, "42", {
+          timestampMs: -1,
+          body: "x",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("postRecordComment rejects blank / non-string body", async () => {
+      await expect(
+        controller.postRecordComment(null, "42", {
+          timestampMs: 0,
+          body: "   ",
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.postRecordComment(null, "42", {
+          timestampMs: 0,
+          body: 123 as unknown as string,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("postRecordComment 404s on unknown recordId", async () => {
+      mockRecordService.findOne.mockResolvedValue(null);
+      await expect(
+        controller.postRecordComment(null, "404", {
+          timestampMs: 0,
+          body: "x",
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("deleteRecordComment returns 204 on success", async () => {
+      mockReplayCommentService.delete.mockResolvedValue(true);
+      await expect(
+        controller.deleteRecordComment("42", "7"),
+      ).resolves.toBeUndefined();
+      expect(mockReplayCommentService.delete).toHaveBeenCalledWith(7, 42);
+    });
+
+    it("deleteRecordComment 404s when no row was deleted", async () => {
+      mockReplayCommentService.delete.mockResolvedValue(false);
+      await expect(
+        controller.deleteRecordComment("42", "7"),
       ).rejects.toThrow(NotFoundException);
     });
   });

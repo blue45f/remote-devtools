@@ -4,10 +4,14 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Logger,
   NotFoundException,
   Param,
+  Post,
   Put,
   Query,
   Res,
@@ -16,7 +20,7 @@ import {
 import type { Response } from "express";
 
 import { getLocalDateString } from "@remote-platform/constants";
-import { RecordService } from "@remote-platform/core";
+import { RecordService, ReplayCommentService } from "@remote-platform/core";
 import { S3Service } from "../s3/s3.service";
 
 import { Auth } from "../auth/auth.decorator";
@@ -27,6 +31,8 @@ import { WebviewGateway } from "./webview.gateway"; // Import Gateway to retriev
 
 const MAX_TAG_LENGTH = 24;
 const MAX_TAGS_PER_RECORD = 16;
+const MAX_COMMENT_BODY_LENGTH = 2000;
+const MAX_COMMENT_AUTHOR_LENGTH = 80;
 
 function normaliseTags(input: unknown[]): string[] {
   const seen = new Set<string>();
@@ -50,6 +56,7 @@ export class WebviewController {
   constructor(
     private readonly webviewGateway: WebviewGateway,
     private readonly recordService: RecordService,
+    private readonly replayCommentService: ReplayCommentService,
     private readonly s3Service: S3Service,
   ) {}
 
@@ -276,6 +283,103 @@ export class WebviewController {
       throw new NotFoundException(`Record ${id} not found`);
     }
     return { id: updated.id, tags: updated.tags };
+  }
+
+  /**
+   * GET /sessions/record/:recordId/comments
+   * List all comments on a record's replay, sorted by timestamp_ms ASC
+   * (so they appear in playback order).
+   */
+  @Get("record/:recordId/comments")
+  public async getRecordComments(@Param("recordId") recordId: string) {
+    const id = this.parseRecordId(recordId);
+    const rows = await this.replayCommentService.findByRecordId(id);
+    return rows.map((c) => ({
+      id: c.id,
+      timestampMs: c.timestampMs,
+      body: c.body,
+      author: c.author ?? null,
+      createdAt: c.createdAt,
+    }));
+  }
+
+  /**
+   * POST /sessions/record/:recordId/comments
+   * Body: { timestampMs: number; body: string; author?: string }
+   * Creates a new comment anchored at `timestampMs` on the replay timeline.
+   */
+  @Post("record/:recordId/comments")
+  public async postRecordComment(
+    @Auth() auth: AuthClaims | null,
+    @Param("recordId") recordId: string,
+    @Body() body: { timestampMs?: unknown; body?: unknown; author?: unknown },
+  ) {
+    const id = this.parseRecordId(recordId);
+    const ts = Number(body?.timestampMs);
+    if (!Number.isFinite(ts) || ts < 0) {
+      throw new BadRequestException("timestampMs must be a non-negative number");
+    }
+    const text =
+      typeof body?.body === "string"
+        ? body.body.trim().slice(0, MAX_COMMENT_BODY_LENGTH)
+        : "";
+    if (!text) {
+      throw new BadRequestException("body must be a non-empty string");
+    }
+    const author =
+      typeof body?.author === "string"
+        ? body.author.trim().slice(0, MAX_COMMENT_AUTHOR_LENGTH) || null
+        : null;
+
+    const record = await this.recordService.findOne(id);
+    if (!record) {
+      throw new NotFoundException(`Record ${id} not found`);
+    }
+
+    const saved = await this.replayCommentService.create({
+      recordId: id,
+      timestampMs: Math.floor(ts),
+      body: text,
+      author,
+      orgId: auth?.org ?? null,
+    });
+
+    return {
+      id: saved.id,
+      timestampMs: saved.timestampMs,
+      body: saved.body,
+      author: saved.author,
+      createdAt: saved.createdAt,
+    };
+  }
+
+  /**
+   * DELETE /sessions/record/:recordId/comments/:commentId
+   * Removes one comment. 404 if the comment doesn't exist on that record.
+   */
+  @Delete("record/:recordId/comments/:commentId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  public async deleteRecordComment(
+    @Param("recordId") recordId: string,
+    @Param("commentId") commentId: string,
+  ): Promise<void> {
+    const id = this.parseRecordId(recordId);
+    const cId = Number(commentId);
+    if (!Number.isInteger(cId) || cId <= 0) {
+      throw new BadRequestException("Invalid commentId parameter");
+    }
+    const deleted = await this.replayCommentService.delete(cId, id);
+    if (!deleted) {
+      throw new NotFoundException(`Comment ${cId} not found on record ${id}`);
+    }
+  }
+
+  private parseRecordId(recordId: string): number {
+    const id = Number(recordId);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new BadRequestException("Invalid recordId parameter");
+    }
+    return id;
   }
 
   // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)

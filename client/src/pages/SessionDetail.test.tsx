@@ -120,6 +120,48 @@ describe("SessionDetail page", () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it("renders seeded replay comments on the Replay tab", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("2"); // jump to Replay
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-comments-panel")).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId("replay-comment").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("adds a new comment and the chip count increments", async () => {
+    const user = userEvent.setup();
+    renderAt(1001);
+
+    await user.keyboard("2");
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-comment-input")).toBeInTheDocument();
+    });
+    // Wait for the seeded comments to land so the increment is meaningful.
+    await waitFor(() => {
+      expect(screen.getAllByTestId("replay-comment").length).toBeGreaterThan(0);
+    });
+    const before = screen.getAllByTestId("replay-comment").length;
+
+    await user.type(
+      screen.getByTestId("replay-comment-input"),
+      "regression on the empty cart flow",
+    );
+    await user.click(screen.getByTestId("replay-comment-add"));
+
+    await waitFor(() => {
+      const after = screen.getAllByTestId("replay-comment").length;
+      expect(after).toBe(before + 1);
+    });
+    expect(
+      screen.getByText(/regression on the empty cart flow/),
+    ).toBeInTheDocument();
+  });
+
   it("opens a response body dialog when a Network row is clicked", async () => {
     const user = userEvent.setup();
     renderAt(1000);

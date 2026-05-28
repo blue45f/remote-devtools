@@ -13,6 +13,61 @@ import {
 } from "./seed";
 import { buildSeedRrwebEvents } from "./seed-rrweb";
 
+interface DemoComment {
+  id: number;
+  timestampMs: number;
+  body: string;
+  author: string | null;
+  createdAt: string;
+}
+
+const demoCommentStore = new Map<number, DemoComment[]>();
+const demoCommentSeeded = new Set<number>();
+
+function seedDemoComments(recordId: number): DemoComment[] {
+  // First time a session opens its comments panel in demo mode, drop in
+  // a couple of representative comments so the UI isn't empty.
+  if (demoCommentSeeded.has(recordId)) return demoCommentStore.get(recordId) ?? [];
+  demoCommentSeeded.add(recordId);
+  const initial: DemoComment[] = [
+    {
+      id: recordId * 1000 + 1,
+      timestampMs: 4500,
+      body: "Login button is offset to the right — looks broken on iPhone SE.",
+      author: "qa",
+      createdAt: new Date(Date.now() - 3 * 60_000).toISOString(),
+    },
+    {
+      id: recordId * 1000 + 2,
+      timestampMs: 12000,
+      body: "Confirmed: the spinner doesn't disappear after the request resolves.",
+      author: "frontend",
+      createdAt: new Date(Date.now() - 2 * 60_000).toISOString(),
+    },
+  ];
+  demoCommentStore.set(recordId, initial);
+  return initial;
+}
+
+function getDemoComments(recordId: number): DemoComment[] {
+  return seedDemoComments(recordId);
+}
+
+function appendDemoComment(recordId: number, c: DemoComment): void {
+  const list = seedDemoComments(recordId);
+  list.push(c);
+  list.sort((a, b) => a.timestampMs - b.timestampMs);
+}
+
+function deleteDemoComment(recordId: number, commentId: number): void {
+  const list = demoCommentStore.get(recordId);
+  if (!list) return;
+  demoCommentStore.set(
+    recordId,
+    list.filter((c) => c.id !== commentId),
+  );
+}
+
 export function resolveSeed<T>(
   path: string,
   init?: RequestInit,
@@ -34,6 +89,48 @@ export function resolveSeed<T>(
       return { id, tags: [] } as T;
     }
   }
+  // Replay comments (in-memory demo store, lives for the page session).
+  const commentListMatch = path.match(
+    /^\/sessions\/record\/(\d+)\/comments$/,
+  );
+  if (commentListMatch) {
+    const recordId = Number(commentListMatch[1]);
+    if (method === "GET") {
+      return getDemoComments(recordId) as T;
+    }
+    if (method === "POST" && init?.body) {
+      try {
+        const parsed = JSON.parse(init.body as string) as {
+          timestampMs?: number;
+          body?: string;
+          author?: string;
+        };
+        const text = (parsed.body ?? "").trim();
+        if (!text) return undefined;
+        const saved: DemoComment = {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          timestampMs: Math.max(0, Math.floor(parsed.timestampMs ?? 0)),
+          body: text.slice(0, 2000),
+          author: (parsed.author ?? null) || null,
+          createdAt: new Date().toISOString(),
+        };
+        appendDemoComment(recordId, saved);
+        return saved as T;
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  const commentDeleteMatch = path.match(
+    /^\/sessions\/record\/(\d+)\/comments\/(\d+)$/,
+  );
+  if (commentDeleteMatch && method === "DELETE") {
+    const recordId = Number(commentDeleteMatch[1]);
+    const commentId = Number(commentDeleteMatch[2]);
+    deleteDemoComment(recordId, commentId);
+    return undefined as T; // 204 — apiFetch unwraps to undefined
+  }
+
   // /api/dashboard/stats
   if (path === "/api/dashboard/stats") {
     return { data: buildSeedStats() } as T;
