@@ -635,6 +635,8 @@ describe('SessionDetail page', () => {
     // Markdown heading + at least one metadata bullet.
     expect(md).toMatch(/^### /);
     expect(md).toMatch(/- \*\*Session ID:\*\*/);
+    // Session 1000 has errors → the derived insights ride along.
+    expect(md).toMatch(/\*\*Notable:\*\*/);
   });
 
   it('copies the session URL via the header Copy URL button', async () => {

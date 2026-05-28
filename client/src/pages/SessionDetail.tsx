@@ -174,6 +174,7 @@ function buildSessionSummary(
   id: string,
   metadata: SessionMetadata | undefined,
   counts: SummaryCounts,
+  insights: SessionInsight[] = [],
 ): string {
   const name = metadata?.name ?? metadata?.room ?? `Session #${id}`;
   const lines: string[] = [`### ${name}`, ''];
@@ -191,6 +192,10 @@ function buildSessionSummary(
   add('Network errors', counts.networkErrorCount);
   add('Console errors', counts.consoleErrorCount);
   add('Comments', counts.commentCount);
+  if (insights.length > 0) {
+    lines.push('', '**Notable:**');
+    for (const insight of insights) lines.push(`- ${insight.text}`);
+  }
   if (metadata?.note && metadata.note.trim()) {
     lines.push('', '> ' + metadata.note.trim().replace(/\n/g, '\n> '));
   }
@@ -454,6 +459,22 @@ export default function SessionDetailPage() {
     return out;
   }, [consoleRows, networkRows, sessionStartMs]);
 
+  // Derived narrative observations — shared by the Overview Insights card
+  // and the "Copy summary" Markdown so both tell the same story.
+  const insights = useMemo(
+    () =>
+      buildSessionInsights({
+        consoleErrors: (consoleRows ?? []).filter((r) => r.level === 'error'),
+        failedRequests: (networkRows ?? []).filter(
+          (r) => r.status !== undefined && r.status >= 400,
+        ),
+        networkRows: networkRows ?? [],
+        rageClicks,
+        sessionStartMs,
+      }),
+    [consoleRows, networkRows, rageClicks, sessionStartMs],
+  );
+
   const jumpToReplay = (offsetMs: number) => {
     const clamped = Math.max(0, Math.round(offsetMs));
     // Write tab + playhead in one searchParams update (raw state setter, so
@@ -598,11 +619,16 @@ export default function SessionDetailPage() {
         metadata={metadata}
         loading={metaLoading}
         recordId={recordId}
-        summary={buildSessionSummary(id ?? '', metadata, {
-          networkErrorCount,
-          consoleErrorCount,
-          commentCount,
-        })}
+        summary={buildSessionSummary(
+          id ?? '',
+          metadata,
+          {
+            networkErrorCount,
+            consoleErrorCount,
+            commentCount,
+          },
+          insights,
+        )}
       />
       {recordId !== null && (
         <TagsEditor recordId={recordId} loading={metaLoading} tags={metadata?.tags ?? []} />
@@ -729,18 +755,7 @@ export default function SessionDetailPage() {
 
         <TabsContent value="overview" className="mt-5 space-y-4">
           {!eventsLoading && recordId !== null && (
-            <SessionInsightsCard
-              insights={buildSessionInsights({
-                consoleErrors: (consoleRows ?? []).filter((r) => r.level === 'error'),
-                failedRequests: (networkRows ?? []).filter(
-                  (r) => r.status !== undefined && r.status >= 400,
-                ),
-                networkRows: networkRows ?? [],
-                rageClicks,
-                sessionStartMs,
-              })}
-              onJump={jumpToReplay}
-            />
+            <SessionInsightsCard insights={insights} onJump={jumpToReplay} />
           )}
           {!eventsLoading && rageClicks.length > 0 && (
             <RageClickCard
