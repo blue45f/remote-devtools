@@ -120,6 +120,29 @@ describe("SessionDetail page", () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it("opens a response body dialog when a Network row is clicked", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("4");
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("session-network-table"),
+      ).toBeInTheDocument();
+    });
+
+    const rows = screen.getAllByTestId("session-network-row");
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[2]); // seed row #2 is the POST /cart/items with a body
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-network-detail")).toBeInTheDocument();
+    });
+    const body = screen.getByTestId("session-network-body");
+    // Pretty-printed JSON gets newlines + indent.
+    expect(body.textContent).toContain('"ok": true');
+  });
+
   it("exposes a Copy cURL button on Network rows", async () => {
     const user = userEvent.setup();
 

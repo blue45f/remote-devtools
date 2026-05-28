@@ -44,6 +44,13 @@ const ReplayPlayer = lazy(() =>
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -507,6 +514,7 @@ function NetworkTab({
 
   const rows = data ?? [];
   const [filter, setFilter] = useState("");
+  const [selected, setSelected] = useState<NetworkRow | null>(null);
 
   const filtered = useMemo(() => {
     if (!filter) return rows;
@@ -629,17 +637,123 @@ function NetworkTab({
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <NetworkRowView key={r.id} row={r} />
+                <NetworkRowView
+                  key={r.id}
+                  row={r}
+                  onSelect={() => setSelected(r)}
+                />
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+      <NetworkRowDetail
+        row={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }
 
-function NetworkRowView({ row }: { row: NetworkRow }) {
+function NetworkRowDetail({
+  row,
+  onClose,
+}: {
+  row: NetworkRow | null;
+  onClose: () => void;
+}) {
+  const open = row !== null;
+  const body = row?.responseBody ?? null;
+  const isJson =
+    !!body &&
+    !row?.base64Encoded &&
+    (row?.mimeType?.includes("json") ||
+      body.trim().startsWith("{") ||
+      body.trim().startsWith("["));
+  const pretty = useMemo(() => {
+    if (!body) return null;
+    if (!isJson) return body;
+    try {
+      return JSON.stringify(JSON.parse(body), null, 2);
+    } catch {
+      return body;
+    }
+  }, [body, isJson]);
+
+  const copyBody = async () => {
+    if (!body) return;
+    try {
+      await navigator.clipboard.writeText(pretty ?? body);
+      toast.success("Body copied");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        className="max-w-3xl p-0 overflow-hidden"
+        data-testid="session-network-detail"
+      >
+        <DialogHeader className="px-6 pt-6 pb-3">
+          <DialogTitle className="flex items-center gap-2 font-mono text-sm">
+            <span>{row?.method ?? ""}</span>
+            <span className="truncate">{row?.url ?? ""}</span>
+          </DialogTitle>
+          <DialogDescription className="font-mono text-[11px] flex items-center gap-3">
+            <span>Status: {row?.status ?? "—"}</span>
+            {row?.resourceType && <span>Type: {row.resourceType}</span>}
+            {row?.mimeType && <span>MIME: {row.mimeType}</span>}
+            <span>Size: {formatBytes(row?.encodedDataLength)}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="px-6 pb-6 max-h-[60vh] flex flex-col">
+          {body ? (
+            <>
+              <div className="flex items-center justify-end mb-2 gap-2">
+                {row?.base64Encoded && (
+                  <Badge variant="neutral" size="sm">
+                    base64
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyBody}
+                  data-testid="session-network-body-copy"
+                >
+                  <Copy />
+                  <span className="hidden sm:inline">Copy body</span>
+                </Button>
+              </div>
+              <pre
+                className="font-mono text-[11px] bg-bg-subtle border border-border rounded-md p-3 overflow-auto flex-1"
+                data-testid="session-network-body"
+              >
+                {pretty}
+              </pre>
+            </>
+          ) : (
+            <EmptyState
+              icon={Globe}
+              title="No body captured"
+              description="The SDK didn't store a response body for this request."
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NetworkRowView({
+  row,
+  onSelect,
+}: {
+  row: NetworkRow;
+  onSelect: () => void;
+}) {
   const statusClass =
     row.status === undefined
       ? "text-fg-faint"
@@ -653,8 +767,9 @@ function NetworkRowView({ row }: { row: NetworkRow }) {
 
   return (
     <tr
-      className="group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors"
+      className="group border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors cursor-pointer"
       data-testid="session-network-row"
+      onClick={onSelect}
     >
       <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg">
         {row.method}
@@ -681,7 +796,10 @@ function NetworkRowView({ row }: { row: NetworkRow }) {
       <td className="px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums text-fg-subtle">
         {formatBytes(row.encodedDataLength)}
       </td>
-      <td className="pl-3 pr-4 py-2 align-middle text-right">
+      <td
+        className="pl-3 pr-4 py-2 align-middle text-right"
+        onClick={(e) => e.stopPropagation()}
+      >
         <NetworkRowCopyCurl row={row} />
       </td>
     </tr>
