@@ -38,6 +38,16 @@ describe("SessionDetail page", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the parsed userAgent badge in the header", async () => {
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId("session-user-agent")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("session-user-agent")).toHaveTextContent(
+      /Chrome · macOS|Safari · iOS|Firefox · Linux|Edge · Windows|Chrome · Android/,
+    );
+  });
+
   it("switches between overview, replay, timeline and raw tabs", async () => {
     const user = userEvent.setup();
     renderAt(1000);

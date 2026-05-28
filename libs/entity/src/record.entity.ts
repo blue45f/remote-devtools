@@ -55,6 +55,14 @@ export class RecordEntity {
   @Column({ name: "referrer", length: 500, nullable: true })
   public referrer: string;
 
+  /**
+   * SDK 캡처 시 클라이언트의 navigator.userAgent. NULL은 (a) 마이그레이션 이전
+   * 데이터 또는 (b) SDK가 UA를 보내지 않은 케이스. 프론트엔드에서 브라우저/OS
+   * 배지 렌더링용으로만 사용한다.
+   */
+  @Column({ name: "user_agent", type: "text", nullable: true })
+  public userAgent?: string | null;
+
   /** 이 녹화에 속한 네트워크 요청 목록. */
   @OneToMany(() => NetworkEntity, (network) => network.record, {
     cascade: true,
