@@ -512,6 +512,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the right slice to a support ticket without leaking
   unrelated rows.
 
+- **Sessions CSV export** — `abd6ef78` — Download icon in
+  the Sessions page header dumps the currently filtered +
+  sorted rows to CSV. Columns: id, name, url, host,
+  deviceId, mode, durationMs, timestamp, tags, userAgent.
+  Duration converts from nanoseconds; tags join with a
+  space so spreadsheets don't split them. Respects every
+  active filter (search/age/duration/host/tag, recorded vs
+  live tab) so the file matches what's on screen.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
