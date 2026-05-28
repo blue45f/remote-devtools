@@ -107,11 +107,16 @@ the next obvious candidates. Each entry: what shipped, what's next.
   next to the period tabs; clicking it spins the icon and invalidates
   every dashboard query. Datadog / PostHog / Grafana parity for
   long-lived auto-refresh dashboards.
-- **Sessions filter URL serialization** — current commit — search,
+- **Sessions filter URL serialization** — `b4546b8f` — search,
   regex, sort, duration, age, host (plus existing tab) now round-trip
   through the URL via `q`/`re`/`sort`/`dur`/`age`/`host` params. The
   address bar IS the shareable filter view; defaults are omitted from
   the URL so it stays clean. PostHog / Datadog list-view parity.
+- **Pinned sessions (client-only)** — current commit — Per-row pin
+  toggle on the Recorded tab; pinned sessions float to the top in a
+  dedicated "Pinned (N)" section that survives across filters and
+  reloads via `localStorage` (`sessions-pins:v1`). No backend change.
+  Linear / Notion sidebar-pin parity.
 
 ## Next obvious candidates
 
