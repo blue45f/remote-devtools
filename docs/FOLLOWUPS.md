@@ -149,13 +149,19 @@ the next obvious candidates. Each entry: what shipped, what's next.
   keyboard. Shortcuts skip inputs/textarea/contentEditable so they
   don't fight the Timeline search field. Chrome DevTools docking and
   Linear tab-by-number parity.
-- **Timeline multi-select type filter** — current commit — Timeline
+- **Timeline multi-select type filter** — `2003c6b6` — Timeline
   filter rows/chips toggle on/off instead of single-selecting. Empty
   selection means "show everything" so the default behaviour is
   unchanged. A "Clear" link appears next to the section header when
   any type is active so users can reset without hunting through chips.
   ActivityFeed kind-filter parity — same toggle mental model across
   the app.
+- **Recent sessions in CommandPalette** — current commit — Visiting
+  `/sessions/:id` records the metadata (id + name + url) to
+  `recent-sessions:v1` (capped at 5, deduped by id, MRU on top). The
+  palette surfaces them as a top-level "Recent sessions" group so a
+  re-open is `⌘K → click`. Linear "Recent" / Vercel project switcher
+  / GitHub repo-jumper parity.
 
 ## Next obvious candidates
 

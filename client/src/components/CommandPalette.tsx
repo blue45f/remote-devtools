@@ -1,4 +1,12 @@
-import { Keyboard, Monitor, Moon, RotateCcw, Sparkles, Sun } from "lucide-react";
+import {
+  History,
+  Keyboard,
+  Monitor,
+  Moon,
+  RotateCcw,
+  Sparkles,
+  Sun,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { toast } from "@/components/ui/toaster";
@@ -14,6 +22,8 @@ import {
 } from "@/components/ui/command";
 import { queryClient } from "@/lib/api";
 import { allNavItems } from "@/lib/nav";
+import { shortHash } from "@/lib/format";
+import { useRecentSessions } from "@/lib/recent-sessions";
 import { useAppStore } from "@/lib/store";
 
 export function CommandPalette() {
@@ -24,6 +34,7 @@ export function CommandPalette() {
   const demoMode = useAppStore((s) => s.demoMode);
   const toggleDemoMode = useAppStore((s) => s.toggleDemoMode);
   const setShortcutsOpen = useAppStore((s) => s.setShortcutsOpen);
+  const recentSessions = useRecentSessions();
 
   const run = (fn: () => void) => {
     fn();
@@ -35,6 +46,31 @@ export function CommandPalette() {
       <CommandInput placeholder="Type a command or search…" />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+
+        {recentSessions.length > 0 && (
+          <>
+            <CommandGroup heading="Recent sessions">
+              {recentSessions.map((s) => (
+                <CommandItem
+                  key={s.id}
+                  value={`recent session ${s.id} ${s.name ?? ""} ${s.url ?? ""}`}
+                  onSelect={() => run(() => navigate(`/sessions/${s.id}`))}
+                >
+                  <History />
+                  <span className="truncate">
+                    {s.name ?? `Session ${shortHash(s.id, 10)}`}
+                  </span>
+                  {s.url && (
+                    <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
+                      {prettyHost(s.url)}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         <CommandGroup heading="Navigation">
           {allNavItems.map((item) => {
@@ -142,4 +178,12 @@ export function CommandPalette() {
       </CommandList>
     </CommandDialog>
   );
+}
+
+function prettyHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }

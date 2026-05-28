@@ -54,6 +54,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import { formatDurationFromNanos, shortHash } from "@/lib/format";
+import { recordSessionVisit } from "@/lib/recent-sessions";
 import { cn } from "@/lib/utils";
 
 interface SessionMetadata {
@@ -225,6 +226,19 @@ export default function SessionDetailPage() {
     );
     playheadMsRef.current = clamped;
   };
+
+  // Record this visit in the recent-sessions ring so the CommandPalette
+  // can offer a "Recent" group for quick re-open. Fires once per metadata
+  // load — id/name/url only change when the user navigates to a different
+  // session.
+  useEffect(() => {
+    if (!id || !metadata) return;
+    recordSessionVisit({
+      id,
+      name: metadata.name ?? metadata.room,
+      url: metadata.url,
+    });
+  }, [id, metadata]);
 
   // Number-key tab switching (1/2/3/4). Mirrors the DevTools docking
   // convention and Linear's tab-by-number model — once a user knows the

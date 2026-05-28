@@ -50,4 +50,27 @@ describe("CommandPalette", () => {
     });
     expect(localStorage.getItem("demo-mode")).toBe("1");
   });
+
+  it("surfaces recent sessions from localStorage when present", () => {
+    localStorage.setItem(
+      "recent-sessions:v1",
+      JSON.stringify([
+        {
+          id: "abc123",
+          name: "checkout-flow-test",
+          url: "https://shop.example.com/cart/checkout",
+          visitedAt: Date.now(),
+        },
+      ]),
+    );
+    renderWithProviders(<CommandPalette />);
+    expect(screen.getByText("Recent sessions")).toBeInTheDocument();
+    expect(screen.getByText("checkout-flow-test")).toBeInTheDocument();
+    expect(screen.getByText("shop.example.com")).toBeInTheDocument();
+  });
+
+  it("hides the recent group entirely when no history exists", () => {
+    renderWithProviders(<CommandPalette />);
+    expect(screen.queryByText("Recent sessions")).not.toBeInTheDocument();
+  });
 });
