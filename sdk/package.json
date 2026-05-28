@@ -29,7 +29,7 @@
     "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
-    "@rrweb/types": "2.0.0-alpha.18",
+    "@rrweb/types": "2.0.0-alpha.20",
     "@types/crypto-js": "^4.2.2",
     "@types/js-cookie": "^3.0.6",
     "@vitest/coverage-v8": "^3.2.4",
