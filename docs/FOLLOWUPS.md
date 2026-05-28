@@ -648,6 +648,13 @@ limit)` extracts hostname directly in SQL
   See-all button that jumps to the Network tab. Triage
   starts on the landing tab without clicking around.
 
+- **Keyboard error nav + replay cheatsheet** — `2604a5c2` —
+  `e` / `Shift+E` jump to next / previous error on the
+  Replay tab (shared `pickErrorOffset` helper keeps it in
+  sync with the ErrorNavButton). The shortcuts dialog now
+  lists Replay-tab bindings (F, E, Shift+E) when active, so
+  they're discoverable.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
