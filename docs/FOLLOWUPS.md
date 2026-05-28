@@ -674,6 +674,16 @@ limit)` extracts hostname directly in SQL
   `1d9508cc`: dashboard manual refresh now invalidates the
   Top-hosts and Recently-annotated panels too.)
 
+- **Deep-linkable session tabs** — `2380c861` — The active
+  Session-detail tab round-trips through `?tab=` so a tab is
+  shareable and survives reload (`?tab=network`). Single-
+  writer `setTab` updates state + URL in one call (no mirror
+  effect) so it never races with the `?t=` playhead write;
+  jumpToReplay now writes `t` + `tab=replay` together.
+  Overview is the default and omitted. (Earlier mirror-effect
+  attempt was reverted for racing `?t=`; this is the correct
+  single-writer version.)
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
