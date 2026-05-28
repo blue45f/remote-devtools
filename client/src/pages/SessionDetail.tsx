@@ -1271,6 +1271,15 @@ function TagsEditor({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<string[] | null>(null);
+  const [showSuggest, setShowSuggest] = useState(false);
+
+  // Cross-session tag list for autosuggest. Cached for 5 min — the set
+  // changes slowly relative to the user's typing speed.
+  const { data: allTags } = useQuery<string[]>({
+    queryKey: ['all-record-tags'],
+    queryFn: () => apiFetch<string[]>('/sessions/record/tags'),
+    staleTime: 5 * 60_000,
+  });
 
   const mutation = useMutation({
     mutationFn: async (next: string[]) => {
@@ -1300,6 +1309,15 @@ function TagsEditor({
   });
 
   const visible = pending ?? tags;
+
+  const suggestions = useMemo(() => {
+    const term = draft.trim().toLowerCase();
+    if (!term) return [] as string[];
+    const taken = new Set(visible);
+    return (allTags ?? [])
+      .filter((t) => t.toLowerCase().includes(term) && !taken.has(t))
+      .slice(0, 6);
+  }, [draft, visible, allTags]);
 
   const submit = () => {
     const next = normaliseTags([...visible, draft]);
@@ -1349,12 +1367,43 @@ function TagsEditor({
             e.preventDefault();
             submit();
           }}
-          className="inline-flex items-center gap-1"
+          className="inline-flex items-center gap-1 relative"
         >
+          {showSuggest && suggestions.length > 0 && (
+            <div
+              className="absolute top-full mt-1 left-0 z-10 min-w-[180px] rounded-md border border-border bg-surface shadow-lg p-1"
+              data-testid="session-tag-suggest"
+            >
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  // mouseDown so the input's blur doesn't fire first and
+                  // close the dropdown before we register the click.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setPending(normaliseTags([...visible, s]));
+                    mutation.mutate(normaliseTags([...visible, s]));
+                    setDraft('');
+                    setShowSuggest(false);
+                  }}
+                  data-testid="session-tag-suggest-item"
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-bg-muted text-fg"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             type="text"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setShowSuggest(true);
+            }}
+            onFocus={() => setShowSuggest(true)}
+            onBlur={() => setShowSuggest(false)}
             maxLength={MAX_TAG_LENGTH}
             placeholder="Add tag…"
             aria-label="Add tag"

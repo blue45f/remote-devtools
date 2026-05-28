@@ -257,6 +257,18 @@ export class WebviewController {
   }
 
   /**
+   * GET /sessions/record/tags
+   *
+   * Returns the full sorted list of unique tags ever applied to records
+   * in scope. Powers the autosuggest dropdown on the SessionDetail
+   * tags editor.
+   */
+  @Get('record/tags')
+  public async listAllRecordTags(@Auth() auth: AuthClaims | null): Promise<string[]> {
+    return this.recordService.findAllTags(auth?.org ?? null);
+  }
+
+  /**
    * PUT /sessions/record/:recordId/tags
    *
    * Replace the tag set on a record. The body shape is `{ tags: string[] }`

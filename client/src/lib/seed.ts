@@ -73,9 +73,12 @@ const USER_AGENTS: string[] = [
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36',
 ];
 
+let cachedSeedSessions: SeedSession[] | undefined;
+
 export function buildSeedSessions(): SeedSession[] {
+  if (cachedSeedSessions) return cachedSeedSessions;
   const now = Date.now();
-  return NAMES.map((name, i) => {
+  cachedSeedSessions = NAMES.map((name, i) => {
     const seconds = [12, 47, 240, 1240, 18, 96, 720, 33, 5400, 64, 0, 0][i] ?? 30;
     const isLive = i >= 10;
     return {
@@ -90,6 +93,7 @@ export function buildSeedSessions(): SeedSession[] {
       tags: SEED_TAGS[i % SEED_TAGS.length],
     };
   });
+  return cachedSeedSessions;
 }
 
 export function liveSeedSessions(): SeedSession[] {
