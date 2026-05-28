@@ -15,6 +15,7 @@ import {
   Eye,
   FastForward,
   FileJson,
+  FileText,
   Globe,
   Hash,
   Layers,
@@ -152,6 +153,44 @@ function formatTimestampWithMillis(ts: number) {
   const time = d.toLocaleTimeString(undefined, { hour12: false });
   const ms = String(d.getMilliseconds()).padStart(3, '0');
   return `${time}.${ms}`;
+}
+
+interface SummaryCounts {
+  networkErrorCount: number;
+  consoleErrorCount: number;
+  commentCount: number;
+}
+
+/**
+ * Build a Markdown summary of a session for pasting into a bug ticket
+ * (Linear / GitHub / Jira). Composes the metadata the page already has;
+ * omits rows that have no value so the block stays tight.
+ */
+function buildSessionSummary(
+  id: string,
+  metadata: SessionMetadata | undefined,
+  counts: SummaryCounts,
+): string {
+  const name = metadata?.name ?? metadata?.room ?? `Session #${id}`;
+  const lines: string[] = [`### ${name}`, ''];
+  const add = (label: string, value?: string | number | null) => {
+    if (value === undefined || value === null || value === '') return;
+    lines.push(`- **${label}:** ${value}`);
+  };
+  add('Session ID', id);
+  add('URL', metadata?.url);
+  add('Device', metadata?.deviceId);
+  if (metadata?.duration) add('Duration', formatDurationFromNanos(metadata.duration));
+  add('Captured', metadata?.createdAt ? new Date(metadata.createdAt).toLocaleString() : undefined);
+  if (metadata?.userAgent) add('Browser', formatUserAgentBadge(metadata.userAgent) || undefined);
+  if (metadata?.tags && metadata.tags.length > 0) add('Tags', metadata.tags.join(', '));
+  add('Network errors', counts.networkErrorCount);
+  add('Console errors', counts.consoleErrorCount);
+  add('Comments', counts.commentCount);
+  if (metadata?.note && metadata.note.trim()) {
+    lines.push('', '> ' + metadata.note.trim().replace(/\n/g, '\n> '));
+  }
+  return lines.join('\n') + '\n';
 }
 
 type TabValue = 'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw';
@@ -406,7 +445,17 @@ export default function SessionDetailPage() {
       </Button>
 
       {/* Header */}
-      <SessionHeader id={id ?? ''} metadata={metadata} loading={metaLoading} recordId={recordId} />
+      <SessionHeader
+        id={id ?? ''}
+        metadata={metadata}
+        loading={metaLoading}
+        recordId={recordId}
+        summary={buildSessionSummary(id ?? '', metadata, {
+          networkErrorCount,
+          consoleErrorCount,
+          commentCount,
+        })}
+      />
       {recordId !== null && (
         <TagsEditor recordId={recordId} loading={metaLoading} tags={metadata?.tags ?? []} />
       )}
@@ -1954,12 +2003,15 @@ function SessionHeader({
   id,
   metadata,
   loading,
+  summary,
 }: {
   id: string;
   metadata?: SessionMetadata;
   loading: boolean;
   /** Numeric record id when this is a DB session (vs. an S3 backup). */
   recordId?: number | null;
+  /** Pre-built Markdown summary for the Copy summary button. */
+  summary?: string;
 }) {
   const isRecording = metadata?.recordMode;
   return (
@@ -2029,6 +2081,7 @@ function SessionHeader({
           )
         ) : null}
 
+        {!loading && summary && <SessionHeaderCopySummary summary={summary} />}
         {metadata?.url && <SessionHeaderCopyUrl url={metadata.url} />}
         {metadata?.url && (
           <Tooltip>
@@ -2061,6 +2114,38 @@ function SessionHeader({
         )}
       </div>
     </div>
+  );
+}
+
+function SessionHeaderCopySummary({ summary }: { summary: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('Summary copied', { description: 'Markdown for a bug ticket' });
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="touch-target"
+          onClick={copy}
+          data-testid="session-header-copy-summary"
+          aria-label="Copy session summary as Markdown"
+        >
+          {copied ? <Check /> : <FileText />}
+          <span className="hidden xs:inline sm:inline">Copy summary</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Copy a Markdown summary for a ticket</TooltipContent>
+    </Tooltip>
   );
 }
 
