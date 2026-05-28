@@ -4,12 +4,14 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Check,
   Clock,
   Download,
   ExternalLink,
   Filter,
   Globe,
   LayoutGrid,
+  Link2 as LinkIcon,
   Monitor as MonitorIcon,
   PlaySquare,
   Pin,
@@ -1628,6 +1630,7 @@ function SessionRow({
             </Tooltip>
           )}
           <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+            {tab === 'record' && <SessionRowCopyLink id={session.id} />}
             {tab === 'record' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1654,6 +1657,40 @@ function SessionRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+function SessionRowCopyLink({ id }: { id: number }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/sessions/${id}`
+        : `/sessions/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('Session link copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={copy}
+          aria-label="Copy session link"
+          data-testid="session-copy-link"
+        >
+          {copied ? <Check className="size-3.5" /> : <LinkIcon className="size-3.5" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Copy link</TooltipContent>
+    </Tooltip>
   );
 }
 

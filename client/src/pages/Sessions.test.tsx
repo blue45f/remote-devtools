@@ -247,6 +247,28 @@ describe('Sessions page', () => {
     expect(screen.getByText(/annotated/)).toBeInTheDocument();
   });
 
+  it('copies a session link from a row action', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    const copyButtons = screen.getAllByTestId('session-copy-link');
+    expect(copyButtons.length).toBeGreaterThan(0);
+    await user.click(copyButtons[0]);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0][0]).toMatch(/\/sessions\/\d+$/);
+  });
+
   it('focuses the search input when "/" is pressed', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
