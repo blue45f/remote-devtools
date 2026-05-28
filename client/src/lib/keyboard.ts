@@ -19,6 +19,7 @@ export function useGlobalShortcuts() {
   const setCommandOpen = useAppStore((s) => s.setCommandOpen);
   const toggleCommand = useAppStore((s) => s.toggleCommand);
   const toggleShortcuts = useAppStore((s) => s.toggleShortcuts);
+  const toggleSidebarCollapsed = useAppStore((s) => s.toggleSidebarCollapsed);
 
   useEffect(() => {
     let pendingG = false;
@@ -49,6 +50,14 @@ export function useGlobalShortcuts() {
       if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         toggleShortcuts();
+        return;
+      }
+
+      // "[" — collapse / expand the sidebar. Notion / Linear / Slack
+      // parity for the "give me more canvas" muscle memory.
+      if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        toggleSidebarCollapsed();
         return;
       }
 
@@ -84,7 +93,13 @@ export function useGlobalShortcuts() {
       window.removeEventListener("keydown", handler);
       clearPending();
     };
-  }, [navigate, setCommandOpen, toggleCommand, toggleShortcuts]);
+  }, [
+    navigate,
+    setCommandOpen,
+    toggleCommand,
+    toggleShortcuts,
+    toggleSidebarCollapsed,
+  ]);
 }
 
 /**
@@ -109,6 +124,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { keys: ["⌘", "K"], label: "Open command palette" },
       { keys: ["?"], label: "Show keyboard shortcuts" },
+      { keys: ["["], label: "Collapse / expand sidebar" },
       { keys: ["Esc"], label: "Close dialog / cancel" },
     ],
   },

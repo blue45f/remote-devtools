@@ -78,4 +78,17 @@ describe("useGlobalShortcuts", () => {
     await user.keyboard("?");
     expect(useAppStore.getState().shortcutsOpen).toBe(false);
   });
+
+  it("toggles the sidebar collapsed state on `[`", async () => {
+    const user = userEvent.setup();
+    renderProbe();
+
+    // `[` is the leading char of user-event's key-code syntax; double it
+    // to type a literal bracket.
+    const initial = useAppStore.getState().sidebarCollapsed;
+    await user.keyboard("[[");
+    expect(useAppStore.getState().sidebarCollapsed).toBe(!initial);
+    await user.keyboard("[[");
+    expect(useAppStore.getState().sidebarCollapsed).toBe(initial);
+  });
 });

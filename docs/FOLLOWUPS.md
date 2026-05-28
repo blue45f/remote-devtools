@@ -186,6 +186,11 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `dashboard-prefs:v1` and hydrates on next visit. Stops the
   back-and-forth tax of users who live on the monthly view.
   Datadog / Grafana / PostHog dashboard parity.
+- **Sidebar collapse keyboard shortcut `[`** — current commit —
+  Pressing `[` (no modifiers, outside text inputs) toggles
+  `sidebarCollapsed`, giving power users the "more canvas" muscle
+  memory from Notion / Linear / Slack without grabbing the mouse.
+  Shortcut documented in the General group of the help dialog.
 
 ## Next obvious candidates
 
