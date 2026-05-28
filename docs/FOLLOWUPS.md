@@ -66,10 +66,13 @@ the next obvious candidates. Each entry: what shipped, what's next.
   use real `<a>` semantics (Cmd+click for new tab works). Sessions
   reads `?tab=live` from the URL and writes it back as tab changes.
   Vercel / Linear dashboard parity.
-- **Captured preview click heatmap** — current commit — SessionDetail
+- **Captured preview click heatmap** — `0cef3e57` — SessionDetail
   overlays click coordinates as accent-colored dots on the captured
   preview thumbnail. Toggle in the overlay shows / hides them with the
   total count. FullStory / Microsoft Clarity heatmap MVP.
+- **Pricing FAQ search** — current commit — Live filter input over
+  questions + answers, with a helpful "no matches" CTA that links to
+  GitHub issues. Stripe / Vercel / Linear pricing parity.
 
 ## Next obvious candidates
 
