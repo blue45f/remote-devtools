@@ -25,8 +25,8 @@
     "error-stack-parser": "^2.1.4",
     "js-cookie": "^3.0.7",
     "rrweb": "2.0.0-alpha.4",
-    "specificity": "0.4.1",
-    "ua-parser-js": "^2.0.9"
+    "specificity": "1.0.0",
+    "ua-parser-js": "^2.0.10"
   },
   "devDependencies": {
     "@rrweb/types": "2.0.0-alpha.20",
