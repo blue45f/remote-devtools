@@ -366,6 +366,28 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('the replay tab badge counts only open comments', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    // Seed has 2 unresolved comments → badge shows 2.
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-comments-badge')).toHaveTextContent('2');
+    });
+
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+    const firstRow = screen.getAllByTestId('replay-comment')[0];
+    await user.click(within(firstRow).getByTestId('replay-comment-resolve'));
+
+    // Resolving one drops the open count to 1.
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-comments-badge')).toHaveTextContent('1');
+    });
+  });
+
   it('shows the comment author byline', async () => {
     const user = userEvent.setup();
     renderAt(1000);
