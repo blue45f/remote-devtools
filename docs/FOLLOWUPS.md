@@ -602,6 +602,15 @@ limit)` extracts hostname directly in SQL
   Clear-filters action. Closes the notes loop — find every
   annotated session in one click.
 
+- **Copy session summary (Markdown)** — `e4b6ae0c` — Copy
+  summary button on the SessionHeader puts a Markdown digest
+  on the clipboard: name, ID, URL, device, duration, browser,
+  tags, network/console error counts, comment count, and the
+  note as a blockquote. Pure `buildSessionSummary` helper
+  composes page data and omits empty rows. Ready-to-paste
+  into a Linear/GitHub/Jira ticket. Sentry "copy issue
+  details" parity.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
