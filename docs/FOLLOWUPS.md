@@ -121,10 +121,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Refresh selector (5s / 15s / 30s / Paused). Lets users dial down
   the cadence of the polling react-query without code changes.
   Datadog "Refresh interval" parity.
-- **Active filters pill summary** — current commit — Above the result
+- **Active filters pill summary** — `a51e1cb7` — Above the result
   count, each active filter renders as an accent-soft pill with an X
   that removes only that filter. Hidden when nothing is active.
   Linear / Notion / GitHub PR list parity.
+- **Reset Sessions preferences command** — current commit — A new
+  "Reset Sessions preferences" entry in the CommandPalette wipes
+  `sessions-prefs:v1` + `sessions-pins:v1` from localStorage. The
+  escape hatch for when stored prefs end up in a weird state.
 
 ## Next obvious candidates
 
