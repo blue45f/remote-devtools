@@ -185,6 +185,22 @@ export default function SessionDetailPage() {
 
   const rageClicks = useMemo(() => detectRageClicks(events), [events]);
 
+  // All MouseInteraction "Click" coordinates (rrweb IncrementalSnapshot,
+  // source=2, type=2). Streamed into SessionPreviewCard as overlay dots.
+  const clickPoints = useMemo(() => {
+    const out: { x: number; y: number }[] = [];
+    for (const e of events) {
+      if (e.type !== 3) continue;
+      const data = e.data as
+        | { source?: number; type?: number; x?: number; y?: number }
+        | undefined;
+      if (data?.source !== 2 || data?.type !== 2) continue;
+      if (typeof data.x !== "number" || typeof data.y !== "number") continue;
+      out.push({ x: data.x, y: data.y });
+    }
+    return out;
+  }, [events]);
+
   // First event's wall-clock timestamp anchors offset math for the
   // "Timeline → Jump to replay" flow. rrweb-player expects ms from
   // session start, not absolute epoch ms.
@@ -237,6 +253,7 @@ export default function SessionDetailPage() {
           <SessionPreviewCard
             sessionId={id}
             className="lg:max-w-[260px] w-full"
+            clickPoints={clickPoints}
           />
         )}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 self-start">
