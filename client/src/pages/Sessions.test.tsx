@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/utils';
 
@@ -156,6 +156,33 @@ describe('Sessions page', () => {
     await waitFor(() => {
       expect(screen.queryByText(/tag: checkout/)).not.toBeInTheDocument();
     });
+  });
+
+  it('exports the filtered sessions list as CSV', async () => {
+    const user = userEvent.setup();
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:csv');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('sessions-export-csv'));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toContain('text/csv');
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
   it('toggles row density and persists the choice', async () => {
