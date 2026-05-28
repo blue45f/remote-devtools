@@ -359,8 +359,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   — bypasses the setTimeout/race-condition trap a naïve focus
   attempt would hit during the tab transition. Documented in
   the Session detail shortcuts group.
-- **ActivityFeed surfaces recent replay comments** — current
-  commit — Connects the comments feature to the Dashboard.
+- **ActivityFeed surfaces recent replay comments** — `d5004bde` — Connects the comments feature to the Dashboard.
   `ActivityService.getFeedPage` now pulls from the
   `replay_comment` table too, merges into the chronological
   feed, and a `comment` kind ships with a 80-char truncated
