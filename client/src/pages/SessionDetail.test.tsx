@@ -121,6 +121,34 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('exports filtered Console rows as a text file', async () => {
+    const user = userEvent.setup();
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:txt');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    renderAt(1000);
+
+    await user.keyboard('5'); // Console tab
+    await waitFor(() => {
+      expect(screen.getByTestId('session-console-list')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('session-console-export'));
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe('text/plain');
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+  });
+
   it('opens the keyboard shortcuts overlay when ? is pressed', async () => {
     const user = userEvent.setup();
     renderAt(1000);

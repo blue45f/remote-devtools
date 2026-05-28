@@ -582,6 +582,7 @@ export default function SessionDetailPage() {
         <TabsContent value="console" className="mt-5">
           <ConsoleTab
             sessionId={id ?? ''}
+            sessionName={metadata?.name ?? metadata?.room}
             onJumpToReplay={jumpToReplay}
             sessionStartMs={sessionStartMs}
           />
@@ -1261,10 +1262,12 @@ const ALL_CONSOLE_LEVELS: ConsoleLevel[] = ['log', 'info', 'warn', 'error', 'deb
 
 function ConsoleTab({
   sessionId,
+  sessionName,
   onJumpToReplay,
   sessionStartMs,
 }: {
   sessionId: string;
+  sessionName?: string;
   onJumpToReplay?: (offsetMs: number) => void;
   sessionStartMs?: number;
 }) {
@@ -1306,6 +1309,25 @@ function ConsoleTab({
       if (next.has(l)) next.delete(l);
       else next.add(l);
       return next;
+    });
+  };
+
+  const exportFiltered = () => {
+    const lines = filtered.map((r) => {
+      const ts = new Date(r.timestamp).toISOString();
+      return `[${ts}] [${r.level.toUpperCase()}] ${r.text}`;
+    });
+    const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `${sessionName || `session-${sessionId}`}-console.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Console export downloaded', {
+      description: `${filtered.length} message${filtered.length === 1 ? '' : 's'}`,
     });
   };
 
@@ -1353,6 +1375,17 @@ function ConsoleTab({
             }
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportFiltered}
+          data-testid="session-console-export"
+          title="Download visible console rows as text"
+          disabled={filtered.length === 0}
+        >
+          <Download />
+          <span className="hidden sm:inline">Export</span>
+        </Button>
         <div className="flex items-center gap-1.5 flex-wrap">
           {ALL_CONSOLE_LEVELS.map((l) => {
             const count = counts[l];
