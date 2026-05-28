@@ -470,7 +470,8 @@ export default function SessionsPage() {
         (s) =>
           matcher(s.name) ||
           (s.url ? matcher(s.url) : false) ||
-          (s.deviceId ? matcher(s.deviceId) : false),
+          (s.deviceId ? matcher(s.deviceId) : false) ||
+          (Array.isArray(s.tags) && s.tags.some((t) => matcher(t))),
       );
     }
 
@@ -741,7 +742,7 @@ export default function SessionsPage() {
                 placeholder={
                   regexMode
                     ? '/regex/ — match name, URL, or device'
-                    : 'Search by name, URL, or device…'
+                    : 'Search by name, URL, device, or tag…'
                 }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

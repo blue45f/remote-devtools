@@ -271,6 +271,21 @@ describe('RecordService', () => {
       expect(cursorParam.cur.toISOString()).toBe('2026-04-27T00:00:00.000Z');
     });
 
+    it('searches name, url and tags for the q term', async () => {
+      const qb = makeQB([]);
+      vi.spyOn(repository, 'createQueryBuilder').mockReturnValue(
+        qb as unknown as SelectQueryBuilder<RecordEntity>,
+      );
+
+      await service.findPaginated({ q: 'checkout' });
+
+      const where = qb.calls.andWhere as { sql: string; params: unknown }[];
+      expect(where[0].sql).toMatch(/LOWER\(r\.name\)/);
+      expect(where[0].sql).toMatch(/LOWER\(r\.url\)/);
+      expect(where[0].sql).toMatch(/array_to_string\(r\.tags/);
+      expect(where[0].params).toEqual({ q: '%checkout%' });
+    });
+
     it('skips empty filters', async () => {
       const qb = makeQB([]);
       vi.spyOn(repository, 'createQueryBuilder').mockReturnValue(
