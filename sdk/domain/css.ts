@@ -1,4 +1,9 @@
-import { calculate, compare, SpecificityArray } from "specificity";
+import { calculate, compare } from "specificity";
+
+// specificity@1.0 doesn't re-export its types from the package root, so
+// derive the Specificity shape from `calculate`'s return type rather than
+// reaching into the package's internal paths.
+type Specificity = ReturnType<typeof calculate>;
 
 import { DEVTOOL_STYLESHEET } from "../common/constant";
 import nodes from "../common/nodes";
@@ -46,7 +51,7 @@ type FormattedCssProperty = {
 
 interface FormattedCssRule {
   index: number;
-  specificityArray: SpecificityArray;
+  specificityArray: Specificity;
   cssRule: {
     styleSheetId: string;
     media: { source: string; text: string }[];
@@ -98,7 +103,10 @@ export class CSS extends BaseDomain {
     node: Node,
   ): FormattedCssRule {
     let index = 0;
-    let specificityArray: SpecificityArray = [0, 0, 0, 0];
+    // specificity@1.0 returns a Specificity object keyed by A/B/C (id /
+    // class+attr+pseudo-class / element+pseudo-element). The old [0,0,0,0]
+    // tuple is gone — replaced by `{ A:0, B:0, C:0 }`.
+    let specificityArray: Specificity = { A: 0, B: 0, C: 0 };
 
     const selectors = rule.selectorText
       .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -106,7 +114,7 @@ export class CSS extends BaseDomain {
       .map((item, i) => {
         const text = item.trim();
         if (isElement(node) && isMatches(node, text)) {
-          specificityArray = calculate(text)[0].specificityArray;
+          specificityArray = calculate(text);
           index = i;
         } else if (
           ["::before", "::after"].includes(node.nodeName?.toLowerCase())
@@ -118,7 +126,7 @@ export class CSS extends BaseDomain {
             isElement(node.parentNode) &&
             isMatches(node.parentNode, selectorText)
           ) {
-            specificityArray = calculate(text)[0].specificityArray;
+            specificityArray = calculate(text);
             index = i;
           }
         }
@@ -587,7 +595,7 @@ export class CSS extends BaseDomain {
     const matchedCSSRules: {
       matchingSelectors: number[];
       rule: FormattedCssRule["cssRule"];
-      specificityArray: SpecificityArray;
+      specificityArray: Specificity;
     }[] = [];
     const styleSheets = Array.from(document.styleSheets);
     const pushMatchedCSSRules = (styleSheetId: string, rule: StyleRule) => {
