@@ -51,10 +51,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   the Replay tab puts the player + minimap + share row into native
   fullscreen via `requestFullscreen()`. Button auto-hides where the
   Fullscreen API isn't available. OpenReplay / FullStory parity.
-- **Sessions keyboard navigation** — current commit — j/↓ next, k/↑
+- **Sessions keyboard navigation** — `6d22e573` — j/↓ next, k/↑
   prev, Enter opens detail. Active row gets an accent ring (grid) or
   accent-soft bg (table) and `scrollIntoView` keeps it visible. Linear
   / Gmail parity for high-velocity triage.
+- **ActivityFeed date grouping** — current commit — Feed splits into
+  Today / Yesterday / This week / Older buckets with sticky headers
+  and per-bucket counts. The spine that connects events is preserved
+  across groups so the timeline metaphor still reads. Linear / PostHog
+  / Slack parity.
 
 ## Next obvious candidates
 
