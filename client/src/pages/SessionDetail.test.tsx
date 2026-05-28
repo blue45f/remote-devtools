@@ -121,6 +121,22 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('opens the keyboard shortcuts overlay when ? is pressed', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('?');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('session-shortcuts-help')).toBeInTheDocument();
+    });
+    // Should list the tab shortcuts as <kbd> chips.
+    const dialog = screen.getByTestId('session-shortcuts-help');
+    expect(dialog).toHaveTextContent('Overview tab');
+    expect(dialog).toHaveTextContent('Replay tab');
+    expect(dialog).toHaveTextContent('Jump to Replay and focus a new comment');
+  });
+
   it('filters the Network tab by HTTP status class chip', async () => {
     const user = userEvent.setup();
     renderAt(1000);

@@ -149,6 +149,8 @@ function formatTimestampWithMillis(ts: number) {
   return `${time}.${ms}`;
 }
 
+type TabValue = 'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw';
+
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -173,9 +175,7 @@ export default function SessionDetailPage() {
     return Number.isFinite(ms) && ms > 0 ? ms : 0;
   }, [searchParams]);
 
-  const [tab, setTab] = useState<
-    'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw'
-  >(initialReplayOffset > 0 ? 'replay' : 'overview');
+  const [tab, setTab] = useState<TabValue>(initialReplayOffset > 0 ? 'replay' : 'overview');
 
   // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
   // it in a ref so the share button reads the latest value without making
@@ -360,6 +360,30 @@ export default function SessionDetailPage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [recordId]);
+
+  // `?` opens the shortcuts cheatsheet. Lets Shift through because `?` is
+  // produced with Shift+/ on US layouts. Closes via Esc (handled by Dialog).
+  const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== '?') return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setHelpOpen((v) => !v);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
@@ -567,7 +591,70 @@ export default function SessionDetailPage() {
           <RawTab events={events ?? []} loading={eventsLoading} />
         </TabsContent>
       </Tabs>
+      <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} activeTab={tab} />
     </div>
+  );
+}
+
+function ShortcutsHelp({
+  open,
+  onOpenChange,
+  activeTab,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  activeTab: TabValue;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent data-testid="session-shortcuts-help">
+        <DialogHeader>
+          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogDescription>
+            Press <Kbd>?</Kbd> any time to toggle this list.
+          </DialogDescription>
+        </DialogHeader>
+        <ul className="text-sm space-y-2">
+          <ShortcutRow keys={['1']} label="Overview tab" />
+          <ShortcutRow keys={['2']} label="Replay tab" />
+          <ShortcutRow keys={['3']} label="Timeline tab" />
+          <ShortcutRow keys={['4']} label="Network tab" />
+          <ShortcutRow keys={['5']} label="Console tab" />
+          <ShortcutRow keys={['6']} label="Raw JSON tab" />
+          <ShortcutRow keys={['C']} label="Jump to Replay and focus a new comment" />
+          {activeTab === 'timeline' && (
+            <>
+              <ShortcutRow keys={['J', '↓']} label="Next timeline row" />
+              <ShortcutRow keys={['K', '↑']} label="Previous timeline row" />
+              <ShortcutRow keys={['Enter']} label="Seek replay to focused row" />
+            </>
+          )}
+          <ShortcutRow keys={['?']} label="Toggle this cheatsheet" />
+          <ShortcutRow keys={['Esc']} label="Dismiss this dialog" />
+        </ul>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ShortcutRow({ keys, label }: { keys: string[]; label: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3">
+      <span className="text-fg-subtle">{label}</span>
+      <span className="flex items-center gap-1 shrink-0">
+        {keys.map((k, i) => (
+          <Kbd key={i}>{k}</Kbd>
+        ))}
+      </span>
+    </li>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded border border-border bg-bg-subtle text-[11px] font-mono text-fg-subtle">
+      {children}
+    </kbd>
   );
 }
 
