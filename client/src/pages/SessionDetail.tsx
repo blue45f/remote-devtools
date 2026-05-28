@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   ArrowLeft,
@@ -31,50 +31,46 @@ import {
   Smartphone,
   X,
   Zap,
-} from "lucide-react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+} from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
-import { SessionPreviewCard } from "@/components/replay/SessionPreviewCard";
+import { SessionPreviewCard } from '@/components/replay/SessionPreviewCard';
 
 const ReplayPlayer = lazy(() =>
-  import("@/components/replay/ReplayPlayer").then((m) => ({
+  import('@/components/replay/ReplayPlayer').then((m) => ({
     default: m.ReplayPlayer,
   })),
 );
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/components/ui/toaster";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { apiFetch } from "@/lib/api";
-import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
-import { formatDurationFromNanos, shortHash } from "@/lib/format";
-import { buildCurlCommand } from "@/lib/curl";
-import { buildHar } from "@/lib/har";
-import { recordSessionVisit } from "@/lib/recent-sessions";
-import { REPLAY_SPEEDS, useReplayPrefs } from "@/lib/replay-prefs";
-import { formatUserAgentBadge } from "@/lib/user-agent";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/toaster';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { apiFetch } from '@/lib/api';
+import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
+import { formatDurationFromNanos, shortHash } from '@/lib/format';
+import { buildCurlCommand } from '@/lib/curl';
+import { buildHar } from '@/lib/har';
+import { recordSessionVisit } from '@/lib/recent-sessions';
+import { REPLAY_SPEEDS, useReplayPrefs } from '@/lib/replay-prefs';
+import { formatUserAgentBadge } from '@/lib/user-agent';
+import { cn } from '@/lib/utils';
 
 interface SessionMetadata {
   id: number;
@@ -121,7 +117,7 @@ interface RawEvent {
 function normaliseEvent(raw: RawEvent): ReplayEvent {
   const type = raw.type ?? raw.protocol?.type ?? 0;
   const timestamp =
-    typeof raw.timestamp === "number"
+    typeof raw.timestamp === 'number'
       ? raw.timestamp
       : (raw.protocol?.timestamp ?? Number(raw.timestamp ?? 0));
   const data = raw.data ?? raw.protocol?.data;
@@ -129,12 +125,12 @@ function normaliseEvent(raw: RawEvent): ReplayEvent {
 }
 
 const EVENT_META: Record<number, { name: string; icon: typeof Activity }> = {
-  0: { name: "DomLoaded", icon: Globe },
-  1: { name: "PageLoaded", icon: Eye },
-  2: { name: "FullSnapshot", icon: Layers },
-  3: { name: "Incremental", icon: Activity },
-  4: { name: "Meta", icon: FileJson },
-  5: { name: "Custom", icon: Zap },
+  0: { name: 'DomLoaded', icon: Globe },
+  1: { name: 'PageLoaded', icon: Eye },
+  2: { name: 'FullSnapshot', icon: Layers },
+  3: { name: 'Incremental', icon: Activity },
+  4: { name: 'Meta', icon: FileJson },
+  5: { name: 'Custom', icon: Zap },
 };
 
 function getEventMeta(type: number) {
@@ -149,7 +145,7 @@ function getEventMeta(type: number) {
 function formatTimestampWithMillis(ts: number) {
   const d = new Date(ts);
   const time = d.toLocaleTimeString(undefined, { hour12: false });
-  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
   return `${time}.${ms}`;
 }
 
@@ -161,7 +157,7 @@ export default function SessionDetailPage() {
   // sessions get an integer recordId that the tags-editor mutation can
   // target.
   const recordId = useMemo<number | null>(() => {
-    if (!id || id.startsWith("s3-")) return null;
+    if (!id || id.startsWith('s3-')) return null;
     const n = Number(id);
     return Number.isInteger(n) && n > 0 ? n : null;
   }, [id]);
@@ -171,15 +167,15 @@ export default function SessionDetailPage() {
   // links — pasting a URL with `?t=` should land the viewer right on
   // the moment that mattered.
   const initialReplayOffset = useMemo(() => {
-    const raw = searchParams.get("t");
+    const raw = searchParams.get('t');
     if (!raw) return 0;
     const ms = Number.parseInt(raw, 10);
     return Number.isFinite(ms) && ms > 0 ? ms : 0;
   }, [searchParams]);
 
   const [tab, setTab] = useState<
-    "overview" | "replay" | "timeline" | "network" | "console" | "raw"
-  >(initialReplayOffset > 0 ? "replay" : "overview");
+    'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw'
+  >(initialReplayOffset > 0 ? 'replay' : 'overview');
 
   // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
   // it in a ref so the share button reads the latest value without making
@@ -187,16 +183,14 @@ export default function SessionDetailPage() {
   const playheadMsRef = useRef<number>(initialReplayOffset);
 
   const { data: metadata, isLoading: metaLoading } = useQuery({
-    queryKey: ["session-metadata", id],
-    queryFn: () =>
-      apiFetch<SessionMetadata>(`/api/session-replay/sessions/${id}`),
+    queryKey: ['session-metadata', id],
+    queryFn: () => apiFetch<SessionMetadata>(`/api/session-replay/sessions/${id}`),
     enabled: !!id,
   });
 
   const { data: rawEvents, isLoading: eventsLoading } = useQuery({
-    queryKey: ["session-events", id],
-    queryFn: () =>
-      apiFetch<RawEvent[]>(`/api/session-replay/sessions/${id}/events`),
+    queryKey: ['session-events', id],
+    queryFn: () => apiFetch<RawEvent[]>(`/api/session-replay/sessions/${id}/events`),
     enabled: !!id,
   });
 
@@ -205,15 +199,13 @@ export default function SessionDetailPage() {
   // Same query key as NetworkTab / ConsoleTab — TanStack Query shares the
   // cache, so the panel queries become free reads.
   const { data: networkRows } = useQuery<NetworkRow[]>({
-    queryKey: ["session-network", id],
-    queryFn: () =>
-      apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${id}/network`),
+    queryKey: ['session-network', id],
+    queryFn: () => apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${id}/network`),
     enabled: !!id && recordId !== null,
   });
   const { data: consoleRows } = useQuery<ConsoleRow[]>({
-    queryKey: ["session-console", id],
-    queryFn: () =>
-      apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${id}/console`),
+    queryKey: ['session-console', id],
+    queryFn: () => apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${id}/console`),
     enabled: !!id && recordId !== null,
   });
 
@@ -226,24 +218,20 @@ export default function SessionDetailPage() {
     [networkRows],
   );
   const consoleErrorCount = useMemo(
-    () => (consoleRows ?? []).reduce((acc, r) => acc + (r.level === "error" ? 1 : 0), 0),
+    () => (consoleRows ?? []).reduce((acc, r) => acc + (r.level === 'error' ? 1 : 0), 0),
     [consoleRows],
   );
 
   // Pre-fetch comment count so the Replay-tab badge appears without
   // forcing the user to click into Replay first.
   const { data: commentRows } = useQuery<ReplayComment[]>({
-    queryKey: ["session-comments", recordId],
-    queryFn: () =>
-      apiFetch<ReplayComment[]>(`/sessions/record/${recordId}/comments`),
+    queryKey: ['session-comments', recordId],
+    queryFn: () => apiFetch<ReplayComment[]>(`/sessions/record/${recordId}/comments`),
     enabled: recordId !== null,
   });
   const commentCount = commentRows?.length ?? 0;
 
-  const events = useMemo<ReplayEvent[]>(
-    () => (rawEvents ?? []).map(normaliseEvent),
-    [rawEvents],
-  );
+  const events = useMemo<ReplayEvent[]>(() => (rawEvents ?? []).map(normaliseEvent), [rawEvents]);
 
   const eventTypeCounts = useMemo(() => {
     const counts = new Map<number, number>();
@@ -263,11 +251,9 @@ export default function SessionDetailPage() {
     const out: { x: number; y: number }[] = [];
     for (const e of events) {
       if (e.type !== 3) continue;
-      const data = e.data as
-        | { source?: number; type?: number; x?: number; y?: number }
-        | undefined;
+      const data = e.data as { source?: number; type?: number; x?: number; y?: number } | undefined;
       if (data?.source !== 2 || data?.type !== 2) continue;
-      if (typeof data.x !== "number" || typeof data.y !== "number") continue;
+      if (typeof data.x !== 'number' || typeof data.y !== 'number') continue;
       out.push({ x: data.x, y: data.y });
     }
     return out;
@@ -276,20 +262,17 @@ export default function SessionDetailPage() {
   // First event's wall-clock timestamp anchors offset math for the
   // "Timeline → Jump to replay" flow. rrweb-player expects ms from
   // session start, not absolute epoch ms.
-  const sessionStartMs = useMemo(
-    () => events?.[0]?.timestamp ?? 0,
-    [events],
-  );
+  const sessionStartMs = useMemo(() => events?.[0]?.timestamp ?? 0, [events]);
 
   const jumpToReplay = (offsetMs: number) => {
     const clamped = Math.max(0, Math.round(offsetMs));
-    setTab("replay");
+    setTab('replay');
     // Replace, not push — we don't want every event click building up an
     // entry on the history stack.
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set("t", String(clamped));
+        next.set('t', String(clamped));
         return next;
       },
       { replace: true },
@@ -320,33 +303,33 @@ export default function SessionDetailPage() {
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable)
       ) {
         return;
       }
       const next =
-        e.key === "1"
-          ? "overview"
-          : e.key === "2"
-            ? "replay"
-            : e.key === "3"
-              ? "timeline"
-              : e.key === "4"
-                ? "network"
-                : e.key === "5"
-                  ? "console"
-                  : e.key === "6"
-                    ? "raw"
+        e.key === '1'
+          ? 'overview'
+          : e.key === '2'
+            ? 'replay'
+            : e.key === '3'
+              ? 'timeline'
+              : e.key === '4'
+                ? 'network'
+                : e.key === '5'
+                  ? 'console'
+                  : e.key === '6'
+                    ? 'raw'
                     : null;
       if (!next) return;
       e.preventDefault();
       setTab(next);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   // `C` jumps to the Replay tab and focuses the comment input. Works
@@ -359,23 +342,23 @@ export default function SessionDetailPage() {
     if (recordId === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (e.key !== "c" && e.key !== "C") return;
+      if (e.key !== 'c' && e.key !== 'C') return;
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable)
       ) {
         return;
       }
       e.preventDefault();
-      setTab("replay");
+      setTab('replay');
       setCommentFocusSignal((s) => s + 1);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [recordId]);
 
   return (
@@ -394,18 +377,9 @@ export default function SessionDetailPage() {
       </Button>
 
       {/* Header */}
-      <SessionHeader
-        id={id ?? ""}
-        metadata={metadata}
-        loading={metaLoading}
-        recordId={recordId}
-      />
+      <SessionHeader id={id ?? ''} metadata={metadata} loading={metaLoading} recordId={recordId} />
       {recordId !== null && (
-        <TagsEditor
-          recordId={recordId}
-          loading={metaLoading}
-          tags={metadata?.tags ?? []}
-        />
+        <TagsEditor recordId={recordId} loading={metaLoading} tags={metadata?.tags ?? []} />
       )}
 
       <Separator className="my-5 sm:my-6" />
@@ -425,16 +399,12 @@ export default function SessionDetailPage() {
           <MetricTile
             icon={Layers}
             label="Total events"
-            value={
-              metaLoading || eventsLoading ? null : totalEvents.toLocaleString()
-            }
+            value={metaLoading || eventsLoading ? null : totalEvents.toLocaleString()}
           />
           <MetricTile
             icon={Clock}
             label="Duration"
-            value={
-              metaLoading ? null : formatDurationFromNanos(metadata?.duration)
-            }
+            value={metaLoading ? null : formatDurationFromNanos(metadata?.duration)}
           />
           <MetricTile
             icon={Calendar}
@@ -444,10 +414,10 @@ export default function SessionDetailPage() {
                 ? null
                 : metadata?.createdAt
                   ? new Date(metadata.createdAt).toLocaleString(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
                     })
-                  : "—"
+                  : '—'
             }
           />
           <MetricTile
@@ -488,11 +458,7 @@ export default function SessionDetailPage() {
               <ListTree className="size-3.5" />
               Timeline
               {totalEvents > 0 && (
-                <Badge
-                  variant="neutral"
-                  size="sm"
-                  className="ml-1 h-4 px-1 text-[10px]"
-                >
+                <Badge variant="neutral" size="sm" className="ml-1 h-4 px-1 text-[10px]">
                   {totalEvents}
                 </Badge>
               )}
@@ -540,11 +506,7 @@ export default function SessionDetailPage() {
               onJump={jumpToReplay}
             />
           )}
-          <OverviewTab
-            loading={eventsLoading}
-            counts={eventTypeCounts}
-            total={totalEvents}
-          />
+          <OverviewTab loading={eventsLoading} counts={eventTypeCounts} total={totalEvents} />
         </TabsContent>
 
         <TabsContent value="replay" className="mt-5">
@@ -575,14 +537,11 @@ export default function SessionDetailPage() {
         </TabsContent>
 
         <TabsContent value="network" className="mt-5">
-          <NetworkTab
-            sessionId={id ?? ""}
-            sessionName={metadata?.name ?? metadata?.room}
-          />
+          <NetworkTab sessionId={id ?? ''} sessionName={metadata?.name ?? metadata?.room} />
         </TabsContent>
 
         <TabsContent value="console" className="mt-5">
-          <ConsoleTab sessionId={id ?? ""} />
+          <ConsoleTab sessionId={id ?? ''} />
         </TabsContent>
 
         <TabsContent value="raw" className="mt-5">
@@ -610,31 +569,22 @@ interface NetworkRow {
   base64Encoded?: boolean | null;
 }
 
-function NetworkTab({
-  sessionId,
-  sessionName,
-}: {
-  sessionId: string;
-  sessionName?: string;
-}) {
+function NetworkTab({ sessionId, sessionName }: { sessionId: string; sessionName?: string }) {
   const { data, isLoading } = useQuery<NetworkRow[]>({
-    queryKey: ["session-network", sessionId],
-    queryFn: () =>
-      apiFetch<NetworkRow[]>(
-        `/api/session-replay/sessions/${sessionId}/network`,
-      ),
+    queryKey: ['session-network', sessionId],
+    queryFn: () => apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${sessionId}/network`),
     enabled: !!sessionId,
   });
 
   const rows = data ?? [];
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<NetworkRow | null>(null);
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
 
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of rows) {
-      const t = r.resourceType ?? "Other";
+      const t = r.resourceType ?? 'Other';
       counts.set(t, (counts.get(t) ?? 0) + 1);
     }
     // Order by count desc so the dominant type (usually XHR/Fetch) floats up.
@@ -652,7 +602,7 @@ function NetworkTab({
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
-      const type = r.resourceType ?? "Other";
+      const type = r.resourceType ?? 'Other';
       if (activeTypes.size > 0 && !activeTypes.has(type)) return false;
       if (filter) {
         const term = filter.toLowerCase();
@@ -683,8 +633,8 @@ function NetworkTab({
           icon={Globe}
           title="No network activity"
           description={
-            sessionId.startsWith("s3-")
-              ? "Network capture is only available on live DB sessions."
+            sessionId.startsWith('s3-')
+              ? 'Network capture is only available on live DB sessions.'
               : "This session didn't record any network requests."
           }
         />
@@ -695,9 +645,9 @@ function NetworkTab({
   const exportHar = () => {
     const har = buildHar(rows, sessionName);
     const blob = new Blob([JSON.stringify(har, null, 2)], {
-      type: "application/json",
+      type: 'application/json',
     });
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
     a.href = url;
     a.download = `${sessionName || `session-${sessionId}`}.har`;
@@ -705,8 +655,8 @@ function NetworkTab({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("HAR downloaded", {
-      description: `${rows.length} request${rows.length === 1 ? "" : "s"}`,
+    toast.success('HAR downloaded', {
+      description: `${rows.length} request${rows.length === 1 ? '' : 's'}`,
     });
   };
 
@@ -721,11 +671,7 @@ function NetworkTab({
             leadingIcon={<Globe />}
             trailingIcon={
               filter ? (
-                <button
-                  type="button"
-                  onClick={() => setFilter("")}
-                  aria-label="Clear filter"
-                >
+                <button type="button" onClick={() => setFilter('')} aria-label="Clear filter">
                   <X className="size-3.5" />
                 </button>
               ) : undefined
@@ -759,17 +705,17 @@ function NetworkTab({
                   aria-pressed={active}
                   data-testid={`session-network-type-${type}`}
                   className={cn(
-                    "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1",
+                    'h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1',
                     active
-                      ? "bg-fg text-bg border-fg"
-                      : "bg-surface border-border text-fg-subtle hover:text-fg",
+                      ? 'bg-fg text-bg border-fg'
+                      : 'bg-surface border-border text-fg-subtle hover:text-fg',
                   )}
                 >
                   <span>{type}</span>
                   <span
                     className={cn(
-                      "font-mono tabular-nums text-[10px]",
-                      active ? "text-bg/80" : "text-fg-faint",
+                      'font-mono tabular-nums text-[10px]',
+                      active ? 'text-bg/80' : 'text-fg-faint',
                     )}
                   >
                     {count}
@@ -783,27 +729,17 @@ function NetworkTab({
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
-            <span className="font-medium text-fg-subtle">
-              {filtered.length}
-            </span>{" "}
-            requests
+            <span className="font-medium text-fg-subtle">{filtered.length}</span> requests
             {filtered.length !== rows.length && (
-              <span className="text-fg-faint ml-1">
-                (of {rows.length})
-              </span>
+              <span className="text-fg-faint ml-1">(of {rows.length})</span>
             )}
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table
-            className="w-full text-sm"
-            data-testid="session-network-table"
-          >
+          <table className="w-full text-sm" data-testid="session-network-table">
             <thead>
               <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
-                <th className="h-9 px-3 text-left font-semibold first:pl-4">
-                  Method
-                </th>
+                <th className="h-9 px-3 text-left font-semibold first:pl-4">Method</th>
                 <th className="h-9 px-3 text-left font-semibold">URL</th>
                 <th className="h-9 px-3 text-right font-semibold">Status</th>
                 <th className="h-9 px-3 text-left font-semibold">Type</th>
@@ -813,39 +749,24 @@ function NetworkTab({
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <NetworkRowView
-                  key={r.id}
-                  row={r}
-                  onSelect={() => setSelected(r)}
-                />
+                <NetworkRowView key={r.id} row={r} onSelect={() => setSelected(r)} />
               ))}
             </tbody>
           </table>
         </div>
       </Card>
-      <NetworkRowDetail
-        row={selected}
-        onClose={() => setSelected(null)}
-      />
+      <NetworkRowDetail row={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
 
-function NetworkRowDetail({
-  row,
-  onClose,
-}: {
-  row: NetworkRow | null;
-  onClose: () => void;
-}) {
+function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: () => void }) {
   const open = row !== null;
   const body = row?.responseBody ?? null;
   const isJson =
     !!body &&
     !row?.base64Encoded &&
-    (row?.mimeType?.includes("json") ||
-      body.trim().startsWith("{") ||
-      body.trim().startsWith("["));
+    (row?.mimeType?.includes('json') || body.trim().startsWith('{') || body.trim().startsWith('['));
   const pretty = useMemo(() => {
     if (!body) return null;
     if (!isJson) return body;
@@ -860,25 +781,22 @@ function NetworkRowDetail({
     if (!body) return;
     try {
       await navigator.clipboard.writeText(pretty ?? body);
-      toast.success("Body copied");
+      toast.success('Body copied');
     } catch {
-      toast.error("Failed to copy");
+      toast.error('Failed to copy');
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        className="max-w-3xl p-0 overflow-hidden"
-        data-testid="session-network-detail"
-      >
+      <DialogContent className="max-w-3xl p-0 overflow-hidden" data-testid="session-network-detail">
         <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle className="flex items-center gap-2 font-mono text-sm">
-            <span>{row?.method ?? ""}</span>
-            <span className="truncate">{row?.url ?? ""}</span>
+            <span>{row?.method ?? ''}</span>
+            <span className="truncate">{row?.url ?? ''}</span>
           </DialogTitle>
           <DialogDescription className="font-mono text-[11px] flex items-center gap-3">
-            <span>Status: {row?.status ?? "—"}</span>
+            <span>Status: {row?.status ?? '—'}</span>
             {row?.resourceType && <span>Type: {row.resourceType}</span>}
             {row?.mimeType && <span>MIME: {row.mimeType}</span>}
             <span>Size: {formatBytes(row?.encodedDataLength)}</span>
@@ -923,23 +841,17 @@ function NetworkRowDetail({
   );
 }
 
-function NetworkRowView({
-  row,
-  onSelect,
-}: {
-  row: NetworkRow;
-  onSelect: () => void;
-}) {
+function NetworkRowView({ row, onSelect }: { row: NetworkRow; onSelect: () => void }) {
   const statusClass =
     row.status === undefined
-      ? "text-fg-faint"
+      ? 'text-fg-faint'
       : row.status >= 500
-        ? "text-danger"
+        ? 'text-danger'
         : row.status >= 400
-          ? "text-warning"
+          ? 'text-warning'
           : row.status >= 300
-            ? "text-fg-subtle"
-            : "text-success";
+            ? 'text-fg-subtle'
+            : 'text-success';
 
   return (
     <tr
@@ -947,36 +859,46 @@ function NetworkRowView({
       data-testid="session-network-row"
       onClick={onSelect}
     >
-      <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg">
-        {row.method}
-      </td>
+      <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg">{row.method}</td>
       <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg-subtle">
-        <span
-          className="truncate block max-w-[420px] sm:max-w-[640px]"
-          title={row.url}
-        >
-          {row.url || "—"}
+        <span className="truncate block max-w-[420px] sm:max-w-[640px]" title={row.url}>
+          {row.url || '—'}
         </span>
       </td>
       <td
         className={cn(
-          "px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums",
+          'px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums',
           statusClass,
         )}
       >
-        {row.status ?? "—"}
+        {row.status ?? '—'}
       </td>
       <td className="px-3 py-2 align-middle text-[11px] text-fg-subtle">
-        {row.resourceType ?? row.mimeType ?? "—"}
+        {row.resourceType ?? row.mimeType ?? '—'}
       </td>
       <td className="px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums text-fg-subtle">
         {formatBytes(row.encodedDataLength)}
       </td>
-      <td
-        className="pl-3 pr-4 py-2 align-middle text-right"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <NetworkRowCopyCurl row={row} />
+      <td className="pl-3 pr-4 py-2 align-middle text-right" onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex items-center gap-0.5">
+          {row.url && (
+            <a
+              href={row.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open URL in new tab"
+              data-testid="session-network-open-url"
+              className={cn(
+                'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
+                'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+                'hover:bg-bg-muted text-fg-subtle hover:text-fg',
+              )}
+            >
+              <ExternalLink className="size-3" />
+            </a>
+          )}
+          <NetworkRowCopyCurl row={row} />
+        </div>
       </td>
     </tr>
   );
@@ -991,9 +913,9 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
       await navigator.clipboard.writeText(cmd);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success("cURL copied", { description: row.method + " " + row.url });
+      toast.success('cURL copied', { description: row.method + ' ' + row.url });
     } catch {
-      toast.error("Failed to copy");
+      toast.error('Failed to copy');
     }
   };
 
@@ -1004,9 +926,9 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
       aria-label="Copy as cURL"
       data-testid="session-network-curl"
       className={cn(
-        "inline-flex items-center justify-center size-6 rounded-md transition-opacity",
-        "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
-        "hover:bg-bg-muted text-fg-subtle hover:text-fg",
+        'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
+        'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+        'hover:bg-bg-muted text-fg-subtle hover:text-fg',
       )}
     >
       {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
@@ -1015,7 +937,7 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
 }
 
 function formatBytes(n?: number): string {
-  if (!n || !Number.isFinite(n)) return "—";
+  if (!n || !Number.isFinite(n)) return '—';
   if (n < 1024) return `${n}B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
   return `${(n / 1024 / 1024).toFixed(1)}MB`;
@@ -1023,41 +945,30 @@ function formatBytes(n?: number): string {
 
 /* ───────── Console tab ───────── */
 
-type ConsoleLevel = "log" | "info" | "warn" | "error" | "debug";
+type ConsoleLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
 interface ConsoleRow {
   id: number;
   timestamp: number;
   level: ConsoleLevel;
   text: string;
-  source: "console" | "exception";
+  source: 'console' | 'exception';
   url?: string;
   lineNumber?: number;
 }
 
-const ALL_CONSOLE_LEVELS: ConsoleLevel[] = [
-  "log",
-  "info",
-  "warn",
-  "error",
-  "debug",
-];
+const ALL_CONSOLE_LEVELS: ConsoleLevel[] = ['log', 'info', 'warn', 'error', 'debug'];
 
 function ConsoleTab({ sessionId }: { sessionId: string }) {
   const { data, isLoading } = useQuery<ConsoleRow[]>({
-    queryKey: ["session-console", sessionId],
-    queryFn: () =>
-      apiFetch<ConsoleRow[]>(
-        `/api/session-replay/sessions/${sessionId}/console`,
-      ),
+    queryKey: ['session-console', sessionId],
+    queryFn: () => apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${sessionId}/console`),
     enabled: !!sessionId,
   });
 
   const rows = data ?? [];
-  const [activeLevels, setActiveLevels] = useState<Set<ConsoleLevel>>(
-    new Set(),
-  );
-  const [filter, setFilter] = useState("");
+  const [activeLevels, setActiveLevels] = useState<Set<ConsoleLevel>>(new Set());
+  const [filter, setFilter] = useState('');
 
   const counts = useMemo(() => {
     const out: Record<ConsoleLevel, number> = {
@@ -1107,8 +1018,8 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
           icon={Terminal}
           title="No console activity"
           description={
-            sessionId.startsWith("s3-")
-              ? "Console capture is only available on live DB sessions."
+            sessionId.startsWith('s3-')
+              ? 'Console capture is only available on live DB sessions.'
               : "This session didn't log any console output or exceptions."
           }
         />
@@ -1127,11 +1038,7 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
             leadingIcon={<Terminal />}
             trailingIcon={
               filter ? (
-                <button
-                  type="button"
-                  onClick={() => setFilter("")}
-                  aria-label="Clear filter"
-                >
+                <button type="button" onClick={() => setFilter('')} aria-label="Clear filter">
                   <X className="size-3.5" />
                 </button>
               ) : undefined
@@ -1152,19 +1059,19 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
                 aria-pressed={active}
                 data-testid={`console-level-chip-${l}`}
                 className={cn(
-                  "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0",
-                  "inline-flex items-center gap-1",
-                  empty && "opacity-40 cursor-not-allowed",
+                  'h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0',
+                  'inline-flex items-center gap-1',
+                  empty && 'opacity-40 cursor-not-allowed',
                   active
-                    ? "bg-fg text-bg border-fg"
-                    : "bg-surface border-border text-fg-subtle hover:text-fg",
+                    ? 'bg-fg text-bg border-fg'
+                    : 'bg-surface border-border text-fg-subtle hover:text-fg',
                 )}
               >
                 <span className="capitalize">{l}</span>
                 <span
                   className={cn(
-                    "font-mono tabular-nums text-[10px]",
-                    active ? "text-bg/80" : "text-fg-faint",
+                    'font-mono tabular-nums text-[10px]',
+                    active ? 'text-bg/80' : 'text-fg-faint',
                   )}
                 >
                   {count}
@@ -1176,10 +1083,7 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
       </div>
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
-          <span className="font-medium text-fg-subtle">
-            {filtered.length}
-          </span>{" "}
-          messages
+          <span className="font-medium text-fg-subtle">{filtered.length}</span> messages
           {filtered.length !== rows.length && (
             <span className="text-fg-faint ml-1">(of {rows.length})</span>
           )}
@@ -1196,13 +1100,13 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
 
 function ConsoleRowView({ row }: { row: ConsoleRow }) {
   const colour =
-    row.level === "error"
-      ? "text-danger"
-      : row.level === "warn"
-        ? "text-warning"
-        : row.level === "info"
-          ? "text-accent"
-          : "text-fg-subtle";
+    row.level === 'error'
+      ? 'text-danger'
+      : row.level === 'warn'
+        ? 'text-warning'
+        : row.level === 'info'
+          ? 'text-accent'
+          : 'text-fg-subtle';
   return (
     <li
       className="px-3 py-1.5 flex items-start gap-2 text-[12px] font-mono"
@@ -1210,20 +1114,15 @@ function ConsoleRowView({ row }: { row: ConsoleRow }) {
       data-level={row.level}
     >
       <span
-        className={cn(
-          "uppercase tracking-wider text-[10px] font-semibold shrink-0 w-12",
-          colour,
-        )}
+        className={cn('uppercase tracking-wider text-[10px] font-semibold shrink-0 w-12', colour)}
       >
         {row.level}
       </span>
-      <span className="flex-1 whitespace-pre-wrap break-words text-fg">
-        {row.text}
-      </span>
+      <span className="flex-1 whitespace-pre-wrap break-words text-fg">{row.text}</span>
       {row.url && (
         <span className="text-[10px] text-fg-faint shrink-0">
-          {row.url.replace(/^https?:\/\//, "")}
-          {row.lineNumber ? `:${row.lineNumber}` : ""}
+          {row.url.replace(/^https?:\/\//, '')}
+          {row.lineNumber ? `:${row.lineNumber}` : ''}
         </span>
       )}
     </li>
@@ -1259,7 +1158,7 @@ function TagsEditor({
   tags: string[];
 }) {
   const queryClient = useQueryClient();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<string[] | null>(null);
 
   const mutation = useMutation({
@@ -1267,8 +1166,8 @@ function TagsEditor({
       const res = await apiFetch<{ id: number; tags: string[] }>(
         `/sessions/record/${recordId}/tags`,
         {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tags: next }),
         },
       );
@@ -1278,7 +1177,7 @@ function TagsEditor({
       // Round-trip the server's normalised result back into the cache so
       // the optimistic value is replaced even if the server trimmed more.
       queryClient.setQueryData<SessionMetadata | undefined>(
-        ["session-metadata", String(recordId)],
+        ['session-metadata', String(recordId)],
         (prev) => (prev ? { ...prev, tags: saved } : prev),
       );
       setPending(null);
@@ -1295,10 +1194,10 @@ function TagsEditor({
     const next = normaliseTags([...visible, draft]);
     if (next.length === visible.length && draft.trim()) {
       // Duplicate or normalised-to-empty — clear the input but don't fire.
-      setDraft("");
+      setDraft('');
       return;
     }
-    setDraft("");
+    setDraft('');
     setPending(next);
     mutation.mutate(next);
   };
@@ -1312,14 +1211,9 @@ function TagsEditor({
   if (loading) return null;
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-1.5 mt-3"
-      data-testid="session-tags-editor"
-    >
+    <div className="flex flex-wrap items-center gap-1.5 mt-3" data-testid="session-tags-editor">
       <Tag className="size-3.5 text-fg-faint shrink-0" />
-      {visible.length === 0 && (
-        <span className="text-[11px] text-fg-faint">No tags yet.</span>
-      )}
+      {visible.length === 0 && <span className="text-[11px] text-fg-faint">No tags yet.</span>}
       {visible.map((t) => (
         <span
           key={t}
@@ -1419,7 +1313,8 @@ function SessionHeader({
             )}
           </div>
         )}
-        {!loading && metadata?.userAgent &&
+        {!loading &&
+          metadata?.userAgent &&
           (() => {
             const label = formatUserAgentBadge(metadata.userAgent);
             if (!label) return null;
@@ -1470,7 +1365,7 @@ function SessionHeader({
             variant="primary"
             size="sm"
             className="touch-target"
-            room={metadata?.name ?? metadata?.room ?? ""}
+            room={metadata?.name ?? metadata?.room ?? ''}
             recordId={metadata?.recordMode ? metadata.id : undefined}
             label="Open in DevTools"
             title="Inspect this session in the Chrome DevTools UI"
@@ -1513,8 +1408,7 @@ function ReplayPanel({
   const [{ speed, skipInactive }, setPrefs] = useReplayPrefs();
   const [restartToken, setRestartToken] = useState(0);
   const fullscreenSupported =
-    typeof document !== "undefined" &&
-    typeof document.fullscreenEnabled === "boolean"
+    typeof document !== 'undefined' && typeof document.fullscreenEnabled === 'boolean'
       ? document.fullscreenEnabled
       : false;
 
@@ -1522,8 +1416,8 @@ function ReplayPanel({
     const onChange = () => {
       setIsFullscreen(document.fullscreenElement === wrapperRef.current);
     };
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
   const toggleFullscreen = () => {
@@ -1544,22 +1438,20 @@ function ReplayPanel({
   useEffect(() => {
     if (!fullscreenSupported) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "f" && e.key !== "F") return;
+      if (e.key !== 'f' && e.key !== 'F') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
       ) {
         return;
       }
       e.preventDefault();
       toggleFullscreen();
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
     // toggleFullscreen reads fresh refs each call — safe to omit from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullscreenSupported]);
@@ -1568,18 +1460,15 @@ function ReplayPanel({
     <div
       ref={wrapperRef}
       className={cn(
-        "space-y-3",
+        'space-y-3',
         // Inside fullscreen the wrapper IS the viewport, so paint a
         // background and give it interior padding so the player isn't
         // glued to the screen edges.
-        isFullscreen && "bg-bg p-4 sm:p-6 overflow-auto",
+        isFullscreen && 'bg-bg p-4 sm:p-6 overflow-auto',
       )}
     >
       <div className="flex items-center justify-end gap-2 flex-wrap">
-        <SpeedPicker
-          value={speed}
-          onChange={(next) => setPrefs({ speed: next })}
-        />
+        <SpeedPicker value={speed} onChange={(next) => setPrefs({ speed: next })} />
         <Button
           variant="outline"
           size="sm"
@@ -1591,7 +1480,7 @@ function ReplayPanel({
           <span className="hidden sm:inline">Restart</span>
         </Button>
         <Button
-          variant={skipInactive ? "primary" : "outline"}
+          variant={skipInactive ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setPrefs({ skipInactive: !skipInactive })}
           aria-pressed={skipInactive}
@@ -1611,17 +1500,13 @@ function ReplayPanel({
           >
             {isFullscreen ? <Minimize2 /> : <Maximize2 />}
             <span className="hidden sm:inline">
-              {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             </span>
           </Button>
         )}
         <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
       </div>
-      <ReplayMinimap
-        events={events}
-        sessionStartMs={sessionStartMs}
-        onSeek={onJumpToReplay}
-      />
+      <ReplayMinimap events={events} sessionStartMs={sessionStartMs} onSeek={onJumpToReplay} />
       <Suspense
         fallback={
           <Card className="p-6">
@@ -1666,7 +1551,7 @@ function formatReplayTimestamp(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000));
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 function CommentsPanel({
@@ -1681,20 +1566,14 @@ function CommentsPanel({
   focusSignal: number;
 }) {
   const queryClient = useQueryClient();
-  const queryKey = useMemo(
-    () => ["session-comments", recordId] as const,
-    [recordId],
-  );
+  const queryKey = useMemo(() => ['session-comments', recordId] as const, [recordId]);
 
   const { data, isLoading } = useQuery<ReplayComment[]>({
     queryKey,
-    queryFn: () =>
-      apiFetch<ReplayComment[]>(
-        `/sessions/record/${recordId}/comments`,
-      ),
+    queryFn: () => apiFetch<ReplayComment[]>(`/sessions/record/${recordId}/comments`),
   });
 
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState('');
   const comments = data ?? [];
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1707,30 +1586,26 @@ function CommentsPanel({
 
   const addMutation = useMutation({
     mutationFn: async (input: { timestampMs: number; body: string }) => {
-      return apiFetch<ReplayComment>(
-        `/sessions/record/${recordId}/comments`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        },
-      );
+      return apiFetch<ReplayComment>(`/sessions/record/${recordId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
     },
     onSuccess: (saved) => {
       queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (prev) =>
         [...(prev ?? []), saved].sort((a, b) => a.timestampMs - b.timestampMs),
       );
-      setDraft("");
+      setDraft('');
     },
     onError: () => toast.error("Couldn't save comment"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (commentId: number) => {
-      await apiFetch<void>(
-        `/sessions/record/${recordId}/comments/${commentId}`,
-        { method: "DELETE" },
-      );
+      await apiFetch<void>(`/sessions/record/${recordId}/comments/${commentId}`, {
+        method: 'DELETE',
+      });
       return commentId;
     },
     onMutate: async (commentId) => {
@@ -1779,11 +1654,7 @@ function CommentsPanel({
       ) : (
         <ol className="space-y-2 mb-3">
           {comments.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-start gap-2 text-xs"
-              data-testid="replay-comment"
-            >
+            <li key={c.id} className="flex items-start gap-2 text-xs" data-testid="replay-comment">
               <button
                 type="button"
                 onClick={() => onSeek(c.timestampMs)}
@@ -1862,10 +1733,8 @@ function SpeedPicker({
             onClick={() => onChange(s)}
             aria-pressed={active}
             className={cn(
-              "h-7 min-w-[2.25rem] px-1.5 rounded text-[11px] font-medium tabular-nums transition-colors",
-              active
-                ? "bg-fg text-bg"
-                : "text-fg-subtle hover:bg-bg-muted hover:text-fg",
+              'h-7 min-w-[2.25rem] px-1.5 rounded text-[11px] font-medium tabular-nums transition-colors',
+              active ? 'bg-fg text-bg' : 'text-fg-subtle hover:bg-bg-muted hover:text-fg',
             )}
             data-testid={`replay-speed-${s}`}
           >
@@ -1914,11 +1783,9 @@ export function detectRageClicks(
   const clicks: IncrementalClick[] = [];
   for (const e of events) {
     if (e.type !== 3) continue;
-    const data = e.data as
-      | { source?: number; type?: number; x?: number; y?: number }
-      | undefined;
+    const data = e.data as { source?: number; type?: number; x?: number; y?: number } | undefined;
     if (data?.source !== 2 || data?.type !== 2) continue;
-    if (typeof data.x !== "number" || typeof data.y !== "number") continue;
+    if (typeof data.x !== 'number' || typeof data.y !== 'number') continue;
     clicks.push({ timestamp: e.timestamp, x: data.x, y: data.y });
   }
   if (clicks.length < minCount) return [];
@@ -1964,10 +1831,7 @@ function RageClickCard({
   onJump: (offsetMs: number) => void;
 }) {
   return (
-    <Card
-      className="p-4 border-warning/40 bg-warning-soft/30"
-      data-testid="rage-click-card"
-    >
+    <Card className="p-4 border-warning/40 bg-warning-soft/30" data-testid="rage-click-card">
       <div className="flex items-start gap-3">
         <div className="size-9 rounded-md bg-warning-soft text-warning flex items-center justify-center shrink-0">
           <Zap className="size-4" />
@@ -1975,12 +1839,11 @@ function RageClickCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-fg">
             {clicks.length === 1
-              ? "1 rage-click moment detected"
+              ? '1 rage-click moment detected'
               : `${clicks.length} rage-click moments detected`}
           </h3>
           <p className="text-xs text-fg-subtle mt-0.5">
-            User clicked rapidly in the same spot — often a sign of an
-            unresponsive button.
+            User clicked rapidly in the same spot — often a sign of an unresponsive button.
           </p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {clicks.slice(0, 5).map((c, idx) => {
@@ -1996,17 +1859,13 @@ function RageClickCard({
                   >
                     <PlayCircle className="size-3" />
                     {formatPlayhead(offsetMs)}
-                    <span className="ml-1 text-[10px] text-fg-faint font-mono">
-                      ×{c.count}
-                    </span>
+                    <span className="ml-1 text-[10px] text-fg-faint font-mono">×{c.count}</span>
                   </Button>
                 </li>
               );
             })}
             {clicks.length > 5 && (
-              <li className="text-[11px] text-fg-faint self-center">
-                +{clicks.length - 5} more
-              </li>
+              <li className="text-[11px] text-fg-faint self-center">+{clicks.length - 5} more</li>
             )}
           </ul>
         </div>
@@ -2047,10 +1906,7 @@ function ReplayMinimap({
     const arr = new Array<number>(BUCKETS).fill(0);
     for (const e of events) {
       const ratio = (e.timestamp - start) / span;
-      const idx = Math.min(
-        BUCKETS - 1,
-        Math.max(0, Math.floor(ratio * BUCKETS)),
-      );
+      const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor(ratio * BUCKETS)));
       arr[idx] += 1;
     }
     return { buckets: arr, totalMs: span };
@@ -2062,10 +1918,7 @@ function ReplayMinimap({
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.min(
-      1,
-      Math.max(0, (e.clientX - rect.left) / rect.width),
-    );
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
     onSeek(Math.round(ratio * totalMs));
   };
 
@@ -2073,9 +1926,7 @@ function ReplayMinimap({
     <Card className="p-2.5">
       <div className="flex items-center justify-between mb-1.5 text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
         <span>Activity</span>
-        <span className="text-fg-faint normal-case tracking-normal">
-          Click to seek
-        </span>
+        <span className="text-fg-faint normal-case tracking-normal">Click to seek</span>
       </div>
       <div
         role="button"
@@ -2083,7 +1934,7 @@ function ReplayMinimap({
         aria-label="Replay activity minimap — click to seek"
         onClick={handleClick}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+          if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onSeek(totalMs / 2);
           }
@@ -2129,35 +1980,28 @@ function ShareReplayLinkButton({
   const copy = async () => {
     const playhead = Math.max(0, Math.round(playheadMsRef.current));
     const base =
-      typeof window !== "undefined"
-        ? `${window.location.origin}${window.location.pathname}`
-        : "";
+      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
     const url = playhead > 0 ? `${base}?t=${playhead}` : base;
 
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-      toast.success("Share link copied", {
+      toast.success('Share link copied', {
         description:
           playhead > 0
             ? `Opens the replay at ${formatPlayhead(playhead)}.`
-            : "Opens the replay from the beginning.",
+            : 'Opens the replay from the beginning.',
       });
     } catch {
-      toast.error("Failed to copy link");
+      toast.error('Failed to copy link');
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => void copy()}
-      data-testid="share-replay-link"
-    >
+    <Button variant="outline" size="sm" onClick={() => void copy()} data-testid="share-replay-link">
       <Link2 />
-      {copied ? "Copied" : "Share link to current time"}
+      {copied ? 'Copied' : 'Share link to current time'}
     </Button>
   );
 }
@@ -2166,7 +2010,7 @@ function formatPlayhead(ms: number) {
   const totalSeconds = Math.floor(ms / 1000);
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 /* ───────── Metric tile ───────── */
@@ -2197,7 +2041,7 @@ function MetricTile({
       window.setTimeout(() => setCopied(false), 1500);
       if (copyToastLabel) toast.success(copyToastLabel);
     } catch {
-      toast.error("Failed to copy");
+      toast.error('Failed to copy');
     }
   };
 
@@ -2205,19 +2049,12 @@ function MetricTile({
     <Card className="group p-4 relative">
       <div className="flex items-center gap-2 text-fg-faint mb-1.5">
         <Icon className="size-3.5" />
-        <span className="text-[11px] uppercase tracking-wider font-semibold">
-          {label}
-        </span>
+        <span className="text-[11px] uppercase tracking-wider font-semibold">{label}</span>
       </div>
       {value === null ? (
         <Skeleton className="h-6 w-20" />
       ) : (
-        <div
-          className={cn(
-            "text-base font-semibold text-fg truncate",
-            mono && "font-mono",
-          )}
-        >
+        <div className={cn('text-base font-semibold text-fg truncate', mono && 'font-mono')}>
           {value}
         </div>
       )}
@@ -2227,16 +2064,12 @@ function MetricTile({
           onClick={() => void onCopy()}
           aria-label={copyToastLabel ?? `Copy ${label.toLowerCase()}`}
           className={cn(
-            "absolute top-2 right-2 size-6 inline-flex items-center justify-center rounded-md",
-            "text-fg-faint hover:text-fg hover:bg-bg-muted",
-            "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity",
+            'absolute top-2 right-2 size-6 inline-flex items-center justify-center rounded-md',
+            'text-fg-faint hover:text-fg hover:bg-bg-muted',
+            'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity',
           )}
         >
-          {copied ? (
-            <Check className="size-3.5" />
-          ) : (
-            <Copy className="size-3.5" />
-          )}
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </button>
       )}
     </Card>
@@ -2266,7 +2099,7 @@ function CopyChip({
       window.setTimeout(() => setCopied(false), 1500);
       toast.success(toastLabel);
     } catch {
-      toast.error("Failed to copy");
+      toast.error('Failed to copy');
     }
   };
   return (
@@ -2275,7 +2108,7 @@ function CopyChip({
       onClick={() => void onClick()}
       data-testid="copy-chip"
       className={cn(
-        "group inline-flex items-center gap-2 text-[11px] sm:text-xs text-fg-faint hover:text-fg transition-colors",
+        'group inline-flex items-center gap-2 text-[11px] sm:text-xs text-fg-faint hover:text-fg transition-colors',
         className,
       )}
     >
@@ -2338,9 +2171,7 @@ function OverviewTab({
               <div className="size-7 rounded-md bg-bg-muted border border-border flex items-center justify-center">
                 <Icon className="size-3.5 text-fg-subtle" />
               </div>
-              <span className="text-sm font-medium text-fg flex-1">
-                {meta.name}
-              </span>
+              <span className="text-sm font-medium text-fg flex-1">{meta.name}</span>
               <span className="font-mono text-base font-semibold text-fg tabular-nums">
                 {count.toLocaleString()}
               </span>
@@ -2374,7 +2205,7 @@ function TimelineTab({
   sessionStartMs: number;
   onJumpToReplay: (offsetMs: number) => void;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   // Multi-select event-type filter. Empty set = show everything. Matches
   // the ActivityFeed kind filter mental model so the user only needs to
   // learn one toggle pattern across the app.
@@ -2427,9 +2258,9 @@ function TimelineTab({
       const target = e.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable)
       ) {
         return;
@@ -2442,25 +2273,23 @@ function TimelineTab({
           const next = idx < 0 ? (delta > 0 ? 0 : filtered.length - 1) : idx + delta;
           const clamped = Math.max(0, Math.min(filtered.length - 1, next));
           requestAnimationFrame(() => {
-            const el = document.querySelector<HTMLElement>(
-              `[data-timeline-row="${clamped}"]`,
-            );
-            el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            const el = document.querySelector<HTMLElement>(`[data-timeline-row="${clamped}"]`);
+            el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           });
           return clamped;
         });
       };
 
       switch (e.key) {
-        case "j":
-        case "ArrowDown":
+        case 'j':
+        case 'ArrowDown':
           move(1);
           return;
-        case "k":
-        case "ArrowUp":
+        case 'k':
+        case 'ArrowUp':
           move(-1);
           return;
-        case "Enter": {
+        case 'Enter': {
           if (cursorIdx < 0) return;
           const ev = filtered[cursorIdx];
           if (!ev) return;
@@ -2472,8 +2301,8 @@ function TimelineTab({
           return;
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [filtered, cursorIdx, onJumpToReplay, sessionStartMs]);
 
   if (loading) {
@@ -2515,11 +2344,7 @@ function TimelineTab({
           leadingIcon={<Activity />}
           trailingIcon={
             search ? (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                aria-label="Clear filter"
-              >
+              <button type="button" onClick={() => setSearch('')} aria-label="Clear filter">
                 <X className="size-3.5" />
               </button>
             ) : undefined
@@ -2601,10 +2426,7 @@ function TimelineTab({
       <Card className="p-0 overflow-hidden min-w-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
-            <span className="font-medium text-fg-subtle">
-              {filtered.length}
-            </span>{" "}
-            events
+            <span className="font-medium text-fg-subtle">{filtered.length}</span> events
             {filtered.length !== events.length && (
               <span className="text-fg-faint ml-1">(of {events.length})</span>
             )}
@@ -2640,11 +2462,11 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-7 px-2.5 rounded-full border text-[12px] font-medium shrink-0",
-        "inline-flex items-center gap-1.5 transition-colors",
+        'h-7 px-2.5 rounded-full border text-[12px] font-medium shrink-0',
+        'inline-flex items-center gap-1.5 transition-colors',
         active
-          ? "bg-fg text-bg border-fg"
-          : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+          ? 'bg-fg text-bg border-fg'
+          : 'bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg',
       )}
       aria-pressed={active}
     >
@@ -2652,8 +2474,8 @@ function FilterChip({
       <span>{label}</span>
       <span
         className={cn(
-          "font-mono tabular-nums text-[10px]",
-          active ? "text-bg/80" : "text-fg-faint",
+          'font-mono tabular-nums text-[10px]',
+          active ? 'text-bg/80' : 'text-fg-faint',
         )}
       >
         {count}
@@ -2693,7 +2515,7 @@ function VirtualEventList({
   useEffect(() => {
     if (cursorIdx === undefined || cursorIdx < 0) return;
     if (cursorIdx >= events.length) return;
-    virtualizer.scrollToIndex(cursorIdx, { align: "auto" });
+    virtualizer.scrollToIndex(cursorIdx, { align: 'auto' });
   }, [cursorIdx, events.length, virtualizer]);
 
   if (events.length === 0) {
@@ -2710,10 +2532,7 @@ function VirtualEventList({
       className="h-[min(60vh,480px)] sm:h-[min(65vh,520px)] overflow-auto"
       data-testid="timeline-virtual-scroll"
     >
-      <ol
-        className="relative w-full"
-        style={{ height: virtualizer.getTotalSize() }}
-      >
+      <ol className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const event = events[virtualRow.index];
           const meta = getEventMeta(event.type);
@@ -2734,8 +2553,8 @@ function VirtualEventList({
                 onClick={() => onJumpToReplay(offsetMs)}
                 data-timeline-row={virtualRow.index}
                 className={cn(
-                  "group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors",
-                  cursorIdx === virtualRow.index && "bg-accent-soft/40",
+                  'group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors',
+                  cursorIdx === virtualRow.index && 'bg-accent-soft/40',
                 )}
                 title="Jump to this point in the replay"
               >
@@ -2744,8 +2563,8 @@ function VirtualEventList({
                 </span>
                 <span
                   className={cn(
-                    "size-6 shrink-0 rounded-md border flex items-center justify-center",
-                    "border-border bg-bg-muted text-fg-subtle",
+                    'size-6 shrink-0 rounded-md border flex items-center justify-center',
+                    'border-border bg-bg-muted text-fg-subtle',
                   )}
                 >
                   <Icon className="size-3" />
@@ -2780,10 +2599,10 @@ function highlightText(text: string, query?: string) {
   const trimmed = query.trim();
   if (!trimmed) return text;
 
-  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let re: RegExp;
   try {
-    re = new RegExp(`(${escaped})`, "ig");
+    re = new RegExp(`(${escaped})`, 'ig');
   } catch {
     return text;
   }
@@ -2823,10 +2642,8 @@ function FilterRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
-        active
-          ? "bg-bg-muted text-fg"
-          : "text-fg-subtle hover:bg-bg-muted/60 hover:text-fg",
+        'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors',
+        active ? 'bg-bg-muted text-fg' : 'text-fg-subtle hover:bg-bg-muted/60 hover:text-fg',
       )}
     >
       {icon}
@@ -2838,13 +2655,7 @@ function FilterRow({
 
 /* ───────── Raw tab ───────── */
 
-function RawTab({
-  events,
-  loading,
-}: {
-  events: ReplayEvent[];
-  loading: boolean;
-}) {
+function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }) {
   const { id } = useParams<{ id: string }>();
   const [copied, setCopied] = useState(false);
   const json = useMemo(() => JSON.stringify(events, null, 2), [events]);
@@ -2854,34 +2665,32 @@ function RawTab({
       await navigator.clipboard.writeText(json);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success("Copied to clipboard", {
+      toast.success('Copied to clipboard', {
         description: `${events.length} events`,
       });
     } catch {
-      toast.error("Failed to copy");
+      toast.error('Failed to copy');
     }
   };
 
   const download = () => {
     try {
-      const blob = new Blob([json], { type: "application/json" });
+      const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `session-${id ?? "events"}.json`;
+      a.download = `session-${id ?? 'events'}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       // Defer revocation by a tick so Safari has the URL when it queues the
       // download request.
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      toast.success("Download started", {
-        description: `${events.length} events · ${(json.length / 1024).toFixed(
-          1,
-        )} kB`,
+      toast.success('Download started', {
+        description: `${events.length} events · ${(json.length / 1024).toFixed(1)} kB`,
       });
     } catch {
-      toast.error("Failed to download");
+      toast.error('Failed to download');
     }
   };
 
@@ -2908,18 +2717,13 @@ function RawTab({
           {events.length} events · {(json.length / 1024).toFixed(1)} kB
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={download}
-            data-testid="raw-download"
-          >
+          <Button variant="ghost" size="sm" onClick={download} data-testid="raw-download">
             <Download />
             <span className="hidden xs:inline sm:inline">Download</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => void copy()}>
             <Copy />
-            {copied ? "Copied" : "Copy"}
+            {copied ? 'Copied' : 'Copy'}
           </Button>
         </div>
       </div>

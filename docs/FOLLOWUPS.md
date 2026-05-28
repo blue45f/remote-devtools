@@ -226,17 +226,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   badge parity.
 - **Session tags** — `f4f7cd34` — Second backend cycle. New
   `tags text[]` column on RecordEntity (NOT NULL, default `{}`)
-  + migration `1777800000000-AddTagsToRecord`. New
-  `RecordService.replaceTags(id, tags)` and
-  `PUT /sessions/record/:id/tags` endpoint with server-side
-  normalisation (trim, dedupe, cap at 16 × 24 chars). Tags ride
-  along on `/sessions/record` list responses + session-replay
-  metadata. Frontend: inline `TagsEditor` chip strip on
-  SessionDetail header — add via input + Enter, remove via the X
-  on each chip, optimistic UI with rollback on failure. The
-  `apiFetch` helper now accepts a `RequestInit` and the demo seed
-  router echoes the PUT body so offline edits feel live. Linear
-  / Notion / GitHub issue-tag parity.
+  - migration `1777800000000-AddTagsToRecord`. New
+    `RecordService.replaceTags(id, tags)` and
+    `PUT /sessions/record/:id/tags` endpoint with server-side
+    normalisation (trim, dedupe, cap at 16 × 24 chars). Tags ride
+    along on `/sessions/record` list responses + session-replay
+    metadata. Frontend: inline `TagsEditor` chip strip on
+    SessionDetail header — add via input + Enter, remove via the X
+    on each chip, optimistic UI with rollback on failure. The
+    `apiFetch` helper now accepts a `RequestInit` and the demo seed
+    router echoes the PUT body so offline edits feel live. Linear
+    / Notion / GitHub issue-tag parity.
 - **Network tab on SessionDetail** — `deaec788` — Third
   backend cycle. SessionReplayService gains `getSessionNetwork`
   which flattens captured CDP-shaped network rows
@@ -379,6 +379,13 @@ the next obvious candidates. Each entry: what shipped, what's next.
   default flow is unchanged. Free-text + type filters
   compose. Mirrors the Console level-chip pattern. Chrome
   DevTools Network "Fetch/XHR" filter parity.
+- **Network row Open URL button** — current commit — Tiny UX
+  polish: each Network row exposes an `ExternalLink` icon
+  next to the Copy-cURL button. Hover-revealed (same
+  pattern), opens the captured URL in a new tab with
+  `rel="noreferrer"`. The row-click → response body modal
+  still fires when clicking the row body — the link sits
+  in the existing stopPropagation cell.
 
 Listed in rough order of value × ease:
 
