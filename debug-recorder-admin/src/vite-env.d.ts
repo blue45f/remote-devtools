@@ -27,3 +27,12 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// react-syntax-highlighter@16 ships ESM-only sub-paths without bundled
+// types, so the DevGuidePage's deep imports (per-language and per-style)
+// can't see the public typings. The values are passed straight into
+// SyntaxHighlighter.registerLanguage / .style — both accept `unknown`
+// at the runtime boundary.
+declare module 'react-syntax-highlighter/dist/esm/prism-light'
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/*'
+declare module 'react-syntax-highlighter/dist/esm/styles/prism/*'
