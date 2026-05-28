@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
+  AlertTriangle,
   ArrowLeft,
   Bug,
   Calendar,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronsUpDown,
   ChevronUp,
   Clock,
@@ -2325,6 +2328,13 @@ function ReplayPanel({
     >
       <div className="flex items-center justify-end gap-2 flex-wrap">
         <SpeedPicker value={speed} onChange={(next) => setPrefs({ speed: next })} />
+        {errorMarkers && errorMarkers.length > 0 && (
+          <ErrorNavButton
+            errorMarkers={errorMarkers}
+            playheadMsRef={playheadMsRef}
+            onSeek={onJumpToReplay}
+          />
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -2855,6 +2865,59 @@ function RageClickCard({
  * player's own controller only shows current position, not where the
  * action is.
  */
+function ErrorNavButton({
+  errorMarkers,
+  playheadMsRef,
+  onSeek,
+}: {
+  errorMarkers: { id: string; offsetMs: number }[];
+  playheadMsRef: React.MutableRefObject<number>;
+  onSeek: (offsetMs: number) => void;
+}) {
+  const sortedOffsets = useMemo(
+    () => errorMarkers.map((m) => m.offsetMs).sort((a, b) => a - b),
+    [errorMarkers],
+  );
+
+  const seekRelative = (dir: 1 | -1) => {
+    const here = playheadMsRef.current;
+    const target =
+      dir === 1
+        ? sortedOffsets.find((o) => o > here + 1)
+        : [...sortedOffsets].reverse().find((o) => o < here - 1);
+    // Wrap around so the buttons always do something useful.
+    const fallback = dir === 1 ? sortedOffsets[0] : sortedOffsets[sortedOffsets.length - 1];
+    onSeek(target ?? fallback);
+  };
+
+  return (
+    <div className="inline-flex items-center rounded-md border border-danger-soft bg-danger-soft/40 text-danger">
+      <button
+        type="button"
+        onClick={() => seekRelative(-1)}
+        aria-label="Previous error"
+        data-testid="replay-prev-error"
+        className="inline-flex items-center justify-center h-8 px-1.5 hover:bg-danger-soft rounded-l-md"
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <span className="inline-flex items-center gap-1 px-1.5 text-[11px] font-medium tabular-nums">
+        <AlertTriangle className="size-3" />
+        {sortedOffsets.length}
+      </span>
+      <button
+        type="button"
+        onClick={() => seekRelative(1)}
+        aria-label="Next error"
+        data-testid="replay-next-error"
+        className="inline-flex items-center justify-center h-8 px-1.5 hover:bg-danger-soft rounded-r-md"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </div>
+  );
+}
+
 function ReplayMinimap({
   events,
   sessionStartMs,

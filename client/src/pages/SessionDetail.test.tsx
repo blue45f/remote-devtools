@@ -358,6 +358,23 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('seeks to an error via the Next error button', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+
+    await user.keyboard('2'); // Replay tab
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-next-error')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('replay-next-error'));
+
+    // jumpToReplay writes the offset into the ?t= query param.
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+    });
+  });
+
   it('renders error markers on the Replay minimap', async () => {
     const user = userEvent.setup();
     renderAt(1000);
