@@ -1003,6 +1003,26 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     }
   }, [body, isJson]);
 
+  const copyUrl = async () => {
+    if (!row?.url) return;
+    try {
+      await navigator.clipboard.writeText(row.url);
+      toast.success('URL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  const copyCurl = async () => {
+    if (!row) return;
+    try {
+      await navigator.clipboard.writeText(buildCurlCommand(row));
+      toast.success('cURL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
   const copyBody = async () => {
     if (!body) return;
     try {
@@ -1058,6 +1078,36 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
             {row?.mimeType && <span>MIME: {row.mimeType}</span>}
             <span>Size: {formatBytes(row?.encodedDataLength)}</span>
           </DialogDescription>
+          {row && (
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyUrl}
+                data-testid="session-network-detail-copy-url"
+              >
+                <Link2 />
+                <span className="hidden sm:inline">Copy URL</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyCurl}
+                data-testid="session-network-detail-copy-curl"
+              >
+                <Copy />
+                <span className="hidden sm:inline">Copy cURL</span>
+              </Button>
+              {row.url && (
+                <Button asChild variant="outline" size="sm">
+                  <a href={row.url} target="_blank" rel="noreferrer">
+                    <ExternalLink />
+                    <span className="hidden sm:inline">Open</span>
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
         </DialogHeader>
         <div className="px-6 pb-6 max-h-[60vh] flex flex-col">
           {body ? (
