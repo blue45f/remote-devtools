@@ -1131,7 +1131,10 @@ function TimelineTab({
   onJumpToReplay: (offsetMs: number) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [activeType, setActiveType] = useState<number | null>(null);
+  // Multi-select event-type filter. Empty set = show everything. Matches
+  // the ActivityFeed kind filter mental model so the user only needs to
+  // learn one toggle pattern across the app.
+  const [activeTypes, setActiveTypes] = useState<Set<number>>(new Set());
   // Cursor for keyboard navigation. -1 = no row focused yet; revealed
   // on first j / k press.
   const [cursorIdx, setCursorIdx] = useState<number>(-1);
@@ -1144,7 +1147,7 @@ function TimelineTab({
 
   const filtered = useMemo(() => {
     return events.filter((e) => {
-      if (activeType !== null && e.type !== activeType) return false;
+      if (activeTypes.size > 0 && !activeTypes.has(e.type)) return false;
       if (search) {
         const meta = getEventMeta(e.type);
         const match =
@@ -1154,13 +1157,23 @@ function TimelineTab({
       }
       return true;
     });
-  }, [events, activeType, search]);
+  }, [events, activeTypes, search]);
+
+  const toggleType = (t: number) => {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  };
+  const clearTypes = () => setActiveTypes(new Set());
 
   // Reset cursor whenever the visible result set changes — the row at
   // `cursorIdx` might no longer exist.
   useEffect(() => {
     setCursorIdx(-1);
-  }, [activeType, search]);
+  }, [activeTypes, search]);
 
   // j / k navigation, Enter jumps the replay to that moment. Consistent
   // with the Sessions list — same keys, same Linear/Gmail mental model.
@@ -1270,14 +1283,25 @@ function TimelineTab({
         />
         {/* Desktop list */}
         <div className="hidden lg:block">
-          <div className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-1.5 px-1">
-            Type
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
+              Type
+            </span>
+            {activeTypes.size > 0 && (
+              <button
+                type="button"
+                onClick={clearTypes}
+                className="text-[10px] uppercase tracking-wider text-fg-faint hover:text-fg font-semibold"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <ul className="space-y-0.5">
             <li>
               <FilterRow
-                active={activeType === null}
-                onClick={() => setActiveType(null)}
+                active={activeTypes.size === 0}
+                onClick={clearTypes}
                 label="All types"
                 count={events.length}
               />
@@ -1289,8 +1313,8 @@ function TimelineTab({
               return (
                 <li key={t}>
                   <FilterRow
-                    active={activeType === t}
-                    onClick={() => setActiveType(t)}
+                    active={activeTypes.has(t)}
+                    onClick={() => toggleType(t)}
                     label={meta.name}
                     count={count}
                     icon={<Icon className="size-3.5" />}
@@ -1305,8 +1329,8 @@ function TimelineTab({
         <div className="lg:hidden -mx-1 px-1 scroll-rail scroll-rail-fade">
           <div className="flex items-center gap-1.5 pb-0.5">
             <FilterChip
-              active={activeType === null}
-              onClick={() => setActiveType(null)}
+              active={activeTypes.size === 0}
+              onClick={clearTypes}
               label="All"
               count={events.length}
             />
@@ -1317,8 +1341,8 @@ function TimelineTab({
               return (
                 <FilterChip
                   key={t}
-                  active={activeType === t}
-                  onClick={() => setActiveType(t)}
+                  active={activeTypes.has(t)}
+                  onClick={() => toggleType(t)}
                   label={meta.name}
                   count={count}
                   icon={<Icon className="size-3" />}

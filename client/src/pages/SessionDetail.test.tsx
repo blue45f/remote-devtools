@@ -62,6 +62,44 @@ describe("SessionDetail page", () => {
     });
   });
 
+  it("multi-selects timeline type filters", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("3");
+    await waitFor(() => {
+      expect(screen.getByText(/All types/)).toBeInTheDocument();
+    });
+
+    // Desktop list row "All types" should be the active default.
+    const allRow = screen
+      .getAllByRole("button", { name: /All types/i })
+      .find((b) => b.textContent?.includes("All types"));
+    expect(allRow).toBeDefined();
+
+    // Pick the first specific-type row in the desktop list (skip "All types").
+    const typeRows = screen
+      .getAllByRole("button")
+      .filter(
+        (b) =>
+          b.textContent !== null &&
+          /^(Meta|Snapshot|Mutation|Interaction|DomContentLoaded|Load|Custom|Plugin|Type-)/.test(
+            b.textContent ?? "",
+          ),
+      );
+    expect(typeRows.length).toBeGreaterThan(0);
+
+    await user.click(typeRows[0]);
+    // After selection, a "Clear" affordance appears.
+    expect(await screen.findByText(/^Clear$/)).toBeInTheDocument();
+
+    // Toggling the same row again deselects it; "Clear" disappears.
+    await user.click(typeRows[0]);
+    await waitFor(() => {
+      expect(screen.queryByText(/^Clear$/)).not.toBeInTheDocument();
+    });
+  });
+
   it("switches tabs via 1/2/3/4 number keys", async () => {
     const user = userEvent.setup();
     renderAt(1000);
