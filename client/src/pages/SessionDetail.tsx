@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Bug,
   Calendar,
+  Check,
   Clock,
   Copy,
   Download,
@@ -290,6 +291,8 @@ export default function SessionDetailPage() {
             label="Device"
             value={metaLoading ? null : shortHash(metadata?.deviceId, 14)}
             mono
+            copy={metadata?.deviceId}
+            copyToastLabel="Device ID copied"
           />
         </div>
       </div>
@@ -390,10 +393,13 @@ function SessionHeader({
   return (
     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-[11px] sm:text-xs text-fg-faint mb-1.5 sm:mb-2">
-          <Hash className="size-3" />
-          Session {shortHash(id, 12)}
-        </div>
+        <CopyChip
+          icon={<Hash className="size-3" />}
+          label={`Session ${shortHash(id, 12)}`}
+          value={id}
+          toastLabel="Session ID copied"
+          className="mb-1.5 sm:mb-2"
+        />
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg break-words">
           {loading ? (
             <Skeleton className="h-7 w-48 sm:w-72" />
@@ -891,14 +897,33 @@ function MetricTile({
   label,
   value,
   mono,
+  copy,
+  copyToastLabel,
 }: {
   icon: typeof Activity;
   label: string;
   value: React.ReactNode;
   mono?: boolean;
+  /** Optional raw value to copy when the tile's copy chip is clicked. */
+  copy?: string;
+  copyToastLabel?: string;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    if (!copy) return;
+    try {
+      await navigator.clipboard.writeText(copy);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+      if (copyToastLabel) toast.success(copyToastLabel);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
   return (
-    <Card className="p-4">
+    <Card className="group p-4 relative">
       <div className="flex items-center gap-2 text-fg-faint mb-1.5">
         <Icon className="size-3.5" />
         <span className="text-[11px] uppercase tracking-wider font-semibold">
@@ -917,7 +942,72 @@ function MetricTile({
           {value}
         </div>
       )}
+      {copy && (
+        <button
+          type="button"
+          onClick={() => void onCopy()}
+          aria-label={copyToastLabel ?? `Copy ${label.toLowerCase()}`}
+          className={cn(
+            "absolute top-2 right-2 size-6 inline-flex items-center justify-center rounded-md",
+            "text-fg-faint hover:text-fg hover:bg-bg-muted",
+            "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity",
+          )}
+        >
+          {copied ? (
+            <Check className="size-3.5" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
+        </button>
+      )}
     </Card>
+  );
+}
+
+/* ───────── Copy chip ───────── */
+
+function CopyChip({
+  icon,
+  label,
+  value,
+  toastLabel,
+  className,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  toastLabel: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const onClick = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+      toast.success(toastLabel);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => void onClick()}
+      data-testid="copy-chip"
+      className={cn(
+        "group inline-flex items-center gap-2 text-[11px] sm:text-xs text-fg-faint hover:text-fg transition-colors",
+        className,
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+      {copied ? (
+        <Check className="size-3 text-success" />
+      ) : (
+        <Copy className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      )}
+    </button>
   );
 }
 
