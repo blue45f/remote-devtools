@@ -122,6 +122,14 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    label: "Sessions list",
+    shortcuts: [
+      { keys: ["J"], label: "Move cursor down", description: "↓ also works" },
+      { keys: ["K"], label: "Move cursor up", description: "↑ also works" },
+      { keys: ["Enter"], label: "Open focused session" },
+    ],
+  },
+  {
     label: "Replay player",
     shortcuts: [
       {
