@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/utils';
@@ -23,6 +23,23 @@ function renderAt(id: number) {
     <Routes>
       <Route path="/sessions/:id" element={<SessionDetail />} />
     </Routes>,
+    { routerProps: { initialEntries: [`/sessions/${id}`] } },
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location-probe">{`${location.pathname}${location.search}`}</output>;
+}
+
+function renderAtWithLocation(id: number) {
+  return renderWithProviders(
+    <>
+      <LocationProbe />
+      <Routes>
+        <Route path="/sessions/:id" element={<SessionDetail />} />
+      </Routes>
+    </>,
     { routerProps: { initialEntries: [`/sessions/${id}`] } },
   );
 }
@@ -145,6 +162,42 @@ describe('SessionDetail page', () => {
     });
     await waitFor(() => {
       expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('jumps to the Replay tab when a Network row jump button is clicked', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('4'); // Network tab
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const jumpButtons = screen.getAllByTestId('session-network-jump');
+    expect(jumpButtons.length).toBeGreaterThan(0);
+    await user.click(jumpButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
+    });
+  });
+
+  it('jumps to the Replay tab when a Console row jump button is clicked', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('5'); // Console tab
+    await waitFor(() => {
+      expect(screen.getByTestId('session-console-list')).toBeInTheDocument();
+    });
+
+    const jumpButtons = screen.getAllByTestId('session-console-jump');
+    expect(jumpButtons.length).toBeGreaterThan(0);
+    await user.click(jumpButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
     });
   });
 
@@ -282,6 +335,25 @@ describe('SessionDetail page', () => {
     expect(writeText.mock.calls[0][0]).toMatch(/^curl /);
   });
 
+  it('jumps from a Network row to the matching replay offset', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const jumpButtons = screen.getAllByTestId('session-network-jump');
+    expect(jumpButtons.length).toBeGreaterThan(1);
+    await user.click(jumpButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/sessions/1000?t=1200');
+  });
+
   it('renders the parsed userAgent badge in the header', async () => {
     renderAt(1000);
     await waitFor(() => {
@@ -372,6 +444,25 @@ describe('SessionDetail page', () => {
     // Error and warn levels exist in the seed fixture.
     expect(rows.some((r) => r.getAttribute('data-level') === 'error')).toBe(true);
     expect(rows.some((r) => r.getAttribute('data-level') === 'warn')).toBe(true);
+  });
+
+  it('jumps from a Console row to the matching replay offset', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+
+    await user.keyboard('5');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-console-list')).toBeInTheDocument();
+    });
+
+    const jumpButtons = screen.getAllByTestId('session-console-jump');
+    expect(jumpButtons.length).toBeGreaterThan(2);
+    await user.click(jumpButtons[2]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/sessions/1000?t=1800');
   });
 
   it('filters Console rows by level chip', async () => {

@@ -432,6 +432,18 @@ the next obvious candidates. Each entry: what shipped, what's next.
   timeline view — reviewers can scan the entire session for
   annotated moments at a glance. Figma comments / Loom
   timestamp-pin parity.
+- **Network/Console row → seek replay** — current commit —
+  Each Network row and Console row gains a hover-revealed
+  `PlayCircle` icon button that jumps to the Replay tab and
+  seeks the player to that event's timestamp. The seek uses
+  a `normaliseOffsetMs` helper that auto-detects ms-vs-ns
+  units by checking whether `(row.timestamp - sessionStart)`
+  exceeds a 24h sanity threshold — handles both rrweb (ms)
+  and CDP-stored DB rows (ns) without per-route branches.
+  The "what failed and where exactly was the user looking
+  at that moment" triage flow now lives end-to-end on
+  SessionDetail. Chrome DevTools / OpenReplay / Highlight.io
+  network/console-to-replay parity.
 
 Listed in rough order of value × ease:
 

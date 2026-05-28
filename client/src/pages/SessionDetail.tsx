@@ -547,11 +547,20 @@ export default function SessionDetailPage() {
         </TabsContent>
 
         <TabsContent value="network" className="mt-5">
-          <NetworkTab sessionId={id ?? ''} sessionName={metadata?.name ?? metadata?.room} />
+          <NetworkTab
+            sessionId={id ?? ''}
+            sessionName={metadata?.name ?? metadata?.room}
+            onJumpToReplay={jumpToReplay}
+            sessionStartMs={sessionStartMs}
+          />
         </TabsContent>
 
         <TabsContent value="console" className="mt-5">
-          <ConsoleTab sessionId={id ?? ''} />
+          <ConsoleTab
+            sessionId={id ?? ''}
+            onJumpToReplay={jumpToReplay}
+            sessionStartMs={sessionStartMs}
+          />
         </TabsContent>
 
         <TabsContent value="raw" className="mt-5">
@@ -579,7 +588,20 @@ interface NetworkRow {
   base64Encoded?: boolean | null;
 }
 
-function NetworkTab({ sessionId, sessionName }: { sessionId: string; sessionName?: string }) {
+function NetworkTab({
+  sessionId,
+  sessionName,
+  onJumpToReplay,
+  sessionStartMs,
+}: {
+  sessionId: string;
+  sessionName?: string;
+  /** Forwarded from SessionDetailPage so rows can hop into the Replay tab. */
+  onJumpToReplay?: (offsetMs: number) => void;
+  /** Anchor timestamp used to compute the seek offset. Same unit as
+   * `row.timestamp` (caller normalises). */
+  sessionStartMs?: number;
+}) {
   const { data, isLoading } = useQuery<NetworkRow[]>({
     queryKey: ['session-network', sessionId],
     queryFn: () => apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${sessionId}/network`),
@@ -759,7 +781,16 @@ function NetworkTab({ sessionId, sessionName }: { sessionId: string; sessionName
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <NetworkRowView key={r.id} row={r} onSelect={() => setSelected(r)} />
+                <NetworkRowView
+                  key={r.id}
+                  row={r}
+                  onSelect={() => setSelected(r)}
+                  onJump={
+                    onJumpToReplay && sessionStartMs !== undefined
+                      ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                      : undefined
+                  }
+                />
               ))}
             </tbody>
           </table>
@@ -851,7 +882,15 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
   );
 }
 
-function NetworkRowView({ row, onSelect }: { row: NetworkRow; onSelect: () => void }) {
+function NetworkRowView({
+  row,
+  onSelect,
+  onJump,
+}: {
+  row: NetworkRow;
+  onSelect: () => void;
+  onJump?: () => void;
+}) {
   const statusClass =
     row.status === undefined
       ? 'text-fg-faint'
@@ -891,6 +930,21 @@ function NetworkRowView({ row, onSelect }: { row: NetworkRow; onSelect: () => vo
       </td>
       <td className="pl-3 pr-4 py-2 align-middle text-right" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex items-center gap-0.5">
+          {onJump && (
+            <button
+              type="button"
+              onClick={onJump}
+              aria-label="Jump replay to this request"
+              data-testid="session-network-jump"
+              className={cn(
+                'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
+                'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+                'hover:bg-bg-muted text-fg-subtle hover:text-fg',
+              )}
+            >
+              <PlayCircle className="size-3" />
+            </button>
+          )}
           {row.url && (
             <a
               href={row.url}
@@ -946,6 +1000,22 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
   );
 }
 
+/**
+ * Convert a raw row timestamp (which may be ms or ns depending on the
+ * capture path — rrweb sends ms, the CDP-stored DB rows store ns) into a
+ * ms-from-session-start offset.
+ *
+ * Heuristic: if the magnitude of `(row - start)` is way larger than any
+ * reasonable session length (1 day = 86_400_000 ms), assume nanoseconds
+ * and divide by 1_000_000. Otherwise treat as already-ms.
+ */
+function normaliseOffsetMs(rowTimestamp: number, sessionStartMs: number): number {
+  const raw = rowTimestamp - sessionStartMs;
+  // 24 hours in ms — anything beyond this is almost certainly ns.
+  if (Math.abs(raw) > 86_400_000) return Math.max(0, Math.round(raw / 1_000_000));
+  return Math.max(0, Math.round(raw));
+}
+
 function formatBytes(n?: number): string {
   if (!n || !Number.isFinite(n)) return '—';
   if (n < 1024) return `${n}B`;
@@ -969,7 +1039,15 @@ interface ConsoleRow {
 
 const ALL_CONSOLE_LEVELS: ConsoleLevel[] = ['log', 'info', 'warn', 'error', 'debug'];
 
-function ConsoleTab({ sessionId }: { sessionId: string }) {
+function ConsoleTab({
+  sessionId,
+  onJumpToReplay,
+  sessionStartMs,
+}: {
+  sessionId: string;
+  onJumpToReplay?: (offsetMs: number) => void;
+  sessionStartMs?: number;
+}) {
   const { data, isLoading } = useQuery<ConsoleRow[]>({
     queryKey: ['session-console', sessionId],
     queryFn: () => apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${sessionId}/console`),
@@ -1100,7 +1178,15 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
         </div>
         <ul className="divide-y divide-border" data-testid="session-console-list">
           {filtered.map((r) => (
-            <ConsoleRowView key={r.id} row={r} />
+            <ConsoleRowView
+              key={r.id}
+              row={r}
+              onJump={
+                onJumpToReplay && sessionStartMs !== undefined
+                  ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                  : undefined
+              }
+            />
           ))}
         </ul>
       </Card>
@@ -1108,7 +1194,7 @@ function ConsoleTab({ sessionId }: { sessionId: string }) {
   );
 }
 
-function ConsoleRowView({ row }: { row: ConsoleRow }) {
+function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void }) {
   const colour =
     row.level === 'error'
       ? 'text-danger'
@@ -1119,7 +1205,7 @@ function ConsoleRowView({ row }: { row: ConsoleRow }) {
           : 'text-fg-subtle';
   return (
     <li
-      className="px-3 py-1.5 flex items-start gap-2 text-[12px] font-mono"
+      className="group px-3 py-1.5 flex items-start gap-2 text-[12px] font-mono"
       data-testid="session-console-row"
       data-level={row.level}
     >
@@ -1134,6 +1220,21 @@ function ConsoleRowView({ row }: { row: ConsoleRow }) {
           {row.url.replace(/^https?:\/\//, '')}
           {row.lineNumber ? `:${row.lineNumber}` : ''}
         </span>
+      )}
+      {onJump && (
+        <button
+          type="button"
+          onClick={onJump}
+          aria-label="Jump replay to this message"
+          data-testid="session-console-jump"
+          className={cn(
+            'shrink-0 inline-flex items-center justify-center size-5 rounded-md transition-opacity',
+            'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+            'hover:bg-bg-muted text-fg-subtle hover:text-fg',
+          )}
+        >
+          <PlayCircle className="size-3" />
+        </button>
       )}
     </li>
   );
