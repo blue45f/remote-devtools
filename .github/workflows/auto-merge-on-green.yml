@@ -1,0 +1,32 @@
+name: Auto-merge on green
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  enable-auto-merge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    if: |
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'automerge') ||
+        contains(github.event.pull_request.labels.*.name, 'auto-merge')
+      )
+    steps:
+      - name: Enable squash auto-merge
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

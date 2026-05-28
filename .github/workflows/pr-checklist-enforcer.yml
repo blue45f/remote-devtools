@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
+concurrency:
+  group: pr-checklist-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   enforce-pr-checklist:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false
@@ -12,6 +16,7 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Validate PR checklist completion
         uses: actions/github-script@v9

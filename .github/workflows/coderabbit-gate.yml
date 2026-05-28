@@ -26,7 +26,7 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
       (github.event_name == 'pull_request_review')
     steps:
-      - name: Verify CodeRabbit has approved this PR
+      - name: Verify CodeRabbit approved the latest PR head
         uses: actions/github-script@v9
         with:
           # CodeRabbit posts each review under a bot login. We accept any of
@@ -44,6 +44,23 @@ jobs:
               core.setFailed(
                 "Could not determine PR number for the CodeRabbit gate."
               );
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            if (pr.draft) {
+              core.notice(`PR #${prNumber} is draft; skipping CodeRabbit gate.`);
+              return;
+            }
+
+            const headSha = pr.head?.sha;
+            if (!headSha) {
+              core.setFailed(`Could not determine head SHA for PR #${prNumber}.`);
               return;
             }
 
@@ -68,34 +85,39 @@ jobs:
             const codeRabbitReviews = reviews.filter((r) =>
               codeRabbitLogins.has(r.user?.login ?? "")
             );
+            const headReviews = codeRabbitReviews.filter(
+              (r) => r.commit_id === headSha
+            );
 
-            if (codeRabbitReviews.length === 0) {
+            if (headReviews.length === 0) {
               core.setFailed(
-                "CodeRabbit has not reviewed this PR yet. The gate stays red until CodeRabbit posts a review. " +
+                `CodeRabbit has not reviewed the latest PR head (${headSha}) yet. The gate stays red until CodeRabbit posts a review for the current commit. ` +
                   "If CodeRabbit is disabled for your repo, ask an admin to install the GitHub App."
               );
               return;
             }
 
-            // Sort newest first by submitted_at so the *latest* state wins —
+            // Sort newest first by submitted_at so the *latest* state on the
+            // current head SHA wins —
             // i.e. a CHANGES_REQUESTED that the user later resolved (and
             // CodeRabbit re-approved) flips the gate back to green.
-            codeRabbitReviews.sort((a, b) => {
+            headReviews.sort((a, b) => {
               const ta = new Date(a.submitted_at ?? 0).getTime();
               const tb = new Date(b.submitted_at ?? 0).getTime();
               return tb - ta;
             });
-            const latest = codeRabbitReviews[0];
+            const latest = headReviews[0];
             const state = String(latest.state ?? "").toUpperCase();
 
             core.info(
-              `Latest CodeRabbit review: state=${state} id=${latest.id} at=${latest.submitted_at}`
+              `Latest CodeRabbit review for ${headSha}: state=${state} id=${latest.id} at=${latest.submitted_at}`
             );
 
             const summaryLines = [
               "## CodeRabbit review gate",
               "",
               `- PR: #${prNumber}`,
+              `- Head SHA: \`${headSha}\``,
               `- Latest review state: \`${state}\``,
               `- Review id: \`${latest.id}\``,
               `- Submitted at: \`${latest.submitted_at}\``,
