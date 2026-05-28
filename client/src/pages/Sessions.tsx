@@ -683,6 +683,44 @@ export default function SessionsPage() {
         )}
       </div>
 
+      {filtersActive && (
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          <span className="text-[11px] text-fg-faint uppercase tracking-wider font-semibold">
+            Active
+          </span>
+          {search.trim() && (
+            <FilterPill
+              label={`${regexMode ? "regex" : "search"}: "${search.trim()}"`}
+              onRemove={() => setSearch("")}
+            />
+          )}
+          {durationFilter !== "all" && (
+            <FilterPill
+              label={`duration: ${
+                durationFilter === "short"
+                  ? "< 30s"
+                  : durationFilter === "medium"
+                    ? "30s – 5m"
+                    : "> 5m"
+              }`}
+              onRemove={() => setDurationFilter("all")}
+            />
+          )}
+          {ageFilter !== "all" && (
+            <FilterPill
+              label={`time: ${AGE_LABELS[ageFilter].toLowerCase()}`}
+              onRemove={() => setAgeFilter("all")}
+            />
+          )}
+          {hostFilter && (
+            <FilterPill
+              label={`host: ${hostFilter}`}
+              onRemove={() => setHostFilter(null)}
+            />
+          )}
+        </div>
+      )}
+
       {/* Result meta */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="text-xs text-fg-subtle">
@@ -939,6 +977,31 @@ function ViewToggleButton({
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function FilterPill({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-accent-soft text-accent-soft-fg border border-accent-soft text-[11px] font-medium"
+      data-testid="active-filter-pill"
+    >
+      <span>{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove filter: ${label}`}
+        className="inline-flex items-center justify-center size-3.5 rounded-full hover:bg-fg/10 text-current"
+      >
+        <X className="size-2.5" />
+      </button>
+    </span>
   );
 }
 
