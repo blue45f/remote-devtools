@@ -98,10 +98,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   a per-page select (50 / 100 / 200) in the result-meta row. Choice
   persists to `localStorage` via the existing `sessions-prefs:v1`
   schema. Datadog / PostHog data-list parity.
-- **Empty-state CTAs to Sandbox + Demo mode** — current commit —
+- **Empty-state CTAs to Sandbox + Demo mode** — `0ad29a12` —
   Sessions "No sessions yet" empty offers Module / Script SDK sandbox
   buttons; Dashboard ChartEmpty offers "Enable demo mode" inline.
   Removes the dead-end first-run experience.
+- **Dashboard freshness badge + manual refresh** — current commit —
+  Header now shows "Updated Xs ago" (relative time, ticks every 5s)
+  next to the period tabs; clicking it spins the icon and invalidates
+  every dashboard query. Datadog / PostHog / Grafana parity for
+  long-lived auto-refresh dashboards.
 
 ## Next obvious candidates
 
