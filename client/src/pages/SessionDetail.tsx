@@ -1789,6 +1789,7 @@ function SessionHeader({
           )
         ) : null}
 
+        {metadata?.url && <SessionHeaderCopyUrl url={metadata.url} />}
         {metadata?.url && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1820,6 +1821,38 @@ function SessionHeader({
         )}
       </div>
     </div>
+  );
+}
+
+function SessionHeaderCopyUrl({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('URL copied');
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="touch-target"
+          onClick={copy}
+          data-testid="session-header-copy-url"
+          aria-label="Copy captured URL"
+        >
+          {copied ? <Check /> : <Link2 />}
+          <span className="hidden xs:inline sm:inline">Copy URL</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Copy captured URL</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -3349,7 +3382,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
             <Download />
             <span className="hidden xs:inline sm:inline">Download</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => void copy()}>
+          <Button variant="ghost" size="sm" onClick={() => void copy()} data-testid="raw-copy">
             <Copy />
             {copied ? 'Copied' : 'Copy'}
           </Button>

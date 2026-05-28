@@ -409,6 +409,24 @@ describe('SessionDetail page', () => {
     expect(revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 
+  it('copies the session URL via the header Copy URL button', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    const btn = await screen.findByTestId('session-header-copy-url');
+    await user.click(btn);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0][0]).toMatch(/^https?:\/\//);
+  });
+
   it('copies a Network row URL via the Copy URL button', async () => {
     const user = userEvent.setup();
 
@@ -634,7 +652,7 @@ describe('SessionDetail page', () => {
 
     await user.click(screen.getByRole('tab', { name: /Raw JSON/ }));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Copy/ })).toBeInTheDocument();
+      expect(screen.getByTestId('raw-copy')).toBeInTheDocument();
     });
   });
 
@@ -755,7 +773,7 @@ describe('SessionDetail page', () => {
 
     await user.keyboard('6');
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Copy/ })).toBeInTheDocument();
+      expect(screen.getByTestId('raw-copy')).toBeInTheDocument();
     });
 
     await user.keyboard('1');
