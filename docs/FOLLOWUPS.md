@@ -315,7 +315,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Demo seed router holds an in-memory store with two starter
   comments per session so the UI demos out of the box. PostHog
   / Sentry / OpenReplay collaborative-review parity.
-- **Console tab on SessionDetail** — current commit — Fifth
+- **Console tab on SessionDetail** — `9279963f` — Fifth
   backend cycle (no schema change — `RuntimeEntity` was already
   populated by the SDK). New
   `SessionReplayService.getSessionConsole()` flattens captured
