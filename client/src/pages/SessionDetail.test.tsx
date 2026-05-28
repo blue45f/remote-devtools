@@ -200,6 +200,48 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('deep-links to a tab via ?tab= and writes it on tab change', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <LocationProbe />
+        <Routes>
+          <Route path="/sessions/:id" element={<SessionDetail />} />
+        </Routes>
+      </>,
+      { routerProps: { initialEntries: ['/sessions/1000?tab=network'] } },
+    );
+
+    // Opens directly on the Network tab from the URL param.
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    // Switching tabs writes the new value back to the URL.
+    await user.keyboard('5'); // Console
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/tab=console/);
+    });
+  });
+
+  it('still records the playhead when jumping to replay (tab + t coexist)', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+
+    await user.keyboard('4'); // Network
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+    const jumpButtons = screen.getAllByTestId('session-network-jump');
+    await user.click(jumpButtons[0]);
+
+    await waitFor(() => {
+      const probe = screen.getByTestId('location-probe');
+      expect(probe).toHaveTextContent(/t=\d/);
+      expect(probe).toHaveTextContent(/tab=replay/);
+    });
+  });
+
   it('opens the keyboard shortcuts overlay when ? is pressed', async () => {
     const user = userEvent.setup();
     renderAt(1000);
@@ -369,7 +411,7 @@ describe('SessionDetail page', () => {
 
     await user.keyboard('e');
     await waitFor(() => {
-      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/t=\d/);
     });
   });
 
@@ -386,7 +428,7 @@ describe('SessionDetail page', () => {
 
     // jumpToReplay writes the offset into the ?t= query param.
     await waitFor(() => {
-      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/t=\d/);
     });
   });
 
@@ -680,7 +722,9 @@ describe('SessionDetail page', () => {
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
     });
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/sessions/1000?t=1200');
+    const probe = screen.getByTestId('location-probe');
+    expect(probe).toHaveTextContent(/t=1200/);
+    expect(probe).toHaveTextContent(/tab=replay/);
   });
 
   it('renders the parsed userAgent badge in the header', async () => {
@@ -750,7 +794,7 @@ describe('SessionDetail page', () => {
     await user.click(jumpRows[0]);
 
     await waitFor(() => {
-      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/t=\d/);
     });
   });
 
@@ -822,7 +866,9 @@ describe('SessionDetail page', () => {
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Replay/, selected: true })).toBeInTheDocument();
     });
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/sessions/1000?t=1800');
+    const probe = screen.getByTestId('location-probe');
+    expect(probe).toHaveTextContent(/t=1800/);
+    expect(probe).toHaveTextContent(/tab=replay/);
   });
 
   it('filters Console rows by level chip', async () => {
