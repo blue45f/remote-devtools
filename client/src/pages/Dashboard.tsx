@@ -9,6 +9,7 @@ import {
   Minus,
   Radio,
   RefreshCw,
+  StickyNote,
   Ticket,
   TrendingUp,
 } from 'lucide-react';
@@ -275,10 +276,82 @@ export default function DashboardPage() {
             <TicketsByRoleChart data={ticketTrend} />
           </ChartPanel>
           <TopHostsPanel period={period} />
+          <RecentNotesPanel />
         </div>
         <ActivityFeed />
       </div>
     </div>
+  );
+}
+
+interface RecentNote {
+  id: number;
+  name: string;
+  note: string;
+  timestamp: string;
+}
+
+function RecentNotesPanel() {
+  const { data, isLoading } = useQuery<RecentNote[]>({
+    queryKey: ['recent-notes'],
+    queryFn: () => apiFetch<RecentNote[]>('/api/dashboard/recent-notes?limit=5'),
+  });
+  const rows = data ?? [];
+
+  if (isLoading) {
+    return (
+      <Card className="p-5 space-y-2.5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <StickyNote className="size-3.5 text-fg-faint" />
+          Recently annotated
+        </h3>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-full" />
+        ))}
+      </Card>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <StickyNote className="size-3.5 text-fg-faint" />
+          Recently annotated
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">No annotated sessions yet.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5" data-testid="dashboard-recent-notes">
+      <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5 mb-3">
+        <StickyNote className="size-3.5 text-fg-faint" />
+        Recently annotated
+      </h3>
+      <ul className="space-y-1.5">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Link
+              to={`/sessions/${r.id}`}
+              className="group block rounded-md px-2 py-1.5 hover:bg-bg-muted/60 transition-colors"
+              data-testid="dashboard-recent-note-row"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-fg truncate group-hover:text-accent">
+                  {r.name}
+                </span>
+                <span className="text-[10px] text-fg-faint shrink-0">
+                  {formatRelativeAge(new Date(r.timestamp).getTime())}
+                </span>
+              </div>
+              <p className="text-[11px] text-fg-subtle truncate mt-0.5">{r.note}</p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

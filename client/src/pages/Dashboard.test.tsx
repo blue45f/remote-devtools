@@ -68,4 +68,14 @@ describe('Dashboard page', () => {
       expect(rows.length).toBeGreaterThan(0);
     });
   });
+
+  it('renders the Recently annotated panel from seed data', async () => {
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-recent-notes')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('dashboard-recent-note-row').length).toBeGreaterThan(0);
+    });
+  });
 });

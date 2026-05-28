@@ -192,6 +192,25 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       .slice(0, Math.min(Math.max(limit, 1), 25));
     return rows as unknown as T;
   }
+  // /api/dashboard/recent-notes?limit=…
+  if (path.startsWith('/api/dashboard/recent-notes')) {
+    const params = new URLSearchParams(path.split('?')[1] ?? '');
+    const limit = Number.parseInt(params.get('limit') ?? '5', 10) || 5;
+    const annotated = recordSeedSessions()
+      .filter((s) => s.hasNote)
+      .map((s) => {
+        const meta = buildSeedSessionMeta(s.id);
+        return {
+          id: s.id,
+          name: s.name,
+          note: meta.note ?? '',
+          timestamp: s.timestamp,
+        };
+      })
+      .filter((r) => r.note.trim().length > 0)
+      .slice(0, Math.min(Math.max(limit, 1), 25));
+    return annotated as unknown as T;
+  }
   // Unique tag list — aggregates from the seed sessions for autosuggest.
   if (path === '/sessions/record/tags') {
     const all = new Set<string>();
