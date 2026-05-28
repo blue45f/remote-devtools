@@ -532,6 +532,12 @@ limit)` extracts hostname directly in SQL
   to [1, 25]. Demo seed-router aggregates hostnames from
   the seed sessions so offline mode keeps parity.
 
+- **Network row Copy URL** — `ded8beae` — Small Copy URL
+  action between Open URL and Copy cURL. Faster than the
+  cURL flow when all you need is the raw URL — Slack
+  posts, Postman, browser address bar. Same toast/Check
+  flip pattern as the existing copy actions.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
