@@ -160,6 +160,21 @@ export class RecordService {
   }
 
   /**
+   * 전체 unique 태그 목록 반환. 자동완성 dropdown 용도.
+   * 멀티테넌트 모드에서는 호출자가 orgId를 넘기면 해당 조직 범위로 제한된다.
+   */
+  public async findAllTags(orgId?: string | null): Promise<string[]> {
+    const qb = this.recordRepository
+      .createQueryBuilder('r')
+      .select('UNNEST(r.tags)', 'tag')
+      .distinct(true)
+      .orderBy('tag', 'ASC');
+    if (orgId) qb.where('r.org_id = :oid', { oid: orgId });
+    const rows = (await qb.getRawMany()) as { tag: string }[];
+    return rows.map((r) => r.tag).filter((t): t is string => typeof t === 'string' && t.length > 0);
+  }
+
+  /**
    * 세션 태그를 교체한다. 정규화(trim, lowercase 불변, 중복 제거, 빈 문자열
    * 제거)는 호출자가 책임진다 — 컨트롤러에서 한 번만 수행.
    * @param id    레코드 PK

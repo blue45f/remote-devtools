@@ -162,6 +162,14 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
     const period = new URLSearchParams(path.split('?')[1] ?? '').get('period') ?? 'day';
     return { data: buildRecordTrend(period) } as T;
   }
+  // Unique tag list — aggregates from the seed sessions for autosuggest.
+  if (path === '/sessions/record/tags') {
+    const all = new Set<string>();
+    for (const s of recordSeedSessions()) {
+      for (const t of s.tags ?? []) all.add(t);
+    }
+    return Array.from(all).sort() as unknown as T;
+  }
   // /sessions, /sessions/record (with optional pagination/search query string)
   if (path === '/sessions') {
     return liveSeedSessions() as unknown as T;
@@ -339,8 +347,13 @@ const SEED_CONSOLE_ROWS: Omit<SeedConsoleRow, 'id' | 'timestamp'>[] = [
   { level: 'debug', text: 'feature flag: checkout_v2=true', source: 'console' },
 ];
 
+function seedTimelineStartMs(id: number): number {
+  const parsed = new Date(buildSeedSessionMeta(id).createdAt ?? '').getTime();
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
 function buildSeedConsole(id: number): SeedConsoleRow[] {
-  const base = Date.now() - 60_000;
+  const base = seedTimelineStartMs(id);
   return SEED_CONSOLE_ROWS.map((row, i) => ({
     ...row,
     id: id * 100 + 50 + i,
@@ -352,7 +365,7 @@ function buildSeedConsole(id: number): SeedConsoleRow[] {
 function buildSeedNetwork(id: number): SeedNetworkRow[] {
   // S3-style sessions (string ids with "s3-" prefix) wouldn't hit this
   // branch — the route uses (\d+).
-  const base = Date.now() - 60_000;
+  const base = seedTimelineStartMs(id);
   return SEED_NETWORK_ROWS.map((row, i) => ({
     ...row,
     id: id * 100 + i,

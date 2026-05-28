@@ -18,6 +18,7 @@ describe('WebviewController (Internal)', () => {
     findOne: vi.fn(),
     findPaginated: vi.fn(),
     replaceTags: vi.fn(),
+    findAllTags: vi.fn(),
   };
   const mockReplayCommentService = {
     findByRecordId: vi.fn(),
@@ -208,6 +209,24 @@ describe('WebviewController (Internal)', () => {
       await expect(controller.putRecordTags('999', { tags: ['bug'] })).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('listAllRecordTags forwards orgId from auth claims', async () => {
+      mockRecordService.findAllTags.mockResolvedValue(['bug', 'checkout', 'verified']);
+      const out = await controller.listAllRecordTags({
+        sub: 'u1',
+        org: 'org-trusted',
+        plan: 'pro',
+      });
+      expect(out).toEqual(['bug', 'checkout', 'verified']);
+      expect(mockRecordService.findAllTags).toHaveBeenCalledWith('org-trusted');
+    });
+
+    it('listAllRecordTags returns the global list when not authenticated', async () => {
+      mockRecordService.findAllTags.mockResolvedValue(['a', 'b']);
+      const out = await controller.listAllRecordTags(null);
+      expect(out).toEqual(['a', 'b']);
+      expect(mockRecordService.findAllTags).toHaveBeenCalledWith(null);
     });
   });
 
