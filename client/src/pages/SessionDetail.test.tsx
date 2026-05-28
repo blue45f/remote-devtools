@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -361,6 +361,26 @@ describe('SessionDetail page', () => {
     });
     await waitFor(() => {
       expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('resolves a replay comment and reflects it in the row state', async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+
+    const firstRow = screen.getAllByTestId('replay-comment')[0];
+    expect(firstRow.getAttribute('data-resolved')).toBe('false');
+
+    const resolveBtn = within(firstRow).getByTestId('replay-comment-resolve');
+    await user.click(resolveBtn);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment')[0].getAttribute('data-resolved')).toBe('true');
     });
   });
 

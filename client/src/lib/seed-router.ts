@@ -19,6 +19,7 @@ interface DemoComment {
   body: string;
   author: string | null;
   createdAt: string;
+  resolved?: boolean;
 }
 
 const demoCommentStore = new Map<number, DemoComment[]>();
@@ -80,6 +81,18 @@ function updateDemoComment(
   return list[idx];
 }
 
+function resolveDemoComment(
+  recordId: number,
+  commentId: number,
+  resolved: boolean,
+): DemoComment | undefined {
+  const list = seedDemoComments(recordId);
+  const idx = list.findIndex((c) => c.id === commentId);
+  if (idx < 0) return undefined;
+  list[idx] = { ...list[idx], resolved };
+  return list[idx];
+}
+
 export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined {
   // Demo-mode mutations don't hit a backend. Echo the parsed body back
   // as the result so optimistic UI keeps working offline. The api layer
@@ -136,6 +149,18 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       } catch {
         return undefined;
       }
+    }
+  }
+  const commentResolveMatch = path.match(/^\/sessions\/record\/(\d+)\/comments\/(\d+)\/resolve$/);
+  if (commentResolveMatch && method === 'PATCH' && init?.body) {
+    const recordId = Number(commentResolveMatch[1]);
+    const commentId = Number(commentResolveMatch[2]);
+    try {
+      const parsed = JSON.parse(init.body as string) as { resolved?: boolean };
+      const updated = resolveDemoComment(recordId, commentId, !!parsed.resolved);
+      return updated as T;
+    } catch {
+      return undefined;
     }
   }
   const commentRowMatch = path.match(/^\/sessions\/record\/(\d+)\/comments\/(\d+)$/);
