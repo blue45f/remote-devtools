@@ -1544,6 +1544,104 @@ function ReplayPanel({
 
 /* ───────── Replay comments ───────── */
 
+function CommentRow({
+  comment,
+  onSeek,
+  onDelete,
+  onEditCommit,
+}: {
+  comment: { id: number; timestampMs: number; body: string };
+  onSeek: (offsetMs: number) => void;
+  onDelete: () => void;
+  onEditCommit: (body: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.body);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Mirror server state whenever the prop changes (other tab edits,
+  // optimistic rollbacks, refetches).
+  useEffect(() => {
+    if (!editing) setDraft(comment.body);
+  }, [comment.body, editing]);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim().slice(0, 2000);
+    setEditing(false);
+    if (next && next !== comment.body) {
+      onEditCommit(next);
+    } else {
+      setDraft(comment.body);
+    }
+  };
+
+  const cancel = () => {
+    setDraft(comment.body);
+    setEditing(false);
+  };
+
+  return (
+    <li className="flex items-start gap-2 text-xs" data-testid="replay-comment">
+      <button
+        type="button"
+        onClick={() => onSeek(comment.timestampMs)}
+        className="font-mono tabular-nums text-accent hover:underline shrink-0 mt-0.5"
+        data-testid="replay-comment-seek"
+        aria-label={`Seek to ${formatReplayTimestamp(comment.timestampMs)}`}
+      >
+        {formatReplayTimestamp(comment.timestampMs)}
+      </button>
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={draft}
+          maxLength={2000}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+          className="flex-1 h-6 px-1.5 rounded border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-ring"
+          data-testid="replay-comment-edit-input"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex-1 text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1"
+          data-testid="replay-comment-body"
+          title="Click to edit"
+        >
+          {comment.body}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label="Delete comment"
+        data-testid="replay-comment-delete"
+        className="opacity-40 hover:opacity-100 text-fg-faint hover:text-danger"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+    </li>
+  );
+}
+
 interface ReplayComment {
   id: number;
   timestampMs: number;
@@ -1627,6 +1725,28 @@ function CommentsPanel({
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: async (input: { id: number; body: string }) => {
+      return apiFetch<ReplayComment>(`/sessions/record/${recordId}/comments/${input.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: input.body }),
+      });
+    },
+    onMutate: async ({ id, body }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<ReplayComment[]>(queryKey);
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (p) =>
+        (p ?? []).map((c) => (c.id === id ? { ...c, body } : c)),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast.error("Couldn't update comment");
+    },
+  });
+
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
@@ -1659,27 +1779,13 @@ function CommentsPanel({
       ) : (
         <ol className="space-y-2 mb-3">
           {comments.map((c) => (
-            <li key={c.id} className="flex items-start gap-2 text-xs" data-testid="replay-comment">
-              <button
-                type="button"
-                onClick={() => onSeek(c.timestampMs)}
-                className="font-mono tabular-nums text-accent hover:underline shrink-0 mt-0.5"
-                data-testid="replay-comment-seek"
-                aria-label={`Seek to ${formatReplayTimestamp(c.timestampMs)}`}
-              >
-                {formatReplayTimestamp(c.timestampMs)}
-              </button>
-              <p className="flex-1 text-fg break-words">{c.body}</p>
-              <button
-                type="button"
-                onClick={() => deleteMutation.mutate(c.id)}
-                aria-label="Delete comment"
-                data-testid="replay-comment-delete"
-                className="opacity-40 hover:opacity-100 text-fg-faint hover:text-danger"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </li>
+            <CommentRow
+              key={c.id}
+              comment={c}
+              onSeek={onSeek}
+              onDelete={() => deleteMutation.mutate(c.id)}
+              onEditCommit={(body) => editMutation.mutate({ id: c.id, body })}
+            />
           ))}
         </ol>
       )}

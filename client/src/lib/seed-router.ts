@@ -68,6 +68,18 @@ function deleteDemoComment(recordId: number, commentId: number): void {
   );
 }
 
+function updateDemoComment(
+  recordId: number,
+  commentId: number,
+  body: string,
+): DemoComment | undefined {
+  const list = seedDemoComments(recordId);
+  const idx = list.findIndex((c) => c.id === commentId);
+  if (idx < 0) return undefined;
+  list[idx] = { ...list[idx], body };
+  return list[idx];
+}
+
 export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined {
   // Demo-mode mutations don't hit a backend. Echo the parsed body back
   // as the result so optimistic UI keeps working offline. The api layer
@@ -116,12 +128,25 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       }
     }
   }
-  const commentDeleteMatch = path.match(/^\/sessions\/record\/(\d+)\/comments\/(\d+)$/);
-  if (commentDeleteMatch && method === 'DELETE') {
-    const recordId = Number(commentDeleteMatch[1]);
-    const commentId = Number(commentDeleteMatch[2]);
-    deleteDemoComment(recordId, commentId);
-    return undefined as T; // 204 — apiFetch unwraps to undefined
+  const commentRowMatch = path.match(/^\/sessions\/record\/(\d+)\/comments\/(\d+)$/);
+  if (commentRowMatch) {
+    const recordId = Number(commentRowMatch[1]);
+    const commentId = Number(commentRowMatch[2]);
+    if (method === 'DELETE') {
+      deleteDemoComment(recordId, commentId);
+      return undefined as T; // 204 — apiFetch unwraps to undefined
+    }
+    if (method === 'PATCH' && init?.body) {
+      try {
+        const parsed = JSON.parse(init.body as string) as { body?: string };
+        const text = (parsed.body ?? '').trim();
+        if (!text) return undefined;
+        const updated = updateDemoComment(recordId, commentId, text.slice(0, 2000));
+        return updated as T;
+      } catch {
+        return undefined;
+      }
+    }
   }
 
   // /api/dashboard/stats

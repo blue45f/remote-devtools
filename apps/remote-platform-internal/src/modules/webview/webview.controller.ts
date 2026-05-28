@@ -11,6 +11,7 @@ import {
   Logger,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -347,6 +348,42 @@ export class WebviewController {
       body: saved.body,
       author: saved.author,
       createdAt: saved.createdAt,
+    };
+  }
+
+  /**
+   * PATCH /sessions/record/:recordId/comments/:commentId
+   * Body: { body: string }
+   * Updates the comment's text. Author and timestampMs are immutable.
+   */
+  @Patch('record/:recordId/comments/:commentId')
+  public async patchRecordComment(
+    @Param('recordId') recordId: string,
+    @Param('commentId') commentId: string,
+    @Body() body: { body?: unknown },
+  ) {
+    const id = this.parseRecordId(recordId);
+    const cId = Number(commentId);
+    if (!Number.isInteger(cId) || cId <= 0) {
+      throw new BadRequestException('Invalid commentId parameter');
+    }
+    const text =
+      typeof body?.body === 'string' ? body.body.trim().slice(0, MAX_COMMENT_BODY_LENGTH) : '';
+    if (!text) {
+      throw new BadRequestException('body must be a non-empty string');
+    }
+
+    const updated = await this.replayCommentService.updateBody(cId, id, text);
+    if (!updated) {
+      throw new NotFoundException(`Comment ${cId} not found on record ${id}`);
+    }
+
+    return {
+      id: updated.id,
+      timestampMs: updated.timestampMs,
+      body: updated.body,
+      author: updated.author,
+      createdAt: updated.createdAt,
     };
   }
 
