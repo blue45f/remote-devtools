@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Camera, EyeOff, ImageOff, MousePointerClick } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -123,23 +123,14 @@ export function SessionPreviewCard({
             transform: `scale(${scale})`,
           }}
         />
-        {showHeatmap &&
-          clickPoints &&
-          clickPoints.length > 0 &&
-          clickPoints.map((p, i) => (
-            <span
-              key={i}
-              aria-hidden
-              data-testid="preview-click-dot"
-              className="absolute rounded-full bg-accent/40 ring-2 ring-accent/70 pointer-events-none"
-              style={{
-                left: p.x * scale - 5,
-                top: p.y * scale - 5,
-                width: 10,
-                height: 10,
-              }}
-            />
-          ))}
+        {showHeatmap && clickPoints && clickPoints.length > 0 && (
+          <HeatmapCanvas
+            points={clickPoints}
+            width={nativeWidth}
+            height={nativeHeight}
+            scale={scale}
+          />
+        )}
       </div>
       <div
         className={cn(
@@ -170,5 +161,68 @@ export function SessionPreviewCard({
         )}
       </div>
     </Card>
+  );
+}
+
+/**
+ * Renders an additive radial-gradient heatmap of click points onto a canvas.
+ * Each click paints a translucent warm blob; overlapping blobs accumulate
+ * via `globalCompositeOperation = "lighter"` so dense areas glow hotter.
+ *
+ * Canvas dimensions are kept in *native* (capture) pixels and CSS-scaled
+ * via a transform so the heatmap stays pixel-perfect aligned with the
+ * iframe regardless of the card's display size.
+ */
+function HeatmapCanvas({
+  points,
+  width,
+  height,
+  scale,
+}: {
+  points: ClickPoint[];
+  width: number;
+  height: number;
+  scale: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // useLayoutEffect avoids a flash on first paint — the heatmap appears
+  // in the same frame as the underlying iframe scale resolves.
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "lighter";
+
+    const radius = 40; // ~thumb-print sized blob in native coordinates
+    for (const p of points) {
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+      grad.addColorStop(0, "rgba(255, 80, 80, 0.55)");
+      grad.addColorStop(0.4, "rgba(255, 200, 80, 0.3)");
+      grad.addColorStop(1, "rgba(255, 200, 80, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, [points, width, height]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={width}
+      height={height}
+      aria-hidden
+      data-testid="preview-heatmap"
+      className="absolute top-0 left-0 origin-top-left pointer-events-none mix-blend-screen"
+      style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: `scale(${scale})`,
+      }}
+    />
   );
 }

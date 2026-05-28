@@ -285,6 +285,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Network row's Copy-cURL button gets a stopPropagation so it
   doesn't fight the row-click. Chrome DevTools / Sentry / PostHog
   response-preview parity.
+- **Heatmap overlay on Captured Preview** — current commit —
+  Replaces the per-click accent dots with a true canvas-based
+  radial-gradient heatmap. Each click paints a warm 40-px blob;
+  `globalCompositeOperation = "lighter"` makes overlapping blobs
+  brighten so dense areas glow. The canvas keeps native
+  (capture-resolution) intrinsic pixels and CSS-scales via the
+  same transform as the iframe — pixel-perfect alignment
+  regardless of the card's display size. `mix-blend-screen` on
+  the canvas keeps the underlying preview readable. Closes
+  FOLLOWUPS #5. FullStory / Microsoft Clarity / LogRocket
+  heatmap parity.
 
 ## Next obvious candidates
 
@@ -295,8 +306,7 @@ Listed in rough order of value × ease:
 - ~~**Network HAR / "Copy as cURL"** — Network list, cURL copy
   and HAR export all shipped above.~~
 - **Comments / annotations on a replay** — needs DB + auth; defer.
-- **Heatmap overlay on Captured Preview** — aggregate click coordinates
-  across the session; needs decent event shape.
+- ~~**Heatmap overlay on Captured Preview** — done above.~~
 
 ## Conventions
 
