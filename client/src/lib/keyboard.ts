@@ -121,4 +121,19 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["G", "P"], label: "Go to Script SDK" },
     ],
   },
+  {
+    label: "Replay player",
+    shortcuts: [
+      {
+        keys: ["Space"],
+        label: "Play / pause",
+        description: "K also pauses (YouTube-style)",
+      },
+      { keys: ["←"], label: "Back 5 seconds" },
+      { keys: ["→"], label: "Forward 5 seconds" },
+      { keys: ["J"], label: "Back 10 seconds" },
+      { keys: ["L"], label: "Forward 10 seconds" },
+      { keys: ["Home"], label: "Restart from beginning" },
+    ],
+  },
 ];
