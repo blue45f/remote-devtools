@@ -21,6 +21,7 @@ import {
   Search,
   Smartphone,
   Table as TableIcon,
+  Tag,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -483,6 +484,21 @@ export default function SessionsPage() {
       .slice(0, 8); // a longer list overflows the rail; 8 is plenty
   }, [sessions]);
 
+  // Same idea for tags — surface the top 8 across currently-loaded
+  // sessions so the user can pick one without scanning every row.
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of sessions) {
+      if (!Array.isArray(s.tags)) continue;
+      for (const t of s.tags) {
+        counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+  }, [sessions]);
+
   const filtersActive =
     search.trim() !== "" ||
     durationFilter !== "all" ||
@@ -716,6 +732,14 @@ export default function SessionsPage() {
             hosts={hostCounts}
             active={hostFilter}
             onChange={setHostFilter}
+          />
+        )}
+
+        {tagCounts.length > 0 && (
+          <TopTagChips
+            tags={tagCounts}
+            active={tagFilter}
+            onChange={setTagFilter}
           />
         )}
       </div>
@@ -1173,6 +1197,58 @@ function HostChips({
               data-testid={`sessions-host-chip-${host}`}
             >
               <span className="font-mono">{host}</span>
+              <span
+                className={cn(
+                  "font-mono tabular-nums text-[10px]",
+                  isActive ? "text-bg/80" : "text-fg-faint",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TopTagChips({
+  tags,
+  active,
+  onChange,
+}: {
+  tags: [string, number][];
+  active: string | null;
+  onChange: (tag: string | null) => void;
+}) {
+  return (
+    <div
+      className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible"
+      data-testid="sessions-tag-strip"
+    >
+      <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
+        <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
+          <Tag className="size-3" />
+          Tag
+        </span>
+        {tags.map(([tag, count]) => {
+          const isActive = active === tag;
+          return (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => onChange(isActive ? null : tag)}
+              className={cn(
+                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1.5",
+                isActive
+                  ? "bg-fg text-bg border-fg"
+                  : "bg-accent-soft text-accent-soft-fg border-accent-soft hover:border-border-strong",
+              )}
+              aria-pressed={isActive}
+              data-testid={`sessions-top-tag-${tag}`}
+            >
+              <span>{tag}</span>
               <span
                 className={cn(
                   "font-mono tabular-nums text-[10px]",

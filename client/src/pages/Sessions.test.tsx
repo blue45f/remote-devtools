@@ -109,6 +109,28 @@ describe("Sessions page", () => {
     expect(detail.getAttribute("href")).toMatch(/^\/sessions\/\d+$/);
   });
 
+  it("surfaces a top-tags quick-filter strip and clicking one filters the list", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    // The strip itself is rendered.
+    expect(screen.getByTestId("sessions-tag-strip")).toBeInTheDocument();
+
+    // The seeded sessions cycle through ["checkout","bug"], ["pricing"],
+    // [], ["mobile","verified"], ["error"], [] — so "checkout" appears
+    // at least once and should be in the top-8.
+    const chip = screen.getByTestId("sessions-top-tag-checkout");
+    expect(chip).toBeInTheDocument();
+    await user.click(chip);
+
+    await waitFor(() => {
+      expect(screen.getByText(/tag: checkout/)).toBeInTheDocument();
+    });
+  });
+
   it("filters the list by clicking a tag chip on a row", async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);
