@@ -62,6 +62,27 @@ describe("SessionDetail page", () => {
     });
   });
 
+  it("renders the playback speed picker on the Replay tab", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("2"); // jump to Replay
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-speed-picker")).toBeInTheDocument();
+    });
+
+    // 1x is the default and should be the active button.
+    const oneX = screen.getByTestId("replay-speed-1");
+    expect(oneX.getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(screen.getByTestId("replay-speed-2"));
+    expect(screen.getByTestId("replay-speed-2").getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    // Choice persists for future visits.
+    expect(localStorage.getItem("replay-prefs:v1")).toContain('"speed":2');
+  });
+
   it("multi-selects timeline type filters", async () => {
     const user = userEvent.setup();
     renderAt(1000);

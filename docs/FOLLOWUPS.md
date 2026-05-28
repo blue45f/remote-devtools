@@ -162,11 +162,18 @@ the next obvious candidates. Each entry: what shipped, what's next.
   palette surfaces them as a top-level "Recent sessions" group so a
   re-open is `⌘K → click`. Linear "Recent" / Vercel project switcher
   / GitHub repo-jumper parity.
-- **Reset Sessions also clears recent history** — current commit —
+- **Reset Sessions also clears recent history** — `e940bf0a` —
   The CommandPalette "Reset Sessions preferences" command now also
   wipes `recent-sessions:v1` so the privacy-conscious reset is a
   single click. Toast copy updated to mention the recent history
   alongside view / sort / pins.
+- **Replay playback speed picker** — current commit — Above the
+  rrweb-player, a four-button group (0.5× / 1× / 2× / 4×) replaces
+  the buried speed selector hidden inside the rrweb controller.
+  Choice persists via `replay-prefs:v1` so the next session opens at
+  the speed you last picked. ReplayPlayer accepts a `speed` prop and
+  re-applies via `setSpeed()` on change. PostHog / OpenReplay /
+  Sentry replay parity for "I just want this to go faster".
 
 ## Next obvious candidates
 

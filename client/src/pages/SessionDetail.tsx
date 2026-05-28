@@ -55,6 +55,7 @@ import { apiFetch } from "@/lib/api";
 import { DevToolsLinkButton } from "@/components/DevToolsLinkButton";
 import { formatDurationFromNanos, shortHash } from "@/lib/format";
 import { recordSessionVisit } from "@/lib/recent-sessions";
+import { REPLAY_SPEEDS, useReplayPrefs } from "@/lib/replay-prefs";
 import { cn } from "@/lib/utils";
 
 interface SessionMetadata {
@@ -543,6 +544,7 @@ function ReplayPanel({
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [{ speed }, setPrefs] = useReplayPrefs();
   const fullscreenSupported =
     typeof document !== "undefined" &&
     typeof document.fullscreenEnabled === "boolean"
@@ -606,7 +608,11 @@ function ReplayPanel({
         isFullscreen && "bg-bg p-4 sm:p-6 overflow-auto",
       )}
     >
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 flex-wrap">
+        <SpeedPicker
+          value={speed}
+          onChange={(next) => setPrefs({ speed: next })}
+        />
         {fullscreenSupported && (
           <Button
             variant="outline"
@@ -638,11 +644,50 @@ function ReplayPanel({
         <ReplayPlayer
           events={events as unknown[]}
           startTime={initialReplayOffset}
+          speed={speed}
           onTimeUpdate={(ms) => {
             playheadMsRef.current = ms;
           }}
         />
       </Suspense>
+    </div>
+  );
+}
+
+function SpeedPicker({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (next: 0.5 | 1 | 2 | 4) => void;
+}) {
+  return (
+    <div
+      className="inline-flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5"
+      role="group"
+      aria-label="Playback speed"
+      data-testid="replay-speed-picker"
+    >
+      {REPLAY_SPEEDS.map((s) => {
+        const active = value === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(s)}
+            aria-pressed={active}
+            className={cn(
+              "h-7 min-w-[2.25rem] px-1.5 rounded text-[11px] font-medium tabular-nums transition-colors",
+              active
+                ? "bg-fg text-bg"
+                : "text-fg-subtle hover:bg-bg-muted hover:text-fg",
+            )}
+            data-testid={`replay-speed-${s}`}
+          >
+            {s}x
+          </button>
+        );
+      })}
     </div>
   );
 }

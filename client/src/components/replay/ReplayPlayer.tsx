@@ -11,6 +11,8 @@ interface ReplayPlayerProps {
   className?: string;
   /** Offset in ms from session start to seek to immediately after mount. */
   startTime?: number;
+  /** Playback speed multiplier — applied on init and any time it changes. */
+  speed?: number;
   /** Fired whenever the player's playhead moves. */
   onTimeUpdate?: (currentTimeMs: number) => void;
 }
@@ -21,6 +23,7 @@ interface RrwebPlayerInstance {
   play?: () => void;
   pause?: () => void;
   toggle?: () => void;
+  setSpeed?: (speed: number) => void;
   getMetaData?: () => { totalTime: number };
   getCurrentTime?: () => number;
   addEventListener?: (
@@ -67,6 +70,7 @@ export function ReplayPlayer({
   events,
   className,
   startTime,
+  speed,
   onTimeUpdate,
 }: ReplayPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -104,6 +108,8 @@ export function ReplayPlayer({
               height: 420,
               autoPlay: false,
               showController: true,
+              speed: speed ?? 1,
+              speedOption: [0.5, 1, 2, 4],
               mouseTail: { strokeStyle: "#3b82f6", duration: 600 },
             },
           });
@@ -170,6 +176,20 @@ export function ReplayPlayer({
       /* ignore — out-of-range offsets are a noop */
     }
   }, [startTime, validationError]);
+
+  // Apply playback-speed changes coming from the parent toolbar. rrweb-player
+  // exposes setSpeed since 1.0; older builds silently no-op.
+  useEffect(() => {
+    if (validationError) return;
+    if (speed === undefined) return;
+    const instance = instanceRef.current;
+    if (!instance?.setSpeed) return;
+    try {
+      instance.setSpeed(speed);
+    } catch {
+      /* ignore — invalid speeds don't break the player */
+    }
+  }, [speed, validationError]);
 
   if (validationError) {
     return (
