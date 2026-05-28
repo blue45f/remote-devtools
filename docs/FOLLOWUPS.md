@@ -635,6 +635,13 @@ limit)` extracts hostname directly in SQL
   accent comment markers on the same strip. OpenReplay /
   Sentry error-timeline parity.
 
+- **Next/Prev error navigation** — `b970b30c` — Compact
+  error-nav control on the Replay toolbar (shown only when
+  the session has errors): a count badge flanked by prev/next
+  buttons that seek to the nearest error marker relative to
+  the playhead, wrapping at the ends. Step through failures
+  hands-free instead of hunting the minimap visually.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
