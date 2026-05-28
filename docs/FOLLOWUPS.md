@@ -684,6 +684,17 @@ limit)` extracts hostname directly in SQL
   attempt was reverted for racing `?t=`; this is the correct
   single-writer version.)
 
+- **Resolve/unresolve replay comments** — `042cb4eb`
+  (server) + `aecb7ef8` (client) — Fifteenth backend cycle and
+  a first slice of the "collaboration" next-level item.
+  ReplayCommentEntity gains a `resolved` boolean (migration
+  1778100000000); `PATCH …/comments/:id/resolve` toggles it
+  and the list/mutations carry it. Each comment row gets a
+  resolve toggle (circle → check) and renders muted +
+  strikethrough when resolved — a shared-triage workflow on
+  the existing async-collaboration comments. Demo seed-router
+  handles the PATCH.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
