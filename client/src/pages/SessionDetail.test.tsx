@@ -99,7 +99,7 @@ describe("SessionDetail page", () => {
     );
   });
 
-  it("switches between overview, replay, timeline and raw tabs", async () => {
+  it("switches between overview, replay, timeline, network and raw tabs", async () => {
     const user = userEvent.setup();
     renderAt(1000);
 
@@ -115,6 +115,11 @@ describe("SessionDetail page", () => {
     await user.click(screen.getByRole("tab", { name: /Timeline/ }));
     await waitFor(() => {
       expect(screen.getByText(/All types/)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Network/ }));
+    await waitFor(() => {
+      expect(screen.getByTestId("session-network-table")).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("tab", { name: /Raw JSON/ }));
@@ -233,6 +238,13 @@ describe("SessionDetail page", () => {
     });
 
     await user.keyboard("4");
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("session-network-table"),
+      ).toBeInTheDocument();
+    });
+
+    await user.keyboard("5");
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Copy/ })).toBeInTheDocument();
     });

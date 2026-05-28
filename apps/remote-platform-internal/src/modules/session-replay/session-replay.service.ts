@@ -10,6 +10,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
+import { NetworkService } from "@remote-platform/core";
 import { RecordEntity, ScreenEntity } from "@remote-platform/entity";
 
 import { S3Service } from "../s3/s3.service";
@@ -37,6 +38,21 @@ export interface SessionPreview {
   readonly height?: number;
   readonly baseHref?: string;
   readonly capturedAt: string;
+}
+
+export interface SessionNetworkEntry {
+  readonly id: number;
+  readonly requestId: number;
+  readonly timestamp: number;
+  readonly method: string;
+  readonly url: string;
+  readonly status?: number;
+  readonly statusText?: string;
+  readonly resourceType?: string;
+  readonly mimeType?: string;
+  readonly encodedDataLength?: number;
+  readonly responseBody?: string | null;
+  readonly base64Encoded?: boolean | null;
 }
 
 export interface SessionMetadata {
@@ -84,6 +100,7 @@ export class SessionReplayService {
     private readonly screenRepository: Repository<ScreenEntity>,
 
     private readonly s3Service: S3Service,
+    private readonly networkService: NetworkService,
   ) {}
 
   /**
@@ -828,5 +845,94 @@ export class SessionReplayService {
         typeof params.baseHref === "string" ? params.baseHref : undefined,
       capturedAt: new Date(Number(row.timestamp) / 1_000_000).toISOString(),
     };
+  }
+
+  /**
+   * Flatten the CDP-shaped network rows attached to a DB session into a
+   * table-friendly list. Each row's `protocol` field stores the most
+   * recently-seen CDP event for the request (typically Network.responseReceived
+   * for completed requests, requestWillBeSent for pending). We pluck out
+   * the URL / method / status / type / mimeType across the two shapes so
+   * the frontend doesn't have to learn the CDP envelope.
+   *
+   * Returns an empty array for S3-backed sessions or when the record
+   * doesn't exist — Network capture only runs against live DB sessions.
+   */
+  public async getSessionNetwork(
+    sessionId: string | number,
+  ): Promise<SessionNetworkEntry[]> {
+    const sessionIdStr = String(sessionId);
+    if (sessionIdStr.startsWith("s3-")) return [];
+
+    const recordId = Number(sessionId);
+    if (!Number.isInteger(recordId) || recordId <= 0) return [];
+
+    const rows = await this.networkService.findByRecordId(recordId);
+    return rows.map((row) => {
+      const protocol =
+        (row.protocol as Record<string, unknown> | null | undefined) ?? {};
+      const method = typeof protocol.method === "string" ? protocol.method : "";
+      const params =
+        (protocol.params as Record<string, unknown> | undefined) ?? {};
+
+      const request =
+        (params.request as Record<string, unknown> | undefined) ?? {};
+      const response =
+        (params.response as Record<string, unknown> | undefined) ?? {};
+
+      // CDP `requestWillBeSent` puts the URL on params.request.url;
+      // `responseReceived` puts the URL on params.response.url. We pick
+      // whichever is present so a row works no matter which event we
+      // captured last.
+      const url =
+        typeof request.url === "string"
+          ? (request.url as string)
+          : typeof response.url === "string"
+            ? (response.url as string)
+            : typeof params.url === "string"
+              ? (params.url as string)
+              : "";
+
+      const httpMethod =
+        typeof request.method === "string"
+          ? (request.method as string)
+          : method.includes("Response")
+            ? "GET"
+            : "GET";
+
+      const status =
+        typeof response.status === "number"
+          ? (response.status as number)
+          : undefined;
+      const statusText =
+        typeof response.statusText === "string"
+          ? (response.statusText as string)
+          : undefined;
+      const mimeType =
+        typeof response.mimeType === "string"
+          ? (response.mimeType as string)
+          : undefined;
+      const encodedDataLength =
+        typeof response.encodedDataLength === "number"
+          ? (response.encodedDataLength as number)
+          : undefined;
+      const resourceType =
+        typeof params.type === "string" ? (params.type as string) : undefined;
+
+      return {
+        id: row.id,
+        requestId: row.requestId,
+        timestamp: Number(row.timestamp),
+        method: httpMethod,
+        url,
+        status,
+        statusText,
+        resourceType,
+        mimeType,
+        encodedDataLength,
+        responseBody: row.responseBody,
+        base64Encoded: row.base64Encoded,
+      };
+    });
   }
 }

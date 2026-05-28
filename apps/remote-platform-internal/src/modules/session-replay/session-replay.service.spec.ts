@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { NetworkService } from "@remote-platform/core";
 import { RecordEntity, ScreenEntity } from "@remote-platform/entity";
 
 import { S3Service } from "../s3/s3.service";
@@ -37,6 +38,10 @@ describe("SessionReplayService.getSessionMetadata", () => {
         { provide: getRepositoryToken(RecordEntity), useValue: recordRepo },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
         { provide: S3Service, useValue: {} },
+        {
+          provide: NetworkService,
+          useValue: { findByRecordId: vi.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -113,5 +118,107 @@ describe("SessionReplayService.getSessionMetadata", () => {
     await expect(service.getSessionMetadata(404)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+});
+
+describe("SessionReplayService.getSessionNetwork", () => {
+  let service: SessionReplayService;
+  let networkService: { findByRecordId: ReturnType<typeof vi.fn> };
+
+  beforeEach(async () => {
+    networkService = {
+      findByRecordId: vi.fn(),
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        SessionReplayService,
+        {
+          provide: getRepositoryToken(RecordEntity),
+          useValue: { findOne: vi.fn() },
+        },
+        {
+          provide: getRepositoryToken(ScreenEntity),
+          useValue: { createQueryBuilder: vi.fn() },
+        },
+        { provide: S3Service, useValue: {} },
+        { provide: NetworkService, useValue: networkService },
+      ],
+    }).compile();
+
+    service = moduleRef.get(SessionReplayService);
+  });
+
+  it("returns [] for S3-backed session ids", async () => {
+    const out = await service.getSessionNetwork("s3-foo-12345-0");
+    expect(out).toEqual([]);
+    expect(networkService.findByRecordId).not.toHaveBeenCalled();
+  });
+
+  it("returns [] for non-integer ids", async () => {
+    expect(await service.getSessionNetwork("garbage")).toEqual([]);
+    expect(await service.getSessionNetwork(0)).toEqual([]);
+    expect(networkService.findByRecordId).not.toHaveBeenCalled();
+  });
+
+  it("flattens a Network.responseReceived row into a table-friendly shape", async () => {
+    networkService.findByRecordId.mockResolvedValue([
+      {
+        id: 1,
+        requestId: 42,
+        timestamp: "1700000000000",
+        protocol: {
+          method: "Network.responseReceived",
+          params: {
+            type: "Fetch",
+            response: {
+              url: "https://api.example.com/cart",
+              status: 200,
+              statusText: "OK",
+              mimeType: "application/json",
+              encodedDataLength: 1234,
+            },
+            request: { method: "POST" },
+          },
+        },
+        responseBody: '{"ok":true}',
+        base64Encoded: false,
+      },
+    ]);
+
+    const [row] = await service.getSessionNetwork(7);
+    expect(row).toMatchObject({
+      id: 1,
+      requestId: 42,
+      timestamp: 1700000000000,
+      method: "POST",
+      url: "https://api.example.com/cart",
+      status: 200,
+      statusText: "OK",
+      resourceType: "Fetch",
+      mimeType: "application/json",
+      encodedDataLength: 1234,
+      responseBody: '{"ok":true}',
+      base64Encoded: false,
+    });
+  });
+
+  it("falls back gracefully when the protocol envelope is missing", async () => {
+    networkService.findByRecordId.mockResolvedValue([
+      {
+        id: 9,
+        requestId: 99,
+        timestamp: 100,
+        protocol: null,
+        responseBody: null,
+        base64Encoded: null,
+      },
+    ]);
+
+    const [row] = await service.getSessionNetwork(7);
+    expect(row.id).toBe(9);
+    expect(row.url).toBe("");
+    expect(row.method).toBe("GET");
+    expect(row.status).toBeUndefined();
   });
 });

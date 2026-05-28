@@ -89,6 +89,13 @@ export function resolveSeed<T>(
   if (previewMatch) {
     return buildSeedPreview(Number(previewMatch[1])) as unknown as T;
   }
+  // Captured network rows for the Network tab.
+  const networkMatch = path.match(
+    /^\/api\/session-replay\/sessions\/(\d+)\/network$/,
+  );
+  if (networkMatch) {
+    return buildSeedNetwork(Number(networkMatch[1])) as unknown as T;
+  }
   // Billing status (demo always reports billing disabled).
   if (path === "/api/billing/status") {
     return { enabled: false } as unknown as T;
@@ -117,6 +124,89 @@ export function resolveSeed<T>(
     return { rows, nextCursor } as unknown as T;
   }
   return undefined;
+}
+
+interface SeedNetworkRow {
+  id: number;
+  requestId: number;
+  timestamp: number;
+  method: string;
+  url: string;
+  status?: number;
+  statusText?: string;
+  resourceType?: string;
+  mimeType?: string;
+  encodedDataLength?: number;
+  responseBody?: string | null;
+  base64Encoded?: boolean | null;
+}
+
+const SEED_NETWORK_ROWS: Omit<SeedNetworkRow, "id" | "requestId" | "timestamp">[] = [
+  {
+    method: "GET",
+    url: "https://shop.example.com/cart/checkout",
+    status: 200,
+    statusText: "OK",
+    resourceType: "Document",
+    mimeType: "text/html",
+    encodedDataLength: 38221,
+  },
+  {
+    method: "GET",
+    url: "https://shop.example.com/static/app.css",
+    status: 200,
+    resourceType: "Stylesheet",
+    mimeType: "text/css",
+    encodedDataLength: 18432,
+  },
+  {
+    method: "POST",
+    url: "https://api.shop.example.com/v1/cart/items",
+    status: 201,
+    resourceType: "Fetch",
+    mimeType: "application/json",
+    encodedDataLength: 412,
+    responseBody: '{"ok":true,"cartId":"cart_12ab34cd"}',
+  },
+  {
+    method: "GET",
+    url: "https://api.shop.example.com/v1/checkout/session",
+    status: 401,
+    statusText: "Unauthorized",
+    resourceType: "Fetch",
+    mimeType: "application/json",
+    encodedDataLength: 89,
+  },
+  {
+    method: "POST",
+    url: "https://api.shop.example.com/v1/log/error",
+    status: 500,
+    statusText: "Internal Server Error",
+    resourceType: "Fetch",
+    mimeType: "application/json",
+    encodedDataLength: 217,
+  },
+  {
+    method: "GET",
+    url: "https://cdn.shop.example.com/img/banner.jpg",
+    status: 200,
+    resourceType: "Image",
+    mimeType: "image/jpeg",
+    encodedDataLength: 112408,
+  },
+];
+
+/** Returns a small fixture of captured network rows for a seeded session. */
+function buildSeedNetwork(id: number): SeedNetworkRow[] {
+  // S3-style sessions (string ids with "s3-" prefix) wouldn't hit this
+  // branch — the route uses (\d+).
+  const base = Date.now() - 60_000;
+  return SEED_NETWORK_ROWS.map((row, i) => ({
+    ...row,
+    id: id * 100 + i,
+    requestId: i + 1,
+    timestamp: base + i * 1200,
+  }));
 }
 
 /** Returns a static screenPreview for any seeded session id. */

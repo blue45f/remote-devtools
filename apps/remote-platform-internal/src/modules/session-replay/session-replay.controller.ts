@@ -14,6 +14,7 @@ import {
   SessionReplayService,
   ReplayEvent,
   SessionMetadata,
+  SessionNetworkEntry,
   SessionPreview,
 } from "./session-replay.service";
 
@@ -124,5 +125,20 @@ export class SessionReplayController {
     }
 
     return this.sessionReplayService.loadSession(recordId);
+  }
+
+  /**
+   * GET /api/session-replay/sessions/:id/network
+   *
+   * Returns the captured network rows for a DB session as a flat list
+   * suitable for a Network panel — URL, method, status, type, mimeType,
+   * timestamp, and optional response body. S3-backed sessions return an
+   * empty array.
+   */
+  @Get("sessions/:id/network")
+  public async getSessionNetwork(
+    @Param("id") id: string,
+  ): Promise<SessionNetworkEntry[]> {
+    return this.sessionReplayService.getSessionNetwork(id);
   }
 }
