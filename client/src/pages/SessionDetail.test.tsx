@@ -224,6 +224,38 @@ describe("SessionDetail page", () => {
     );
   });
 
+  it("surfaces a comment count badge on the Replay tab", async () => {
+    renderAt(1000);
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-comments-badge")).toBeInTheDocument();
+    });
+    // Seed router pre-seeds 2 starter comments per session.
+    expect(screen.getByTestId("replay-comments-badge").textContent).toBe("2");
+  });
+
+  it("C jumps to Replay and focuses the comment input", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: /Overview/ })).toBeInTheDocument();
+    });
+    expect(screen.getByRole("tab", { name: /Overview/, selected: true })).toBeInTheDocument();
+
+    await user.keyboard("c");
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("tab", { name: /Replay/, selected: true }),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByTestId("replay-comment-input"),
+      );
+    });
+  });
+
   it("surfaces error count badges on Network and Console tabs", async () => {
     renderAt(1000);
 

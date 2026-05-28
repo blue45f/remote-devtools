@@ -154,6 +154,11 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["4"], label: "Network tab" },
       { keys: ["5"], label: "Console tab" },
       { keys: ["6"], label: "Raw JSON tab" },
+      {
+        keys: ["C"],
+        label: "Comment at playhead",
+        description: "Jumps to Replay and focuses the comment input",
+      },
     ],
   },
   {
