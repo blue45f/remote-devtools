@@ -400,11 +400,14 @@ export default function SessionDetailPage() {
   );
 
   // Pre-fetch comment count so the Replay-tab badge appears without
-  // forcing the user to click into Replay first.
+  // forcing the user to click into Replay first. Polls so a teammate's
+  // annotations (and resolve toggles) surface without a manual reload —
+  // the panel shares this query key, so its list refreshes too.
   const { data: commentRows } = useQuery<ReplayComment[]>({
     queryKey: ['session-comments', recordId],
     queryFn: () => apiFetch<ReplayComment[]>(`/sessions/record/${recordId}/comments`),
     enabled: recordId !== null,
+    refetchInterval: 15_000,
   });
   const commentCount = commentRows?.length ?? 0;
 
