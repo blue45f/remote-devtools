@@ -151,7 +151,8 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["1"], label: "Overview tab" },
       { keys: ["2"], label: "Replay tab" },
       { keys: ["3"], label: "Timeline tab" },
-      { keys: ["4"], label: "Raw JSON tab" },
+      { keys: ["4"], label: "Network tab" },
+      { keys: ["5"], label: "Raw JSON tab" },
     ],
   },
   {

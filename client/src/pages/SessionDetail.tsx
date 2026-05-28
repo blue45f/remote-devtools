@@ -165,9 +165,9 @@ export default function SessionDetailPage() {
     return Number.isFinite(ms) && ms > 0 ? ms : 0;
   }, [searchParams]);
 
-  const [tab, setTab] = useState<"overview" | "replay" | "timeline" | "raw">(
-    initialReplayOffset > 0 ? "replay" : "overview",
-  );
+  const [tab, setTab] = useState<
+    "overview" | "replay" | "timeline" | "network" | "raw"
+  >(initialReplayOffset > 0 ? "replay" : "overview");
 
   // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
   // it in a ref so the share button reads the latest value without making
@@ -258,10 +258,10 @@ export default function SessionDetailPage() {
     });
   }, [id, metadata]);
 
-  // Number-key tab switching (1/2/3/4). Mirrors the DevTools docking
+  // Number-key tab switching (1/2/3/4/5). Mirrors the DevTools docking
   // convention and Linear's tab-by-number model — once a user knows the
-  // layout, jumping between Overview / Replay / Timeline / Raw becomes
-  // muscle memory.
+  // layout, jumping between Overview / Replay / Timeline / Network / Raw
+  // becomes muscle memory.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
@@ -283,8 +283,10 @@ export default function SessionDetailPage() {
             : e.key === "3"
               ? "timeline"
               : e.key === "4"
-                ? "raw"
-                : null;
+                ? "network"
+                : e.key === "5"
+                  ? "raw"
+                  : null;
       if (!next) return;
       e.preventDefault();
       setTab(next);
@@ -402,6 +404,10 @@ export default function SessionDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="network" className="gap-1.5">
+              <Globe className="size-3.5" />
+              Network
+            </TabsTrigger>
             <TabsTrigger value="raw" className="gap-1.5">
               <FileJson className="size-3.5" />
               Raw JSON
@@ -449,12 +455,199 @@ export default function SessionDetailPage() {
           />
         </TabsContent>
 
+        <TabsContent value="network" className="mt-5">
+          <NetworkTab sessionId={id ?? ""} />
+        </TabsContent>
+
         <TabsContent value="raw" className="mt-5">
           <RawTab events={events ?? []} loading={eventsLoading} />
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+/* ───────── Network tab ───────── */
+
+interface NetworkRow {
+  id: number;
+  requestId: number;
+  timestamp: number;
+  method: string;
+  url: string;
+  status?: number;
+  statusText?: string;
+  resourceType?: string;
+  mimeType?: string;
+  encodedDataLength?: number;
+  responseBody?: string | null;
+  base64Encoded?: boolean | null;
+}
+
+function NetworkTab({ sessionId }: { sessionId: string }) {
+  const { data, isLoading } = useQuery<NetworkRow[]>({
+    queryKey: ["session-network", sessionId],
+    queryFn: () =>
+      apiFetch<NetworkRow[]>(
+        `/api/session-replay/sessions/${sessionId}/network`,
+      ),
+    enabled: !!sessionId,
+  });
+
+  const rows = data ?? [];
+  const [filter, setFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!filter) return rows;
+    const term = filter.toLowerCase();
+    return rows.filter(
+      (r) =>
+        r.url.toLowerCase().includes(term) ||
+        r.method.toLowerCase().includes(term) ||
+        (r.mimeType?.toLowerCase().includes(term) ?? false),
+    );
+  }, [rows, filter]);
+
+  if (isLoading) {
+    return (
+      <Card className="p-3 space-y-2">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-6 w-full" />
+        ))}
+      </Card>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <EmptyState
+          icon={Globe}
+          title="No network activity"
+          description={
+            sessionId.startsWith("s3-")
+              ? "Network capture is only available on live DB sessions."
+              : "This session didn't record any network requests."
+          }
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <Input
+        placeholder="Filter URL, method, or MIME…"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        leadingIcon={<Globe />}
+        trailingIcon={
+          filter ? (
+            <button
+              type="button"
+              onClick={() => setFilter("")}
+              aria-label="Clear filter"
+            >
+              <X className="size-3.5" />
+            </button>
+          ) : undefined
+        }
+      />
+      <Card className="overflow-hidden p-0">
+        <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
+          <span>
+            <span className="font-medium text-fg-subtle">
+              {filtered.length}
+            </span>{" "}
+            requests
+            {filtered.length !== rows.length && (
+              <span className="text-fg-faint ml-1">
+                (of {rows.length})
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table
+            className="w-full text-sm"
+            data-testid="session-network-table"
+          >
+            <thead>
+              <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
+                <th className="h-9 px-3 text-left font-semibold first:pl-4">
+                  Method
+                </th>
+                <th className="h-9 px-3 text-left font-semibold">URL</th>
+                <th className="h-9 px-3 text-right font-semibold">Status</th>
+                <th className="h-9 px-3 text-left font-semibold">Type</th>
+                <th className="h-9 px-3 text-right font-semibold last:pr-4">
+                  Size
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <NetworkRowView key={r.id} row={r} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function NetworkRowView({ row }: { row: NetworkRow }) {
+  const statusClass =
+    row.status === undefined
+      ? "text-fg-faint"
+      : row.status >= 500
+        ? "text-danger"
+        : row.status >= 400
+          ? "text-warning"
+          : row.status >= 300
+            ? "text-fg-subtle"
+            : "text-success";
+
+  return (
+    <tr
+      className="border-b border-border last:border-0 hover:bg-bg-muted/40 transition-colors"
+      data-testid="session-network-row"
+    >
+      <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg">
+        {row.method}
+      </td>
+      <td className="px-3 py-2 align-middle font-mono text-[11px] text-fg-subtle">
+        <span
+          className="truncate block max-w-[420px] sm:max-w-[640px]"
+          title={row.url}
+        >
+          {row.url || "—"}
+        </span>
+      </td>
+      <td
+        className={cn(
+          "px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums",
+          statusClass,
+        )}
+      >
+        {row.status ?? "—"}
+      </td>
+      <td className="px-3 py-2 align-middle text-[11px] text-fg-subtle">
+        {row.resourceType ?? row.mimeType ?? "—"}
+      </td>
+      <td className="px-3 py-2 align-middle text-right font-mono text-[11px] tabular-nums text-fg-subtle">
+        {formatBytes(row.encodedDataLength)}
+      </td>
+    </tr>
+  );
+}
+
+function formatBytes(n?: number): string {
+  if (!n || !Number.isFinite(n)) return "—";
+  if (n < 1024) return `${n}B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
+  return `${(n / 1024 / 1024).toFixed(1)}MB`;
 }
 
 /* ───────── Tags editor ───────── */

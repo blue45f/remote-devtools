@@ -237,6 +237,20 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `apiFetch` helper now accepts a `RequestInit` and the demo seed
   router echoes the PUT body so offline edits feel live. Linear
   / Notion / GitHub issue-tag parity.
+- **Network tab on SessionDetail** — current commit — Third
+  backend cycle. SessionReplayService gains `getSessionNetwork`
+  which flattens captured CDP-shaped network rows
+  (Network.requestWillBeSent / responseReceived) into a flat
+  `{ method, url, status, type, mimeType, size, timestamp }`
+  table-friendly shape. New
+  `GET /api/session-replay/sessions/:id/network` endpoint. S3
+  sessions return [] since network capture only runs against DB
+  sessions. Frontend: 5th "Network" tab on SessionDetail with
+  filter input, status-coloured cells (success / 3xx / 4xx / 5xx),
+  byte-sized response sizes, and sticky toolbar. Tab number
+  shortcuts shift: 1/2/3/4/5 = Overview / Replay / Timeline /
+  Network / Raw. Chrome DevTools / PostHog / Highlight.io
+  network-panel parity.
 
 ## Next obvious candidates
 
@@ -244,9 +258,8 @@ Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
 - ~~**Session tags** — done above.~~
-- **Network HAR / "Copy as cURL"** — depends on shaping network events
-  with method/url/headers; check `libs/core` to see if SDK already
-  captures these.
+- ~~**Network HAR / "Copy as cURL"** — Network list shipped above; HAR
+  export and cURL copy still pending.~~
 - **Comments / annotations on a replay** — needs DB + auth; defer.
 - **Heatmap overlay on Captured Preview** — aggregate click coordinates
   across the session; needs decent event shape.
