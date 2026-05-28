@@ -135,10 +135,15 @@ the next obvious candidates. Each entry: what shipped, what's next.
   "Go to dashboard" escape link, and `Sentry.captureException` with
   componentStack context. Linear / Sentry / Vercel error page parity.
 - **NotFound: attempted path + did-you-mean + search shortcut** —
-  current commit — 404 page surfaces the attempted pathname in mono
+  `662c8f78` — 404 page surfaces the attempted pathname in mono
   font, suggests the closest nav route (Levenshtein ≤ 3) as a
   Did-you-mean link, and adds a "Search" button that opens the
   CommandPalette. Vercel / Linear 404 parity.
+- **Timeline tab keyboard navigation** — current commit — j/↓ next
+  event, k/↑ previous, Enter jumps the replay to that timestamp.
+  Cursor row gets bg-accent-soft and the virtualizer scrolls it into
+  view via `scrollToIndex`. Matches the Sessions list bindings so
+  the keyboard model is consistent across the app.
 
 ## Next obvious candidates
 
