@@ -90,10 +90,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   icon button on the topbar cycles light → dark → system → light.
   Desktop-only; mobile keeps the CommandPalette / sidebar theme menu.
   GitHub / Vercel / Linear parity.
-- **ActivityFeed kind filter chips** — current commit — Multi-select
+- **ActivityFeed kind filter chips** — `fe1672ef` — Multi-select
   Session / Ticket / Error / Join chips with per-kind counts. Zero-count
   chips render disabled-looking so the row width stays stable across
   polls. Linear / Slack feed-filter parity.
+- **Sessions page-size selector** — current commit — Recorded tab gets
+  a per-page select (50 / 100 / 200) in the result-meta row. Choice
+  persists to `localStorage` via the existing `sessions-prefs:v1`
+  schema. Datadog / PostHog data-list parity.
 
 ## Next obvious candidates
 

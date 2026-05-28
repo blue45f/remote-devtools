@@ -98,7 +98,9 @@ type PaginatedRecordResponse =
   | SessionRecord[]
   | { rows: SessionRecord[]; nextCursor: string | null };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZES = [50, 100, 200] as const;
+type PageSize = (typeof PAGE_SIZES)[number];
+const DEFAULT_PAGE_SIZE: PageSize = 50;
 
 /**
  * Pick the default view for the user's viewport. Below `lg` the table needs
@@ -126,6 +128,7 @@ const PREFS_STORAGE_KEY = "sessions-prefs:v1";
 interface SessionsPrefs {
   view?: ViewMode;
   sort?: SortKey;
+  pageSize?: PageSize;
 }
 
 function readStoredPrefs(): SessionsPrefs {
@@ -141,7 +144,12 @@ function readStoredPrefs(): SessionsPrefs {
       parsed.sort === "newest" || parsed.sort === "oldest" || parsed.sort === "name"
         ? parsed.sort
         : undefined;
-    return { view, sort };
+    const pageSize: PageSize | undefined = (PAGE_SIZES as readonly number[]).includes(
+      Number(parsed.pageSize),
+    )
+      ? (parsed.pageSize as PageSize)
+      : undefined;
+    return { view, sort, pageSize };
   } catch {
     return {};
   }
@@ -183,6 +191,9 @@ export default function SessionsPage() {
   const [view, setView] = useState<ViewMode>(
     () => readStoredPrefs().view ?? pickDefaultView(),
   );
+  const [pageSize, setPageSize] = useState<PageSize>(
+    () => readStoredPrefs().pageSize ?? DEFAULT_PAGE_SIZE,
+  );
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
   const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
   const [hostFilter, setHostFilter] = useState<string | null>(null);
@@ -195,8 +206,8 @@ export default function SessionsPage() {
   // with the same shape. Search, host, duration are intentionally NOT
   // persisted — they're query-bound state, not preferences.
   useEffect(() => {
-    persistPrefs({ view, sort });
-  }, [view, sort]);
+    persistPrefs({ view, sort, pageSize });
+  }, [view, sort, pageSize]);
 
   // Reset the cursor whenever the filter result changes — the row at
   // cursorIdx might not exist any more.
@@ -251,7 +262,7 @@ export default function SessionsPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["sessions", tab, debouncedSearch],
+    queryKey: ["sessions", tab, debouncedSearch, pageSize],
     queryFn: async ({ pageParam }) => {
       if (tab === "live") {
         const live = await apiFetch<SessionRecord[]>("/sessions");
@@ -259,7 +270,7 @@ export default function SessionsPage() {
       }
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("q", debouncedSearch);
-      if (debouncedSearch || pageParam) params.set("limit", String(PAGE_SIZE));
+      if (debouncedSearch || pageParam) params.set("limit", String(pageSize));
       if (pageParam) params.set("cursor", pageParam);
       const qs = params.toString();
       const path = qs ? `/sessions/record?${qs}` : "/sessions/record";
@@ -569,7 +580,7 @@ export default function SessionsPage() {
       </div>
 
       {/* Result meta */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="text-xs text-fg-subtle">
           {isLoading ? (
             <Skeleton className="h-4 w-24" />
@@ -587,6 +598,30 @@ export default function SessionsPage() {
             </>
           )}
         </div>
+
+        {tab === "record" && (
+          <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
+            <span className="hidden sm:inline">Per page</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => setPageSize(Number(v) as PageSize)}
+            >
+              <SelectTrigger
+                className="h-7 px-2 text-[11px] font-mono"
+                data-testid="sessions-page-size"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Body — render exactly one of table/grid based on the toggle. The
