@@ -684,6 +684,16 @@ limit)` extracts hostname directly in SQL
   attempt was reverted for racing `?t=`; this is the correct
   single-writer version.)
 
+- **Session insights panel** — `1782fea7` — First slice of
+  the "AI summarization" next-level item, delivered as honest
+  deterministic heuristics (no model). An Insights card on
+  the Overview synthesises the page's data into plain-language
+  observations: error/failed-request counts, the densest 3s
+  error cluster, the single largest response, and the worst
+  rage-click burst — each clickable to seek the replay; a
+  clean run reports a positive "no issues" line. Pure
+  `buildSessionInsights` helper, unit-tested.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
