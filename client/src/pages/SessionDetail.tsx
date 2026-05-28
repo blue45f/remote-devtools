@@ -10,6 +10,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  FastForward,
   FileJson,
   Globe,
   Hash,
@@ -544,7 +545,7 @@ function ReplayPanel({
 }: ReplayPanelProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [{ speed }, setPrefs] = useReplayPrefs();
+  const [{ speed, skipInactive }, setPrefs] = useReplayPrefs();
   const fullscreenSupported =
     typeof document !== "undefined" &&
     typeof document.fullscreenEnabled === "boolean"
@@ -613,6 +614,17 @@ function ReplayPanel({
           value={speed}
           onChange={(next) => setPrefs({ speed: next })}
         />
+        <Button
+          variant={skipInactive ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setPrefs({ skipInactive: !skipInactive })}
+          aria-pressed={skipInactive}
+          data-testid="replay-skip-inactive"
+          title="Skip over idle stretches"
+        >
+          <FastForward />
+          <span className="hidden sm:inline">Skip idle</span>
+        </Button>
         {fullscreenSupported && (
           <Button
             variant="outline"
@@ -645,6 +657,7 @@ function ReplayPanel({
           events={events as unknown[]}
           startTime={initialReplayOffset}
           speed={speed}
+          skipInactive={skipInactive}
           onTimeUpdate={(ms) => {
             playheadMsRef.current = ms;
           }}

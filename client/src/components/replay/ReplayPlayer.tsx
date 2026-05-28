@@ -13,6 +13,8 @@ interface ReplayPlayerProps {
   startTime?: number;
   /** Playback speed multiplier — applied on init and any time it changes. */
   speed?: number;
+  /** Whether the player should fast-forward through idle stretches. */
+  skipInactive?: boolean;
   /** Fired whenever the player's playhead moves. */
   onTimeUpdate?: (currentTimeMs: number) => void;
 }
@@ -24,6 +26,7 @@ interface RrwebPlayerInstance {
   pause?: () => void;
   toggle?: () => void;
   setSpeed?: (speed: number) => void;
+  setConfig?: (config: { speed?: number; skipInactive?: boolean }) => void;
   getMetaData?: () => { totalTime: number };
   getCurrentTime?: () => number;
   addEventListener?: (
@@ -71,6 +74,7 @@ export function ReplayPlayer({
   className,
   startTime,
   speed,
+  skipInactive,
   onTimeUpdate,
 }: ReplayPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -110,6 +114,7 @@ export function ReplayPlayer({
               showController: true,
               speed: speed ?? 1,
               speedOption: [0.5, 1, 2, 4],
+              skipInactive: skipInactive ?? false,
               mouseTail: { strokeStyle: "#3b82f6", duration: 600 },
             },
           });
@@ -190,6 +195,21 @@ export function ReplayPlayer({
       /* ignore — invalid speeds don't break the player */
     }
   }, [speed, validationError]);
+
+  // Apply skip-inactive toggle. setConfig is the live-update path; the
+  // initial value is also set on the props at construction so refreshes
+  // honour the user's last choice without flicker.
+  useEffect(() => {
+    if (validationError) return;
+    if (skipInactive === undefined) return;
+    const instance = instanceRef.current;
+    if (!instance?.setConfig) return;
+    try {
+      instance.setConfig({ skipInactive });
+    } catch {
+      /* ignore — older builds without setConfig */
+    }
+  }, [skipInactive, validationError]);
 
   if (validationError) {
     return (
