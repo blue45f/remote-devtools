@@ -370,7 +370,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `activity-prefs:v1` storage parser accepts the new kind
   without breaking older saved sets. Linear / Slack /
   Discourse activity-stream parity.
-- **Network tab resource type filter chips** — current commit —
+- **Network tab resource type filter chips** — `3ca9a8bc` —
   Above the Network row table, a chip strip surfaces the
   resource types (Document, Stylesheet, Fetch, Image, Script,
   …) that appear in the captured rows, sorted by count
