@@ -121,6 +121,31 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('copies a single console message via the row copy button', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    await user.keyboard('5'); // Console tab
+    await waitFor(() => {
+      expect(screen.getByTestId('session-console-list')).toBeInTheDocument();
+    });
+
+    const copyButtons = screen.getAllByTestId('session-console-copy');
+    expect(copyButtons.length).toBeGreaterThan(0);
+    await user.click(copyButtons[0]);
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(typeof writeText.mock.calls[0][0]).toBe('string');
+    expect((writeText.mock.calls[0][0] as string).length).toBeGreaterThan(0);
+  });
+
   it('exports filtered Console rows as a text file', async () => {
     const user = userEvent.setup();
 

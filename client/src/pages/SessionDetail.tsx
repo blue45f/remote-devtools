@@ -1704,6 +1704,7 @@ function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void 
           {row.lineNumber ? `:${row.lineNumber}` : ''}
         </span>
       )}
+      <ConsoleRowCopy text={row.text} />
       {onJump && (
         <button
           type="button"
@@ -1720,6 +1721,34 @@ function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void 
         </button>
       )}
     </li>
+  );
+}
+
+function ConsoleRowCopy({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label="Copy message"
+      data-testid="session-console-copy"
+      className={cn(
+        'shrink-0 inline-flex items-center justify-center size-5 rounded-md transition-opacity',
+        'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+        'hover:bg-bg-muted text-fg-subtle hover:text-fg',
+      )}
+    >
+      {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+    </button>
   );
 }
 
