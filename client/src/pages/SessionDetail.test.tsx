@@ -89,6 +89,31 @@ describe("SessionDetail page", () => {
     });
   });
 
+  it("filters the Network tab by resource type chip", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await user.keyboard("4");
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("session-network-table"),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("session-network-type-strip")).toBeInTheDocument();
+
+    const before = screen.getAllByTestId("session-network-row").length;
+    // The seed has multiple Fetch rows + a couple other types — clicking
+    // the Fetch chip narrows the list to just Fetch rows.
+    const fetchChip = screen.getByTestId("session-network-type-Fetch");
+    await user.click(fetchChip);
+
+    await waitFor(() => {
+      const after = screen.getAllByTestId("session-network-row").length;
+      expect(after).toBeLessThan(before);
+      expect(after).toBeGreaterThan(0);
+    });
+  });
+
   it("triggers a HAR download from the Network tab", async () => {
     const user = userEvent.setup();
 

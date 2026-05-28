@@ -629,17 +629,42 @@ function NetworkTab({
   const rows = data ?? [];
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState<NetworkRow | null>(null);
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
+
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const t = r.resourceType ?? "Other";
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    // Order by count desc so the dominant type (usually XHR/Fetch) floats up.
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
+  const toggleType = (t: string) => {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  };
 
   const filtered = useMemo(() => {
-    if (!filter) return rows;
-    const term = filter.toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.url.toLowerCase().includes(term) ||
-        r.method.toLowerCase().includes(term) ||
-        (r.mimeType?.toLowerCase().includes(term) ?? false),
-    );
-  }, [rows, filter]);
+    return rows.filter((r) => {
+      const type = r.resourceType ?? "Other";
+      if (activeTypes.size > 0 && !activeTypes.has(type)) return false;
+      if (filter) {
+        const term = filter.toLowerCase();
+        const match =
+          r.url.toLowerCase().includes(term) ||
+          r.method.toLowerCase().includes(term) ||
+          (r.mimeType?.toLowerCase().includes(term) ?? false);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [rows, filter, activeTypes]);
 
   if (isLoading) {
     return (
@@ -718,6 +743,43 @@ function NetworkTab({
           <span className="hidden sm:inline">Export HAR</span>
         </Button>
       </div>
+      {typeCounts.length > 1 && (
+        <div
+          className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible"
+          data-testid="session-network-type-strip"
+        >
+          <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
+            {typeCounts.map(([type, count]) => {
+              const active = activeTypes.has(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => toggleType(type)}
+                  aria-pressed={active}
+                  data-testid={`session-network-type-${type}`}
+                  className={cn(
+                    "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0 inline-flex items-center gap-1",
+                    active
+                      ? "bg-fg text-bg border-fg"
+                      : "bg-surface border-border text-fg-subtle hover:text-fg",
+                  )}
+                >
+                  <span>{type}</span>
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums text-[10px]",
+                      active ? "text-bg/80" : "text-fg-faint",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
