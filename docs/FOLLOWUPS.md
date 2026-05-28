@@ -487,6 +487,13 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Until now the bindings were only documented in the
   source — discoverability upgrade.
 
+- **Activity feed pause/resume** — `753a9847` — Pill toggle
+  next to the LiveDot on the Dashboard activity feed halts
+  the refetch interval. LiveDot text flips to "Paused" so
+  the indicator stays truthful. Click again to resume. Lets
+  a reader inspect a row without it scrolling away. Button
+  only renders when polling is enabled (`pollMs > 0`).
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
