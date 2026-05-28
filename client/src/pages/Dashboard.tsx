@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Link } from "react-router-dom";
+
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AreaChart, Sparkline } from "@/components/charts";
 import { AnimatedNumber } from "@/components/ui/animated-number";
@@ -125,16 +127,28 @@ export default function DashboardPage() {
 
       {/* Hero row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 mb-2.5 sm:mb-3">
-        <HeroLiveCard live={liveCount} loading={liveQuery.isLoading} />
-        <HeroMetricCard
-          label="Sessions today"
-          value={stats?.todayRecordSessions}
-          weeklyAvg={stats?.weeklyAverageRecordSessions}
-          loading={statsQuery.isLoading}
-          icon={Clapperboard}
-          spark={recordTrend}
-          accent="fg"
-        />
+        <Link
+          to="/sessions?tab=live"
+          aria-label="Open live sessions"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+        >
+          <HeroLiveCard live={liveCount} loading={liveQuery.isLoading} />
+        </Link>
+        <Link
+          to="/sessions"
+          aria-label="Open all recorded sessions"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+        >
+          <HeroMetricCard
+            label="Sessions today"
+            value={stats?.todayRecordSessions}
+            weeklyAvg={stats?.weeklyAverageRecordSessions}
+            loading={statsQuery.isLoading}
+            icon={Clapperboard}
+            spark={recordTrend}
+            accent="fg"
+          />
+        </Link>
         <HeroMetricCard
           label="Tickets today"
           value={stats?.todayTickets}
@@ -148,24 +162,34 @@ export default function DashboardPage() {
 
       {/* Secondary stat row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-6 sm:mb-8">
-        <StatTile
-          label="Total sessions"
-          value={stats?.totalRecordSessions}
-          icon={Activity}
-          loading={statsQuery.isLoading}
-        />
+        <Link
+          to="/sessions"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+        >
+          <StatTile
+            label="Total sessions"
+            value={stats?.totalRecordSessions}
+            icon={Activity}
+            loading={statsQuery.isLoading}
+          />
+        </Link>
         <StatTile
           label="Total tickets"
           value={stats?.totalTickets}
           icon={Ticket}
           loading={statsQuery.isLoading}
         />
-        <StatTile
-          label="Weekly avg sessions"
-          value={stats?.weeklyAverageRecordSessions}
-          icon={TrendingUp}
-          loading={statsQuery.isLoading}
-        />
+        <Link
+          to="/sessions"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+        >
+          <StatTile
+            label="Weekly avg sessions"
+            value={stats?.weeklyAverageRecordSessions}
+            icon={TrendingUp}
+            loading={statsQuery.isLoading}
+          />
+        </Link>
         <StatTile
           label="Weekly avg tickets"
           value={stats?.weeklyAverage}
@@ -207,7 +231,8 @@ function HeroLiveCard({ live, loading }: { live: number; loading: boolean }) {
   return (
     <Card
       className={cn(
-        "p-4 sm:p-5 relative overflow-hidden",
+        "p-4 sm:p-5 relative overflow-hidden h-full",
+        "transition-colors hover:border-border-strong",
         isActive && "border-danger/30",
       )}
     >
@@ -278,7 +303,7 @@ function HeroMetricCard({
   const delta = avg > 0 ? ((v - avg) / avg) * 100 : 0;
 
   return (
-    <Card className="p-4 sm:p-5 relative overflow-hidden">
+    <Card className="p-4 sm:p-5 relative overflow-hidden h-full transition-colors hover:border-border-strong">
       <div className="flex items-center gap-2 text-fg-subtle text-xs uppercase tracking-wider font-semibold mb-2">
         <Icon className="size-3.5" />
         {label}
@@ -350,7 +375,7 @@ interface StatTileProps {
 
 function StatTile({ label, value, icon: Icon, loading }: StatTileProps) {
   return (
-    <Card className="p-3 sm:p-4">
+    <Card className="p-3 sm:p-4 h-full transition-colors hover:border-border-strong">
       <div className="flex items-center gap-1.5 sm:gap-2 text-fg-faint text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold mb-1 sm:mb-1.5">
         <Icon className="size-3" />
         <span className="truncate">{label}</span>
