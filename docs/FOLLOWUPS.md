@@ -662,6 +662,11 @@ limit)` extracts hostname directly in SQL
   See-all tab jump. Click an error on the landing tab, watch
   what the user saw.
 
+- **Slash-to-focus sessions search** — `d860ae65` — Pressing
+  `/` anywhere on the Sessions page focuses the search input
+  (GitHub / Linear convention), unless already typing in a
+  field. Power-user navigation polish.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
