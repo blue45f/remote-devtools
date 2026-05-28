@@ -521,6 +521,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   active filter (search/age/duration/host/tag, recorded vs
   live tab) so the file matches what's on screen.
 
+- **Top hosts panel on Dashboard** — `99c82876` — Eleventh
+  backend cycle. New `DashboardService.getTopHosts(period,
+limit)` extracts hostname directly in SQL
+  (`regexp_replace + split_part`) and counts records over
+  the trend window. `GET /api/dashboard/top-hosts` surfaces
+  the data; the Dashboard renders a panel under the trend
+  charts with each row linking to `/sessions?host=<host>`
+  and a thin accent bar showing the share. Limit clamped
+  to [1, 25]. Demo seed-router aggregates hostnames from
+  the seed sessions so offline mode keeps parity.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
