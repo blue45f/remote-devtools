@@ -358,6 +358,21 @@ describe('SessionDetail page', () => {
     });
   });
 
+  it('seeks to an error via the "e" keyboard shortcut', async () => {
+    const user = userEvent.setup();
+    renderAtWithLocation(1000);
+
+    await user.keyboard('2'); // Replay tab
+    await waitFor(() => {
+      expect(screen.getByTestId('replay-next-error')).toBeInTheDocument();
+    });
+
+    await user.keyboard('e');
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe')).toHaveTextContent(/\?t=\d/);
+    });
+  });
+
   it('seeks to an error via the Next error button', async () => {
     const user = userEvent.setup();
     renderAtWithLocation(1000);

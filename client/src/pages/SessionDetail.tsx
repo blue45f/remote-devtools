@@ -717,6 +717,13 @@ function ShortcutsHelp({
               <ShortcutRow keys={['Enter']} label="Seek replay to focused row" />
             </>
           )}
+          {activeTab === 'replay' && (
+            <>
+              <ShortcutRow keys={['F']} label="Toggle fullscreen" />
+              <ShortcutRow keys={['E']} label="Jump to next error" />
+              <ShortcutRow keys={['⇧', 'E']} label="Jump to previous error" />
+            </>
+          )}
           <ShortcutRow keys={['?']} label="Toggle this cheatsheet" />
           <ShortcutRow keys={['Esc']} label="Dismiss this dialog" />
         </ul>
@@ -2321,6 +2328,31 @@ function ReplayPanel({
     // toggleFullscreen reads fresh refs each call — safe to omit from deps
   }, [fullscreenSupported]);
 
+  // `e` jumps to the next error, `Shift+E` to the previous one. Mirrors the
+  // ErrorNavButton so keyboard-driven triage works without reaching for it.
+  useEffect(() => {
+    if (!errorMarkers || errorMarkers.length === 0) return;
+    const sorted = errorMarkers.map((m) => m.offsetMs).sort((a, b) => a - b);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'e' && e.key !== 'E') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+      const next = pickErrorOffset(sorted, playheadMsRef.current, e.shiftKey ? -1 : 1);
+      if (next !== undefined) {
+        e.preventDefault();
+        onJumpToReplay(next);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [errorMarkers, playheadMsRef, onJumpToReplay]);
+
   return (
     <div
       ref={wrapperRef}
@@ -2871,6 +2903,21 @@ function RageClickCard({
  * player's own controller only shows current position, not where the
  * action is.
  */
+/**
+ * Pick the next (dir=1) or previous (dir=-1) error offset relative to the
+ * current playhead, wrapping around at the ends so the control always does
+ * something. `sortedOffsets` must be ascending.
+ */
+function pickErrorOffset(sortedOffsets: number[], here: number, dir: 1 | -1): number | undefined {
+  if (sortedOffsets.length === 0) return undefined;
+  const target =
+    dir === 1
+      ? sortedOffsets.find((o) => o > here + 1)
+      : [...sortedOffsets].reverse().find((o) => o < here - 1);
+  const fallback = dir === 1 ? sortedOffsets[0] : sortedOffsets[sortedOffsets.length - 1];
+  return target ?? fallback;
+}
+
 function ErrorNavButton({
   errorMarkers,
   playheadMsRef,
@@ -2886,14 +2933,8 @@ function ErrorNavButton({
   );
 
   const seekRelative = (dir: 1 | -1) => {
-    const here = playheadMsRef.current;
-    const target =
-      dir === 1
-        ? sortedOffsets.find((o) => o > here + 1)
-        : [...sortedOffsets].reverse().find((o) => o < here - 1);
-    // Wrap around so the buttons always do something useful.
-    const fallback = dir === 1 ? sortedOffsets[0] : sortedOffsets[sortedOffsets.length - 1];
-    onSeek(target ?? fallback);
+    const next = pickErrorOffset(sortedOffsets, playheadMsRef.current, dir);
+    if (next !== undefined) onSeek(next);
   };
 
   return (
