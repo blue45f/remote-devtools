@@ -61,4 +61,35 @@ describe("SessionDetail page", () => {
       expect(screen.getByRole("button", { name: /Copy/ })).toBeInTheDocument();
     });
   });
+
+  it("switches tabs via 1/2/3/4 number keys", async () => {
+    const user = userEvent.setup();
+    renderAt(1000);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: /Overview/ })).toBeInTheDocument();
+    });
+
+    await user.keyboard("2");
+    await waitFor(() => {
+      expect(screen.getByTestId("replay-mock")).toBeInTheDocument();
+    });
+
+    await user.keyboard("3");
+    await waitFor(() => {
+      expect(screen.getByText(/All types/)).toBeInTheDocument();
+    });
+
+    await user.keyboard("4");
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Copy/ })).toBeInTheDocument();
+    });
+
+    await user.keyboard("1");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("tab", { name: /Overview/, selected: true }),
+      ).toBeInTheDocument();
+    });
+  });
 });

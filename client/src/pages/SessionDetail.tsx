@@ -226,6 +226,41 @@ export default function SessionDetailPage() {
     playheadMsRef.current = clamped;
   };
 
+  // Number-key tab switching (1/2/3/4). Mirrors the DevTools docking
+  // convention and Linear's tab-by-number model — once a user knows the
+  // layout, jumping between Overview / Replay / Timeline / Raw becomes
+  // muscle memory.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const next =
+        e.key === "1"
+          ? "overview"
+          : e.key === "2"
+            ? "replay"
+            : e.key === "3"
+              ? "timeline"
+              : e.key === "4"
+                ? "raw"
+                : null;
+      if (!next) return;
+      e.preventDefault();
+      setTab(next);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
       {/* Back link */}
