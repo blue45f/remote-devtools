@@ -134,6 +134,11 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ["J"], label: "Back 10 seconds" },
       { keys: ["L"], label: "Forward 10 seconds" },
       { keys: ["Home"], label: "Restart from beginning" },
+      {
+        keys: ["F"],
+        label: "Toggle fullscreen",
+        description: "Only on Replay tab",
+      },
     ],
   },
 ];

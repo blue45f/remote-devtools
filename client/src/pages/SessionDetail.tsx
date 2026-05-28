@@ -15,6 +15,8 @@ import {
   Layers,
   Link2,
   ListTree,
+  Maximize2,
+  Minimize2,
   PlayCircle,
   RadioTower,
   Smartphone,
@@ -22,7 +24,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { SessionPreviewCard } from "@/components/replay/SessionPreviewCard";
@@ -329,31 +331,13 @@ export default function SessionDetailPage() {
               <Skeleton className="h-[420px] w-full" />
             </Card>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-end">
-                <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
-              </div>
-              <ReplayMinimap
-                events={events ?? []}
-                sessionStartMs={sessionStartMs}
-                onSeek={jumpToReplay}
-              />
-              <Suspense
-                fallback={
-                  <Card className="p-6">
-                    <Skeleton className="h-[420px] w-full" />
-                  </Card>
-                }
-              >
-                <ReplayPlayer
-                  events={(events ?? []) as unknown[]}
-                  startTime={initialReplayOffset}
-                  onTimeUpdate={(ms) => {
-                    playheadMsRef.current = ms;
-                  }}
-                />
-              </Suspense>
-            </div>
+            <ReplayPanel
+              events={events ?? []}
+              sessionStartMs={sessionStartMs}
+              initialReplayOffset={initialReplayOffset}
+              playheadMsRef={playheadMsRef}
+              onJumpToReplay={jumpToReplay}
+            />
           )}
         </TabsContent>
 
@@ -464,6 +448,129 @@ function SessionHeader({
           </DevToolsLinkButton>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ───────── Replay panel (wraps player + minimap + share + fullscreen) ───────── */
+
+interface ReplayPanelProps {
+  events: ReplayEvent[];
+  sessionStartMs: number;
+  initialReplayOffset: number;
+  playheadMsRef: React.MutableRefObject<number>;
+  onJumpToReplay: (offsetMs: number) => void;
+}
+
+function ReplayPanel({
+  events,
+  sessionStartMs,
+  initialReplayOffset,
+  playheadMsRef,
+  onJumpToReplay,
+}: ReplayPanelProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenSupported =
+    typeof document !== "undefined" &&
+    typeof document.fullscreenEnabled === "boolean"
+      ? document.fullscreenEnabled
+      : false;
+
+  useEffect(() => {
+    const onChange = () => {
+      setIsFullscreen(document.fullscreenElement === wrapperRef.current);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const el = wrapperRef.current;
+    if (!el || !fullscreenSupported) return;
+    if (document.fullscreenElement === el) {
+      void document.exitFullscreen().catch(() => {
+        /* user gesture lost, ignore */
+      });
+    } else {
+      void el.requestFullscreen().catch(() => {
+        /* user gesture lost, ignore */
+      });
+    }
+  };
+
+  // `F` toggles fullscreen unless typing into an input
+  useEffect(() => {
+    if (!fullscreenSupported) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "f" && e.key !== "F") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      toggleFullscreen();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // toggleFullscreen reads fresh refs each call — safe to omit from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullscreenSupported]);
+
+  return (
+    <div
+      ref={wrapperRef}
+      className={cn(
+        "space-y-3",
+        // Inside fullscreen the wrapper IS the viewport, so paint a
+        // background and give it interior padding so the player isn't
+        // glued to the screen edges.
+        isFullscreen && "bg-bg p-4 sm:p-6 overflow-auto",
+      )}
+    >
+      <div className="flex items-center justify-end gap-2">
+        {fullscreenSupported && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFullscreen}
+            aria-pressed={isFullscreen}
+            data-testid="replay-fullscreen"
+          >
+            {isFullscreen ? <Minimize2 /> : <Maximize2 />}
+            <span className="hidden sm:inline">
+              {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            </span>
+          </Button>
+        )}
+        <ShareReplayLinkButton playheadMsRef={playheadMsRef} />
+      </div>
+      <ReplayMinimap
+        events={events}
+        sessionStartMs={sessionStartMs}
+        onSeek={onJumpToReplay}
+      />
+      <Suspense
+        fallback={
+          <Card className="p-6">
+            <Skeleton className="h-[420px] w-full" />
+          </Card>
+        }
+      >
+        <ReplayPlayer
+          events={events as unknown[]}
+          startTime={initialReplayOffset}
+          onTimeUpdate={(ms) => {
+            playheadMsRef.current = ms;
+          }}
+        />
+      </Suspense>
     </div>
   );
 }
