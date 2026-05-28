@@ -191,10 +191,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   `sidebarCollapsed`, giving power users the "more canvas" muscle
   memory from Notion / Linear / Slack without grabbing the mouse.
   Shortcut documented in the General group of the help dialog.
-- **CommandPalette toggle skip-idle** — current commit — A new
+- **CommandPalette toggle skip-idle** — `5daf1ea4` — A new
   Replay group in the palette flips the `replay-prefs:v1`
   skipInactive flag from anywhere in the app — no need to visit
   a session first. Toast confirms the new state.
+- **Sessions list density toggle** — current commit — A new
+  Comfortable / Compact toggle next to the view-mode buttons.
+  Compact halves row padding in the table view, tightens grid
+  gutters and card padding, and hides the secondary ID line in
+  table cells so the row height drops by ~40%. Persists to
+  `sessions-prefs:v1`. Linear / Notion / Datadog density-toggle
+  parity.
 
 ## Next obvious candidates
 
