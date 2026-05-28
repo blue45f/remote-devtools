@@ -389,6 +389,35 @@ describe('SessionDetail page', () => {
     expect(body.textContent).toContain('"ok": true');
   });
 
+  it('copies URL and cURL from the network detail dialog', async () => {
+    const user = userEvent.setup();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderAt(1000);
+
+    await user.keyboard('4');
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-table')).toBeInTheDocument();
+    });
+
+    const rows = screen.getAllByTestId('session-network-row');
+    await user.click(rows[2]);
+    await waitFor(() => {
+      expect(screen.getByTestId('session-network-detail')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('session-network-detail-copy-url'));
+    expect(writeText.mock.calls.at(-1)?.[0]).toMatch(/^https?:\/\//);
+
+    await user.click(screen.getByTestId('session-network-detail-copy-curl'));
+    expect(writeText.mock.calls.at(-1)?.[0]).toMatch(/^curl /);
+  });
+
   it('downloads the response body from the detail dialog', async () => {
     const user = userEvent.setup();
 
