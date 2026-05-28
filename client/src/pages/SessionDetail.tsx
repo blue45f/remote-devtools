@@ -799,10 +799,12 @@ export default function SessionDetailPage() {
               onJumpToReplay={jumpToReplay}
               recordId={recordId}
               commentFocusSignal={commentFocusSignal}
-              commentMarkers={(commentRows ?? []).map((c) => ({
-                id: c.id,
-                timestampMs: c.timestampMs,
-              }))}
+              commentMarkers={(commentRows ?? [])
+                .filter((c) => !c.resolved)
+                .map((c) => ({
+                  id: c.id,
+                  timestampMs: c.timestampMs,
+                }))}
               errorMarkers={errorMarkers}
             />
           )}
@@ -2767,7 +2769,10 @@ function CommentsPanel({
   });
 
   const [draft, setDraft] = useState('');
+  const [hideResolved, setHideResolved] = useState(false);
   const comments = data ?? [];
+  const resolvedCount = comments.filter((c) => c.resolved).length;
+  const visibleComments = hideResolved ? comments.filter((c) => !c.resolved) : comments;
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Focus the input whenever the page's `C` shortcut fires. Skip the
@@ -2880,17 +2885,30 @@ function CommentsPanel({
             </Badge>
           )}
         </h3>
+        {resolvedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setHideResolved((v) => !v)}
+            aria-pressed={hideResolved}
+            data-testid="replay-comments-hide-resolved"
+            className="text-[11px] text-fg-faint hover:text-fg transition-colors"
+          >
+            {hideResolved ? `Show resolved (${resolvedCount})` : `Hide resolved (${resolvedCount})`}
+          </button>
+        )}
       </div>
 
       {isLoading ? (
         <Skeleton className="h-8 w-full" />
-      ) : comments.length === 0 ? (
+      ) : visibleComments.length === 0 ? (
         <p className="text-xs text-fg-faint mb-3">
-          No comments yet — add one anchored to the current playhead.
+          {comments.length === 0
+            ? 'No comments yet — add one anchored to the current playhead.'
+            : 'All comments resolved.'}
         </p>
       ) : (
         <ol className="space-y-2 mb-3">
-          {comments.map((c) => (
+          {visibleComments.map((c) => (
             <CommentRow
               key={c.id}
               comment={c}

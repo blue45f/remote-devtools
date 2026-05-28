@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { __resetDemoComments } from '@/lib/seed-router';
 import { renderWithProviders } from '@/test/utils';
 
 import SessionDetail, { buildSessionInsights } from './SessionDetail';
@@ -16,6 +17,7 @@ vi.mock('@/components/replay/ReplayPlayer', () => ({
 
 beforeEach(() => {
   localStorage.setItem('demo-mode', '1');
+  __resetDemoComments();
 });
 
 function renderAt(id: number) {
@@ -381,6 +383,32 @@ describe('SessionDetail page', () => {
 
     await waitFor(() => {
       expect(screen.getAllByTestId('replay-comment')[0].getAttribute('data-resolved')).toBe('true');
+    });
+  });
+
+  it('hides resolved comments via the panel toggle', async () => {
+    const user = userEvent.setup();
+    // Dedicated session id — the demo comment store is module-level and
+    // leaks across tests, so use an id no other comment test mutates.
+    renderAt(1009);
+
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+    const total = screen.getAllByTestId('replay-comment').length;
+
+    // No toggle until at least one comment is resolved.
+    expect(screen.queryByTestId('replay-comments-hide-resolved')).not.toBeInTheDocument();
+
+    const firstRow = screen.getAllByTestId('replay-comment')[0];
+    await user.click(within(firstRow).getByTestId('replay-comment-resolve'));
+
+    const toggle = await screen.findByTestId('replay-comments-hide-resolved');
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBe(total - 1);
     });
   });
 
