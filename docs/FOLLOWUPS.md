@@ -86,10 +86,14 @@ the next obvious candidates. Each entry: what shipped, what's next.
   event-type label. Special regex characters are escaped before
   compile; query is split via capturing group and re-identified via
   case-insensitive equality. PostHog / Sentry / Algolia parity.
-- **Topbar theme quick toggle** — current commit — Sun/Moon/Monitor
+- **Topbar theme quick toggle** — `58d86191` — Sun/Moon/Monitor
   icon button on the topbar cycles light → dark → system → light.
   Desktop-only; mobile keeps the CommandPalette / sidebar theme menu.
   GitHub / Vercel / Linear parity.
+- **ActivityFeed kind filter chips** — current commit — Multi-select
+  Session / Ticket / Error / Join chips with per-kind counts. Zero-count
+  chips render disabled-looking so the row width stays stable across
+  polls. Linear / Slack feed-filter parity.
 
 ## Next obvious candidates
 

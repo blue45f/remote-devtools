@@ -110,8 +110,46 @@ export function ActivityFeed({
     }
   }
 
-  const items = [...top, ...olderPages.flatMap((p) => p.rows)];
+  const allItems = useMemo(
+    () => [...top, ...olderPages.flatMap((p) => p.rows)],
+    [top, olderPages],
+  );
+
+  // Multi-select kind filter. Empty set means "show everything".
+  const [activeKinds, setActiveKinds] = useState<Set<ActivityKind>>(new Set());
+  const items = useMemo(() => {
+    if (activeKinds.size === 0) return allItems;
+    return allItems.filter((it) => activeKinds.has(it.kind));
+  }, [allItems, activeKinds]);
+
+  // Per-kind counts feed the chip strip — chips with 0 hits stay
+  // visible but disabled-looking so the filter row's width is stable
+  // as the feed polls.
+  const kindCounts = useMemo(() => {
+    const counts: Record<ActivityKind, number> = {
+      session: 0,
+      ticket: 0,
+      error: 0,
+      join: 0,
+    };
+    for (const it of allItems) {
+      counts[it.kind] = (counts[it.kind] ?? 0) + 1;
+    }
+    return counts;
+  }, [allItems]);
+
   const grouped = useMemo(() => groupByBucket(items), [items]);
+
+  const toggleKind = (k: ActivityKind) => {
+    setActiveKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  };
+
+  const allKinds: ActivityKind[] = ["session", "ticket", "error", "join"];
 
   return (
     <Card className={cn("p-5", className)}>
@@ -127,6 +165,49 @@ export function ActivityFeed({
         </div>
         <LiveDot active={pollMs > 0} />
       </div>
+
+      {allItems.length > 0 && (
+        <div className="scroll-rail scroll-rail-fade -mx-1 px-1 mb-3 sm:overflow-visible">
+          <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
+            {allKinds.map((k) => {
+              const meta = KIND_META[k];
+              const Icon = meta.icon;
+              const active = activeKinds.has(k);
+              const count = kindCounts[k];
+              const empty = count === 0;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => toggleKind(k)}
+                  disabled={empty}
+                  aria-pressed={active}
+                  data-testid={`activity-kind-chip-${k}`}
+                  className={cn(
+                    "h-6 px-2 rounded-full border text-[11px] font-medium transition-colors shrink-0",
+                    "inline-flex items-center gap-1",
+                    empty && "opacity-50 cursor-not-allowed",
+                    active
+                      ? "bg-fg text-bg border-fg"
+                      : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+                  )}
+                >
+                  <Icon className="size-3" />
+                  <span>{meta.label}</span>
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums text-[10px]",
+                      active ? "text-bg/80" : "text-fg-faint",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {error ? (
         <EmptyState
