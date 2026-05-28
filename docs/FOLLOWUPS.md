@@ -684,6 +684,14 @@ limit)` extracts hostname directly in SQL
   attempt was reverted for racing `?t=`; this is the correct
   single-writer version.)
 
+- **Command palette session search** — `3dd2dda7` — Cmd+K now
+  runs a debounced backend search as you type (controlled
+  input → `/sessions/record?q=`) and shows a "Sessions" group
+  of matches beyond the local Recent list, picking up
+  tag-aware search. Recent dupes removed; item values carry
+  name/url/tags so cmdk's local filter keeps them. Cmd+K is a
+  real session finder now.
+
 - **Tag-aware session search** — `55520aef` — Session search
   now matches user-authored tags alongside name/URL.
   `findPaginated` flattens the tags array (`array_to_string`)
