@@ -202,7 +202,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   table cells so the row height drops by ~40%. Persists to
   `sessions-prefs:v1`. Linear / Notion / Datadog density-toggle
   parity.
-- **Replay Restart button** — current commit — Visible Restart
+- **Replay Restart button** — `ccbe969d` — Visible Restart
   button next to the speed picker in the replay toolbar. Calls
   `goto(0)` via a `restartToken` counter prop so the parent never
   reaches into the rrweb-player instance. Pairs the Home keyboard
