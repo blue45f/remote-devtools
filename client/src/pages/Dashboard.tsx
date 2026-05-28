@@ -166,6 +166,8 @@ export default function DashboardPage() {
               void queryClient.invalidateQueries({ queryKey: ['ticket-trend'] });
               void queryClient.invalidateQueries({ queryKey: ['record-trend'] });
               void queryClient.invalidateQueries({ queryKey: ['live-sessions'] });
+              void queryClient.invalidateQueries({ queryKey: ['top-hosts'] });
+              void queryClient.invalidateQueries({ queryKey: ['recent-notes'] });
             }}
           />
           <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
