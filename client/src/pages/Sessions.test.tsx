@@ -269,6 +269,23 @@ describe('Sessions page', () => {
     expect(writeText.mock.calls[0][0]).toMatch(/\/sessions\/\d+$/);
   });
 
+  it('finds sessions by tag text via the search box', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sessions />);
+    await waitFor(() => {
+      expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
+    });
+
+    // "verified" is a tag on settings-permissions but appears in no session
+    // name — so a match proves tag search works end to end.
+    await user.type(screen.getByPlaceholderText(/Search by name/), 'verified');
+
+    await waitFor(() => {
+      expect(screen.getByText(/settings-permissions/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/checkout-flow-test/)).not.toBeInTheDocument();
+  });
+
   it('focuses the search input when "/" is pressed', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sessions />);

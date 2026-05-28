@@ -230,12 +230,15 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
     if (noFilters) return all as unknown as T;
     const q = (qs.get('q') ?? '').toLowerCase();
     const filtered = q
-      ? all.filter(
-          (s) =>
+      ? all.filter((s) => {
+          const tags = (s.tags ?? []).join(' ').toLowerCase();
+          return (
             s.name.toLowerCase().includes(q) ||
             (s.url ?? '').toLowerCase().includes(q) ||
-            (s.deviceId ?? '').toLowerCase().includes(q),
-        )
+            (s.deviceId ?? '').toLowerCase().includes(q) ||
+            tags.includes(q)
+          );
+        })
       : all;
     return { rows: filtered, nextCursor: null } as unknown as T;
   }

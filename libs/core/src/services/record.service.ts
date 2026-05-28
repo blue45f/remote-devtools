@@ -73,9 +73,16 @@ export class RecordService {
 
     if (opts.q?.trim()) {
       const term = `%${opts.q.trim().toLowerCase()}%`;
-      qb.andWhere('(LOWER(r.name) LIKE :q OR LOWER(r.url) LIKE :q)', {
-        q: term,
-      });
+      // Search name + url plus the user-authored tags so labels a user added
+      // to organise a session are findable. tags is text[]; array_to_string
+      // flattens it for a single LIKE. (Notes aren't in the list payload, so
+      // they stay out of search to keep client/server results consistent.)
+      qb.andWhere(
+        `(LOWER(r.name) LIKE :q
+          OR LOWER(r.url) LIKE :q
+          OR LOWER(array_to_string(r.tags, ' ')) LIKE :q)`,
+        { q: term },
+      );
     }
     if (opts.deviceId?.trim()) {
       qb.andWhere('r.deviceId = :did', { did: opts.deviceId.trim() });
