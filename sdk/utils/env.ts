@@ -4,15 +4,15 @@ export type SdkEnvKey =
   | 'VITE_EXTERNAL_HOST'
   | 'VITE_EXTERNAL_WS';
 
-type ImportMetaWithOptionalEnv = ImportMeta & {
+export type SdkEnvSource = {
   readonly env?: Partial<Record<SdkEnvKey, string | undefined>>;
 };
 
 export function readSdkEnv(
   key: SdkEnvKey,
   fallback: string,
-  meta: ImportMeta = import.meta,
+  source?: SdkEnvSource,
 ): string {
-  const value = (meta as ImportMetaWithOptionalEnv).env?.[key];
+  const value = source?.env?.[key];
   return value || fallback;
 }

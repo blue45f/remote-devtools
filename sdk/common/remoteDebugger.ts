@@ -1,5 +1,6 @@
 import { ChromeDomain } from '../domain';
 import { CommonInfo } from '../types/common';
+import { readSdkEnv } from '../utils/env';
 import { logger } from '../utils/logger';
 import { createUserDataText, UserData } from '../utils/userDataText';
 
@@ -11,6 +12,21 @@ type NavigateEventLike = {
 
 type NavigationWithNavigateEvent = Navigation & {
   addEventListener: (type: 'navigate', listener: (event: NavigateEventLike) => void) => void;
+};
+
+type RemoteDebuggerSocketMessage = {
+  event: string;
+  recordId?: number;
+  roomName?: string;
+  timestamp?: number;
+  message?: { id?: number; method?: string; params?: unknown };
+  devtoolsId?: string;
+};
+
+type RemoteDebuggerRoomCreatedMessage = RemoteDebuggerSocketMessage & {
+  event: 'roomCreated';
+  recordId: number;
+  roomName: string;
 };
 
 /**
@@ -368,6 +384,39 @@ export class RemoteDebugger {
     }
   }
 
+  private parseSocketMessage(messageData: string): RemoteDebuggerSocketMessage | null {
+    try {
+      const parsed: unknown = JSON.parse(messageData);
+
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        logger.remote.warn('Invalid WebSocket message: payload must be an object', parsed);
+        return null;
+      }
+
+      const message = parsed as Partial<RemoteDebuggerSocketMessage>;
+      if (typeof message.event !== 'string') {
+        logger.remote.warn('Invalid WebSocket message: missing event', parsed);
+        return null;
+      }
+
+      return message as RemoteDebuggerSocketMessage;
+    } catch (error) {
+      logger.remote.warn('Invalid WebSocket message: failed to parse JSON', error);
+      return null;
+    }
+  }
+
+  private isRoomCreatedMessage(
+    message: RemoteDebuggerSocketMessage,
+  ): message is RemoteDebuggerRoomCreatedMessage {
+    if (typeof message.recordId !== 'number' || typeof message.roomName !== 'string') {
+      logger.remote.warn('Invalid roomCreated message: missing recordId or roomName', message);
+      return false;
+    }
+
+    return true;
+  }
+
   /**
    * 디버깅용: location 후킹 상태 확인
    * 브라우저 콘솔에서 window.remoteDebugger?.checkLocationHooks() 호출 가능
@@ -563,7 +612,7 @@ export class RemoteDebugger {
         room: this.bufferRoomName || undefined,
       });
 
-      const apiHost = import.meta.env?.VITE_EXTERNAL_HOST || 'http://localhost:3001';
+      const apiHost = readSdkEnv('VITE_EXTERNAL_HOST', 'http://localhost:3001');
       const endpoint = `${apiHost}/buffer/save`;
 
       const beaconBody = new Blob([beaconPayload], {
@@ -600,8 +649,8 @@ export class RemoteDebugger {
     this.isRecordMode = recordMode;
 
     // 환경 변수 사용 (recordMode = true는 External, false는 Internal)
-    const externalWs = import.meta.env?.VITE_EXTERNAL_WS || 'ws://localhost:3001';
-    const internalWs = import.meta.env?.VITE_INTERNAL_WS || 'ws://localhost:3000';
+    const externalWs = readSdkEnv('VITE_EXTERNAL_WS', 'ws://localhost:3001');
+    const internalWs = readSdkEnv('VITE_INTERNAL_WS', 'ws://localhost:3000');
     const finalHost = recordMode ? externalWs : internalWs;
 
     // Connecting to WebSocket
@@ -620,11 +669,9 @@ export class RemoteDebugger {
 
     this.socket.onmessage = (message) => {
       const messageData = message.data as string;
-      const data = JSON.parse(messageData) as {
-        event: string;
-        recordId: number;
-        roomName: string;
-      };
+      const data = this.parseSocketMessage(messageData);
+      if (!data) return;
+
       const event = data.event;
 
       if (event === 'error') {
@@ -635,13 +682,12 @@ export class RemoteDebugger {
       if (event === 'roomCreated') {
         if (!this.socket) return;
 
-        this.recordId = data.recordId;
-        this.roomName = data.roomName;
+        if (!this.isRoomCreatedMessage(data)) return;
 
         this.handleRoomCreated(data);
 
         this.domain.updateRoomInfo({
-          room: this.roomName,
+          room: data.roomName,
           recordMode: this.isRecordMode,
           socket: this.socket,
           url: window.location.href,
@@ -798,15 +844,10 @@ export class RemoteDebugger {
   /**
    * 녹화 세션 생성 완료 처리
    */
-  private handleRoomCreated(data: unknown): void {
-    const roomData = data as {
-      recordId: number;
-      roomName: string;
-      timestamp: number;
-    };
-    this.recordId = roomData.recordId;
-    this.roomName = roomData.roomName;
-    this.roomTimestamp = roomData.timestamp;
+  private handleRoomCreated(data: RemoteDebuggerRoomCreatedMessage): void {
+    this.recordId = data.recordId;
+    this.roomName = data.roomName;
+    this.roomTimestamp = data.timestamp ?? null;
     // 도메인에 녹화 세션 정보 업데이트
     this.domain.updateRoomInfo({
       room: this.roomName,

@@ -22,7 +22,7 @@
     "build": "pnpm run build:all",
     "build:internal": "nest build remote-platform-internal",
     "build:external": "nest build remote-platform-external",
-    "build:react": "pnpm --filter client build && pnpm --filter sdk build && pnpm --filter debug-recorder-admin build && pnpm --filter figma-plugin build",
+    "build:react": "pnpm --filter client build && pnpm --filter remote-debug-sdk build && pnpm --filter debug-recorder-admin build && pnpm --filter remote-debug-tools-figma-plugin build",
     "build:all": "pnpm run build:internal && pnpm run build:external && pnpm run build:react",
     "start:container": "pm2-runtime start ecosystem.config.js",
     "start:internal": "nest start remote-platform-internal",
