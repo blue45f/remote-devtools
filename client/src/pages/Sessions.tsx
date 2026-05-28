@@ -66,6 +66,21 @@ type SortKey = "newest" | "oldest" | "name";
 type ViewMode = "table" | "grid";
 
 type DurationFilter = "all" | "short" | "medium" | "long";
+type AgeFilter = "all" | "24h" | "7d" | "30d";
+
+const AGE_LABELS: Record<AgeFilter, string> = {
+  all: "All time",
+  "24h": "Last 24h",
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+};
+
+const AGE_LIMITS_MS: Record<AgeFilter, number> = {
+  all: 0,
+  "24h": 24 * 3600 * 1000,
+  "7d": 7 * 24 * 3600 * 1000,
+  "30d": 30 * 24 * 3600 * 1000,
+};
 
 const SORT_LABELS: Record<SortKey, string> = {
   newest: "Newest first",
@@ -169,6 +184,7 @@ export default function SessionsPage() {
     () => readStoredPrefs().view ?? pickDefaultView(),
   );
   const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>("all");
   const [hostFilter, setHostFilter] = useState<string | null>(null);
   // Index of the currently-focused row in the filtered list. -1 means
   // "no row selected" — the cursor reveals only after the user presses
@@ -186,7 +202,7 @@ export default function SessionsPage() {
   // cursorIdx might not exist any more.
   useEffect(() => {
     setCursorIdx(-1);
-  }, [tab, search, sort, durationFilter, hostFilter]);
+  }, [tab, search, sort, durationFilter, ageFilter, hostFilter]);
 
   // Compile the search query into a matcher once per change. Invalid regex
   // patterns fall back to plain-substring matching so the user never gets
@@ -283,6 +299,15 @@ export default function SessionsPage() {
       });
     }
 
+    if (ageFilter !== "all") {
+      const cutoff = Date.now() - AGE_LIMITS_MS[ageFilter];
+      result = result.filter((s) => {
+        if (!s.timestamp) return false;
+        const t = new Date(s.timestamp).getTime();
+        return Number.isFinite(t) && t >= cutoff;
+      });
+    }
+
     if (hostFilter) {
       result = result.filter((s) => getHostname(s.url) === hostFilter);
     }
@@ -293,7 +318,7 @@ export default function SessionsPage() {
       const tb = new Date(b.timestamp ?? 0).getTime();
       return sort === "newest" ? tb - ta : ta - tb;
     });
-  }, [sessions, matcher, sort, durationFilter, hostFilter]);
+  }, [sessions, matcher, sort, durationFilter, ageFilter, hostFilter]);
 
   // Build the host strip from the *currently loaded* sessions so it
   // reflects what's on screen. Sort by hit count descending so the
@@ -310,7 +335,10 @@ export default function SessionsPage() {
   }, [sessions]);
 
   const filtersActive =
-    search.trim() !== "" || durationFilter !== "all" || hostFilter !== null;
+    search.trim() !== "" ||
+    durationFilter !== "all" ||
+    ageFilter !== "all" ||
+    hostFilter !== null;
 
   // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
   // while typing in inputs, while modifier keys are held, and while
@@ -520,9 +548,12 @@ export default function SessionsPage() {
         <FilterChips
           duration={durationFilter}
           onDurationChange={setDurationFilter}
+          age={ageFilter}
+          onAgeChange={setAgeFilter}
           onClear={() => {
             setSearch("");
             setDurationFilter("all");
+            setAgeFilter("all");
             setHostFilter(null);
           }}
           showClear={filtersActive}
@@ -766,29 +797,64 @@ function HostChips({
 function FilterChips({
   duration,
   onDurationChange,
+  age,
+  onAgeChange,
   onClear,
   showClear,
 }: {
   duration: DurationFilter;
   onDurationChange: (v: DurationFilter) => void;
+  age: AgeFilter;
+  onAgeChange: (v: AgeFilter) => void;
   onClear: () => void;
   showClear: boolean;
 }) {
-  const options: { value: DurationFilter; label: string }[] = [
+  const durationOptions: { value: DurationFilter; label: string }[] = [
     { value: "all", label: "Any duration" },
     { value: "short", label: "< 30s" },
     { value: "medium", label: "30s – 5m" },
     { value: "long", label: "> 5m" },
   ];
 
+  const ageOptions: { value: AgeFilter; label: string }[] = (
+    Object.keys(AGE_LABELS) as AgeFilter[]
+  ).map((k) => ({
+    value: k,
+    label: k === "all" ? "Any time" : AGE_LABELS[k].replace("Last ", ""),
+  }));
+
   return (
     <div className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible">
       <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
         <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
+          <Clock className="size-3" />
+          Time
+        </span>
+        {ageOptions.map((opt) => {
+          const active = age === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onAgeChange(opt.value)}
+              className={cn(
+                "h-7 sm:h-6 px-2.5 sm:px-2 rounded-full border text-[12px] sm:text-[11px] font-medium transition-colors shrink-0",
+                active
+                  ? "bg-fg text-bg border-fg"
+                  : "bg-surface border-border text-fg-subtle hover:border-border-strong hover:text-fg",
+              )}
+              aria-pressed={active}
+              data-testid={`sessions-age-chip-${opt.value}`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+        <span className="inline-flex items-center gap-1 text-xs text-fg-faint mx-1 shrink-0">
           <Filter className="size-3" />
           Duration
         </span>
-        {options.map((opt) => {
+        {durationOptions.map((opt) => {
           const active = duration === opt.value;
           return (
             <button
