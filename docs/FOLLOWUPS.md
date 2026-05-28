@@ -400,7 +400,7 @@ the next obvious candidates. Each entry: what shipped, what's next.
   added a scripts/\*_/_.mjs block to debug-recorder-admin's
   eslint config so the build-budget script has Node globals.
   CI green again.
-- **Overview top-errors card** — current commit — When a
+- **Overview top-errors card** — `622d19bc` — When a
   session has captured console errors, the Overview tab
   surfaces the most recent 3 as a danger-toned card at the
   top (above the event-type counts). Each entry shows
