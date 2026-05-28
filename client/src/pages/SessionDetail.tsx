@@ -41,7 +41,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { SessionPreviewCard } from '@/components/replay/SessionPreviewCard';
@@ -222,7 +222,37 @@ export default function SessionDetailPage() {
     return Number.isFinite(ms) && ms > 0 ? ms : 0;
   }, [searchParams]);
 
-  const [tab, setTab] = useState<TabValue>(initialReplayOffset > 0 ? 'replay' : 'overview');
+  // `?tab=` deep-links a specific tab; falls back to Replay when a `?t=`
+  // deep-link is present, else Overview. Resolved once for the initial
+  // state — subsequent changes flow through `setTab` (which writes the URL).
+  const initialTab = useMemo<TabValue>(() => {
+    const param = searchParams.get('tab');
+    const valid: TabValue[] = ['overview', 'replay', 'timeline', 'network', 'console', 'raw'];
+    if (param && valid.includes(param as TabValue)) return param as TabValue;
+    return initialReplayOffset > 0 ? 'replay' : 'overview';
+    // Resolve once on mount; later changes flow through setTab.
+  }, []);
+
+  const [tab, setTabState] = useState<TabValue>(initialTab);
+
+  // Single writer: update state AND mirror to the URL in one call so the
+  // active tab is shareable. No separate effect, so this never races with
+  // jumpToReplay's `?t=` write. 'overview' is the default → omitted.
+  const setTab = useCallback(
+    (next: TabValue) => {
+      setTabState(next);
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          if (next === 'overview') p.delete('tab');
+          else p.set('tab', next);
+          return p;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   // The rrweb-player drives this via the `onTimeUpdate` callback. We keep
   // it in a ref so the share button reads the latest value without making
@@ -333,13 +363,15 @@ export default function SessionDetailPage() {
 
   const jumpToReplay = (offsetMs: number) => {
     const clamped = Math.max(0, Math.round(offsetMs));
-    setTab('replay');
-    // Replace, not push — we don't want every event click building up an
-    // entry on the history stack.
+    // Write tab + playhead in one searchParams update (raw state setter, so
+    // we don't double-write the URL via setTab). Replace, not push — we
+    // don't want every event click building up a history entry.
+    setTabState('replay');
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.set('t', String(clamped));
+        next.set('tab', 'replay');
         return next;
       },
       { replace: true },
