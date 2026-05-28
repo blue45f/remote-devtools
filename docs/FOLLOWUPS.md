@@ -712,6 +712,13 @@ limit)` extracts hostname directly in SQL
   clean run reports a positive "no issues" line. Pure
   `buildSessionInsights` helper, unit-tested.
 
+- **Insights in copy summary** — `9a7d2687` — The Markdown
+  "Copy summary" appends a **Notable:** section with the same
+  derived insights as the Overview card. Computed once in a
+  page-level memo shared by both, so a pasted bug ticket
+  carries the narrative (error clusters, largest response,
+  rage bursts), not just raw counts.
+
 Listed in rough order of value × ease:
 
 - ~~**Browser / OS badge on Session row** — done above.~~
