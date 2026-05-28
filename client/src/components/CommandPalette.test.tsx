@@ -40,6 +40,22 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
+  it('searches sessions server-side as the user types', async () => {
+    localStorage.setItem('demo-mode', '1');
+    act(() => {
+      useAppStore.setState({ commandOpen: true, demoMode: true });
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<CommandPalette />);
+
+    await user.type(screen.getByPlaceholderText(/Type a command/), 'settings');
+
+    await waitFor(() => {
+      expect(screen.getByText('Sessions')).toBeInTheDocument();
+    });
+    expect(screen.getAllByTestId('cmd-session-match').length).toBeGreaterThan(0);
+  });
+
   it('toggles demo mode through the palette and persists to localStorage', async () => {
     const user = userEvent.setup();
     renderWithProviders(<CommandPalette />);

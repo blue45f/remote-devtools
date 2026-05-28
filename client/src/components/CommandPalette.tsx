@@ -7,9 +7,11 @@ import {
   Monitor,
   Moon,
   RotateCcw,
+  Search,
   Sparkles,
   Sun,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { toast } from '@/components/ui/toaster';
@@ -40,6 +42,13 @@ interface ActivityEntry {
   timestampMs?: number;
 }
 
+interface SessionMatch {
+  id: number;
+  name?: string;
+  url?: string;
+  tags?: string[];
+}
+
 export function CommandPalette() {
   const navigate = useNavigate();
   const commandOpen = useAppStore((s) => s.commandOpen);
@@ -66,6 +75,34 @@ export function CommandPalette() {
     )
     .slice(0, 5);
 
+  // Controlled input so we can run a server-side session search as the user
+  // types (beyond the local "recent" list). Reset when the palette closes.
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 200);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => {
+    if (!commandOpen) setSearch('');
+  }, [commandOpen]);
+
+  const { data: sessionMatches } = useQuery<SessionMatch[]>({
+    queryKey: ['palette-session-search', debouncedSearch],
+    queryFn: async () => {
+      const res = await apiFetch<SessionMatch[] | { rows: SessionMatch[] }>(
+        `/sessions/record?q=${encodeURIComponent(debouncedSearch)}&limit=6`,
+      );
+      return Array.isArray(res) ? res : (res.rows ?? []);
+    },
+    enabled: commandOpen && debouncedSearch.length >= 2,
+    staleTime: 30_000,
+  });
+  const recentIds = new Set(recentSessions.map((s) => String(s.id)));
+  const sessionResults = (sessionMatches ?? [])
+    .filter((s) => !recentIds.has(String(s.id)))
+    .slice(0, 6);
+
   const run = (fn: () => void) => {
     fn();
     setCommandOpen(false);
@@ -73,9 +110,41 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-      <CommandInput placeholder="Type a command or search…" />
+      <CommandInput
+        placeholder="Type a command or search sessions…"
+        value={search}
+        onValueChange={setSearch}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+
+        {sessionResults.length > 0 && (
+          <>
+            <CommandGroup heading="Sessions">
+              {sessionResults.map((s) => (
+                <CommandItem
+                  key={s.id}
+                  // value carries name/url/tags so cmdk's local filter keeps
+                  // these server matches in view as the user keeps typing.
+                  value={`session ${s.id} ${s.name ?? ''} ${s.url ?? ''} ${(s.tags ?? []).join(' ')}`}
+                  onSelect={() => run(() => navigate(`/sessions/${s.id}`))}
+                  data-testid="cmd-session-match"
+                >
+                  <Search />
+                  <span className="truncate">
+                    {s.name ?? `Session ${shortHash(String(s.id), 10)}`}
+                  </span>
+                  {s.url && (
+                    <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
+                      {prettyHost(s.url)}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {recentSessions.length > 0 && (
           <>
