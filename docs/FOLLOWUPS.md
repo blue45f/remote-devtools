@@ -144,11 +144,18 @@ the next obvious candidates. Each entry: what shipped, what's next.
   Cursor row gets bg-accent-soft and the virtualizer scrolls it into
   view via `scrollToIndex`. Matches the Sessions list bindings so
   the keyboard model is consistent across the app.
-- **SessionDetail tab number shortcuts** — current commit — 1/2/3/4
+- **SessionDetail tab number shortcuts** — `959ac62d` — 1/2/3/4
   switch Overview / Replay / Timeline / Raw JSON without leaving the
   keyboard. Shortcuts skip inputs/textarea/contentEditable so they
   don't fight the Timeline search field. Chrome DevTools docking and
   Linear tab-by-number parity.
+- **Timeline multi-select type filter** — current commit — Timeline
+  filter rows/chips toggle on/off instead of single-selecting. Empty
+  selection means "show everything" so the default behaviour is
+  unchanged. A "Clear" link appears next to the section header when
+  any type is active so users can reset without hunting through chips.
+  ActivityFeed kind-filter parity — same toggle mental model across
+  the app.
 
 ## Next obvious candidates
 
