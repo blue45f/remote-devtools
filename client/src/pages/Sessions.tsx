@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -143,7 +143,25 @@ function persistPrefs(prefs: SessionsPrefs) {
 
 export default function SessionsPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<SessionTab>("record");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab: SessionTab =
+    searchParams.get("tab") === "live" ? "live" : "record";
+  const [tab, setTab] = useState<SessionTab>(initialTab);
+
+  // Keep ?tab=live in the URL in sync with the tab state — round-trips
+  // to Dashboard's "Live now" card and back work without losing tab.
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === "live") next.set("tab", "live");
+        else next.delete("tab");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [tab, setSearchParams]);
+
   const [search, setSearch] = useState("");
   const [regexMode, setRegexMode] = useState(false);
   const [sort, setSort] = useState<SortKey>(() => readStoredPrefs().sort ?? "newest");

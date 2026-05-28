@@ -55,11 +55,17 @@ the next obvious candidates. Each entry: what shipped, what's next.
   prev, Enter opens detail. Active row gets an accent ring (grid) or
   accent-soft bg (table) and `scrollIntoView` keeps it visible. Linear
   / Gmail parity for high-velocity triage.
-- **ActivityFeed date grouping** — current commit — Feed splits into
+- **ActivityFeed date grouping** — `bdfe7796` — Feed splits into
   Today / Yesterday / This week / Older buckets with sticky headers
   and per-bucket counts. The spine that connects events is preserved
   across groups so the timeline metaphor still reads. Linear / PostHog
   / Slack parity.
+- **Dashboard cards click-through + Sessions tab URL** — current commit
+  — Hero "Live now" jumps to `/sessions?tab=live`; "Sessions today",
+  "Total sessions", "Weekly avg sessions" link to `/sessions`. Cards
+  use real `<a>` semantics (Cmd+click for new tab works). Sessions
+  reads `?tab=live` from the URL and writes it back as tab changes.
+  Vercel / Linear dashboard parity.
 
 ## Next obvious candidates
 
