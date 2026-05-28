@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Search as SearchIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -9,6 +10,7 @@ import { SkipLink } from "@/components/a11y/SkipLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -322,38 +324,76 @@ const FAQS: { q: string; a: string }[] = [
 ];
 
 function FAQ() {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return FAQS;
+    return FAQS.filter(
+      (f) =>
+        f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q),
+    );
+  }, [query]);
+
   return (
     <section className="mt-16">
-      <div className="mb-6">
-        <Badge
-          variant="neutral"
-          size="sm"
-          className="mb-3 uppercase tracking-wider"
-        >
-          FAQ
-        </Badge>
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Common questions
-        </h2>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        {FAQS.map((item) => (
-          <details
-            key={item.q}
-            className="group rounded-lg border border-border bg-surface px-4 py-3 open:bg-bg-subtle transition-colors"
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <Badge
+            variant="neutral"
+            size="sm"
+            className="mb-3 uppercase tracking-wider"
           >
-            <summary className="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
-              <span>{item.q}</span>
-              <span className="ml-3 text-fg-faint transition-transform group-open:rotate-180">
-                ↓
-              </span>
-            </summary>
-            <p className="mt-2 text-sm text-fg-subtle leading-relaxed">
-              {item.a}
-            </p>
-          </details>
-        ))}
+            FAQ
+          </Badge>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Common questions
+          </h2>
+        </div>
+        <div className="w-full sm:max-w-xs">
+          <Input
+            placeholder="Search FAQ…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            leadingIcon={<SearchIcon />}
+            data-testid="faq-search"
+          />
+        </div>
       </div>
+      {filtered.length === 0 ? (
+        <Card className="p-6 text-center bg-bg-subtle">
+          <p className="text-sm text-fg-subtle">
+            No matches. Try a different keyword or reach out to{" "}
+            <a
+              href={GITHUB_URL + "/issues/new"}
+              className="text-fg hover:underline underline-offset-2"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub issues
+            </a>
+            .
+          </p>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {filtered.map((item) => (
+            <details
+              key={item.q}
+              className="group rounded-lg border border-border bg-surface px-4 py-3 open:bg-bg-subtle transition-colors"
+            >
+              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
+                <span>{item.q}</span>
+                <span className="ml-3 text-fg-faint transition-transform group-open:rotate-180">
+                  ↓
+                </span>
+              </summary>
+              <p className="mt-2 text-sm text-fg-subtle leading-relaxed">
+                {item.a}
+              </p>
+            </details>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
