@@ -51,11 +51,12 @@ export default function SignUpPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-3">
-        <label className="block">
+        <label htmlFor="signup-name" className="block">
           <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
             {t('auth.fullName')}
           </span>
           <Input
+            id="signup-name"
             type="text"
             required
             placeholder={t('auth.fullNamePlaceholder')}
@@ -65,11 +66,12 @@ export default function SignUpPage() {
             autoComplete="name"
           />
         </label>
-        <label className="block">
+        <label htmlFor="signup-email" className="block">
           <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
             {t('auth.workEmail')}
           </span>
           <Input
+            id="signup-email"
             type="email"
             required
             placeholder={t('auth.emailPlaceholder')}

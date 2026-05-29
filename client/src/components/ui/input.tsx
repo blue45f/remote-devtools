@@ -20,7 +20,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         >
           {leadingIcon && (
-            <span className="absolute left-3 text-fg-faint pointer-events-none [&_svg]:size-4">
+            <span
+              aria-hidden
+              className="absolute left-3 text-fg-faint pointer-events-none [&_svg]:size-4"
+            >
               {leadingIcon}
             </span>
           )}
