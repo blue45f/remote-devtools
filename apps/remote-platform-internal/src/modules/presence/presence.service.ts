@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
 
 export interface Viewer {
   clientId: string;
@@ -39,6 +40,18 @@ export class PresenceService {
   /** Current live viewers for a session (stale entries pruned). */
   public getViewers(sessionId: string): Viewer[] {
     return this.collect(sessionId);
+  }
+
+  /**
+   * Periodically sweep every session so an idle session whose viewers all
+   * left (and is never read again) doesn't leak its map entry. `collect`
+   * drops stale viewers and deletes a session once it's empty.
+   */
+  @Interval(60_000)
+  public pruneAll(): void {
+    for (const sessionId of [...this.sessions.keys()]) {
+      this.collect(sessionId);
+    }
   }
 
   private collect(sessionId: string): Viewer[] {
