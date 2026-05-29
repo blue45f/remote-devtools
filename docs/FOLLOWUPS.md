@@ -729,6 +729,24 @@ limit)` extracts hostname directly in SQL
   `usePresence` heartbeats every 10s (per-tab sessionStorage
   client id) and the Session header shows a "N viewing" chip.
   Single-process MVP — multi-node would move the map to Redis.
+  (Refined `9736dd38`: only show when >1 viewer; hardened
+  `0f9fe0bd`: @Interval(60s) pruneAll bounds the map.)
+
+- **WebSocket presence upgrade** — `51df998d` (server) +
+  `a74d6f6b` (client) — Seventeenth backend cycle; pushes
+  presence live instead of polling. New `PresenceGateway`
+  (raw ws) on a distinct path `/ws/presence` so it coexists
+  with the DevTools gateway untouched; connect=join,
+  close=leave, `ping` refreshes TTL, every change broadcasts
+  the viewer list to that session's sockets. Shares
+  PresenceService state with the HTTP endpoints.
+  `usePresence` prefers the socket and **falls back to HTTP
+  polling** in demo mode or on socket error/close, so neither
+  presence nor DevTools depends on the ws path. New
+  `/ws/presence` dev proxy (`ws:true`). NOTE: live
+  multi-gateway coexistence + push want a manual smoke test —
+  unit tests cover the gateway logic with mock sockets but not
+  a real ws server.
 
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
