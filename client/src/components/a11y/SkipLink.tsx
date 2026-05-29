@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { cn } from '@/lib/utils';
 
 /**
@@ -9,11 +11,12 @@ import { cn } from '@/lib/utils';
  */
 export function SkipLink({
   targetId = 'main-content',
-  children = 'Skip to main content',
+  children,
 }: {
   targetId?: string;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <a
       href={`#${targetId}`}
@@ -23,7 +26,7 @@ export function SkipLink({
         'focus:text-sm focus:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       )}
     >
-      {children}
+      {children ?? t('common.skipToMain')}
     </a>
   );
 }

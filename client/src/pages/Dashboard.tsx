@@ -15,6 +15,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Link } from 'react-router-dom';
 
@@ -77,22 +79,23 @@ function persistPeriod(period: Period) {
   }
 }
 
-const PERIODS: { value: Period; label: string }[] = [
-  { value: 'day', label: 'Daily' },
-  { value: 'week', label: 'Weekly' },
-  { value: 'month', label: 'Monthly' },
+const PERIODS: { value: Period; labelKey: string }[] = [
+  { value: 'day', labelKey: 'dashboard.periodDaily' },
+  { value: 'week', labelKey: 'dashboard.periodWeekly' },
+  { value: 'month', labelKey: 'dashboard.periodMonthly' },
 ];
 
 const ROLE_KEYS = ['developer', 'designer', 'pm', 'qa', 'other'] as const;
-const ROLE_LABELS: Record<(typeof ROLE_KEYS)[number], string> = {
-  developer: 'Developer',
-  designer: 'Designer',
-  pm: 'PM',
-  qa: 'QA',
-  other: 'Other',
+const ROLE_LABEL_KEYS: Record<(typeof ROLE_KEYS)[number], string> = {
+  developer: 'dashboard.roleDeveloper',
+  designer: 'dashboard.roleDesigner',
+  pm: 'dashboard.rolePm',
+  qa: 'dashboard.roleQa',
+  other: 'dashboard.roleOther',
 };
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<Period>(() => readStoredPeriod() ?? 'day');
   const queryClient = useQueryClient();
   const [, forceTick] = useState(0);
@@ -143,10 +146,10 @@ export default function DashboardPage() {
           eyebrow can breathe. */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between flex-wrap gap-3 sm:gap-4 mb-5 sm:mb-6">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">Dashboard</h1>
-          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
-            Activity overview across all your debug sessions and tickets.
-          </p>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
+            {t('dashboard.title')}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">{t('dashboard.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <FreshnessBadge
@@ -178,7 +181,7 @@ export default function DashboardPage() {
                 {PERIODS.map((p) => (
                   <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
                     <CalendarDays className="size-3.5" />
-                    {p.label}
+                    {t(p.labelKey)}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -187,22 +190,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Hero row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 mb-2.5 sm:mb-3">
+      {/* Hero row — the live signal reads first, then today's counts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
         <Link
           to="/sessions?tab=live"
-          aria-label="Open live sessions"
+          aria-label={t('dashboard.openLiveSessions')}
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
         >
           <HeroLiveCard live={liveCount} loading={liveQuery.isLoading} />
         </Link>
         <Link
           to="/sessions"
-          aria-label="Open all recorded sessions"
+          aria-label={t('dashboard.openRecordedSessions')}
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
         >
           <HeroMetricCard
-            label="Sessions today"
+            label={t('dashboard.sessionsToday')}
             value={stats?.todayRecordSessions}
             weeklyAvg={stats?.weeklyAverageRecordSessions}
             loading={statsQuery.isLoading}
@@ -212,7 +215,7 @@ export default function DashboardPage() {
           />
         </Link>
         <HeroMetricCard
-          label="Tickets today"
+          label={t('dashboard.ticketsToday')}
           value={stats?.todayTickets}
           weeklyAvg={stats?.weeklyAverage}
           loading={statsQuery.isLoading}
@@ -222,58 +225,56 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Secondary stat row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-6 sm:mb-8">
-        <Link
+      {/* Secondary stats — one dense, hairline-divided strip rather than four
+          identical cards (the identical-card-grid anti-pattern). Borders draw
+          a clean cross on the 2-up phone layout and a single row of dividers
+          from md up. */}
+      <Card className="grid grid-cols-2 md:grid-cols-4 overflow-hidden mb-6 sm:mb-8">
+        <StatCell
+          label={t('dashboard.totalSessions')}
+          value={stats?.totalRecordSessions}
+          icon={Activity}
+          loading={statsQuery.isLoading}
           to="/sessions"
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
-        >
-          <StatTile
-            label="Total sessions"
-            value={stats?.totalRecordSessions}
-            icon={Activity}
-            loading={statsQuery.isLoading}
-          />
-        </Link>
-        <StatTile
-          label="Total tickets"
+        />
+        <StatCell
+          label={t('dashboard.totalTickets')}
           value={stats?.totalTickets}
           icon={Ticket}
           loading={statsQuery.isLoading}
+          className="border-l border-border"
         />
-        <Link
+        <StatCell
+          label={t('dashboard.weeklyAvgSessions')}
+          value={stats?.weeklyAverageRecordSessions}
+          icon={TrendingUp}
+          loading={statsQuery.isLoading}
           to="/sessions"
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
-        >
-          <StatTile
-            label="Weekly avg sessions"
-            value={stats?.weeklyAverageRecordSessions}
-            icon={TrendingUp}
-            loading={statsQuery.isLoading}
-          />
-        </Link>
-        <StatTile
-          label="Weekly avg tickets"
+          className="border-t border-border md:border-t-0 md:border-l"
+        />
+        <StatCell
+          label={t('dashboard.weeklyAvgTickets')}
           value={stats?.weeklyAverage}
           icon={TrendingUp}
           loading={statsQuery.isLoading}
+          className="border-t border-l border-border md:border-t-0"
         />
-      </div>
+      </Card>
 
       {/* Charts + activity */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4">
         <div className="xl:col-span-2 space-y-3 sm:space-y-4 min-w-0">
           <ChartPanel
-            title="Sessions over time"
-            description="New record sessions captured per period."
+            title={t('dashboard.sessionsOverTime')}
+            description={t('dashboard.sessionsOverTimeDesc')}
             loading={recordTrendQuery.isLoading}
             empty={recordTrend.length === 0}
           >
             <SessionsAreaChart data={recordTrend} />
           </ChartPanel>
           <ChartPanel
-            title="Tickets by role"
-            description="Tickets created per role."
+            title={t('dashboard.ticketsByRole')}
+            description={t('dashboard.ticketsByRoleDesc')}
             loading={ticketTrendQuery.isLoading}
             empty={ticketTrend.length === 0}
           >
@@ -297,6 +298,7 @@ interface RecentNote {
 }
 
 function RecentNotesPanel() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery<RecentNote[]>({
     queryKey: ['recent-notes'],
     queryFn: () => apiFetch<RecentNote[]>('/api/dashboard/recent-notes?limit=5'),
@@ -308,7 +310,7 @@ function RecentNotesPanel() {
       <Card className="p-5 space-y-2.5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <StickyNote className="size-3.5 text-fg-faint" />
-          Recently annotated
+          {t('dashboard.recentlyAnnotated')}
         </h3>
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-8 w-full" />
@@ -322,9 +324,9 @@ function RecentNotesPanel() {
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <StickyNote className="size-3.5 text-fg-faint" />
-          Recently annotated
+          {t('dashboard.recentlyAnnotated')}
         </h3>
-        <p className="text-xs text-fg-subtle mt-2">No annotated sessions yet.</p>
+        <p className="text-xs text-fg-subtle mt-2">{t('dashboard.noAnnotatedSessions')}</p>
       </Card>
     );
   }
@@ -333,7 +335,7 @@ function RecentNotesPanel() {
     <Card className="p-5" data-testid="dashboard-recent-notes">
       <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5 mb-3">
         <StickyNote className="size-3.5 text-fg-faint" />
-        Recently annotated
+        {t('dashboard.recentlyAnnotated')}
       </h3>
       <ul className="space-y-1.5">
         {rows.map((r) => (
@@ -348,7 +350,7 @@ function RecentNotesPanel() {
                   {r.name}
                 </span>
                 <span className="text-[10px] text-fg-faint shrink-0">
-                  {formatRelativeAge(new Date(r.timestamp).getTime())}
+                  {formatRelativeAge(new Date(r.timestamp).getTime(), t)}
                 </span>
               </div>
               <p className="text-[11px] text-fg-subtle truncate mt-0.5">{r.note}</p>
@@ -361,6 +363,7 @@ function RecentNotesPanel() {
 }
 
 function TopHostsPanel({ period }: { period: Period }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery<{ host: string; count: number }[]>({
     queryKey: ['top-hosts', period],
     queryFn: () =>
@@ -376,7 +379,7 @@ function TopHostsPanel({ period }: { period: Period }) {
       <Card className="p-5 space-y-2.5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Globe className="size-3.5 text-fg-faint" />
-          Top hosts
+          {t('dashboard.topHosts')}
         </h3>
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-6 w-full" />
@@ -390,9 +393,9 @@ function TopHostsPanel({ period }: { period: Period }) {
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Globe className="size-3.5 text-fg-faint" />
-          Top hosts
+          {t('dashboard.topHosts')}
         </h3>
-        <p className="text-xs text-fg-subtle mt-2">No host data for this period yet.</p>
+        <p className="text-xs text-fg-subtle mt-2">{t('dashboard.noHostData')}</p>
       </Card>
     );
   }
@@ -402,9 +405,11 @@ function TopHostsPanel({ period }: { period: Period }) {
       <div className="flex items-baseline justify-between mb-3">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Globe className="size-3.5 text-fg-faint" />
-          Top hosts
+          {t('dashboard.topHosts')}
         </h3>
-        <span className="text-[11px] text-fg-faint">Last {PERIOD_LABEL[period]}</span>
+        <span className="text-[11px] text-fg-faint">
+          {t('dashboard.lastRange', { range: t(PERIOD_LABEL_KEY[period]) })}
+        </span>
       </div>
       <ul className="space-y-1.5">
         {rows.map((r) => {
@@ -434,13 +439,14 @@ function TopHostsPanel({ period }: { period: Period }) {
   );
 }
 
-const PERIOD_LABEL: Record<Period, string> = {
-  day: '7 days',
-  week: '8 weeks',
-  month: '6 months',
+const PERIOD_LABEL_KEY: Record<Period, string> = {
+  day: 'dashboard.periodRange7Days',
+  week: 'dashboard.periodRange8Weeks',
+  month: 'dashboard.periodRange6Months',
 };
 
 function TopTagsPanel({ period }: { period: Period }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery<{ tag: string; count: number }[]>({
     queryKey: ['top-tags', period],
     queryFn: () =>
@@ -455,7 +461,7 @@ function TopTagsPanel({ period }: { period: Period }) {
       <Card className="p-5 space-y-2.5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Tag className="size-3.5 text-fg-faint" />
-          Top tags
+          {t('dashboard.topTags')}
         </h3>
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-6 w-full" />
@@ -469,9 +475,9 @@ function TopTagsPanel({ period }: { period: Period }) {
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Tag className="size-3.5 text-fg-faint" />
-          Top tags
+          {t('dashboard.topTags')}
         </h3>
-        <p className="text-xs text-fg-subtle mt-2">No tags applied in this period yet.</p>
+        <p className="text-xs text-fg-subtle mt-2">{t('dashboard.noTagsApplied')}</p>
       </Card>
     );
   }
@@ -481,9 +487,11 @@ function TopTagsPanel({ period }: { period: Period }) {
       <div className="flex items-baseline justify-between mb-3">
         <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
           <Tag className="size-3.5 text-fg-faint" />
-          Top tags
+          {t('dashboard.topTags')}
         </h3>
-        <span className="text-[11px] text-fg-faint">Last {PERIOD_LABEL[period]}</span>
+        <span className="text-[11px] text-fg-faint">
+          {t('dashboard.lastRange', { range: t(PERIOD_LABEL_KEY[period]) })}
+        </span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {rows.map((r) => (
@@ -513,9 +521,10 @@ function FreshnessBadge({
   fetching: boolean;
   onRefresh: () => void;
 }) {
+  const { t } = useTranslation();
   // Recompute on every render; the parent ticks every 5s so the relative
   // time string stays current without an internal interval.
-  const label = formatRelativeAge(updatedAt);
+  const label = formatRelativeAge(updatedAt, t);
 
   return (
     <button
@@ -529,69 +538,67 @@ function FreshnessBadge({
         'disabled:opacity-60 disabled:cursor-not-allowed',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       )}
-      aria-label="Refresh dashboard data"
+      aria-label={t('dashboard.refreshData')}
       data-testid="dashboard-refresh"
     >
       <RefreshCw className={cn('size-3', fetching && 'animate-spin')} />
-      <span>{fetching ? 'Refreshing…' : `Updated ${label}`}</span>
+      <span>{fetching ? t('dashboard.refreshing') : t('dashboard.updated', { time: label })}</span>
     </button>
   );
 }
 
-function formatRelativeAge(updatedAt: number) {
-  if (!updatedAt) return 'just now';
+function formatRelativeAge(updatedAt: number, t: TFunction) {
+  if (!updatedAt) return t('common.justNow');
   const ms = Date.now() - updatedAt;
-  if (ms < 5_000) return 'just now';
-  if (ms < 60_000) return `${Math.floor(ms / 1_000)}s ago`;
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  return `${Math.floor(ms / 3_600_000)}h ago`;
+  if (ms < 5_000) return t('common.justNow');
+  if (ms < 60_000) return t('common.secondsAgo', { n: Math.floor(ms / 1_000) });
+  if (ms < 3_600_000) return t('common.minutesAgo', { n: Math.floor(ms / 60_000) });
+  return t('common.hoursAgo', { n: Math.floor(ms / 3_600_000) });
 }
 
 /* ─────────────  Hero cards  ───────────── */
 
 function HeroLiveCard({ live, loading }: { live: number; loading: boolean }) {
+  const { t } = useTranslation();
   const isActive = live > 0;
   return (
     <Card
       className={cn(
-        'p-4 sm:p-5 relative overflow-hidden h-full',
-        'transition-colors hover:border-border-strong',
-        isActive && 'border-danger/30',
+        'p-4 sm:p-5 h-full transition-colors',
+        // Live is a *state*, so the only color it earns is a hairline tint on
+        // the border, reinforced by the record-dot heartbeat below. No
+        // decorative wash, and the `live` token (not `danger`) so an active
+        // session never reads as an error.
+        isActive ? 'border-live/40 hover:border-live/60' : 'hover:border-border-strong',
       )}
     >
-      {isActive && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-1/2 -right-1/2 size-72 rounded-full blur-3xl bg-danger/10"
-        />
+      <div className="flex items-center gap-2 text-fg-subtle text-xs uppercase tracking-wider font-semibold mb-2">
+        <Radio className="size-3.5" />
+        {t('dashboard.liveNow')}
+      </div>
+      {loading ? (
+        <Skeleton className="h-9 w-16" />
+      ) : (
+        <div className="flex items-baseline gap-2">
+          <AnimatedNumber value={live} className="text-3xl font-semibold text-fg tabular-nums" />
+          <span className="text-sm text-fg-subtle">
+            {t(live === 1 ? 'dashboard.sessionOne' : 'dashboard.sessionOther')}
+          </span>
+        </div>
       )}
-      <div className="relative">
-        <div className="flex items-center gap-2 text-fg-subtle text-xs uppercase tracking-wider font-semibold mb-2">
-          <Radio className="size-3.5" />
-          Live now
-        </div>
-        {loading ? (
-          <Skeleton className="h-9 w-16" />
+      <div className="flex items-center gap-2 mt-3">
+        {isActive ? (
+          <Badge variant="live" className="gap-1.5">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-live" />
+            </span>
+            {t('dashboard.streaming')}
+          </Badge>
         ) : (
-          <div className="flex items-baseline gap-2">
-            <AnimatedNumber value={live} className="text-3xl font-semibold text-fg" />
-            <span className="text-sm text-fg-subtle">session{live !== 1 && 's'}</span>
-          </div>
+          <Badge variant="neutral">{t('dashboard.idle')}</Badge>
         )}
-        <div className="flex items-center gap-2 mt-3">
-          {isActive ? (
-            <Badge variant="live" className="gap-1.5">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-live" />
-              </span>
-              Streaming
-            </Badge>
-          ) : (
-            <Badge variant="neutral">Idle</Badge>
-          )}
-          <span className="text-[11px] text-fg-faint">refresh 30s</span>
-        </div>
+        <span className="text-[11px] text-fg-faint">{t('dashboard.refresh30s')}</span>
       </div>
     </Card>
   );
@@ -616,6 +623,7 @@ function HeroMetricCard({
   spark,
   accent,
 }: HeroMetricCardProps) {
+  const { t } = useTranslation();
   const v = value ?? 0;
   const avg = weeklyAvg ?? 0;
   const delta = avg > 0 ? ((v - avg) / avg) * 100 : 0;
@@ -639,7 +647,8 @@ function HeroMetricCard({
         </div>
       )}
       <div className="text-[11px] text-fg-faint mt-1.5">
-        weekly avg <span className="font-mono text-fg-subtle">{formatNumber(avg)}</span>
+        {t('dashboard.weeklyAvg')}{' '}
+        <span className="font-mono text-fg-subtle">{formatNumber(avg)}</span>
       </div>
 
       {/* sparkline — pulls margin to bleed into the card edge */}
@@ -656,11 +665,12 @@ function HeroMetricCard({
 }
 
 function DeltaBadge({ delta }: { delta: number }) {
+  const { t } = useTranslation();
   if (Math.abs(delta) < 0.5) {
     return (
       <Badge variant="neutral" size="sm" className="gap-0.5">
         <Minus className="size-2.5" />
-        flat
+        {t('dashboard.flat')}
       </Badge>
     );
   }
@@ -673,18 +683,20 @@ function DeltaBadge({ delta }: { delta: number }) {
   );
 }
 
-/* ───────── Secondary stat tile ───────── */
+/* ───────── Secondary stat cell (a division of the stat strip) ───────── */
 
-interface StatTileProps {
+interface StatCellProps {
   label: string;
   value?: number;
   icon: typeof Activity;
   loading?: boolean;
+  to?: string;
+  className?: string;
 }
 
-function StatTile({ label, value, icon: Icon, loading }: StatTileProps) {
-  return (
-    <Card className="p-3 sm:p-4 h-full transition-colors hover:border-border-strong">
+function StatCell({ label, value, icon: Icon, loading, to, className }: StatCellProps) {
+  const body = (
+    <>
       <div className="flex items-center gap-1.5 sm:gap-2 text-fg-faint text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold mb-1 sm:mb-1.5">
         <Icon className="size-3" />
         <span className="truncate">{label}</span>
@@ -695,11 +707,29 @@ function StatTile({ label, value, icon: Icon, loading }: StatTileProps) {
         <AnimatedNumber
           value={value ?? 0}
           format={(n) => formatNumber(Math.round(n))}
-          className="text-lg sm:text-xl font-semibold text-fg block"
+          className="text-lg sm:text-xl font-semibold text-fg block tabular-nums"
         />
       )}
-    </Card>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={cn(
+          'block p-3 sm:p-4 transition-colors hover:bg-bg-subtle',
+          // inset ring so it isn't clipped by the strip's overflow-hidden
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+          className,
+        )}
+      >
+        {body}
+      </Link>
+    );
+  }
+
+  return <div className={cn('p-3 sm:p-4', className)}>{body}</div>;
 }
 
 /* ───────── Chart panel ───────── */
@@ -738,19 +768,20 @@ function ChartSkeleton() {
 }
 
 function ChartEmpty() {
+  const { t } = useTranslation();
   const demoMode = useAppStore((s) => s.demoMode);
   const toggleDemoMode = useAppStore((s) => s.toggleDemoMode);
   return (
     <div className="h-full flex flex-col items-center justify-center text-center text-fg-faint gap-2">
       <Activity className="size-6" />
-      <p className="text-xs">No data for this period</p>
+      <p className="text-xs">{t('dashboard.noDataForPeriod')}</p>
       {!demoMode && (
         <button
           type="button"
           onClick={() => toggleDemoMode()}
           className="text-xs text-fg-subtle hover:text-fg underline-offset-2 hover:underline"
         >
-          Enable demo mode to preview with seed data
+          {t('dashboard.enableDemoMode')}
         </button>
       )}
     </div>
@@ -760,6 +791,7 @@ function ChartEmpty() {
 /* ───────── Sessions Area Chart ───────── */
 
 function SessionsAreaChart({ data }: { data: TrendItem[] }) {
+  const { t } = useTranslation();
   const chartData = useMemo(
     () =>
       data.map((d) => ({
@@ -768,12 +800,13 @@ function SessionsAreaChart({ data }: { data: TrendItem[] }) {
       })),
     [data],
   );
-  return <AreaChart data={chartData} valueLabel="Sessions" />;
+  return <AreaChart data={chartData} valueLabel={t('dashboard.sessionsValueLabel')} />;
 }
 
 /* ───────── Tickets by Role (horizontal stacked bar) ───────── */
 
 function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
+  const { t } = useTranslation();
   // aggregate across the period
   const totals = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -784,13 +817,13 @@ function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
     }
     return ROLE_KEYS.map((role, i) => ({
       role,
-      label: ROLE_LABELS[role],
+      label: t(ROLE_LABEL_KEYS[role]),
       value: acc[role] ?? 0,
       shade: i,
     }))
       .filter((r) => r.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [data]);
+  }, [data, t]);
 
   if (totals.length === 0) return <ChartEmpty />;
 

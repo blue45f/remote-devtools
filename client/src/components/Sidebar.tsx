@@ -1,4 +1,5 @@
 import { ChevronsLeft, ChevronsRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 
 import { Brand } from '@/components/Brand';
@@ -22,6 +23,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) {
+  const { t } = useTranslation();
   const storeCollapsed = useAppStore((s) => s.sidebarCollapsed);
   const toggleCollapsed = useAppStore((s) => s.toggleSidebarCollapsed);
   // Mobile drawer always renders the expanded sidebar — collapsed-rail mode
@@ -50,7 +52,7 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
             variant="ghost"
             size="icon"
             onClick={onClose}
-            aria-label="Close navigation"
+            aria-label={t('sidebar.closeNav')}
             className="-mr-1 touch-target"
           >
             <X />
@@ -59,12 +61,12 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Main navigation">
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label={t('sidebar.mainNav')}>
         {navSections.map((section, idx) => (
           <div key={idx} className={cn(idx > 0 && 'mt-5')}>
-            {section.label && !collapsed && (
+            {section.labelKey && !collapsed && (
               <div className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
-                {section.label}
+                {t(section.labelKey)}
               </div>
             )}
             <ul className="flex flex-col gap-0.5">
@@ -96,13 +98,13 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
                 variant="ghost"
                 size="icon-sm"
                 onClick={toggleCollapsed}
-                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
               >
                 {collapsed ? <ChevronsRight /> : <ChevronsLeft />}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              {collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
             </TooltipContent>
           </Tooltip>
         )}
@@ -120,7 +122,9 @@ function SidebarLink({
   collapsed: boolean;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation();
   const Icon = item.icon;
+  const label = t(item.labelKey);
 
   const link = (
     <NavLink
@@ -149,7 +153,7 @@ function SidebarLink({
           <Icon className="size-4 shrink-0" />
           {!collapsed && (
             <>
-              <span className="flex-1 truncate">{item.label}</span>
+              <span className="flex-1 truncate">{label}</span>
               {item.shortcut && (
                 <span className="text-[10px] tracking-widest text-fg-faint opacity-0 group-hover:opacity-100 transition-opacity">
                   {item.shortcut}
@@ -167,7 +171,7 @@ function SidebarLink({
     <Tooltip>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>
-        {item.label}
+        {label}
       </TooltipContent>
     </Tooltip>
   );

@@ -1,4 +1,5 @@
 import { Keyboard } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -12,6 +13,7 @@ import { SHORTCUT_GROUPS } from '@/lib/keyboard';
 import { useAppStore } from '@/lib/store';
 
 export function ShortcutsDialog() {
+  const { t } = useTranslation();
   const open = useAppStore((s) => s.shortcutsOpen);
   const setOpen = useAppStore((s) => s.setShortcutsOpen);
 
@@ -21,11 +23,9 @@ export function ShortcutsDialog() {
         <DialogHeader className="px-6 pt-6 mb-0">
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="size-4 text-fg-subtle" />
-            Keyboard shortcuts
+            {t('shortcuts.title')}
           </DialogTitle>
-          <DialogDescription>
-            Move around without taking your hands off the keyboard.
-          </DialogDescription>
+          <DialogDescription>{t('shortcuts.description')}</DialogDescription>
         </DialogHeader>
         <div className="px-6 pb-6 pt-4 space-y-5 max-h-[70vh] overflow-y-auto">
           {SHORTCUT_GROUPS.map((group) => (
@@ -45,7 +45,11 @@ export function ShortcutsDialog() {
                     <div className="flex items-center gap-1 shrink-0">
                       {s.keys.map((key, idx) => (
                         <span key={`${s.label}-${idx}`} className="inline-flex items-center">
-                          {idx > 0 && <span className="text-[10px] text-fg-faint mx-1">then</span>}
+                          {idx > 0 && (
+                            <span className="text-[10px] text-fg-faint mx-1">
+                              {t('shortcuts.then')}
+                            </span>
+                          )}
                           <Kbd>{key}</Kbd>
                         </span>
                       ))}
@@ -57,8 +61,7 @@ export function ShortcutsDialog() {
           ))}
 
           <p className="text-[11px] text-fg-faint border-t border-border pt-3">
-            Tip: shortcuts ignore typing inside inputs, textareas, and search fields so they don't
-            get in your way.
+            {t('shortcuts.tip')}
           </p>
         </div>
       </DialogContent>

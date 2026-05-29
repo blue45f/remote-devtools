@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { SessionPreviewCard } from '@/components/replay/SessionPreviewCard';
@@ -75,6 +76,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toaster';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
+import i18n from '@/lib/i18n';
 import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
 import { formatDurationFromNanos, shortHash } from '@/lib/format';
 import { buildCurlCommand } from '@/lib/curl';
@@ -180,24 +182,33 @@ function buildSessionSummary(
   counts: SummaryCounts,
   insights: SessionInsight[] = [],
 ): string {
-  const name = metadata?.name ?? metadata?.room ?? `Session #${id}`;
+  const name = metadata?.name ?? metadata?.room ?? i18n.t('sessionDetail.summaryName', { id });
   const lines: string[] = [`### ${name}`, ''];
   const add = (label: string, value?: string | number | null) => {
     if (value === undefined || value === null || value === '') return;
     lines.push(`- **${label}:** ${value}`);
   };
-  add('Session ID', id);
-  add('URL', metadata?.url);
-  add('Device', metadata?.deviceId);
-  if (metadata?.duration) add('Duration', formatDurationFromNanos(metadata.duration));
-  add('Captured', metadata?.createdAt ? new Date(metadata.createdAt).toLocaleString() : undefined);
-  if (metadata?.userAgent) add('Browser', formatUserAgentBadge(metadata.userAgent) || undefined);
-  if (metadata?.tags && metadata.tags.length > 0) add('Tags', metadata.tags.join(', '));
-  add('Network errors', counts.networkErrorCount);
-  add('Console errors', counts.consoleErrorCount);
-  add('Comments', counts.commentCount);
+  add(i18n.t('sessionDetail.summarySessionId'), id);
+  add(i18n.t('sessionDetail.summaryUrl'), metadata?.url);
+  add(i18n.t('sessionDetail.summaryDevice'), metadata?.deviceId);
+  if (metadata?.duration)
+    add(i18n.t('sessionDetail.summaryDuration'), formatDurationFromNanos(metadata.duration));
+  add(
+    i18n.t('sessionDetail.summaryCaptured'),
+    metadata?.createdAt ? new Date(metadata.createdAt).toLocaleString() : undefined,
+  );
+  if (metadata?.userAgent)
+    add(
+      i18n.t('sessionDetail.summaryBrowser'),
+      formatUserAgentBadge(metadata.userAgent) || undefined,
+    );
+  if (metadata?.tags && metadata.tags.length > 0)
+    add(i18n.t('sessionDetail.summaryTags'), metadata.tags.join(', '));
+  add(i18n.t('sessionDetail.summaryNetworkErrors'), counts.networkErrorCount);
+  add(i18n.t('sessionDetail.summaryConsoleErrors'), counts.consoleErrorCount);
+  add(i18n.t('sessionDetail.summaryComments'), counts.commentCount);
   if (insights.length > 0) {
-    lines.push('', '**Notable:**');
+    lines.push('', `**${i18n.t('sessionDetail.summaryNotable')}**`);
     for (const insight of insights) lines.push(`- ${insight.text}`);
   }
   if (metadata?.note && metadata.note.trim()) {
@@ -234,7 +245,7 @@ export function buildSessionInsights(input: {
   ].sort((a, b) => a - b);
 
   if (errorOffsets.length === 0 && rageClicks.length === 0) {
-    return [{ text: 'Clean session — no errors, failed requests, or rage-clicks detected.' }];
+    return [{ text: i18n.t('sessionDetail.insightCleanSession') }];
   }
 
   const out: SessionInsight[] = [];
@@ -243,9 +254,34 @@ export function buildSessionInsights(input: {
     const ce = consoleErrors.length;
     const fr = failedRequests.length;
     const parts: string[] = [];
-    if (ce > 0) parts.push(`${ce} console error${ce === 1 ? '' : 's'}`);
-    if (fr > 0) parts.push(`${fr} failed request${fr === 1 ? '' : 's'}`);
-    out.push({ text: `${parts.join(' and ')} in this session.`, jumpMs: errorOffsets[0] });
+    if (ce > 0)
+      parts.push(
+        i18n.t(
+          ce === 1
+            ? 'sessionDetail.insightConsoleErrorOne'
+            : 'sessionDetail.insightConsoleErrorOther',
+          {
+            n: ce,
+          },
+        ),
+      );
+    if (fr > 0)
+      parts.push(
+        i18n.t(
+          fr === 1
+            ? 'sessionDetail.insightFailedRequestOne'
+            : 'sessionDetail.insightFailedRequestOther',
+          {
+            n: fr,
+          },
+        ),
+      );
+    out.push({
+      text: i18n.t('sessionDetail.insightInThisSession', {
+        parts: parts.join(i18n.t('sessionDetail.insightAnd')),
+      }),
+      jumpMs: errorOffsets[0],
+    });
 
     // Densest 3s window across all error offsets — the "what blew up" moment.
     const WINDOW = 3000;
@@ -258,7 +294,10 @@ export function buildSessionInsights(input: {
     }
     if (best.count >= 2) {
       out.push({
-        text: `${best.count} errors cluster around ${formatPlayhead(best.start)}.`,
+        text: i18n.t('sessionDetail.insightErrorsCluster', {
+          n: best.count,
+          time: formatPlayhead(best.start),
+        }),
         jumpMs: best.start,
       });
     }
@@ -281,7 +320,11 @@ export function buildSessionInsights(input: {
       /* keep raw url */
     }
     out.push({
-      text: `Largest response: ${formatBytes(largest.encodedDataLength)} — ${largest.method} ${path}.`,
+      text: i18n.t('sessionDetail.insightLargestResponse', {
+        size: formatBytes(largest.encodedDataLength),
+        method: largest.method,
+        path,
+      }),
       jumpMs: normaliseOffsetMs(largest.timestamp, sessionStartMs),
     });
   }
@@ -290,7 +333,10 @@ export function buildSessionInsights(input: {
     const worst = rageClicks.reduce((m, c) => (c.count > m.count ? c : m), rageClicks[0]);
     const offset = Math.max(0, worst.startMs - sessionStartMs);
     out.push({
-      text: `Rage-click burst at ${formatPlayhead(offset)} (×${worst.count}).`,
+      text: i18n.t('sessionDetail.insightRageClickBurst', {
+        time: formatPlayhead(offset),
+        n: worst.count,
+      }),
       jumpMs: offset,
     });
   }
@@ -301,6 +347,7 @@ export function buildSessionInsights(input: {
 type TabValue = 'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'raw';
 
 export default function SessionDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -622,7 +669,7 @@ export default function SessionDetailPage() {
       >
         <Link to="/sessions">
           <ArrowLeft />
-          All sessions
+          {t('sessionDetail.allSessions')}
         </Link>
       </Button>
 
@@ -667,17 +714,17 @@ export default function SessionDetailPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 self-start">
           <MetricTile
             icon={Layers}
-            label="Total events"
+            label={t('sessionDetail.metricTotalEvents')}
             value={metaLoading || eventsLoading ? null : totalEvents.toLocaleString()}
           />
           <MetricTile
             icon={Clock}
-            label="Duration"
+            label={t('sessionDetail.metricDuration')}
             value={metaLoading ? null : formatDurationFromNanos(metadata?.duration)}
           />
           <MetricTile
             icon={Calendar}
-            label="Started"
+            label={t('sessionDetail.metricStarted')}
             value={
               metaLoading
                 ? null
@@ -691,11 +738,11 @@ export default function SessionDetailPage() {
           />
           <MetricTile
             icon={Smartphone}
-            label="Device"
+            label={t('sessionDetail.metricDevice')}
             value={metaLoading ? null : shortHash(metadata?.deviceId, 14)}
             mono
             copy={metadata?.deviceId}
-            copyToastLabel="Device ID copied"
+            copyToastLabel={t('sessionDetail.deviceIdCopied')}
           />
         </div>
       </div>

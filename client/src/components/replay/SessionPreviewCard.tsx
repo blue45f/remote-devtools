@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Camera, EyeOff, ImageOff, MousePointerClick } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +39,7 @@ interface SessionPreviewCardProps {
  * mini-page always fills the card without distortion.
  */
 export function SessionPreviewCard({ sessionId, className, clickPoints }: SessionPreviewCardProps) {
+  const { t } = useTranslation();
   const [showHeatmap, setShowHeatmap] = useState(true);
   const { data, isLoading, error } = useQuery({
     queryKey: ['session-preview', sessionId],
@@ -90,7 +92,7 @@ export function SessionPreviewCard({ sessionId, className, clickPoints }: Sessio
         )}
       >
         <ImageOff className="size-5" />
-        <span>No preview captured</span>
+        <span>{t('replay.noPreviewCaptured')}</span>
       </Card>
     );
   }
@@ -99,8 +101,8 @@ export function SessionPreviewCard({ sessionId, className, clickPoints }: Sessio
     <Card className={cn('relative overflow-hidden p-0 group bg-bg-subtle', className)}>
       <div ref={containerRef} className="aspect-[16/10] w-full relative">
         <iframe
-          title="Session preview"
-          aria-label="Captured page preview"
+          title={t('replay.previewIframeTitle')}
+          aria-label={t('replay.previewIframeAriaLabel')}
           srcDoc={srcDoc}
           sandbox=""
           referrerPolicy="no-referrer"
@@ -129,7 +131,7 @@ export function SessionPreviewCard({ sessionId, className, clickPoints }: Sessio
         )}
       >
         <Camera className="size-3" />
-        <span className="flex-1">Captured preview</span>
+        <span className="flex-1">{t('replay.capturedPreview')}</span>
         {clickPoints && clickPoints.length > 0 && (
           <button
             type="button"

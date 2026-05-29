@@ -8,15 +8,18 @@ import ko from '@/locales/ko.json';
 /**
  * i18n setup.
  *
- * Scope: marketing surface only (Landing, Pricing, Auth, Topbar, Sidebar nav).
- * The engineering UI (Dashboard, Sessions, SessionDetail, SDK sandbox) stays
- * English on purpose — those screens are used by developers who already work
- * in English-language tools, and translating CDP / DevTools terms produces
- * stranger results than helpful ones.
+ * Scope: the whole app. Marketing (Landing, Pricing, Auth, Topbar, Sidebar)
+ * and the engineering UI (Dashboard, Sessions, SessionDetail, SDK sandbox) all
+ * read their copy through `t()`. Dynamic / machine data (URLs, device hashes,
+ * timestamps, raw CDP payloads, IDs) is never translated — only UI chrome is.
  *
- * Adding a new key: edit BOTH `locales/en.json` and `locales/ko.json`. The
- * type-safety of the `t()` calls is enforced at runtime, not compile-time, so
- * a missing key falls back to English.
+ * Default language is Korean. A fresh visitor lands on Korean; switching via
+ * the language menu persists the choice in localStorage ("rd-lang"). We drop
+ * navigator detection on purpose so the default is Korean for everyone, not
+ * just Korean-locale browsers.
+ *
+ * Adding a new key: edit BOTH `locales/ko.json` and `locales/en.json`. Missing
+ * keys fall back to Korean (the default), then to the raw key string.
  */
 
 void i18n
@@ -27,13 +30,15 @@ void i18n
       en: { translation: en },
       ko: { translation: ko },
     },
-    fallbackLng: 'en',
+    lng: 'ko',
+    fallbackLng: 'ko',
     supportedLngs: ['en', 'ko'],
     interpolation: { escapeValue: false }, // React already escapes
     detection: {
-      // Persist explicit user choice in localStorage; otherwise infer from
-      // navigator.language. Skip path/query/cookie detection — keeps URLs clean.
-      order: ['localStorage', 'navigator'],
+      // Respect an explicit stored choice; otherwise fall through to `lng`
+      // (Korean). No navigator/path/query/cookie detection — keeps the default
+      // predictable and URLs clean.
+      order: ['localStorage'],
       lookupLocalStorage: 'rd-lang',
       caches: ['localStorage'],
     },

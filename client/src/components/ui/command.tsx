@@ -1,6 +1,7 @@
 import { Command as CommandPrimitive } from 'cmdk';
 import { Search } from 'lucide-react';
 import { forwardRef, type ComponentPropsWithoutRef, type HTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -27,13 +28,12 @@ interface CommandDialogProps {
 }
 
 export function CommandDialog({ open, onOpenChange, children }: CommandDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 max-w-2xl">
-        <DialogTitle className="sr-only">Command palette</DialogTitle>
-        <DialogDescription className="sr-only">
-          Search for actions, sessions, and pages
-        </DialogDescription>
+        <DialogTitle className="sr-only">{t('ui.commandPalette')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('ui.commandPaletteDesc')}</DialogDescription>
         <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-fg-faint">
           {children}
         </Command>

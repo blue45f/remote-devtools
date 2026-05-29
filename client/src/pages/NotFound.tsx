@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Compass, Home, Search } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ function distance(a: string, b: string): number {
 }
 
 export default function NotFound() {
+  const { t } = useTranslation();
   const location = useLocation();
   const setCommandOpen = useAppStore((s) => s.setCommandOpen);
 
@@ -74,10 +76,10 @@ export default function NotFound() {
           <span className="h-px w-6 bg-border" />
         </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight text-fg mb-2">Lost in the network</h1>
-        <p className="text-sm text-fg-subtle max-w-sm mb-1 mx-auto">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg mb-2">
+          {t('notFound.title')}
+        </h1>
+        <p className="text-sm text-fg-subtle max-w-sm mb-1 mx-auto">{t('notFound.description')}</p>
         {location.pathname && location.pathname !== '/' && (
           <p
             className="text-[11px] text-fg-faint font-mono mb-5"
@@ -89,13 +91,13 @@ export default function NotFound() {
 
         {suggestion && (
           <div className="mb-5 text-sm text-fg-subtle">
-            Did you mean{' '}
+            {t('notFound.didYouMean')}{' '}
             <Link
               to={suggestion.to}
               className="text-fg hover:underline underline-offset-2 font-medium"
               data-testid="notfound-suggestion"
             >
-              {suggestion.label} ({suggestion.to})
+              {t(suggestion.labelKey)} ({suggestion.to})
             </Link>
             ?
           </div>
@@ -105,13 +107,13 @@ export default function NotFound() {
           <Button asChild variant="outline">
             <Link to="/sessions">
               <ArrowLeft />
-              All sessions
+              {t('notFound.allSessions')}
             </Link>
           </Button>
           <Button asChild variant="primary">
             <Link to="/dashboard">
               <Home />
-              Dashboard
+              {t('sidebar.dashboard')}
             </Link>
           </Button>
           <Button
@@ -120,7 +122,7 @@ export default function NotFound() {
             data-testid="notfound-search"
           >
             <Search />
-            Search
+            {t('notFound.search')}
             <Kbd className="ml-1">{isMac ? '⌘' : 'Ctrl'}</Kbd>
             <Kbd>K</Kbd>
           </Button>

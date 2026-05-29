@@ -1,7 +1,9 @@
 import 'rrweb-player/dist/style.css';
 
+import type { TFunction } from 'i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -51,20 +53,23 @@ interface RrwebShapedEvent {
  * Validates that the supplied event list looks like an rrweb session that the
  * player can actually replay. The bare minimum is one Meta (type 4) followed
  * by one FullSnapshot (type 2) with a non-empty node tree.
+ *
+ * Returns a translation KEY for the reason (resolved at render via `t`) so the
+ * diagnostic copy is localised alongside the surrounding message.
  */
 function getReplayProblem(events: unknown[]): string | null {
-  if (events.length < 2) return 'no events to replay';
+  if (events.length < 2) return 'replay.problemNoEvents';
   const meta = events.find((e) => (e as RrwebShapedEvent)?.type === 4);
   const snapshot = events.find((e) => (e as RrwebShapedEvent)?.type === 2);
-  if (!meta) return 'missing Meta event';
-  if (!snapshot) return 'missing FullSnapshot event';
+  if (!meta) return 'replay.problemMissingMeta';
+  if (!snapshot) return 'replay.problemMissingSnapshot';
 
   const data = (snapshot as RrwebShapedEvent).data as
     | { node?: { childNodes?: unknown[] } }
     | undefined;
   const nodes = data?.node?.childNodes;
   if (!nodes || nodes.length === 0) {
-    return 'FullSnapshot has no DOM tree';
+    return 'replay.problemNoDomTree';
   }
   return null;
 }
@@ -78,6 +83,7 @@ export function ReplayPlayer({
   restartToken,
   onTimeUpdate,
 }: ReplayPlayerProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<RrwebPlayerInstance | null>(null);
   // Most recent playhead position. Updated by the rrweb `ui-update-
@@ -146,11 +152,11 @@ export function ReplayPlayer({
             });
           }
         } catch (err) {
-          setError(toErrorMessage(err));
+          setError(toErrorMessage(err, t));
         }
       })
       .catch((err) => {
-        if (!disposed) setError(toErrorMessage(err));
+        if (!disposed) setError(toErrorMessage(err, t));
       });
 
     return () => {
@@ -165,7 +171,7 @@ export function ReplayPlayer({
     // `startTime` intentionally NOT in deps — initial seek only here.
     // A second effect (below) handles live re-seeking when the parent
     // changes `startTime` (e.g. Timeline → Jump to replay).
-  }, [events, validationError]);
+  }, [events, validationError, t]);
 
   // Re-seek when `startTime` changes after mount. This drives the
   // Timeline → Replay jump flow: clicking an event updates `?t=` which
@@ -235,14 +241,14 @@ export function ReplayPlayer({
   if (validationError) {
     return (
       <ReplayMessage
-        title="Replay unavailable"
-        description={`This session can't be replayed (${validationError}).`}
+        title={t('replay.unavailableTitle')}
+        description={t('replay.unavailableDescription', { reason: t(validationError) })}
       />
     );
   }
 
   if (error) {
-    return <ReplayMessage title="Replay failed" description={error} danger />;
+    return <ReplayMessage title={t('replay.failedTitle')} description={error} danger />;
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -321,7 +327,7 @@ export function ReplayPlayer({
         tabIndex={0}
         onKeyDown={handleKeyDown}
         role="application"
-        aria-label="Session replay player. Use space to play/pause, arrows to seek, J/L for 10s, Home to restart."
+        aria-label={t('replay.playerAriaLabel')}
         className="rrweb-mount min-h-[440px] w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
         data-testid="rrweb-mount"
       />
@@ -329,10 +335,10 @@ export function ReplayPlayer({
   );
 }
 
-function toErrorMessage(err: unknown): string {
+function toErrorMessage(err: unknown, t: TFunction): string {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
-  return 'The replay player crashed unexpectedly.';
+  return t('replay.crashed');
 }
 
 function ReplayMessage({
