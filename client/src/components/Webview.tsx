@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { API_HOST } from '@/lib/api';
 
 import DebugPanel from './webview/DebugPanel';
 import ExploreTab from './webview/ExploreTab';
@@ -184,7 +185,10 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
         </Tabs>
       </div>
 
-      <BottomCta />
+      {/* The public Vercel demo ships no backend, so the DevTools UI it would
+          open does not exist there — only surface the CTA when a backend is
+          actually reachable. */}
+      {import.meta.env.VITE_FORCE_DEMO !== 'true' && <BottomCta />}
     </div>
   );
 };
@@ -230,7 +234,7 @@ function BottomCta() {
     <div className="fixed bottom-4 right-4 z-20">
       <Button
         variant="primary"
-        onClick={() => window.open('http://localhost:3000/devtools/index.html', '_blank')}
+        onClick={() => window.open(`${API_HOST}/devtools/index.html`, '_blank')}
         className="shadow-lg"
       >
         <ExternalLink />

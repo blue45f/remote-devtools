@@ -13,7 +13,7 @@ const destinations = [
     rating: 4.9,
     reviews: 2847,
     price: '$1,240',
-    tag: 'Popular',
+    tagKey: 'webview.tagPopular',
   },
   {
     id: 2,
@@ -22,7 +22,7 @@ const destinations = [
     rating: 4.8,
     reviews: 3156,
     price: '$890',
-    tag: 'Trending',
+    tagKey: 'webview.tagTrending',
   },
   {
     id: 3,
@@ -31,7 +31,7 @@ const destinations = [
     rating: 4.7,
     reviews: 1923,
     price: '$720',
-    tag: 'Hidden Gem',
+    tagKey: 'webview.tagHiddenGem',
   },
   {
     id: 4,
@@ -40,7 +40,7 @@ const destinations = [
     rating: 4.6,
     reviews: 4201,
     price: '$650',
-    tag: 'Best Value',
+    tagKey: 'webview.tagBestValue',
   },
 ];
 
@@ -118,7 +118,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
                   className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-bg/90 backdrop-blur-sm text-[11px] font-semibold text-fg">
-                  {dest.tag}
+                  {t(dest.tagKey)}
                 </span>
                 <button
                   type="button"

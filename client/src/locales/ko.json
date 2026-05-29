@@ -749,6 +749,10 @@
     "saveAriaLabel": "{{name}} 저장",
     "perPerson": "/ 인당",
     "bookNow": "지금 예약",
-    "ratingAria": "평점 {{rating}}점, 리뷰 {{reviews}}개"
+    "ratingAria": "평점 {{rating}}점, 리뷰 {{reviews}}개",
+    "tagPopular": "인기",
+    "tagTrending": "트렌딩",
+    "tagHiddenGem": "숨은 명소",
+    "tagBestValue": "가성비"
   }
 }

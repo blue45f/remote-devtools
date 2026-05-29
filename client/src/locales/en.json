@@ -749,6 +749,10 @@
     "saveAriaLabel": "Save {{name}}",
     "perPerson": "/ person",
     "bookNow": "Book Now",
-    "ratingAria": "Rating {{rating}}, {{reviews}} reviews"
+    "ratingAria": "Rating {{rating}}, {{reviews}} reviews",
+    "tagPopular": "Popular",
+    "tagTrending": "Trending",
+    "tagHiddenGem": "Hidden Gem",
+    "tagBestValue": "Best Value"
   }
 }
