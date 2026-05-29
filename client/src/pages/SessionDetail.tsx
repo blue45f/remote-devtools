@@ -858,9 +858,17 @@ export default function SessionDetailPage() {
 
         <TabsContent value="replay" className="mt-5">
           {eventsLoading ? (
-            <Card className="p-6">
-              <Skeleton className="h-[420px] w-full" />
-            </Card>
+            <div className="space-y-3">
+              <div className="flex items-center justify-end gap-2 flex-wrap">
+                <Skeleton className="h-9 w-64" />
+              </div>
+              <Card className="p-2.5">
+                <Skeleton className="h-10 w-full" />
+              </Card>
+              <Card className="p-6">
+                <Skeleton className="h-[420px] w-full" />
+              </Card>
+            </div>
           ) : (
             <ReplayPanel
               events={events ?? []}
@@ -1135,11 +1143,29 @@ function NetworkTab({
 
   if (isLoading) {
     return (
-      <Card className="p-3 space-y-2">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-6 w-full" />
-        ))}
-      </Card>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-16 rounded-full" />
+          ))}
+        </div>
+        <Card className="overflow-hidden p-0">
+          <div className="px-3 py-2 border-b border-border bg-bg-subtle">
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <div className="p-3 space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -1862,11 +1888,29 @@ function ConsoleTab({
 
   if (isLoading) {
     return (
-      <Card className="p-3 space-y-2">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-5 w-full" />
-        ))}
-      </Card>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <Skeleton className="h-9 w-24" />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-16 rounded-full" />
+            ))}
+          </div>
+        </div>
+        <Card className="overflow-hidden p-0">
+          <div className="px-3 py-2 border-b border-border bg-bg-subtle">
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <div className="p-3 space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -3827,8 +3871,13 @@ function OverviewTab({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i} className="p-4">
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-6 w-12" />
+            <div className="flex items-center gap-2.5 mb-3">
+              <Skeleton className="size-7 rounded-md" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-5 w-10" />
+            </div>
+            <Skeleton className="h-1 w-full rounded-full" />
+            <Skeleton className="mt-1.5 h-3 w-16" />
           </Card>
         ))}
       </div>
@@ -3996,15 +4045,26 @@ function TimelineTab({
 
   if (loading) {
     return (
-      <Card className="p-3 space-y-2">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 py-1">
-            <Skeleton className="size-6 rounded-md" />
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="h-3 w-24 ml-auto" />
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[220px_1fr]">
+        <aside className="space-y-3 min-w-0">
+          <Skeleton className="h-9 w-full" />
+          <div className="space-y-0.5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-7 w-full rounded-md" />
+            ))}
           </div>
-        ))}
-      </Card>
+        </aside>
+        <Card className="p-0 overflow-hidden min-w-0">
+          <div className="px-3 py-2 border-b border-border bg-bg-subtle">
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <div className="p-3 space-y-1.5">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
     );
   }
 

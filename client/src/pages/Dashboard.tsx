@@ -463,9 +463,13 @@ function TopTagsPanel({ period }: { period: Period }) {
           <Tag className="size-3.5 text-fg-faint" />
           {t('dashboard.topTags')}
         </h3>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-6 w-full" />
-        ))}
+        {/* Chip-shaped skeletons that mirror the wrapped tag pills below,
+            so the layout doesn't jump from stacked bars to a chip wrap. */}
+        <div className="flex flex-wrap gap-1.5">
+          {[64, 48, 80, 56, 40, 72, 52].map((w, i) => (
+            <Skeleton key={i} className="h-7 rounded-full" style={{ width: w }} />
+          ))}
+        </div>
       </Card>
     );
   }
