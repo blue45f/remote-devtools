@@ -399,11 +399,12 @@ function MockTile({ label, value, tone }: { label: string; value: string; tone: 
 /* ───────── Stats stripe ───────── */
 
 function StatsStrip() {
+  const { t } = useTranslation();
   const stats = [
-    { value: '8.4k+', label: 'sessions captured in seed dataset' },
-    { value: 'rrweb v2', label: 'DOM replay engine' },
-    { value: 'MIT', label: 'license · self-host friendly' },
-    { value: '0 DB', label: 'demo mode · runs in your browser' },
+    { value: '8.4k+', label: t('landing.stat1Label') },
+    { value: 'rrweb v2', label: t('landing.stat2Label') },
+    { value: 'MIT', label: t('landing.stat3Label') },
+    { value: '0 DB', label: t('landing.stat4Label') },
   ];
   return (
     <section className="border-y border-border bg-bg-subtle">
@@ -430,62 +431,38 @@ function StatsStrip() {
 
 const FEATURES: {
   icon: ComponentType<{ className?: string }>;
-  title: string;
-  body: string;
+  /** i18n key under `landing` for the feature title. */
+  titleKey: string;
+  /** i18n key under `landing` for the feature body. */
+  bodyKey: string;
 }[] = [
-  {
-    icon: Radio,
-    title: 'Live capture',
-    body: 'Stream Chrome DevTools Protocol events from any page in real time over WebSocket — no installs.',
-  },
-  {
-    icon: PlayCircle,
-    title: 'Pixel-perfect replay',
-    body: 'rrweb-powered DOM replay with mouse trails, console output, and scrubbable timelines.',
-  },
-  {
-    icon: Activity,
-    title: 'Activity feed',
-    body: 'Sessions, tickets, errors, and joins flow into a chronological feed engineers actually read.',
-  },
-  {
-    icon: Code2,
-    title: 'SDK in two flavors',
-    body: 'Drop in the UMD script tag or ESM import — bundle-size aware, zero runtime dependencies.',
-  },
-  {
-    icon: TerminalSquare,
-    title: 'Real DevTools UI',
-    body: 'Connect to the same Chromium DevTools you already know — Network, Console, Elements, all of it.',
-  },
-  {
-    icon: ServerCog,
-    title: 'Self-hostable',
-    body: 'MIT licensed. Bring your own Postgres, S3, Jira, Slack — or run it offline behind a VPN.',
-  },
+  { icon: Radio, titleKey: 'featureLiveCaptureTitle', bodyKey: 'featureLiveCaptureBody' },
+  { icon: PlayCircle, titleKey: 'featureReplayTitle', bodyKey: 'featureReplayBody' },
+  { icon: Activity, titleKey: 'featureActivityTitle', bodyKey: 'featureActivityBody' },
+  { icon: Code2, titleKey: 'featureSdkTitle', bodyKey: 'featureSdkBody' },
+  { icon: TerminalSquare, titleKey: 'featureDevToolsTitle', bodyKey: 'featureDevToolsBody' },
+  { icon: ServerCog, titleKey: 'featureSelfHostTitle', bodyKey: 'featureSelfHostBody' },
 ];
 
 function Features() {
+  const { t } = useTranslation();
   return (
     <section id="features" className="py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-4 lg:px-6">
         <div className="max-w-2xl mb-10 lg:mb-14">
           <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
-            What you get
+            {t('landing.featuresBadge')}
           </Badge>
           <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
-            Everything in one open-source kit.
+            {t('landing.featuresHeading')}
           </h2>
-          <p className="text-fg-subtle">
-            Replay sessions, debug live tabs, and ship fixes faster — with the real Chrome DevTools,
-            not a cut-down imitation.
-          </p>
+          <p className="text-fg-subtle">{t('landing.featuresLead')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {FEATURES.map((f, i) => (
             <motion.div
-              key={f.title}
+              key={f.titleKey}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 + i * 0.04 }}
@@ -494,8 +471,10 @@ function Features() {
                 <div className="size-9 rounded-lg bg-bg-muted border border-border flex items-center justify-center mb-3">
                   <f.icon className="size-4 text-fg-subtle" />
                 </div>
-                <h3 className="text-sm font-semibold mb-1.5">{f.title}</h3>
-                <p className="text-sm text-fg-subtle leading-relaxed">{f.body}</p>
+                <h3 className="text-sm font-semibold mb-1.5">{t(`landing.${f.titleKey}`)}</h3>
+                <p className="text-sm text-fg-subtle leading-relaxed">
+                  {t(`landing.${f.bodyKey}`)}
+                </p>
               </Card>
             </motion.div>
           ))}
@@ -527,6 +506,7 @@ docker-compose up
 };
 
 function QuickStart() {
+  const { t } = useTranslation();
   const [active, setActive] = useState<keyof typeof SNIPPETS>('Module');
   const [copied, setCopied] = useState(false);
 
@@ -545,14 +525,12 @@ function QuickStart() {
       <div className="max-w-5xl mx-auto px-4 lg:px-6">
         <div className="max-w-2xl mb-8">
           <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
-            Quick start
+            {t('landing.quickStartBadge')}
           </Badge>
           <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
-            Three lines to start capturing.
+            {t('landing.quickStartHeading')}
           </h2>
-          <p className="text-fg-subtle">
-            Pick the surface that fits — module import, script tag, or the full Docker stack.
-          </p>
+          <p className="text-fg-subtle">{t('landing.quickStartLead')}</p>
         </div>
 
         <Card className="overflow-hidden p-0">
@@ -577,7 +555,7 @@ function QuickStart() {
               onClick={copy}
               className="text-xs text-fg-subtle hover:text-fg px-2 py-1 rounded shrink-0"
             >
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? t('common.copied') : t('common.copy')}
             </button>
           </div>
           <pre className="font-mono text-[12px] sm:text-[12.5px] leading-relaxed p-4 sm:p-5 text-fg-subtle overflow-x-auto">
@@ -587,7 +565,7 @@ function QuickStart() {
 
         <div className="mt-5 flex items-center gap-2 text-xs text-fg-faint">
           <CircuitBoard className="size-3.5" />
-          Need the full guide?{' '}
+          {t('landing.needGuide')}{' '}
           <a
             href={GITHUB_URL + '/blob/main/README.md'}
             className="underline-offset-2 hover:underline text-fg-subtle"
@@ -605,6 +583,7 @@ function QuickStart() {
 /* ───────── Closing CTA ───────── */
 
 function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
+  const { t } = useTranslation();
   return (
     <section className="py-24 lg:py-32 text-center relative overflow-hidden">
       <div
@@ -617,12 +596,9 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
       />
       <div className="max-w-3xl mx-auto px-4 lg:px-6">
         <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
-          Ready to inspect a real session?
+          {t('landing.ctaHeading')}
         </h2>
-        <p className="text-fg-subtle mb-7 max-w-xl mx-auto">
-          The demo is one click away. Or clone the repo and ship it on your own infrastructure
-          today.
-        </p>
+        <p className="text-fg-subtle mb-7 max-w-xl mx-auto">{t('landing.ctaLead')}</p>
         <div className="flex flex-col xs:flex-row sm:flex-row flex-wrap items-stretch xs:items-center sm:items-center justify-center gap-3 max-w-md xs:max-w-none sm:max-w-none mx-auto">
           <Button
             variant="primary"
@@ -631,7 +607,7 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
             className="w-full xs:w-auto sm:w-auto touch-target"
           >
             <PlayCircle />
-            Open the demo
+            {t('landing.openTheDemo')}
           </Button>
           <Button
             asChild
@@ -652,24 +628,25 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
 }
 
 function ShortcutHints() {
+  const { t } = useTranslation();
   return (
     <div className="mt-10 inline-flex items-center gap-3 text-[11px] text-fg-faint">
       <span className="inline-flex items-center gap-1.5">
         <Kbd>G</Kbd>
         <Kbd>D</Kbd>
-        <span>Dashboard</span>
+        <span>{t('sidebar.dashboard')}</span>
       </span>
       <span className="text-border-strong">·</span>
       <span className="inline-flex items-center gap-1.5">
         <Kbd>G</Kbd>
         <Kbd>S</Kbd>
-        <span>Sessions</span>
+        <span>{t('sidebar.sessions')}</span>
       </span>
       <span className="text-border-strong">·</span>
       <span className="inline-flex items-center gap-1.5">
         <Kbd>⌘</Kbd>
         <Kbd>K</Kbd>
-        <span>Command palette</span>
+        <span>{t('landing.commandPalette')}</span>
       </span>
     </div>
   );
