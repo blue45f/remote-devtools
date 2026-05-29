@@ -2,6 +2,7 @@
  * Seed data for demo mode. Designed so that every page in the app
  * shows realistic content even when the backend is unreachable.
  */
+import i18n from '@/lib/i18n';
 
 const DAY = 24 * 60 * 60 * 1000;
 const MS_TO_NANOS = 1_000_000;
@@ -223,7 +224,7 @@ export function buildSeedSessionMeta(id: number) {
     eventCount: 0,
     userAgent: found.userAgent,
     tags: found.tags,
-    note: found.id === 1000 ? 'Repro: add item, open cart, spinner never clears.' : null,
+    note: found.id === 1000 ? i18n.t('activity.demoSessionNote') : null,
   };
 }
 

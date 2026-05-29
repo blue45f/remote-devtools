@@ -676,7 +676,17 @@
     "quietDesc": "New activity will appear here in real time.",
     "loadOlder": "Load older",
     "live": "Live",
-    "paused": "Paused"
+    "paused": "Paused",
+    "titleRecordedSession": "Recorded session · {{name}}",
+    "titleTicketCreated": "Ticket created on {{name}}",
+    "titleConsoleError": "Console error in {{host}}",
+    "titleEngineerJoined": "Engineer joined {{name}}",
+    "titleCommentBy": "Comment by qa on {{name}}",
+    "demoCommentOffset": "The checkout button is offset to the right on iPhone SE.",
+    "demoCommentSpinner": "Confirmed reproducible: spinner never resolves after 3s.",
+    "demoReplayComment1": "Login button is offset to the right — looks broken on iPhone SE.",
+    "demoReplayComment2": "Confirmed: the spinner doesn't disappear after the request resolves.",
+    "demoSessionNote": "Repro: add item, open cart, spinner never clears."
   },
   "replay": {
     "problemNoEvents": "no events to replay",

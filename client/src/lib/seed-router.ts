@@ -2,6 +2,8 @@
  * Maps API paths to seed responses for demo mode.
  * Returns undefined for unmatched paths so the caller falls back to network.
  */
+import i18n from '@/lib/i18n';
+
 import {
   buildRecordTrend,
   buildSeedSessionMeta,
@@ -43,14 +45,14 @@ function seedDemoComments(recordId: number): DemoComment[] {
     {
       id: recordId * 1000 + 1,
       timestampMs: 4500,
-      body: 'Login button is offset to the right — looks broken on iPhone SE.',
+      body: i18n.t('activity.demoReplayComment1'),
       author: 'qa',
       createdAt: new Date(Date.now() - 3 * 60_000).toISOString(),
     },
     {
       id: recordId * 1000 + 2,
       timestampMs: 12000,
-      body: "Confirmed: the spinner doesn't disappear after the request resolves.",
+      body: i18n.t('activity.demoReplayComment2'),
       author: 'frontend',
       createdAt: new Date(Date.now() - 2 * 60_000).toISOString(),
     },
@@ -550,11 +552,11 @@ function buildActivityFeed(): ActivityEntry[] {
     const at = new Date(now - offset).toISOString();
     const kind = kinds[i % kinds.length];
     const titleByKind = {
-      session: `Recorded session · ${s.name}`,
-      ticket: `Ticket created on ${s.name}`,
-      error: `Console error in ${s.url.split('/')[2]}`,
-      join: `Engineer joined ${s.name}`,
-      comment: `Comment by qa on ${s.name}`,
+      session: i18n.t('activity.titleRecordedSession', { name: s.name }),
+      ticket: i18n.t('activity.titleTicketCreated', { name: s.name }),
+      error: i18n.t('activity.titleConsoleError', { host: s.url.split('/')[2] }),
+      join: i18n.t('activity.titleEngineerJoined', { name: s.name }),
+      comment: i18n.t('activity.titleCommentBy', { name: s.name }),
     };
     const subtitleByKind = {
       session: s.url,
@@ -562,9 +564,7 @@ function buildActivityFeed(): ActivityEntry[] {
       error: s.url,
       join: s.url,
       comment:
-        i % 2 === 0
-          ? 'The checkout button is offset to the right on iPhone SE.'
-          : 'Confirmed reproducible: spinner never resolves after 3s.',
+        i % 2 === 0 ? i18n.t('activity.demoCommentOffset') : i18n.t('activity.demoCommentSpinner'),
     };
     events.push({
       id: `${kind}-${i}-${s.id}`,
