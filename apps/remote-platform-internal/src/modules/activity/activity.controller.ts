@@ -1,5 +1,7 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+
+import { resolveLang } from '@remote-platform/common';
 
 import { Auth } from '../auth/auth.decorator';
 import { AuthGuard } from '../auth/auth.guard';
@@ -34,11 +36,13 @@ export class ActivityController {
     @Query('limit') limit?: string,
     @Query('orgId') orgId?: string,
     @Query('before') before?: string,
+    @Headers('accept-language') acceptLanguage?: string,
   ): Promise<ActivityEntry[] | ActivityPage> {
     const parsed = limit ? Number(limit) : 20;
     const safeLimit = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 100) : 20;
     const scope = auth?.org ?? orgId ?? null;
-    const page = await this.activityService.getFeedPage(safeLimit, scope, before ?? null);
+    const lang = resolveLang(acceptLanguage);
+    const page = await this.activityService.getFeedPage(safeLimit, scope, before ?? null, lang);
     if (!before) return page.rows; // back-compat
     return page;
   }

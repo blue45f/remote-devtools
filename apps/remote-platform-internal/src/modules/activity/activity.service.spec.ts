@@ -57,7 +57,7 @@ describe('ActivityService', () => {
     expect(feed[0]).toMatchObject({
       id: 'session-42',
       kind: 'session',
-      title: 'Recorded session · checkout',
+      title: '세션 기록됨 · checkout',
       subtitle: 'https://shop.example.com/cart',
       device: 'dev-1',
       sessionId: 42,
@@ -80,7 +80,7 @@ describe('ActivityService', () => {
 
     const feed = await service.getFeed(20);
     expect(feed[0].kind).toBe('session');
-    expect(feed[0].title).toBe('Live session · live-debug');
+    expect(feed[0].title).toBe('라이브 세션 · live-debug');
     expect(feed[0].sessionId).toBeUndefined();
   });
 
@@ -207,7 +207,7 @@ describe('ActivityService', () => {
       expect(rows[0]).toMatchObject({
         id: 'comment-7',
         kind: 'comment',
-        title: 'Comment by qa on checkout',
+        title: 'qa님이 checkout에 남긴 댓글',
         sessionId: 42,
         timestampMs: 4500,
       });
@@ -227,7 +227,7 @@ describe('ActivityService', () => {
         },
       ]);
       const rows = await service.getFeed(10);
-      expect(rows[0].title).toBe('Comment by anonymous on Session #99');
+      expect(rows[0].title).toBe('익명님이 세션 #99에 남긴 댓글');
     });
 
     it('gracefully degrades when the comment table is missing', async () => {
