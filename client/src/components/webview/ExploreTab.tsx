@@ -131,6 +131,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
               <div className="p-4">
                 <h3 className="font-medium text-sm text-fg mb-1">{dest.name}</h3>
                 <div
+                  role="img"
                   className="flex items-center gap-1 mb-2 text-xs"
                   aria-label={t('webview.ratingAria', {
                     rating: dest.rating,

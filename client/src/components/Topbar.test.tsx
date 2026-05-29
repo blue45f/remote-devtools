@@ -48,9 +48,12 @@ describe('Topbar', () => {
 
   it('renders a search trigger that opens the command palette', () => {
     renderWithProviders(<Topbar />);
-    const trigger = screen.getByRole('button', {
-      name: /Open command palette/,
-    });
+    // The button's accessible name mirrors its visible "Search" label
+    // (WCAG 2.5.3); the command-palette intent lives in the title tooltip and
+    // the shortcut is exposed via aria-keyshortcuts.
+    const trigger = screen.getByRole('button', { name: /Search/ });
     expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('title', 'Open command palette');
+    expect(trigger).toHaveAttribute('aria-keyshortcuts');
   });
 });
