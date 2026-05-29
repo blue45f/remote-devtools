@@ -2488,7 +2488,12 @@ function SessionHeader({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button asChild variant="outline" size="sm" className="touch-target">
-                <a href={metadata.url} target="_blank" rel="noreferrer">
+                <a
+                  href={metadata.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={t('sessionDetail.openUrl')}
+                >
                   <ExternalLink />
                   <span className="hidden xs:inline sm:inline">{t('sessionDetail.openUrl')}</span>
                 </a>

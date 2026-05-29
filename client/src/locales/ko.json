@@ -536,6 +536,8 @@
     "colDevice": "기기",
     "colDuration": "길이",
     "colWhen": "시점",
+    "colStatus": "상태",
+    "colActions": "작업",
     "sessionFallbackName": "세션 #{{id}}",
     "hasNote": "메모 있음",
     "idLabel": "ID",
@@ -714,7 +716,7 @@
     "previewIframeTitle": "세션 미리보기",
     "previewIframeAriaLabel": "캡처된 페이지 미리보기",
     "capturedPreview": "캡처된 미리보기",
-    "heatmapToggle": "클릭 히트맵 표시 전환"
+    "heatmapToggle": "클릭 히트맵 표시 전환 (클릭 {{n}}개)"
   },
   "webview": {
     "tabCustomerPage": "고객 페이지",
