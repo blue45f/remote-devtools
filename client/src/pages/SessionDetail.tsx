@@ -3074,7 +3074,7 @@ function CommentsPanel({
   return (
     <Card className="p-4" data-testid="replay-comments-panel">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+        <h2 className="text-sm font-semibold flex items-center gap-1.5">
           <MessageSquare className="size-3.5 text-fg-faint" />
           {t('sessionDetail.comments')}
           {comments.length > 0 && (
@@ -3082,7 +3082,7 @@ function CommentsPanel({
               {comments.length}
             </Badge>
           )}
-        </h3>
+        </h2>
         {resolvedCount > 0 && (
           <button
             type="button"
@@ -3281,11 +3281,11 @@ function RageClickCard({
           <Zap className="size-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-fg">
+          <h2 className="text-sm font-semibold text-fg">
             {clicks.length === 1
               ? t('sessionDetail.rageClickOne')
               : t('sessionDetail.rageClickOther', { n: clicks.length })}
-          </h3>
+          </h2>
           <p className="text-xs text-fg-subtle mt-0.5">{t('sessionDetail.rageClickDesc')}</p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {clicks.slice(0, 5).map((c, idx) => {
@@ -3704,12 +3704,12 @@ function TopErrorsCard({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Bug className="size-4 text-danger" />
-          <h3 className="text-sm font-semibold text-fg">
+          <h2 className="text-sm font-semibold text-fg">
             {t('sessionDetail.consoleErrors')}
             <span className="ml-2 text-fg-faint font-normal">
               {t('sessionDetail.totalCount', { n: rows.length })}
             </span>
-          </h3>
+          </h2>
         </div>
         <Button
           variant="outline"
@@ -3778,12 +3778,12 @@ function FailedRequestsCard({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Globe className="size-4 text-danger" />
-          <h3 className="text-sm font-semibold text-fg">
+          <h2 className="text-sm font-semibold text-fg">
             {t('sessionDetail.failedRequests')}
             <span className="ml-2 text-fg-faint font-normal">
               {t('sessionDetail.totalCount', { n: rows.length })}
             </span>
-          </h3>
+          </h2>
         </div>
         <Button
           variant="outline"
@@ -3839,7 +3839,7 @@ function SessionInsightsCard({
     <Card className="p-4" data-testid="session-insights">
       <div className="flex items-center gap-2 mb-3">
         <Lightbulb className="size-4 text-accent" />
-        <h3 className="text-sm font-semibold text-fg">{t('sessionDetail.insights')}</h3>
+        <h2 className="text-sm font-semibold text-fg">{t('sessionDetail.insights')}</h2>
       </div>
       <ul className="space-y-1.5">
         {insights.map((insight, i) => (

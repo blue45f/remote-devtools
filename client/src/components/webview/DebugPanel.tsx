@@ -36,9 +36,9 @@ export default function DebugPanel({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+        <h2 className="text-2xl font-semibold tracking-tight text-fg">
           {t('webview.debugPanelTitle')}
-        </h1>
+        </h2>
         <p className="text-sm text-fg-subtle mt-1">{t('webview.debugPanelSubtitle')}</p>
       </div>
 
