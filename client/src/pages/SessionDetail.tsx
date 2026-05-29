@@ -711,7 +711,10 @@ export default function SessionDetailPage() {
             clickPoints={clickPoints}
           />
         )}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 self-start">
+        {/* One hairline-divided strip rather than four separate metric cards
+            (mirrors the dashboard's stat strip for a consistent visual
+            language). Borders draw a clean cross on the 2-up phone layout. */}
+        <Card className="grid grid-cols-2 md:grid-cols-4 overflow-hidden self-start">
           <MetricTile
             icon={Layers}
             label={t('sessionDetail.metricTotalEvents')}
@@ -721,6 +724,7 @@ export default function SessionDetailPage() {
             icon={Clock}
             label={t('sessionDetail.metricDuration')}
             value={metaLoading ? null : formatDurationFromNanos(metadata?.duration)}
+            className="border-l border-border"
           />
           <MetricTile
             icon={Calendar}
@@ -735,6 +739,7 @@ export default function SessionDetailPage() {
                     })
                   : '—'
             }
+            className="border-t border-border md:border-t-0 md:border-l"
           />
           <MetricTile
             icon={Smartphone}
@@ -743,8 +748,9 @@ export default function SessionDetailPage() {
             mono
             copy={metadata?.deviceId}
             copyToastLabel={t('sessionDetail.deviceIdCopied')}
+            className="border-t border-l border-border md:border-t-0"
           />
-        </div>
+        </Card>
       </div>
 
       {/* Tabs — horizontally scrollable on narrow screens with fading edges
@@ -3516,6 +3522,7 @@ function MetricTile({
   mono,
   copy,
   copyToastLabel,
+  className,
 }: {
   icon: typeof Activity;
   label: string;
@@ -3524,7 +3531,10 @@ function MetricTile({
   /** Optional raw value to copy when the tile's copy chip is clicked. */
   copy?: string;
   copyToastLabel?: string;
+  /** Divider/border classes — the tiles render as cells of one strip. */
+  className?: string;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -3535,12 +3545,12 @@ function MetricTile({
       window.setTimeout(() => setCopied(false), 1500);
       if (copyToastLabel) toast.success(copyToastLabel);
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
   return (
-    <Card className="group p-4 relative">
+    <div className={cn('group relative p-4', className)}>
       <div className="flex items-center gap-2 text-fg-faint mb-1.5">
         <Icon className="size-3.5" />
         <span className="text-[11px] uppercase tracking-wider font-semibold">{label}</span>
@@ -3556,7 +3566,7 @@ function MetricTile({
         <button
           type="button"
           onClick={() => void onCopy()}
-          aria-label={copyToastLabel ?? `Copy ${label.toLowerCase()}`}
+          aria-label={copyToastLabel ?? t('sessionDetail.copyMetric', { label })}
           className={cn(
             'absolute top-2 right-2 size-6 inline-flex items-center justify-center rounded-md',
             'text-fg-faint hover:text-fg hover:bg-bg-muted',
@@ -3566,7 +3576,7 @@ function MetricTile({
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </button>
       )}
-    </Card>
+    </div>
   );
 }
 
