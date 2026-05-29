@@ -556,7 +556,11 @@
     "devtools": "DevTools",
     "errorTitle": "Failed to load sessions",
     "errorDescription": "The server didn't respond. Check your connection or try again.",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "viewFilterLabel": "Session type",
+    "sortAria": "Sort sessions",
+    "perPageAria": "Sessions per page",
+    "refreshIntervalAria": "Live refresh interval"
   },
   "command": {
     "placeholder": "Type a command or search sessions…",

@@ -556,7 +556,11 @@
     "devtools": "DevTools",
     "errorTitle": "세션을 불러오지 못했습니다",
     "errorDescription": "서버가 응답하지 않았습니다. 연결을 확인하거나 다시 시도하세요.",
-    "tryAgain": "다시 시도"
+    "tryAgain": "다시 시도",
+    "viewFilterLabel": "세션 유형",
+    "sortAria": "세션 정렬 기준",
+    "perPageAria": "페이지당 세션 수",
+    "refreshIntervalAria": "라이브 새로고침 주기"
   },
   "command": {
     "placeholder": "명령을 입력하거나 세션을 검색하세요…",

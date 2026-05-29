@@ -22,9 +22,9 @@ describe('Sessions page', () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    // Tabs
-    expect(screen.getByRole('tab', { name: /Recorded/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Live/ })).toBeInTheDocument();
+    // Session-type segmented control (Recorded / Live)
+    expect(screen.getByRole('button', { name: /Recorded/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Live/ })).toBeInTheDocument();
   });
 
   it('filters rows when the user types in the search box', async () => {
@@ -63,7 +63,7 @@ describe('Sessions page', () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: /Live/ }));
+    await user.click(screen.getByRole('button', { name: /Live/ }));
 
     await waitFor(() => {
       // Live sessions in the seed are the last two
