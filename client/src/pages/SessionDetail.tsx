@@ -2505,7 +2505,7 @@ function SessionHeader({
             className="touch-target"
             room={metadata?.name ?? metadata?.room ?? ''}
             recordId={metadata?.recordMode ? metadata.id : undefined}
-            label={t('sessionDetail.openInDevTools')}
+            label={t('sessionDetail.openDevTools')}
             title={t('sessionDetail.openInDevToolsTitle')}
           >
             <Bug />
@@ -3849,14 +3849,14 @@ function SessionInsightsCard({
                 type="button"
                 onClick={() => onJump(insight.jumpMs as number)}
                 data-testid="session-insight-jump"
-                className="flex items-start gap-2 text-xs text-fg-subtle w-full text-left rounded px-1 -mx-1 hover:bg-bg-muted/60 hover:text-fg cursor-pointer"
+                className="flex items-start gap-2 text-xs text-fg-subtle w-full text-left rounded px-1 py-1.5 -mx-1 hover:bg-bg-muted/60 hover:text-fg cursor-pointer"
                 title={t('sessionDetail.jumpToMomentTitle')}
               >
                 <PlayCircle className="size-3.5 mt-0.5 shrink-0 text-fg-faint" />
                 <span>{insight.text}</span>
               </button>
             ) : (
-              <div className="flex items-start gap-2 text-xs text-fg-subtle px-1 -mx-1">
+              <div className="flex items-start gap-2 text-xs text-fg-subtle px-1 py-1.5 -mx-1">
                 <Check className="size-3.5 mt-0.5 shrink-0 text-success" />
                 <span>{insight.text}</span>
               </div>

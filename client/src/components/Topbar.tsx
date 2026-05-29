@@ -183,12 +183,22 @@ export function Topbar() {
           'hover:border-border-strong hover:text-fg-subtle transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         )}
-        aria-label={t('topbar.openCommandPalette')}
+        title={t('topbar.openCommandPalette')}
+        aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
       >
-        <Search className="size-4 sm:size-3.5" />
+        <Search className="size-4 sm:size-3.5" aria-hidden />
+        {/* Visible label on tablet+, an sr-only equivalent on phone so the
+            icon-only button still has an accessible name. The accessible name
+            mirrors the visible text (WCAG 2.5.3); the shortcut is exposed via
+            aria-keyshortcuts rather than the decorative kbd hints. */}
+        <span className="sr-only sm:hidden">{t('topbar.search')}</span>
         <span className="hidden sm:inline pr-3">{t('topbar.search')}</span>
-        <Kbd className="hidden sm:inline-flex">{isMac ? '⌘' : 'Ctrl'}</Kbd>
-        <Kbd className="hidden sm:inline-flex">K</Kbd>
+        <Kbd className="hidden sm:inline-flex" aria-hidden>
+          {isMac ? '⌘' : 'Ctrl'}
+        </Kbd>
+        <Kbd className="hidden sm:inline-flex" aria-hidden>
+          K
+        </Kbd>
       </button>
     </header>
   );
