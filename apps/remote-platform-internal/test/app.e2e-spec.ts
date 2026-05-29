@@ -8,6 +8,7 @@ import {
   BillingWebhookEventEntity,
   OrganizationEntity,
   RecordEntity,
+  ReplayCommentEntity,
   TicketLogEntity,
 } from '@remote-platform/entity';
 
@@ -167,11 +168,14 @@ describe('ActivityModule (e2e)', () => {
     })
       .overrideProvider(ActivityService)
       .useValue(mockActivityService)
-      // ActivityModule imports TypeOrmModule.forFeature([Record, TicketLog]);
-      // we stub the repos so the DI container resolves without a database.
+      // ActivityModule imports
+      // TypeOrmModule.forFeature([Record, TicketLog, ReplayComment]); we stub
+      // the repos so the DI container resolves without a database.
       .overrideProvider(getRepositoryToken(RecordEntity))
       .useValue({})
       .overrideProvider(getRepositoryToken(TicketLogEntity))
+      .useValue({})
+      .overrideProvider(getRepositoryToken(ReplayCommentEntity))
       .useValue({})
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -204,7 +208,7 @@ describe('ActivityModule (e2e)', () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toMatchObject({ id: 'session-1', kind: 'session' });
     // Default limit = 20, no scope, no cursor
-    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(20, null, null);
+    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(20, null, null, 'ko');
   });
 
   it('GET /api/activity/feed?before=ISO returns the paginated envelope', async () => {
@@ -227,7 +231,12 @@ describe('ActivityModule (e2e)', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(false);
     expect(res.body).toEqual(page);
-    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(20, null, '2025-01-01T00:00:00Z');
+    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(
+      20,
+      null,
+      '2025-01-01T00:00:00Z',
+      'ko',
+    );
   });
 
   it('GET /api/activity/feed?limit=200 clamps the limit down to 100', async () => {
@@ -235,7 +244,7 @@ describe('ActivityModule (e2e)', () => {
       .get('/api/activity/feed')
       .query({ limit: '200' });
     expect(res.status).toBe(200);
-    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(100, null, null);
+    expect(mockActivityService.getFeedPage).toHaveBeenCalledWith(100, null, null, 'ko');
   });
 });
 

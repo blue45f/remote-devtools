@@ -2,6 +2,16 @@
 export { ErrorCode, ErrorMessages } from './exceptions/error-codes.enum';
 export { BusinessException, BusinessErrorResponse } from './exceptions/business.exception';
 
+// i18n
+export type { Lang } from './i18n';
+export {
+  DEFAULT_LANG,
+  resolveLang,
+  getErrorMessage,
+  ErrorMessagesKo,
+  GenericMessages,
+} from './i18n';
+
 // Filters
 export {
   AllExceptionsFilter,

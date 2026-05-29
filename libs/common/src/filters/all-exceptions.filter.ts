@@ -11,7 +11,8 @@ import {
 import { Request, Response } from 'express';
 
 import { BusinessException, BusinessErrorResponse } from '../exceptions/business.exception';
-import { ErrorCode } from '../exceptions/error-codes.enum';
+import { ErrorCode, ErrorMessages } from '../exceptions/error-codes.enum';
+import { resolveLang, getErrorMessage } from '../i18n';
 
 const getExceptionMessage = (exceptionResponse: unknown, fallback: string): string => {
   if (
@@ -90,14 +91,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    // Localize responses from the request language (Korean by default).
+    const lang = resolveLang(request?.headers?.['accept-language']);
+
     let errorResponse: BusinessErrorResponse;
     let status: number;
 
     if (exception instanceof BusinessException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse() as BusinessErrorResponse;
+      // Localize the default message (Korean by default). A custom message
+      // passed at throw time differs from the English default and is preserved.
+      const isDefaultMessage =
+        exceptionResponse.message === ErrorMessages[exceptionResponse.errorCode];
       errorResponse = {
         ...exceptionResponse,
+        message: isDefaultMessage
+          ? getErrorMessage(exceptionResponse.errorCode, lang)
+          : exceptionResponse.message,
         path: request.url,
       };
 

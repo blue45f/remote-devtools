@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import { LessThan } from 'typeorm';
 
+import { Lang } from '@remote-platform/common';
 import { RecordEntity, ReplayCommentEntity, TicketLogEntity } from '@remote-platform/entity';
 
 export type ActivityKind = 'session' | 'ticket' | 'error' | 'join' | 'comment';
@@ -51,8 +52,10 @@ export class ActivityService {
     limit = 20,
     /** Tenant scope. NULL or undefined returns the global feed (self-host mode). */
     orgId?: string | null,
+    /** Response language for generated titles. Defaults to Korean. */
+    lang: Lang = 'ko',
   ): Promise<ActivityEntry[]> {
-    const { rows } = await this.getFeedPage(limit, orgId, null);
+    const { rows } = await this.getFeedPage(limit, orgId, null, lang);
     return rows;
   }
 
@@ -67,6 +70,8 @@ export class ActivityService {
     limit = 20,
     orgId?: string | null,
     before?: string | null,
+    /** Response language for generated titles. Defaults to Korean. */
+    lang: Lang = 'ko',
   ): Promise<ActivityPage> {
     const sessionsLimit = Math.ceil(limit * 0.6);
     const ticketsLimit = Math.ceil(limit * 0.4);
@@ -114,7 +119,7 @@ export class ActivityService {
       entries.push({
         id: `session-${r.id}`,
         kind: 'session',
-        title: r.recordMode ? `Recorded session · ${r.name}` : `Live session · ${r.name}`,
+        title: sessionTitle(lang, r.recordMode, r.name ?? ''),
         subtitle: r.url ?? undefined,
         at: (r.timestamp instanceof Date
           ? r.timestamp
@@ -138,20 +143,19 @@ export class ActivityService {
       entries.push({
         id: `ticket-${row.id}`,
         kind: 'ticket',
-        title: row.name ? `Ticket created · ${row.name}` : 'Ticket created',
+        title: ticketTitle(lang, row.name),
         subtitle: row.ticketUrl,
         at: createdAt,
       });
     }
 
     for (const c of comments) {
-      const sessionName = c.record?.name ?? `Session #${c.record?.id ?? '?'}`;
-      const author = c.author ?? 'anonymous';
+      const sessionName = c.record?.name ?? sessionFallbackName(lang, c.record?.id ?? '?');
       const truncated = c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body;
       entries.push({
         id: `comment-${c.id}`,
         kind: 'comment',
-        title: `Comment by ${author} on ${sessionName}`,
+        title: commentTitle(lang, c.author, sessionName),
         subtitle: truncated,
         at: (c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt)).toISOString(),
         sessionId: c.record?.id,
@@ -165,4 +169,25 @@ export class ActivityService {
       rows.length === limit && rows.length > 0 ? (rows[rows.length - 1]?.at ?? null) : null;
     return { rows, nextCursor };
   }
+}
+
+/* ── Localized activity titles (Korean by default) ── */
+
+function sessionTitle(lang: Lang, recordMode: boolean, name: string): string {
+  if (lang === 'en') return recordMode ? `Recorded session · ${name}` : `Live session · ${name}`;
+  return recordMode ? `세션 기록됨 · ${name}` : `라이브 세션 · ${name}`;
+}
+
+function ticketTitle(lang: Lang, name?: string): string {
+  if (lang === 'en') return name ? `Ticket created · ${name}` : 'Ticket created';
+  return name ? `티켓 생성됨 · ${name}` : '티켓 생성됨';
+}
+
+function sessionFallbackName(lang: Lang, id: number | string): string {
+  return lang === 'en' ? `Session #${id}` : `세션 #${id}`;
+}
+
+function commentTitle(lang: Lang, author: string | null | undefined, sessionName: string): string {
+  if (lang === 'en') return `Comment by ${author ?? 'anonymous'} on ${sessionName}`;
+  return `${author ?? '익명'}님이 ${sessionName}에 남긴 댓글`;
 }
