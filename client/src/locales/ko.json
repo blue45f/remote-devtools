@@ -620,7 +620,7 @@
     "refresh30s": "30초마다 갱신",
     "sessionOne": "세션",
     "sessionOther": "세션",
-    "openLiveSessions": "라이브 세션 열기",
+    "openLiveSessions": "실시간 세션 열기",
     "openRecordedSessions": "기록된 세션 전체 열기",
     "sessionsToday": "오늘 세션",
     "ticketsToday": "오늘 티켓",

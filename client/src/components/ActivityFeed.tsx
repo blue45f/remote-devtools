@@ -296,7 +296,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
                 <section key={group.bucket} className="relative" data-bucket={group.bucket}>
                   <h3 className="sticky top-0 z-10 -ml-1 pl-2 pr-2 py-1 bg-surface/90 backdrop-blur-sm text-[10px] uppercase tracking-wider text-fg-faint font-semibold border-b border-border/60">
                     {t(group.labelKey)}{' '}
-                    <span className="ml-1 text-fg-faint/80 normal-case tracking-normal font-mono tabular-nums">
+                    <span className="ml-1 text-fg-faint normal-case tracking-normal font-mono tabular-nums">
                       {group.rows.length}
                     </span>
                   </h3>
