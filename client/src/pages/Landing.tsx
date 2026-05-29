@@ -74,6 +74,7 @@ export default function LandingPage() {
 /* ───────── Top nav ───────── */
 
 function TopNav({ onTheme }: { onTheme: () => void }) {
+  const { t } = useTranslation();
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl safe-pt">
       <div className="max-w-6xl mx-auto h-14 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
@@ -86,13 +87,13 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
 
         <nav className="hidden md:flex items-center gap-5 ml-2 text-sm text-fg-subtle">
           <a href="#features" className="hover:text-fg transition-colors">
-            Features
+            {t('landing.navFeatures')}
           </a>
           <a href="#quickstart" className="hover:text-fg transition-colors">
-            Quick start
+            {t('landing.navQuickStart')}
           </a>
           <Link to="/pricing" className="hover:text-fg transition-colors">
-            Pricing
+            {t('nav.pricing')}
           </Link>
           <a href={GITHUB_URL} className="hover:text-fg transition-colors">
             GitHub
@@ -106,12 +107,12 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
           onClick={onTheme}
           className="hidden sm:inline text-xs text-fg-subtle hover:text-fg px-2 py-1"
         >
-          Theme
+          {t('sidebar.theme')}
         </button>
 
         {/* GitHub button collapses to an icon on phones to keep the
             primary CTA visible at 320px viewports */}
-        <Button asChild variant="ghost" size="sm" aria-label="GitHub repository">
+        <Button asChild variant="ghost" size="sm" aria-label={t('landing.githubRepoAria')}>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer">
             <Github />
             <span className="hidden sm:inline">GitHub</span>
@@ -119,8 +120,8 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
         </Button>
         <Button asChild variant="primary" size="sm">
           <Link to="/dashboard">
-            <span className="hidden xs:inline sm:inline">Open app</span>
-            <span className="xs:hidden sm:hidden">Open</span>
+            <span className="hidden xs:inline sm:inline">{t('landing.openApp')}</span>
+            <span className="xs:hidden sm:hidden">{t('landing.openShort')}</span>
             <ArrowRight />
           </Link>
         </Button>
@@ -204,7 +205,7 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-6 text-xs text-fg-faint"
         >
-          The demo runs entirely in your browser with seed data — no signup, no backend.
+          {t('landing.heroNote')}
         </motion.p>
       </div>
     </section>
@@ -245,6 +246,7 @@ function BackgroundGrid() {
  * cleanly on any DPI without shipping a real screenshot file.
  */
 function DashboardMockup() {
+  const { t } = useTranslation();
   return (
     <section className="relative -mt-4 lg:-mt-8 pb-16 lg:pb-24 px-4 lg:px-6">
       <div
@@ -270,7 +272,7 @@ function DashboardMockup() {
             <span className="ml-3 text-[11px] font-mono text-fg-faint">
               remote-devtools.vercel.app/dashboard
             </span>
-            <span className="ml-auto text-[10px] text-fg-faint">demo mode</span>
+            <span className="ml-auto text-[10px] text-fg-faint">{t('landing.mockDemoMode')}</span>
           </div>
 
           {/* Mock UI body — on phones we drop the sidebar entirely so the
@@ -285,33 +287,35 @@ function DashboardMockup() {
               </div>
               <div className="space-y-1">
                 <div className="h-6 rounded-md bg-bg-muted px-2 flex items-center text-[11px] font-medium">
-                  Dashboard
+                  {t('sidebar.dashboard')}
                 </div>
                 <div className="h-6 rounded-md px-2 flex items-center text-[11px] text-fg-subtle">
-                  Sessions
+                  {t('sidebar.sessions')}
                 </div>
                 <div className="h-6 rounded-md px-2 flex items-center text-[11px] text-fg-subtle">
-                  Module SDK
+                  {t('nav.moduleSdk')}
                 </div>
                 <div className="h-6 rounded-md px-2 flex items-center text-[11px] text-fg-subtle">
-                  Script SDK
+                  {t('nav.scriptSdk')}
                 </div>
               </div>
             </aside>
 
             {/* Mini main content */}
             <div className="p-3.5 sm:p-5">
-              <h3 className="text-base sm:text-lg font-semibold mb-3">Dashboard</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-3">{t('dashboard.title')}</h3>
               <div className="grid grid-cols-3 gap-2 mb-4">
-                <MockTile label="LIVE NOW" value="2" tone="live" />
-                <MockTile label="SESSIONS TODAY" value="142" tone="up" />
-                <MockTile label="TICKETS TODAY" value="23" tone="up" />
+                <MockTile label={t('landing.mockLiveNow')} value="2" tone="live" />
+                <MockTile label={t('landing.mockSessionsToday')} value="142" tone="up" />
+                <MockTile label={t('landing.mockTicketsToday')} value="23" tone="up" />
               </div>
               {/* Tiny faux chart */}
               <div className="rounded-lg border border-border p-3 mb-3 bg-bg-subtle">
                 <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-[11px] font-semibold">Sessions over time</span>
-                  <span className="text-[10px] text-fg-faint">Daily</span>
+                  <span className="text-[11px] font-semibold">
+                    {t('dashboard.sessionsOverTime')}
+                  </span>
+                  <span className="text-[10px] text-fg-faint">{t('dashboard.periodDaily')}</span>
                 </div>
                 <svg
                   viewBox="0 0 280 60"
@@ -340,25 +344,25 @@ function DashboardMockup() {
               {/* Activity feed mini */}
               <div className="rounded-lg border border-border p-3 bg-bg-subtle">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold">Recent activity</span>
+                  <span className="text-[11px] font-semibold">{t('activity.recentActivity')}</span>
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success">
                     <span className="relative flex size-1.5">
                       <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-50 animate-ping" />
                       <span className="relative inline-flex size-1.5 rounded-full bg-success" />
                     </span>
-                    LIVE
+                    {t('sessions.badgeLive')}
                   </span>
                 </div>
                 <div className="space-y-1.5">
                   {[
-                    { kind: 'Recorded session', t: '12s' },
-                    { kind: 'Ticket created', t: '37s' },
-                    { kind: 'Console error', t: '1m' },
+                    { kind: t('landing.mockRecordedSession'), time: '12s' },
+                    { kind: t('landing.mockTicketCreated'), time: '37s' },
+                    { kind: t('landing.mockConsoleError'), time: '1m' },
                   ].map((row) => (
                     <div key={row.kind} className="flex items-center gap-2 text-[10px]">
                       <span className="size-1.5 rounded-full bg-fg-faint" />
                       <span className="font-medium truncate">{row.kind}</span>
-                      <span className="text-fg-faint ml-auto">{row.t}</span>
+                      <span className="text-fg-faint ml-auto">{row.time}</span>
                     </div>
                   ))}
                 </div>
@@ -372,6 +376,7 @@ function DashboardMockup() {
 }
 
 function MockTile({ label, value, tone }: { label: string; value: string; tone: 'live' | 'up' }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg border border-border bg-bg-subtle p-2.5">
       <div className="text-[9px] uppercase tracking-wider font-semibold text-fg-faint mb-0.5">
@@ -382,7 +387,7 @@ function MockTile({ label, value, tone }: { label: string; value: string; tone: 
         {tone === 'live' && (
           <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider px-1 rounded bg-danger-soft text-danger">
             <span className="size-1 rounded-full bg-danger animate-pulse-dot" />
-            REC
+            {t('sessions.badgeRec')}
           </span>
         )}
         {tone === 'up' && <span className="text-[9px] font-semibold text-success">↑ 20%</span>}

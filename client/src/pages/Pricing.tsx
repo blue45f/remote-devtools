@@ -22,68 +22,81 @@ interface BillingStatus {
 const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 
 interface Plan {
-  name: string;
+  /** i18n key under `pricing` for the plan name. */
+  nameKey: string;
   price: string;
-  cadence?: string;
-  description: string;
-  cta: string;
+  /** i18n key under `pricing` for the billing cadence, if any. */
+  cadenceKey?: string;
+  /** i18n key under `pricing` for the plan description. */
+  descriptionKey: string;
+  /**
+   * i18n key under `pricing` for the CTA. When `comingSoon` is set this is the
+   * placeholder label, swapped for `pricing.getStarted` once billing is live.
+   */
+  ctaKey: string;
+  /** Plans gated behind the hosted-billing waitlist show "Coming soon" until enabled. */
+  comingSoon?: boolean;
   href: string;
   highlight?: boolean;
-  features: string[];
-  footnote?: string;
+  /** i18n keys under `pricing` for each feature bullet. */
+  featureKeys: string[];
+  /** i18n key under `pricing` for the footnote, if any. */
+  footnoteKey?: string;
 }
 
 const PLANS: Plan[] = [
   {
-    name: 'Self-hosted',
+    nameKey: 'planSelfHostedName',
     price: '$0',
-    cadence: 'forever',
-    description: 'MIT licensed. Bring your own infrastructure, keep all your data.',
-    cta: 'Read the docs',
+    cadenceKey: 'cadenceForever',
+    descriptionKey: 'planSelfHostedDesc',
+    ctaKey: 'readDocs',
     href: GITHUB_URL + '/blob/main/docs/SELF_HOSTING.md',
-    features: [
-      'Full source access (NestJS + React + SDK)',
-      'Docker Compose stack included',
-      'Postgres, S3, Jira, Slack integrations',
-      'Optional admin token authentication',
-      'Community support via GitHub issues',
+    featureKeys: [
+      'planSelfHostedFeature1',
+      'planSelfHostedFeature2',
+      'planSelfHostedFeature3',
+      'planSelfHostedFeature4',
+      'planSelfHostedFeature5',
     ],
-    footnote: 'Best for teams with existing platform engineering capacity.',
+    footnoteKey: 'planSelfHostedFootnote',
   },
   {
-    name: 'Starter',
+    nameKey: 'planStarterName',
     price: '$29',
-    cadence: 'team / month',
-    description: 'Hosted by us. For small teams getting started with replay.',
-    cta: 'Coming soon',
+    cadenceKey: 'cadenceTeamMonth',
+    descriptionKey: 'planStarterDesc',
+    ctaKey: 'comingSoon',
+    comingSoon: true,
     href: '/sign-up?plan=starter',
     highlight: true,
-    features: [
-      'Up to 5,000 sessions / month',
-      '30-day session retention',
-      'Up to 5 team members',
-      'Email support (24h response)',
-      'Slack & Jira integrations',
-      'All replay & timeline features',
+    featureKeys: [
+      'planStarterFeature1',
+      'planStarterFeature2',
+      'planStarterFeature3',
+      'planStarterFeature4',
+      'planStarterFeature5',
+      'planStarterFeature6',
     ],
-    footnote: 'Hosted SaaS — see roadmap below.',
+    footnoteKey: 'planHostedFootnote',
   },
   {
-    name: 'Pro',
+    nameKey: 'planProName',
     price: '$99',
-    cadence: 'team / month',
-    description: 'For growing teams that need scale, retention, and SSO.',
-    cta: 'Coming soon',
+    cadenceKey: 'cadenceTeamMonth',
+    descriptionKey: 'planProDesc',
+    ctaKey: 'comingSoon',
+    comingSoon: true,
     href: '/sign-up?plan=pro',
-    features: [
-      'Up to 50,000 sessions / month',
-      '90-day session retention',
-      'Unlimited seats',
-      'SSO (SAML / OIDC)',
-      'Audit log + role-based access',
-      'Priority support (4h response)',
+    featureKeys: [
+      'planProFeature1',
+      'planProFeature2',
+      'planProFeature3',
+      'planProFeature4',
+      'planProFeature5',
+      'planProFeature6',
     ],
-    footnote: 'Hosted SaaS — see roadmap below.',
+    footnoteKey: 'planHostedFootnote',
   },
 ];
 
@@ -116,10 +129,10 @@ export default function PricingPage() {
           <div className="flex-1" />
           <nav className="hidden md:flex items-center gap-5 text-sm text-fg-subtle mr-3">
             <Link to="/" className="hover:text-fg">
-              Home
+              {t('nav.home')}
             </Link>
             <Link to="/pricing" className="text-fg">
-              Pricing
+              {t('nav.pricing')}
             </Link>
             <a href={GITHUB_URL} className="hover:text-fg">
               GitHub
@@ -127,8 +140,8 @@ export default function PricingPage() {
           </nav>
           <Button asChild variant="primary" size="sm">
             <Link to="/dashboard">
-              <span className="hidden xs:inline sm:inline">Open demo</span>
-              <span className="xs:hidden sm:hidden">Demo</span>
+              <span className="hidden xs:inline sm:inline">{t('nav.openDemo')}</span>
+              <span className="xs:hidden sm:hidden">{t('topbar.demoMode')}</span>
               <ArrowRight />
             </Link>
           </Button>
@@ -156,15 +169,15 @@ export default function PricingPage() {
           </div>
 
           <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
-            {PLANS.map((rawPlan, i) => {
+            {PLANS.map((plan, i) => {
               // When billing is wired up, flip "Coming soon" to a real CTA.
-              const plan =
-                billingEnabled && rawPlan.cta === 'Coming soon'
-                  ? { ...rawPlan, cta: 'Get started' }
-                  : rawPlan;
+              const ctaLabel =
+                billingEnabled && plan.comingSoon
+                  ? t('pricing.getStarted')
+                  : t(`pricing.${plan.ctaKey}`);
               return (
                 <motion.div
-                  key={plan.name}
+                  key={plan.nameKey}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
@@ -182,13 +195,17 @@ export default function PricingPage() {
                       </span>
                     )}
                     <div>
-                      <h3 className="text-lg font-semibold">{plan.name}</h3>
-                      <p className="text-xs text-fg-subtle mt-1">{plan.description}</p>
+                      <h3 className="text-lg font-semibold">{t(`pricing.${plan.nameKey}`)}</h3>
+                      <p className="text-xs text-fg-subtle mt-1">
+                        {t(`pricing.${plan.descriptionKey}`)}
+                      </p>
                     </div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-4xl font-semibold tracking-tight">{plan.price}</span>
-                      {plan.cadence && (
-                        <span className="text-xs text-fg-subtle">/ {plan.cadence}</span>
+                      {plan.cadenceKey && (
+                        <span className="text-xs text-fg-subtle">
+                          / {t(`pricing.${plan.cadenceKey}`)}
+                        </span>
                       )}
                     </div>
                     <Button
@@ -197,24 +214,24 @@ export default function PricingPage() {
                       className="w-full touch-target"
                     >
                       {plan.href.startsWith('/') ? (
-                        <Link to={plan.href}>{plan.cta}</Link>
+                        <Link to={plan.href}>{ctaLabel}</Link>
                       ) : (
                         <a href={plan.href} target="_blank" rel="noreferrer">
-                          {plan.cta}
+                          {ctaLabel}
                         </a>
                       )}
                     </Button>
                     <ul className="flex flex-col gap-2 text-sm">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-fg-subtle">
+                      {plan.featureKeys.map((fKey) => (
+                        <li key={fKey} className="flex items-start gap-2 text-fg-subtle">
                           <Check className="size-4 text-fg-faint mt-0.5 shrink-0" />
-                          <span>{f}</span>
+                          <span>{t(`pricing.${fKey}`)}</span>
                         </li>
                       ))}
                     </ul>
-                    {plan.footnote && (
+                    {plan.footnoteKey && (
                       <p className="text-[11px] text-fg-faint mt-auto pt-2 border-t border-border">
-                        {plan.footnote}
+                        {t(`pricing.${plan.footnoteKey}`)}
                       </p>
                     )}
                   </Card>
@@ -226,10 +243,9 @@ export default function PricingPage() {
           <Card className="mt-10 p-6 bg-bg-subtle">
             <div className="flex flex-wrap items-start gap-4">
               <div className="flex-1 min-w-[280px]">
-                <h3 className="text-sm font-semibold mb-1">About the hosted plans</h3>
+                <h3 className="text-sm font-semibold mb-1">{t('pricing.aboutHostedPlans')}</h3>
                 <p className="text-xs text-fg-subtle leading-relaxed">
-                  The hosted Starter and Pro tiers are not yet live. The open-source release is
-                  fully functional today — see{' '}
+                  {t('pricing.aboutHostedDescPrefix')}{' '}
                   <a
                     href={GITHUB_URL + '/blob/main/docs/LAUNCH.md'}
                     className="underline-offset-2 hover:underline text-fg-subtle hover:text-fg"
@@ -238,12 +254,12 @@ export default function PricingPage() {
                   >
                     LAUNCH.md
                   </a>{' '}
-                  for the SaaS roadmap.
+                  {t('pricing.aboutHostedDescSuffix')}
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/sign-up">
-                  Join the waitlist
+                  {t('auth.joinWaitlist')}
                   <ArrowRight />
                 </Link>
               </Button>
@@ -257,61 +273,49 @@ export default function PricingPage() {
       <footer className="border-t border-border py-6 safe-pb">
         <div className="max-w-6xl mx-auto safe-px flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-fg-faint">
           <Link to="/" className="hover:text-fg-subtle">
-            Home
+            {t('nav.home')}
           </Link>
           <Link to="/pricing" className="hover:text-fg-subtle">
-            Pricing
+            {t('nav.pricing')}
           </Link>
           <a href={GITHUB_URL} className="hover:text-fg-subtle">
             GitHub
           </a>
           <a href={GITHUB_URL + '/blob/main/docs/SELF_HOSTING.md'} className="hover:text-fg-subtle">
-            Self-host docs
+            {t('devtools.selfHostDocs')}
           </a>
           <a href={GITHUB_URL + '/blob/main/docs/LAUNCH.md'} className="hover:text-fg-subtle">
-            Roadmap
+            {t('pricing.roadmap')}
           </a>
-          <span className="ml-auto">MIT licensed · Built with CDP</span>
+          <span className="ml-auto">{t('pricing.footerNote')}</span>
         </div>
       </footer>
     </div>
   );
 }
 
-const FAQS: { q: string; a: string }[] = [
-  {
-    q: 'Is the public demo really free?',
-    a: 'Yes — the demo at remote-devtools.vercel.app is fully free, no signup. It runs entirely in your browser with seed data; nothing leaves the page.',
-  },
-  {
-    q: "What's the difference between self-hosted and Starter?",
-    a: 'Self-hosted is the full open-source release on your own infrastructure — Postgres, S3, Jira, Slack integrations all work. Starter is the same product hosted by us with managed Postgres and 30-day session retention.',
-  },
-  {
-    q: 'When will Starter and Pro launch?',
-    a: 'Hosted tiers are on the waitlist. The roadmap (LAUNCH.md) tracks the work needed to get there. Self-host is fully usable today.',
-  },
-  {
-    q: 'Can I switch from self-host to hosted later?',
-    a: 'Yes — sessions live in Postgres. Once we ship the hosted plans, an export/import path will be documented.',
-  },
-  {
-    q: 'Does it work behind a VPN / on-premise / air-gapped?',
-    a: "Yes. Self-host has no external dependencies (S3, Jira, Slack, Google Sheets are all optional). Run docker compose on a single VM and you're done.",
-  },
-  {
-    q: 'What about data privacy?',
-    a: 'The SDK captures DOM and CDP events from the pages you opt into. Self-host means the data never leaves your servers. The hosted plan will include DPA, EU data residency, and per-org isolation.',
-  },
+/** FAQ entries keyed into the `pricing` namespace; resolved at render. */
+const FAQ_KEYS: { qKey: string; aKey: string }[] = [
+  { qKey: 'faqDemoFreeQ', aKey: 'faqDemoFreeA' },
+  { qKey: 'faqSelfVsStarterQ', aKey: 'faqSelfVsStarterA' },
+  { qKey: 'faqLaunchQ', aKey: 'faqLaunchA' },
+  { qKey: 'faqSwitchQ', aKey: 'faqSwitchA' },
+  { qKey: 'faqVpnQ', aKey: 'faqVpnA' },
+  { qKey: 'faqPrivacyQ', aKey: 'faqPrivacyA' },
 ];
 
 function FAQ() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
+  const faqs = useMemo(
+    () => FAQ_KEYS.map((f) => ({ q: t(`pricing.${f.qKey}`), a: t(`pricing.${f.aKey}`) })),
+    [t],
+  );
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return FAQS;
-    return FAQS.filter((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q));
-  }, [query]);
+    if (!q) return faqs;
+    return faqs.filter((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q));
+  }, [query, faqs]);
 
   return (
     <section className="mt-16">
@@ -320,11 +324,11 @@ function FAQ() {
           <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
             FAQ
           </Badge>
-          <h2 className="text-2xl font-semibold tracking-tight">Common questions</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('pricing.commonQuestions')}</h2>
         </div>
         <div className="w-full sm:max-w-xs">
           <Input
-            placeholder="Search FAQ…"
+            placeholder={t('pricing.searchFaq')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             leadingIcon={<SearchIcon />}
@@ -335,16 +339,16 @@ function FAQ() {
       {filtered.length === 0 ? (
         <Card className="p-6 text-center bg-bg-subtle">
           <p className="text-sm text-fg-subtle">
-            No matches. Try a different keyword or reach out to{' '}
+            {t('pricing.noMatchesPrefix')}{' '}
             <a
               href={GITHUB_URL + '/issues/new'}
               className="text-fg hover:underline underline-offset-2"
               target="_blank"
               rel="noreferrer"
             >
-              GitHub issues
+              {t('pricing.githubIssues')}
             </a>
-            .
+            {t('pricing.noMatchesSuffix')}
           </p>
         </Card>
       ) : (
