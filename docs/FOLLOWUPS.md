@@ -721,6 +721,15 @@ limit)` extracts hostname directly in SQL
   triage number — rather than the total, decrementing live as
   comments are resolved. Copy-summary still reports total.
 
+- **Live viewer presence** — `d0ce20b5` (server) + `8252de83`
+  (client) — Sixteenth backend cycle; the real-time-presence
+  next-level item as a heartbeat/poll MVP (no WebSocket).
+  PresenceModule keeps an in-memory 20s-TTL viewer map;
+  `POST /api/presence/:id/heartbeat` + `GET /api/presence/:id`.
+  `usePresence` heartbeats every 10s (per-tab sessionStorage
+  client id) and the Session header shows a "N viewing" chip.
+  Single-process MVP — multi-node would move the map to Redis.
+
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
   `DashboardService.getTopTags(period, limit)` aggregates the
