@@ -16,6 +16,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GoogleSheetsModule } from './modules/google-sheets/google-sheets.module';
 import { ImageBase64Module } from './modules/image-base64/image-base64.module';
+import { PresenceModule } from './modules/presence/presence.module';
 import { RemoveRecordService } from './modules/remove-record/remove-record.service';
 import { SessionReplayModule } from './modules/session-replay/session-replay.module';
 import { TicketFormModule } from './modules/ticket-form/ticket-form.module';
@@ -67,6 +68,7 @@ const staticModule = ServeStaticModule.forRoot(
     ActivityModule,
     AuthModule,
     BillingModule,
+    PresenceModule,
     HealthModule,
   ],
   controllers: [AppController],
