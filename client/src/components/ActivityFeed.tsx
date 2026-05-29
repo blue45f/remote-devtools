@@ -473,11 +473,12 @@ function FeedSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-start gap-3 py-1.5">
+        <div key={i} className="flex items-start gap-3 py-2.5">
           <Skeleton className="size-8 rounded-full" />
           <div className="flex-1 space-y-1.5">
             <Skeleton className="h-3 w-48" />
             <Skeleton className="h-2.5 w-32" />
+            <Skeleton className="h-2 w-20" />
           </div>
           <Skeleton className="h-2.5 w-12" />
         </div>

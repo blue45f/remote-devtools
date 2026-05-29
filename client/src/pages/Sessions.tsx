@@ -997,9 +997,9 @@ export default function SessionsPage() {
         <ErrorState onRetry={() => void refetch()} />
       ) : isLoading ? (
         effectiveView === 'table' ? (
-          <SessionTableSkeleton />
+          <SessionTableSkeleton density={density} />
         ) : (
-          <SessionGridSkeleton />
+          <SessionGridSkeleton density={density} />
         )
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -1959,13 +1959,18 @@ function SessionCard({
 
 /* ───────── Skeletons / Error ───────── */
 
-function SessionTableSkeleton() {
+function SessionTableSkeleton({ density }: { density: Density }) {
+  // Mirror SessionRow cell padding so the skeleton occupies the same row
+  // height as loaded rows (no vertical layout shift on first paint).
+  const cellY = density === 'compact' ? 'py-1.5' : 'py-3';
   return (
     <Card className="overflow-hidden p-0">
       <table className="w-full">
         <thead>
+          {/* 7 columns, matching SessionTable's <thead>: status dot, Session,
+              URL, Device, Duration, When, actions. */}
           <tr className="border-b border-border bg-bg-subtle">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 7 }).map((_, i) => (
               <th key={i} className="h-9 px-3" />
             ))}
           </tr>
@@ -1973,23 +1978,32 @@ function SessionTableSkeleton() {
         <tbody>
           {Array.from({ length: 6 }).map((_, i) => (
             <tr key={i} className="border-b border-border last:border-0">
-              <td className="pl-4 pr-2 py-3.5">
+              <td className={cn('pl-4 pr-2', cellY)}>
                 <Skeleton className="size-2 rounded-full" />
               </td>
-              <td className="px-3 py-3.5">
-                <Skeleton className="h-3.5 w-40 mb-1.5" />
-                <Skeleton className="h-2.5 w-20" />
+              <td className={cn('px-3', cellY)}>
+                {density === 'comfortable' ? (
+                  <>
+                    <Skeleton className="h-3.5 w-40 mb-1.5" />
+                    <Skeleton className="h-2.5 w-20" />
+                  </>
+                ) : (
+                  <Skeleton className="h-3.5 w-40" />
+                )}
               </td>
-              <td className="px-3 py-3.5">
+              <td className={cn('px-3', cellY)}>
                 <Skeleton className="h-3 w-48" />
               </td>
-              <td className="px-3 py-3.5">
+              <td className={cn('px-3', cellY)}>
                 <Skeleton className="h-3 w-24" />
               </td>
-              <td className="px-3 py-3.5 text-right">
+              <td className={cn('px-3 text-right', cellY)}>
                 <Skeleton className="h-3 w-12 ml-auto" />
               </td>
-              <td className="pl-3 pr-4 py-3.5 text-right">
+              <td className={cn('px-3 text-right', cellY)}>
+                <Skeleton className="h-3 w-14 ml-auto" />
+              </td>
+              <td className={cn('pl-3 pr-4 text-right', cellY)}>
                 <Skeleton className="h-3 w-16 ml-auto" />
               </td>
             </tr>
@@ -2000,15 +2014,27 @@ function SessionTableSkeleton() {
   );
 }
 
-function SessionGridSkeleton() {
+function SessionGridSkeleton({ density }: { density: Density }) {
+  // Mirror SessionGrid gap + SessionCard padding/structure so cards reserve
+  // the same footprint as loaded cards (no layout shift).
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div
+      className={cn(
+        'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3',
+        density === 'compact' ? 'gap-1.5 sm:gap-2' : 'gap-2.5 sm:gap-3',
+      )}
+    >
       {Array.from({ length: 6 }).map((_, i) => (
-        <Card key={i} className="p-4">
-          <Skeleton className="h-4 w-32 mb-2" />
-          <Skeleton className="h-3 w-48 mb-4" />
-          <Skeleton className="h-3 w-24 mb-2" />
-          <Skeleton className="h-8 w-full mt-3" />
+        <Card key={i} className={cn(density === 'compact' ? 'p-2 sm:p-2.5' : 'p-3.5 sm:p-4')}>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-12 rounded-full" />
+          </div>
+          <Skeleton className="h-3 w-48 mb-3" />
+          <Skeleton className="h-3 w-24" />
+          <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
+            <Skeleton className="h-8 w-full" />
+          </div>
         </Card>
       ))}
     </div>
