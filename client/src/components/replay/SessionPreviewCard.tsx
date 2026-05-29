@@ -137,6 +137,7 @@ export function SessionPreviewCard({ sessionId, className, clickPoints }: Sessio
             type="button"
             onClick={() => setShowHeatmap((v) => !v)}
             aria-pressed={showHeatmap}
+            aria-label={t('replay.heatmapToggle')}
             className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider hover:text-bg/80"
             data-testid="preview-heatmap-toggle"
           >
