@@ -2565,6 +2565,7 @@ function ReplayPanel({
   commentMarkers,
   errorMarkers,
 }: ReplayPanelProps) {
+  const { t } = useTranslation();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [{ speed, skipInactive }, setPrefs] = useReplayPrefs();
@@ -2665,12 +2666,12 @@ function ReplayPanel({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setRestartToken((t) => t + 1)}
+          onClick={() => setRestartToken((token) => token + 1)}
           data-testid="replay-restart"
-          title="Restart from the beginning (Home)"
+          title={t('sessionDetail.replayRestart')}
         >
           <RotateCcw />
-          <span className="hidden sm:inline">Restart</span>
+          <span className="hidden sm:inline">{t('sessionDetail.restart')}</span>
         </Button>
         <Button
           variant={skipInactive ? 'primary' : 'outline'}
@@ -2678,10 +2679,10 @@ function ReplayPanel({
           onClick={() => setPrefs({ skipInactive: !skipInactive })}
           aria-pressed={skipInactive}
           data-testid="replay-skip-inactive"
-          title="Skip over idle stretches"
+          title={t('sessionDetail.replaySkipIdle')}
         >
           <FastForward />
-          <span className="hidden sm:inline">Skip idle</span>
+          <span className="hidden sm:inline">{t('sessionDetail.skipIdle')}</span>
         </Button>
         {fullscreenSupported && (
           <Button
@@ -2757,6 +2758,7 @@ function CommentRow({
   onEditCommit: (body: string) => void;
   onToggleResolved: (resolved: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.body);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -2849,7 +2851,7 @@ function CommentRow({
               resolved && 'line-through',
             )}
             data-testid="replay-comment-body"
-            title="Click to edit"
+            title={t('sessionDetail.clickToEdit')}
           >
             {comment.body}
           </button>
@@ -2866,7 +2868,7 @@ function CommentRow({
       <button
         type="button"
         onClick={onDelete}
-        aria-label="Delete comment"
+        aria-label={t('sessionDetail.deleteComment')}
         data-testid="replay-comment-delete"
         className="opacity-40 hover:opacity-100 text-fg-faint hover:text-danger"
       >
@@ -2903,6 +2905,7 @@ function CommentsPanel({
   onSeek: (offsetMs: number) => void;
   focusSignal: number;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ['session-comments', recordId] as const, [recordId]);
 
@@ -3073,7 +3076,7 @@ function CommentsPanel({
       >
         <Input
           ref={inputRef}
-          placeholder="Add a comment at the current playhead…"
+          placeholder={t('sessionDetail.addCommentPlaceholder')}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={2000}
@@ -3102,11 +3105,12 @@ function SpeedPicker({
   value: number;
   onChange: (next: 0.5 | 1 | 2 | 4) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="inline-flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5"
       role="group"
-      aria-label="Playback speed"
+      aria-label={t('sessionDetail.playbackSpeed')}
       data-testid="replay-speed-picker"
     >
       {REPLAY_SPEEDS.map((s) => {
@@ -3215,6 +3219,7 @@ function RageClickCard({
   sessionStartMs: number;
   onJump: (offsetMs: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Card className="p-4 border-warning/40 bg-warning-soft/30" data-testid="rage-click-card">
       <div className="flex items-start gap-3">
@@ -3224,12 +3229,10 @@ function RageClickCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-fg">
             {clicks.length === 1
-              ? '1 rage-click moment detected'
-              : `${clicks.length} rage-click moments detected`}
+              ? t('sessionDetail.rageClickOne')
+              : t('sessionDetail.rageClickOther', { n: clicks.length })}
           </h3>
-          <p className="text-xs text-fg-subtle mt-0.5">
-            User clicked rapidly in the same spot — often a sign of an unresponsive button.
-          </p>
+          <p className="text-xs text-fg-subtle mt-0.5">{t('sessionDetail.rageClickDesc')}</p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {clicks.slice(0, 5).map((c, idx) => {
               const offsetMs = Math.max(0, c.startMs - sessionStartMs);
@@ -3296,6 +3299,7 @@ function ErrorNavButton({
   playheadMsRef: React.MutableRefObject<number>;
   onSeek: (offsetMs: number) => void;
 }) {
+  const { t } = useTranslation();
   const sortedOffsets = useMemo(
     () => errorMarkers.map((m) => m.offsetMs).sort((a, b) => a - b),
     [errorMarkers],
@@ -3311,7 +3315,7 @@ function ErrorNavButton({
       <button
         type="button"
         onClick={() => seekRelative(-1)}
-        aria-label="Previous error"
+        aria-label={t('sessionDetail.prevError')}
         data-testid="replay-prev-error"
         className="inline-flex items-center justify-center h-8 px-1.5 hover:bg-danger-soft rounded-l-md"
       >
@@ -3324,7 +3328,7 @@ function ErrorNavButton({
       <button
         type="button"
         onClick={() => seekRelative(1)}
-        aria-label="Next error"
+        aria-label={t('sessionDetail.nextError')}
         data-testid="replay-next-error"
         className="inline-flex items-center justify-center h-8 px-1.5 hover:bg-danger-soft rounded-r-md"
       >
@@ -3349,6 +3353,7 @@ function ReplayMinimap({
   /** Error positions (ms-from-session-start) to render as red ticks. */
   errorMarkers?: { id: string; offsetMs: number }[];
 }) {
+  const { t } = useTranslation();
   const BUCKETS = 96;
 
   const { buckets, totalMs } = useMemo(() => {
@@ -3378,13 +3383,15 @@ function ReplayMinimap({
   return (
     <Card className="p-2.5">
       <div className="flex items-center justify-between mb-1.5 text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
-        <span>Activity</span>
-        <span className="text-fg-faint normal-case tracking-normal">Click to seek</span>
+        <span>{t('sessionDetail.minimapActivity')}</span>
+        <span className="text-fg-faint normal-case tracking-normal">
+          {t('sessionDetail.minimapClickToSeek')}
+        </span>
       </div>
       <div
         role="button"
         tabIndex={0}
-        aria-label="Replay activity minimap — click to seek"
+        aria-label={t('sessionDetail.minimapAria')}
         onClick={handleClick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -3418,7 +3425,7 @@ function ReplayMinimap({
             <button
               key={m.id}
               type="button"
-              aria-label="Jump to error"
+              aria-label={t('sessionDetail.jumpToError')}
               data-testid="replay-minimap-error"
               onClick={(e) => {
                 e.stopPropagation();
@@ -3435,7 +3442,7 @@ function ReplayMinimap({
             <button
               key={m.id}
               type="button"
-              aria-label="Jump to comment"
+              aria-label={t('sessionDetail.jumpToComment')}
               data-testid="replay-minimap-comment"
               onClick={(e) => {
                 e.stopPropagation();
@@ -3758,12 +3765,13 @@ function SessionInsightsCard({
   insights: SessionInsight[];
   onJump: (offsetMs: number) => void;
 }) {
+  const { t } = useTranslation();
   if (insights.length === 0) return null;
   return (
     <Card className="p-4" data-testid="session-insights">
       <div className="flex items-center gap-2 mb-3">
         <Lightbulb className="size-4 text-accent" />
-        <h3 className="text-sm font-semibold text-fg">Insights</h3>
+        <h3 className="text-sm font-semibold text-fg">{t('sessionDetail.insights')}</h3>
       </div>
       <ul className="space-y-1.5">
         {insights.map((insight, i) => (
@@ -3774,7 +3782,7 @@ function SessionInsightsCard({
                 onClick={() => onJump(insight.jumpMs as number)}
                 data-testid="session-insight-jump"
                 className="flex items-start gap-2 text-xs text-fg-subtle w-full text-left rounded px-1 -mx-1 hover:bg-bg-muted/60 hover:text-fg cursor-pointer"
-                title="Jump to this moment in the replay"
+                title={t('sessionDetail.jumpToMomentTitle')}
               >
                 <PlayCircle className="size-3.5 mt-0.5 shrink-0 text-fg-faint" />
                 <span>{insight.text}</span>
@@ -3803,6 +3811,7 @@ function OverviewTab({
   counts: [number, number][];
   total: number;
 }) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -3821,7 +3830,7 @@ function OverviewTab({
       <Card>
         <EmptyState
           icon={Activity}
-          title="No events recorded"
+          title={t('sessionDetail.noEventsTitle')}
           description="This session captured no replay events."
         />
       </Card>
@@ -3874,6 +3883,7 @@ function TimelineTab({
   sessionStartMs: number;
   onJumpToReplay: (offsetMs: number) => void;
 }) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   // Multi-select event-type filter. Empty set = show everything. Matches
   // the ActivityFeed kind filter mental model so the user only needs to
@@ -3903,11 +3913,11 @@ function TimelineTab({
     });
   }, [events, activeTypes, search]);
 
-  const toggleType = (t: number) => {
+  const toggleType = (item: number) => {
     setActiveTypes((prev) => {
       const next = new Set(prev);
-      if (next.has(t)) next.delete(t);
-      else next.add(t);
+      if (next.has(item)) next.delete(item);
+      else next.add(item);
       return next;
     });
   };
@@ -3993,7 +4003,7 @@ function TimelineTab({
       <Card>
         <EmptyState
           icon={ListTree}
-          title="Empty timeline"
+          title={t('sessionDetail.emptyTimelineTitle')}
           description="No events were captured for this session."
         />
       </Card>
@@ -4007,13 +4017,17 @@ function TimelineTab({
           On mobile/tablet: search bar + horizontal chip rail. */}
       <aside className="space-y-3 min-w-0">
         <Input
-          placeholder="Filter events…"
+          placeholder={t('sessionDetail.filterEventsPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           leadingIcon={<Activity />}
           trailingIcon={
             search ? (
-              <button type="button" onClick={() => setSearch('')} aria-label="Clear filter">
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label={t('sessionDetail.clearFilter')}
+              >
                 <X className="size-3.5" />
               </button>
             ) : undefined
@@ -4044,15 +4058,15 @@ function TimelineTab({
                 count={events.length}
               />
             </li>
-            {types.map((t) => {
-              const meta = getEventMeta(t);
-              const count = events.filter((e) => e.type === t).length;
+            {types.map((item) => {
+              const meta = getEventMeta(item);
+              const count = events.filter((e) => e.type === item).length;
               const Icon = meta.icon;
               return (
-                <li key={t}>
+                <li key={item}>
                   <FilterRow
-                    active={activeTypes.has(t)}
-                    onClick={() => toggleType(t)}
+                    active={activeTypes.has(item)}
+                    onClick={() => toggleType(item)}
                     label={meta.name}
                     count={count}
                     icon={<Icon className="size-3.5" />}
@@ -4072,15 +4086,15 @@ function TimelineTab({
               label="All"
               count={events.length}
             />
-            {types.map((t) => {
-              const meta = getEventMeta(t);
-              const count = events.filter((e) => e.type === t).length;
+            {types.map((item) => {
+              const meta = getEventMeta(item);
+              const count = events.filter((e) => e.type === item).length;
               const Icon = meta.icon;
               return (
                 <FilterChip
-                  key={t}
-                  active={activeTypes.has(t)}
-                  onClick={() => toggleType(t)}
+                  key={item}
+                  active={activeTypes.has(item)}
+                  onClick={() => toggleType(item)}
                   label={meta.name}
                   count={count}
                   icon={<Icon className="size-3" />}
@@ -4170,6 +4184,7 @@ function VirtualEventList({
   highlight?: string;
   cursorIdx?: number;
 }) {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
@@ -4225,7 +4240,7 @@ function VirtualEventList({
                   'group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors',
                   cursorIdx === virtualRow.index && 'bg-accent-soft/40',
                 )}
-                title="Jump to this point in the replay"
+                title={t('sessionDetail.jumpToPointTitle')}
               >
                 <span className="w-10 shrink-0 text-right text-[10px] text-fg-faint font-mono tabular-nums">
                   {virtualRow.index + 1}
@@ -4325,6 +4340,7 @@ function FilterRow({
 /* ───────── Raw tab ───────── */
 
 function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }) {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [copied, setCopied] = useState(false);
   const json = useMemo(() => JSON.stringify(events, null, 2), [events]);
@@ -4374,7 +4390,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
   if (events.length === 0) {
     return (
       <Card>
-        <EmptyState icon={FileJson} title="No data" />
+        <EmptyState icon={FileJson} title={t('sessionDetail.noData')} />
       </Card>
     );
   }
@@ -4388,7 +4404,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="sm" onClick={download} data-testid="raw-download">
             <Download />
-            <span className="hidden xs:inline sm:inline">Download</span>
+            <span className="hidden xs:inline sm:inline">{t('sessionDetail.download')}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => void copy()} data-testid="raw-copy">
             <Copy />

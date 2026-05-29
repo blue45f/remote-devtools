@@ -52,7 +52,19 @@
     "quickStartHeading": "SDK를 설치하고 대시보드를 여세요.",
     "quickStartLead": "module, script, self-host 경로 중 하나를 골라 실제 세션 캡처를 시작하세요.",
     "docs": "문서",
-    "builtWith": "Chrome DevTools Protocol 기반"
+    "builtWith": "Chrome DevTools Protocol 기반",
+    "mockDemoMode": "데모 모드",
+    "mockLiveNow": "현재 라이브",
+    "mockSessionsToday": "오늘 세션",
+    "mockTicketsToday": "오늘 티켓",
+    "mockRecordedSession": "기록된 세션",
+    "mockTicketCreated": "티켓 생성됨",
+    "mockConsoleError": "콘솔 오류",
+    "needGuide": "전체 가이드가 필요하신가요?",
+    "ctaHeading": "실제 세션을 살펴볼 준비가 되셨나요?",
+    "ctaLead": "데모는 클릭 한 번이면 됩니다. 또는 저장소를 복제해 오늘 바로 자체 인프라에 배포하세요.",
+    "openTheDemo": "데모 열기",
+    "commandPalette": "커맨드 팔레트"
   },
   "pricing": {
     "badge": "요금제",
@@ -95,7 +107,24 @@
     "aboutHostedDescSuffix": "에서 SaaS 로드맵을 확인하세요.",
     "roadmap": "로드맵",
     "footerNote": "MIT 라이선스 · CDP 기반",
-    "faqTitle": "자주 묻는 질문"
+    "faqTitle": "자주 묻는 질문",
+    "commonQuestions": "자주 묻는 질문",
+    "searchFaq": "FAQ 검색…",
+    "noMatchesPrefix": "일치하는 항목이 없습니다. 다른 키워드로 검색하거나",
+    "githubIssues": "GitHub issues",
+    "noMatchesSuffix": "에 문의하세요.",
+    "faqDemoFreeQ": "공개 데모는 정말 무료인가요?",
+    "faqDemoFreeA": "네, remote-devtools.vercel.app의 데모는 완전 무료이며 가입이 필요 없습니다. 시드 데이터로 브라우저 안에서만 실행되며 어떤 데이터도 페이지를 벗어나지 않습니다.",
+    "faqSelfVsStarterQ": "셀프 호스팅과 Starter의 차이는 무엇인가요?",
+    "faqSelfVsStarterA": "셀프 호스팅은 자체 인프라에서 실행하는 완전한 오픈소스 릴리스로, Postgres, S3, Jira, Slack 연동이 모두 작동합니다. Starter는 동일한 제품을 저희가 관리형 Postgres와 30일 세션 보관으로 호스팅하는 버전입니다.",
+    "faqLaunchQ": "Starter와 Pro는 언제 출시되나요?",
+    "faqLaunchA": "호스티드 등급은 대기 명단에 있습니다. 로드맵(LAUNCH.md)에서 출시까지 필요한 작업을 추적합니다. 셀프 호스팅은 오늘 바로 완전하게 사용할 수 있습니다.",
+    "faqSwitchQ": "나중에 셀프 호스팅에서 호스티드로 전환할 수 있나요?",
+    "faqSwitchA": "네, 세션은 Postgres에 저장됩니다. 호스티드 플랜이 출시되면 내보내기/가져오기 경로가 문서화됩니다.",
+    "faqVpnQ": "VPN 뒤, 온프레미스, 망 분리 환경에서도 작동하나요?",
+    "faqVpnA": "네. 셀프 호스팅은 외부 의존성이 없습니다 (S3, Jira, Slack, Google Sheets는 모두 선택 사항입니다). 단일 VM에서 docker compose를 실행하면 끝입니다.",
+    "faqPrivacyQ": "데이터 프라이버시는 어떻게 되나요?",
+    "faqPrivacyA": "SDK는 사용자가 허용한 페이지에서만 DOM과 CDP 이벤트를 캡처합니다. 셀프 호스팅은 데이터가 사용자 서버를 절대 벗어나지 않음을 의미합니다. 호스티드 플랜에는 DPA, EU 데이터 레지던시, 조직별 격리가 포함됩니다."
   },
   "auth": {
     "welcomeBack": "다시 오신 것을 환영합니다",
@@ -140,7 +169,7 @@
     "demoMode": "데모",
     "demoModeTooltip": "시드 데이터 표시 중 — 백엔드 네트워크 요청은 우회됩니다.",
     "openCommandPalette": "명령 팔레트 열기",
-    "breadcrumb": "이동 경로"
+    "breadcrumb": "탐색 경로"
   },
   "sidebar": {
     "dashboard": "대시보드",
@@ -405,7 +434,17 @@
     "insightAnd": ", ",
     "insightErrorsCluster": "{{time}} 부근에 오류 {{n}}건이 몰려 있습니다.",
     "insightLargestResponse": "가장 큰 응답: {{size}} ({{method}} {{path}}).",
-    "insightRageClickBurst": "{{time}}에 분노 클릭 폭주 (×{{n}})."
+    "insightRageClickBurst": "{{time}}에 분노 클릭 폭주 (×{{n}}).",
+    "replayRestart": "처음부터 다시 시작 (Home)",
+    "replaySkipIdle": "유휴 구간 건너뛰기",
+    "prevError": "이전 오류",
+    "noEventsTitle": "기록된 이벤트 없음",
+    "noData": "데이터 없음",
+    "minimapActivity": "활동",
+    "minimapClickToSeek": "클릭하여 이동",
+    "rageClickOne": "분노 클릭 순간 1건 감지됨",
+    "rageClickOther": "분노 클릭 순간 {{n}}건 감지됨",
+    "rageClickDesc": "같은 위치를 빠르게 반복 클릭했습니다. 응답하지 않는 버튼의 신호일 수 있습니다."
   },
   "sessions": {
     "title": "세션",
