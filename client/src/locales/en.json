@@ -748,6 +748,7 @@
     "viewAll": "View all",
     "saveAriaLabel": "Save {{name}}",
     "perPerson": "/ person",
-    "bookNow": "Book Now"
+    "bookNow": "Book Now",
+    "ratingAria": "Rating {{rating}}, {{reviews}} reviews"
   }
 }

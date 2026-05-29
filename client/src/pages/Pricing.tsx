@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Search as SearchIcon } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Search as SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -360,9 +360,10 @@ function FAQ() {
             >
               <summary className="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
                 <span>{item.q}</span>
-                <span className="ml-3 text-fg-faint transition-transform group-open:rotate-180">
-                  ↓
-                </span>
+                <ChevronDown
+                  aria-hidden
+                  className="ml-3 size-4 shrink-0 text-fg-faint transition-transform group-open:rotate-180"
+                />
               </summary>
               <p className="mt-2 text-sm text-fg-subtle leading-relaxed">{item.a}</p>
             </details>

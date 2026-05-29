@@ -1,4 +1,4 @@
-import { Mail } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -89,9 +89,10 @@ export default function SignInPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-3">
-        <label className="block">
+        <label htmlFor="signin-email" className="block">
           <span className="text-xs font-medium text-fg-subtle mb-1.5 block">{t('auth.email')}</span>
           <Input
+            id="signin-email"
             type="email"
             required
             placeholder={t('auth.emailPlaceholder')}
@@ -141,8 +142,12 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             <BrandMark className="size-7" />
             <span className="text-[15px] font-semibold tracking-tight">Remote DevTools</span>
           </Link>
-          <Link to="/" className="text-xs text-fg-subtle hover:text-fg">
-            ← {t('nav.home')}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-xs text-fg-subtle hover:text-fg"
+          >
+            <ArrowLeft className="size-3.5" aria-hidden />
+            {t('nav.home')}
           </Link>
         </div>
       </header>

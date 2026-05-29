@@ -748,6 +748,7 @@
     "viewAll": "전체 보기",
     "saveAriaLabel": "{{name}} 저장",
     "perPerson": "/ 인당",
-    "bookNow": "지금 예약"
+    "bookNow": "지금 예약",
+    "ratingAria": "평점 {{rating}}점, 리뷰 {{reviews}}개"
   }
 }

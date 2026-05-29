@@ -1,4 +1,4 @@
-import { Heart, Search } from 'lucide-react';
+import { Heart, Search, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -130,10 +130,20 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
               </div>
               <div className="p-4">
                 <h3 className="font-medium text-sm text-fg mb-1">{dest.name}</h3>
-                <div className="flex items-center gap-1 mb-2 text-xs">
-                  <span className="text-warning">★</span>
-                  <span className="font-medium text-fg">{dest.rating}</span>
-                  <span className="text-fg-faint">({dest.reviews.toLocaleString()})</span>
+                <div
+                  className="flex items-center gap-1 mb-2 text-xs"
+                  aria-label={t('webview.ratingAria', {
+                    rating: dest.rating,
+                    reviews: dest.reviews.toLocaleString(),
+                  })}
+                >
+                  <Star className="size-3.5 text-warning fill-warning" aria-hidden />
+                  <span className="font-medium text-fg" aria-hidden>
+                    {dest.rating}
+                  </span>
+                  <span className="text-fg-faint" aria-hidden>
+                    ({dest.reviews.toLocaleString()})
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1">
