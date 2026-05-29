@@ -30,13 +30,16 @@ void i18n
       en: { translation: en },
       ko: { translation: ko },
     },
-    lng: 'ko',
+    // No explicit `lng` — that would override the detector and lock the
+    // language menu. Detection finds a stored choice; absent one, i18next
+    // falls back to `fallbackLng` (Korean). So fresh visitors get Korean and
+    // the menu can still switch to English (persisted to localStorage).
     fallbackLng: 'ko',
     supportedLngs: ['en', 'ko'],
     interpolation: { escapeValue: false }, // React already escapes
     detection: {
-      // Respect an explicit stored choice; otherwise fall through to `lng`
-      // (Korean). No navigator/path/query/cookie detection — keeps the default
+      // Respect an explicit stored choice; otherwise fall back to Korean.
+      // No navigator/path/query/cookie detection — keeps the default
       // predictable and URLs clean.
       order: ['localStorage'],
       lookupLocalStorage: 'rd-lang',
