@@ -1,4 +1,14 @@
-import { ArrowDownToLine, Code2, Edit, Loader2, Plus, Send, Terminal, Trash2 } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  Code2,
+  Edit,
+  Hourglass,
+  PenLine,
+  Plus,
+  Send,
+  Terminal,
+  Trash2,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -77,7 +87,7 @@ export default function DebugPanel({
           PUT
         </Button>
         <Button variant="secondary" size="sm" onClick={onPatchRequest}>
-          <Edit />
+          <PenLine />
           PATCH
         </Button>
         <Button variant="secondary" size="sm" onClick={onDeleteRequest}>
@@ -101,7 +111,7 @@ export default function DebugPanel({
           {t('webview.consoleOutput')}
         </Button>
         <Button variant="secondary" size="sm" onClick={onToggleLoading}>
-          <Loader2 />
+          <Hourglass />
           {t('webview.toggleLoading')}
         </Button>
       </Section>
