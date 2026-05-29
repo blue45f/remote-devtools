@@ -10,6 +10,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const dataDir = process.env.PG_DATA_DIR ?? join(homedir(), ".cache", "remote-devtools-pg");
+const port = Number(process.env.PG_PORT ?? 5432);
 const isFirstBoot = !existsSync(join(dataDir, "PG_VERSION"));
 
 if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
@@ -18,7 +19,7 @@ const pg = new EmbeddedPostgres({
   databaseDir: dataDir,
   user: "myuser",
   password: "mypassword",
-  port: 5432,
+  port,
   persistent: true,
 });
 
@@ -37,7 +38,7 @@ if (isFirstBoot) {
   await pg.createDatabase("mydb");
 }
 
-console.log("[pg] ready on localhost:5432 (db=mydb, user=myuser)");
+console.log(`[pg] ready on localhost:${port} (db=mydb, user=myuser)`);
 
 // Hold the event loop so the script doesn't exit immediately after pg.start()
 // returns. We keep the handle so signal handlers can release it before the
