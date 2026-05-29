@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { Spinner } from '@/components/ui/spinner';
@@ -25,6 +26,7 @@ interface AuthStatus {
 }
 
 export function RequireAuth({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const isDemo = useAppStore((s) => s.demoMode);
   const isForcedDemo = import.meta.env.VITE_FORCE_DEMO === 'true';
@@ -62,7 +64,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (status === 'checking') {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Spinner label="Checking sign-in…" />
+        <Spinner label={t('common.checking')} />
       </div>
     );
   }

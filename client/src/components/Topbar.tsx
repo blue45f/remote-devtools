@@ -14,25 +14,30 @@ import { cn } from '@/lib/utils';
 const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 interface Crumb {
-  label: string;
+  /** i18n key, resolved with t() at render. Preferred over the raw label. */
+  labelKey?: string;
+  /** Raw label for dynamic path segments (e.g. a session id) with no key. */
+  label?: string;
   to?: string;
 }
 
 function buildCrumbs(pathname: string): Crumb[] {
   if (pathname === '/' || pathname === '') {
-    return [{ label: 'Home' }];
+    return [{ labelKey: 'topbar.home' }];
   }
 
   const parts = pathname.split('/').filter(Boolean);
   const crumbs: Crumb[] = [];
 
-  // First segment: try to map to nav label
+  // First segment: map to a nav item so the crumb is localized via its key.
   const first = `/${parts[0]}`;
   const navMatch = allNavItems.find((n) => n.to === first);
-  crumbs.push({
-    label: navMatch?.label ?? prettify(parts[0]),
-    to: parts.length > 1 ? first : undefined,
-  });
+  const firstTo = parts.length > 1 ? first : undefined;
+  crumbs.push(
+    navMatch
+      ? { labelKey: navMatch.labelKey, to: firstTo }
+      : { label: prettify(parts[0]), to: firstTo },
+  );
 
   for (let i = 1; i < parts.length; i++) {
     const isLast = i === parts.length - 1;
@@ -66,10 +71,10 @@ export function Topbar() {
   const ThemeIcon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
   const themeLabel =
     theme === 'light'
-      ? 'Light theme · switch to dark'
+      ? t('topbar.themeLight')
       : theme === 'dark'
-        ? 'Dark theme · switch to system'
-        : 'System theme · switch to light';
+        ? t('topbar.themeDark')
+        : t('topbar.themeSystem');
 
   const crumbs = useMemo(() => buildCrumbs(location.pathname), [location.pathname]);
 
@@ -87,7 +92,7 @@ export function Topbar() {
         size="icon"
         className="lg:hidden touch-target"
         onClick={() => setSidebarOpen(true)}
-        aria-label={t('sidebar.expand')}
+        aria-label={t('topbar.openNavigation')}
       >
         <Menu />
       </Button>
@@ -116,14 +121,14 @@ export function Topbar() {
                   to={crumb.to}
                   className="text-fg-subtle hover:text-fg transition-colors truncate"
                 >
-                  {crumb.label}
+                  {crumb.labelKey ? t(crumb.labelKey) : crumb.label}
                 </Link>
               ) : (
                 <span
                   aria-current={isLast ? 'page' : undefined}
                   className={cn('truncate', isLast ? 'text-fg font-medium' : 'text-fg-subtle')}
                 >
-                  {crumb.label}
+                  {crumb.labelKey ? t(crumb.labelKey) : crumb.label}
                 </span>
               )}
             </div>

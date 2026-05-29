@@ -169,7 +169,12 @@
     "demoMode": "Demo",
     "demoModeTooltip": "Showing seed data — backend network requests are bypassed.",
     "openCommandPalette": "Open command palette",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "home": "Home",
+    "openNavigation": "Open navigation menu",
+    "themeLight": "Light theme · switch to dark",
+    "themeDark": "Dark theme · switch to system",
+    "themeSystem": "System theme · switch to light"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -206,7 +211,10 @@
     "durationSec": "{{value}}s",
     "durationMin": "{{value}}m",
     "durationHour": "{{value}}h",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "on": "ON",
+    "off": "OFF",
+    "checking": "Checking sign-in…"
   },
   "notFound": {
     "title": "Lost in the network",
@@ -705,7 +713,8 @@
     "noPreviewCaptured": "No preview captured",
     "previewIframeTitle": "Session preview",
     "previewIframeAriaLabel": "Captured page preview",
-    "capturedPreview": "Captured preview"
+    "capturedPreview": "Captured preview",
+    "heatmapToggle": "Toggle click heatmap"
   },
   "webview": {
     "tabCustomerPage": "Customer page",

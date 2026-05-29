@@ -257,7 +257,7 @@ export function CommandPalette() {
           >
             <Sparkles />
             <span>{demoMode ? t('command.disableDemo') : t('command.enableDemo')}</span>
-            <CommandShortcut>{demoMode ? 'ON' : 'OFF'}</CommandShortcut>
+            <CommandShortcut>{demoMode ? t('common.on') : t('common.off')}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
@@ -283,7 +283,7 @@ export function CommandPalette() {
           >
             <FastForward />
             <span>{skipInactive ? t('command.disableSkipIdle') : t('command.enableSkipIdle')}</span>
-            <CommandShortcut>{skipInactive ? 'ON' : 'OFF'}</CommandShortcut>
+            <CommandShortcut>{skipInactive ? t('common.on') : t('common.off')}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
