@@ -4,3 +4,54 @@ packages:
   - sdk
   - figma-plugin
   - .
+allowBuilds:
+  '@embedded-postgres/darwin-arm64': true
+  '@nestjs/core': true
+  '@scarf/scarf': true
+  '@swc/core': true
+  esbuild: true
+  sharp: true
+
+minimumReleaseAgeExclude:
+  - '@ant-design/icons'
+  - '@aws-sdk/*'
+  - '@nodable/entities'
+  - '@pkgr/core'
+  - '@rc-component/menu'
+  - '@radix-ui/*'
+  - '@sentry-internal/*'
+  - '@sentry/*'
+  - '@smithy/*'
+  - '@storybook/*'
+  - '@tailwindcss/*'
+  - '@tanstack/*'
+  - '@testing-library/*'
+  - '@types/*'
+  - '@vitejs/*'
+  - '@vitest/*'
+  - axios
+  - babel-plugin-react-compiler
+  - devtools-protocol
+  - electron-to-chromium
+  - enhanced-resolve
+  - eslint
+  - eslint-module-utils
+  - eslint-plugin-prettier
+  - framer-motion
+  - googleapis
+  - hasown
+  - i18next
+  - lucide-react
+  - playwright
+  - react-router
+  - react-router-dom
+  - storybook
+  - synckit
+  - tailwindcss
+  - tldts-core
+  - typed-array-length
+  - typescript
+  - unplugin-swc
+  - vite
+  - vitest
+  - zustand
