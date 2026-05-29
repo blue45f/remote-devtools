@@ -43,6 +43,20 @@ export class PresenceService {
   }
 
   /**
+   * Explicitly drop a viewer — used by the WebSocket gateway on disconnect,
+   * where a socket close is a precise "leave" (no need to wait for the TTL).
+   * Returns the remaining live viewers for the session.
+   */
+  public remove(sessionId: string, clientId: string): Viewer[] {
+    const viewers = this.sessions.get(sessionId);
+    if (viewers) {
+      viewers.delete(clientId);
+      if (viewers.size === 0) this.sessions.delete(sessionId);
+    }
+    return this.collect(sessionId);
+  }
+
+  /**
    * Periodically sweep every session so an idle session whose viewers all
    * left (and is never read again) doesn't leak its map entry. `collect`
    * drops stale viewers and deletes a session once it's empty.
