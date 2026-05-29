@@ -377,7 +377,7 @@
     "comments": "Comments",
     "showResolved": "Show resolved ({{n}})",
     "hideResolved": "Hide resolved ({{n}})",
-    "noCommentsYet": "No comments yet — add one anchored to the current playhead.",
+    "noCommentsYet": "No comments yet. Add one anchored to the current playhead.",
     "allCommentsResolved": "All comments resolved.",
     "addCommentPlaceholder": "Add a comment at the current playhead…",
     "add": "Add",

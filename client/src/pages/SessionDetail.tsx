@@ -2744,7 +2744,7 @@ function ReplayPanel({
           >
             {isFullscreen ? <Minimize2 /> : <Maximize2 />}
             <span className="hidden sm:inline">
-              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              {isFullscreen ? t('sessionDetail.exitFullscreen') : t('sessionDetail.fullscreen')}
             </span>
           </Button>
         )}
@@ -2852,7 +2852,9 @@ function CommentRow({
       <button
         type="button"
         onClick={() => onToggleResolved(!resolved)}
-        aria-label={resolved ? 'Reopen comment' : 'Mark comment resolved'}
+        aria-label={
+          resolved ? t('sessionDetail.reopenComment') : t('sessionDetail.markCommentResolved')
+        }
         aria-pressed={resolved}
         data-testid="replay-comment-resolve"
         className={cn(
@@ -2867,7 +2869,7 @@ function CommentRow({
         onClick={() => onSeek(comment.timestampMs)}
         className="font-mono tabular-nums text-accent hover:underline shrink-0 mt-0.5"
         data-testid="replay-comment-seek"
-        aria-label={`Seek to ${formatReplayTimestamp(comment.timestampMs)}`}
+        aria-label={t('sessionDetail.seekTo', { time: formatReplayTimestamp(comment.timestampMs) })}
       >
         {formatReplayTimestamp(comment.timestampMs)}
       </button>
@@ -2992,7 +2994,7 @@ function CommentsPanel({
       );
       setDraft('');
     },
-    onError: () => toast.error("Couldn't save comment"),
+    onError: () => toast.error(t('sessionDetail.couldntSaveComment')),
   });
 
   const deleteMutation = useMutation({
@@ -3012,7 +3014,7 @@ function CommentsPanel({
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast.error("Couldn't delete comment");
+      toast.error(t('sessionDetail.couldntDeleteComment'));
     },
   });
 
@@ -3034,7 +3036,7 @@ function CommentsPanel({
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast.error("Couldn't update comment");
+      toast.error(t('sessionDetail.couldntUpdateComment'));
     },
   });
 
@@ -3056,7 +3058,7 @@ function CommentsPanel({
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast.error("Couldn't update comment");
+      toast.error(t('sessionDetail.couldntUpdateComment'));
     },
   });
 
@@ -3074,7 +3076,7 @@ function CommentsPanel({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
           <MessageSquare className="size-3.5 text-fg-faint" />
-          Comments
+          {t('sessionDetail.comments')}
           {comments.length > 0 && (
             <Badge variant="neutral" size="sm" className="ml-1">
               {comments.length}
@@ -3089,7 +3091,9 @@ function CommentsPanel({
             data-testid="replay-comments-hide-resolved"
             className="text-[11px] text-fg-faint hover:text-fg transition-colors"
           >
-            {hideResolved ? `Show resolved (${resolvedCount})` : `Hide resolved (${resolvedCount})`}
+            {hideResolved
+              ? t('sessionDetail.showResolved', { n: resolvedCount })
+              : t('sessionDetail.hideResolved', { n: resolvedCount })}
           </button>
         )}
       </div>
@@ -3099,8 +3103,8 @@ function CommentsPanel({
       ) : visibleComments.length === 0 ? (
         <p className="text-xs text-fg-faint mb-3">
           {comments.length === 0
-            ? 'No comments yet — add one anchored to the current playhead.'
-            : 'All comments resolved.'}
+            ? t('sessionDetail.noCommentsYet')
+            : t('sessionDetail.allCommentsResolved')}
         </p>
       ) : (
         <ol className="space-y-2 mb-3">
@@ -3141,7 +3145,7 @@ function CommentsPanel({
           data-testid="replay-comment-add"
         >
           <Plus />
-          <span className="hidden sm:inline">Add</span>
+          <span className="hidden sm:inline">{t('sessionDetail.add')}</span>
         </Button>
       </form>
     </Card>
@@ -3303,7 +3307,9 @@ function RageClickCard({
               );
             })}
             {clicks.length > 5 && (
-              <li className="text-[11px] text-fg-faint self-center">+{clicks.length - 5} more</li>
+              <li className="text-[11px] text-fg-faint self-center">
+                {t('sessionDetail.moreCount', { n: clicks.length - 5 })}
+              </li>
             )}
           </ul>
         </div>
@@ -3519,6 +3525,7 @@ function ShareReplayLinkButton({
 }: {
   playheadMsRef: React.MutableRefObject<number>;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -3531,21 +3538,21 @@ function ShareReplayLinkButton({
       await navigator.clipboard.writeText(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-      toast.success('Share link copied', {
+      toast.success(t('sessionDetail.shareLinkCopied'), {
         description:
           playhead > 0
-            ? `Opens the replay at ${formatPlayhead(playhead)}.`
-            : 'Opens the replay from the beginning.',
+            ? t('sessionDetail.shareLinkAtTime', { time: formatPlayhead(playhead) })
+            : t('sessionDetail.shareLinkFromBeginning'),
       });
     } catch {
-      toast.error('Failed to copy link');
+      toast.error(t('sessionDetail.failedToCopyLink'));
     }
   };
 
   return (
     <Button variant="outline" size="sm" onClick={() => void copy()} data-testid="share-replay-link">
       <Link2 />
-      {copied ? 'Copied' : 'Share link to current time'}
+      {copied ? t('sessionDetail.copied') : t('sessionDetail.shareLinkToCurrentTime')}
     </Button>
   );
 }
@@ -3639,6 +3646,7 @@ function CopyChip({
   toastLabel: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const onClick = async () => {
     try {
@@ -3647,7 +3655,7 @@ function CopyChip({
       window.setTimeout(() => setCopied(false), 1500);
       toast.success(toastLabel);
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
   return (
@@ -3684,6 +3692,7 @@ function TopErrorsCard({
   onJumpToReplay?: (offsetMs: number) => void;
   sessionStartMs?: number;
 }) {
+  const { t } = useTranslation();
   // Show the most recent 3 — sort by timestamp desc, slice.
   const recent = useMemo(
     () => [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3),
@@ -3696,8 +3705,10 @@ function TopErrorsCard({
         <div className="flex items-center gap-2">
           <Bug className="size-4 text-danger" />
           <h3 className="text-sm font-semibold text-fg">
-            Console errors
-            <span className="ml-2 text-fg-faint font-normal">({rows.length} total)</span>
+            {t('sessionDetail.consoleErrors')}
+            <span className="ml-2 text-fg-faint font-normal">
+              {t('sessionDetail.totalCount', { n: rows.length })}
+            </span>
           </h3>
         </div>
         <Button
@@ -3706,7 +3717,7 @@ function TopErrorsCard({
           onClick={onJumpToConsole}
           data-testid="overview-top-errors-jump"
         >
-          See all
+          {t('sessionDetail.seeAll')}
         </Button>
       </div>
       <ul className="space-y-1.5">
@@ -3727,7 +3738,7 @@ function TopErrorsCard({
                   'flex items-start gap-2 text-[12px] font-mono w-full text-left rounded px-1 -mx-1',
                   canJump && 'hover:bg-danger-soft/60 cursor-pointer',
                 )}
-                title={canJump ? 'Jump to this moment in the replay' : undefined}
+                title={canJump ? t('sessionDetail.jumpToMomentTitle') : undefined}
               >
                 <span className="text-fg-faint shrink-0 tabular-nums">
                   {formatTimestampWithMillis(r.timestamp)}
@@ -3753,6 +3764,7 @@ function FailedRequestsCard({
   onJumpToReplay?: (offsetMs: number) => void;
   sessionStartMs?: number;
 }) {
+  const { t } = useTranslation();
   const recent = useMemo(
     () => [...rows].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3),
     [rows],
@@ -3767,8 +3779,10 @@ function FailedRequestsCard({
         <div className="flex items-center gap-2">
           <Globe className="size-4 text-danger" />
           <h3 className="text-sm font-semibold text-fg">
-            Failed requests
-            <span className="ml-2 text-fg-faint font-normal">({rows.length} total)</span>
+            {t('sessionDetail.failedRequests')}
+            <span className="ml-2 text-fg-faint font-normal">
+              {t('sessionDetail.totalCount', { n: rows.length })}
+            </span>
           </h3>
         </div>
         <Button
@@ -3777,7 +3791,7 @@ function FailedRequestsCard({
           onClick={onJumpToNetwork}
           data-testid="overview-failed-requests-jump"
         >
-          See all
+          {t('sessionDetail.seeAll')}
         </Button>
       </div>
       <ul className="space-y-1.5">
@@ -3798,7 +3812,7 @@ function FailedRequestsCard({
                   'flex items-center gap-2 text-[12px] font-mono w-full text-left rounded px-1 -mx-1',
                   canJump && 'hover:bg-danger-soft/60 cursor-pointer',
                 )}
-                title={canJump ? 'Jump to this moment in the replay' : undefined}
+                title={canJump ? t('sessionDetail.jumpToMomentTitle') : undefined}
               >
                 <span className="text-danger shrink-0 tabular-nums w-9">{r.status}</span>
                 <span className="text-fg-faint shrink-0">{r.method}</span>
@@ -3920,7 +3934,7 @@ function OverviewTab({
               />
             </div>
             <div className="mt-1.5 text-[11px] text-fg-faint tabular-nums">
-              {percentage.toFixed(1)}% of total
+              {t('sessionDetail.percentOfTotal', { value: percentage.toFixed(1) })}
             </div>
           </Card>
         );
@@ -4107,7 +4121,7 @@ function TimelineTab({
         <div className="hidden lg:block">
           <div className="flex items-center justify-between mb-1.5 px-1">
             <span className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
-              Type
+              {t('sessionDetail.type')}
             </span>
             {activeTypes.size > 0 && (
               <button
@@ -4115,7 +4129,7 @@ function TimelineTab({
                 onClick={clearTypes}
                 className="text-[10px] uppercase tracking-wider text-fg-faint hover:text-fg font-semibold"
               >
-                Clear
+                {t('sessionDetail.clear')}
               </button>
             )}
           </div>
@@ -4124,7 +4138,7 @@ function TimelineTab({
               <FilterRow
                 active={activeTypes.size === 0}
                 onClick={clearTypes}
-                label="All types"
+                label={t('sessionDetail.allTypes')}
                 count={events.length}
               />
             </li>
@@ -4153,7 +4167,7 @@ function TimelineTab({
             <FilterChip
               active={activeTypes.size === 0}
               onClick={clearTypes}
-              label="All"
+              label={t('sessionDetail.all')}
               count={events.length}
             />
             {types.map((item) => {
@@ -4179,9 +4193,12 @@ function TimelineTab({
       <Card className="p-0 overflow-hidden min-w-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint flex items-center justify-between">
           <span>
-            <span className="font-medium text-fg-subtle">{filtered.length}</span> events
+            <span className="font-medium text-fg-subtle">{filtered.length}</span>{' '}
+            {t('sessionDetail.eventsLabel')}
             {filtered.length !== events.length && (
-              <span className="text-fg-faint ml-1">(of {events.length})</span>
+              <span className="text-fg-faint ml-1">
+                {t('sessionDetail.ofTotal', { n: events.length })}
+              </span>
             )}
           </span>
         </div>
@@ -4275,7 +4292,7 @@ function VirtualEventList({
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center h-[280px] sm:h-[360px] text-xs text-fg-subtle">
-        No events match the current filters.
+        {t('sessionDetail.noEventsMatchFilters')}
       </div>
     );
   }
@@ -4420,11 +4437,11 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
       await navigator.clipboard.writeText(json);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('Copied to clipboard', {
-        description: `${events.length} events`,
+      toast.success(t('sessionDetail.copiedToClipboard'), {
+        description: `${events.length} ${t('sessionDetail.eventsLabel')}`,
       });
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
@@ -4441,11 +4458,11 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
       // Defer revocation by a tick so Safari has the URL when it queues the
       // download request.
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      toast.success('Download started', {
-        description: `${events.length} events · ${(json.length / 1024).toFixed(1)} kB`,
+      toast.success(t('sessionDetail.downloadStarted'), {
+        description: `${events.length} ${t('sessionDetail.eventsLabel')} · ${(json.length / 1024).toFixed(1)} kB`,
       });
     } catch {
-      toast.error('Failed to download');
+      toast.error(t('sessionDetail.failedToDownload'));
     }
   };
 
@@ -4473,7 +4490,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
     <Card className="overflow-hidden p-0">
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-bg-subtle">
         <span className="text-[11px] uppercase tracking-wider text-fg-faint font-semibold truncate">
-          {events.length} events · {(json.length / 1024).toFixed(1)} kB
+          {events.length} {t('sessionDetail.eventsLabel')} · {(json.length / 1024).toFixed(1)} kB
         </span>
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="sm" onClick={download} data-testid="raw-download">
@@ -4482,7 +4499,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
           </Button>
           <Button variant="ghost" size="sm" onClick={() => void copy()} data-testid="raw-copy">
             <Copy />
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t('sessionDetail.copied') : t('common.copy')}
           </Button>
         </div>
       </div>
