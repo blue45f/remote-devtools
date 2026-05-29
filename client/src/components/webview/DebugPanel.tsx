@@ -1,5 +1,6 @@
 import { ArrowDownToLine, Code2, Edit, Loader2, Plus, Send, Terminal, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,20 +32,21 @@ export default function DebugPanel({
   onPatchRequest,
   onDeleteRequest,
 }: DebugPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">SDK debug panel</h1>
-        <p className="text-sm text-fg-subtle mt-1">
-          Trigger SDK-instrumented events to verify capture in the DevTools.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          {t('webview.debugPanelTitle')}
+        </h1>
+        <p className="text-sm text-fg-subtle mt-1">{t('webview.debugPanelSubtitle')}</p>
       </div>
 
       <Section
         badge="GET"
         badgeTone="success"
-        title="Read requests"
-        description="Verify request interception across fetch / XHR / Axios."
+        title={t('webview.readRequestsTitle')}
+        description={t('webview.readRequestsDesc')}
       >
         <Button variant="secondary" size="sm" onClick={onFetchRequest}>
           <ArrowDownToLine />
@@ -63,8 +65,8 @@ export default function DebugPanel({
       <Section
         badge="WRITE"
         badgeTone="info"
-        title="Mutation requests"
-        description="Test method capture for write operations."
+        title={t('webview.mutationRequestsTitle')}
+        description={t('webview.mutationRequestsDesc')}
       >
         <Button variant="secondary" size="sm" onClick={onPostRequest}>
           <Send />
@@ -87,20 +89,20 @@ export default function DebugPanel({
       <Section
         badge="DOM"
         badgeTone="warning"
-        title="DOM &amp; Console"
-        description="Trigger DOM mutation, console output, and loading states."
+        title={t('webview.domConsoleTitle')}
+        description={t('webview.domConsoleDesc')}
       >
         <Button variant="secondary" size="sm" onClick={onDomChange}>
           <Plus />
-          Add DOM node
+          {t('webview.addDomNode')}
         </Button>
         <Button variant="secondary" size="sm" onClick={onConsoleLog}>
           <Terminal />
-          Console output
+          {t('webview.consoleOutput')}
         </Button>
         <Button variant="secondary" size="sm" onClick={onToggleLoading}>
           <Loader2 />
-          Toggle loading
+          {t('webview.toggleLoading')}
         </Button>
       </Section>
 
@@ -108,7 +110,7 @@ export default function DebugPanel({
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3 text-[11px] uppercase tracking-wider font-semibold text-fg-faint">
             <Code2 className="size-3" />
-            Captured DOM nodes
+            {t('webview.capturedDomNodes')}
             <span className="font-mono text-fg-subtle">({domNodes.length})</span>
           </div>
           <div className="flex flex-wrap gap-1.5">

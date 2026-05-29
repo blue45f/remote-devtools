@@ -270,16 +270,16 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
       {error ? (
         <EmptyState
           icon={AlertCircle}
-          title="Could not load activity"
-          description="Try again in a moment, or enable demo mode."
+          title={t('activity.couldNotLoad')}
+          description={t('activity.couldNotLoadDesc')}
         />
       ) : isLoading ? (
         <FeedSkeleton />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Sparkles}
-          title="Quiet on this front"
-          description="New activity will appear here in real time."
+          title={t('activity.quietTitle')}
+          description={t('activity.quietDesc')}
         />
       ) : (
         <>
@@ -318,7 +318,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
                 disabled={loadingMore}
                 className="text-xs"
               >
-                {loadingMore ? 'Loading…' : 'Load older'}
+                {loadingMore ? t('common.loading') : t('activity.loadOlder')}
               </Button>
             </div>
           )}
@@ -445,6 +445,7 @@ function FeedRow({ item }: { item: ActivityEntry }) {
 }
 
 function LiveDot({ active }: { active: boolean }) {
+  const { t } = useTranslation();
   return (
     <span
       className={cn(
@@ -463,7 +464,7 @@ function LiveDot({ active }: { active: boolean }) {
           )}
         />
       </span>
-      {active ? 'Live' : 'Paused'}
+      {active ? t('activity.live') : t('activity.paused')}
     </span>
   );
 }

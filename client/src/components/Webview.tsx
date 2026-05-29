@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { CircuitBoard, ExternalLink, Terminal, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ interface WebviewPageProps {
 }
 
 export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [node, setNode] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'explore' | 'debug'>('explore');
@@ -135,11 +137,11 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
           <TabsList>
             <TabsTrigger value="explore" className="gap-1.5">
               <CircuitBoard className="size-3.5" />
-              Customer page
+              {t('webview.tabCustomerPage')}
             </TabsTrigger>
             <TabsTrigger value="debug" className="gap-1.5">
               <Terminal className="size-3.5" />
-              Debug actions
+              {t('webview.tabDebugActions')}
             </TabsTrigger>
           </TabsList>
 
@@ -188,7 +190,8 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
 };
 
 function SdkBanner({ kind }: { kind: SdkKind }) {
-  const label = kind === 'module' ? 'Module SDK' : 'Script SDK (UMD)';
+  const { t } = useTranslation();
+  const label = kind === 'module' ? t('webview.sdkBadgeModule') : t('webview.sdkBadgeScript');
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-bg-subtle">
       <span className="size-8 rounded-md bg-accent-soft text-accent-soft-fg flex items-center justify-center shrink-0">
@@ -196,34 +199,33 @@ function SdkBanner({ kind }: { kind: SdkKind }) {
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-fg">SDK Playground</span>
+          <span className="text-sm font-medium text-fg">{t('webview.sdkPlayground')}</span>
           <Badge variant="accent" size="sm">
             {label}
           </Badge>
           <span className="size-1.5 rounded-full bg-success animate-pulse-dot" />
-          <span className="text-[11px] text-fg-faint">connected</span>
+          <span className="text-[11px] text-fg-faint">{t('webview.connected')}</span>
         </div>
-        <p className="text-xs text-fg-subtle mt-0.5">
-          A demo customer page that loads the Remote DevTools SDK and lets you trigger sample
-          events.
-        </p>
+        <p className="text-xs text-fg-subtle mt-0.5">{t('webview.sdkPlaygroundDesc')}</p>
       </div>
     </div>
   );
 }
 
 function LoadingPanel() {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center h-[40vh]">
       <div className="flex flex-col items-center gap-2.5">
         <div className="size-8 rounded-full border-2 border-border border-t-fg animate-spin" />
-        <span className="text-sm text-fg-subtle">Loading…</span>
+        <span className="text-sm text-fg-subtle">{t('common.loading')}</span>
       </div>
     </div>
   );
 }
 
 function BottomCta() {
+  const { t } = useTranslation();
   return (
     <div className="fixed bottom-4 right-4 z-20">
       <Button
@@ -232,7 +234,7 @@ function BottomCta() {
         className="shadow-lg"
       >
         <ExternalLink />
-        Open DevTools
+        {t('webview.openDevtools')}
       </Button>
     </div>
   );

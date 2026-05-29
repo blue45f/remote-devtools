@@ -754,18 +754,23 @@ export default function SessionDetailPage() {
           <TabsList className="w-max">
             <TabsTrigger value="overview" className="gap-1.5">
               <Activity className="size-3.5" />
-              Overview
+              {t('sessionDetail.tabOverview')}
             </TabsTrigger>
             <TabsTrigger value="replay" className="gap-1.5">
               <PlayCircle className="size-3.5" />
-              Replay
+              {t('sessionDetail.tabReplay')}
               {openCommentCount > 0 && (
                 <Badge
                   variant="neutral"
                   size="sm"
                   className="ml-1 h-4 px-1 text-[10px]"
                   data-testid="replay-comments-badge"
-                  title={`${openCommentCount} open comment${openCommentCount === 1 ? '' : 's'}`}
+                  title={t(
+                    openCommentCount === 1
+                      ? 'sessionDetail.openCommentsTitleOne'
+                      : 'sessionDetail.openCommentsTitleOther',
+                    { n: openCommentCount },
+                  )}
                 >
                   {openCommentCount}
                 </Badge>
@@ -773,7 +778,7 @@ export default function SessionDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="timeline" className="gap-1.5">
               <ListTree className="size-3.5" />
-              Timeline
+              {t('sessionDetail.tabTimeline')}
               {totalEvents > 0 && (
                 <Badge variant="neutral" size="sm" className="ml-1 h-4 px-1 text-[10px]">
                   {totalEvents}
@@ -782,7 +787,7 @@ export default function SessionDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="network" className="gap-1.5">
               <Globe className="size-3.5" />
-              Network
+              {t('sessionDetail.tabNetwork')}
               {networkErrorCount > 0 && (
                 <Badge
                   variant="danger"
@@ -796,7 +801,7 @@ export default function SessionDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="console" className="gap-1.5">
               <Terminal className="size-3.5" />
-              Console
+              {t('sessionDetail.tabConsole')}
               {consoleErrorCount > 0 && (
                 <Badge
                   variant="danger"
@@ -810,7 +815,7 @@ export default function SessionDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="raw" className="gap-1.5">
               <FileJson className="size-3.5" />
-              Raw JSON
+              {t('sessionDetail.tabRaw')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -915,39 +920,42 @@ function ShortcutsHelp({
   onOpenChange: (v: boolean) => void;
   activeTab: TabValue;
 }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="session-shortcuts-help">
         <DialogHeader>
-          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogTitle>{t('sessionDetail.shortcutsTitle')}</DialogTitle>
           <DialogDescription>
-            Press <Kbd>?</Kbd> any time to toggle this list.
+            {t('sessionDetail.shortcutsToggleHint_part1')}
+            <Kbd>?</Kbd>
+            {t('sessionDetail.shortcutsToggleHint_part2')}
           </DialogDescription>
         </DialogHeader>
         <ul className="text-sm space-y-2">
-          <ShortcutRow keys={['1']} label="Overview tab" />
-          <ShortcutRow keys={['2']} label="Replay tab" />
-          <ShortcutRow keys={['3']} label="Timeline tab" />
-          <ShortcutRow keys={['4']} label="Network tab" />
-          <ShortcutRow keys={['5']} label="Console tab" />
-          <ShortcutRow keys={['6']} label="Raw JSON tab" />
-          <ShortcutRow keys={['C']} label="Jump to Replay and focus a new comment" />
+          <ShortcutRow keys={['1']} label={t('sessionDetail.shortcutOverviewTab')} />
+          <ShortcutRow keys={['2']} label={t('sessionDetail.shortcutReplayTab')} />
+          <ShortcutRow keys={['3']} label={t('sessionDetail.shortcutTimelineTab')} />
+          <ShortcutRow keys={['4']} label={t('sessionDetail.shortcutNetworkTab')} />
+          <ShortcutRow keys={['5']} label={t('sessionDetail.shortcutConsoleTab')} />
+          <ShortcutRow keys={['6']} label={t('sessionDetail.shortcutRawTab')} />
+          <ShortcutRow keys={['C']} label={t('sessionDetail.shortcutComment')} />
           {activeTab === 'timeline' && (
             <>
-              <ShortcutRow keys={['J', '↓']} label="Next timeline row" />
-              <ShortcutRow keys={['K', '↑']} label="Previous timeline row" />
-              <ShortcutRow keys={['Enter']} label="Seek replay to focused row" />
+              <ShortcutRow keys={['J', '↓']} label={t('sessionDetail.shortcutNextTimelineRow')} />
+              <ShortcutRow keys={['K', '↑']} label={t('sessionDetail.shortcutPrevTimelineRow')} />
+              <ShortcutRow keys={['Enter']} label={t('sessionDetail.shortcutSeekToRow')} />
             </>
           )}
           {activeTab === 'replay' && (
             <>
-              <ShortcutRow keys={['F']} label="Toggle fullscreen" />
-              <ShortcutRow keys={['E']} label="Jump to next error" />
-              <ShortcutRow keys={['⇧', 'E']} label="Jump to previous error" />
+              <ShortcutRow keys={['F']} label={t('sessionDetail.shortcutToggleFullscreen')} />
+              <ShortcutRow keys={['E']} label={t('sessionDetail.shortcutNextError')} />
+              <ShortcutRow keys={['⇧', 'E']} label={t('sessionDetail.shortcutPrevError')} />
             </>
           )}
-          <ShortcutRow keys={['?']} label="Toggle this cheatsheet" />
-          <ShortcutRow keys={['Esc']} label="Dismiss this dialog" />
+          <ShortcutRow keys={['?']} label={t('sessionDetail.shortcutToggleCheatsheet')} />
+          <ShortcutRow keys={['Esc']} label={t('sessionDetail.shortcutDismissDialog')} />
         </ul>
       </DialogContent>
     </Dialog>
@@ -1018,6 +1026,7 @@ function NetworkTab({
    * `row.timestamp` (caller normalises). */
   sessionStartMs?: number;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery<NetworkRow[]>({
     queryKey: ['session-network', sessionId],
     queryFn: () => apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${sessionId}/network`),
@@ -1133,11 +1142,11 @@ function NetworkTab({
       <Card>
         <EmptyState
           icon={Globe}
-          title="No network activity"
+          title={t('sessionDetail.networkEmptyTitle')}
           description={
             sessionId.startsWith('s3-')
-              ? 'Network capture is only available on live DB sessions.'
-              : "This session didn't record any network requests."
+              ? t('sessionDetail.networkEmptyS3')
+              : t('sessionDetail.networkEmptyNone')
           }
         />
       </Card>
@@ -1157,8 +1166,11 @@ function NetworkTab({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('HAR downloaded', {
-      description: `${rows.length} request${rows.length === 1 ? '' : 's'}`,
+    toast.success(t('sessionDetail.harDownloaded'), {
+      description: t(
+        rows.length === 1 ? 'sessionDetail.requestCountOne' : 'sessionDetail.requestCountOther',
+        { n: rows.length },
+      ),
     });
   };
 
@@ -1167,13 +1179,17 @@ function NetworkTab({
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="Filter URL, method, or MIME…"
+            placeholder={t('sessionDetail.networkFilterPlaceholder')}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             leadingIcon={<Globe />}
             trailingIcon={
               filter ? (
-                <button type="button" onClick={() => setFilter('')} aria-label="Clear filter">
+                <button
+                  type="button"
+                  onClick={() => setFilter('')}
+                  aria-label={t('sessionDetail.clearFilter')}
+                >
                   <X className="size-3.5" />
                 </button>
               ) : undefined
@@ -1185,10 +1201,10 @@ function NetworkTab({
           size="sm"
           onClick={exportHar}
           data-testid="session-network-har"
-          title="Download captured requests as HAR (HTTP Archive)"
+          title={t('sessionDetail.exportHarTitle')}
         >
           <Download />
-          <span className="hidden sm:inline">Export HAR</span>
+          <span className="hidden sm:inline">{t('sessionDetail.exportHar')}</span>
         </Button>
       </div>
       {typeCounts.length > 1 && (
@@ -1274,18 +1290,21 @@ function NetworkTab({
           data-testid="session-network-summary"
         >
           <span>
-            <span className="font-medium text-fg-subtle">{filtered.length}</span> requests
+            <span className="font-medium text-fg-subtle">{filtered.length}</span>{' '}
+            {t('sessionDetail.requestsLabel')}
             {filtered.length !== rows.length && (
-              <span className="text-fg-faint ml-1">(of {rows.length})</span>
+              <span className="text-fg-faint ml-1">
+                {t('sessionDetail.ofTotal', { n: rows.length })}
+              </span>
             )}
           </span>
           <span className="flex items-center gap-3 shrink-0">
             <span data-testid="session-network-transferred">
-              {formatBytes(summary.transferred)} transferred
+              {t('sessionDetail.bytesTransferred', { value: formatBytes(summary.transferred) })}
             </span>
             {summary.failed > 0 && (
               <span className="text-danger" data-testid="session-network-failed">
-                {summary.failed} failed
+                {t('sessionDetail.failedCount', { n: summary.failed })}
               </span>
             )}
           </span>
@@ -1294,21 +1313,23 @@ function NetworkTab({
           <table className="w-full text-sm" data-testid="session-network-table">
             <thead>
               <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
-                <th className="h-9 px-3 text-left font-semibold first:pl-4">Method</th>
-                <th className="h-9 px-3 text-left font-semibold">URL</th>
+                <th className="h-9 px-3 text-left font-semibold first:pl-4">
+                  {t('sessionDetail.colMethod')}
+                </th>
+                <th className="h-9 px-3 text-left font-semibold">{t('sessionDetail.colUrl')}</th>
                 <th className="h-9 px-3 text-right font-semibold">
                   <NetworkSortHeader
-                    label="Status"
+                    label={t('sessionDetail.colStatus')}
                     active={sort.key === 'status'}
                     dir={sort.dir}
                     onClick={() => toggleSort('status')}
                     testid="session-network-sort-status"
                   />
                 </th>
-                <th className="h-9 px-3 text-left font-semibold">Type</th>
+                <th className="h-9 px-3 text-left font-semibold">{t('sessionDetail.colType')}</th>
                 <th className="h-9 px-3 text-right font-semibold">
                   <NetworkSortHeader
-                    label="Size"
+                    label={t('sessionDetail.colSize')}
                     active={sort.key === 'size'}
                     dir={sort.dir}
                     onClick={() => toggleSort('size')}
@@ -1341,6 +1362,7 @@ function NetworkTab({
 }
 
 function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: () => void }) {
+  const { t } = useTranslation();
   const open = row !== null;
   const body = row?.responseBody ?? null;
   const isJson =
@@ -1361,9 +1383,9 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     if (!row?.url) return;
     try {
       await navigator.clipboard.writeText(row.url);
-      toast.success('URL copied');
+      toast.success(t('sessionDetail.urlCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
@@ -1371,9 +1393,9 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     if (!row) return;
     try {
       await navigator.clipboard.writeText(buildCurlCommand(row));
-      toast.success('cURL copied');
+      toast.success(t('sessionDetail.curlCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
@@ -1381,9 +1403,9 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     if (!body) return;
     try {
       await navigator.clipboard.writeText(pretty ?? body);
-      toast.success('Body copied');
+      toast.success(t('sessionDetail.bodyCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
@@ -1415,7 +1437,7 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Body downloaded', { description: filename });
+    toast.success(t('sessionDetail.bodyDownloaded'), { description: filename });
   };
 
   return (
@@ -1525,13 +1547,14 @@ function NetworkSortHeader({
   onClick: () => void;
   testid: string;
 }) {
+  const { t } = useTranslation();
   const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ChevronUp : ChevronDown;
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={testid}
-      aria-label={`Sort by ${label}`}
+      aria-label={t('sessionDetail.sortBy', { label })}
       className={cn(
         'inline-flex items-center gap-1 uppercase tracking-wider transition-colors ml-auto',
         active ? 'text-fg' : 'hover:text-fg',

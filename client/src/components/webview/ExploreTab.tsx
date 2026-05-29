@@ -1,5 +1,6 @@
 import { Heart, Search } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,12 +45,12 @@ const destinations = [
 ];
 
 const categories = [
-  { icon: '\u{1F3D4}', label: 'Mountains' },
-  { icon: '\u{1F3D6}', label: 'Beach' },
-  { icon: '\u{1F3DB}', label: 'Culture' },
-  { icon: '\u{1F33F}', label: 'Nature' },
-  { icon: '\u{1F3BF}', label: 'Adventure' },
-  { icon: '\u{1F377}', label: 'Food & Wine' },
+  { icon: '\u{1F3D4}', labelKey: 'webview.categoryMountains' },
+  { icon: '\u{1F3D6}', labelKey: 'webview.categoryBeach' },
+  { icon: '\u{1F3DB}', labelKey: 'webview.categoryCulture' },
+  { icon: '\u{1F33F}', labelKey: 'webview.categoryNature' },
+  { icon: '\u{1F3BF}', labelKey: 'webview.categoryAdventure' },
+  { icon: '\u{1F377}', labelKey: 'webview.categoryFoodWine' },
 ];
 
 interface ExploreTabProps {
@@ -57,27 +58,26 @@ interface ExploreTabProps {
 }
 
 export default function ExploreTab({ domNodes }: ExploreTabProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="space-y-6">
       <section>
         <h1 className="text-3xl font-semibold tracking-tight text-fg">
-          Discover your next
+          {t('webview.discoverHeadingLine1')}
           <br />
-          <span className="text-fg-subtle">adventure.</span>
+          <span className="text-fg-subtle">{t('webview.discoverHeadingLine2')}</span>
         </h1>
-        <p className="text-fg-subtle text-sm mt-2">
-          Curated destinations for unforgettable experiences.
-        </p>
+        <p className="text-fg-subtle text-sm mt-2">{t('webview.discoverSubtitle')}</p>
       </section>
 
       <Input
         type="text"
-        placeholder="Search destinations, experiences…"
+        placeholder={t('webview.searchPlaceholder')}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        aria-label="Search destinations"
+        aria-label={t('webview.searchAriaLabel')}
         leadingIcon={<Search />}
         className="h-11"
       />
@@ -85,23 +85,23 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {categories.map((cat) => (
           <button
-            key={cat.label}
+            key={cat.labelKey}
             type="button"
             className="group flex flex-col items-center gap-1 min-w-[78px] px-3 py-2.5 rounded-lg bg-bg-subtle border border-border hover:border-border-strong transition-colors"
           >
             <span className="text-xl group-hover:scale-110 transition-transform duration-200">
               {cat.icon}
             </span>
-            <span className="text-[11px] font-medium text-fg-subtle">{cat.label}</span>
+            <span className="text-[11px] font-medium text-fg-subtle">{t(cat.labelKey)}</span>
           </button>
         ))}
       </div>
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-fg">Top destinations</h2>
+          <h2 className="text-base font-semibold text-fg">{t('webview.topDestinations')}</h2>
           <button type="button" className="text-xs font-medium text-fg-subtle hover:text-fg">
-            View all
+            {t('webview.viewAll')}
           </button>
         </div>
 
@@ -122,7 +122,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
                 </span>
                 <button
                   type="button"
-                  aria-label={`Save ${dest.name}`}
+                  aria-label={t('webview.saveAriaLabel', { name: dest.name })}
                   className="absolute top-3 right-3 size-7 rounded-full bg-bg/90 backdrop-blur-sm flex items-center justify-center hover:bg-bg transition-colors"
                 >
                   <Heart className="size-3.5 text-fg-subtle" />
@@ -138,13 +138,13 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1">
                     <span className="text-base font-semibold text-fg">{dest.price}</span>
-                    <span className="text-[11px] text-fg-faint">/ person</span>
+                    <span className="text-[11px] text-fg-faint">{t('webview.perPerson')}</span>
                   </div>
                   <button
                     type="button"
                     className="px-2.5 py-1 rounded-md bg-fg text-bg text-[11px] font-medium hover:bg-fg/90 transition-colors"
                   >
-                    Book Now
+                    {t('webview.bookNow')}
                   </button>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
       {domNodes.length > 0 && (
         <Card className="p-3">
           <div className="text-[10px] uppercase tracking-wider font-semibold text-fg-faint mb-2">
-            Captured DOM nodes ({domNodes.length})
+            {t('webview.capturedDomNodesCount', { n: domNodes.length })}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {domNodes.map((char, index) => (
