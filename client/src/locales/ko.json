@@ -655,7 +655,8 @@
     "rolePm": "PM",
     "roleQa": "QA",
     "roleOther": "기타",
-    "total": "합계"
+    "total": "합계",
+    "periodGroupLabel": "기간"
   },
   "activity": {
     "recentActivity": "최근 활동",
