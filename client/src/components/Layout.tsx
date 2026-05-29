@@ -54,6 +54,10 @@ export default function Layout() {
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           )}
           aria-hidden={!sidebarOpen}
+          // When closed the drawer is off-canvas; `inert` takes its nav links
+          // out of the tab order so keyboard focus can't land in hidden content
+          // (aria-hidden alone leaves them focusable — an a11y trap).
+          inert={!sidebarOpen}
         >
           <Sidebar
             onItemClick={() => setSidebarOpen(false)}

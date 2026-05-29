@@ -1523,13 +1523,17 @@ function SessionTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
-              <Th className="w-[28px]" />
+              <Th className="w-[28px]">
+                <span className="sr-only">{t('sessions.colStatus')}</span>
+              </Th>
               <Th>{t('sessions.colSession')}</Th>
               <Th>{t('sessions.colUrl')}</Th>
               <Th>{t('sessions.colDevice')}</Th>
               <Th className="text-right">{t('sessions.colDuration')}</Th>
               <Th className="text-right">{t('sessions.colWhen')}</Th>
-              <Th className="w-[100px] text-right" />
+              <Th className="w-[100px] text-right">
+                <span className="sr-only">{t('sessions.colActions')}</span>
+              </Th>
             </tr>
           </thead>
           <tbody>

@@ -536,6 +536,8 @@
     "colDevice": "Device",
     "colDuration": "Duration",
     "colWhen": "When",
+    "colStatus": "Status",
+    "colActions": "Actions",
     "sessionFallbackName": "Session #{{id}}",
     "hasNote": "Has note",
     "idLabel": "ID",
@@ -714,7 +716,7 @@
     "previewIframeTitle": "Session preview",
     "previewIframeAriaLabel": "Captured page preview",
     "capturedPreview": "Captured preview",
-    "heatmapToggle": "Toggle click heatmap"
+    "heatmapToggle": "Toggle click heatmap ({{n}} clicks)"
   },
   "webview": {
     "tabCustomerPage": "Customer page",
