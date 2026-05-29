@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Copy, Home, RotateCw } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import i18n from '@/lib/i18n';
 
 interface Props {
   children: ReactNode;
@@ -74,16 +75,18 @@ export default class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="size-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-fg">Something went wrong</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-fg">
+              {i18n.t('errors.title')}
+            </h2>
             <p className="mt-1 text-sm text-fg-subtle">
-              {error?.message ?? 'The interface hit an unexpected error and could not continue.'}
+              {error?.message ?? i18n.t('errors.description')}
             </p>
           </div>
 
           {error?.stack && (
             <details className="w-full text-left">
               <summary className="cursor-pointer text-xs text-fg-faint hover:text-fg-subtle inline-flex items-center gap-1">
-                Show technical details
+                {i18n.t('errors.showDetails')}
               </summary>
               <pre className="mt-2 max-h-48 overflow-auto rounded-md border border-border bg-bg-subtle p-3 font-mono text-[11px] text-fg-subtle whitespace-pre-wrap break-all">
                 {error.stack}
@@ -94,17 +97,17 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button variant="primary" onClick={() => window.location.reload()}>
               <RotateCw />
-              Reload page
+              {i18n.t('errors.reload')}
             </Button>
             <Button asChild variant="outline">
               <a href="/dashboard">
                 <Home />
-                Go to dashboard
+                {i18n.t('errors.goToDashboard')}
               </a>
             </Button>
             <Button variant="ghost" onClick={() => void this.copyDetails()}>
               {copied ? <Check /> : <Copy />}
-              {copied ? 'Copied' : 'Copy error details'}
+              {copied ? i18n.t('common.copied') : i18n.t('errors.copyDetails')}
             </Button>
           </div>
         </div>

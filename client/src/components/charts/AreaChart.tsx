@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 
@@ -30,7 +31,9 @@ interface AreaChartProps {
  * 100-line component is much cheaper. Visual parity verified against the old
  * recharts output (smooth curve, faint dashed grid, small axis ticks).
  */
-export function AreaChart({ data, className, valueLabel = 'Value', yTicks = 4 }: AreaChartProps) {
+export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChartProps) {
+  const { t } = useTranslation();
+  const resolvedValueLabel = valueLabel ?? t('ui.chartValue');
   const reactId = useId();
   const gradientId = `${reactId.replace(/:/g, '')}-dashboard-area-grad`;
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -102,7 +105,7 @@ export function AreaChart({ data, className, valueLabel = 'Value', yTicks = 4 }:
       <div
         className={cn('flex items-center justify-center h-full text-xs text-fg-faint', className)}
       >
-        No data to chart yet
+        {t('ui.chartNoData')}
       </div>
     );
   }
@@ -120,7 +123,7 @@ export function AreaChart({ data, className, valueLabel = 'Value', yTicks = 4 }:
         onMouseMove={onMove}
         onMouseLeave={() => setHoverIdx(null)}
         role="img"
-        aria-label={`${valueLabel} trend chart`}
+        aria-label={t('ui.chartAriaLabel', { label: resolvedValueLabel })}
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -230,7 +233,7 @@ export function AreaChart({ data, className, valueLabel = 'Value', yTicks = 4 }:
             <div className="font-medium text-fg mb-0.5">{hover.label}</div>
             <div className="flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-fg" />
-              <span className="text-fg-subtle">{valueLabel}</span>
+              <span className="text-fg-subtle">{resolvedValueLabel}</span>
               <span className="font-mono tabular-nums text-fg ml-1">
                 {hover.value.toLocaleString()}
               </span>

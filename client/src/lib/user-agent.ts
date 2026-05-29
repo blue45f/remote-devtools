@@ -1,3 +1,5 @@
+import i18n from '@/lib/i18n';
+
 export interface ParsedUserAgent {
   browser: string;
   os: string;
@@ -31,7 +33,7 @@ function detectBrowser(ua: string): string {
   if (/Chrome\//.test(ua)) return 'Chrome';
   if (/Safari\//.test(ua)) return 'Safari';
   if (/MSIE |Trident\//.test(ua)) return 'IE';
-  return 'Unknown';
+  return i18n.t('common.unknown');
 }
 
 function detectOS(ua: string): string {
@@ -44,7 +46,7 @@ function detectOS(ua: string): string {
   if (/Mac OS X|Macintosh/.test(ua)) return 'macOS';
   if (/CrOS/.test(ua)) return 'ChromeOS';
   if (/Linux/.test(ua)) return 'Linux';
-  return 'Unknown';
+  return i18n.t('common.unknown');
 }
 
 /** Compact "Chrome · macOS" style label. */

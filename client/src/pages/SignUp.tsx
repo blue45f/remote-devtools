@@ -1,5 +1,6 @@
 import { Mail, User } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ import { AuthShell } from './SignIn';
  * waitlist toast. Wire this to a real auth + waitlist API per LAUNCH.md.
  */
 export default function SignUpPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
@@ -29,8 +31,8 @@ export default function SignUpPage() {
     setPending(true);
     setTimeout(() => {
       setPending(false);
-      toast.success("You're on the list", {
-        description: `We'll email ${email} when the hosted ${plan} plan ships.`,
+      toast.success(t('auth.onTheList'), {
+        description: t('auth.onTheListDesc', { email, plan }),
       });
       // Drop the visitor into the demo so they can keep exploring.
       setDemoMode(true);
@@ -42,21 +44,21 @@ export default function SignUpPage() {
     <AuthShell>
       <div className="text-center mb-6">
         <Badge variant="accent" size="sm" className="mb-3 capitalize">
-          {plan} plan
+          {t('auth.planBadge', { plan })}
         </Badge>
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">Create your workspace</h1>
-        <p className="text-sm text-fg-subtle">
-          Sign-ups are gated to the waitlist for now — drop your email and we'll let you in.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight mb-1">{t('auth.createWorkspace')}</h1>
+        <p className="text-sm text-fg-subtle">{t('auth.waitlistSubtitle')}</p>
       </div>
 
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
-          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">Full name</span>
+          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
+            {t('auth.fullName')}
+          </span>
           <Input
             type="text"
             required
-            placeholder="Jane Cooper"
+            placeholder={t('auth.fullNamePlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             leadingIcon={<User />}
@@ -64,11 +66,13 @@ export default function SignUpPage() {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">Work email</span>
+          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
+            {t('auth.workEmail')}
+          </span>
           <Input
             type="email"
             required
-            placeholder="you@team.com"
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leadingIcon={<Mail />}
@@ -76,26 +80,26 @@ export default function SignUpPage() {
           />
         </label>
         <Button type="submit" variant="primary" className="w-full" disabled={pending}>
-          {pending ? 'Reserving your spot…' : 'Join the waitlist'}
+          {pending ? t('auth.reservingSpot') : t('auth.joinWaitlist')}
         </Button>
       </form>
 
       <p className="mt-7 text-center text-xs text-fg-subtle">
-        Already have an account?{' '}
+        {t('auth.alreadyHaveAccount')}{' '}
         <Link to="/sign-in" className="text-fg underline underline-offset-2">
-          Sign in
+          {t('auth.signInLink')}
         </Link>
       </p>
 
       <p className="mt-4 text-center text-[11px] text-fg-faint">
-        Or skip the wait — the open-source release is{' '}
+        {t('auth.skipWaitPrefix')}{' '}
         <a
           href="https://github.com/blue45f/remote-devtools"
           target="_blank"
           rel="noreferrer"
           className="hover:text-fg-subtle underline-offset-2 hover:underline"
         >
-          ready to self-host
+          {t('auth.readyToSelfHost')}
         </a>
         .
       </p>

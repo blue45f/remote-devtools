@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -82,11 +83,22 @@ const DEFAULT_DENSITY: Density = 'comfortable';
 type DurationFilter = 'all' | 'short' | 'medium' | 'long';
 type AgeFilter = 'all' | '24h' | '7d' | '30d';
 
-const AGE_LABELS: Record<AgeFilter, string> = {
-  all: 'All time',
-  '24h': 'Last 24h',
-  '7d': 'Last 7 days',
-  '30d': 'Last 30 days',
+// Age-filter label key maps resolved with `t()` at render (SPEC.md i18n notes).
+// `AGE_CHIP_KEYS` is the terse chip variant ("24h"); `AGE_PILL_KEYS` is the
+// lowercased active-filter pill variant ("last 24h"). They are separate keys
+// because Korean has no case distinction and the chip drops the "Last " prefix.
+const AGE_CHIP_KEYS: Record<AgeFilter, string> = {
+  all: 'sessions.ageChipAll',
+  '24h': 'sessions.ageChip24h',
+  '7d': 'sessions.ageChip7d',
+  '30d': 'sessions.ageChip30d',
+};
+
+const AGE_PILL_KEYS: Record<AgeFilter, string> = {
+  all: 'sessions.agePillAll',
+  '24h': 'sessions.agePill24h',
+  '7d': 'sessions.agePill7d',
+  '30d': 'sessions.agePill30d',
 };
 
 const AGE_LIMITS_MS: Record<AgeFilter, number> = {
@@ -96,10 +108,10 @@ const AGE_LIMITS_MS: Record<AgeFilter, number> = {
   '30d': 30 * 24 * 3600 * 1000,
 };
 
-const SORT_LABELS: Record<SortKey, string> = {
-  newest: 'Newest first',
-  oldest: 'Oldest first',
-  name: 'Name A → Z',
+const SORT_LABEL_KEYS: Record<SortKey, string> = {
+  newest: 'sessions.sortNewest',
+  oldest: 'sessions.sortOldest',
+  name: 'sessions.sortName',
 };
 
 const SORT_ICONS: Record<SortKey, typeof ArrowDown> = {
@@ -264,6 +276,7 @@ function sessionsToCsv(rows: SessionRecord[]): string {
 }
 
 export default function SessionsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -407,9 +420,9 @@ export default function SessionsPage() {
       new RegExp(search.trim());
       return null;
     } catch (err) {
-      return err instanceof Error ? err.message : 'Invalid pattern';
+      return err instanceof Error ? err.message : t('sessions.regexInvalid');
     }
-  }, [regexMode, search]);
+  }, [regexMode, search, t]);
 
   // Debounce the search term that gets sent to the server. The local input
   // updates instantly so the field stays responsive.
@@ -526,8 +539,10 @@ export default function SessionsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Sessions ${format.toUpperCase()} downloaded`, {
-      description: `${filtered.length} row${filtered.length === 1 ? '' : 's'}`,
+    toast.success(t('sessions.exportToast', { format: format.toUpperCase() }), {
+      description: t(filtered.length === 1 ? 'sessions.rowCountOne' : 'sessions.rowCountOther', {
+        n: filtered.length,
+      }),
     });
   };
   const exportCsv = () => downloadExport('csv');
@@ -665,10 +680,10 @@ export default function SessionsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-4 sm:mb-5 gap-3 sm:gap-4 flex-wrap">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">Sessions</h1>
-          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">
-            Recorded and live debugging sessions across all devices.
-          </p>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg">
+            {t('sessions.title')}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-fg-subtle">{t('sessions.description')}</p>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
@@ -679,13 +694,13 @@ export default function SessionsPage() {
                 size="icon-sm"
                 onClick={() => void refetch()}
                 disabled={isFetching}
-                aria-label="Refresh"
+                aria-label={t('sessions.refresh')}
                 className="touch-target"
               >
                 <RefreshCw className={cn(isFetching && 'animate-spin')} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Refresh</TooltipContent>
+            <TooltipContent>{t('sessions.refresh')}</TooltipContent>
           </Tooltip>
 
           <ViewModeToggle value={view} onChange={setView} />
@@ -696,7 +711,7 @@ export default function SessionsPage() {
                 variant="ghost"
                 size="icon-sm"
                 disabled={filtered.length === 0}
-                aria-label="Export filtered sessions"
+                aria-label={t('sessions.exportAria')}
                 data-testid="sessions-export"
                 className="touch-target"
               >
@@ -705,10 +720,10 @@ export default function SessionsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={exportCsv} data-testid="sessions-export-csv">
-                Export CSV
+                {t('sessions.exportCsv')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={exportJson} data-testid="sessions-export-json">
-                Export JSON
+                {t('sessions.exportJson')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -723,14 +738,14 @@ export default function SessionsPage() {
             <TabsList>
               <TabsTrigger value="record" className="gap-1.5">
                 <PlaySquare className="size-3.5" />
-                Recorded
+                {t('sessions.tabRecorded')}
               </TabsTrigger>
               <TabsTrigger value="live" className="gap-1.5">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
                   <span className="relative inline-flex size-2 rounded-full bg-live" />
                 </span>
-                Live
+                {t('sessions.tabLive')}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -740,9 +755,7 @@ export default function SessionsPage() {
               <Input
                 ref={searchInputRef}
                 placeholder={
-                  regexMode
-                    ? '/regex/ — match name, URL, or device'
-                    : 'Search by name, URL, device, or tag…'
+                  regexMode ? t('sessions.searchPlaceholderRegex') : t('sessions.searchPlaceholder')
                 }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -754,7 +767,7 @@ export default function SessionsPage() {
                       <button
                         type="button"
                         onClick={() => setSearch('')}
-                        aria-label="Clear search"
+                        aria-label={t('sessions.clearSearch')}
                         className="text-fg-faint hover:text-fg"
                       >
                         <X className="size-3.5" />
@@ -766,7 +779,7 @@ export default function SessionsPage() {
                           type="button"
                           onClick={() => setRegexMode((v) => !v)}
                           aria-pressed={regexMode}
-                          aria-label="Toggle regular-expression search"
+                          aria-label={t('sessions.toggleRegex')}
                           className={cn(
                             'inline-flex items-center justify-center size-5 rounded transition-colors',
                             regexMode
@@ -778,14 +791,16 @@ export default function SessionsPage() {
                           <Regex className="size-3" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>{regexMode ? 'Regex on' : 'Regex off'}</TooltipContent>
+                      <TooltipContent>
+                        {regexMode ? t('sessions.regexOn') : t('sessions.regexOff')}
+                      </TooltipContent>
                     </Tooltip>
                   </div>
                 }
               />
               {regexError && (
                 <p className="mt-1 text-[11px] text-danger" data-testid="sessions-regex-error">
-                  Regex error: {regexError}
+                  {t('sessions.regexError', { message: regexError })}
                 </p>
               )}
             </div>
@@ -800,13 +815,13 @@ export default function SessionsPage() {
                 <span className="hidden sm:inline">
                   <SelectValue />
                 </span>
-                <span className="sm:hidden text-xs">Sort</span>
+                <span className="sm:hidden text-xs">{t('sessions.sort')}</span>
               </span>
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+              {(Object.keys(SORT_LABEL_KEYS) as SortKey[]).map((key) => (
                 <SelectItem key={key} value={key}>
-                  {SORT_LABELS[key]}
+                  {t(SORT_LABEL_KEYS[key])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -842,7 +857,7 @@ export default function SessionsPage() {
           )}
         >
           <StickyNote className="size-3.5" />
-          Annotated
+          {t('sessions.annotated')}
         </button>
 
         {hostCounts.length > 1 && (
@@ -857,39 +872,50 @@ export default function SessionsPage() {
       {filtersActive && (
         <div className="flex items-center gap-1.5 flex-wrap mb-3">
           <span className="text-[11px] text-fg-faint uppercase tracking-wider font-semibold">
-            Active
+            {t('sessions.activeFilters')}
           </span>
           {search.trim() && (
             <FilterPill
-              label={`${regexMode ? 'regex' : 'search'}: "${search.trim()}"`}
+              label={t(regexMode ? 'sessions.pillRegex' : 'sessions.pillSearch', {
+                value: search.trim(),
+              })}
               onRemove={() => setSearch('')}
             />
           )}
           {durationFilter !== 'all' && (
             <FilterPill
-              label={`duration: ${
-                durationFilter === 'short'
-                  ? '< 30s'
-                  : durationFilter === 'medium'
-                    ? '30s – 5m'
-                    : '> 5m'
-              }`}
+              label={t('sessions.pillDuration', {
+                value:
+                  durationFilter === 'short'
+                    ? t('sessions.durationShort')
+                    : durationFilter === 'medium'
+                      ? t('sessions.durationMedium')
+                      : t('sessions.durationLong'),
+              })}
               onRemove={() => setDurationFilter('all')}
             />
           )}
           {ageFilter !== 'all' && (
             <FilterPill
-              label={`time: ${AGE_LABELS[ageFilter].toLowerCase()}`}
+              label={t('sessions.pillTime', { value: t(AGE_PILL_KEYS[ageFilter]) })}
               onRemove={() => setAgeFilter('all')}
             />
           )}
           {hostFilter && (
-            <FilterPill label={`host: ${hostFilter}`} onRemove={() => setHostFilter(null)} />
+            <FilterPill
+              label={t('sessions.pillHost', { value: hostFilter })}
+              onRemove={() => setHostFilter(null)}
+            />
           )}
           {tagFilter && (
-            <FilterPill label={`tag: ${tagFilter}`} onRemove={() => setTagFilter(null)} />
+            <FilterPill
+              label={t('sessions.pillTag', { value: tagFilter })}
+              onRemove={() => setTagFilter(null)}
+            />
           )}
-          {noteOnly && <FilterPill label="annotated" onRemove={() => setNoteOnly(false)} />}
+          {noteOnly && (
+            <FilterPill label={t('sessions.pillAnnotated')} onRemove={() => setNoteOnly(false)} />
+          )}
         </div>
       )}
 
@@ -900,12 +926,15 @@ export default function SessionsPage() {
             <Skeleton className="h-4 w-24" />
           ) : (
             <>
-              <span className="font-medium text-fg">{filtered.length}</span> session
-              {filtered.length !== 1 && 's'}
+              <span className="font-medium text-fg">{filtered.length}</span>{' '}
+              {t(filtered.length === 1 ? 'sessions.sessionWordOne' : 'sessions.sessionWordOther')}
               {filtersActive && (
                 <>
                   {' '}
-                  matching filters <span className="text-fg-faint">(of {sessions.length})</span>
+                  {t('sessions.matchingFilters')}{' '}
+                  <span className="text-fg-faint">
+                    {t('sessions.ofTotal', { value: sessions.length })}
+                  </span>
                 </>
               )}
             </>
@@ -914,7 +943,7 @@ export default function SessionsPage() {
 
         {tab === 'record' && (
           <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
-            <span className="hidden sm:inline">Per page</span>
+            <span className="hidden sm:inline">{t('sessions.perPage')}</span>
             <Select
               value={String(pageSize)}
               onValueChange={(v) => setPageSize(Number(v) as PageSize)}
@@ -938,7 +967,7 @@ export default function SessionsPage() {
 
         {tab === 'live' && (
           <div className="flex items-center gap-1.5 text-[11px] text-fg-faint">
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t('sessions.refresh')}</span>
             <Select
               value={liveInterval}
               onValueChange={(v) => setLiveInterval(v as typeof liveInterval)}
@@ -953,7 +982,7 @@ export default function SessionsPage() {
                 <SelectItem value="5s">5s</SelectItem>
                 <SelectItem value="15s">15s</SelectItem>
                 <SelectItem value="30s">30s</SelectItem>
-                <SelectItem value="off">Paused</SelectItem>
+                <SelectItem value="off">{t('sessions.paused')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -975,11 +1004,9 @@ export default function SessionsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Activity}
-          title={filtersActive ? 'No matches' : 'No sessions yet'}
+          title={filtersActive ? t('sessions.emptyMatchTitle') : t('sessions.emptyTitle')}
           description={
-            filtersActive
-              ? 'Try clearing some filters or expanding the date range.'
-              : 'Sessions will appear here as your SDK starts capturing traffic. The Module / Script sandbox pages generate live events to test the pipeline end-to-end.'
+            filtersActive ? t('sessions.emptyMatchDescription') : t('sessions.emptyDescription')
           }
           action={
             filtersActive ? (
@@ -992,20 +1019,20 @@ export default function SessionsPage() {
                   setHostFilter(null);
                 }}
               >
-                Clear filters
+                {t('sessions.clearFilters')}
               </Button>
             ) : (
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button asChild variant="primary" size="sm">
                   <Link to="/sandbox/module">
                     <PlaySquare />
-                    Open Module SDK sandbox
+                    {t('sessions.openModuleSandbox')}
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link to="/sandbox/script">
                     <ExternalLink />
-                    Script SDK
+                    {t('sessions.scriptSdk')}
                   </Link>
                 </Button>
               </div>
@@ -1044,10 +1071,13 @@ export default function SessionsPage() {
             return (
               <div className="space-y-4">
                 {pinnedRows.length > 0 && (
-                  <section aria-label="Pinned sessions" data-testid="sessions-pinned-group">
+                  <section
+                    aria-label={t('sessions.pinnedSessions')}
+                    data-testid="sessions-pinned-group"
+                  >
                     <h3 className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-2 inline-flex items-center gap-1.5">
                       <Pin className="size-3" />
-                      Pinned
+                      {t('sessions.pinned')}
                       <span className="font-mono normal-case tracking-normal">
                         {pinnedRows.length}
                       </span>
@@ -1070,10 +1100,10 @@ export default function SessionsPage() {
                 {isFetchingNextPage ? (
                   <>
                     <RefreshCw className="animate-spin" />
-                    Loading…
+                    {t('sessions.loadingMore')}
                   </>
                 ) : (
-                  'Load more'
+                  t('sessions.loadMore')
                 )}
               </Button>
             </div>
@@ -1118,6 +1148,7 @@ function SessionRowTagChip({
 }
 
 function DensityToggle({ value, onChange }: { value: Density; onChange: (next: Density) => void }) {
+  const { t } = useTranslation();
   const next: Density = value === 'comfortable' ? 'compact' : 'comfortable';
   const isCompact = value === 'compact';
   return (
@@ -1127,7 +1158,7 @@ function DensityToggle({ value, onChange }: { value: Density; onChange: (next: D
           type="button"
           onClick={() => onChange(next)}
           aria-pressed={isCompact}
-          aria-label={isCompact ? 'Comfortable density' : 'Compact density'}
+          aria-label={isCompact ? t('sessions.densityComfortable') : t('sessions.densityCompact')}
           data-testid="sessions-density-toggle"
           className={cn(
             'inline-flex h-8 items-center gap-1 rounded-md border border-border bg-bg-muted px-2 text-[11px] font-medium transition-colors',
@@ -1135,34 +1166,39 @@ function DensityToggle({ value, onChange }: { value: Density; onChange: (next: D
           )}
         >
           {isCompact ? <Rows4 className="size-3.5" /> : <Rows3 className="size-3.5" />}
-          <span className="hidden md:inline">{isCompact ? 'Compact' : 'Comfortable'}</span>
+          <span className="hidden md:inline">
+            {isCompact ? t('sessions.compact') : t('sessions.comfortable')}
+          </span>
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        Toggle row density ({isCompact ? '→ comfortable' : '→ compact'})
+        {isCompact
+          ? t('sessions.densityToggleToComfortable')
+          : t('sessions.densityToggleToCompact')}
       </TooltipContent>
     </Tooltip>
   );
 }
 
 function ViewModeToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
+  const { t } = useTranslation();
   return (
     <div
       role="radiogroup"
-      aria-label="View mode"
+      aria-label={t('sessions.viewMode')}
       className="inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-bg-muted p-0.5"
     >
       <ViewToggleButton
         active={value === 'table'}
         onClick={() => onChange('table')}
-        label="Table view"
+        label={t('sessions.tableView')}
       >
         <TableIcon className="size-3.5" />
       </ViewToggleButton>
       <ViewToggleButton
         active={value === 'grid'}
         onClick={() => onChange('grid')}
-        label="Grid view"
+        label={t('sessions.gridView')}
       >
         <LayoutGrid className="size-3.5" />
       </ViewToggleButton>
@@ -1204,6 +1240,7 @@ function ViewToggleButton({
 }
 
 function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { t } = useTranslation();
   return (
     <span
       className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-accent-soft text-accent-soft-fg border border-accent-soft text-[11px] font-medium"
@@ -1213,7 +1250,7 @@ function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove filter: ${label}`}
+        aria-label={t('sessions.removeFilter', { value: label })}
         className="inline-flex items-center justify-center size-3.5 rounded-full hover:bg-fg/10 text-current"
       >
         <X className="size-2.5" />
@@ -1231,12 +1268,13 @@ function HostChips({
   active: string | null;
   onChange: (host: string | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible">
       <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
         <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
           <Globe className="size-3" />
-          Host
+          {t('sessions.host')}
         </span>
         <button
           type="button"
@@ -1249,7 +1287,7 @@ function HostChips({
           )}
           aria-pressed={active === null}
         >
-          Any
+          {t('sessions.any')}
         </button>
         {hosts.map(([host, count]) => {
           const isActive = active === host;
@@ -1293,6 +1331,7 @@ function TopTagChips({
   active: string | null;
   onChange: (tag: string | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="-mx-1 px-1 scroll-rail scroll-rail-fade sm:overflow-visible"
@@ -1301,7 +1340,7 @@ function TopTagChips({
       <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
         <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
           <Tag className="size-3" />
-          Tag
+          {t('sessions.tag')}
         </span>
         {tags.map(([tag, count]) => {
           const isActive = active === tag;
@@ -1351,18 +1390,19 @@ function FilterChips({
   onClear: () => void;
   showClear: boolean;
 }) {
+  const { t } = useTranslation();
   const durationOptions: { value: DurationFilter; label: string }[] = [
-    { value: 'all', label: 'Any duration' },
-    { value: 'short', label: '< 30s' },
-    { value: 'medium', label: '30s – 5m' },
-    { value: 'long', label: '> 5m' },
+    { value: 'all', label: t('sessions.durationAny') },
+    { value: 'short', label: t('sessions.durationShort') },
+    { value: 'medium', label: t('sessions.durationMedium') },
+    { value: 'long', label: t('sessions.durationLong') },
   ];
 
   const ageOptions: { value: AgeFilter; label: string }[] = (
-    Object.keys(AGE_LABELS) as AgeFilter[]
+    Object.keys(AGE_CHIP_KEYS) as AgeFilter[]
   ).map((k) => ({
     value: k,
-    label: k === 'all' ? 'Any time' : AGE_LABELS[k].replace('Last ', ''),
+    label: t(AGE_CHIP_KEYS[k]),
   }));
 
   return (
@@ -1370,7 +1410,7 @@ function FilterChips({
       <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap pb-0.5">
         <span className="inline-flex items-center gap-1 text-xs text-fg-faint mr-1 shrink-0">
           <Clock className="size-3" />
-          Time
+          {t('sessions.time')}
         </span>
         {ageOptions.map((opt) => {
           const active = age === opt.value;
@@ -1394,7 +1434,7 @@ function FilterChips({
         })}
         <span className="inline-flex items-center gap-1 text-xs text-fg-faint mx-1 shrink-0">
           <Filter className="size-3" />
-          Duration
+          {t('sessions.duration')}
         </span>
         {durationOptions.map((opt) => {
           const active = duration === opt.value;
@@ -1423,7 +1463,7 @@ function FilterChips({
             className="ml-1 h-7 sm:h-6 px-2 text-[11px] shrink-0"
           >
             <X className="size-3" />
-            Clear
+            {t('sessions.clear')}
           </Button>
         )}
       </div>
@@ -1452,6 +1492,7 @@ function SessionTable({
   onTagClick: (tag: string | null) => void;
   activeTag: string | null;
 }) {
+  const { t } = useTranslation();
   return (
     <Card className="overflow-hidden p-0">
       <div className="overflow-x-auto">
@@ -1459,11 +1500,11 @@ function SessionTable({
           <thead>
             <tr className="border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
               <Th className="w-[28px]" />
-              <Th>Session</Th>
-              <Th>URL</Th>
-              <Th>Device</Th>
-              <Th className="text-right">Duration</Th>
-              <Th className="text-right">When</Th>
+              <Th>{t('sessions.colSession')}</Th>
+              <Th>{t('sessions.colUrl')}</Th>
+              <Th>{t('sessions.colDevice')}</Th>
+              <Th className="text-right">{t('sessions.colDuration')}</Th>
+              <Th className="text-right">{t('sessions.colWhen')}</Th>
               <Th className="w-[100px] text-right" />
             </tr>
           </thead>
@@ -1518,6 +1559,7 @@ function SessionRow({
   onTagClick?: (tag: string | null) => void;
   activeTag?: string | null;
 }) {
+  const { t } = useTranslation();
   const isLive = tab === 'live';
   const isRecording = session.recordMode ?? !isLive;
   const cellY = density === 'compact' ? 'py-1.5' : 'py-3';
@@ -1538,19 +1580,19 @@ function SessionRow({
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5 min-w-0">
             <span className="font-medium text-fg truncate max-w-[280px]">
-              {session.name || `Session #${session.id}`}
+              {session.name || t('sessions.sessionFallbackName', { id: session.id })}
             </span>
             {session.hasNote && (
               <StickyNote
                 className="size-3.5 text-fg-faint shrink-0"
                 data-testid="session-note-indicator"
-                aria-label="Has note"
+                aria-label={t('sessions.hasNote')}
               />
             )}
           </span>
           {density === 'comfortable' && (
             <span className="text-[11px] text-fg-faint">
-              ID {shortHash(String(session.id), 10)}
+              {t('sessions.idLabel')} {shortHash(String(session.id), 10)}
             </span>
           )}
           {density === 'comfortable' && session.tags && session.tags.length > 0 && (
@@ -1614,7 +1656,7 @@ function SessionRow({
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => onTogglePin(session.id)}
-                  aria-label={pinned ? 'Unpin session' : 'Pin session'}
+                  aria-label={pinned ? t('sessions.unpinSession') : t('sessions.pinSession')}
                   aria-pressed={pinned}
                   data-testid="session-pin-button"
                   className={cn(
@@ -1627,7 +1669,7 @@ function SessionRow({
                   {pinned ? <Pin className="size-3.5" /> : <PinOff className="size-3.5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{pinned ? 'Unpin' : 'Pin'}</TooltipContent>
+              <TooltipContent>{pinned ? t('sessions.unpin') : t('sessions.pin')}</TooltipContent>
             </Tooltip>
           )}
           <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
@@ -1636,12 +1678,15 @@ function SessionRow({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon-sm">
-                    <Link to={`/sessions/${session.id}`} aria-label="View session details">
+                    <Link
+                      to={`/sessions/${session.id}`}
+                      aria-label={t('sessions.viewSessionDetails')}
+                    >
                       <Activity className="size-3.5" />
                     </Link>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Detail</TooltipContent>
+                <TooltipContent>{t('sessions.detail')}</TooltipContent>
               </Tooltip>
             )}
             <DevToolsLinkButton
@@ -1649,8 +1694,8 @@ function SessionRow({
               size="icon-sm"
               room={session.name}
               recordId={tab === 'record' ? session.id : undefined}
-              label="Open in DevTools"
-              title="Open DevTools"
+              label={t('sessions.openInDevTools')}
+              title={t('sessions.openDevTools')}
             >
               <ExternalLink className="size-3.5" />
             </DevToolsLinkButton>
@@ -1662,6 +1707,7 @@ function SessionRow({
 }
 
 function SessionRowCopyLink({ id }: { id: number }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     const url =
@@ -1672,9 +1718,9 @@ function SessionRowCopyLink({ id }: { id: number }) {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('Session link copied');
+      toast.success(t('sessions.linkCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessions.copyFailed'));
     }
   };
   return (
@@ -1684,18 +1730,19 @@ function SessionRowCopyLink({ id }: { id: number }) {
           variant="ghost"
           size="icon-sm"
           onClick={copy}
-          aria-label="Copy session link"
+          aria-label={t('sessions.copySessionLink')}
           data-testid="session-copy-link"
         >
           {copied ? <Check className="size-3.5" /> : <LinkIcon className="size-3.5" />}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Copy link</TooltipContent>
+      <TooltipContent>{t('sessions.copyLink')}</TooltipContent>
     </Tooltip>
   );
 }
 
 function StatusDot({ isLive, isRecording }: { isLive: boolean; isRecording: boolean }) {
+  const { t } = useTranslation();
   if (isLive) {
     return (
       <Tooltip>
@@ -1705,7 +1752,7 @@ function StatusDot({ isLive, isRecording }: { isLive: boolean; isRecording: bool
             <span className="relative inline-flex size-2 rounded-full bg-live" />
           </span>
         </TooltipTrigger>
-        <TooltipContent>Live now</TooltipContent>
+        <TooltipContent>{t('sessions.liveNow')}</TooltipContent>
       </Tooltip>
     );
   }
@@ -1719,7 +1766,9 @@ function StatusDot({ isLive, isRecording }: { isLive: boolean; isRecording: bool
           )}
         />
       </TooltipTrigger>
-      <TooltipContent>{isRecording ? 'Recorded' : 'Completed'}</TooltipContent>
+      <TooltipContent>
+        {isRecording ? t('sessions.recorded') : t('sessions.completed')}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -1788,6 +1837,7 @@ function SessionCard({
   onTagClick?: (tag: string | null) => void;
   activeTag?: string | null;
 }) {
+  const { t } = useTranslation();
   const isLive = tab === 'live';
   return (
     <Card
@@ -1803,7 +1853,7 @@ function SessionCard({
         <div className="flex items-center gap-2 min-w-0">
           <StatusDot isLive={isLive} isRecording={session.recordMode ?? !isLive} />
           <span className="font-medium text-[15px] sm:text-sm text-fg truncate">
-            {session.name || `Session #${session.id}`}
+            {session.name || t('sessions.sessionFallbackName', { id: session.id })}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -1815,7 +1865,7 @@ function SessionCard({
                 e.stopPropagation();
                 onTogglePin(session.id);
               }}
-              aria-label={pinned ? 'Unpin session' : 'Pin session'}
+              aria-label={pinned ? t('sessions.unpinSession') : t('sessions.pinSession')}
               aria-pressed={pinned}
               data-testid="session-pin-button"
               className={cn(
@@ -1831,11 +1881,11 @@ function SessionCard({
           {isLive ? (
             <Badge variant="live" size="sm" className="gap-1">
               <RadioTower className="size-2.5" />
-              LIVE
+              {t('sessions.badgeLive')}
             </Badge>
           ) : (
             <Badge variant="neutral" size="sm">
-              REC
+              {t('sessions.badgeRec')}
             </Badge>
           )}
         </div>
@@ -1888,7 +1938,7 @@ function SessionCard({
           <Button asChild variant="secondary" size="sm" className="flex-1 touch-target">
             <Link to={`/sessions/${session.id}`}>
               <Activity />
-              Details
+              {t('sessions.details')}
             </Link>
           </Button>
         )}
@@ -1900,7 +1950,7 @@ function SessionCard({
           recordId={tab === 'record' ? session.id : undefined}
         >
           <ExternalLink />
-          DevTools
+          {t('sessions.devtools')}
         </DevToolsLinkButton>
       </div>
     </Card>
@@ -1966,19 +2016,18 @@ function SessionGridSkeleton() {
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-danger/20 bg-danger-soft/20">
       <div className="flex flex-col items-center text-center py-12 px-6">
         <div className="size-10 rounded-full bg-danger-soft flex items-center justify-center mb-3">
           <X className="size-5 text-danger" />
         </div>
-        <h3 className="text-sm font-semibold text-fg mb-1">Failed to load sessions</h3>
-        <p className="text-sm text-fg-subtle max-w-sm mb-4">
-          The server didn't respond. Check your connection or try again.
-        </p>
+        <h3 className="text-sm font-semibold text-fg mb-1">{t('sessions.errorTitle')}</h3>
+        <p className="text-sm text-fg-subtle max-w-sm mb-4">{t('sessions.errorDescription')}</p>
         <Button variant="outline" onClick={onRetry}>
           <RefreshCw />
-          Try again
+          {t('sessions.tryAgain')}
         </Button>
       </div>
     </Card>

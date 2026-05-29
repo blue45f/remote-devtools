@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -64,31 +65,31 @@ interface ActivityEntry {
   sessionId?: number;
 }
 
-const KIND_META: Record<ActivityKind, { icon: LucideIcon; tone: string; label: string }> = {
+const KIND_META: Record<ActivityKind, { icon: LucideIcon; tone: string; labelKey: string }> = {
   session: {
     icon: Clapperboard,
     tone: 'bg-accent-soft text-accent-soft-fg',
-    label: 'Session',
+    labelKey: 'activity.kindSession',
   },
   ticket: {
     icon: Ticket,
     tone: 'bg-warning-soft text-warning',
-    label: 'Ticket',
+    labelKey: 'activity.kindTicket',
   },
   error: {
     icon: AlertCircle,
     tone: 'bg-danger-soft text-danger',
-    label: 'Error',
+    labelKey: 'activity.kindError',
   },
   join: {
     icon: UserPlus,
     tone: 'bg-success-soft text-success',
-    label: 'Join',
+    labelKey: 'activity.kindJoin',
   },
   comment: {
     icon: MessageSquare,
     tone: 'bg-accent-soft text-accent-soft-fg',
-    label: 'Comment',
+    labelKey: 'activity.kindComment',
   },
 };
 
@@ -106,6 +107,7 @@ interface ActivityPage {
 }
 
 export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: ActivityFeedProps) {
+  const { t } = useTranslation();
   // User-controllable pause. Polling never starts when `pollMs === 0` (the
   // parent disabled it), or when the user clicks pause.
   const [paused, setPaused] = useState(false);
@@ -195,11 +197,9 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
         <div>
           <h2 className="text-sm font-semibold text-fg flex items-center gap-1.5">
             <Sparkles className="size-3.5 text-fg-faint" />
-            Recent activity
+            {t('activity.recentActivity')}
           </h2>
-          <p className="text-xs text-fg-subtle mt-0.5">
-            Streaming session and ticket events from across the org.
-          </p>
+          <p className="text-xs text-fg-subtle mt-0.5">{t('activity.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           {pollMs > 0 && (
@@ -207,7 +207,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
               type="button"
               onClick={() => setPaused((p) => !p)}
               aria-pressed={paused}
-              aria-label={paused ? 'Resume polling' : 'Pause polling'}
+              aria-label={paused ? t('activity.resumePolling') : t('activity.pausePolling')}
               data-testid="activity-feed-pause"
               className={cn(
                 'h-6 w-6 rounded-full border transition-colors inline-flex items-center justify-center shrink-0',
@@ -215,7 +215,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
                   ? 'bg-fg text-bg border-fg'
                   : 'bg-surface border-border text-fg-subtle hover:text-fg',
               )}
-              title={paused ? 'Resume live updates' : 'Pause live updates'}
+              title={paused ? t('activity.resumeLiveUpdates') : t('activity.pauseLiveUpdates')}
             >
               {paused ? <Play className="size-3" /> : <Pause className="size-3" />}
             </button>
@@ -251,7 +251,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
                   )}
                 >
                   <Icon className="size-3" />
-                  <span>{meta.label}</span>
+                  <span>{t(meta.labelKey)}</span>
                   <span
                     className={cn(
                       'font-mono tabular-nums text-[10px]',
@@ -295,7 +295,7 @@ export function ActivityFeed({ pollMs = 8_000, limit = 12, className }: Activity
               {grouped.map((group) => (
                 <section key={group.bucket} className="relative" data-bucket={group.bucket}>
                   <h3 className="sticky top-0 z-10 -ml-1 pl-2 pr-2 py-1 bg-surface/90 backdrop-blur-sm text-[10px] uppercase tracking-wider text-fg-faint font-semibold border-b border-border/60">
-                    {group.label}{' '}
+                    {t(group.labelKey)}{' '}
                     <span className="ml-1 text-fg-faint/80 normal-case tracking-normal font-mono tabular-nums">
                       {group.rows.length}
                     </span>
@@ -332,7 +332,7 @@ type BucketKey = 'today' | 'yesterday' | 'thisWeek' | 'older';
 
 interface ActivityGroup {
   bucket: BucketKey;
-  label: string;
+  labelKey: string;
   rows: ActivityEntry[];
 }
 
@@ -367,19 +367,20 @@ function groupByBucket(items: ActivityEntry[]): ActivityGroup[] {
     else buckets.older.push(item);
   }
 
-  const labels: Record<BucketKey, string> = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    thisWeek: 'This week',
-    older: 'Older',
+  const labelKeys: Record<BucketKey, string> = {
+    today: 'activity.bucketToday',
+    yesterday: 'activity.bucketYesterday',
+    thisWeek: 'activity.bucketThisWeek',
+    older: 'activity.bucketOlder',
   };
 
-  return (Object.keys(labels) as BucketKey[])
+  return (Object.keys(labelKeys) as BucketKey[])
     .filter((b) => buckets[b].length > 0)
-    .map((b) => ({ bucket: b, label: labels[b], rows: buckets[b] }));
+    .map((b) => ({ bucket: b, labelKey: labelKeys[b], rows: buckets[b] }));
 }
 
 function FeedRow({ item }: { item: ActivityEntry }) {
+  const { t } = useTranslation();
   const meta = KIND_META[item.kind] ?? KIND_META.session;
   const Icon = meta.icon;
 
@@ -401,7 +402,7 @@ function FeedRow({ item }: { item: ActivityEntry }) {
           <p className="text-[11px] text-fg-subtle truncate font-mono mt-0.5">{item.subtitle}</p>
         )}
         <div className="flex items-center gap-2 mt-1 text-[10px] uppercase tracking-wider text-fg-faint">
-          <span className="font-semibold">{meta.label}</span>
+          <span className="font-semibold">{t(meta.labelKey)}</span>
           {item.device && (
             <>
               <span aria-hidden>·</span>

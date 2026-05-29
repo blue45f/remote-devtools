@@ -1,5 +1,6 @@
 import { Mail } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { BrandMark } from '@/components/Brand';
@@ -23,6 +24,7 @@ import { useAppStore } from '@/lib/store';
  *    for Clerk/Supabase/Auth0 — see auth.tsx for the drop-in example.
  */
 export default function SignInPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
@@ -40,8 +42,8 @@ export default function SignInPage() {
       // Vercel demo build has no backend — fall through to demo mode.
       if (isForcedDemo) {
         await new Promise((r) => setTimeout(r, 600));
-        toast.success('Demo mode activated', {
-          description: 'Real authentication ships with the hosted plan.',
+        toast.success(t('auth.demoModeActivated'), {
+          description: t('auth.demoModeActivatedDesc'),
         });
         setDemoMode(true);
         navigate(next);
@@ -56,23 +58,23 @@ export default function SignInPage() {
 
       if (res.status === 503) {
         // Backend has AUTH_JWT_SECRET unset — single-tenant self-host.
-        toast.success('Signed in (auth disabled)', {
-          description: 'AUTH_JWT_SECRET is unset, so the backend skips token verification.',
+        toast.success(t('auth.signedInAuthDisabled'), {
+          description: t('auth.signedInAuthDisabledDesc'),
         });
         navigate(next);
         return;
       }
       if (!res.ok) {
-        const msg = await res.text().catch(() => 'Sign-in failed');
+        const msg = await res.text().catch(() => t('auth.signInFailed'));
         throw new Error(msg || `HTTP ${res.status}`);
       }
       const { token } = (await res.json()) as { token: string };
       signIn(token);
-      toast.success('Signed in');
+      toast.success(t('auth.signedIn'));
       navigate(next);
     } catch (err) {
-      toast.error('Could not sign in', {
-        description: err instanceof Error ? err.message : 'Try again.',
+      toast.error(t('auth.couldNotSignIn'), {
+        description: err instanceof Error ? err.message : t('auth.tryAgain'),
       });
     } finally {
       setPending(false);
@@ -82,17 +84,17 @@ export default function SignInPage() {
   return (
     <AuthShell>
       <div className="text-center mb-7">
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">Welcome back</h1>
-        <p className="text-sm text-fg-subtle">Sign in to your team workspace.</p>
+        <h1 className="text-2xl font-semibold tracking-tight mb-1">{t('auth.welcomeBack')}</h1>
+        <p className="text-sm text-fg-subtle">{t('auth.signInSubtitle')}</p>
       </div>
 
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
-          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">Email</span>
+          <span className="text-xs font-medium text-fg-subtle mb-1.5 block">{t('auth.email')}</span>
           <Input
             type="email"
             required
-            placeholder="you@team.com"
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leadingIcon={<Mail />}
@@ -100,29 +102,29 @@ export default function SignInPage() {
           />
         </label>
         <Button type="submit" variant="primary" className="w-full" disabled={pending}>
-          {pending ? 'Signing in…' : 'Continue with email'}
+          {pending ? t('auth.signingIn') : t('auth.continueWithEmail')}
         </Button>
       </form>
 
       <div className="my-5 flex items-center gap-3 text-[11px] text-fg-faint">
         <span className="flex-1 h-px bg-border" />
-        <span>or</span>
+        <span>{t('auth.or')}</span>
         <span className="flex-1 h-px bg-border" />
       </div>
 
       <div className="space-y-2">
         <Button variant="outline" className="w-full" disabled>
-          Continue with Google · soon
+          {t('auth.continueWithGoogle')}
         </Button>
         <Button variant="outline" className="w-full" disabled>
-          Continue with SSO · soon
+          {t('auth.continueWithSso')}
         </Button>
       </div>
 
       <p className="mt-7 text-center text-xs text-fg-subtle">
-        New here?{' '}
+        {t('auth.newHere')}{' '}
         <Link to="/sign-up" className="text-fg underline underline-offset-2">
-          Create an account
+          {t('auth.createAccountLink')}
         </Link>
       </p>
     </AuthShell>
@@ -130,6 +132,7 @@ export default function SignInPage() {
 }
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <header className="border-b border-border">
@@ -139,7 +142,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             <span className="text-[15px] font-semibold tracking-tight">Remote DevTools</span>
           </Link>
           <Link to="/" className="text-xs text-fg-subtle hover:text-fg">
-            ← Home
+            ← {t('nav.home')}
           </Link>
         </div>
       </header>

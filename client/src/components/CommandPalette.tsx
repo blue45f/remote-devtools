@@ -12,6 +12,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { toast } from '@/components/ui/toaster';
@@ -50,6 +51,7 @@ interface SessionMatch {
 }
 
 export function CommandPalette() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const commandOpen = useAppStore((s) => s.commandOpen);
   const setCommandOpen = useAppStore((s) => s.setCommandOpen);
@@ -80,8 +82,8 @@ export function CommandPalette() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 200);
+    return () => clearTimeout(timer);
   }, [search]);
   useEffect(() => {
     if (!commandOpen) setSearch('');
@@ -111,16 +113,16 @@ export function CommandPalette() {
   return (
     <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
       <CommandInput
-        placeholder="Type a command or search sessions…"
+        placeholder={t('command.placeholder')}
         value={search}
         onValueChange={setSearch}
       />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>{t('command.noResults')}</CommandEmpty>
 
         {sessionResults.length > 0 && (
           <>
-            <CommandGroup heading="Sessions">
+            <CommandGroup heading={t('command.sessions')}>
               {sessionResults.map((s) => (
                 <CommandItem
                   key={s.id}
@@ -132,7 +134,7 @@ export function CommandPalette() {
                 >
                   <Search />
                   <span className="truncate">
-                    {s.name ?? `Session ${shortHash(String(s.id), 10)}`}
+                    {s.name ?? t('command.sessionFallback', { id: shortHash(String(s.id), 10) })}
                   </span>
                   {s.url && (
                     <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
@@ -148,7 +150,7 @@ export function CommandPalette() {
 
         {recentSessions.length > 0 && (
           <>
-            <CommandGroup heading="Recent sessions">
+            <CommandGroup heading={t('command.recentSessions')}>
               {recentSessions.map((s) => (
                 <CommandItem
                   key={s.id}
@@ -156,7 +158,9 @@ export function CommandPalette() {
                   onSelect={() => run(() => navigate(`/sessions/${s.id}`))}
                 >
                   <History />
-                  <span className="truncate">{s.name ?? `Session ${shortHash(s.id, 10)}`}</span>
+                  <span className="truncate">
+                    {s.name ?? t('command.sessionFallback', { id: shortHash(s.id, 10) })}
+                  </span>
                   {s.url && (
                     <span className="ml-auto text-[10px] text-fg-faint truncate max-w-[40%]">
                       {prettyHost(s.url)}
@@ -171,7 +175,7 @@ export function CommandPalette() {
 
         {recentComments.length > 0 && (
           <>
-            <CommandGroup heading="Recent comments">
+            <CommandGroup heading={t('command.recentComments')}>
               {recentComments.map((c) => {
                 const url =
                   typeof c.timestampMs === 'number'
@@ -197,17 +201,20 @@ export function CommandPalette() {
           </>
         )}
 
-        <CommandGroup heading="Navigation">
+        <CommandGroup heading={t('command.navigation')}>
           {allNavItems.map((item) => {
             const Icon = item.icon;
+            const itemLabel = t(item.labelKey);
             return (
               <CommandItem
                 key={item.to}
-                value={`nav ${item.label}`}
+                // English `label` keeps the filter token stable; the localized
+                // label is appended so search works in the active language too.
+                value={`nav ${item.label} ${itemLabel}`}
                 onSelect={() => run(() => navigate(item.to))}
               >
                 <Icon />
-                <span>{item.label}</span>
+                <span>{itemLabel}</span>
                 {item.shortcut && <CommandShortcut>{item.shortcut}</CommandShortcut>}
               </CommandItem>
             );
@@ -216,76 +223,79 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Appearance">
+        <CommandGroup heading={t('command.appearance')}>
           <CommandItem value="theme light" onSelect={() => run(() => setTheme('light'))}>
             <Sun />
-            <span>Light theme</span>
+            <span>{t('command.lightTheme')}</span>
           </CommandItem>
           <CommandItem value="theme dark" onSelect={() => run(() => setTheme('dark'))}>
             <Moon />
-            <span>Dark theme</span>
+            <span>{t('command.darkTheme')}</span>
           </CommandItem>
           <CommandItem value="theme system" onSelect={() => run(() => setTheme('system'))}>
             <Monitor />
-            <span>System theme</span>
+            <span>{t('command.systemTheme')}</span>
           </CommandItem>
         </CommandGroup>
 
         <CommandSeparator />
 
-        <CommandGroup heading="Demo">
+        <CommandGroup heading={t('command.demo')}>
           <CommandItem
             value="toggle demo"
             onSelect={() =>
               run(() => {
                 toggleDemoMode();
                 queryClient.invalidateQueries();
-                toast.success(demoMode ? 'Demo mode disabled' : 'Demo mode enabled', {
+                toast.success(demoMode ? t('command.demoDisabled') : t('command.demoEnabled'), {
                   description: demoMode
-                    ? 'Returning to live network requests.'
-                    : 'Showing rich seed data while the backend is offline.',
+                    ? t('command.demoDisabledDesc')
+                    : t('command.demoEnabledDesc'),
                 });
               })
             }
           >
             <Sparkles />
-            <span>{demoMode ? 'Disable demo mode' : 'Enable demo mode'}</span>
+            <span>{demoMode ? t('command.disableDemo') : t('command.enableDemo')}</span>
             <CommandShortcut>{demoMode ? 'ON' : 'OFF'}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
         <CommandSeparator />
 
-        <CommandGroup heading="Replay">
+        <CommandGroup heading={t('command.replay')}>
           <CommandItem
             value="toggle replay skip idle"
             onSelect={() =>
               run(() => {
                 setReplayPrefs({ skipInactive: !skipInactive });
-                toast.success(skipInactive ? 'Skip idle disabled' : 'Skip idle enabled', {
-                  description: skipInactive
-                    ? 'Replay will play idle stretches at normal speed.'
-                    : 'Replay will fast-forward through idle stretches.',
-                });
+                toast.success(
+                  skipInactive ? t('command.skipIdleDisabled') : t('command.skipIdleEnabled'),
+                  {
+                    description: skipInactive
+                      ? t('command.skipIdleDisabledDesc')
+                      : t('command.skipIdleEnabledDesc'),
+                  },
+                );
               })
             }
             data-testid="cmd-toggle-skip-idle"
           >
             <FastForward />
-            <span>{skipInactive ? 'Disable Replay skip idle' : 'Enable Replay skip idle'}</span>
+            <span>{skipInactive ? t('command.disableSkipIdle') : t('command.enableSkipIdle')}</span>
             <CommandShortcut>{skipInactive ? 'ON' : 'OFF'}</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
         <CommandSeparator />
 
-        <CommandGroup heading="Help">
+        <CommandGroup heading={t('command.help')}>
           <CommandItem
             value="show keyboard shortcuts"
             onSelect={() => run(() => setShortcutsOpen(true))}
           >
             <Keyboard />
-            <span>Keyboard shortcuts</span>
+            <span>{t('command.keyboardShortcuts')}</span>
             <CommandShortcut>?</CommandShortcut>
           </CommandItem>
           <CommandItem
@@ -296,18 +306,17 @@ export function CommandPalette() {
                   window.localStorage.removeItem('sessions-prefs:v1');
                   window.localStorage.removeItem('sessions-pins:v1');
                   clearRecentSessions();
-                  toast.success('Sessions data cleared', {
-                    description:
-                      'View / sort / pins / recent history reset. Reload the Sessions page to see the change.',
+                  toast.success(t('command.sessionsCleared'), {
+                    description: t('command.sessionsClearedDesc'),
                   });
                 } catch {
-                  toast.error("Couldn't clear preferences");
+                  toast.error(t('command.clearFailed'));
                 }
               })
             }
           >
             <RotateCcw />
-            <span>Reset Sessions preferences</span>
+            <span>{t('command.resetSessionsPrefs')}</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

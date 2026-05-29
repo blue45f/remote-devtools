@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { forwardRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { toast } from '@/components/ui/toaster';
@@ -28,19 +29,20 @@ interface DevToolsLinkButtonProps extends Omit<ButtonProps, 'asChild' | 'onClick
  *       click → opens the WebSocket-handshake URL in a new tab.
  */
 export const DevToolsLinkButton = forwardRef<HTMLButtonElement, DevToolsLinkButtonProps>(
-  ({ room, recordId, label = 'Open DevTools', children, ...rest }, ref) => {
+  ({ room, recordId, label, children, ...rest }, ref) => {
+    const { t } = useTranslation();
     const demoMode = useAppStore((s) => s.demoMode);
     const forceDemo = import.meta.env.VITE_FORCE_DEMO === 'true';
     const isDemo = demoMode || forceDemo;
+    const resolvedLabel = label ?? t('devtools.open');
 
     const handleClick = () => {
       if (isDemo) {
-        toast('DevTools requires a backend', {
-          description:
-            'The Open DevTools handshake speaks to your self-hosted internal API. Click below for setup.',
+        toast(t('devtools.toastTitle'), {
+          description: t('devtools.toastDescription'),
           duration: 6000,
           action: {
-            label: 'Self-host docs',
+            label: t('devtools.selfHostDocs'),
             onClick: () =>
               window.open(
                 'https://github.com/blue45f/remote-devtools/blob/main/docs/SELF_HOSTING.md',
@@ -56,7 +58,7 @@ export const DevToolsLinkButton = forwardRef<HTMLButtonElement, DevToolsLinkButt
     };
 
     return (
-      <Button ref={ref} type="button" onClick={handleClick} aria-label={label} {...rest}>
+      <Button ref={ref} type="button" onClick={handleClick} aria-label={resolvedLabel} {...rest}>
         {children ?? (
           <>
             <ExternalLink />
