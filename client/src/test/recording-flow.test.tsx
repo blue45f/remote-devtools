@@ -73,7 +73,7 @@ describe('Recording flow (demo mode)', () => {
       expect(screen.getByText(/checkout-flow-test/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: /Live/ }));
+    await user.click(screen.getByRole('button', { name: /Live/ }));
     await waitFor(() => {
       expect(screen.getByText(/live-stream-debug/)).toBeInTheDocument();
     });
