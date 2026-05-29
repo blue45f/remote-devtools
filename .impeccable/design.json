@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-29T00:00:00.000Z",
+  "title": "Design System: Remote DevTools",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal Blue",
+        "canonical": "hsl(217 91% 60%)",
+        "tonalRamp": [
+          "hsl(217 91% 15%)",
+          "hsl(217 91% 25%)",
+          "hsl(217 91% 35%)",
+          "hsl(217 91% 45%)",
+          "hsl(217 91% 55%)",
+          "hsl(217 91% 65%)",
+          "hsl(217 91% 80%)",
+          "hsl(217 100% 95%)"
+        ]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "hsl(0 0% 9%)",
+        "tonalRamp": [
+          "hsl(0 0% 9%)",
+          "hsl(0 0% 20%)",
+          "hsl(0 0% 28%)",
+          "hsl(0 0% 38%)",
+          "hsl(0 0% 52%)",
+          "hsl(0 0% 70%)",
+          "hsl(0 0% 85%)",
+          "hsl(0 0% 96%)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "hsl(0 0% 100%)",
+        "tonalRamp": [
+          "hsl(0 0% 9%)",
+          "hsl(0 0% 14%)",
+          "hsl(0 0% 22%)",
+          "hsl(0 0% 42%)",
+          "hsl(0 0% 70%)",
+          "hsl(0 0% 92%)",
+          "hsl(0 0% 96%)",
+          "hsl(0 0% 100%)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "hsl(0 0% 92%)",
+        "tonalRamp": [
+          "hsl(0 0% 14%)",
+          "hsl(0 0% 22%)",
+          "hsl(0 0% 42%)",
+          "hsl(0 0% 66%)",
+          "hsl(0 0% 85%)",
+          "hsl(0 0% 92%)",
+          "hsl(0 0% 96%)",
+          "hsl(0 0% 98%)"
+        ]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Terminal Green",
+        "canonical": "hsl(142 71% 28%)",
+        "tonalRamp": [
+          "hsl(142 71% 12%)",
+          "hsl(142 71% 20%)",
+          "hsl(142 71% 28%)",
+          "hsl(142 71% 38%)",
+          "hsl(142 71% 50%)",
+          "hsl(142 60% 65%)",
+          "hsl(142 60% 82%)",
+          "hsl(142 71% 95%)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Caution Amber",
+        "canonical": "hsl(38 92% 42%)",
+        "tonalRamp": [
+          "hsl(38 92% 16%)",
+          "hsl(38 92% 26%)",
+          "hsl(38 92% 42%)",
+          "hsl(38 92% 50%)",
+          "hsl(38 92% 60%)",
+          "hsl(38 92% 72%)",
+          "hsl(38 92% 85%)",
+          "hsl(38 92% 95%)"
+        ]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Alarm Red",
+        "canonical": "hsl(0 72% 42%)",
+        "tonalRamp": [
+          "hsl(0 72% 16%)",
+          "hsl(0 72% 26%)",
+          "hsl(0 72% 42%)",
+          "hsl(0 72% 52%)",
+          "hsl(0 84% 60%)",
+          "hsl(0 84% 72%)",
+          "hsl(0 84% 85%)",
+          "hsl(0 72% 96%)"
+        ]
+      },
+      "live": {
+        "role": "secondary",
+        "displayName": "Record Red",
+        "canonical": "hsl(0 84% 60%)",
+        "tonalRamp": [
+          "hsl(0 84% 20%)",
+          "hsl(0 84% 32%)",
+          "hsl(0 84% 44%)",
+          "hsl(0 84% 60%)",
+          "hsl(0 84% 70%)",
+          "hsl(0 84% 80%)",
+          "hsl(0 84% 90%)",
+          "hsl(0 84% 96%)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles only (Dashboard, Sessions)." },
+      "title": { "displayName": "Title", "purpose": "Card titles, panel headers, section labels." },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text; cap prose at 65 to 75ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Eyebrows, table column headers, metadata tags; often uppercase."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Machine data: IDs, timestamps, URLs, byte sizes, raw payloads."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-xs",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.04)",
+        "purpose": "Barely-there lift on accent and danger buttons."
+      },
+      {
+        "name": "shadow-sm",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+        "purpose": "Resting raised controls."
+      },
+      {
+        "name": "shadow-md",
+        "value": "0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04)",
+        "purpose": "Hover lift and popovers."
+      },
+      {
+        "name": "shadow-lg",
+        "value": "0 12px 32px -8px rgb(0 0 0 / 0.1), 0 4px 8px -4px rgb(0 0 0 / 0.06)",
+        "purpose": "Dialogs, command palette, top layer. Dark mode deepens alpha to 0.5 to 0.6."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Reveals and slide-up entrances (280ms)."
+      },
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Fades and most state transitions (150 to 200ms)."
+      },
+      {
+        "name": "ease-spring",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Rare playful overshoot; use deliberately."
+      },
+      {
+        "name": "duration-control",
+        "value": "150ms",
+        "purpose": "Button and control state transitions."
+      }
+    ],
+    "breakpoints": [
+      { "name": "xs", "value": "480px" },
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default high-emphasis action. Monochrome Ink fill, not blue.",
+      "html": "<button class=\"ds-btn-primary\">Open in DevTools</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 7px; background: hsl(0 0% 9%); color: hsl(0 0% 100%); font: 500 14px/1 'Inter Variable', sans-serif; cursor: pointer; transition: background .15s, transform .15s; } .ds-btn-primary:hover { background: hsl(0 0% 20%); } .ds-btn-primary:active { transform: scale(.98); } .ds-btn-primary:focus-visible { outline: 2px solid hsl(217 91% 60%); outline-offset: 2px; }"
+    },
+    {
+      "name": "Accent Button",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Used when the action IS the blue affordance. The one chromatic button.",
+      "html": "<button class=\"ds-btn-accent\">New session</button>",
+      "css": ".ds-btn-accent { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 7px; background: hsl(217 91% 60%); color: #fff; font: 500 14px/1 'Inter Variable', sans-serif; cursor: pointer; box-shadow: 0 1px 2px 0 rgb(0 0 0 / .04); transition: background .15s, transform .15s; } .ds-btn-accent:hover { background: hsl(217 91% 54%); } .ds-btn-accent:active { transform: scale(.98); } .ds-btn-accent:focus-visible { outline: 2px solid hsl(217 91% 60%); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Low-emphasis action. Transparent with a strong hairline border.",
+      "html": "<button class=\"ds-btn-outline\">Export</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: 1px solid hsl(0 0% 85%); border-radius: 7px; background: hsl(0 0% 100%); color: hsl(0 0% 9%); font: 500 14px/1 'Inter Variable', sans-serif; cursor: pointer; transition: background .15s, transform .15s; } .ds-btn-outline:hover { background: hsl(0 0% 96%); } .ds-btn-outline:active { transform: scale(.98); } .ds-btn-outline:focus-visible { outline: 2px solid hsl(217 91% 60%); outline-offset: 2px; }"
+    },
+    {
+      "name": "Neutral Badge",
+      "kind": "chip",
+      "refersTo": "badge-neutral",
+      "description": "Muted metadata tag. Default badge.",
+      "html": "<span class=\"ds-badge-neutral\">recorded</span>",
+      "css": ".ds-badge-neutral { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 7px; background: hsl(0 0% 96%); color: hsl(0 0% 28%); font: 500 12px/1 'Inter Variable', sans-serif; }"
+    },
+    {
+      "name": "Live Badge",
+      "kind": "chip",
+      "refersTo": "badge-live",
+      "description": "Recording/live indicator with the only persistent heartbeat in the system.",
+      "html": "<span class=\"ds-badge-live\"><span class=\"ds-live-dot\"></span>Recording</span>",
+      "css": ".ds-badge-live { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 7px; background: hsl(0 72% 96%); color: hsl(0 72% 42%); font: 500 12px/1 'Inter Variable', sans-serif; } .ds-live-dot { width: 6px; height: 6px; border-radius: 999px; background: hsl(0 84% 60%); animation: ds-pulse-dot 1.6s ease-in-out infinite; } @keyframes ds-pulse-dot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .6; transform: scale(.85); } }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text field with a leading icon; blue border plus soft glow on focus.",
+      "html": "<div class=\"ds-input\"><svg class=\"ds-input-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><path d=\"m21 21-4.3-4.3\"></path></svg><input placeholder=\"Search by name, URL, device, or tag\" /></div>",
+      "css": ".ds-input { position: relative; display: flex; align-items: center; height: 36px; border: 1px solid hsl(0 0% 92%); border-radius: 7px; background: hsl(0 0% 100%); transition: border-color .15s, box-shadow .15s; } .ds-input:focus-within { border-color: hsl(217 91% 60%); box-shadow: 0 0 0 2px hsl(217 91% 60% / .2); } .ds-input-icon { position: absolute; left: 12px; width: 16px; height: 16px; color: hsl(0 0% 42%); pointer-events: none; } .ds-input input { flex: 1; height: 100%; padding: 0 12px 0 36px; border: none; background: transparent; outline: none; color: hsl(0 0% 9%); font: 400 14px/1 'Inter Variable', sans-serif; } .ds-input input::placeholder { color: hsl(0 0% 42%); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat container: hairline border, no resting shadow, softer corners than controls.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Top hosts</h3><p class=\"ds-card-body\">shop.example.com leads with 42 recorded sessions this week.</p></div>",
+      "css": ".ds-card { padding: 20px; border: 1px solid hsl(0 0% 92%); border-radius: 14px; background: hsl(0 0% 100%); color: hsl(0 0% 9%); } .ds-card-title { margin: 0 0 6px; font: 600 14px/1.1 'Inter Variable', sans-serif; letter-spacing: -.01em; } .ds-card-body { margin: 0; font: 400 14px/1.5 'Inter Variable', sans-serif; color: hsl(0 0% 38%); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Operator's Console",
+    "overview": "Remote DevTools is read first, acted on second. The surface vanishes so the signal (an error spike, a failed request, who is watching right now) reads instantly: untinted grayscale carries every structural surface, and a single Signal Blue marks only an action, a selection, or focus. Color is information, never decoration. Density is welcome (tables, timelines, network rows, console streams) so the type scale is tight and fixed, radii are smaller than Tailwind defaults, and depth comes from hairline borders rather than shadows. It rejects the SaaS-marketing reflex (no gradients, neon, glassmorphism, hero-metric template, or identical card grids); the lineage is Linear and Vercel.",
+    "keyCharacteristics": [
+      "Pure-neutral grayscale (hue 0, saturation 0%) for structure; one Signal Blue accent used sparingly.",
+      "Default primary action is Ink (near-black), not blue. Blue is a deliberate secondary affordance.",
+      "Flat by default: hairline borders define structure, shadows are reserved for floating layers.",
+      "Inter for interface, JetBrains Mono for machine data (IDs, timestamps, URLs, sizes).",
+      "Tight fixed type scale and tight radii for an information-dense, operator-grade feel.",
+      "First-class dark mode; every token has a paired dark value."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Signal Blue appears on a small fraction of any screen. Primary actions use Ink, not blue; blue marks the one thing that is selected, focused, or the explicit accent action. Its rarity is the point.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pure Neutral Rule",
+        "body": "Structural neutrals carry zero hue (saturation 0%). The monochrome is deliberate and is the brand. Do not warm or cool the grays toward a hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Color-Is-Information Rule",
+        "body": "If a color appears, it must mean something (state, selection, severity). Never introduce a hue for visual interest alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono-Means-Machine Rule",
+        "body": "JetBrains Mono is for values a machine produced or a human will copy (IDs, timestamps, URLs, sizes, JSON). Never use mono for prose or UI labels, and never use Inter for a raw payload.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight-Title Rule",
+        "body": "Titles carry negative tracking and weight 600, not size inflation. Hierarchy comes from weight and tracking contrast, not giant type.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-At-Rest Rule",
+        "body": "Surfaces are flat until state intervenes. If a card has a resting drop shadow, it is wrong: give it a border instead. Shadows answer hover, focus, and float, nothing else.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do default high-emphasis actions to Ink (bg-fg); reserve Signal Blue for the accent variant, selection, links, and focus. Keep it under roughly 10% of any screen.",
+      "Do convey depth with 1px Hairline borders and one-step tonal layering. Keep surfaces flat at rest; add shadow only on hover or for floating layers.",
+      "Do use JetBrains Mono for IDs, timestamps, URLs, byte sizes, and raw payloads; Inter for everything else.",
+      "Do keep radii tight: rounded-md (7px) for controls, rounded-xl (14px) for cards.",
+      "Do animate only opacity and transform with ease-out-expo / ease-out-quart over 150 to 280ms, and honor prefers-reduced-motion.",
+      "Do ship every interactive state (default, hover, focus-visible, active, disabled) and the consistent 2px Signal Blue focus ring.",
+      "Do keep neutrals pure grayscale (saturation 0%) and let color mean something."
+    ],
+    "donts": [
+      "Don't use gradient washes, neon accents, or glassmorphism (blurred glass cards). This system is opaque and flat.",
+      "Don't build the hero-metric template (giant number + tiny label + supporting stats + gradient) or endless identical icon-and-heading card grids.",
+      "Don't add decorative motion that doesn't report state, reinvent the scrollbar, or reach for loud, full-saturation color (especially on inactive states).",
+      "Don't use background-clip: text gradient text. Emphasize with weight or size.",
+      "Don't put a colored border-left / border-right stripe on cards, rows, or callouts. Use a full border, a soft tint, or a leading icon.",
+      "Don't give a resting card a drop shadow, or warm/cool the grays toward a hue.",
+      "Don't set display fonts or mono in standard UI labels, and don't use em dashes in product copy."
+    ]
+  }
+}
