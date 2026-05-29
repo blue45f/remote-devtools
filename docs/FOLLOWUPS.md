@@ -743,10 +743,29 @@ limit)` extracts hostname directly in SQL
   `usePresence` prefers the socket and **falls back to HTTP
   polling** in demo mode or on socket error/close, so neither
   presence nor DevTools depends on the ws path. New
-  `/ws/presence` dev proxy (`ws:true`). NOTE: live
-  multi-gateway coexistence + push want a manual smoke test —
-  unit tests cover the gateway logic with mock sockets but not
-  a real ws server.
+  `/ws/presence` dev proxy (`ws:true`).
+  VERIFIED — the earlier "needs a smoke test" caveat is
+  resolved. An automated live-ws spec (`51eccd91`) boots a
+  real Nest app (WsAdapter + PresenceModule + a default-path
+  gateway standing in for DevTools) and drives it with real
+  `ws` clients: `/ws/presence` routing, viewer broadcast
+  (join→2, leave→1), and **multi-gateway coexistence** all
+  pass. Also smoke-tested against the full internal app on an
+  isolated alt-port stack (pg 5533 / internal 3010 / external
+  3011 / client 8080): HTTP presence, direct WS (counts
+  1→2→1), and WS through the Vite proxy (8080→3010) all work
+  with both gateways live.
+
+- **Internal app boot fix (found during smoke)** — `602b080d`
+  — `ActivityModule` used `@UseGuards(AuthGuard)` but never
+  imported `AuthModule` (not `@Global`), so the internal app
+  crashed at boot with an unresolved-AuthService DI error.
+  Importing AuthModule fixes it; surfaced only when actually
+  booting the app for the presence smoke test (unit specs
+  don't boot the full app). Same commit makes `start-pg.mjs`
+  honour `PG_PORT` and the Vite proxy honour
+  `VITE_INTERNAL_PORT`/`VITE_EXTERNAL_PORT` for isolated
+  multi-instance dev.
 
 - **Top tags dashboard panel** — `a2e8edfd` (server) +
   `98f1121c` (client) — Fourteenth backend cycle.
