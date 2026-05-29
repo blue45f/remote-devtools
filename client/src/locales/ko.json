@@ -444,7 +444,10 @@
     "minimapClickToSeek": "클릭하여 이동",
     "rageClickOne": "분노 클릭 순간 1건 감지됨",
     "rageClickOther": "분노 클릭 순간 {{n}}건 감지됨",
-    "rageClickDesc": "같은 위치를 빠르게 반복 클릭했습니다. 응답하지 않는 버튼의 신호일 수 있습니다."
+    "rageClickDesc": "같은 위치를 빠르게 반복 클릭했습니다. 응답하지 않는 버튼의 신호일 수 있습니다.",
+    "noEventsDesc": "이 세션에는 기록된 리플레이 이벤트가 없습니다.",
+    "emptyTimelineDesc": "이 세션에 기록된 이벤트가 없습니다.",
+    "noDataDesc": "이 세션에는 표시할 원본 이벤트가 없습니다."
   },
   "sessions": {
     "title": "세션",

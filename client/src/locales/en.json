@@ -444,7 +444,10 @@
     "minimapClickToSeek": "Click to seek",
     "rageClickOne": "1 rage-click moment detected",
     "rageClickOther": "{{n}} rage-click moments detected",
-    "rageClickDesc": "User clicked rapidly in the same spot — often a sign of an unresponsive button."
+    "rageClickDesc": "User clicked rapidly in the same spot — often a sign of an unresponsive button.",
+    "noEventsDesc": "This session captured no replay events.",
+    "emptyTimelineDesc": "No events were captured for this session.",
+    "noDataDesc": "This session has no raw events to display."
   },
   "sessions": {
     "title": "Sessions",
