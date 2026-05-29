@@ -676,7 +676,17 @@
     "quietDesc": "새로운 활동이 실시간으로 여기에 표시됩니다.",
     "loadOlder": "이전 항목 불러오기",
     "live": "라이브",
-    "paused": "일시중지"
+    "paused": "일시중지",
+    "titleRecordedSession": "세션 기록됨 · {{name}}",
+    "titleTicketCreated": "{{name}}에 티켓 생성됨",
+    "titleConsoleError": "{{host}}에서 콘솔 오류 발생",
+    "titleEngineerJoined": "엔지니어가 {{name}}에 참여함",
+    "titleCommentBy": "qa님이 {{name}}에 남긴 댓글",
+    "demoCommentOffset": "결제 버튼이 iPhone SE에서 오른쪽으로 치우쳐 있습니다.",
+    "demoCommentSpinner": "재현 확인: 3초 후에도 스피너가 사라지지 않습니다.",
+    "demoReplayComment1": "로그인 버튼이 오른쪽으로 치우쳐 있습니다. iPhone SE에서 깨져 보입니다.",
+    "demoReplayComment2": "확인됨: 요청이 완료된 뒤에도 스피너가 사라지지 않습니다.",
+    "demoSessionNote": "재현: 항목 추가, 장바구니 열기, 스피너가 사라지지 않음."
   },
   "replay": {
     "problemNoEvents": "리플레이할 이벤트가 없습니다",

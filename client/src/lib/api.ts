@@ -61,7 +61,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   // Forward the auth token if one is present. Production swaps the
   // localStorage source for Clerk / Supabase / Auth0 — see auth.tsx.
   const token = typeof window === 'undefined' ? null : localStorage.getItem('auth-token');
+  // Tell the backend which language to localize its responses in (activity
+  // titles, error messages). Mirrors the i18n default: Korean unless the user
+  // explicitly switched (persisted as `rd-lang`).
+  const lang = typeof window === 'undefined' ? 'ko' : localStorage.getItem('rd-lang') || 'ko';
   const headers: HeadersInit = {
+    'Accept-Language': lang,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
