@@ -303,7 +303,10 @@ function DashboardMockup() {
 
             {/* Mini main content */}
             <div className="p-3.5 sm:p-5">
-              <h3 className="text-base sm:text-lg font-semibold mb-3">{t('dashboard.title')}</h3>
+              {/* Decorative label inside the hero's product mockup, not a
+                  document heading — a real <h3> here skips <h2> after the page
+                  <h1> and breaks heading order (WCAG 1.3.1). */}
+              <div className="text-base sm:text-lg font-semibold mb-3">{t('dashboard.title')}</div>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <MockTile label={t('landing.mockLiveNow')} value="2" tone="live" />
                 <MockTile label={t('landing.mockSessionsToday')} value="142" tone="up" />
