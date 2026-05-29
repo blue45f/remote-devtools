@@ -15,6 +15,11 @@ interface PresenceResponse {
 const CLIENT_ID_KEY = 'presence-client-id';
 const HEARTBEAT_MS = 10_000;
 
+function isDemoMode(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem('demo-mode') === '1';
+}
+
 /**
  * Stable per-tab client id. Lives in sessionStorage so a reload keeps the
  * same identity but a new tab counts as a distinct viewer.
@@ -33,10 +38,17 @@ export function getPresenceClientId(): string {
   }
 }
 
+function presenceWsUrl(sessionId: string, clientId: string): string {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const qs = new URLSearchParams({ sessionId, clientId });
+  return `${proto}//${window.location.host}/ws/presence?${qs.toString()}`;
+}
+
 /**
- * Live presence for a session via heartbeat polling. While `enabled`, posts a
- * heartbeat immediately and every 10s, using the returned viewer list as the
- * source of truth. Returns the current viewers + count (including self).
+ * Live presence for a session. Prefers a WebSocket (push) on /ws/presence
+ * and falls back to HTTP heartbeat polling — in demo mode (no real server)
+ * or if the socket can't connect / drops. Returns the current viewers +
+ * count (including self).
  */
 export function usePresence(sessionId: string | undefined, enabled: boolean): PresenceResponse {
   const [state, setState] = useState<PresenceResponse>({ count: 0, viewers: [] });
@@ -46,10 +58,19 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
       setState({ count: 0, viewers: [] });
       return;
     }
+
     let cancelled = false;
     const clientId = getPresenceClientId();
+    let socket: WebSocket | null = null;
+    let pollTimer: number | undefined;
+    let pingTimer: number | undefined;
 
-    const beat = async () => {
+    const stopPolling = () => {
+      if (pollTimer !== undefined) window.clearInterval(pollTimer);
+      pollTimer = undefined;
+    };
+
+    const poll = async () => {
       try {
         const res = await apiFetch<PresenceResponse>(
           `/api/presence/${encodeURIComponent(sessionId)}/heartbeat`,
@@ -61,15 +82,70 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
         );
         if (!cancelled && res) setState(res);
       } catch {
-        /* presence is best-effort — ignore transient failures */
+        /* best-effort */
       }
     };
 
-    void beat();
-    const interval = window.setInterval(() => void beat(), HEARTBEAT_MS);
+    const startPolling = () => {
+      if (cancelled || pollTimer !== undefined) return;
+      void poll();
+      pollTimer = window.setInterval(() => void poll(), HEARTBEAT_MS);
+    };
+
+    // Demo mode / SSR: no live socket server, so poll the (seed-routed) HTTP
+    // endpoint instead of opening a doomed WebSocket.
+    if (isDemoMode() || typeof WebSocket === 'undefined') {
+      startPolling();
+      return () => {
+        cancelled = true;
+        stopPolling();
+      };
+    }
+
+    try {
+      socket = new WebSocket(presenceWsUrl(sessionId, clientId));
+      socket.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data as string) as { type?: string } & PresenceResponse;
+          if (!cancelled && msg.type === 'viewers') {
+            setState({ count: msg.count, viewers: msg.viewers });
+          }
+        } catch {
+          /* ignore malformed frames */
+        }
+      };
+      socket.onopen = () => {
+        pingTimer = window.setInterval(() => {
+          if (socket?.readyState === WebSocket.OPEN) socket.send('ping');
+        }, HEARTBEAT_MS);
+      };
+      // If the socket errors or closes unexpectedly, fall back to polling so
+      // presence still works even where the ws path isn't reachable.
+      const fallback = () => {
+        if (cancelled) return;
+        if (pingTimer !== undefined) window.clearInterval(pingTimer);
+        pingTimer = undefined;
+        startPolling();
+      };
+      socket.onerror = fallback;
+      socket.onclose = fallback;
+    } catch {
+      startPolling();
+    }
+
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      stopPolling();
+      if (pingTimer !== undefined) window.clearInterval(pingTimer);
+      if (socket) {
+        socket.onclose = null;
+        socket.onerror = null;
+        try {
+          socket.close();
+        } catch {
+          /* already closed */
+        }
+      }
     };
   }, [sessionId, enabled]);
 

@@ -30,6 +30,7 @@ cd client && pnpm dev        # Vite dev server with proxy to backends
 ## Architecture
 
 ### Backend
+
 - `apps/remote-platform-internal` (port 3000): DevTools UI, session replay APIs, dashboard, admin
 - `apps/remote-platform-external` (port 3001): SDK serving, CDP data collection, Jira/Slack
 - `libs/core`: shared DB services (Record, Network, DOM, Screen, Runtime, S3)
@@ -38,6 +39,7 @@ cd client && pnpm dev        # Vite dev server with proxy to backends
 - `libs/constants`: shared constants, timezone utilities
 
 ### Frontend (`client/`)
+
 - React 19 + Vite 6 + TanStack Query v5 + Zustand + Tailwind CSS 4
 - Path alias: `@/` → `client/src`
 - Layout: `src/components/Layout.tsx` (sidebar + topbar + Cmd+K palette)
@@ -48,17 +50,19 @@ cd client && pnpm dev        # Vite dev server with proxy to backends
 
 In dev, the client runs on `localhost:8080` while backends serve their APIs on 3000/3001 with helmet's `Cross-Origin-Resource-Policy: same-origin`. The Vite server proxies to bypass CORP:
 
-| path | target | notes |
-|------|--------|-------|
-| `/sdk` | external 3001 | UMD/ESM SDK bundle |
-| `/buffer` | external 3001 | SDK beacon endpoint |
-| `/api` | internal 3000 | session-replay, dashboard, activity |
-| `/sessions` | internal 3000 | sessions CRUD, **with `bypass(req)` for `Accept: text/html`** so the SPA route also named `/sessions` still serves `index.html` |
-| `/socket.io` | external 3001 | gateway WebSocket |
+| path           | target        | notes                                                                                                                           |
+| -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/sdk`         | external 3001 | UMD/ESM SDK bundle                                                                                                              |
+| `/buffer`      | external 3001 | SDK beacon endpoint                                                                                                             |
+| `/api`         | internal 3000 | session-replay, dashboard, activity                                                                                             |
+| `/sessions`    | internal 3000 | sessions CRUD, **with `bypass(req)` for `Accept: text/html`** so the SPA route also named `/sessions` still serves `index.html` |
+| `/socket.io`   | external 3001 | gateway WebSocket                                                                                                               |
+| `/ws/presence` | internal 3000 | live viewer presence WebSocket (`ws: true`); client falls back to `/api/presence` HTTP polling                                  |
 
 When adding a new backend route the frontend needs to call, mirror it here.
 
 ### Routes
+
 - `/dashboard` — overview metrics, charts, real-time activity feed
 - `/sessions` — recorded + live debugging sessions
 - `/sessions/:id` — session detail with **Overview / Replay / Timeline / Raw JSON** tabs
@@ -72,6 +76,7 @@ When adding a new backend route the frontend needs to call, mirror it here.
 `{ id, eventType, protocol: { type, data, timestamp }, isRRWeb }` (CDP envelope), but rrweb-player and the Timeline UI expect flat `{ type, timestamp, data }`. The `normaliseEvent()` helper in `client/src/pages/SessionDetail.tsx` collapses both shapes — keep that adapter when changing either side.
 
 ### SDK (`sdk/`)
+
 Browser instrumentation SDK shipped as both UMD and ESM. Loaded by sandbox pages and any customer site that imports `remote-debug-sdk`.
 
 ## Demo Mode
@@ -117,6 +122,7 @@ pnpm test:cov      # with v8 coverage
 ## Conventions
 
 ### Backend
+
 - File naming: kebab-case (`user-profile.service.ts`)
 - Path aliases: `@remote-platform/core`, `@remote-platform/entity`, `@remote-platform/common`, `@remote-platform/constants`
 - Error handling: use `BusinessException` or NestJS built-in exceptions, never generic `Error`
@@ -128,6 +134,7 @@ pnpm test:cov      # with v8 coverage
 - HTML escaping: use `escape-html` package
 
 ### Frontend
+
 - File naming: kebab-case for primitives (`empty-state.tsx`), PascalCase for composed components and pages (`Sidebar.tsx`, `Dashboard.tsx`)
 - Imports: use `@/` alias instead of relative paths beyond a single level
 - Icons: import from `lucide-react`; never inline raw SVG for nav/UI affordances

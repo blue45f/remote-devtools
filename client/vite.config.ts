@@ -50,6 +50,13 @@ export default defineConfig(({ command }) => ({
               ws: true,
               changeOrigin: true,
             },
+            // Live-presence WebSocket on the internal app (separate ws path
+            // from the DevTools gateway).
+            '/ws/presence': {
+              target: 'http://localhost:3000',
+              ws: true,
+              changeOrigin: true,
+            },
           }
         : undefined,
   },
