@@ -199,7 +199,7 @@ function SdkBanner({ kind }: { kind: SdkKind }) {
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-fg">{t('webview.sdkPlayground')}</span>
+          <h1 className="text-sm font-medium text-fg">{t('webview.sdkPlayground')}</h1>
           <Badge variant="accent" size="sm">
             {label}
           </Badge>

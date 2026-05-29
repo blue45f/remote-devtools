@@ -64,11 +64,11 @@ export default function ExploreTab({ domNodes }: ExploreTabProps) {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-3xl font-semibold tracking-tight text-fg">
+        <h2 className="text-3xl font-semibold tracking-tight text-fg">
           {t('webview.discoverHeadingLine1')}
           <br />
           <span className="text-fg-subtle">{t('webview.discoverHeadingLine2')}</span>
-        </h1>
+        </h2>
         <p className="text-fg-subtle text-sm mt-2">{t('webview.discoverSubtitle')}</p>
       </section>
 

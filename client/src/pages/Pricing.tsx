@@ -195,7 +195,7 @@ export default function PricingPage() {
                       </span>
                     )}
                     <div>
-                      <h3 className="text-lg font-semibold">{t(`pricing.${plan.nameKey}`)}</h3>
+                      <h2 className="text-lg font-semibold">{t(`pricing.${plan.nameKey}`)}</h2>
                       <p className="text-xs text-fg-subtle mt-1">
                         {t(`pricing.${plan.descriptionKey}`)}
                       </p>
@@ -243,7 +243,7 @@ export default function PricingPage() {
           <Card className="mt-10 p-6 bg-bg-subtle">
             <div className="flex flex-wrap items-start gap-4">
               <div className="flex-1 min-w-[280px]">
-                <h3 className="text-sm font-semibold mb-1">{t('pricing.aboutHostedPlans')}</h3>
+                <h2 className="text-sm font-semibold mb-1">{t('pricing.aboutHostedPlans')}</h2>
                 <p className="text-xs text-fg-subtle leading-relaxed">
                   {t('pricing.aboutHostedDescPrefix')}{' '}
                   <a
