@@ -57,10 +57,9 @@ export default function NotFound() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mb-6"
+        className="mb-6"
       >
-        <div className="absolute inset-0 size-20 rounded-full bg-accent/10 blur-2xl animate-pulse [animation-duration:3s]" />
-        <div className="relative flex size-20 items-center justify-center rounded-3xl bg-bg-subtle border border-border">
+        <div className="flex size-20 items-center justify-center rounded-3xl bg-bg-subtle border border-border">
           <Compass className="size-9 text-fg-subtle" />
         </div>
       </motion.div>
