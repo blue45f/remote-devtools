@@ -5,7 +5,18 @@ packages:
   - figma-plugin
   - .
 allowBuilds:
+  # embedded-postgres ships a per-platform binary whose install script must run.
+  # Allow every platform variant so the build is approved on CI (linux-x64) and
+  # on any contributor's machine, not just Apple Silicon — otherwise pnpm v11
+  # fails `--frozen-lockfile` with ERR_PNPM_IGNORED_BUILDS.
   '@embedded-postgres/darwin-arm64': true
+  '@embedded-postgres/darwin-x64': true
+  '@embedded-postgres/linux-arm': true
+  '@embedded-postgres/linux-arm64': true
+  '@embedded-postgres/linux-ia32': true
+  '@embedded-postgres/linux-ppc64': true
+  '@embedded-postgres/linux-x64': true
+  '@embedded-postgres/windows-x64': true
   '@nestjs/core': true
   '@scarf/scarf': true
   '@swc/core': true
