@@ -50,7 +50,9 @@
     "featureSelfHostBody": "MIT 라이선스. Postgres, S3, Jira, Slack을 직접 연결하거나 VPN 뒤에서 오프라인으로 실행하세요.",
     "quickStartBadge": "빠른 시작",
     "quickStartHeading": "SDK를 설치하고 대시보드를 여세요.",
-    "quickStartLead": "module, script, self-host 경로 중 하나를 골라 실제 세션 캡처를 시작하세요."
+    "quickStartLead": "module, script, self-host 경로 중 하나를 골라 실제 세션 캡처를 시작하세요.",
+    "docs": "문서",
+    "builtWith": "Chrome DevTools Protocol 기반"
   },
   "pricing": {
     "badge": "요금제",
