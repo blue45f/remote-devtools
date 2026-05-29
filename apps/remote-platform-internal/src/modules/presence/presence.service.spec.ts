@@ -45,6 +45,25 @@ describe('PresenceService', () => {
     expect(service.getViewers('s1')).toHaveLength(1);
   });
 
+  it('remove drops a viewer immediately and returns the remainder', () => {
+    service.heartbeat('s1', 'a', 'Alice');
+    service.heartbeat('s1', 'b', null);
+
+    const remaining = service.remove('s1', 'a');
+    expect(remaining.map((v) => v.clientId)).toEqual(['b']);
+    expect(service.getViewers('s1')).toHaveLength(1);
+  });
+
+  it('remove of the last viewer empties the session', () => {
+    service.heartbeat('s1', 'a', null);
+    expect(service.remove('s1', 'a')).toHaveLength(0);
+    expect(service.getViewers('s1')).toHaveLength(0);
+  });
+
+  it('remove is a no-op for an unknown session/client', () => {
+    expect(service.remove('nope', 'x')).toEqual([]);
+  });
+
   it('pruneAll evicts idle sessions that are never read again', () => {
     service.heartbeat('s1', 'a', null);
     service.heartbeat('s2', 'b', null);
