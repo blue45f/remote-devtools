@@ -2280,9 +2280,9 @@ function NoteEditor({
         ['session-metadata', String(recordId)],
         (prev) => (prev ? { ...prev, note: saved } : prev),
       );
-      toast.success('Note saved');
+      toast.success(t('sessionDetail.noteSaved'));
     },
-    onError: () => toast.error("Couldn't save note"),
+    onError: () => toast.error(t('sessionDetail.couldntSaveNote')),
   });
 
   if (loading) return null;
@@ -2293,15 +2293,15 @@ function NoteEditor({
     <div className="mt-3" data-testid="session-note-editor">
       <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-fg-faint">
         <StickyNote className="size-3.5 shrink-0" />
-        <span>Note</span>
+        <span>{t('sessionDetail.note')}</span>
       </div>
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         maxLength={MAX_NOTE_LENGTH}
         rows={2}
-        placeholder="Add a note — repro steps, context, anything worth remembering…"
-        aria-label="Session note"
+        placeholder={t('sessionDetail.notePlaceholder')}
+        aria-label={t('sessionDetail.noteAriaLabel')}
         data-testid="session-note-input"
         className="w-full rounded-md border border-border bg-surface px-3 py-2 text-xs text-fg placeholder:text-fg-faint focus:outline-none focus:ring-2 focus:ring-ring resize-y"
       />
@@ -2315,7 +2315,7 @@ function NoteEditor({
             data-testid="session-note-save"
           >
             <Check />
-            Save note
+            {t('sessionDetail.saveNote')}
           </Button>
           <Button
             size="sm"
@@ -2324,7 +2324,7 @@ function NoteEditor({
             onClick={() => setDraft(note)}
             data-testid="session-note-cancel"
           >
-            Cancel
+            {t('sessionDetail.cancel')}
           </Button>
         </div>
       )}
@@ -2351,22 +2351,23 @@ function SessionHeader({
   /** Live viewer count from presence polling. */
   viewerCount?: number;
 }) {
+  const { t } = useTranslation();
   const isRecording = metadata?.recordMode;
   return (
     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
         <CopyChip
           icon={<Hash className="size-3" />}
-          label={`Session ${shortHash(id, 12)}`}
+          label={t('sessionDetail.sessionChip', { hash: shortHash(id, 12) })}
           value={id}
-          toastLabel="Session ID copied"
+          toastLabel={t('sessionDetail.sessionIdCopied')}
           className="mb-1.5 sm:mb-2"
         />
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-fg break-words">
           {loading ? (
             <Skeleton className="h-7 w-48 sm:w-72" />
           ) : (
-            (metadata?.name ?? metadata?.room ?? `Session #${id}`)
+            (metadata?.name ?? metadata?.room ?? t('sessionDetail.sessionFallbackName', { id }))
           )}
         </h1>
         {(loading || metadata?.url) && (
@@ -2412,10 +2413,10 @@ function SessionHeader({
           isRecording ? (
             <Badge variant="live" className="gap-1">
               <RadioTower className="size-3 animate-pulse-dot" />
-              Recording
+              {t('sessionDetail.recording')}
             </Badge>
           ) : (
-            <Badge variant="success">Completed</Badge>
+            <Badge variant="success">{t('sessionDetail.completed')}</Badge>
           )
         ) : null}
 
@@ -2423,11 +2424,11 @@ function SessionHeader({
           <span
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border bg-surface text-xs text-fg-subtle"
             data-testid="session-presence"
-            title={`${viewerCount} people viewing now (including you)`}
+            title={t('sessionDetail.viewersTitle', { n: viewerCount })}
           >
             <Users className="size-3.5 text-success" />
             <span className="tabular-nums">{viewerCount}</span>
-            <span className="hidden sm:inline">viewing</span>
+            <span className="hidden sm:inline">{t('sessionDetail.viewing')}</span>
           </span>
         )}
 
@@ -2439,11 +2440,11 @@ function SessionHeader({
               <Button asChild variant="outline" size="sm" className="touch-target">
                 <a href={metadata.url} target="_blank" rel="noreferrer">
                   <ExternalLink />
-                  <span className="hidden xs:inline sm:inline">Open URL</span>
+                  <span className="hidden xs:inline sm:inline">{t('sessionDetail.openUrl')}</span>
                 </a>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Open captured URL</TooltipContent>
+            <TooltipContent>{t('sessionDetail.openCapturedUrl')}</TooltipContent>
           </Tooltip>
         )}
 
@@ -2454,12 +2455,12 @@ function SessionHeader({
             className="touch-target"
             room={metadata?.name ?? metadata?.room ?? ''}
             recordId={metadata?.recordMode ? metadata.id : undefined}
-            label="Open in DevTools"
-            title="Inspect this session in the Chrome DevTools UI"
+            label={t('sessionDetail.openInDevTools')}
+            title={t('sessionDetail.openInDevToolsTitle')}
           >
             <Bug />
-            <span className="hidden xs:inline sm:inline">Open DevTools</span>
-            <span className="xs:hidden sm:hidden">DevTools</span>
+            <span className="hidden xs:inline sm:inline">{t('sessionDetail.openDevTools')}</span>
+            <span className="xs:hidden sm:hidden">{t('sessionDetail.devTools')}</span>
           </DevToolsLinkButton>
         )}
       </div>
@@ -2468,15 +2469,18 @@ function SessionHeader({
 }
 
 function SessionHeaderCopySummary({ summary }: { summary: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(summary);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('Summary copied', { description: 'Markdown for a bug ticket' });
+      toast.success(t('sessionDetail.summaryCopied'), {
+        description: t('sessionDetail.summaryCopiedDescription'),
+      });
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
   return (
@@ -2488,27 +2492,28 @@ function SessionHeaderCopySummary({ summary }: { summary: string }) {
           className="touch-target"
           onClick={copy}
           data-testid="session-header-copy-summary"
-          aria-label="Copy session summary as Markdown"
+          aria-label={t('sessionDetail.copySummaryAria')}
         >
           {copied ? <Check /> : <FileText />}
-          <span className="hidden xs:inline sm:inline">Copy summary</span>
+          <span className="hidden xs:inline sm:inline">{t('sessionDetail.copySummary')}</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Copy a Markdown summary for a ticket</TooltipContent>
+      <TooltipContent>{t('sessionDetail.copySummaryTooltip')}</TooltipContent>
     </Tooltip>
   );
 }
 
 function SessionHeaderCopyUrl({ url }: { url: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('URL copied');
+      toast.success(t('sessionDetail.urlCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
   return (
@@ -2520,13 +2525,13 @@ function SessionHeaderCopyUrl({ url }: { url: string }) {
           className="touch-target"
           onClick={copy}
           data-testid="session-header-copy-url"
-          aria-label="Copy captured URL"
+          aria-label={t('sessionDetail.copyUrlAria')}
         >
           {copied ? <Check /> : <Link2 />}
-          <span className="hidden xs:inline sm:inline">Copy URL</span>
+          <span className="hidden xs:inline sm:inline">{t('sessionDetail.copyUrl')}</span>
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Copy captured URL</TooltipContent>
+      <TooltipContent>{t('sessionDetail.copyUrlAria')}</TooltipContent>
     </Tooltip>
   );
 }
