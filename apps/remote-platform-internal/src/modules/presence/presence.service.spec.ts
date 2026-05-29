@@ -44,4 +44,17 @@ describe('PresenceService', () => {
     vi.advanceTimersByTime(1500);
     expect(service.getViewers('s1')).toHaveLength(1);
   });
+
+  it('pruneAll evicts idle sessions that are never read again', () => {
+    service.heartbeat('s1', 'a', null);
+    service.heartbeat('s2', 'b', null);
+    vi.advanceTimersByTime(PresenceService.TTL_MS + 1);
+
+    service.pruneAll();
+
+    // Both sessions are now empty and dropped; a fresh read returns nothing
+    // without having had to touch each session id explicitly.
+    expect(service.getViewers('s1')).toHaveLength(0);
+    expect(service.getViewers('s2')).toHaveLength(0);
+  });
 });
