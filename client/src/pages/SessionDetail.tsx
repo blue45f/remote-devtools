@@ -40,6 +40,7 @@ import {
   Trash2,
   RadioTower,
   Smartphone,
+  Users,
   X,
   Zap,
 } from 'lucide-react';
@@ -79,6 +80,7 @@ import { formatDurationFromNanos, shortHash } from '@/lib/format';
 import { buildCurlCommand } from '@/lib/curl';
 import { buildHar } from '@/lib/har';
 import { recordSessionVisit } from '@/lib/recent-sessions';
+import { usePresence } from '@/lib/presence';
 import { REPLAY_SPEEDS, useReplayPrefs } from '@/lib/replay-prefs';
 import { formatUserAgentBadge } from '@/lib/user-agent';
 import { cn } from '@/lib/utils';
@@ -414,6 +416,9 @@ export default function SessionDetailPage() {
   // number — while the total still feeds the copy-summary.
   const openCommentCount = (commentRows ?? []).filter((c) => !c.resolved).length;
 
+  // Live presence — who else is viewing this session right now.
+  const { count: viewerCount } = usePresence(id, recordId !== null);
+
   const events = useMemo<ReplayEvent[]>(() => (rawEvents ?? []).map(normaliseEvent), [rawEvents]);
 
   const eventTypeCounts = useMemo(() => {
@@ -637,6 +642,7 @@ export default function SessionDetailPage() {
           },
           insights,
         )}
+        viewerCount={viewerCount}
       />
       {recordId !== null && (
         <TagsEditor recordId={recordId} loading={metaLoading} tags={metadata?.tags ?? []} />
@@ -2239,6 +2245,7 @@ function SessionHeader({
   metadata,
   loading,
   summary,
+  viewerCount = 0,
 }: {
   id: string;
   metadata?: SessionMetadata;
@@ -2247,6 +2254,8 @@ function SessionHeader({
   recordId?: number | null;
   /** Pre-built Markdown summary for the Copy summary button. */
   summary?: string;
+  /** Live viewer count from presence polling. */
+  viewerCount?: number;
 }) {
   const isRecording = metadata?.recordMode;
   return (
@@ -2315,6 +2324,18 @@ function SessionHeader({
             <Badge variant="success">Completed</Badge>
           )
         ) : null}
+
+        {viewerCount > 0 && (
+          <span
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border bg-surface text-xs text-fg-subtle"
+            data-testid="session-presence"
+            title={`${viewerCount} ${viewerCount === 1 ? 'person' : 'people'} viewing now`}
+          >
+            <Users className="size-3.5 text-success" />
+            <span className="tabular-nums">{viewerCount}</span>
+            <span className="hidden sm:inline">viewing</span>
+          </span>
+        )}
 
         {!loading && summary && <SessionHeaderCopySummary summary={summary} />}
         {metadata?.url && <SessionHeaderCopyUrl url={metadata.url} />}

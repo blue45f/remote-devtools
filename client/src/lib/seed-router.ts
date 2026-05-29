@@ -193,6 +193,16 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
     }
   }
 
+  // /api/presence/:sessionId[/heartbeat] — demo shows the caller plus a
+  // stub teammate so the indicator is non-trivial offline.
+  if (/^\/api\/presence\//.test(path)) {
+    const viewers = [
+      { clientId: 'demo-self', name: null },
+      { clientId: 'demo-teammate', name: 'teammate' },
+    ];
+    return { count: viewers.length, viewers } as unknown as T;
+  }
+
   // /api/dashboard/stats
   if (path === '/api/dashboard/stats') {
     return { data: buildSeedStats() } as T;

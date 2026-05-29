@@ -812,6 +812,14 @@ describe('SessionDetail page', () => {
     expect(probe).toHaveTextContent(/tab=replay/);
   });
 
+  it('shows a live presence indicator from the heartbeat', async () => {
+    renderAt(1000);
+    // Demo presence returns the caller plus a stub teammate → 2 viewing.
+    await waitFor(() => {
+      expect(screen.getByTestId('session-presence')).toHaveTextContent('2');
+    });
+  });
+
   it('renders the parsed userAgent badge in the header', async () => {
     renderAt(1000);
     await waitFor(() => {
