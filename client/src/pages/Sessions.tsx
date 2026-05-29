@@ -52,7 +52,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
 import { formatUserAgentBadge } from '@/lib/user-agent';
@@ -734,21 +733,44 @@ export default function SessionsPage() {
           session list scrolls underneath. */}
       <div className="sticky top-0 z-20 pb-3 mb-3 -mt-2 pt-2 bg-bg/85 backdrop-blur-xl border-b border-border flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as SessionTab)}>
-            <TabsList>
-              <TabsTrigger value="record" className="gap-1.5">
-                <PlaySquare className="size-3.5" />
-                {t('sessions.tabRecorded')}
-              </TabsTrigger>
-              <TabsTrigger value="live" className="gap-1.5">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
-                  <span className="relative inline-flex size-2 rounded-full bg-live" />
-                </span>
-                {t('sessions.tabLive')}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Segmented control, not tabs: filters the list by capture mode with
+              no content panels, so a labelled aria-pressed button group avoids
+              the invalid aria-controls that Radix Tabs would emit (WCAG 4.1.2). */}
+          <div
+            role="group"
+            aria-label={t('sessions.viewFilterLabel')}
+            className="inline-flex h-9 items-center gap-1 rounded-md bg-bg-muted p-1 text-fg-subtle"
+          >
+            {(
+              [
+                { value: 'record' as const, labelKey: 'sessions.tabRecorded' },
+                { value: 'live' as const, labelKey: 'sessions.tabLive' },
+              ] satisfies { value: SessionTab; labelKey: string }[]
+            ).map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setTab(s.value)}
+                aria-pressed={tab === s.value}
+                className={cn(
+                  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium',
+                  'transition-[color,background-color,box-shadow] duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg',
+                  tab === s.value ? 'bg-surface text-fg shadow-xs' : 'hover:text-fg',
+                )}
+              >
+                {s.value === 'live' ? (
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-live opacity-60 animate-ping" />
+                    <span className="relative inline-flex size-2 rounded-full bg-live" />
+                  </span>
+                ) : (
+                  <PlaySquare className="size-3.5" />
+                )}
+                {t(s.labelKey)}
+              </button>
+            ))}
+          </div>
 
           <div className="order-3 sm:order-none w-full sm:flex-1 sm:min-w-[220px]">
             <div className="relative">
@@ -768,7 +790,7 @@ export default function SessionsPage() {
                         type="button"
                         onClick={() => setSearch('')}
                         aria-label={t('sessions.clearSearch')}
-                        className="text-fg-faint hover:text-fg"
+                        className="inline-flex items-center justify-center size-6 rounded text-fg-faint hover:text-fg"
                       >
                         <X className="size-3.5" />
                       </button>
@@ -781,7 +803,7 @@ export default function SessionsPage() {
                           aria-pressed={regexMode}
                           aria-label={t('sessions.toggleRegex')}
                           className={cn(
-                            'inline-flex items-center justify-center size-5 rounded transition-colors',
+                            'inline-flex items-center justify-center size-6 rounded transition-colors',
                             regexMode
                               ? 'bg-fg text-bg'
                               : 'text-fg-faint hover:text-fg hover:bg-bg-muted',
@@ -807,7 +829,7 @@ export default function SessionsPage() {
           </div>
 
           <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-            <SelectTrigger className="w-auto sm:min-w-[160px]">
+            <SelectTrigger aria-label={t('sessions.sortAria')} className="w-auto sm:min-w-[160px]">
               <span className="flex items-center gap-2">
                 <SortIcon className="size-3.5 text-fg-subtle" />
                 {/* Hide the long label on small screens; the icon already
@@ -949,6 +971,7 @@ export default function SessionsPage() {
               onValueChange={(v) => setPageSize(Number(v) as PageSize)}
             >
               <SelectTrigger
+                aria-label={t('sessions.perPageAria')}
                 className="h-7 px-2 text-[11px] font-mono"
                 data-testid="sessions-page-size"
               >
@@ -973,6 +996,7 @@ export default function SessionsPage() {
               onValueChange={(v) => setLiveInterval(v as typeof liveInterval)}
             >
               <SelectTrigger
+                aria-label={t('sessions.refreshIntervalAria')}
                 className="h-7 px-2 text-[11px] font-mono"
                 data-testid="sessions-live-interval"
               >
