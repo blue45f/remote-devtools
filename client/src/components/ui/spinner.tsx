@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 
@@ -8,6 +9,7 @@ interface SpinnerProps {
 }
 
 export function Spinner({ className, label }: SpinnerProps) {
+  const { t } = useTranslation();
   return (
     <span
       className="inline-flex items-center gap-2 text-fg-subtle"
@@ -16,7 +18,7 @@ export function Spinner({ className, label }: SpinnerProps) {
     >
       <Loader2 className={cn('size-4 animate-spin', className)} />
       {label && <span className="text-sm">{label}</span>}
-      {!label && <span className="sr-only">Loading</span>}
+      {!label && <span className="sr-only">{t('common.loadingShort')}</span>}
     </span>
   );
 }

@@ -98,7 +98,7 @@ export function Topbar() {
           them. */}
       <nav
         className="flex items-center gap-1 text-sm min-w-0 flex-1 sm:flex-initial"
-        aria-label="Breadcrumb"
+        aria-label={t('topbar.breadcrumb')}
       >
         {crumbs.map((crumb, idx) => {
           const isLast = idx === crumbs.length - 1;
@@ -143,7 +143,7 @@ export function Topbar() {
             >
               <Sparkles className="size-3" />
               <span className="hidden sm:inline">{t('topbar.demoMode')}</span>
-              <span className="sm:hidden">Demo</span>
+              <span className="sm:hidden">{t('topbar.demoMode')}</span>
             </Badge>
           </TooltipTrigger>
           <TooltipContent side="bottom">{t('topbar.demoModeTooltip')}</TooltipContent>

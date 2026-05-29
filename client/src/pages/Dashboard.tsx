@@ -856,7 +856,7 @@ function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
       })}
       {/* Mini legend */}
       <div className="mt-3 pt-3 border-t border-border text-[11px] text-fg-faint flex items-center justify-between">
-        <span>Total</span>
+        <span>{t('dashboard.total')}</span>
         <span className="font-mono tabular-nums text-fg-subtle">
           {totals.reduce((s, t) => s + t.value, 0).toLocaleString()}
         </span>

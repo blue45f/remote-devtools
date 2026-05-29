@@ -22,7 +22,13 @@
     "quickStartTitle": "60초 안에 시작하기",
     "quickStartSubtitle": "SDK를 추가하고 대시보드만 열면 끝입니다.",
     "ctaTitle": "추측은 그만, 재생으로 답을.",
-    "ctaSubtitle": "지금 셀프 호스팅하거나, 호스티드 플랜이 출시되면 가입하세요."
+    "ctaSubtitle": "지금 셀프 호스팅하거나, 호스티드 플랜이 출시되면 가입하세요.",
+    "navFeatures": "기능",
+    "navQuickStart": "빠른 시작",
+    "githubRepoAria": "GitHub 저장소",
+    "openApp": "앱 열기",
+    "openShort": "열기",
+    "heroNote": "데모는 시드 데이터로 브라우저 안에서만 실행됩니다 — 가입도 백엔드도 필요 없습니다."
   },
   "pricing": {
     "badge": "요금제",
@@ -33,6 +39,38 @@
     "comingSoon": "출시 예정",
     "getStarted": "시작하기",
     "readDocs": "문서 보기",
+    "planSelfHostedName": "셀프 호스팅",
+    "cadenceForever": "영구",
+    "planSelfHostedDesc": "MIT 라이선스. 자체 인프라에서 모든 데이터를 보관하세요.",
+    "planSelfHostedFeature1": "전체 소스 접근 (NestJS + React + SDK)",
+    "planSelfHostedFeature2": "Docker Compose 스택 포함",
+    "planSelfHostedFeature3": "Postgres, S3, Jira, Slack 연동",
+    "planSelfHostedFeature4": "선택적 관리자 토큰 인증",
+    "planSelfHostedFeature5": "GitHub 이슈 기반 커뮤니티 지원",
+    "planSelfHostedFootnote": "플랫폼 엔지니어링 역량이 있는 팀에 적합합니다.",
+    "planStarterName": "Starter",
+    "cadenceTeamMonth": "팀 / 월",
+    "planStarterDesc": "저희가 호스팅합니다. 리플레이를 시작하는 소규모 팀용.",
+    "planStarterFeature1": "월 최대 5,000 세션",
+    "planStarterFeature2": "30일 세션 보관",
+    "planStarterFeature3": "최대 5명 팀원",
+    "planStarterFeature4": "이메일 지원 (24시간 응답)",
+    "planStarterFeature5": "Slack 및 Jira 연동",
+    "planStarterFeature6": "모든 리플레이 및 타임라인 기능",
+    "planHostedFootnote": "호스티드 SaaS — 아래 로드맵을 확인하세요.",
+    "planProName": "Pro",
+    "planProDesc": "확장성, 보관 기간, SSO가 필요한 성장 팀용.",
+    "planProFeature1": "월 최대 50,000 세션",
+    "planProFeature2": "90일 세션 보관",
+    "planProFeature3": "무제한 좌석",
+    "planProFeature4": "SSO (SAML / OIDC)",
+    "planProFeature5": "감사 로그 + 역할 기반 접근",
+    "planProFeature6": "우선 지원 (4시간 응답)",
+    "aboutHostedPlans": "호스티드 플랜 안내",
+    "aboutHostedDescPrefix": "호스티드 Starter와 Pro 티어는 아직 출시되지 않았습니다. 오픈소스 릴리스는 지금도 완전히 사용할 수 있습니다 —",
+    "aboutHostedDescSuffix": "에서 SaaS 로드맵을 확인하세요.",
+    "roadmap": "로드맵",
+    "footerNote": "MIT 라이선스 · CDP 기반",
     "faqTitle": "자주 묻는 질문"
   },
   "auth": {
@@ -77,7 +115,8 @@
     "search": "검색…",
     "demoMode": "데모",
     "demoModeTooltip": "시드 데이터 표시 중 — 백엔드 네트워크 요청은 우회됩니다.",
-    "openCommandPalette": "명령 팔레트 열기"
+    "openCommandPalette": "명령 팔레트 열기",
+    "breadcrumb": "이동 경로"
   },
   "sidebar": {
     "dashboard": "대시보드",
@@ -95,6 +134,7 @@
     "english": "English",
     "korean": "한국어",
     "loading": "불러오는 중…",
+    "loadingShort": "불러오는 중",
     "skipToMain": "본문으로 건너뛰기",
     "copy": "복사",
     "copied": "복사됨",
@@ -548,7 +588,8 @@
     "roleDesigner": "디자이너",
     "rolePm": "PM",
     "roleQa": "QA",
-    "roleOther": "기타"
+    "roleOther": "기타",
+    "total": "합계"
   },
   "activity": {
     "recentActivity": "최근 활동",

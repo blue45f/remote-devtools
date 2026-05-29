@@ -1449,10 +1449,14 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
             <span className="truncate">{row?.url ?? ''}</span>
           </DialogTitle>
           <DialogDescription className="font-mono text-[11px] flex items-center gap-3">
-            <span>Status: {row?.status ?? '—'}</span>
-            {row?.resourceType && <span>Type: {row.resourceType}</span>}
-            {row?.mimeType && <span>MIME: {row.mimeType}</span>}
-            <span>Size: {formatBytes(row?.encodedDataLength)}</span>
+            <span>{t('sessionDetail.detailStatus', { value: row?.status ?? '—' })}</span>
+            {row?.resourceType && (
+              <span>{t('sessionDetail.detailType', { value: row.resourceType })}</span>
+            )}
+            {row?.mimeType && <span>{t('sessionDetail.detailMime', { value: row.mimeType })}</span>}
+            <span>
+              {t('sessionDetail.detailSize', { value: formatBytes(row?.encodedDataLength) })}
+            </span>
           </DialogDescription>
           {row && (
             <div className="flex items-center gap-2 pt-1">
@@ -1463,7 +1467,7 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
                 data-testid="session-network-detail-copy-url"
               >
                 <Link2 />
-                <span className="hidden sm:inline">Copy URL</span>
+                <span className="hidden sm:inline">{t('sessionDetail.copyUrl')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -1472,13 +1476,13 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
                 data-testid="session-network-detail-copy-curl"
               >
                 <Copy />
-                <span className="hidden sm:inline">Copy cURL</span>
+                <span className="hidden sm:inline">{t('sessionDetail.copyCurl')}</span>
               </Button>
               {row.url && (
                 <Button asChild variant="outline" size="sm">
                   <a href={row.url} target="_blank" rel="noreferrer">
                     <ExternalLink />
-                    <span className="hidden sm:inline">Open</span>
+                    <span className="hidden sm:inline">{t('sessionDetail.open')}</span>
                   </a>
                 </Button>
               )}
@@ -1501,17 +1505,17 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
                   data-testid="session-network-body-copy"
                 >
                   <Copy />
-                  <span className="hidden sm:inline">Copy body</span>
+                  <span className="hidden sm:inline">{t('sessionDetail.copyBody')}</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={downloadBody}
                   data-testid="session-network-body-download"
-                  title="Download response body to a file"
+                  title={t('sessionDetail.downloadBodyTitle')}
                 >
                   <Download />
-                  <span className="hidden sm:inline">Download</span>
+                  <span className="hidden sm:inline">{t('sessionDetail.download')}</span>
                 </Button>
               </div>
               <pre
@@ -1524,8 +1528,8 @@ function NetworkRowDetail({ row, onClose }: { row: NetworkRow | null; onClose: (
           ) : (
             <EmptyState
               icon={Globe}
-              title="No body captured"
-              description="The SDK didn't store a response body for this request."
+              title={t('sessionDetail.noBodyTitle')}
+              description={t('sessionDetail.noBodyDescription')}
             />
           )}
         </div>
@@ -1575,6 +1579,7 @@ function NetworkRowView({
   onSelect: () => void;
   onJump?: () => void;
 }) {
+  const { t } = useTranslation();
   const statusClass =
     row.status === undefined
       ? 'text-fg-faint'
@@ -1618,7 +1623,7 @@ function NetworkRowView({
             <button
               type="button"
               onClick={onJump}
-              aria-label="Jump replay to this request"
+              aria-label={t('sessionDetail.jumpReplayToRequest')}
               data-testid="session-network-jump"
               className={cn(
                 'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
@@ -1634,7 +1639,7 @@ function NetworkRowView({
               href={row.url}
               target="_blank"
               rel="noreferrer"
-              aria-label="Open URL in new tab"
+              aria-label={t('sessionDetail.openUrlInNewTab')}
               data-testid="session-network-open-url"
               className={cn(
                 'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
@@ -1654,22 +1659,23 @@ function NetworkRowView({
 }
 
 function NetworkRowCopyUrl({ url }: { url: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('URL copied');
+      toast.success(t('sessionDetail.urlCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
   return (
     <button
       type="button"
       onClick={copy}
-      aria-label="Copy URL"
+      aria-label={t('sessionDetail.copyUrl')}
       data-testid="session-network-copy-url"
       className={cn(
         'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
@@ -1683,6 +1689,7 @@ function NetworkRowCopyUrl({ url }: { url: string }) {
 }
 
 function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -1691,9 +1698,9 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
       await navigator.clipboard.writeText(cmd);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success('cURL copied', { description: row.method + ' ' + row.url });
+      toast.success(t('sessionDetail.curlCopied'), { description: row.method + ' ' + row.url });
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
 
@@ -1701,7 +1708,7 @@ function NetworkRowCopyCurl({ row }: { row: NetworkRow }) {
     <button
       type="button"
       onClick={copy}
-      aria-label="Copy as cURL"
+      aria-label={t('sessionDetail.copyAsCurl')}
       data-testid="session-network-curl"
       className={cn(
         'inline-flex items-center justify-center size-6 rounded-md transition-opacity',
@@ -1783,6 +1790,7 @@ function ConsoleTab({
   onJumpToReplay?: (offsetMs: number) => void;
   sessionStartMs?: number;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery<ConsoleRow[]>({
     queryKey: ['session-console', sessionId],
     queryFn: () => apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${sessionId}/console`),
@@ -1838,8 +1846,11 @@ function ConsoleTab({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Console export downloaded', {
-      description: `${filtered.length} message${filtered.length === 1 ? '' : 's'}`,
+    toast.success(t('sessionDetail.consoleExportDownloaded'), {
+      description: t(
+        filtered.length === 1 ? 'sessionDetail.messageCountOne' : 'sessionDetail.messageCountOther',
+        { n: filtered.length },
+      ),
     });
   };
 
@@ -1858,11 +1869,11 @@ function ConsoleTab({
       <Card>
         <EmptyState
           icon={Terminal}
-          title="No console activity"
+          title={t('sessionDetail.consoleEmptyTitle')}
           description={
             sessionId.startsWith('s3-')
-              ? 'Console capture is only available on live DB sessions.'
-              : "This session didn't log any console output or exceptions."
+              ? t('sessionDetail.consoleEmptyS3')
+              : t('sessionDetail.consoleEmptyNone')
           }
         />
       </Card>
@@ -1874,13 +1885,17 @@ function ConsoleTab({
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="Filter console messages…"
+            placeholder={t('sessionDetail.consoleFilterPlaceholder')}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             leadingIcon={<Terminal />}
             trailingIcon={
               filter ? (
-                <button type="button" onClick={() => setFilter('')} aria-label="Clear filter">
+                <button
+                  type="button"
+                  onClick={() => setFilter('')}
+                  aria-label={t('sessionDetail.clearFilter')}
+                >
                   <X className="size-3.5" />
                 </button>
               ) : undefined
@@ -1892,11 +1907,11 @@ function ConsoleTab({
           size="sm"
           onClick={exportFiltered}
           data-testid="session-console-export"
-          title="Download visible console rows as text"
+          title={t('sessionDetail.exportConsoleTitle')}
           disabled={filtered.length === 0}
         >
           <Download />
-          <span className="hidden sm:inline">Export</span>
+          <span className="hidden sm:inline">{t('sessionDetail.export')}</span>
         </Button>
         <div className="flex items-center gap-1.5 flex-wrap">
           {ALL_CONSOLE_LEVELS.map((l) => {
@@ -1936,9 +1951,12 @@ function ConsoleTab({
       </div>
       <Card className="overflow-hidden p-0">
         <div className="px-3 py-2 border-b border-border bg-bg-subtle text-[11px] uppercase tracking-wider text-fg-faint">
-          <span className="font-medium text-fg-subtle">{filtered.length}</span> messages
+          <span className="font-medium text-fg-subtle">{filtered.length}</span>{' '}
+          {t('sessionDetail.messagesLabel')}
           {filtered.length !== rows.length && (
-            <span className="text-fg-faint ml-1">(of {rows.length})</span>
+            <span className="text-fg-faint ml-1">
+              {t('sessionDetail.ofTotal', { n: rows.length })}
+            </span>
           )}
         </div>
         <ul className="divide-y divide-border" data-testid="session-console-list">
@@ -1960,6 +1978,7 @@ function ConsoleTab({
 }
 
 function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void }) {
+  const { t } = useTranslation();
   const colour =
     row.level === 'error'
       ? 'text-danger'
@@ -1991,7 +2010,7 @@ function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void 
         <button
           type="button"
           onClick={onJump}
-          aria-label="Jump replay to this message"
+          aria-label={t('sessionDetail.jumpReplayToMessage')}
           data-testid="session-console-jump"
           className={cn(
             'shrink-0 inline-flex items-center justify-center size-5 rounded-md transition-opacity',
@@ -2007,6 +2026,7 @@ function ConsoleRowView({ row, onJump }: { row: ConsoleRow; onJump?: () => void 
 }
 
 function ConsoleRowCopy({ text }: { text: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -2014,14 +2034,14 @@ function ConsoleRowCopy({ text }: { text: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('sessionDetail.failedToCopy'));
     }
   };
   return (
     <button
       type="button"
       onClick={copy}
-      aria-label="Copy message"
+      aria-label={t('sessionDetail.copyMessage')}
       data-testid="session-console-copy"
       className={cn(
         'shrink-0 inline-flex items-center justify-center size-5 rounded-md transition-opacity',
@@ -2062,6 +2082,7 @@ function TagsEditor({
   loading: boolean;
   tags: string[];
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<string[] | null>(null);
@@ -2098,7 +2119,7 @@ function TagsEditor({
     },
     onError: () => {
       setPending(null);
-      toast.error("Couldn't save tags");
+      toast.error(t('sessionDetail.couldntSaveTags'));
     },
   });
 
@@ -2109,7 +2130,7 @@ function TagsEditor({
     if (!term) return [] as string[];
     const taken = new Set(visible);
     return (allTags ?? [])
-      .filter((t) => t.toLowerCase().includes(term) && !taken.has(t))
+      .filter((tag) => tag.toLowerCase().includes(term) && !taken.has(tag))
       .slice(0, 6);
   }, [draft, visible, allTags]);
 
@@ -2125,8 +2146,8 @@ function TagsEditor({
     mutation.mutate(next);
   };
 
-  const remove = (t: string) => {
-    const next = visible.filter((x) => x !== t);
+  const remove = (tag: string) => {
+    const next = visible.filter((x) => x !== tag);
     setPending(next);
     mutation.mutate(next);
   };
@@ -2136,19 +2157,21 @@ function TagsEditor({
   return (
     <div className="flex flex-wrap items-center gap-1.5 mt-3" data-testid="session-tags-editor">
       <Tag className="size-3.5 text-fg-faint shrink-0" />
-      {visible.length === 0 && <span className="text-[11px] text-fg-faint">No tags yet.</span>}
-      {visible.map((t) => (
+      {visible.length === 0 && (
+        <span className="text-[11px] text-fg-faint">{t('sessionDetail.noTagsYet')}</span>
+      )}
+      {visible.map((tag) => (
         <span
-          key={t}
+          key={tag}
           className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-accent-soft text-accent-soft-fg border border-accent-soft text-[11px] font-medium"
           data-testid="session-tag-chip"
         >
-          {t}
+          {tag}
           <button
             type="button"
-            onClick={() => remove(t)}
+            onClick={() => remove(tag)}
             disabled={mutation.isPending}
-            aria-label={`Remove tag ${t}`}
+            aria-label={t('sessionDetail.removeTag', { tag })}
             className="opacity-60 hover:opacity-100 disabled:opacity-30"
           >
             <X className="size-3" />
@@ -2199,15 +2222,15 @@ function TagsEditor({
             onFocus={() => setShowSuggest(true)}
             onBlur={() => setShowSuggest(false)}
             maxLength={MAX_TAG_LENGTH}
-            placeholder="Add tag…"
-            aria-label="Add tag"
+            placeholder={t('sessionDetail.addTagPlaceholder')}
+            aria-label={t('sessionDetail.addTag')}
             data-testid="session-tag-input"
             className="h-6 px-2 rounded-full border border-border bg-surface text-[11px] placeholder:text-fg-faint focus:outline-none focus:ring-2 focus:ring-ring w-24"
           />
           <button
             type="submit"
             disabled={!draft.trim() || mutation.isPending}
-            aria-label="Save tag"
+            aria-label={t('sessionDetail.saveTag')}
             data-testid="session-tag-add"
             className="inline-flex items-center justify-center size-6 rounded-full border border-border bg-surface text-fg-subtle hover:text-fg disabled:opacity-40"
           >
@@ -2230,6 +2253,7 @@ function NoteEditor({
   loading: boolean;
   note: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(note);
 

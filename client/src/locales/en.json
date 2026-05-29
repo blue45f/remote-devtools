@@ -22,7 +22,13 @@
     "quickStartTitle": "Get started in 60 seconds",
     "quickStartSubtitle": "Drop the SDK in, point your dev console at the dashboard. Done.",
     "ctaTitle": "Stop guessing. Start replaying.",
-    "ctaSubtitle": "Self-host today, or grab the hosted plan when it lands."
+    "ctaSubtitle": "Self-host today, or grab the hosted plan when it lands.",
+    "navFeatures": "Features",
+    "navQuickStart": "Quick start",
+    "githubRepoAria": "GitHub repository",
+    "openApp": "Open app",
+    "openShort": "Open",
+    "heroNote": "The demo runs entirely in your browser with seed data — no signup, no backend."
   },
   "pricing": {
     "badge": "Pricing",
@@ -33,6 +39,38 @@
     "comingSoon": "Coming soon",
     "getStarted": "Get started",
     "readDocs": "Read the docs",
+    "planSelfHostedName": "Self-hosted",
+    "cadenceForever": "forever",
+    "planSelfHostedDesc": "MIT licensed. Bring your own infrastructure, keep all your data.",
+    "planSelfHostedFeature1": "Full source access (NestJS + React + SDK)",
+    "planSelfHostedFeature2": "Docker Compose stack included",
+    "planSelfHostedFeature3": "Postgres, S3, Jira, Slack integrations",
+    "planSelfHostedFeature4": "Optional admin token authentication",
+    "planSelfHostedFeature5": "Community support via GitHub issues",
+    "planSelfHostedFootnote": "Best for teams with existing platform engineering capacity.",
+    "planStarterName": "Starter",
+    "cadenceTeamMonth": "team / month",
+    "planStarterDesc": "Hosted by us. For small teams getting started with replay.",
+    "planStarterFeature1": "Up to 5,000 sessions / month",
+    "planStarterFeature2": "30-day session retention",
+    "planStarterFeature3": "Up to 5 team members",
+    "planStarterFeature4": "Email support (24h response)",
+    "planStarterFeature5": "Slack & Jira integrations",
+    "planStarterFeature6": "All replay & timeline features",
+    "planHostedFootnote": "Hosted SaaS — see roadmap below.",
+    "planProName": "Pro",
+    "planProDesc": "For growing teams that need scale, retention, and SSO.",
+    "planProFeature1": "Up to 50,000 sessions / month",
+    "planProFeature2": "90-day session retention",
+    "planProFeature3": "Unlimited seats",
+    "planProFeature4": "SSO (SAML / OIDC)",
+    "planProFeature5": "Audit log + role-based access",
+    "planProFeature6": "Priority support (4h response)",
+    "aboutHostedPlans": "About the hosted plans",
+    "aboutHostedDescPrefix": "The hosted Starter and Pro tiers are not yet live. The open-source release is fully functional today — see",
+    "aboutHostedDescSuffix": "for the SaaS roadmap.",
+    "roadmap": "Roadmap",
+    "footerNote": "MIT licensed · Built with CDP",
     "faqTitle": "Frequently asked questions"
   },
   "auth": {
@@ -77,7 +115,8 @@
     "search": "Search…",
     "demoMode": "Demo",
     "demoModeTooltip": "Showing seed data — backend network requests are bypassed.",
-    "openCommandPalette": "Open command palette"
+    "openCommandPalette": "Open command palette",
+    "breadcrumb": "Breadcrumb"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -95,6 +134,7 @@
     "english": "English",
     "korean": "한국어",
     "loading": "Loading…",
+    "loadingShort": "Loading",
     "skipToMain": "Skip to main content",
     "copy": "Copy",
     "copied": "Copied",
@@ -548,7 +588,8 @@
     "roleDesigner": "Designer",
     "rolePm": "PM",
     "roleQa": "QA",
-    "roleOther": "Other"
+    "roleOther": "Other",
+    "total": "Total"
   },
   "activity": {
     "recentActivity": "Recent activity",
