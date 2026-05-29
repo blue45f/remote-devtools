@@ -655,7 +655,8 @@
     "rolePm": "PM",
     "roleQa": "QA",
     "roleOther": "Other",
-    "total": "Total"
+    "total": "Total",
+    "periodGroupLabel": "Period"
   },
   "activity": {
     "recentActivity": "Recent activity",

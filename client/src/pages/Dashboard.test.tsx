@@ -26,11 +26,11 @@ describe('Dashboard page', () => {
     const user = userEvent.setup();
     renderWithProviders(<Dashboard />);
 
-    const weekly = screen.getByRole('tab', { name: /Weekly/ });
-    expect(weekly).toHaveAttribute('aria-selected', 'false');
+    const weekly = screen.getByRole('button', { name: /Weekly/ });
+    expect(weekly).toHaveAttribute('aria-pressed', 'false');
 
     await user.click(weekly);
-    expect(weekly).toHaveAttribute('aria-selected', 'true');
+    expect(weekly).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('renders an activity feed section', async () => {
@@ -44,7 +44,7 @@ describe('Dashboard page', () => {
     const user = userEvent.setup();
     renderWithProviders(<Dashboard />);
 
-    await user.click(screen.getByRole('tab', { name: /Weekly/ }));
+    await user.click(screen.getByRole('button', { name: /Weekly/ }));
     await waitFor(() => {
       expect(localStorage.getItem('dashboard-prefs:v1')).toContain('"period":"week"');
     });
@@ -54,7 +54,7 @@ describe('Dashboard page', () => {
     localStorage.setItem('dashboard-prefs:v1', JSON.stringify({ period: 'month' }));
     renderWithProviders(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Monthly/, selected: true })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Monthly/, pressed: true })).toBeInTheDocument();
     });
   });
 

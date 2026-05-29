@@ -26,7 +26,6 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiFetch } from '@/lib/api';
 import { formatNumber } from '@/lib/format';
 import { useAppStore } from '@/lib/store';
@@ -176,16 +175,35 @@ export default function DashboardPage() {
             }}
           />
           <div className="scroll-rail -mx-1 px-1 sm:overflow-visible">
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <TabsList className="w-max">
-                {PERIODS.map((p) => (
-                  <TabsTrigger key={p.value} value={p.value} className="gap-1.5">
+            {/* Segmented control, not tabs: it filters the charts' period rather
+                than switching panels, so a labelled button group with
+                aria-pressed (no phantom aria-controls) is the valid pattern. */}
+            <div
+              role="group"
+              aria-label={t('dashboard.periodGroupLabel')}
+              className="inline-flex h-9 w-max items-center gap-1 rounded-md bg-bg-muted p-1 text-fg-subtle"
+            >
+              {PERIODS.map((p) => {
+                const active = period === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPeriod(p.value)}
+                    aria-pressed={active}
+                    className={cn(
+                      'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium',
+                      'transition-[color,background-color,box-shadow] duration-150',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg',
+                      active ? 'bg-surface text-fg shadow-xs' : 'hover:text-fg',
+                    )}
+                  >
                     <CalendarDays className="size-3.5" />
                     {t(p.labelKey)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
