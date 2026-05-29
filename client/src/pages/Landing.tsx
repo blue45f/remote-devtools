@@ -655,6 +655,7 @@ function ShortcutHints() {
 /* ───────── Footer ───────── */
 
 function SiteFooter() {
+  const { t } = useTranslation();
   return (
     <footer className="border-t border-border py-8">
       <div className="max-w-6xl mx-auto px-4 lg:px-6 flex flex-wrap items-center gap-4 text-xs text-fg-faint">
@@ -672,9 +673,9 @@ function SiteFooter() {
           rel="noreferrer"
           className="hover:text-fg-subtle"
         >
-          Docs
+          {t('landing.docs')}
         </a>
-        <span className="ml-auto">Built with Chrome DevTools Protocol</span>
+        <span className="ml-auto">{t('landing.builtWith')}</span>
       </div>
     </footer>
   );
