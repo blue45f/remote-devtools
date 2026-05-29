@@ -2325,11 +2325,11 @@ function SessionHeader({
           )
         ) : null}
 
-        {viewerCount > 0 && (
+        {viewerCount > 1 && (
           <span
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border bg-surface text-xs text-fg-subtle"
             data-testid="session-presence"
-            title={`${viewerCount} ${viewerCount === 1 ? 'person' : 'people'} viewing now`}
+            title={`${viewerCount} people viewing now (including you)`}
           >
             <Users className="size-3.5 text-success" />
             <span className="tabular-nums">{viewerCount}</span>
