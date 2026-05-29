@@ -8,6 +8,12 @@ import { resolve } from 'path';
 // + `reactCompilerPreset` (see the plugin README). To re-enable, install
 // `@rolldown/plugin-babel`, `@babel/core`, and `@types/babel__core`, then
 // `plugins: [react(), babel({ presets: [reactCompilerPreset()] }), …]`.
+// Proxy targets default to the standard dev ports but can be overridden
+// (e.g. `VITE_INTERNAL_PORT=3010 VITE_EXTERNAL_PORT=3011 pnpm dev`) to run
+// the client against an isolated backend instance on alternate ports.
+const internalTarget = `http://localhost:${process.env.VITE_INTERNAL_PORT ?? '3000'}`;
+const externalTarget = `http://localhost:${process.env.VITE_EXTERNAL_PORT ?? '3001'}`;
+
 export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -25,19 +31,19 @@ export default defineConfig(({ command }) => ({
       command === 'serve'
         ? {
             '/sdk': {
-              target: 'http://localhost:3001',
+              target: externalTarget,
               changeOrigin: true,
             },
             '/buffer': {
-              target: 'http://localhost:3001',
+              target: externalTarget,
               changeOrigin: true,
             },
             '/api': {
-              target: 'http://localhost:3000',
+              target: internalTarget,
               changeOrigin: true,
             },
             '/sessions': {
-              target: 'http://localhost:3000',
+              target: internalTarget,
               changeOrigin: true,
               // SPA route `/sessions/*` collides with the API path of the same
               // name. Skip the proxy when the browser is asking for HTML.
@@ -46,14 +52,14 @@ export default defineConfig(({ command }) => ({
               },
             },
             '/socket.io': {
-              target: 'http://localhost:3001',
+              target: externalTarget,
               ws: true,
               changeOrigin: true,
             },
             // Live-presence WebSocket on the internal app (separate ws path
             // from the DevTools gateway).
             '/ws/presence': {
-              target: 'http://localhost:3000',
+              target: internalTarget,
               ws: true,
               changeOrigin: true,
             },
