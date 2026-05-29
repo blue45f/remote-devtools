@@ -3841,7 +3841,7 @@ function OverviewTab({
         <EmptyState
           icon={Activity}
           title={t('sessionDetail.noEventsTitle')}
-          description="This session captured no replay events."
+          description={t('sessionDetail.noEventsDesc')}
         />
       </Card>
     );
@@ -4014,7 +4014,7 @@ function TimelineTab({
         <EmptyState
           icon={ListTree}
           title={t('sessionDetail.emptyTimelineTitle')}
-          description="No events were captured for this session."
+          description={t('sessionDetail.emptyTimelineDesc')}
         />
       </Card>
     );
@@ -4400,7 +4400,11 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
   if (events.length === 0) {
     return (
       <Card>
-        <EmptyState icon={FileJson} title={t('sessionDetail.noData')} />
+        <EmptyState
+          icon={FileJson}
+          title={t('sessionDetail.noData')}
+          description={t('sessionDetail.noDataDesc')}
+        />
       </Card>
     );
   }
