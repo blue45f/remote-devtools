@@ -2,11 +2,13 @@ import {
   BadRequestException,
   Controller,
   Get,
+  HttpStatus,
   Logger,
   NotFoundException,
   Query,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { BusinessException, ErrorCode } from '@remote-platform/common';
 import { Like, Repository } from 'typeorm';
 
 import {
@@ -133,7 +135,7 @@ export class WebviewController {
     });
 
     if (!record) {
-      throw new NotFoundException('녹화 세션을 찾을 수 없습니다');
+      throw new BusinessException(ErrorCode.SESSION_NOT_FOUND, undefined, HttpStatus.NOT_FOUND);
     }
 
     // DOM 데이터가 있는지 확인 (화면 렌더링용)
@@ -199,7 +201,9 @@ export class WebviewController {
     });
 
     if (!record) {
-      throw new NotFoundException(`녹화 세션 #${recordId}를 찾을 수 없습니다`);
+      throw new BusinessException(ErrorCode.SESSION_NOT_FOUND, undefined, HttpStatus.NOT_FOUND, {
+        recordId,
+      });
     }
 
     // ScreenPreview 데이터 가져오기 (실제 HTML)
