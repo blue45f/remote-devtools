@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 
 import { BusinessException, BusinessErrorResponse } from '../exceptions/business.exception';
 import { ErrorCode, ErrorMessages } from '../exceptions/error-codes.enum';
-import { resolveLang, getErrorMessage } from '../i18n';
+import { resolveLang, getErrorMessage, GenericMessages } from '../i18n';
 
 const getExceptionMessage = (exceptionResponse: unknown, fallback: string): string => {
   if (
@@ -132,10 +132,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const message =
           typeof exceptionResponse === 'string'
             ? exceptionResponse
-            : getExceptionMessage(
-                exceptionResponse,
-                'An error occurred while processing the request.',
-              );
+            : getExceptionMessage(exceptionResponse, GenericMessages[lang].request);
 
         errorResponse = {
           statusCode: status,
@@ -156,20 +153,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      const errorMessage =
-        exception instanceof Error ? exception.message : 'An unknown error occurred.';
+      // The raw message of an unexpected error may carry internals (stack
+      // fragments, DB/driver text); return a localized generic message to the
+      // client and keep the raw detail in the server log only.
+      const rawMessage = exception instanceof Error ? exception.message : String(exception);
 
       errorResponse = {
         statusCode: status,
         errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-        message: errorMessage,
+        message: GenericMessages[lang].internal,
         timestamp: new Date().toISOString(),
         path: request.url,
       };
 
       this.logger.error(
         `Unexpected Error: ${JSON.stringify({
-          message: errorMessage,
+          message: rawMessage,
           stack: exception instanceof Error ? exception.stack : undefined,
           path: request.url,
           method: request.method,
