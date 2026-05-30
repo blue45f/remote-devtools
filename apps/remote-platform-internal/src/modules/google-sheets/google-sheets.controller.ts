@@ -4,6 +4,7 @@ import {
   Logger,
   Query,
   BadRequestException,
+  HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -88,8 +89,9 @@ export class GoogleSheetsController {
       const time = Date.now() - timeStart;
       this.logger.error(`[ADMIN] TC sheet read failed (${time}ms):`, error);
 
-      // Re-throw NestJS exceptions as-is
-      if (error instanceof BadRequestException) {
+      // Re-throw NestJS HTTP exceptions (BadRequest, BusinessException, …) as-is
+      // so their status/errorCode survive instead of being flattened to 500.
+      if (error instanceof HttpException) {
         throw error;
       }
 

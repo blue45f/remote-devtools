@@ -1,6 +1,7 @@
 import https from 'https';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { BusinessException, ErrorCode } from '@remote-platform/common';
 import { GoogleAuth } from 'google-auth-library';
 import { google, sheets_v4 } from 'googleapis';
 
@@ -96,9 +97,11 @@ export class GoogleSheetsService {
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const serviceAccountPrivateKeyEncoded = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
     if (!serviceAccountEmail || !serviceAccountPrivateKeyEncoded) {
-      throw new Error(
+      throw new BusinessException(
+        ErrorCode.SHEETS_CONNECTION_FAILED,
         'Google service account credentials are not configured. ' +
           'Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables.',
+        HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
 
