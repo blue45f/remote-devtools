@@ -98,7 +98,10 @@ describe('AllExceptionsFilter', () => {
 
       expect(getResponseStatus(host)).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const json = getResponseJson(host);
-      expect(json.message).toBe('Something broke');
+      // The raw error message must not leak to the client; a localized generic
+      // message is returned instead (Korean by default).
+      expect(json.message).toBe('내부 서버 오류가 발생했습니다.');
+      expect(json.message).not.toBe('Something broke');
       expect(json.errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR);
     });
 
@@ -109,7 +112,7 @@ describe('AllExceptionsFilter', () => {
 
       expect(getResponseStatus(host)).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const json = getResponseJson(host);
-      expect(json.message).toBe('An unknown error occurred.');
+      expect(json.message).toBe('내부 서버 오류가 발생했습니다.');
     });
   });
 
