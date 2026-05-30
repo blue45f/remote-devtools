@@ -724,7 +724,9 @@ export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
         message: 'Buffer mode activated successfully',
       });
     } catch (error) {
-      this.logger.error(`[ENABLE_BUFFERING_ERROR] ${error}`);
+      this.logger.error(
+        `[ENABLE_BUFFERING_ERROR] ${error instanceof Error ? error.message : String(error)}`,
+      );
       this.sendMessage(client, {
         event: 'error',
         message: 'Failed to enable buffer mode',
@@ -1151,7 +1153,9 @@ export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
           this.visibilityExitSavedRooms,
         );
       } catch (error) {
-        this.logger.error(`[DISCONNECT_FLUSH_ERROR] ${(error as Error).message}`);
+        this.logger.error(
+          `[DISCONNECT_FLUSH_ERROR] ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
   }
