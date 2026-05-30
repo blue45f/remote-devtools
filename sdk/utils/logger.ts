@@ -74,11 +74,15 @@ class Logger {
   constructor() {
     // 개발 모드에서만 debug 로그 표시
     if (typeof window !== 'undefined') {
-      // localStorage에서 설정 읽기
-      const savedLevel = localStorage.getItem('REMOTE_DEBUG_LOG_LEVEL');
-      if (savedLevel) {
-        this.config.level = savedLevel as LogLevel;
-        this.config.showDebug = savedLevel === 'debug';
+      // localStorage에서 설정 읽기 (sandboxed iframe / 프라이버시 모드에서는 접근 자체가 throw할 수 있음)
+      try {
+        const savedLevel = localStorage.getItem('REMOTE_DEBUG_LOG_LEVEL');
+        if (savedLevel) {
+          this.config.level = savedLevel as LogLevel;
+          this.config.showDebug = savedLevel === 'debug';
+        }
+      } catch {
+        // localStorage 접근 불가 — 기본 설정 유지
       }
 
       // 개발 환경 감지
@@ -97,7 +101,11 @@ class Logger {
     this.config.level = level;
     this.config.showDebug = level === 'debug';
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('REMOTE_DEBUG_LOG_LEVEL', level);
+      try {
+        localStorage.setItem('REMOTE_DEBUG_LOG_LEVEL', level);
+      } catch {
+        // localStorage 쓰기 불가 (용량 초과/차단) — 무시
+      }
     }
   }
 
@@ -128,28 +136,32 @@ class Logger {
     // 레벨 표시 (warn, error만)
     const levelPrefix = '';
 
-    // 콘솔 메서드 선택
-    const consoleMethod =
-      level === 'error'
-        ? window.console.error.bind(window.console)
-        : level === 'warn'
-          ? window.console.warn.bind(window.console)
-          : window.console.log.bind(window.console);
+    // 콘솔 출력은 호스트 페이지가 console을 덮어쓰거나 throw하도록 패치했을 수 있으므로
+    // 절대 호스트로 예외가 전파되지 않도록 전체를 감싼다.
+    try {
+      const consoleMethod =
+        level === 'error'
+          ? window.console.error.bind(window.console)
+          : level === 'warn'
+            ? window.console.warn.bind(window.console)
+            : window.console.log.bind(window.console);
 
-    // 출력
-    if (args.length > 0) {
-      consoleMethod(
-        `%c${category}%c ${levelPrefix}${message}\n`,
-        categoryStyle,
-        `color: ${level === 'error' ? LEVEL_COLORS.error : 'inherit'}`,
-        ...args,
-      );
-    } else {
-      consoleMethod(
-        `%c${category}%c ${levelPrefix}${message}\n`,
-        categoryStyle,
-        `color: ${level === 'error' ? LEVEL_COLORS.error : 'inherit'}`,
-      );
+      if (args.length > 0) {
+        consoleMethod(
+          `%c${category}%c ${levelPrefix}${message}\n`,
+          categoryStyle,
+          `color: ${level === 'error' ? LEVEL_COLORS.error : 'inherit'}`,
+          ...args,
+        );
+      } else {
+        consoleMethod(
+          `%c${category}%c ${levelPrefix}${message}\n`,
+          categoryStyle,
+          `color: ${level === 'error' ? LEVEL_COLORS.error : 'inherit'}`,
+        );
+      }
+    } catch {
+      // 호스트의 console이 비정상 — 로깅 실패는 조용히 무시
     }
   }
 
@@ -215,8 +227,8 @@ class Logger {
 // 싱글톤 인스턴스
 export const logger = new Logger();
 
-// 전역에서 디버그 모드 활성화할 수 있도록
-if (typeof window !== 'undefined') {
+// 전역에서 디버그 모드 활성화할 수 있도록 (호스트의 동명 전역과 충돌 시 덮어쓰지 않음)
+if (typeof window !== 'undefined' && !window.remoteDebugLogger) {
   window.remoteDebugLogger = {
     setLevel: (level: LogLevel) => logger.setLevel(level),
     enable: () => logger.setEnabled(true),
