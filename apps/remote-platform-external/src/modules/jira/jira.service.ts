@@ -429,7 +429,7 @@ export class JiraService {
    */
   public async uploadImageToJira(issueId: string, file: UploadedFile): Promise<unknown> {
     if (!/^[A-Z]+-\d+$/.test(issueId)) {
-      throw new Error(`Invalid issueId format: ${issueId}`);
+      throw BusinessException.validationFailed('Invalid Jira issueId format');
     }
 
     const formData = new FormData();

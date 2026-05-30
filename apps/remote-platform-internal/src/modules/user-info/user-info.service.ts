@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { BusinessException, ErrorCode } from '@remote-platform/common';
 import { AssigneeInfo, DeviceInfoEntity } from '@remote-platform/entity';
 
 /** User information compatible with the legacy UserInfo interface */
@@ -114,7 +115,11 @@ export class UserInfoService {
 
       if (!device || !device.user) {
         this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
-        throw new Error('User information not found.');
+        throw new BusinessException(
+          ErrorCode.AUTH_USER_NOT_FOUND,
+          'User information not found.',
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const user = device.user;
@@ -143,7 +148,11 @@ export class UserInfoService {
 
       if (!template) {
         this.logger.warn(`[UserInfo] No ticket template found for device: ${deviceId}`);
-        throw new Error('No ticket template found.');
+        throw new BusinessException(
+          ErrorCode.TEMPLATE_NOT_FOUND,
+          'No ticket template found.',
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const result = this.buildStructuredSheetData(template);
@@ -187,7 +196,11 @@ export class UserInfoService {
 
       if (!device || !device.user) {
         this.logger.warn(`[UserInfo] User not found for device: ${deviceId}`);
-        throw new Error('User information not found.');
+        throw new BusinessException(
+          ErrorCode.AUTH_USER_NOT_FOUND,
+          'User information not found.',
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const user = device.user;
@@ -196,7 +209,7 @@ export class UserInfoService {
 
       if (!template) {
         this.logger.warn(`[UserInfo] Template not found: ${templateName}`);
-        throw new Error(`Template '${templateName}' not found.`);
+        throw BusinessException.templateNotFound(templateName);
       }
 
       const result = this.buildStructuredSheetData(template);
