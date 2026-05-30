@@ -404,7 +404,11 @@ export class UserProfileService {
       })),
     };
 
-    this.logger.debug(`Create DTO prepared: ${JSON.stringify(createDto, null, 2)}`);
+    // Avoid dumping the full DTO (carries slackId / assignee info); log only
+    // non-sensitive shape for debugging.
+    this.logger.debug(
+      `Create DTO prepared: empNo=${createDto.empNo}, templates=${createDto.ticketTemplateList.length}, devices=${createDto.deviceInfoList.length}`,
+    );
 
     let newUser: UserProfileResponseDto;
     try {
