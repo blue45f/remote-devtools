@@ -50,7 +50,7 @@ export class TicketFormController {
    */
   private getActualDeviceId(deviceId: string): string {
     if (!deviceId || deviceId === 'test') {
-      this.logger.log(`Using LOCAL_DEVICE_ID: ${process.env.LOCAL_DEVICE_ID}`);
+      this.logger.debug('Using LOCAL_DEVICE_ID fallback for device resolution');
       return process.env.LOCAL_DEVICE_ID || 'OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1';
     }
 
