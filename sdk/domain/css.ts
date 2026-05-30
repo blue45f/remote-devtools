@@ -540,7 +540,7 @@ export class CSS extends BaseDomain {
           styleSheet.ownerNode.nextSibling,
         );
       }
-      styleSheet.devToolsOverrideStyle.innerHTML = styleContent;
+      styleSheet.devToolsOverrideStyle.textContent = styleContent;
     }
   }
 
