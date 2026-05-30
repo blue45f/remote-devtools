@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BusinessException, ErrorCode } from '@remote-platform/common';
 
 import { convertRecordLink, createUserDataText } from '../../utils/utils';
 import { CreateTicketRequestBody } from '../jira/jira.service';
@@ -209,7 +210,10 @@ export class SlackService {
           timestamp: new Date().toISOString(),
         })}`,
       );
-      throw new Error('SLACK_BOT_TOKEN environment variable is not set');
+      throw BusinessException.slackError(
+        ErrorCode.SLACK_CONNECTION_FAILED,
+        'SLACK_BOT_TOKEN environment variable is not set',
+      );
     }
 
     try {
@@ -246,7 +250,10 @@ export class SlackService {
             httpStatusText: response.statusText,
           })}`,
         );
-        throw new Error(`Slack API error: ${result.error}`);
+        throw BusinessException.slackError(
+          ErrorCode.SLACK_MESSAGE_SEND_FAILED,
+          `Slack API error: ${result.error}`,
+        );
       }
 
       this.logger.log(

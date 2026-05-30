@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { BusinessException, ErrorCode } from '@remote-platform/common';
 import axios, { AxiosInstance } from 'axios';
 import FormData from 'form-data';
 
@@ -179,7 +180,10 @@ export class JiraService {
       );
 
       if (!userInfo?.jiraProjectKey) {
-        throw new Error('Ticket creation failed: Jira project key is not configured');
+        throw BusinessException.jiraError(
+          ErrorCode.JIRA_INVALID_PROJECT,
+          'Ticket creation failed: Jira project key is not configured',
+        );
       }
 
       const requestBody: CreateTicketRequestBody = {
@@ -285,9 +289,10 @@ export class JiraService {
 
       this.logger.error(`[JIRA_API_ERROR] ${JSON.stringify(errorData)}`);
 
-      throw new Error(`Jira ticket creation failed: ${errorMessage}`, {
-        cause: error,
-      });
+      throw BusinessException.jiraError(
+        ErrorCode.JIRA_TICKET_CREATION_FAILED,
+        `Jira ticket creation failed: ${errorMessage}`,
+      );
     }
   }
 
