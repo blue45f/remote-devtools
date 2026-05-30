@@ -2271,6 +2271,13 @@ function TagsEditor({
             }}
             onFocus={() => setShowSuggest(true)}
             onBlur={() => setShowSuggest(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && showSuggest) {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowSuggest(false);
+              }
+            }}
             maxLength={MAX_TAG_LENGTH}
             placeholder={t('sessionDetail.addTagPlaceholder')}
             aria-label={t('sessionDetail.addTag')}
@@ -2475,6 +2482,8 @@ function SessionHeader({
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border bg-surface text-xs text-fg-subtle"
             data-testid="session-presence"
             title={t('sessionDetail.viewersTitle', { n: viewerCount })}
+            aria-live="polite"
+            aria-atomic="true"
           >
             <Users className="size-3.5 text-success" />
             <span className="tabular-nums">{viewerCount}</span>
@@ -3112,7 +3121,7 @@ function CommentsPanel({
             : t('sessionDetail.allCommentsResolved')}
         </p>
       ) : (
-        <ol className="space-y-2 mb-3">
+        <ol className="space-y-2 mb-3" aria-live="polite" aria-relevant="additions removals">
           {visibleComments.map((c) => (
             <CommentRow
               key={c.id}
@@ -4032,6 +4041,10 @@ function TimelineTab({
           requestAnimationFrame(() => {
             const el = document.querySelector<HTMLElement>(`[data-timeline-row="${clamped}"]`);
             el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            // Move real DOM focus with the cursor (roving tabindex) so screen
+            // readers announce the row; preventScroll avoids fighting the
+            // smooth scroll above.
+            el?.focus({ preventScroll: true });
           });
           return clamped;
         });
@@ -4302,6 +4315,11 @@ function VirtualEventList({
     );
   }
 
+  // Roving tabindex: only the cursor row is in the Tab order so keyboard focus
+  // and the visual cursor stay aligned. Before any j/k move (cursor < 0 or
+  // unset) the first row is the tab stop.
+  const rovingIdx = cursorIdx !== undefined && cursorIdx >= 0 ? cursorIdx : 0;
+
   return (
     <div
       ref={parentRef}
@@ -4328,6 +4346,7 @@ function VirtualEventList({
                 type="button"
                 onClick={() => onJumpToReplay(offsetMs)}
                 data-timeline-row={virtualRow.index}
+                tabIndex={virtualRow.index === rovingIdx ? 0 : -1}
                 className={cn(
                   'group flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-bg-muted/50 focus-visible:bg-bg-muted/50 focus-visible:outline-none transition-colors',
                   cursorIdx === virtualRow.index && 'bg-accent-soft/40',

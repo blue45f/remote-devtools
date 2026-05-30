@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import { CommandPalette } from '@/components/CommandPalette';
@@ -16,8 +17,37 @@ export default function Layout() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const location = useLocation();
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useGlobalShortcuts();
+
+  // The mobile drawer is a hand-rolled overlay (not Radix), so manage focus
+  // like a modal: capture the trigger and move focus inside on open, restore
+  // focus to the trigger on close.
+  useEffect(() => {
+    if (sidebarOpen) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+      drawerRef.current
+        ?.querySelector<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )
+        ?.focus();
+    } else {
+      triggerRef.current?.focus();
+      triggerRef.current = null;
+    }
+  }, [sidebarOpen]);
+
+  // Escape closes the drawer (standard overlay affordance).
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [sidebarOpen, setSidebarOpen]);
 
   return (
     <TooltipProvider delayDuration={250} skipDelayDuration={400}>
@@ -46,6 +76,7 @@ export default function Layout() {
         {/* Sidebar (mobile drawer) — picks up safe-area top inset and is
             slightly wider than the desktop rail for thumb-friendly nav. */}
         <aside
+          ref={drawerRef}
           className={cn(
             'fixed inset-y-0 left-0 z-50 lg:hidden',
             'w-[280px] max-w-[85vw] safe-pt',
