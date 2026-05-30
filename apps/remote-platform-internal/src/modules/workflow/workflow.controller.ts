@@ -53,6 +53,12 @@ export class WorkflowController {
       throw new BadRequestException('An image file is required');
     }
 
+    // issueId is interpolated into the Jira REST path below; constrain it to
+    // the Jira key shape (e.g. PROJ-123) so it can't smuggle path segments.
+    if (!/^[A-Z][A-Z0-9]*-\d+$/.test(issueId)) {
+      throw new BadRequestException('Invalid Jira issue key');
+    }
+
     const email = process.env.JIRA_API_EMAIL;
     const token = process.env.JIRA_API_TOKEN;
 
