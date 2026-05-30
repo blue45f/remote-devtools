@@ -47,3 +47,15 @@ export function isMatches(element: Element, selector: string): boolean {
 export function escapeRegString(string: string): string {
   return string.replace(/[\\$*+?.^|(){}[\]]/g, '\\$&');
 }
+
+/**
+ * Escape HTML-significant characters so host-page / network-supplied values
+ * can be safely interpolated into an innerHTML template string without
+ * injecting markup into the host page.
+ */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] as string,
+  );
+}

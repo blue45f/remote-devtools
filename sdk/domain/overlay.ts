@@ -1,6 +1,6 @@
 import { DEVTOOL_OVERLAY } from '../common/constant';
 import nodes from '../common/nodes';
-import { isElement } from '../common/utils';
+import { escapeHtml, isElement } from '../common/utils';
 
 import { BaseDomain } from './base';
 import { Events } from './protocol';
@@ -275,7 +275,7 @@ export class Overlay extends BaseDomain {
     if (tooltipsBox) {
       tooltipsBox.innerHTML = `
       <span class="${cls}" style="color:#973090;font-weight:bold">${node.nodeName.toLowerCase()}</span>
-      <span class="${cls}" style="color:#3434B0;font-weight:bold">${currentClassName ? `.${currentClassName}` : ''}</span>
+      <span class="${cls}" style="color:#3434B0;font-weight:bold">${currentClassName ? `.${escapeHtml(currentClassName)}` : ''}</span>
       <span class="${cls}" style="position:absolute;top:${isTopPosition ? 'auto' : '-4px'};bottom:${isTopPosition ? '-4px' : 'auto'};left:10px;width:8px;height:8px;background:#fff;transform:rotate(45deg);"></span>
       ${Overlay.formatNumber(contentWidth)} x ${Overlay.formatNumber(contentHeight)}
     `;
