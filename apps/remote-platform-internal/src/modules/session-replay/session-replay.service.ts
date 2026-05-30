@@ -306,7 +306,7 @@ export class SessionReplayService {
         // the backup directory tree.
         const backupDirWithSep = backupDir.endsWith(path.sep) ? backupDir : backupDir + path.sep;
         if (fullPath !== backupDir && !fullPath.startsWith(backupDirWithSep)) {
-          throw new BadRequestException(`Invalid s3FilePath (escapes backup dir): ${s3FilePath}`);
+          throw new BadRequestException('Invalid s3FilePath (path escapes the backup directory)');
         }
 
         if (!fs.existsSync(fullPath)) {
