@@ -398,7 +398,8 @@ export async function loadTicketFormDataFromAPI({
     );
 
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    loadingDiv.innerHTML = `Error: ${errorMessage}`;
+    // textContent (not innerHTML): an error message may contain markup.
+    loadingDiv.textContent = `Error: ${errorMessage}`;
     loadingDiv.style.color = '#f87171';
     submitButton.style.display = 'none';
     cancelButton.textContent = 'OK';
