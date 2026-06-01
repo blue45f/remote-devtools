@@ -78,6 +78,10 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
+// 캡처 모드의 활성 selectionchange 핸들러 (start-capture-mode 재진입 시
+// 이전 핸들러가 남아 중복 캡처/업로드되는 것을 방지하기 위해 추적한다).
+let activeCaptureSelectionHandler: (() => void) | null = null;
+
 // 이미지를 캔버스에 추가하는 함수
 async function addImageToCanvas(imageUrl: string, sessionName: string) {
   try {
@@ -516,7 +520,12 @@ figma.ui.onmessage = (msg: PluginMessage) => {
           setTimeout(() => {
             if (figma.currentPage.selection.length === newSelection.length) {
               figma.off('selectionchange', selectionHandler);
-              void captureAndUploadToJira(issueId);
+              if (activeCaptureSelectionHandler === selectionHandler) {
+                activeCaptureSelectionHandler = null;
+              }
+              captureAndUploadToJira(issueId).catch((err) => {
+                console.error('[capture] captureAndUploadToJira failed:', err);
+              });
 
               // UI에 캡처 완료 알림
               figma.ui.postMessage({
@@ -531,12 +540,19 @@ figma.ui.onmessage = (msg: PluginMessage) => {
         }
       };
 
-      // 선택 변경 이벤트 리스너 등록
+      // 재진입 시 이전 핸들러 제거 후 등록 (중복 캡처 방지)
+      if (activeCaptureSelectionHandler) {
+        figma.off('selectionchange', activeCaptureSelectionHandler);
+      }
+      activeCaptureSelectionHandler = selectionHandler;
       figma.on('selectionchange', selectionHandler);
 
       // 30초 후 자동으로 리스너 제거 (타임아웃)
       setTimeout(() => {
         figma.off('selectionchange', selectionHandler);
+        if (activeCaptureSelectionHandler === selectionHandler) {
+          activeCaptureSelectionHandler = null;
+        }
         figma.notify('⏱️ 캡처 모드가 시간 초과로 종료되었습니다', { timeout: 3000 });
       }, 30000);
 
