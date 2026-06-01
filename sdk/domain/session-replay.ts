@@ -1,6 +1,8 @@
 import type { eventWithTime } from '@rrweb/types';
 import * as rrweb from 'rrweb';
 
+import { logger } from '../utils/logger';
+
 import { BaseDomain } from './base';
 
 type MutableEventData = Record<string, unknown> & {
@@ -109,7 +111,7 @@ export class SessionReplay extends BaseDomain {
 
           // 메모리 관리: 버퍼 크기 제한
           if (this.eventBuffer.length > 2000) {
-            console.warn('[RemoteDebug-SDK][SessionReplay] 버퍼 크기 초과, 오래된 이벤트 삭제');
+            logger.remote.warn('[SessionReplay] 버퍼 크기 초과, 오래된 이벤트 삭제');
             this.eventBuffer = this.eventBuffer.slice(-1500);
           }
         } else {
@@ -132,7 +134,7 @@ export class SessionReplay extends BaseDomain {
 
       // 에러 핸들링 추가
       errorHandler: (error: Error) => {
-        console.warn('[RemoteDebug-SDK][SessionReplay] rrweb 내부 오류 발생:', error.message);
+        logger.remote.warn('[SessionReplay] rrweb 내부 오류 발생:', error.message);
         // scrollLeft/scrollTop 관련 오류는 무시 (일시적인 DOM 상태)
         if (error.message?.includes('scrollLeft') || error.message?.includes('scrollTop')) {
           return true; // 오류 무시하고 계속 진행
@@ -265,7 +267,7 @@ export class SessionReplay extends BaseDomain {
         }
       })
       .catch((err) => {
-        console.error('[RemoteDebug-SDK][SessionReplay] 버퍼 전송 중 오류:', err);
+        logger.remote.error('[SessionReplay] 버퍼 전송 중 오류:', err);
       });
   }
 
@@ -341,7 +343,7 @@ export class SessionReplay extends BaseDomain {
         get: function () {
           // documentElement이 없는 경우를 대비한 안전장치
           if (!document.documentElement) {
-            console.warn('[RemoteDebug-SDK][SessionReplay] document.documentElement is null');
+            logger.remote.warn('[SessionReplay] document.documentElement is null');
             return document.body || null;
           }
 

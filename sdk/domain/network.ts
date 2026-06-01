@@ -278,6 +278,11 @@ export class Network extends BaseDomain {
   public disable(): void {
     this.enabled = false;
     // 캐시와 응답 데이터는 유지 (재연결 시 전송할 수 있도록)
+    // 단, document.body를 감시하던 이미지 옵저버는 해제한다 (재연결 시 다시 생성됨).
+    if (this.imageObserver) {
+      this.imageObserver.disconnect();
+      this.imageObserver = null;
+    }
   }
 
   /**
@@ -983,14 +988,16 @@ export class Network extends BaseDomain {
     };
 
     const observerBodyMutation = () => {
-      const observer = new MutationObserver(() => {
+      // enable()이 반복 호출(룸 전환)될 때 옵저버가 누적되지 않도록 기존 것을 먼저 해제.
+      if (this.imageObserver) this.imageObserver.disconnect();
+      this.imageObserver = new MutationObserver(() => {
         const urls = getImageUrls();
         if (urls.length) {
           reportNetwork(urls);
         }
       });
 
-      observer.observe(document.body, {
+      this.imageObserver.observe(document.body, {
         childList: true,
         subtree: true,
       });
@@ -1068,4 +1075,5 @@ export class Network extends BaseDomain {
   private enabled = false;
   private cacheRequest: ProtocolMessage[] = [];
   private requestId = 0;
+  private imageObserver: MutationObserver | null = null;
 }

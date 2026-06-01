@@ -117,8 +117,17 @@ export function createGuideModal(onClose: () => void) {
 
   footer.appendChild(confirmButton);
 
-  // Event handlers
+  // Event handlers. The Escape handler is declared first so handleClose can
+  // always remove it, regardless of how the modal is dismissed (button /
+  // overlay click / Escape) — otherwise it leaks on the host document.
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleClose();
+    }
+  };
+
   const handleClose = () => {
+    document.removeEventListener('keydown', handleEsc);
     if (overlay.parentElement) {
       overlay.parentElement.removeChild(overlay);
     }
@@ -134,12 +143,6 @@ export function createGuideModal(onClose: () => void) {
     }
   });
 
-  const handleEsc = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleClose();
-      document.removeEventListener('keydown', handleEsc);
-    }
-  };
   document.addEventListener('keydown', handleEsc);
 
   modal.appendChild(header);
