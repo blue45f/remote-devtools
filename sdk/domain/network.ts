@@ -619,210 +619,223 @@ export class Network extends BaseDomain {
 
     const instance = this;
     window.fetch = function (request, initConfig = {}) {
-      let url;
-      let method;
-      let data: BodyInit | null | undefined;
-      let finalInitConfig = initConfig; // 최종적으로 사용할 config
+      // Instrumentation must NEVER break the host page's fetch. If anything in
+      // the synchronous setup (URL parse, rewrite, socket send) throws, fall
+      // through to the original fetch with the caller's original arguments.
+      try {
+        let url;
+        let method;
+        let data: BodyInit | null | undefined;
+        let finalInitConfig = initConfig; // 최종적으로 사용할 config
 
-      // When request is a string, it is the requested url
-      if (typeof request === 'string' || request instanceof URL) {
-        url = request;
-        method = (initConfig.method || 'GET').toUpperCase();
-        data = initConfig.body;
-      } else {
-        // Otherwise it is a Request object
-        ({ url, method } = request);
-        method = (method || 'GET').toUpperCase();
-      }
+        // When request is a string, it is the requested url
+        if (typeof request === 'string' || request instanceof URL) {
+          url = request;
+          method = (initConfig.method || 'GET').toUpperCase();
+          data = initConfig.body;
+        } else {
+          // Otherwise it is a Request object
+          ({ url, method } = request);
+          method = (method || 'GET').toUpperCase();
+        }
 
-      url = getAbsolutePath(url);
+        url = getAbsolutePath(url);
 
-      // Rewrite 규칙 체크
-      if (NetworkRewrite.isEnabled()) {
-        const normalizedMethod = (method || 'GET').toUpperCase();
-        const rewriteRule = NetworkRewrite.getRule(normalizedMethod, url);
+        // Rewrite 규칙 체크
+        if (NetworkRewrite.isEnabled()) {
+          const normalizedMethod = (method || 'GET').toUpperCase();
+          const rewriteRule = NetworkRewrite.getRule(normalizedMethod, url);
 
-        if (rewriteRule) {
-          // 요청 변조 처리
-          let modifiedUrl = url;
-          let modifiedData = data;
+          if (rewriteRule) {
+            // 요청 변조 처리
+            let modifiedUrl = url;
+            let modifiedData = data;
 
-          // Query String 변조
-          if (rewriteRule.queryString !== undefined) {
-            const baseUrl = url.split('?')[0];
-            modifiedUrl = baseUrl + rewriteRule.queryString;
-            logger.rewrite.debug(`[Fetch Request] Query String 변조: ${rewriteRule.queryString}`);
-          }
+            // Query String 변조
+            if (rewriteRule.queryString !== undefined) {
+              const baseUrl = url.split('?')[0];
+              modifiedUrl = baseUrl + rewriteRule.queryString;
+              logger.rewrite.debug(`[Fetch Request] Query String 변조: ${rewriteRule.queryString}`);
+            }
 
-          // Request Body 변조
-          if (rewriteRule.requestBody !== undefined) {
-            modifiedData =
-              typeof rewriteRule.requestBody === 'string'
-                ? rewriteRule.requestBody
-                : JSON.stringify(rewriteRule.requestBody);
-            // initConfig 업데이트
-            finalInitConfig = { ...initConfig, body: modifiedData };
-            logger.rewrite.debug(`[Fetch Request] Body 변조: ${modifiedData}`);
-          }
+            // Request Body 변조
+            if (rewriteRule.requestBody !== undefined) {
+              modifiedData =
+                typeof rewriteRule.requestBody === 'string'
+                  ? rewriteRule.requestBody
+                  : JSON.stringify(rewriteRule.requestBody);
+              // initConfig 업데이트
+              finalInitConfig = { ...initConfig, body: modifiedData };
+              logger.rewrite.debug(`[Fetch Request] Body 변조: ${modifiedData}`);
+            }
 
-          // 응답도 변조하는 경우
-          if (rewriteRule.response !== undefined) {
-            // NetworkRewrite 모듈의 Fetch 응답 생성 메서드 사용
-            const rewriteResponse = NetworkRewrite.createFetchRewriteResponse(
-              rewriteRule,
-              modifiedUrl,
-              normalizedMethod,
-            );
-            return Promise.resolve(rewriteResponse);
-          }
+            // 응답도 변조하는 경우
+            if (rewriteRule.response !== undefined) {
+              // NetworkRewrite 모듈의 Fetch 응답 생성 메서드 사용
+              const rewriteResponse = NetworkRewrite.createFetchRewriteResponse(
+                rewriteRule,
+                modifiedUrl,
+                normalizedMethod,
+              );
+              return Promise.resolve(rewriteResponse);
+            }
 
-          // 요청만 변조하고 실제 요청 전송
-          if (rewriteRule.queryString !== undefined || rewriteRule.requestBody !== undefined) {
-            url = modifiedUrl;
-            data = modifiedData;
+            // 요청만 변조하고 실제 요청 전송
+            if (rewriteRule.queryString !== undefined || rewriteRule.requestBody !== undefined) {
+              url = modifiedUrl;
+              data = modifiedData;
 
-            // Request 객체인 경우 새로 생성
-            if (typeof request !== 'string' && !(request instanceof URL)) {
-              request = new Request(modifiedUrl, {
-                ...request,
-                body: modifiedData,
-              });
-            } else {
-              request = modifiedUrl;
+              // Request 객체인 경우 새로 생성
+              if (typeof request !== 'string' && !(request instanceof URL)) {
+                request = new Request(modifiedUrl, {
+                  ...request,
+                  body: modifiedData,
+                });
+              } else {
+                request = modifiedUrl;
+              }
             }
           }
         }
-      }
-      const requestId = instance.getRequestId();
-      const sendRequest = new Map<string, unknown>();
+        const requestId = instance.getRequestId();
+        const sendRequest = new Map<string, unknown>();
 
-      sendRequest.set('url', url);
-      sendRequest.set('method', method);
-      sendRequest.set('requestId', requestId);
-      sendRequest.set('headers', Network.getDefaultHeaders());
+        sendRequest.set('url', url);
+        sendRequest.set('method', method);
+        sendRequest.set('requestId', requestId);
+        sendRequest.set('headers', Network.getDefaultHeaders());
 
-      if (method.toLowerCase() === 'post') {
-        sendRequest.set('postData', data);
-        sendRequest.set('hasPostData', !!data);
-      }
+        if (method.toLowerCase() === 'post') {
+          sendRequest.set('postData', data);
+          sendRequest.set('hasPostData', !!data);
+        }
 
-      instance.socketSend({
-        method: Events.requestWillBeSent,
-        params: {
-          requestId,
-          documentURL: location.href,
-          timestamp: getTimestamp(),
-          wallTime: Date.now(),
-          type: getResourceType(url, null, false), // URL 기반으로 추정, XHR = false
-          request: Object.fromEntries(sendRequest),
-        },
-      });
-
-      let oriResponse: Response;
-
-      // 전역 원본 fetch 사용
-      if (!originalFetch) {
-        return Promise.reject(new Error('[Network] Original fetch is not initialized'));
-      }
-
-      return originalFetch(request, finalInitConfig)
-        .then((response) => {
-          // Temporarily save the raw response to the request
-          oriResponse = response;
-
-          const { headers, status, statusText } = response;
-          const responseHeaders = new Map();
-          let headersText = '';
-          headers.forEach((val, key) => {
-            key = key2UpperCase(key);
-            responseHeaders.set(key, val);
-            headersText += `${key}: ${val}\r\n`;
-          });
-
-          instance.sendNetworkEvent({
-            url,
+        instance.socketSend({
+          method: Events.requestWillBeSent,
+          params: {
             requestId,
-            status,
-            statusText,
-            headersText,
-            type: 'Fetch',
-            blockedCookies: [],
-            headers: Object.fromEntries(responseHeaders),
-            encodedDataLength: Number(headers.get('Content-Length')),
-          });
-
-          const contentType = headers.get('Content-Type');
-          if (
-            [
-              'application/json',
-              'application/javascript',
-              'text/plain',
-              'text/html',
-              'text/css',
-            ].some((type) => contentType?.includes(type))
-          ) {
-            return response.clone().text();
-          }
-          return '';
-        })
-        .then((responseBody) => {
-          // JSON을 minified 형태로 저장 (DevTools pretty print 지원)
-          let processedBody = responseBody;
-          if (typeof responseBody === 'string') {
-            try {
-              const parsed = JSON.parse(responseBody);
-              processedBody = JSON.stringify(parsed); // minified
-            } catch {
-              // JSON이 아닌 경우 원본 유지
-            }
-          }
-
-          // 완전한 요청/응답 정보 저장
-          instance.handleResponseData(requestId, {
-            url,
-            method,
-            status: oriResponse.status,
-            statusText: oriResponse.statusText,
-            responseBody: processedBody,
-            requestBody:
-              method.toLowerCase() === 'post' ||
-              method.toLowerCase() === 'put' ||
-              method.toLowerCase() === 'patch'
-                ? data
-                : undefined,
-            timestamp: Date.now(),
-            type: 'Fetch',
-          });
-          // Returns the raw response to the request
-          return oriResponse;
-        })
-        .catch((error) => {
-          const status = error.status || 500; // error 객체에서 상태 코드 추출 (없으면 기본값 500)
-          const statusText = error.statusText || 'Fetch Error'; // error 객체에서 상태 텍스트 추출 (없으면 기본값)
-          const message = error.message || 'An unknown error occurred'; // 에러 메시지
-          const stack = error.stack || ''; // 에러 스택 트레이스 (옵션)
-          const errorDetails = `Message: ${message}\nStack: ${stack}`;
-
-          instance.sendNetworkEvent({
-            url,
-            requestId,
-            status,
-            statusText,
-            headersText: `Content-Type: text/plain\r\n${errorDetails}`, // 에러 메시지 포함
-            type: 'Fetch',
-            blockedCookies: [],
-            headers: { 'Content-Type': 'text/plain' }, // 기본 헤더
-            encodedDataLength: 0, // 실패 시 데이터 길이는 0
-          });
-
-          instance.sendNetworkEvent({
-            url,
-            requestId,
-            blockedCookies: [],
-            type: 'Fetch',
-          });
-          throw error;
+            documentURL: location.href,
+            timestamp: getTimestamp(),
+            wallTime: Date.now(),
+            type: getResourceType(url, null, false), // URL 기반으로 추정, XHR = false
+            request: Object.fromEntries(sendRequest),
+          },
         });
+
+        let oriResponse: Response;
+
+        // 전역 원본 fetch 사용
+        if (!originalFetch) {
+          return Promise.reject(new Error('[Network] Original fetch is not initialized'));
+        }
+
+        return originalFetch(request, finalInitConfig)
+          .then((response) => {
+            // Temporarily save the raw response to the request
+            oriResponse = response;
+
+            const { headers, status, statusText } = response;
+            const responseHeaders = new Map();
+            let headersText = '';
+            headers.forEach((val, key) => {
+              key = key2UpperCase(key);
+              responseHeaders.set(key, val);
+              headersText += `${key}: ${val}\r\n`;
+            });
+
+            instance.sendNetworkEvent({
+              url,
+              requestId,
+              status,
+              statusText,
+              headersText,
+              type: 'Fetch',
+              blockedCookies: [],
+              headers: Object.fromEntries(responseHeaders),
+              encodedDataLength: Number(headers.get('Content-Length')),
+            });
+
+            const contentType = headers.get('Content-Type');
+            if (
+              [
+                'application/json',
+                'application/javascript',
+                'text/plain',
+                'text/html',
+                'text/css',
+              ].some((type) => contentType?.includes(type))
+            ) {
+              return response.clone().text();
+            }
+            return '';
+          })
+          .then((responseBody) => {
+            // JSON을 minified 형태로 저장 (DevTools pretty print 지원)
+            let processedBody = responseBody;
+            if (typeof responseBody === 'string') {
+              try {
+                const parsed = JSON.parse(responseBody);
+                processedBody = JSON.stringify(parsed); // minified
+              } catch {
+                // JSON이 아닌 경우 원본 유지
+              }
+            }
+
+            // 완전한 요청/응답 정보 저장
+            instance.handleResponseData(requestId, {
+              url,
+              method,
+              status: oriResponse.status,
+              statusText: oriResponse.statusText,
+              responseBody: processedBody,
+              requestBody:
+                method.toLowerCase() === 'post' ||
+                method.toLowerCase() === 'put' ||
+                method.toLowerCase() === 'patch'
+                  ? data
+                  : undefined,
+              timestamp: Date.now(),
+              type: 'Fetch',
+            });
+            // Returns the raw response to the request
+            return oriResponse;
+          })
+          .catch((error) => {
+            const status = error.status || 500; // error 객체에서 상태 코드 추출 (없으면 기본값 500)
+            const statusText = error.statusText || 'Fetch Error'; // error 객체에서 상태 텍스트 추출 (없으면 기본값)
+            const message = error.message || 'An unknown error occurred'; // 에러 메시지
+            const stack = error.stack || ''; // 에러 스택 트레이스 (옵션)
+            const errorDetails = `Message: ${message}\nStack: ${stack}`;
+
+            instance.sendNetworkEvent({
+              url,
+              requestId,
+              status,
+              statusText,
+              headersText: `Content-Type: text/plain\r\n${errorDetails}`, // 에러 메시지 포함
+              type: 'Fetch',
+              blockedCookies: [],
+              headers: { 'Content-Type': 'text/plain' }, // 기본 헤더
+              encodedDataLength: 0, // 실패 시 데이터 길이는 0
+            });
+
+            instance.sendNetworkEvent({
+              url,
+              requestId,
+              blockedCookies: [],
+              type: 'Fetch',
+            });
+            throw error;
+          });
+      } catch (instrumentationError) {
+        logger.rewrite.warn(
+          '[Network] fetch instrumentation failed; falling back to original fetch',
+          instrumentationError,
+        );
+        return originalFetch
+          ? originalFetch(request, initConfig)
+          : Promise.reject(instrumentationError as Error);
+      }
     };
   }
 
