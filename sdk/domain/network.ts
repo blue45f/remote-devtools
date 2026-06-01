@@ -118,6 +118,9 @@ const getResourceType = (
 
 // 전역 responseData 저장소
 const globalResponseData = new Map<number, unknown>();
+// 장시간 떠 있는 호스트 페이지에서 응답 캐시가 무한히 자라지 않도록 상한을 둔다
+// (서버에는 이미 전송된 상태이며, 이 캐시는 재연결 시 재전송 용도).
+const MAX_GLOBAL_RESPONSES = 1000;
 
 // 인터셉터 초기화 플래그
 let interceptorsInitialized = false;
@@ -234,6 +237,12 @@ export class Network extends BaseDomain {
     this.responseData.set(id, data);
     if (this.enabled && (this.recordMode || (this.room && this.room.startsWith('Buffer-')))) {
       globalResponseData.set(id, data);
+      // FIFO 상한: 가장 오래된 항목부터 제거 (Map은 삽입 순서 보존)
+      while (globalResponseData.size > MAX_GLOBAL_RESPONSES) {
+        const oldest = globalResponseData.keys().next().value;
+        if (oldest === undefined) break;
+        globalResponseData.delete(oldest);
+      }
       this.sendResponseData(id, this.getResponseBody({ requestId: id }));
     }
   };
