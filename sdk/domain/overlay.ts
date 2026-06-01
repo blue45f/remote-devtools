@@ -15,6 +15,7 @@ export class Overlay extends BaseDomain {
     marginBox?: HTMLDivElement;
     tooltipsBox?: HTMLDivElement;
   } = {};
+  private highlightHandler: ((e: MouseEvent | TouchEvent) => void) | null = null;
 
   public static formatNumber(num: number): string | number {
     if (num % 1 === 0) return num;
@@ -52,8 +53,27 @@ export class Overlay extends BaseDomain {
   }
 
   public enable(): void {
-    this.createHighlightBox();
+    if (!this.highlightBox.containerBox) {
+      this.createHighlightBox();
+    }
     this.nodeHighlightRequested();
+  }
+
+  /**
+   * Tear down the document listeners and the injected highlight box so the SDK
+   * leaves no trace on the host page after a room switch / disconnect.
+   */
+  public disable(): void {
+    super.disable();
+    if (this.highlightHandler) {
+      document.removeEventListener('mousemove', this.highlightHandler, true);
+      document.removeEventListener('touchmove', this.highlightHandler);
+      this.highlightHandler = null;
+    }
+    if (this.highlightBox.containerBox) {
+      this.highlightBox.containerBox.remove();
+      this.highlightBox = {};
+    }
   }
 
   /**
@@ -142,6 +162,12 @@ export class Overlay extends BaseDomain {
   }
 
   private nodeHighlightRequested() {
+    // enable() may run again on room switches; drop any prior listeners first
+    // so handlers don't accumulate on the host document.
+    if (this.highlightHandler) {
+      document.removeEventListener('mousemove', this.highlightHandler, true);
+      document.removeEventListener('touchmove', this.highlightHandler);
+    }
     const highlight = (e: MouseEvent | TouchEvent) => {
       if (window.$$inspectMode !== 'searchForNode') return;
       e.stopPropagation();
@@ -171,6 +197,7 @@ export class Overlay extends BaseDomain {
       });
     };
 
+    this.highlightHandler = highlight;
     document.addEventListener('mousemove', highlight, true);
     document.addEventListener('touchmove', highlight, { passive: false });
   }
