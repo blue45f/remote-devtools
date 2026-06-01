@@ -23,7 +23,7 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "error-stack-parser": "^2.1.4",
-    "js-cookie": "^3.0.7",
+    "js-cookie": "^3.0.8",
     "rrweb": "2.0.0-alpha.4",
     "specificity": "1.0.0",
     "ua-parser-js": "^2.0.10"
