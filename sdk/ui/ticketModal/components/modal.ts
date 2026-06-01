@@ -99,14 +99,14 @@ export function createTicketModal(
 
   // 취소 버튼 이벤트
   cancelButton.addEventListener('click', () => {
-    document.body.removeChild(overlay);
+    overlay.remove();
     onCancel();
   });
 
   // 오버레이 클릭 시 모달 닫기
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
-      document.body.removeChild(overlay);
+      overlay.remove();
       onCancel();
     }
   });
