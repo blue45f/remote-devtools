@@ -1,7 +1,9 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, User } from 'lucide-react';
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,16 @@ import { toast } from '@/components/ui/toaster';
 import { useAppStore } from '@/lib/store';
 
 import { AuthShell } from './SignIn';
+
+// Mirrors the previous native constraints: name `required`, email `required` +
+// `type="email"`. Invalid input blocks the submit side-effects exactly as the
+// browser bubbles used to, now surfaced inline via react-hook-form.
+const signUpSchema = z.object({
+  name: z.string().trim().min(1),
+  email: z.string().trim().min(1).email(),
+});
+
+type SignUpValues = z.infer<typeof signUpSchema>;
 
 /**
  * Sign-up scaffold. Captures form intent (plan from `?plan=`) and sends a
@@ -20,25 +32,34 @@ export default function SignUpPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [pending, setPending] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignUpValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { name: '', email: '' },
+  });
 
   const plan = params.get('plan') ?? 'free';
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPending(true);
-    setTimeout(() => {
-      setPending(false);
-      toast.success(t('auth.onTheList'), {
-        description: t('auth.onTheListDesc', { email, plan }),
-      });
-      // Drop the visitor into the demo so they can keep exploring.
-      setDemoMode(true);
-      navigate('/dashboard');
-    }, 800);
-  };
+  const submit = handleSubmit(
+    ({ email }) =>
+      // Resolve after the simulated 800ms so `isSubmitting` keeps the button
+      // disabled / in its "reserving spot" state for the same window as before.
+      new Promise<void>((resolve) => {
+        setTimeout(() => {
+          toast.success(t('auth.onTheList'), {
+            description: t('auth.onTheListDesc', { email, plan }),
+          });
+          // Drop the visitor into the demo so they can keep exploring.
+          setDemoMode(true);
+          navigate('/dashboard');
+          resolve();
+        }, 800);
+      }),
+  );
 
   return (
     <AuthShell>
@@ -50,7 +71,7 @@ export default function SignUpPage() {
         <p className="text-sm text-fg-subtle">{t('auth.waitlistSubtitle')}</p>
       </div>
 
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} noValidate className="space-y-3">
         <label htmlFor="signup-name" className="block">
           <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
             {t('auth.fullName')}
@@ -58,12 +79,11 @@ export default function SignUpPage() {
           <Input
             id="signup-name"
             type="text"
-            required
             placeholder={t('auth.fullNamePlaceholder')}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             leadingIcon={<User />}
             autoComplete="name"
+            aria-invalid={errors.name ? true : undefined}
+            {...register('name')}
           />
         </label>
         <label htmlFor="signup-email" className="block">
@@ -73,16 +93,15 @@ export default function SignUpPage() {
           <Input
             id="signup-email"
             type="email"
-            required
             placeholder={t('auth.emailPlaceholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             leadingIcon={<Mail />}
             autoComplete="email"
+            aria-invalid={errors.email ? true : undefined}
+            {...register('email')}
           />
         </label>
-        <Button type="submit" variant="primary" className="w-full" disabled={pending}>
-          {pending ? t('auth.reservingSpot') : t('auth.joinWaitlist')}
+        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? t('auth.reservingSpot') : t('auth.joinWaitlist')}
         </Button>
       </form>
 

@@ -154,23 +154,25 @@ pnpm test:cov      # with v8 coverage
 
 손으로 굴린 유틸 대신 아래 검증된 라이브러리를 우선 사용한다 (Frontend 기준).
 
-| 용도             | 라이브러리                                          | 비고                                                                        |
-| ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
-| 데이터 패칭/캐시 | TanStack Query v5                                   | 서버 상태 전용; 로컬 UI 상태와 분리                                         |
-| 클라이언트 상태  | Zustand                                             | 공유 UI 상태 (`@/lib/store`)                                                |
-| 라우팅           | React Router                                        | `client` v6 / `debug-recorder-admin` v7                                     |
-| HTTP 클라이언트  | axios                                               | `debug-recorder-admin`, `figma-plugin`                                      |
-| 날짜 포맷/연산   | **date-fns**                                        | `format`/`startOfWeek`/`startOfMonth`/`subDays`/`subMonths`; 직접 구현 금지 |
-| 폼               | react-hook-form                                     | `debug-recorder-admin`                                                      |
-| 차트             | Recharts                                            | 대시보드/트렌드                                                             |
-| 세션 리플레이    | rrweb-player                                        | `client`                                                                    |
-| 아이콘           | lucide-react / @ant-design/icons                    | `client` / `debug-recorder-admin`                                           |
-| UI 프리미티브    | Radix UI (`client`) / antd (`debug-recorder-admin`) |                                                                             |
-| 커맨드 팔레트    | cmdk                                                | `client` Cmd+K                                                              |
-| 모션             | framer-motion                                       | `client`                                                                    |
-| 토스트           | sonner                                              | `client`                                                                    |
+| 용도             | 라이브러리                                          | 비고                                                                         |
+| ---------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 데이터 패칭/캐시 | TanStack Query v5                                   | 서버 상태 전용; 로컬 UI 상태와 분리                                          |
+| 클라이언트 상태  | Zustand                                             | 공유 UI 상태 (`@/lib/store`)                                                 |
+| 라우팅           | React Router                                        | `client` v6 / `debug-recorder-admin` v7                                      |
+| HTTP 클라이언트  | axios                                               | `debug-recorder-admin`, `figma-plugin`                                       |
+| 날짜 포맷/연산   | **date-fns**                                        | `format`/`startOfWeek`/`startOfMonth`/`subDays`/`subMonths`; 직접 구현 금지  |
+| 폼               | react-hook-form + @hookform/resolvers + zod         | `client`(`useForm`+`zodResolver`), `debug-recorder-admin`. zod 4.x / rhf 7.x |
+| 차트             | Recharts                                            | 대시보드/트렌드                                                              |
+| 세션 리플레이    | rrweb-player                                        | `client`                                                                     |
+| 아이콘           | lucide-react / @ant-design/icons                    | `client` / `debug-recorder-admin`                                            |
+| UI 프리미티브    | Radix UI (`client`) / antd (`debug-recorder-admin`) |                                                                              |
+| 커맨드 팔레트    | cmdk                                                | `client` Cmd+K                                                               |
+| 모션             | framer-motion                                       | `client`                                                                     |
+| 토스트           | sonner                                              | `client`                                                                     |
 
 > 예외: `sdk/`, `figma-plugin/` 은 런타임 의존성 0 패키지다. debounce/throttle/getRelativeTime 등은 의도적으로 네이티브 구현을 유지하고, 여기에는 위 라이브러리를 추가하지 않는다 (`figma-plugin` 의 axios 만 예외).
+
+> 폼 적용 범위: `useForm({ resolver: zodResolver(schema), defaultValues })` + `register`/`handleSubmit`/`formState`는 검증·제출 로직이 있는 **멀티필드 폼**에만 적용한다 (예: `client/src/pages/SignUp.tsx`). 단일 필드 검색/필터 입력(Sessions/SessionDetail/Pricing/ExploreTab의 search·filter, SignIn의 email 단일 필드, 태그/노트 입력)은 RHF 보일러플레이트만 늘고 이득이 없어 `useState`를 유지한다. `debug-recorder-admin` 의 `UserInfoForm`/`BasicInfoCard`/`TicketTemplateCard` 는 antd `Form`+부모로 끌어올린 동적 배열(devices·templates·assignees) 구조라 `useFieldArray` 전면 재작성·시트 임포트 흐름·`hasChanges` 더티 추적 변경 리스크가 커서(테스트 커버리지 0) 현 상태를 유지한다.
 
 ## API Documentation
 
