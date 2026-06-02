@@ -240,6 +240,9 @@
   },
   "sessionDetail": {
     "allSessions": "모든 세션",
+    "sessionNotFound": "세션을 찾을 수 없습니다",
+    "sessionNotFoundDesc": "이 세션이 삭제되었거나 존재하지 않습니다.",
+    "backToSessions": "세션 목록으로 돌아가기",
     "metricTotalEvents": "전체 이벤트",
     "metricDuration": "길이",
     "metricStarted": "시작",

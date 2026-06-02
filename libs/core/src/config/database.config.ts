@@ -72,5 +72,10 @@ export function createDatabaseConfig(options: DatabaseConfigOptions = {}): TypeO
     logging: options.logging ?? false,
     migrations: [join(__dirname, '..', '..', '..', '..', 'migrations', '*.{ts,js}')],
     migrationsRun: process.env.RUN_MIGRATIONS === 'true',
+    extra: {
+      max: parseInt(process.env.DB_POOL_MAX ?? '10', 10),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+    },
   };
 }

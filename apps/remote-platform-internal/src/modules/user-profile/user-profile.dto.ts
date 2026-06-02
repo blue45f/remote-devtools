@@ -4,7 +4,9 @@ import {
   IsOptional,
   IsArray,
   IsEnum,
+  IsUrl,
   Matches,
+  MaxLength,
   ValidateNested,
   IsNumber,
 } from 'class-validator';
@@ -18,22 +20,28 @@ class TicketTemplateDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   readonly name: string;
 
   @IsOptional()
   @IsString()
+  @IsUrl()
+  @MaxLength(500)
   readonly tcSheetLink?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   readonly jiraProjectKey?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   readonly epicTicket?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   readonly titlePrefix?: string;
 
   @IsOptional()
@@ -52,10 +60,12 @@ class TicketTemplateDto {
 export class CreateUserProfileDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   readonly name: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   readonly username?: string;
 
   @IsEnum(JobType)
@@ -63,6 +73,7 @@ export class CreateUserProfileDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   readonly slackId: string;
 
   @IsString()
@@ -81,10 +92,12 @@ export class CreateUserProfileDto {
 export class UpdateUserProfileDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   readonly name: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   readonly username: string;
 
   @IsEnum(JobType)
@@ -96,6 +109,7 @@ export class UpdateUserProfileDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(254)
   readonly email: string;
 
   @IsOptional()
@@ -110,6 +124,7 @@ export class UpdateUserProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   readonly lastSelectedTemplateName?: string;
 }
 

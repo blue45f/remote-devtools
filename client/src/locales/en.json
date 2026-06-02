@@ -240,6 +240,9 @@
   },
   "sessionDetail": {
     "allSessions": "All sessions",
+    "sessionNotFound": "Session not found",
+    "sessionNotFoundDesc": "This session may have been deleted or does not exist.",
+    "backToSessions": "Back to sessions",
     "metricTotalEvents": "Total events",
     "metricDuration": "Duration",
     "metricStarted": "Started",

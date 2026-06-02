@@ -136,6 +136,7 @@ export class JiraService {
 
     this.jiraClient = axios.create({
       baseURL: `${this.jiraHostUrl}/rest/api/3`,
+      timeout: 15_000,
       headers: {
         Authorization: `Basic ${Buffer.from(`${email}:${token}`).toString('base64')}`,
         'Content-Type': 'application/json',
