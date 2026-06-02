@@ -90,6 +90,7 @@ describe('ScreenService', () => {
       expect(screenRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 }, type: null },
         order: { timestamp: 'ASC' },
+        take: 10_000,
       });
     });
   });
@@ -116,6 +117,7 @@ describe('ScreenService', () => {
       expect(screenRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 }, type: null },
         order: { timestamp: 'ASC' },
+        take: 10_000,
       });
     });
 

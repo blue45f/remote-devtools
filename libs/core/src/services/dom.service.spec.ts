@@ -124,6 +124,7 @@ describe('DomService', () => {
       expect(domRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
         order: { timestamp: 'ASC' },
+        take: 10_000,
       });
     });
   });
