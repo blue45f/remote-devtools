@@ -150,6 +150,28 @@ pnpm test:cov      # with v8 coverage
 - API access: always go through `apiFetch` from `@/lib/api`. Honour demo mode by adding seed responses in `seed-router.ts`.
 - State: Zustand store at `@/lib/store` for shared UI state (sidebar, theme, command palette, demo mode); component-local state otherwise.
 
+### 라이브러리 (용도별)
+
+손으로 굴린 유틸 대신 아래 검증된 라이브러리를 우선 사용한다 (Frontend 기준).
+
+| 용도             | 라이브러리                                          | 비고                                                                        |
+| ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
+| 데이터 패칭/캐시 | TanStack Query v5                                   | 서버 상태 전용; 로컬 UI 상태와 분리                                         |
+| 클라이언트 상태  | Zustand                                             | 공유 UI 상태 (`@/lib/store`)                                                |
+| 라우팅           | React Router                                        | `client` v6 / `debug-recorder-admin` v7                                     |
+| HTTP 클라이언트  | axios                                               | `debug-recorder-admin`, `figma-plugin`                                      |
+| 날짜 포맷/연산   | **date-fns**                                        | `format`/`startOfWeek`/`startOfMonth`/`subDays`/`subMonths`; 직접 구현 금지 |
+| 폼               | react-hook-form                                     | `debug-recorder-admin`                                                      |
+| 차트             | Recharts                                            | 대시보드/트렌드                                                             |
+| 세션 리플레이    | rrweb-player                                        | `client`                                                                    |
+| 아이콘           | lucide-react / @ant-design/icons                    | `client` / `debug-recorder-admin`                                           |
+| UI 프리미티브    | Radix UI (`client`) / antd (`debug-recorder-admin`) |                                                                             |
+| 커맨드 팔레트    | cmdk                                                | `client` Cmd+K                                                              |
+| 모션             | framer-motion                                       | `client`                                                                    |
+| 토스트           | sonner                                              | `client`                                                                    |
+
+> 예외: `sdk/`, `figma-plugin/` 은 런타임 의존성 0 패키지다. debounce/throttle/getRelativeTime 등은 의도적으로 네이티브 구현을 유지하고, 여기에는 위 라이브러리를 추가하지 않는다 (`figma-plugin` 의 axios 만 예외).
+
 ## API Documentation
 
 - Swagger UI: `http://localhost:3000/api/docs` (internal), `http://localhost:3001/api/docs` (external)
