@@ -91,6 +91,7 @@ describe('RuntimeService', () => {
       expect(runtimeRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
         order: { timestamp: 'ASC' },
+        take: 10_000,
       });
     });
   });
@@ -104,6 +105,7 @@ describe('RuntimeService', () => {
       expect(runtimeRepository.find).toHaveBeenCalledWith({
         where: { record: { id: 1 } },
         order: { timestamp: 'ASC' },
+        take: 10_000,
       });
     });
   });
