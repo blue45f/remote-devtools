@@ -46,6 +46,10 @@ cd client && pnpm dev        # Vite dev server with proxy to backends
 - Design system: `src/components/ui/*` (shadcn-style primitives on Radix UI)
 - Design tokens: `src/index.css` (`@theme inline` mapping CSS vars to Tailwind utility names)
 
+### React Compiler
+
+The React Compiler is enabled for the two React apps — `client/` and `debug-recorder-admin/`. It is wired through `@vitejs/plugin-react` v6's `reactCompilerPreset` helper fed into `@rolldown/plugin-babel` (`plugins: [react(), babel({ presets: [reactCompilerPreset()] }), …]`). React 19 needs no `target`/runtime override. The NestJS backend apps, `libs/*`, and the vendored `devtools-frontend/` are not affected.
+
 ### Vite dev proxy (`client/vite.config.ts`)
 
 In dev, the client runs on `localhost:8080` while backends serve their APIs on 3000/3001 with helmet's `Cross-Origin-Resource-Policy: same-origin`. The Vite server proxies to bypass CORP:
