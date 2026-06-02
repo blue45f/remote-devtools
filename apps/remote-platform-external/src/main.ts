@@ -1,4 +1,21 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
+
+function assertRequiredEnv(): void {
+  const appEnv = (process.env.APP_ENV ?? 'local').toLowerCase();
+  if (['local', 'development', 'dev'].includes(appEnv)) return;
+
+  const missing: string[] = [];
+  if (!process.env.DB_WRITER_HOST) missing.push('DB_WRITER_HOST');
+  if (!process.env.DB_PASSWORD && !process.env.DB_SVC_USER_PASSWORD) {
+    missing.push('DB_PASSWORD or DB_SVC_USER_PASSWORD');
+  }
+
+  if (missing.length > 0) {
+    throw new Error(`[STARTUP] Missing required environment variables:\n  ${missing.join('\n  ')}`);
+  }
+}
+
+assertRequiredEnv();
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';

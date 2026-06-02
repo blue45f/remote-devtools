@@ -214,7 +214,8 @@
     "unknown": "알 수 없음",
     "on": "켜짐",
     "off": "꺼짐",
-    "checking": "로그인 확인 중…"
+    "checking": "로그인 확인 중…",
+    "loadFailed": "불러오지 못했습니다"
   },
   "notFound": {
     "title": "네트워크에서 길을 잃었습니다",
