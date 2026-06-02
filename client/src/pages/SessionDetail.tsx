@@ -408,10 +408,15 @@ export default function SessionDetailPage() {
   // every playhead tick re-render the page.
   const playheadMsRef = useRef<number>(initialReplayOffset);
 
-  const { data: metadata, isLoading: metaLoading } = useQuery({
+  const {
+    data: metadata,
+    isLoading: metaLoading,
+    isError: metaError,
+  } = useQuery({
     queryKey: ['session-metadata', id],
     queryFn: () => apiFetch<SessionMetadata>(`/api/session-replay/sessions/${id}`),
     enabled: !!id,
+    meta: { suppressToast: true },
   });
 
   const { data: rawEvents, isLoading: eventsLoading } = useQuery({
@@ -657,6 +662,33 @@ export default function SessionDetailPage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  if (metaError && !metaLoading) {
+    return (
+      <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 mb-3 sm:mb-4 text-fg-subtle hover:text-fg touch-target"
+        >
+          <Link to="/sessions">
+            <ArrowLeft />
+            {t('sessionDetail.allSessions')}
+          </Link>
+        </Button>
+        <EmptyState
+          title={t('sessionDetail.sessionNotFound')}
+          description={t('sessionDetail.sessionNotFoundDesc')}
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/sessions">{t('sessionDetail.backToSessions')}</Link>
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="safe-px py-5 sm:py-6 max-w-7xl mx-auto">
