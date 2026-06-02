@@ -45,7 +45,7 @@
     "lint": "eslint apps/ libs/",
     "lint:fix": "eslint apps/ libs/ --fix",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "format:check": "pnpm -r --if-present run format:check",
+    "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "ci": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "verify": "pnpm run validate:architecture && pnpm run ci",
     "verify:push": "pnpm run verify",
