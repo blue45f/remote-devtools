@@ -552,6 +552,10 @@ export function objectRelease({ objectId }: { objectId: string }): void {
   objects.delete(objectId);
   objectIds.delete(object);
   origins.delete(objectId);
+  // propertySnapshots are keyed `${objectId}-${ownProperties}`; release both so
+  // the snapshot map doesn't outlive the object it described.
+  propertySnapshots.delete(`${objectId}-true`);
+  propertySnapshots.delete(`${objectId}-false`);
 }
 
 export function getObjectById(objectId: string): unknown {

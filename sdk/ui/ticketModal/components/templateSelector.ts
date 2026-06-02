@@ -1,3 +1,4 @@
+import { escapeHtml } from '../../../common/utils';
 import { tokens } from '../../theme';
 import { TicketTemplate, CustomDropdownConfig, SimpleStructuredSheetData } from '../types';
 
@@ -169,7 +170,7 @@ export async function reloadFormWithTemplate(
     tempLoadingDiv.innerHTML = `
       <div style="text-align: center; font-family: ${tokens.font.system};">
         <div style="margin-bottom: 8px; font-weight: 600; color: ${tokens.color.text.primary};">Switching template...</div>
-        <div style="font-size: 12px; color: ${tokens.color.text.dim};">${templateName}</div>
+        <div style="font-size: 12px; color: ${tokens.color.text.dim};">${escapeHtml(templateName)}</div>
       </div>
     `;
 
@@ -200,7 +201,7 @@ export async function reloadFormWithTemplate(
     loadingDiv.innerHTML = `
       <div style="color: ${tokens.color.accent.red}; padding: 20px; text-align: center; font-family: ${tokens.font.system};">
         <p style="color: ${tokens.color.text.secondary};">An error occurred while switching templates.</p>
-        <p style="color: ${tokens.color.text.dim};">Error: ${error instanceof Error ? error.message : String(error)}</p>
+        <p style="color: ${tokens.color.text.dim};">Error: ${escapeHtml(error instanceof Error ? error.message : String(error))}</p>
         <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: ${tokens.color.bg.hover}; border: 1px solid ${tokens.color.border.medium}; color: ${tokens.color.text.secondary}; border-radius: ${tokens.radius.sm}; cursor: pointer;">
           Reload
         </button>

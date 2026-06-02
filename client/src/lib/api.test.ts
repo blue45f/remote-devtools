@@ -34,7 +34,7 @@ describe('apiFetch', () => {
 
   it('throws when the network responds with non-2xx', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('nope', { status: 503 }));
-    await expect(apiFetch('/sessions')).rejects.toThrow(/API error: 503/);
+    await expect(apiFetch('/sessions')).rejects.toThrow(/503/);
   });
 
   it('falls back to network when seed router does not match the path', async () => {

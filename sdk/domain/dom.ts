@@ -61,6 +61,8 @@ export class Dom extends BaseDomain {
   }
 
   private enabled = false;
+  private mutationObserver: MutationObserver | null = null;
+  private inspectClickHandler: ((e: Event) => void) | null = null;
 
   public enable() {
     if (this.enabled) return;
@@ -69,6 +71,23 @@ export class Dom extends BaseDomain {
     this.nodeObserver();
     this.setDomInspect();
     Dom.set$Function();
+  }
+
+  /**
+   * Stop observing the host DOM and remove the inspect click listener so the
+   * SDK doesn't keep a MutationObserver / listener alive after disconnect.
+   */
+  public disable(): void {
+    super.disable();
+    this.enabled = false;
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+    }
+    if (this.inspectClickHandler) {
+      document.removeEventListener('click', this.inspectClickHandler, true);
+      this.inspectClickHandler = null;
+    }
   }
 
   public getDocument() {
@@ -296,37 +315,37 @@ export class Dom extends BaseDomain {
   }
 
   private setDomInspect() {
-    document.addEventListener(
-      'click',
-      (e) => {
-        if (window.$$inspectMode !== 'searchForNode') return;
+    if (this.inspectClickHandler) {
+      document.removeEventListener('click', this.inspectClickHandler, true);
+    }
+    this.inspectClickHandler = (e: Event) => {
+      if (window.$$inspectMode !== 'searchForNode') return;
 
-        e.stopPropagation();
-        e.preventDefault();
+      e.stopPropagation();
+      e.preventDefault();
 
-        const previousNode = (e.target as Element).parentNode;
-        const currentNodeId = nodes.getIdByNode(e.target as Element);
+      const previousNode = (e.target as Element).parentNode;
+      const currentNodeId = nodes.getIdByNode(e.target as Element);
 
-        this.expandNode(previousNode);
+      this.expandNode(previousNode);
 
-        this.sendProtocol({
-          method: Events.nodeHighlightRequested,
-          params: {
-            nodeId: currentNodeId,
-          },
-        });
+      this.sendProtocol({
+        method: Events.nodeHighlightRequested,
+        params: {
+          nodeId: currentNodeId,
+        },
+      });
 
-        this.sendProtocol({
-          method: Events.inspectNodeRequested,
-          params: {
-            backendNodeId: currentNodeId,
-          },
-        });
-        const element = document.getElementById(DEVTOOL_OVERLAY);
-        if (element) element.style.display = 'none';
-      },
-      true,
-    );
+      this.sendProtocol({
+        method: Events.inspectNodeRequested,
+        params: {
+          backendNodeId: currentNodeId,
+        },
+      });
+      const element = document.getElementById(DEVTOOL_OVERLAY);
+      if (element) element.style.display = 'none';
+    };
+    document.addEventListener('click', this.inspectClickHandler, true);
   }
 
   private nodeObserver() {
@@ -438,10 +457,11 @@ export class Dom extends BaseDomain {
       return this.recordMode ? callbackForRecord() : callbackForRealtime(mutationList);
     };
 
-    const observer = new MutationObserver(callback);
+    if (this.mutationObserver) this.mutationObserver.disconnect();
+    this.mutationObserver = new MutationObserver(callback);
 
     // Observe the changes of the document
-    observer.observe(document.documentElement, {
+    this.mutationObserver.observe(document.documentElement, {
       childList: true,
       subtree: true,
       attributes: true,

@@ -309,7 +309,9 @@ export class Runtime extends BaseDomain {
         error instanceof Error
           ? {
               name: error.name,
-              stack: error.stack,
+              // Bound the stack so a pathological (e.g. deep-recursion) error
+              // can't push a multi-MB payload over the WebSocket.
+              stack: error.stack?.slice(0, 8000),
             }
           : null;
       const data: RuntimeProtocolEvent = {

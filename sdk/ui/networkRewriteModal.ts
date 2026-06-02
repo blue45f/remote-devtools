@@ -1,3 +1,4 @@
+import { escapeHtml } from '../common/utils';
 import { Network } from '../domain/network';
 import type { RewriteRule } from '../domain/network-rewrite';
 import { logger } from '../utils/logger';
@@ -525,7 +526,7 @@ function createCardItem(item: NetworkCardItem, onEditClick: (item: NetworkCardIt
           background: ${methodColors.bg};
           padding: 4px 8px;
           border-radius: 4px;
-        ">${item.method}</span>
+        ">${escapeHtml(item.method)}</span>
 
         <!-- Status badge -->
         <span style="
@@ -627,7 +628,7 @@ function createCardItem(item: NetworkCardItem, onEditClick: (item: NetworkCardIt
       color: ${tokens.color.text.muted};
       word-break: break-all;
       line-height: 1.4;
-    ">${item.url}</div>
+    ">${escapeHtml(item.url)}</div>
   `;
 
   // Edit button event (prevent event bubbling)
@@ -777,7 +778,7 @@ function createEditView(item: NetworkCardItem, onSave: SaveRewriteHandler, onBac
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 12px;
-      ">${item.method}</span>
+      ">${escapeHtml(item.method)}</span>
       <div style="
         flex: 1;
         font-family: ${tokens.font.mono};
@@ -785,7 +786,7 @@ function createEditView(item: NetworkCardItem, onSave: SaveRewriteHandler, onBac
         color: ${tokens.color.text.muted};
         word-break: break-all;
         line-height: 1.4;
-      ">${item.url}</div>
+      ">${escapeHtml(item.url)}</div>
     </div>
 
     <!-- Tab menu -->

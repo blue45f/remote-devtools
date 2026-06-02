@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  escapeHtml,
   escapeRegString,
   getAbsolutePath,
   isElement,
@@ -179,6 +180,52 @@ describe('isMatches', () => {
   it('returns false when no matching method exists', () => {
     const bare = {} as unknown as Element;
     expect(isMatches(bare, '.x')).toBe(false);
+  });
+});
+
+describe('escapeHtml', () => {
+  it('escapes all five HTML-significant characters', () => {
+    expect(escapeHtml('&')).toBe('&amp;');
+    expect(escapeHtml('<')).toBe('&lt;');
+    expect(escapeHtml('>')).toBe('&gt;');
+    expect(escapeHtml('"')).toBe('&quot;');
+    expect(escapeHtml("'")).toBe('&#39;');
+  });
+
+  it('escapes multiple special characters in a single string', () => {
+    expect(escapeHtml('<script>alert("xss")</script>')).toBe(
+      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+    );
+    expect(escapeHtml("&lt;img src='x' onerror='bad()'>")).toBe(
+      '&amp;lt;img src=&#39;x&#39; onerror=&#39;bad()&#39;&gt;',
+    );
+  });
+
+  it('leaves plain strings without special characters untouched', () => {
+    expect(escapeHtml('hello world')).toBe('hello world');
+    expect(escapeHtml('')).toBe('');
+    expect(escapeHtml('abc 123 !@#$%^')).toBe('abc 123 !@#$%^');
+  });
+
+  it('converts nullish inputs to an empty string', () => {
+    expect(escapeHtml(null)).toBe('');
+    expect(escapeHtml(undefined)).toBe('');
+  });
+
+  it('converts non-string inputs via String()', () => {
+    expect(escapeHtml(42)).toBe('42');
+    expect(escapeHtml(true)).toBe('true');
+    expect(escapeHtml(0)).toBe('0');
+  });
+
+  it('produces output that is safe to interpolate into innerHTML', () => {
+    const payload = '<img src=x onerror="alert(1)">';
+    const escaped = escapeHtml(payload);
+    const div = document.createElement('div');
+    div.innerHTML = escaped;
+    // No child element injected; treated as plain text
+    expect(div.children.length).toBe(0);
+    expect(div.textContent).toBe(payload);
   });
 });
 

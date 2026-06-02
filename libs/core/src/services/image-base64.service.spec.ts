@@ -53,7 +53,10 @@ describe('ImageBase64Service', () => {
       const result = await service.imageToBase64('https://example.com/img.png');
 
       expect(result).toBe(Buffer.from(imageBytes).toString('base64'));
-      expect(mockFetch).toHaveBeenCalledWith('https://example.com/img.png');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://example.com/img.png',
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     it('should return empty string on HTTP error', async () => {

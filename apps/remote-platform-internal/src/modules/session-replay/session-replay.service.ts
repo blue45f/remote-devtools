@@ -117,7 +117,10 @@ export class SessionReplayService {
   /**
    * Retrieve a paginated list of sessions, optionally filtered by room (recordId or name).
    */
+  private static readonly MAX_SESSION_LIMIT = 200;
+
   public async getSessions(limit = 20, offset = 0, room?: string): Promise<SessionMetadata[]> {
+    limit = Math.min(Math.max(1, limit), SessionReplayService.MAX_SESSION_LIMIT);
     if (room && room.startsWith('s3-')) {
       const s3Metadata = await this.getS3SessionMetadata(room);
       return s3Metadata ? [s3Metadata] : [];
@@ -125,7 +128,7 @@ export class SessionReplayService {
 
     const query = this.recordRepository
       .createQueryBuilder('record')
-      .leftJoinAndSelect('record.screens', 'screen')
+      .leftJoin('record.screens', 'screen')
       .select(['record.id', 'record.name', 'record.duration', 'record.timestamp'])
       .addSelect('COUNT(screen.id)', 'eventCount')
       .addSelect('MIN(screen.timestamp)', 'startTime')

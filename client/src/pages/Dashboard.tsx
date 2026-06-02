@@ -208,6 +208,23 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Stats error banner */}
+      {statsQuery.isError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-muted px-4 py-2.5 mb-4 text-sm text-fg-subtle"
+        >
+          <span>{t('dashboard.statsLoadFailed')}</span>
+          <button
+            type="button"
+            onClick={() => void queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })}
+            className="shrink-0 text-xs font-medium text-fg underline-offset-2 hover:underline"
+          >
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
+
       {/* Hero row — the live signal reads first, then today's counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
         <Link
@@ -286,6 +303,8 @@ export default function DashboardPage() {
             title={t('dashboard.sessionsOverTime')}
             description={t('dashboard.sessionsOverTimeDesc')}
             loading={recordTrendQuery.isLoading}
+            error={recordTrendQuery.isError}
+            onRetry={() => void queryClient.invalidateQueries({ queryKey: ['record-trend'] })}
             empty={recordTrend.length === 0}
           >
             <SessionsAreaChart data={recordTrend} />
@@ -294,6 +313,8 @@ export default function DashboardPage() {
             title={t('dashboard.ticketsByRole')}
             description={t('dashboard.ticketsByRoleDesc')}
             loading={ticketTrendQuery.isLoading}
+            error={ticketTrendQuery.isError}
+            onRetry={() => void queryClient.invalidateQueries({ queryKey: ['ticket-trend'] })}
             empty={ticketTrend.length === 0}
           >
             <TicketsByRoleChart data={ticketTrend} />
@@ -390,7 +411,7 @@ function TopHostsPanel({ period }: { period: Period }) {
       ),
   });
   const rows = data ?? [];
-  const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
+  const max = useMemo(() => rows.reduce((m, r) => (r.count > m ? r.count : m), 0), [rows]);
 
   if (isLoading) {
     return (
@@ -649,6 +670,7 @@ function HeroMetricCard({
   const v = value ?? 0;
   const avg = weeklyAvg ?? 0;
   const delta = avg > 0 ? ((v - avg) / avg) * 100 : 0;
+  const sparkData = useMemo(() => spark.map((d) => d.created ?? 0), [spark]);
 
   return (
     <Card className="p-4 sm:p-5 relative overflow-hidden h-full transition-colors hover:border-border-strong">
@@ -676,10 +698,7 @@ function HeroMetricCard({
       {/* sparkline — pulls margin to bleed into the card edge */}
       <div className="-mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-3 h-12 sm:h-14">
         {spark.length > 0 ? (
-          <Sparkline
-            data={spark.map((d) => d.created ?? 0)}
-            intensity={accent === 'fg' ? 'fg' : 'muted'}
-          />
+          <Sparkline data={sparkData} intensity={accent === 'fg' ? 'fg' : 'muted'} />
         ) : null}
       </div>
     </Card>
@@ -761,10 +780,20 @@ interface ChartPanelProps {
   description?: string;
   loading?: boolean;
   empty?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
   children: React.ReactNode;
 }
 
-function ChartPanel({ title, description, loading, empty, children }: ChartPanelProps) {
+function ChartPanel({
+  title,
+  description,
+  loading,
+  empty,
+  error,
+  onRetry,
+  children,
+}: ChartPanelProps) {
   return (
     <Card className="p-4 sm:p-5">
       <div className="flex items-baseline justify-between gap-2 mb-1">
@@ -773,7 +802,15 @@ function ChartPanel({ title, description, loading, empty, children }: ChartPanel
       {description && <p className="text-xs text-fg-subtle mb-3 sm:mb-4">{description}</p>}
       {/* Chart bodies size down on tablet to keep two charts above the fold */}
       <div className="h-[200px] sm:h-[240px] lg:h-[260px]">
-        {loading ? <ChartSkeleton /> : empty ? <ChartEmpty /> : children}
+        {loading ? (
+          <ChartSkeleton />
+        ) : error ? (
+          <ChartError onRetry={onRetry} />
+        ) : empty ? (
+          <ChartEmpty />
+        ) : (
+          children
+        )}
       </div>
     </Card>
   );
@@ -804,6 +841,25 @@ function ChartEmpty() {
           className="text-xs text-fg-subtle hover:text-fg underline-offset-2 hover:underline"
         >
           {t('dashboard.enableDemoMode')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ChartError({ onRetry }: { onRetry?: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="h-full flex flex-col items-center justify-center text-center text-fg-faint gap-2">
+      <RefreshCw className="size-5 text-fg-subtle" />
+      <p className="text-xs">{t('dashboard.chartLoadFailed')}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="text-xs text-fg-subtle hover:text-fg underline-offset-2 hover:underline"
+        >
+          {t('common.retry')}
         </button>
       )}
     </div>
