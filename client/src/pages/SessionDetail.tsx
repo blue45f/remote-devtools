@@ -423,6 +423,8 @@ export default function SessionDetailPage() {
     data: rawEvents,
     isLoading: eventsLoading,
     isError: eventsError,
+    refetch: refetchEvents,
+    isFetching: eventsFetching,
   } = useQuery({
     queryKey: ['session-events', id],
     queryFn: () => apiFetch<RawEvent[]>(`/api/session-replay/sessions/${id}/events`),
@@ -906,7 +908,25 @@ export default function SessionDetailPage() {
               </Card>
             </div>
           ) : eventsError ? (
-            <Card className="p-6 text-sm text-fg-subtle text-center">{t('common.loadFailed')}</Card>
+            <Card>
+              <EmptyState
+                icon={AlertTriangle}
+                title={t('sessionDetail.replayLoadFailedTitle')}
+                description={t('sessionDetail.replayLoadFailedDesc')}
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void refetchEvents()}
+                    disabled={eventsFetching}
+                    data-testid="replay-retry"
+                  >
+                    <RotateCcw className={cn(eventsFetching && 'animate-spin')} />
+                    {eventsFetching ? t('common.retrying') : t('common.retry')}
+                  </Button>
+                }
+              />
+            </Card>
           ) : (
             <ReplayPanel
               events={events ?? []}
@@ -2680,6 +2700,20 @@ function ReplayPanel({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [{ speed, skipInactive }, setPrefs] = useReplayPrefs();
   const [restartToken, setRestartToken] = useState(0);
+
+  // Last offset a seek aimed at, plus a monotonic nonce so the minimap's
+  // arrival pulse replays even when the user jumps to the same error twice.
+  // `seekTo` wraps the page-level jump so every seek path (minimap click,
+  // error-nav button, keyboard E/Shift+E) feeds the minimap one signal.
+  const [lastSeek, setLastSeek] = useState<{ ms: number; nonce: number } | null>(null);
+  const seekTo = useCallback(
+    (offsetMs: number) => {
+      setLastSeek((prev) => ({ ms: offsetMs, nonce: (prev?.nonce ?? 0) + 1 }));
+      onJumpToReplay(offsetMs);
+    },
+    [onJumpToReplay],
+  );
+
   const fullscreenSupported =
     typeof document !== 'undefined' && typeof document.fullscreenEnabled === 'boolean'
       ? document.fullscreenEnabled
@@ -2746,12 +2780,12 @@ function ReplayPanel({
       const next = pickErrorOffset(sorted, playheadMsRef.current, e.shiftKey ? -1 : 1);
       if (next !== undefined) {
         e.preventDefault();
-        onJumpToReplay(next);
+        seekTo(next);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [errorMarkers, playheadMsRef, onJumpToReplay]);
+  }, [errorMarkers, playheadMsRef, seekTo]);
 
   return (
     <div
@@ -2770,7 +2804,7 @@ function ReplayPanel({
           <ErrorNavButton
             errorMarkers={errorMarkers}
             playheadMsRef={playheadMsRef}
-            onSeek={onJumpToReplay}
+            onSeek={seekTo}
           />
         )}
         <Button
@@ -2813,9 +2847,12 @@ function ReplayPanel({
       <ReplayMinimap
         events={events}
         sessionStartMs={sessionStartMs}
-        onSeek={onJumpToReplay}
+        onSeek={seekTo}
         commentMarkers={commentMarkers}
         errorMarkers={errorMarkers}
+        playheadMsRef={playheadMsRef}
+        seekTargetMs={lastSeek?.ms ?? null}
+        seekNonce={lastSeek?.nonce ?? 0}
       />
       <Suspense
         fallback={
@@ -3460,6 +3497,9 @@ function ReplayMinimap({
   onSeek,
   commentMarkers,
   errorMarkers,
+  playheadMsRef,
+  seekTargetMs,
+  seekNonce = 0,
 }: {
   events: ReplayEvent[];
   sessionStartMs: number;
@@ -3468,9 +3508,21 @@ function ReplayMinimap({
   commentMarkers?: { id: number; timestampMs: number }[];
   /** Error positions (ms-from-session-start) to render as red ticks. */
   errorMarkers?: { id: string; offsetMs: number }[];
+  /** Live playhead position so the bar reads as a position instrument, not
+   * just a static density histogram. Polled, never re-renders the page. */
+  playheadMsRef?: React.MutableRefObject<number>;
+  /** The offset the last seek targeted — the nearest error tick pulses once
+   * to confirm the jump landed ("scrub to failure"). */
+  seekTargetMs?: number | null;
+  /** Bumped on every seek so the arrival pulse replays even on a repeat jump
+   * to the same error. */
+  seekNonce?: number;
 }) {
   const { t } = useTranslation();
-  const BUCKETS = 96;
+  // Denser than before (was 96): a finer histogram resolves a burst of
+  // events from a lull at a glance, which is the whole point of the strip
+  // during triage. CSS clamps the column width so it stays crisp.
+  const BUCKETS = 160;
 
   const { buckets, totalMs } = useMemo(() => {
     if (events.length === 0) return { buckets: [] as number[], totalMs: 0 };
@@ -3486,9 +3538,62 @@ function ReplayMinimap({
     return { buckets: arr, totalMs: span };
   }, [events, sessionStartMs]);
 
+  // Live playhead: drive a CSS variable on the track via rAF reading the
+  // shared ref. The marker translates (not `left`) so the browser composites
+  // it — and a `transition` on transform makes a seek *glide* to its target
+  // instead of teleporting, the "scrub to failure" feel. No React re-render
+  // per tick, preserving the page's existing playhead-in-a-ref design.
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!playheadMsRef || totalMs === 0) return;
+    let raf = 0;
+    let last = -1;
+    const tick = () => {
+      const el = trackRef.current;
+      if (el) {
+        const ratio = Math.min(1, Math.max(0, playheadMsRef.current / totalMs));
+        if (ratio !== last) {
+          // A large jump is a deliberate seek — let the playhead *glide* to
+          // its target so the eye follows the scrub. Frame-to-frame playback
+          // drift is tiny, so we cut the ease to a hair and the line tracks
+          // the player tightly instead of lagging behind.
+          const seek = Math.abs(ratio - last) > 0.02 && last >= 0;
+          el.style.setProperty('--ph-ease', seek ? '360ms' : '90ms');
+          last = ratio;
+          el.style.setProperty('--ph', String(ratio));
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playheadMsRef, totalMs]);
+
+  // Which error tick (if any) should report the arrival. `seekNonce` is in
+  // the deps so the match re-runs (and the one-shot CSS pulse replays) even
+  // on a repeat jump to the same offset; void-reading it keeps that intent
+  // explicit. Matches the offset nearest the seek target.
+  const arrivedErrorId = useMemo(() => {
+    void seekNonce;
+    if (seekTargetMs === null || seekTargetMs === undefined) return null;
+    if (!errorMarkers || errorMarkers.length === 0) return null;
+    let bestId: string | null = null;
+    let bestDist = Infinity;
+    for (const m of errorMarkers) {
+      const d = Math.abs(m.offsetMs - seekTargetMs);
+      if (d < bestDist) {
+        bestDist = d;
+        bestId = m.id;
+      }
+    }
+    // Only celebrate a genuine hit — within ~half a second of an error.
+    return bestDist <= 500 ? bestId : null;
+  }, [seekTargetMs, seekNonce, errorMarkers]);
+
   if (events.length === 0 || totalMs === 0) return null;
 
   const max = buckets.reduce((m, n) => (n > m ? n : m), 0) || 1;
+  const errorCount = errorMarkers?.length ?? 0;
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -3499,12 +3604,29 @@ function ReplayMinimap({
   return (
     <Card className="p-2.5">
       <div className="flex items-center justify-between mb-1.5 text-[10px] uppercase tracking-wider text-fg-faint font-semibold">
-        <span>{t('sessionDetail.minimapActivity')}</span>
+        <span className="inline-flex items-center gap-2">
+          {t('sessionDetail.minimapActivity')}
+          {errorCount > 0 && (
+            <span
+              className="inline-flex items-center gap-1 text-danger normal-case tracking-normal tabular-nums"
+              data-testid="replay-minimap-error-count"
+            >
+              <span className="size-1.5 rounded-full bg-danger" aria-hidden />
+              {t(
+                errorCount === 1
+                  ? 'sessionDetail.minimapErrorCountOne'
+                  : 'sessionDetail.minimapErrorCountOther',
+                { n: errorCount },
+              )}
+            </span>
+          )}
+        </span>
         <span className="text-fg-faint normal-case tracking-normal">
           {t('sessionDetail.minimapClickToSeek')}
         </span>
       </div>
       <div
+        ref={trackRef}
         role="button"
         tabIndex={0}
         aria-label={t('sessionDetail.minimapAria')}
@@ -3515,28 +3637,49 @@ function ReplayMinimap({
             onSeek(totalMs / 2);
           }
         }}
-        className="relative flex h-10 items-end gap-px cursor-pointer rounded-sm overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group relative flex h-11 items-end gap-px cursor-pointer rounded-sm overflow-hidden bg-bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [container-type:inline-size]"
+        style={{ ['--ph' as string]: '0', ['--ph-ease' as string]: '360ms' }}
         data-testid="replay-minimap"
       >
+        {/* Faint hairline baseline so the strip reads as a continuous ruler,
+            not floating bars, even across quiet stretches. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-border-strong"
+        />
         {buckets.map((count, i) => {
           const intensity = count / max;
           // Always render at least a thin sliver so the bar reads as a
           // continuous strip even where no events landed.
-          const heightPct = count === 0 ? 6 : 12 + intensity * 88;
+          const heightPct = count === 0 ? 5 : 14 + intensity * 86;
           return (
             <span
               key={i}
               aria-hidden
-              className="flex-1 rounded-sm bg-fg transition-colors"
+              className="flex-1 min-w-px rounded-t-[1px] bg-fg transition-colors"
               style={{
                 height: `${heightPct}%`,
-                opacity: count === 0 ? 0.12 : 0.25 + intensity * 0.65,
+                opacity: count === 0 ? 0.1 : 0.22 + intensity * 0.62,
               }}
             />
           );
         })}
+        {/* Played region — a faint fill trailing the live playhead. Scaled on
+            X (composited), driven by --ph, so it tracks playback for free. */}
+        {playheadMsRef && (
+          <span
+            aria-hidden
+            data-testid="replay-minimap-played"
+            className="pointer-events-none absolute inset-y-0 left-0 right-0 origin-left bg-fg/[0.06]"
+            style={{
+              transform: 'scaleX(var(--ph))',
+              transition: 'transform var(--ph-ease, 360ms) var(--ease-out-quart)',
+            }}
+          />
+        )}
         {(errorMarkers ?? []).map((m) => {
           const ratio = Math.min(1, Math.max(0, m.offsetMs / totalMs));
+          const arrived = m.id === arrivedErrorId;
           return (
             <button
               key={m.id}
@@ -3547,9 +3690,25 @@ function ReplayMinimap({
                 e.stopPropagation();
                 onSeek(m.offsetMs);
               }}
-              className="absolute top-0 bottom-0 w-0.5 bg-danger hover:w-1 transition-all"
-              style={{ left: `calc(${ratio * 100}% - 1px)` }}
-            />
+              className="absolute top-0 bottom-0 w-px bg-danger transition-[width,opacity] hover:w-[3px]"
+              style={{ left: `calc(${ratio * 100}% - 0.5px)`, opacity: 0.85 }}
+            >
+              {/* A small square head turns a 1px line into a readable pin
+                  without widening the hit-affecting body. The head is what
+                  pulses when a seek lands here. Wrapping it in a keyed array
+                  (key folds in seekNonce) forces React to remount on a repeat
+                  jump to the same tick, so the one-shot CSS pulse replays. */}
+              {[
+                <span
+                  aria-hidden
+                  key={arrived ? `arrived-${seekNonce}` : 'idle'}
+                  className={cn(
+                    'absolute left-1/2 top-0 size-[5px] -translate-x-1/2 -translate-y-px rounded-[1px] bg-danger',
+                    arrived && 'animate-marker-arrive',
+                  )}
+                />,
+              ]}
+            </button>
           );
         })}
         {(commentMarkers ?? []).map((m) => {
@@ -3564,11 +3723,29 @@ function ReplayMinimap({
                 e.stopPropagation();
                 onSeek(m.timestampMs);
               }}
-              className="absolute top-0 bottom-0 w-0.5 bg-accent hover:w-1 transition-all"
-              style={{ left: `calc(${ratio * 100}% - 1px)` }}
-            />
+              className="absolute top-0 bottom-0 w-px bg-accent transition-[width,opacity] hover:w-[3px]"
+              style={{ left: `calc(${ratio * 100}% - 0.5px)`, opacity: 0.85 }}
+            >
+              <span
+                aria-hidden
+                className="absolute left-1/2 bottom-0 size-[5px] -translate-x-1/2 translate-y-px rounded-[1px] bg-accent"
+              />
+            </button>
           );
         })}
+        {/* Live playhead — a thin Ink line that glides to its target on seek.
+            Composited via translateX; transition makes the scrub readable. */}
+        {playheadMsRef && (
+          <span
+            aria-hidden
+            data-testid="replay-minimap-playhead"
+            className="pointer-events-none absolute top-0 bottom-0 left-0 w-px bg-fg"
+            style={{
+              transform: 'translateX(calc(var(--ph) * (100cqw - 1px)))',
+              transition: 'transform var(--ph-ease, 360ms) var(--ease-out-quart)',
+            }}
+          />
+        )}
       </div>
       <div className="flex items-center justify-between mt-1 text-[10px] text-fg-faint font-mono tabular-nums">
         <span>0:00</span>
@@ -3611,7 +3788,7 @@ function ShareReplayLinkButton({
 
   return (
     <Button variant="outline" size="sm" onClick={() => void copy()} data-testid="share-replay-link">
-      <Link2 />
+      {copied ? <Check className="text-success" /> : <Link2 />}
       {copied ? t('sessionDetail.copied') : t('sessionDetail.shareLinkToCurrentTime')}
     </Button>
   );
@@ -4568,7 +4745,7 @@ function RawTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }
             <span className="hidden xs:inline sm:inline">{t('sessionDetail.download')}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => void copy()} data-testid="raw-copy">
-            <Copy />
+            {copied ? <Check className="text-success" /> : <Copy />}
             {copied ? t('sessionDetail.copied') : t('common.copy')}
           </Button>
         </div>
