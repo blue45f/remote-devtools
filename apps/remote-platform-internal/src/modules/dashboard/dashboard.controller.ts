@@ -55,6 +55,9 @@ export class DashboardController {
    * GET /api/dashboard/tickets/trend
    */
   @Get('tickets/trend')
+  @ApiResponse({ status: 200, description: 'Ticket creation trend data' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing period parameter' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getTicketTrend(@Query() query: PeriodQueryDto): Promise<TicketTrendDto> {
     try {
       if (!query.period) {
@@ -98,6 +101,9 @@ export class DashboardController {
    * GET /api/dashboard/record-sessions/trend
    */
   @Get('record-sessions/trend')
+  @ApiResponse({ status: 200, description: 'Recording session creation trend data' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing period parameter' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getRecordSessionTrend(
     @Query() query: PeriodQueryDto,
   ): Promise<RecordSessionTrendDto> {
