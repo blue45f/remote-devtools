@@ -659,6 +659,8 @@
     "refreshing": "Refreshing…",
     "updated": "Updated {{time}}",
     "noDataForPeriod": "No data for this period",
+    "chartLoadFailed": "Failed to load chart data",
+    "statsLoadFailed": "Failed to load stats",
     "enableDemoMode": "Enable demo mode to preview with seed data",
     "roleDeveloper": "Developer",
     "roleDesigner": "Designer",

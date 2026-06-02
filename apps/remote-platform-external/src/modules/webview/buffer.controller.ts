@@ -1,7 +1,9 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 
 import { WebviewGateway } from './webview.gateway';
 
+@SkipThrottle()
 @Controller('buffer')
 export class BufferController {
   constructor(private readonly webviewGateway: WebviewGateway) {}
