@@ -409,3 +409,27 @@ textarea:focus,
 .animate-slide-up {
   animation: slide-up 280ms var(--ease-out-expo);
 }
+
+/* Minimap scrub feedback — when a seek lands on an error tick, the marker
+   reports the arrival with one quick opacity+scale beat, then settles. This
+   is state ("you jumped here"), not decoration: it fires once per seek and
+   is silenced under reduced-motion by the rule above. */
+@keyframes marker-arrive {
+  0% {
+    opacity: 0.45;
+    transform: scaleY(0.72);
+  }
+  55% {
+    opacity: 1;
+    transform: scaleY(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.animate-marker-arrive {
+  transform-origin: center bottom;
+  animation: marker-arrive 320ms var(--ease-out-quart);
+}
