@@ -54,7 +54,7 @@
     "validate:architecture": "node scripts/validate-architecture.mjs"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1056.0",
+    "@aws-sdk/client-s3": "^3.1057.0",
     "@nestjs/common": "^11.1.24",
     "@nestjs/core": "^11.1.24",
     "@nestjs/platform-express": "^11.1.24",
@@ -72,9 +72,9 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "crypto-js": "^4.2.0",
-    "date-fns": "^4.3.0",
+    "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "devtools-protocol": "^0.0.1637485",
+    "devtools-protocol": "^0.0.1638949",
     "dotenv": "^17.4.2",
     "escape-html": "^1.0.3",
     "express": "^5.2.1",
@@ -97,7 +97,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.0.1",
+    "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^11.0.21",
