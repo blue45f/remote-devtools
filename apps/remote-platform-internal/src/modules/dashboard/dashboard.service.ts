@@ -337,6 +337,7 @@ export class DashboardService {
         createdAt: Between(startDate, endDate),
       },
       select: { username: true },
+      take: 5_000,
     });
 
     const jobCounts: JobCounts = {
@@ -390,6 +391,7 @@ export class DashboardService {
         timestamp: Between(startDate, endDate),
       },
       select: { deviceId: true },
+      take: 5_000,
     });
 
     const jobCounts: JobCounts = {

@@ -441,6 +441,7 @@ export class WebviewController {
     const tickets = await this.ticketLogRepository.find({
       where: { parentEpic },
       order: { createdAt: 'DESC' },
+      take: 200,
       relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
@@ -479,6 +480,7 @@ export class WebviewController {
     const tickets = await this.ticketLogRepository.find({
       where: { url: Like(`%${escapedUrl}%`) },
       order: { createdAt: 'DESC' },
+      take: 200,
       relations: { components: true, labels: true }, // 컴포넌트 및 라벨 정보 포함
     });
 
