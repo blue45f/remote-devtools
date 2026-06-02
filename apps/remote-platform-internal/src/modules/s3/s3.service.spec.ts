@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { S3Service } from './s3.service';
+import type { BufferUploadData } from '@remote-platform/core';
 
 vi.mock('fs', () => ({
   existsSync: vi.fn().mockReturnValue(true),
@@ -37,12 +38,12 @@ vi.mock('@remote-platform/constants', () => ({
   getLocalDateString: vi.fn().mockReturnValue('2026-01-01'),
 }));
 
-const sampleData = {
-  deviceId: 'dev-001',
+const sampleData: BufferUploadData = {
   room: 'room-001',
-  bufferData: [{ type: 2, data: {}, timestamp: 1000 }],
-  trigger: 'manual' as const,
-  timestamp: Date.now(),
+  recordId: 1,
+  deviceId: 'dev-001',
+  bufferData: [{ method: 'Page.loadEventFired', params: {}, timestamp: 1000 }],
+  timestamp: 1_700_000_000_000,
 };
 
 describe('S3Service (Internal)', () => {
@@ -62,8 +63,10 @@ describe('S3Service (Internal)', () => {
 
   describe('saveBufferData', () => {
     it('saves to local file when remote storage is disabled', async () => {
-      vi.spyOn(service as never, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      const localSpy = vi.spyOn(service as never, 'saveToLocalFile').mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const localSpy = vi.spyOn(service as any, 'saveToLocalFile').mockResolvedValue(undefined);
 
       await service.saveBufferData(sampleData);
 
@@ -71,8 +74,10 @@ describe('S3Service (Internal)', () => {
     });
 
     it('uploads to S3 when remote storage is enabled', async () => {
-      vi.spyOn(service as never, 'isRemoteStorageEnabled', 'get').mockReturnValue(true);
-      const s3Spy = vi.spyOn(service as never, 'uploadToS3').mockResolvedValue(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s3Spy = vi.spyOn(service as any, 'uploadToS3').mockResolvedValue(undefined);
 
       await service.saveBufferData(sampleData);
 
@@ -80,8 +85,10 @@ describe('S3Service (Internal)', () => {
     });
 
     it('re-throws on error', async () => {
-      vi.spyOn(service as never, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      vi.spyOn(service as never, 'saveToLocalFile').mockRejectedValue(new Error('disk full'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'saveToLocalFile').mockRejectedValue(new Error('disk full'));
 
       await expect(service.saveBufferData(sampleData)).rejects.toThrow('disk full');
     });
@@ -89,8 +96,10 @@ describe('S3Service (Internal)', () => {
 
   describe('s3PlaybackCache eviction', () => {
     it('evicts oldest entries when cache exceeds maxS3CacheSize', async () => {
-      vi.spyOn(service as never, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      vi.spyOn(service as never, 'getS3BackupFromCloud').mockResolvedValue([sampleData]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.spyOn(service as any, 'getS3BackupFromCloud').mockResolvedValue([sampleData]);
 
       const s = service as unknown as {
         s3PlaybackCache: Map<string, unknown>;
