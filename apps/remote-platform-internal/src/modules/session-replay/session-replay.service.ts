@@ -128,7 +128,7 @@ export class SessionReplayService {
 
     const query = this.recordRepository
       .createQueryBuilder('record')
-      .leftJoinAndSelect('record.screens', 'screen')
+      .leftJoin('record.screens', 'screen')
       .select(['record.id', 'record.name', 'record.duration', 'record.timestamp'])
       .addSelect('COUNT(screen.id)', 'eventCount')
       .addSelect('MIN(screen.timestamp)', 'startTime')

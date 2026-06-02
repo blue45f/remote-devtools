@@ -659,6 +659,8 @@
     "refreshing": "새로고침 중…",
     "updated": "{{time}} 업데이트됨",
     "noDataForPeriod": "이 기간에 데이터가 없습니다",
+    "chartLoadFailed": "차트 데이터를 불러오지 못했습니다",
+    "statsLoadFailed": "통계 데이터를 불러오지 못했습니다",
     "enableDemoMode": "데모 모드를 켜면 시드 데이터로 미리 볼 수 있습니다",
     "roleDeveloper": "개발자",
     "roleDesigner": "디자이너",
