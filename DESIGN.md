@@ -23,7 +23,9 @@ colors:
   warning-soft: 'hsl(38 92% 95%)'
   danger: 'hsl(0 72% 42%)'
   danger-soft: 'hsl(0 72% 96%)'
-  live: 'hsl(0 84% 60%)'
+  live: 'hsl(24 90% 52%)'
+  live-soft: 'hsl(24 90% 96%)'
+  live-soft-fg: 'hsl(22 85% 36%)'
 typography:
   display:
     fontFamily: 'Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif'
@@ -148,7 +150,7 @@ A pure-neutral spine with a single chromatic accent and a small, sparingly-used 
 ### Status (sparingly)
 
 - **Terminal Green** (`hsl(142 71% 28%)`), **Caution Amber** (`hsl(38 92% 42%)`), **Alarm Red** (`hsl(0 72% 42%)`): success / warning / danger. Each pairs with a `*-soft` tint for badge and callout fills. Lightness is intentionally darkened from the usual 500-weight so small numerals pass AA on their soft backgrounds.
-- **Record Red** (`hsl(0 84% 60%)`): The live/recording pulse dot only. Distinct from Alarm Red so "recording" never reads as "error".
+- **Record Orange** (`hsl(24 90% 52%)`, soft `hsl(24 90% 96%)` bg / `hsl(22 85% 36%)` text): The live/recording state — the pulse dot and the `live` badge. A warm "REC" hue, deliberately shifted off Alarm Red (hue 0) so a live session never reads as an error. The `live` badge keys to `live-soft`/`live-soft-fg`, not the danger tokens.
 
 ### Named Rules
 
@@ -210,7 +212,7 @@ Refined and restrained surfaces with one precise tactile cue: interactive contro
 
 ### Badges
 
-- **Style:** `rounded-md`, weight 500, optional 12px leading icon. Variants: neutral (muted fill), outline, accent (soft blue), success / warning / danger (soft tint + matching text), live (soft red + record dot), solid (Ink fill).
+- **Style:** `rounded-md`, weight 500, optional 12px leading icon. Variants: neutral (muted fill), outline, accent (soft blue), success / warning / danger (soft tint + matching text), live (Record Orange soft tint + record dot — its own token, never the danger red), solid (Ink fill).
 - **Sizes:** sm (20px, 10px text, wide tracking), md (24px), lg (28px).
 
 ### Cards / Containers
@@ -233,7 +235,7 @@ Refined and restrained surfaces with one precise tactile cue: interactive contro
 
 ### Signature: Status & Live indicators
 
-- **Live/Recording:** Record Red dot with the `pulse-dot` animation (opacity + scale, 1.6s) next to a `live` badge. The only persistently animated element, because "is this live" is the one thing worth a heartbeat.
+- **Live/Recording:** Record Orange dot with the `pulse-dot` animation (opacity + scale, 1.6s) next to a `live` badge. The only persistently animated element, because "is this live" is the one thing worth a heartbeat.
 - **Severity counts:** small mono numerals in Terminal Green / Caution Amber / Alarm Red on their soft tints, used in tab badges and summary bars.
 
 ## 6. Do's and Don'ts

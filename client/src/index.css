@@ -52,8 +52,12 @@
   --info-soft: 217 91% 96%;
   --info-fg: 0 0% 100%;
 
-  /* Live indicator (record dot) */
-  --live: 0 84% 60%;
+  /* Live / recording indicator — a warm "REC" orange, deliberately NOT the
+     danger red (hue 0). Color = information: a live session is a *state*, not
+     an error, so it earns its own hue distinct from danger/warning/success. */
+  --live: 24 90% 52%;
+  --live-soft: 24 90% 96%;
+  --live-soft-fg: 22 85% 36%;
 
   /* Elevation */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
@@ -101,7 +105,9 @@
   --info-soft: 217 91% 14%;
   --info-fg: 0 0% 100%;
 
-  --live: 0 84% 60%;
+  --live: 28 90% 58%;
+  --live-soft: 24 80% 13%;
+  --live-soft-fg: 30 95% 64%;
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
@@ -150,6 +156,8 @@
   --color-info-fg: hsl(var(--info-fg));
 
   --color-live: hsl(var(--live));
+  --color-live-soft: hsl(var(--live-soft));
+  --color-live-soft-fg: hsl(var(--live-soft-fg));
 
   /* Typography */
   --font-sans:
