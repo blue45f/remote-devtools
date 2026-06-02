@@ -213,28 +213,21 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
 }
 
 function BackgroundGrid() {
+  // Operator identity: the hero leans on the hairline grid alone — no colored
+  // glow. Color is information in this product, so the landing must not spend
+  // the accent hue on decoration. Depth comes from the hairline + radial mask.
   return (
-    <>
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 opacity-60 dark:opacity-30"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-[480px] pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 0%, hsl(var(--accent) / 0.18), transparent 70%)',
-        }}
-      />
-    </>
+    <div
+      aria-hidden
+      className="absolute inset-0 -z-10 opacity-60 dark:opacity-30"
+      style={{
+        backgroundImage:
+          'linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)',
+        backgroundSize: '48px 48px',
+        maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
+      }}
+    />
   );
 }
 
@@ -388,8 +381,8 @@ function MockTile({ label, value, tone }: { label: string; value: string; tone: 
       <div className="flex items-baseline gap-1">
         <span className="text-base font-semibold tabular-nums">{value}</span>
         {tone === 'live' && (
-          <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider px-1 rounded bg-danger-soft text-danger">
-            <span className="size-1 rounded-full bg-danger animate-pulse-dot" />
+          <span className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider px-1 rounded bg-live-soft text-live-soft-fg">
+            <span className="size-1 rounded-full bg-live animate-pulse-dot" />
             {t('sessions.badgeRec')}
           </span>
         )}
