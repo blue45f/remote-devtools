@@ -20,6 +20,8 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { getLocalDateString } from '@remote-platform/constants';
 import { RecordService, ReplayCommentService } from '@remote-platform/core';
 import { S3Service } from '../s3/s3.service';
@@ -51,6 +53,7 @@ function normaliseTags(input: unknown[]): string[] {
   return out;
 }
 
+@ApiTags('Sessions')
 @Controller('sessions')
 @UseGuards(AuthGuard)
 export class WebviewController {
@@ -63,6 +66,8 @@ export class WebviewController {
   ) {}
 
   // GET /sessions - Return session list
+  @ApiResponse({ status: 200, description: 'Active live debugging room list' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get()
   public getSessionList(): { id: number; name: string }[] {
     return this.webviewGateway.getLiveRoomList();
@@ -85,6 +90,9 @@ export class WebviewController {
    * For backwards compatibility, if no query params are present the response
    * is wrapped as a bare array so existing clients keep working.
    */
+  @ApiResponse({ status: 200, description: 'Paginated recorded session list' })
+  @ApiResponse({ status: 400, description: 'Invalid query parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('record')
   public async getRecordSessionList(
     @Auth() auth: AuthClaims | null,
@@ -139,6 +147,10 @@ export class WebviewController {
   }
 
   // GET /sessions/backups - List S3 backups (includes file content - slower)
+  @ApiResponse({ status: 200, description: 'S3 backup list with event counts' })
+  @ApiResponse({ status: 400, description: 'Invalid limit parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'S3 service error' })
   @Get('backups')
   public async getBackupList(
     @Query('deviceId') deviceId?: string,
@@ -176,6 +188,10 @@ export class WebviewController {
   }
 
   // GET /sessions/backups-light - Lightweight S3 backup listing (no file content reading - faster)
+  @ApiResponse({ status: 200, description: 'Lightweight S3 backup metadata list' })
+  @ApiResponse({ status: 400, description: 'Invalid limit parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'S3 service error' })
   @Get('backups-light')
   public async getBackupListLight(
     @Query('deviceId') deviceId?: string,
@@ -212,6 +228,8 @@ export class WebviewController {
   }
 
   // GET /sessions/backup-urls - Extract URL information from selected backup files
+  @ApiResponse({ status: 200, description: 'Returns URL map extracted from selected backup files' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('backup-urls')
   public async getBackupUrls(@Query('filePaths') filePaths?: string) {
     if (!filePaths) {
@@ -223,12 +241,18 @@ export class WebviewController {
   }
 
   // GET /sessions/backup-viewer - Backup viewer UI
+  @ApiResponse({ status: 200, description: 'Serves the backup viewer HTML page' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('backup-viewer')
   public getBackupViewer(@Res() res: Response): void {
     res.sendFile(path.join(__dirname, 'backup-viewer.html'));
   }
 
   // GET /sessions/record/:recordId/info - Retrieve info for a specific record
+  @ApiResponse({ status: 200, description: 'Returns metadata for the specified record' })
+  @ApiResponse({ status: 400, description: 'Invalid recordId parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
   @Get('record/:recordId/info')
   public async getRecordInfo(@Param('recordId') recordId: string) {
     const id = Number(recordId);
@@ -266,6 +290,11 @@ export class WebviewController {
    * in scope. Powers the autosuggest dropdown on the SessionDetail
    * tags editor.
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Returns sorted list of all unique record tags in scope',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('record/tags')
   public async listAllRecordTags(@Auth() auth: AuthClaims | null): Promise<string[]> {
     return this.recordService.findAllTags(auth?.org ?? null);
@@ -278,6 +307,13 @@ export class WebviewController {
    * and the server normalises each entry (trim, drop empties, dedupe,
    * cap at 24 chars × 16 tags) before saving.
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Tag set replaced successfully; returns updated id and tags',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId or tags payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
   @Put('record/:recordId/tags')
   public async putRecordTags(
     @Param('recordId') recordId: string,
@@ -307,6 +343,13 @@ export class WebviewController {
    * The server trims and caps at MAX_NOTE_LENGTH; an empty result clears the
    * note (stored as NULL).
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Note updated successfully; returns updated id and note',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId or note payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
   @Patch('record/:recordId/note')
   public async patchRecordNote(
     @Param('recordId') recordId: string,
@@ -334,6 +377,12 @@ export class WebviewController {
    * List all comments on a record's replay, sorted by timestamp_ms ASC
    * (so they appear in playback order).
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Returns comments for the record sorted by timestamp ascending',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Get('record/:recordId/comments')
   public async getRecordComments(@Param('recordId') recordId: string) {
     const id = this.parseRecordId(recordId);
@@ -353,6 +402,13 @@ export class WebviewController {
    * Body: { timestampMs: number; body: string; author?: string }
    * Creates a new comment anchored at `timestampMs` on the replay timeline.
    */
+  @ApiResponse({
+    status: 201,
+    description: 'Comment created successfully; returns the new comment',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId, timestampMs, or body payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
   @Post('record/:recordId/comments')
   public async postRecordComment(
     @Auth() auth: AuthClaims | null,
@@ -402,6 +458,13 @@ export class WebviewController {
    * Body: { body: string }
    * Updates the comment's text. Author and timestampMs are immutable.
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Comment body updated successfully; returns the updated comment',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId, commentId, or body payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Comment not found on record' })
   @Patch('record/:recordId/comments/:commentId')
   public async patchRecordComment(
     @Param('recordId') recordId: string,
@@ -439,6 +502,13 @@ export class WebviewController {
    * Body: { resolved: boolean }
    * Marks a shared annotation as addressed (or reopens it) for triage.
    */
+  @ApiResponse({
+    status: 200,
+    description: 'Comment resolved state updated; returns the updated comment',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId, commentId, or resolved payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Comment not found on record' })
   @Patch('record/:recordId/comments/:commentId/resolve')
   public async patchRecordCommentResolved(
     @Param('recordId') recordId: string,
@@ -473,6 +543,10 @@ export class WebviewController {
    * DELETE /sessions/record/:recordId/comments/:commentId
    * Removes one comment. 404 if the comment doesn't exist on that record.
    */
+  @ApiResponse({ status: 204, description: 'Comment deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid recordId or commentId parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Comment not found on record' })
   @Delete('record/:recordId/comments/:commentId')
   @HttpCode(HttpStatus.NO_CONTENT)
   public async deleteRecordComment(
@@ -499,6 +573,13 @@ export class WebviewController {
   }
 
   // GET /sessions/record/:recordId/previous - Retrieve previous records for the same deviceId (S3 backups)
+  @ApiResponse({
+    status: 200,
+    description: 'Returns previous S3 backup sessions for the same device, sorted newest first',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid recordId parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
   @Get('record/:recordId/previous')
   public async getPreviousRecords(@Param('recordId') recordId: string) {
     const id = Number(recordId);

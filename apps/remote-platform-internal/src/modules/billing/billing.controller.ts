@@ -10,7 +10,7 @@ import {
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
 import { Auth } from '../auth/auth.decorator';
@@ -40,12 +40,18 @@ export class BillingController {
    *   { enabled: true, plans: [...] }    → render Pricing CTAs
    */
   @Get('status')
+  @ApiResponse({ status: 200, description: 'Returns billing enabled status and plans.' })
+  @ApiResponse({ status: 503, description: 'Billing not configured.' })
   public status() {
     return this.billing.getStatus();
   }
 
   @Get('subscription')
   @UseGuards(AuthGuard)
+  @ApiResponse({ status: 200, description: 'Returns current org subscription state.' })
+  @ApiResponse({ status: 400, description: 'Missing or empty org claim.' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated request.' })
+  @ApiResponse({ status: 503, description: 'Billing not configured.' })
   public async subscription(@Auth() auth: AuthClaims | null) {
     const orgId = auth?.org?.trim();
     if (!orgId) {
@@ -57,6 +63,10 @@ export class BillingController {
   @Post('checkout')
   @UseGuards(AuthGuard)
   @HttpCode(200)
+  @ApiResponse({ status: 200, description: 'Stripe Checkout session created successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid request body.' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated request.' })
+  @ApiResponse({ status: 503, description: 'Billing not configured.' })
   public async checkout(@Auth() auth: AuthClaims | null, @Body() body: CheckoutDto) {
     const orgId = (auth?.org ?? 'anonymous').trim();
     return this.billing.createCheckoutSession({
@@ -71,6 +81,11 @@ export class BillingController {
   @UseGuards(AuthGuard, PlanGuard)
   @RequirePlan('starter')
   @HttpCode(200)
+  @ApiResponse({ status: 200, description: 'Stripe Customer Portal session created.' })
+  @ApiResponse({ status: 400, description: 'Missing or empty org claim.' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated request.' })
+  @ApiResponse({ status: 403, description: 'Plan does not meet minimum requirement.' })
+  @ApiResponse({ status: 503, description: 'Billing not configured.' })
   public async portal(@Auth() auth: AuthClaims | null, @Body() body: PortalDto) {
     const orgId = auth?.org?.trim();
     if (!orgId) {
@@ -90,6 +105,9 @@ export class BillingController {
    */
   @Post('webhook')
   @HttpCode(200)
+  @ApiResponse({ status: 200, description: 'Webhook received and event processed.' })
+  @ApiResponse({ status: 400, description: 'Missing signature or raw body.' })
+  @ApiResponse({ status: 503, description: 'Billing not configured.' })
   public async webhook(@Req() req: Request, @Headers('stripe-signature') signature?: string) {
     if (!this.billing.enabled) {
       throw new ServiceUnavailableException('Billing not enabled');

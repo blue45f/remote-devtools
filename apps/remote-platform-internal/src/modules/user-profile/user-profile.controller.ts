@@ -9,7 +9,7 @@ import {
   Param,
   Put,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { UpdateUserProfileDto, UserProfileResponseDto } from './user-profile.dto';
 import { UserProfileService } from './user-profile.service';
@@ -24,6 +24,9 @@ export class UserProfileController {
   /**
    * Retrieve a user profile by employee number.
    */
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User profile not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get(':empNo')
   public async findOne(@Param('empNo') empNo: string): Promise<{
     success: boolean;
@@ -39,6 +42,10 @@ export class UserProfileController {
   /**
    * Create or update a user profile by employee number.
    */
+  @ApiResponse({ status: 200, description: 'User profile upserted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  @ApiResponse({ status: 404, description: 'User profile not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Put(':empNo/upsert')
   public async upsert(
     @Param('empNo') empNo: string,
@@ -62,6 +69,9 @@ export class UserProfileController {
   /**
    * Delete a user profile by employee number.
    */
+  @ApiResponse({ status: 204, description: 'User profile deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User profile not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Delete(':empNo')
   @HttpCode(HttpStatus.NO_CONTENT)
   public async remove(@Param('empNo') empNo: string): Promise<void> {

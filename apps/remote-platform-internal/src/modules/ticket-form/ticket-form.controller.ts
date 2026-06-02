@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Logger, Put, Query } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -60,6 +60,9 @@ export class TicketFormController {
   /**
    * Retrieve ticket form data based on the last selected template.
    */
+  @ApiResponse({ status: 200, description: 'Ticket form data retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'Device or user not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Get('ticket-form-data')
   public async getTicketFormData(@Query('deviceId') deviceId: string): Promise<ApiResponse> {
     const actualDeviceId = this.getActualDeviceId(deviceId);
@@ -95,6 +98,9 @@ export class TicketFormController {
   /**
    * Retrieve all ticket templates for a user.
    */
+  @ApiResponse({ status: 200, description: 'User templates retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'Device or user not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Get('user-templates')
   public async getUserTemplates(
     @Query('deviceId') deviceId: string,
@@ -177,6 +183,9 @@ export class TicketFormController {
   /**
    * Retrieve ticket form data for a specific template and update the last selected template.
    */
+  @ApiResponse({ status: 200, description: 'Template form data retrieved and selection saved.' })
+  @ApiResponse({ status: 404, description: 'Device, user, or template not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Get('ticket-form-data-by-template')
   public async getTicketFormDataByTemplate(
     @Query('deviceId') deviceId: string,
@@ -234,6 +243,10 @@ export class TicketFormController {
   /**
    * Update the last selected template for a user (called when the SDK changes templates).
    */
+  @ApiResponse({ status: 200, description: 'Template selection updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Template not found for user.' })
+  @ApiResponse({ status: 404, description: 'Device or user not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Put('select-template')
   public async selectTemplate(
     @Body() body: { deviceId: string; templateName: string },

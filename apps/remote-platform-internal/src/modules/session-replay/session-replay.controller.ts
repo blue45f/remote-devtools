@@ -8,7 +8,7 @@ import {
   ParseIntPipe,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiResponse } from '@nestjs/swagger';
 
 import {
   SessionReplayService,
@@ -30,6 +30,9 @@ export class SessionReplayController {
    * GET /api/session-replay/sessions
    * Retrieve a paginated list of sessions, optionally filtered by room.
    */
+  @ApiResponse({ status: 200, description: 'Paginated list of session metadata' })
+  @ApiResponse({ status: 400, description: 'Invalid query parameters' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions')
   public async getSessions(
     @Query(
@@ -57,6 +60,10 @@ export class SessionReplayController {
    * GET /api/session-replay/sessions/:id
    * Retrieve metadata for a specific session.
    */
+  @ApiResponse({ status: 200, description: 'Session metadata for the given ID' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions/:id')
   public async getSessionMetadata(@Param('id', ParseIntPipe) id: number): Promise<SessionMetadata> {
     return this.sessionReplayService.getSessionMetadata(id);
@@ -67,6 +74,10 @@ export class SessionReplayController {
    * Returns the most recent screenPreview snapshot (head + body HTML) so
    * the frontend can render a thumbnail iframe of the captured page.
    */
+  @ApiResponse({ status: 200, description: 'Screen preview snapshot or null if none' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions/:id/preview')
   public async getSessionPreview(
     @Param('id', ParseIntPipe) id: number,
@@ -79,6 +90,10 @@ export class SessionReplayController {
    * Retrieve all events for a session. Supports DB record IDs, S3 session IDs,
    * and direct S3 file paths.
    */
+  @ApiResponse({ status: 200, description: 'Replay events for the session' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID or parameters' })
+  @ApiResponse({ status: 404, description: 'Session or S3 file not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions/:id/events')
   public async getSessionEvents(
     @Param('id') id: string,
@@ -122,6 +137,10 @@ export class SessionReplayController {
    * timestamp, and optional response body. S3-backed sessions return an
    * empty array.
    */
+  @ApiResponse({ status: 200, description: 'Captured network entries for the session' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions/:id/network')
   public async getSessionNetwork(@Param('id') id: string): Promise<SessionNetworkEntry[]> {
     return this.sessionReplayService.getSessionNetwork(id);
@@ -134,6 +153,10 @@ export class SessionReplayController {
    * flat list — one entry per CDP `Runtime.consoleAPICalled` /
    * `Runtime.exceptionThrown` event with level + text + source.
    */
+  @ApiResponse({ status: 200, description: 'Captured console events for the session' })
+  @ApiResponse({ status: 400, description: 'Invalid session ID format' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('sessions/:id/console')
   public async getSessionConsole(@Param('id') id: string): Promise<SessionConsoleEntry[]> {
     return this.sessionReplayService.getSessionConsole(id);

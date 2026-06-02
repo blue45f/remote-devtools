@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { JiraService } from './jira.service';
 
 /**
@@ -36,6 +36,10 @@ export class JiraController {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     }),
   )
+  @ApiResponse({ status: 201, description: 'Image uploaded to Jira successfully' })
+  @ApiResponse({ status: 400, description: 'Missing or invalid image file' })
+  @ApiResponse({ status: 404, description: 'Jira issue not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error during upload' })
   public async uploadImageToJira(
     @Param('issueId') issueId: string,
     @UploadedFile() file: Express.Multer.File,

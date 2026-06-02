@@ -24,7 +24,7 @@ import {
 // HTML을 실제 브라우저로 렌더링
 import { renderHTMLToImage } from '../../utils/html-to-image';
 import { RecordService } from '@remote-platform/core';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { S3Service } from '../s3/s3.service';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -55,6 +55,8 @@ export class WebviewController {
   /**
    * 티켓 생성 통계 조회
    */
+  @ApiResponse({ status: 200, description: 'Ticket creation statistics returned' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('ticket-stats')
   public async getTicketStats() {
     // 총 티켓 생성 수
@@ -123,6 +125,9 @@ export class WebviewController {
   /**
    * 녹화 세션 상세 정보 조회 (screenPreview 포함)
    */
+  @ApiResponse({ status: 200, description: 'Session detail returned successfully' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('session-detail')
   public async getSessionDetail(@Query('sessionName') sessionName: string) {
     if (!sessionName) {
@@ -180,6 +185,10 @@ export class WebviewController {
    *
    * ScreenPreview 데이터를 기반으로 실제 화면과 유사한 이미지 생성
    */
+  @ApiResponse({ status: 200, description: 'Screenshot data URL returned' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing recordId' })
+  @ApiResponse({ status: 404, description: 'Record or preview data not found' })
+  @ApiResponse({ status: 500, description: 'Screenshot rendering failed' })
   @Get('generate-screenshot')
   public async generateScreenshot(
     @Query('recordId') recordId: string,
@@ -298,6 +307,9 @@ export class WebviewController {
   /**
    * 특정 사용자의 티켓 생성 이력 조회
    */
+  @ApiResponse({ status: 200, description: 'User tickets returned successfully' })
+  @ApiResponse({ status: 400, description: 'deviceId is required' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('user-tickets')
   public async getUserTickets(@Query('deviceId') deviceId: string) {
     if (!deviceId) {
@@ -332,6 +344,8 @@ export class WebviewController {
   /**
    * 일별 티켓 생성 통계 (최근 30일)
    */
+  @ApiResponse({ status: 200, description: 'Daily ticket stats for past 30 days' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('daily-stats')
   public async getDailyStats() {
     const thirtyDaysAgo = new Date();
@@ -355,6 +369,8 @@ export class WebviewController {
   /**
    * 컴포넌트별 티켓 생성 통계
    */
+  @ApiResponse({ status: 200, description: 'Ticket counts by component returned' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('component-stats')
   public async getComponentStats() {
     const componentStats = await this.ticketComponentRepository
@@ -383,6 +399,8 @@ export class WebviewController {
   /**
    * 라벨별 티켓 생성 통계
    */
+  @ApiResponse({ status: 200, description: 'Ticket counts by label returned' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('label-stats')
   public async getLabelStats() {
     const labelStats = await this.ticketLabelRepository
@@ -411,6 +429,9 @@ export class WebviewController {
   /**
    * 특정 Epic으로 생성된 티켓 조회
    */
+  @ApiResponse({ status: 200, description: 'Tickets for given epic returned' })
+  @ApiResponse({ status: 400, description: 'parentEpic is required' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('tickets-by-epic')
   public async getTicketsByEpic(@Query('parentEpic') parentEpic: string) {
     if (!parentEpic) {
@@ -445,6 +466,9 @@ export class WebviewController {
   /**
    * 특정 URL에서 생성된 티켓 조회 (부분 일치)
    */
+  @ApiResponse({ status: 200, description: 'Tickets matching URL substring returned' })
+  @ApiResponse({ status: 400, description: 'url is required' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('tickets-by-url')
   public async getTicketsByUrl(@Query('url') url: string) {
     if (!url) {
@@ -482,6 +506,8 @@ export class WebviewController {
   /**
    * 녹화 세션 생성 통계 조회
    */
+  @ApiResponse({ status: 200, description: 'Recording session statistics returned' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('session-stats')
   public async getSessionStats() {
     // 총 녹화 세션 생성 수
@@ -546,6 +572,9 @@ export class WebviewController {
   /**
    * 특정 디바이스의 녹화 세션 생성 이력 조회
    */
+  @ApiResponse({ status: 200, description: 'Device recording sessions returned' })
+  @ApiResponse({ status: 400, description: 'deviceId is required' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('user-sessions')
   public async getUserSessions(@Query('deviceId') deviceId: string) {
     if (!deviceId) {
@@ -576,6 +605,8 @@ export class WebviewController {
   /**
    * 일별 녹화 세션 생성 통계 (최근 30일)
    */
+  @ApiResponse({ status: 200, description: 'Daily session stats split by mode' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('session-daily-stats')
   public async getSessionDailyStats() {
     const thirtyDaysAgo = new Date();
