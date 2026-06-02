@@ -80,7 +80,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const res = await fetch(`${API_HOST}${path}`, { ...init, headers });
+  const res = await fetch(`${API_HOST}${path}`, {
+    ...init,
+    headers,
+    signal: init?.signal ?? AbortSignal.timeout(30_000),
+  });
   if (!res.ok) {
     // Try to extract the backend's localized error message from the JSON body.
     // Our exception filter always returns { statusCode, message, error }.

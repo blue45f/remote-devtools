@@ -200,6 +200,7 @@ export class UserProfileService {
     const users = await this.userRepository.find({
       relations: { deviceInfoList: true, ticketTemplateList: true },
       order: { createdAt: 'DESC' },
+      take: 1_000,
     });
 
     return users.map((user) =>

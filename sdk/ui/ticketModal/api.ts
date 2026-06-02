@@ -20,7 +20,7 @@ export async function getUserTemplates(deviceId: string): Promise<UserTemplatesR
     const apiHost = getAPIHost();
     const apiUrl = `${apiHost}/api/user-templates?deviceId=${encodeURIComponent(deviceId)}`;
 
-    const fetchResponse = await fetch(apiUrl);
+    const fetchResponse = await fetch(apiUrl, { signal: AbortSignal.timeout(15_000) });
 
     // VPN 체크: 403 에러 확인
     if (fetchResponse.status === 403) {
@@ -55,7 +55,7 @@ export async function getTicketFormDataByTemplate(
     const apiHost = getAPIHost();
     const apiUrl = `${apiHost}/api/ticket-form-data-by-template?deviceId=${encodeURIComponent(deviceId)}&templateName=${encodeURIComponent(templateName)}`;
 
-    const fetchResponse = await fetch(apiUrl);
+    const fetchResponse = await fetch(apiUrl, { signal: AbortSignal.timeout(15_000) });
 
     // VPN 체크: 403 에러 확인
     if (fetchResponse.status === 403) {
@@ -90,6 +90,7 @@ export async function selectTemplate(deviceId: string, templateName: string): Pr
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, templateName }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     // VPN 체크: 403 에러 확인
@@ -140,7 +141,7 @@ export async function loadTicketFormDataFromAPI({
       const apiHost = getAPIHost();
       const testUrl = `${apiHost}/api/user-templates?deviceId=${encodeURIComponent(deviceId)}`;
       try {
-        const testResponse = await fetch(testUrl);
+        const testResponse = await fetch(testUrl, { signal: AbortSignal.timeout(10_000) });
         if (testResponse.status === 403) {
           // 403 에러 - VPN 필요
           loadingDiv.innerHTML =
@@ -216,7 +217,7 @@ export async function loadTicketFormDataFromAPI({
 
     let fetchResponse: Response;
     try {
-      fetchResponse = await fetch(apiUrl);
+      fetchResponse = await fetch(apiUrl, { signal: AbortSignal.timeout(15_000) });
     } catch (networkError) {
       // 네트워크 에러 (ERR_ADDRESS_UNREACHABLE 등) - VPN 필요
       console.error('[RemoteDebug-SDK][VPN Error] 네트워크 연결 실패:', networkError);

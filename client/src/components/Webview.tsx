@@ -107,6 +107,7 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
         method,
         headers: data ? { 'Content-Type': 'application/json' } : undefined,
         body: data ? JSON.stringify(data) : undefined,
+        signal: AbortSignal.timeout(15_000),
       });
       emitSampleLog(
         `${method} response:`,
