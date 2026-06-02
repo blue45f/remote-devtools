@@ -54,6 +54,7 @@ export default function SignInPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sub: email || 'dev-user' }),
+        signal: AbortSignal.timeout(15_000),
       });
 
       if (res.status === 503) {
