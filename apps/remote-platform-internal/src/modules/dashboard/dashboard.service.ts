@@ -359,6 +359,7 @@ export class DashboardService {
       uniqueUsernames.length > 0
         ? await this.userRepository.find({
             where: uniqueUsernames.map((username) => ({ username })),
+            take: 5_000,
           })
         : [];
 
@@ -414,6 +415,7 @@ export class DashboardService {
         ? await this.deviceInfoRepository.find({
             where: uniqueDeviceIds.map((deviceId) => ({ deviceId })),
             relations: { user: true },
+            take: 5_000,
           })
         : [];
 
