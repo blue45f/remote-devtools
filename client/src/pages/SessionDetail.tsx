@@ -419,7 +419,11 @@ export default function SessionDetailPage() {
     meta: { suppressToast: true },
   });
 
-  const { data: rawEvents, isLoading: eventsLoading } = useQuery({
+  const {
+    data: rawEvents,
+    isLoading: eventsLoading,
+    isError: eventsError,
+  } = useQuery({
     queryKey: ['session-events', id],
     queryFn: () => apiFetch<RawEvent[]>(`/api/session-replay/sessions/${id}/events`),
     enabled: !!id,
@@ -901,6 +905,8 @@ export default function SessionDetailPage() {
                 <Skeleton className="h-[420px] w-full" />
               </Card>
             </div>
+          ) : eventsError ? (
+            <Card className="p-6 text-sm text-fg-subtle text-center">{t('common.loadFailed')}</Card>
           ) : (
             <ReplayPanel
               events={events ?? []}
@@ -1073,7 +1079,7 @@ function NetworkTab({
   sessionStartMs?: number;
 }) {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery<NetworkRow[]>({
+  const { data, isLoading, isError } = useQuery<NetworkRow[]>({
     queryKey: ['session-network', sessionId],
     queryFn: () => apiFetch<NetworkRow[]>(`/api/session-replay/sessions/${sessionId}/network`),
     enabled: !!sessionId,
@@ -1199,6 +1205,10 @@ function NetworkTab({
         </Card>
       </div>
     );
+  }
+
+  if (isError) {
+    return <Card className="p-6 text-sm text-fg-subtle text-center">{t('common.loadFailed')}</Card>;
   }
 
   if (rows.length === 0) {
@@ -1855,7 +1865,7 @@ function ConsoleTab({
   sessionStartMs?: number;
 }) {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery<ConsoleRow[]>({
+  const { data, isLoading, isError } = useQuery<ConsoleRow[]>({
     queryKey: ['session-console', sessionId],
     queryFn: () => apiFetch<ConsoleRow[]>(`/api/session-replay/sessions/${sessionId}/console`),
     enabled: !!sessionId,
@@ -1944,6 +1954,10 @@ function ConsoleTab({
         </Card>
       </div>
     );
+  }
+
+  if (isError) {
+    return <Card className="p-6 text-sm text-fg-subtle text-center">{t('common.loadFailed')}</Card>;
   }
 
   if (rows.length === 0) {

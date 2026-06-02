@@ -61,6 +61,7 @@ export class ScreenService {
     return this.screenRepository.find({
       where: { record: { id: recordId }, type: null },
       order: { timestamp: 'ASC' },
+      take: 10_000,
     });
   }
 

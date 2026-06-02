@@ -76,7 +76,7 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
 
   // Test handlers
   const handleApiRequest = () => {
-    fetch(SAMPLE_ENDPOINTS.fetchTodo)
+    fetch(SAMPLE_ENDPOINTS.fetchTodo, { signal: AbortSignal.timeout(10_000) })
       .then((r) => r.json())
       .then((data) => emitSampleLog('Fetch Response:', data))
       .catch((e) => console.error('Fetch error:', e));

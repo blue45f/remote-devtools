@@ -115,6 +115,7 @@ export class NetworkService {
     return this.networkRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: 'ASC' },
+      take: 10_000,
     });
   }
 

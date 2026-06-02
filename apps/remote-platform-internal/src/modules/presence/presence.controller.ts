@@ -28,6 +28,7 @@ export class PresenceController {
   @Post(':sessionId/heartbeat')
   @ApiOperation({ summary: '세션 뷰어 하트비트' })
   @ApiResponse({ status: 201, description: '{ count, viewers }' })
+  @ApiResponse({ status: 400, description: 'Missing or invalid sessionId / clientId' })
   public heartbeat(
     @Param('sessionId') sessionId: string,
     @Body() body: { clientId?: unknown; name?: unknown },
@@ -51,6 +52,7 @@ export class PresenceController {
   @Get(':sessionId')
   @ApiOperation({ summary: '세션 뷰어 조회' })
   @ApiResponse({ status: 200, description: '{ count, viewers }' })
+  @ApiResponse({ status: 400, description: 'Missing or blank sessionId' })
   public getViewers(@Param('sessionId') sessionId: string): PresenceResponse {
     const sid = (sessionId ?? '').trim();
     if (!sid) throw new BadRequestException('sessionId is required');

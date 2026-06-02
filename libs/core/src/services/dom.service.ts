@@ -84,6 +84,7 @@ export class DomService {
     return this.domRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: 'ASC' },
+      take: 10_000,
     });
   }
 
