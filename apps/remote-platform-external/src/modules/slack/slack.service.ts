@@ -236,6 +236,7 @@ export class SlackService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(15_000),
       });
 
       const result = (await response.json()) as SlackApiResponse;

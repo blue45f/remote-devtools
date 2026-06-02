@@ -8,6 +8,7 @@ import { assertSafePublicUrl } from '../utils/url-safety';
  * controlled URLs.
  */
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 10_000;
 
 /**
  * 이미지 URL을 Base64 문자열로 변환하는 서비스.
@@ -34,7 +35,7 @@ export class ImageBase64Service {
     }
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!response.ok) {
         this.logger.warn(`Failed to fetch image: ${response.status} ${url}`);
         return '';
