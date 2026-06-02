@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
-// React Compiler was previously wired through plugin-react v4's `babel`
-// option. v6 dropped that escape hatch in favour of `@rolldown/plugin-babel`
-// + `reactCompilerPreset` (see the plugin README). To re-enable, install
-// `@rolldown/plugin-babel`, `@babel/core`, and `@types/babel__core`, then
-// `plugins: [react(), babel({ presets: [reactCompilerPreset()] }), …]`.
+// React Compiler is wired through plugin-react v6's `reactCompilerPreset`
+// helper fed into `@rolldown/plugin-babel` (v4's `babel` escape hatch was
+// dropped). React 19 → no `target`/runtime override needed.
 // Proxy targets default to the standard dev ports but can be overridden
 // (e.g. `VITE_INTERNAL_PORT=3010 VITE_EXTERNAL_PORT=3011 pnpm dev`) to run
 // the client against an isolated backend instance on alternate ports.
@@ -15,7 +14,7 @@ const internalTarget = `http://localhost:${process.env.VITE_INTERNAL_PORT ?? '30
 const externalTarget = `http://localhost:${process.env.VITE_EXTERNAL_PORT ?? '3001'}`;
 
 export default defineConfig(({ command }) => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
