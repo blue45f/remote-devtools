@@ -338,7 +338,7 @@ interface RecentNote {
 
 function RecentNotesPanel() {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery<RecentNote[]>({
+  const { data, isLoading, isError } = useQuery<RecentNote[]>({
     queryKey: ['recent-notes'],
     queryFn: () => apiFetch<RecentNote[]>('/api/dashboard/recent-notes?limit=5'),
   });
@@ -354,6 +354,18 @@ function RecentNotesPanel() {
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-8 w-full" />
         ))}
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <StickyNote className="size-3.5 text-fg-faint" />
+          {t('dashboard.recentlyAnnotated')}
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">{t('common.loadFailed')}</p>
       </Card>
     );
   }
@@ -403,7 +415,7 @@ function RecentNotesPanel() {
 
 function TopHostsPanel({ period }: { period: Period }) {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery<{ host: string; count: number }[]>({
+  const { data, isLoading, isError } = useQuery<{ host: string; count: number }[]>({
     queryKey: ['top-hosts', period],
     queryFn: () =>
       apiFetch<{ host: string; count: number }[]>(
@@ -423,6 +435,18 @@ function TopHostsPanel({ period }: { period: Period }) {
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-6 w-full" />
         ))}
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Globe className="size-3.5 text-fg-faint" />
+          {t('dashboard.topHosts')}
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">{t('common.loadFailed')}</p>
       </Card>
     );
   }
@@ -486,7 +510,7 @@ const PERIOD_LABEL_KEY: Record<Period, string> = {
 
 function TopTagsPanel({ period }: { period: Period }) {
   const { t } = useTranslation();
-  const { data, isLoading } = useQuery<{ tag: string; count: number }[]>({
+  const { data, isLoading, isError } = useQuery<{ tag: string; count: number }[]>({
     queryKey: ['top-tags', period],
     queryFn: () =>
       apiFetch<{ tag: string; count: number }[]>(
@@ -509,6 +533,18 @@ function TopTagsPanel({ period }: { period: Period }) {
             <Skeleton key={i} className="h-7 rounded-full" style={{ width: w }} />
           ))}
         </div>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-fg flex items-center gap-1.5">
+          <Tag className="size-3.5 text-fg-faint" />
+          {t('dashboard.topTags')}
+        </h3>
+        <p className="text-xs text-fg-subtle mt-2">{t('common.loadFailed')}</p>
       </Card>
     );
   }

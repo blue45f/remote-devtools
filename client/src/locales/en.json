@@ -214,7 +214,8 @@
     "unknown": "Unknown",
     "on": "ON",
     "off": "OFF",
-    "checking": "Checking sign-in…"
+    "checking": "Checking sign-in…",
+    "loadFailed": "Failed to load"
   },
   "notFound": {
     "title": "Lost in the network",
