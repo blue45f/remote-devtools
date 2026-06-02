@@ -5,11 +5,21 @@
  * the fetch helper short-circuits to seed data instead of the network —
  * the seed router is lazy-loaded so it is not paid for in normal builds.
  */
-import { QueryClient } from '@tanstack/react-query';
+import { QueryCache, QueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export const API_HOST = import.meta.env.VITE_HOST || 'http://localhost:3000';
 
 export const queryClient = new QueryClient({
+  // Global error toast for all useQuery failures.
+  // Mutations all have their own onError handlers and should NOT set suppressToast.
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      if (query.meta?.suppressToast) return;
+      const msg = (error as Error).message || '알 수 없는 오류가 발생했습니다.';
+      toast.error(msg);
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
@@ -71,6 +81,19 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     ...(init?.headers as Record<string, string> | undefined),
   };
   const res = await fetch(`${API_HOST}${path}`, { ...init, headers });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    // Try to extract the backend's localized error message from the JSON body.
+    // Our exception filter always returns { statusCode, message, error }.
+    let message = `API 오류: ${res.status}`;
+    try {
+      const body = await res.clone().json();
+      if (typeof body?.message === 'string' && body.message) {
+        message = body.message;
+      }
+    } catch {
+      /* response is not JSON — keep the status-code fallback */
+    }
+    throw new Error(message);
+  }
   return res.json();
 }

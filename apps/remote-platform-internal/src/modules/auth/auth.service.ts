@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 /**
@@ -52,13 +58,13 @@ export class AuthService {
    */
   public verify(token: string): AuthClaims {
     if (!this.enabled) {
-      throw new Error(
+      throw new UnauthorizedException(
         'Auth is disabled (no AUTH_JWT_SECRET / AUTH_JWT_PUBLIC_KEY). ' +
           'Set one to enable verification.',
       );
     }
     const key = this.publicKey ?? this.secret;
-    if (!key) throw new Error('No JWT key configured');
+    if (!key) throw new UnauthorizedException('No JWT key configured');
     const algorithms = this.publicKey ? (['RS256'] as const) : (['HS256'] as const);
     return jwt.verify(token, key, {
       algorithms: [...algorithms],
@@ -74,10 +80,10 @@ export class AuthService {
    */
   public issueDevToken(claims: Omit<AuthClaims, 'iat' | 'exp'>): string {
     if (!this.secret) {
-      throw new Error('Dev tokens require AUTH_JWT_SECRET');
+      throw new InternalServerErrorException('Dev tokens require AUTH_JWT_SECRET');
     }
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('Dev token endpoint is disabled when NODE_ENV=production');
+      throw new ForbiddenException('Dev token endpoint is disabled when NODE_ENV=production');
     }
     return jwt.sign(claims, this.secret, {
       algorithm: 'HS256',

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   Query,
@@ -283,7 +284,7 @@ export class WebviewController {
 
       // 다른 에러는 500 에러로 처리
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`스크린샷 생성 실패: ${message}`, { cause: error });
+      throw new InternalServerErrorException(`스크린샷 생성 실패: ${message}`);
     }
 
     this.logger.log(`[Screenshot] Successfully generated image for record: ${record.name}`);
