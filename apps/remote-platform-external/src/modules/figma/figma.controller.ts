@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Logger, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -66,6 +66,9 @@ export class FigmaController {
    * Receives Figma user information and returns associated device info.
    * If username is not provided, returns an error code prompting input.
    */
+  @ApiResponse({ status: 201, description: 'User matched; devices returned' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing request body' })
+  @ApiResponse({ status: 500, description: 'Unexpected server error' })
   @Post('user')
   async registerUser(@Body() userData: FigmaUserRequest): Promise<DeviceInfoResponse> {
     this.logger.log(`[FIGMA_USER_REGISTER] Received user data: ${JSON.stringify(userData)}`);
@@ -169,6 +172,8 @@ export class FigmaController {
   /**
    * Saves selection information from the Figma plugin.
    */
+  @ApiResponse({ status: 201, description: 'Selection data acknowledged successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing request body' })
   @Post('selection')
   async saveSelection(@Body() selectionData: Record<string, unknown>): Promise<SelectionResponse> {
     this.logger.log(`[FIGMA_SELECTION] Received selection: ${JSON.stringify(selectionData)}`);
@@ -178,6 +183,8 @@ export class FigmaController {
   /**
    * Saves page information from the Figma plugin.
    */
+  @ApiResponse({ status: 201, description: 'Page data acknowledged successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing request body' })
   @Post('page')
   async savePage(@Body() pageData: Record<string, unknown>): Promise<SelectionResponse> {
     this.logger.log(`[FIGMA_PAGE] Received page data: ${JSON.stringify(pageData)}`);
@@ -187,6 +194,7 @@ export class FigmaController {
   /**
    * Health check endpoint for the Figma API.
    */
+  @ApiResponse({ status: 200, description: 'Figma API is live' })
   @Get('health')
   async healthCheck(): Promise<HealthCheckResponse> {
     return {

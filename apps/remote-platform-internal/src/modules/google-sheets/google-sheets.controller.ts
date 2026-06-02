@@ -7,7 +7,7 @@ import {
   HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiResponse } from '@nestjs/swagger';
 
 import { GoogleSheetsService } from './google-sheets.service';
 
@@ -32,6 +32,9 @@ export class GoogleSheetsController {
    * Read TC sheet data directly from a Google Sheets URL (admin use).
    */
   @Get('read-tc-sheet')
+  @ApiResponse({ status: 200, description: 'Sheet data fetched successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or sheet data not found.' })
+  @ApiResponse({ status: 500, description: 'Internal error while reading sheet.' })
   public async readTcSheetFromUrl(
     @Query('sheetUrl') sheetUrl: string,
     @Query('sheetName') sheetName?: string,

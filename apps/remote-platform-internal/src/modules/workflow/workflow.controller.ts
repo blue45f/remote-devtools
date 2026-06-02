@@ -10,7 +10,7 @@ import {
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import axios from 'axios';
 import FormData from 'form-data';
@@ -31,6 +31,8 @@ export class WorkflowController {
    * GET /workflow/members - Search internal organization members by name.
    */
   @Get('members')
+  @ApiResponse({ status: 200, description: 'Member list returned successfully' })
+  @ApiResponse({ status: 500, description: 'Upstream proxy or network error' })
   public getMembers(@Query('name') name: string): Promise<WorkflowResponse<MemberDTO>> {
     return axios
       .get<WorkflowResponse<MemberDTO>>(`${this.workflowAPIURL}/members`, {
@@ -45,6 +47,12 @@ export class WorkflowController {
    */
   @Post('jira/issues/:issueId/image')
   @UseInterceptors(FileInterceptor('image'))
+  @ApiResponse({ status: 201, description: 'Image attached to Jira issue' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing file, invalid issue key, or missing credentials',
+  })
+  @ApiResponse({ status: 500, description: 'Jira API or network error' })
   public async uploadImageToJira(
     @Param('issueId') issueId: string,
     @UploadedFile() file: Express.Multer.File,

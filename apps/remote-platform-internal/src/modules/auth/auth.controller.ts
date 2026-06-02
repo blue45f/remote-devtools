@@ -7,7 +7,7 @@ import {
   Post,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 
@@ -31,6 +31,7 @@ export class AuthController {
    * No claims are leaked here — it's just a feature flag.
    */
   @Get('status')
+  @ApiResponse({ status: 200, description: 'Returns auth enabled flag.' })
   public status() {
     return { enabled: this.auth.enabled };
   }
@@ -48,6 +49,9 @@ export class AuthController {
    */
   @Post('dev-token')
   @HttpCode(200)
+  @ApiResponse({ status: 200, description: 'Returns signed Bearer JWT.' })
+  @ApiResponse({ status: 400, description: 'Dev tokens disabled in production.' })
+  @ApiResponse({ status: 503, description: 'Auth not configured; JWT secret missing.' })
   public issueDevToken(@Body() body: DevTokenBody) {
     if (!this.auth.enabled) {
       throw new ServiceUnavailableException(

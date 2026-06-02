@@ -1,5 +1,5 @@
 import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { resolveLang } from '@remote-platform/common';
 
@@ -31,6 +31,9 @@ export class ActivityController {
    *   3. unscoped — returns the global feed (self-host single-tenant)
    */
   @Get('feed')
+  @ApiResponse({ status: 200, description: 'Activity feed entries returned successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized — invalid or missing token' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getFeed(
     @Auth() auth: AuthClaims | null,
     @Query('limit') limit?: string,
