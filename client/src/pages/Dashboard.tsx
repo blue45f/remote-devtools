@@ -390,7 +390,7 @@ function TopHostsPanel({ period }: { period: Period }) {
       ),
   });
   const rows = data ?? [];
-  const max = rows.reduce((m, r) => (r.count > m ? r.count : m), 0);
+  const max = useMemo(() => rows.reduce((m, r) => (r.count > m ? r.count : m), 0), [rows]);
 
   if (isLoading) {
     return (
@@ -649,6 +649,7 @@ function HeroMetricCard({
   const v = value ?? 0;
   const avg = weeklyAvg ?? 0;
   const delta = avg > 0 ? ((v - avg) / avg) * 100 : 0;
+  const sparkData = useMemo(() => spark.map((d) => d.created ?? 0), [spark]);
 
   return (
     <Card className="p-4 sm:p-5 relative overflow-hidden h-full transition-colors hover:border-border-strong">
@@ -676,10 +677,7 @@ function HeroMetricCard({
       {/* sparkline — pulls margin to bleed into the card edge */}
       <div className="-mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-3 h-12 sm:h-14">
         {spark.length > 0 ? (
-          <Sparkline
-            data={spark.map((d) => d.created ?? 0)}
-            intensity={accent === 'fg' ? 'fg' : 'muted'}
-          />
+          <Sparkline data={sparkData} intensity={accent === 'fg' ? 'fg' : 'muted'} />
         ) : null}
       </div>
     </Card>
