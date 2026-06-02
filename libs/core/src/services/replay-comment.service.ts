@@ -22,6 +22,7 @@ export class ReplayCommentService {
     return this.repo.find({
       where: { record: { id: recordId } },
       order: { timestampMs: 'ASC', createdAt: 'ASC' },
+      take: 500,
     });
   }
 

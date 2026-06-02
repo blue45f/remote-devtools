@@ -130,8 +130,9 @@ export default function DashboardPage() {
 
   const liveQuery = useQuery({
     queryKey: ['live-sessions'],
-    queryFn: () => apiFetch<unknown[]>('/sessions').catch(() => []),
+    queryFn: () => apiFetch<unknown[]>('/sessions'),
     refetchInterval: 30_000,
+    meta: { suppressToast: true },
   });
 
   const stats = statsQuery.data?.data;

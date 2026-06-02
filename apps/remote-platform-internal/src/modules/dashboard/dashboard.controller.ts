@@ -28,6 +28,7 @@ export class DashboardController {
   @Get('stats')
   @ApiOperation({ summary: '대시보드 통계 조회' })
   @ApiResponse({ status: 200, description: '통계 데이터 반환' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getStats(): Promise<DashboardStatsDto> {
     try {
       const data = await this.dashboardService.getDashboardStats();
@@ -151,6 +152,8 @@ export class DashboardController {
   @Get('top-hosts')
   @ApiOperation({ summary: '기간 내 호스트별 레코드 수 상위 N' })
   @ApiResponse({ status: 200, description: '[{ host, count }] 배열' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing period parameter' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getTopHosts(
     @Query() query: PeriodQueryDto,
     @Query('limit') limitRaw?: string,
@@ -171,6 +174,8 @@ export class DashboardController {
   @Get('top-tags')
   @ApiOperation({ summary: '기간 내 태그 사용 상위 N' })
   @ApiResponse({ status: 200, description: '[{ tag, count }] 배열' })
+  @ApiResponse({ status: 400, description: 'Invalid or missing period parameter' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getTopTags(
     @Query() query: PeriodQueryDto,
     @Query('limit') limitRaw?: string,
@@ -191,6 +196,7 @@ export class DashboardController {
   @Get('recent-notes')
   @ApiOperation({ summary: '최근 메모가 달린 세션' })
   @ApiResponse({ status: 200, description: '[{ id, name, note, timestamp }] 배열' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   public async getRecentNotes(
     @Query('limit') limitRaw?: string,
   ): Promise<{ id: number; name: string; note: string; timestamp: string }[]> {

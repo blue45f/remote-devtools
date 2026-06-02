@@ -55,6 +55,7 @@ export class RuntimeService {
     return this.runtimeRepository.find({
       where: { record: { id: recordId } },
       order: { timestamp: 'ASC' },
+      take: 10_000,
     });
   }
 
