@@ -25,6 +25,7 @@ import helmet from 'helmet';
 
 import {
   AllExceptionsFilter,
+  createCorsOriginValidator,
   HttpExceptionFilter,
   QueryFailedExceptionFilter,
 } from '@remote-platform/common';
@@ -54,26 +55,9 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      const customOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',') || [];
-      const customPatterns = customOrigins.map(
-        (domain) => new RegExp(`^https?:\\/\\/[^/]+\\.${domain.trim().replace(/\./g, '\\.')}$`),
-      );
-
-      const allowedPatterns = [/^https?:\/\/localhost(:\d+)?$/, ...customPatterns];
-
-      const isAllowed = allowedPatterns.some((pattern) => pattern.test(origin));
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    // Origin allow-listing lives in `@remote-platform/common` so it is a pure,
+    // unit-tested security boundary (see libs/common/src/security/cors-origin.ts).
+    origin: createCorsOriginValidator(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
