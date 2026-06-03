@@ -4,9 +4,9 @@ import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
-// React Compiler is wired through plugin-react v6's `reactCompilerPreset`
-// helper fed into `@rolldown/plugin-babel` (v4's `babel` escape hatch was
-// dropped). React 19 → no `target`/runtime override needed.
+// Vite 8. React Compiler is wired through plugin-react v6's `reactCompilerPreset`
+// helper fed into `@rolldown/plugin-babel` (plugin-react v4's `babel` escape
+// hatch was dropped). React 19 → no `target`/runtime override needed.
 // Proxy targets default to the standard dev ports but can be overridden
 // (e.g. `VITE_INTERNAL_PORT=3010 VITE_EXTERNAL_PORT=3011 pnpm dev`) to run
 // the client against an isolated backend instance on alternate ports.
