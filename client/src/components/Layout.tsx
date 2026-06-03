@@ -49,6 +49,18 @@ export default function Layout() {
     return () => document.removeEventListener('keydown', onKey);
   }, [sidebarOpen, setSidebarOpen]);
 
+  // On route change move focus to the main landmark (same start point as the
+  // skip link) so keyboard/SR users don't have to re-traverse from the top.
+  // Skip the first render so a directly-opened page keeps its focus.
+  const isFirstRouteRef = useRef(true);
+  useEffect(() => {
+    if (isFirstRouteRef.current) {
+      isFirstRouteRef.current = false;
+      return;
+    }
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+  }, [location.pathname]);
+
   return (
     <TooltipProvider delayDuration={250} skipDelayDuration={400}>
       <SkipLink />
