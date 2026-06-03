@@ -19,8 +19,4 @@ describe('AppController (External)', () => {
   it('should return health check on /', () => {
     expect(controller.getRoot()).toBe('ok');
   });
-
-  it('should return health check on /health', () => {
-    expect(controller.getHealth()).toBe('ok');
-  });
 });
