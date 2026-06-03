@@ -40,7 +40,7 @@ cd client && pnpm dev        # Vite dev server with proxy to backends
 
 ### Frontend (`client/`)
 
-- React 19 + Vite 6 + TanStack Query v5 + Zustand + Tailwind CSS 4
+- React 19 + Vite 8 + TanStack Query v5 + Zustand + Tailwind CSS 4
 - Path alias: `@/` → `client/src`
 - Layout: `src/components/Layout.tsx` (sidebar + topbar + Cmd+K palette)
 - Design system: `src/components/ui/*` (shadcn-style primitives on Radix UI)
@@ -115,7 +115,7 @@ pnpm test:cov      # with v8 coverage
 
 - **Backend**: NestJS 11, TypeORM, PostgreSQL, helmet, `@nestjs/throttler`, `@nestjs/swagger`, `@nestjs/terminus`
 - **Frontend**:
-  - React 19, Vite 6, TanStack Query v5, Zustand
+  - React 19, Vite 8, TanStack Query v5, Zustand
   - Tailwind CSS 4 (via `@tailwindcss/vite`)
   - Radix UI primitives, cmdk (command palette), framer-motion (motion), lucide-react (icons), sonner (toasts)
   - Recharts (charts), rrweb-player (session replay)
