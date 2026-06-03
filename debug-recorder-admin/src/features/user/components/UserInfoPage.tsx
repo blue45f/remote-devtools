@@ -1,10 +1,13 @@
-import { PageContainer } from '@/shared/components'
-import { UserInfoForm } from './UserInfoForm'
+import { useTranslation } from 'react-i18next';
+import { PageContainer } from '@/shared/components';
+import { UserInfoForm } from './UserInfoForm';
 
 export function UserInfoPage() {
+  const { t } = useTranslation();
+
   return (
-    <PageContainer title="유저 정보">
+    <PageContainer title={t('userInfo.title')}>
       <UserInfoForm />
     </PageContainer>
-  )
+  );
 }
