@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "featureIntroduction": "기능 소개",
+    "userGuide": "유저 가이드",
+    "devGuide": "개발 가이드",
+    "userInfo": "유저 정보",
+    "dashboard": "대시보드",
+    "remoteDevtools": "Remote DevTools"
+  },
+  "layout": {
+    "checkingSession": "세션 확인 중...",
+    "logout": "로그아웃"
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "refresh": "새로고침",
+    "loadErrorTitle": "데이터 로드 실패",
+    "loadErrorDescription": "서버에서 데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다.",
+    "period": {
+      "day": "일별",
+      "week": "주별",
+      "month": "월별"
+    },
+    "viewMode": {
+      "ticket": "티켓",
+      "recordRoom": "녹화방"
+    },
+    "stats": {
+      "totalTickets": "전체 티켓",
+      "todayTickets": "오늘 생성된 티켓",
+      "weeklyAverage": "주간 평균",
+      "resolveRate": "해결률",
+      "totalRecordRooms": "전체 녹화방",
+      "todayRecordRooms": "오늘 생성된 녹화방",
+      "activeRecordRooms": "활성 녹화방",
+      "countSuffix": "건",
+      "percentSuffix": "%"
+    },
+    "trend": {
+      "ticketTitle": "티켓 추이",
+      "recordRoomTitle": "녹화방 추이",
+      "empty": "데이터가 없습니다",
+      "series": {
+        "created": "생성",
+        "resolved": "해결",
+        "pending": "대기",
+        "messages": "메시지",
+        "participants": "참여자"
+      }
+    }
+  }
+}
