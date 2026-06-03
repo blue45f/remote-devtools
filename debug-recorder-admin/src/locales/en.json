@@ -48,5 +48,80 @@
         "participants": "Participants"
       }
     }
+  },
+  "common": {
+    "error": {
+      "title": "An error occurred",
+      "unknown": "An unknown error occurred.",
+      "retry": "Try again"
+    }
+  },
+  "userInfo": {
+    "title": "User Info"
+  },
+  "featureIntro": {
+    "title": "Features",
+    "previewAlt": "{{title}} feature preview",
+    "recordingTitle": "Recording Room",
+    "recordingDescription": "Captures screen recordings along with network requests and console logs, automatically collecting the information you need for debugging.",
+    "ticketTitle": "Create {{issueLabel}}",
+    "ticketDescription": "Automatically creates a {{issueTrackerName}} based on the recorded information. Use templates to write a consistently formatted {{issueLabel}}.",
+    "networkRewriteDescription": "Modify API responses to test various scenarios. Easily reproduce error conditions and edge cases.",
+    "designTitle": "{{designTool}} Integration",
+    "designDescription": "Integrate with {{designTool}} to share recording flows and organize feedback.",
+    "shareDescription": "Automatically send notification and sharing messages via {{shareChannel}}.",
+    "remoteDevtoolsDescription": "Collect and observe remote debug sessions in real time, and manage event streams, session status, and command control all on one screen.",
+    "ctaPrompt": "To get started with {{appName}}, please set up your user info first.",
+    "ctaButton": "Set up user info"
+  },
+  "remoteDevtools": {
+    "title": "Remote DevTools",
+    "disabledTitle": "Remote DevTools integration disabled",
+    "disabledDescription": "VITE_REMOTE_DEVTOOLS_ENABLED is currently false, so this feature is disabled. Enable the value in `.env`.",
+    "levelFilterAll": "All",
+    "statusFilterAll": "All statuses",
+    "connectedText": "Connected (live)",
+    "reconnectingText": "Reconnecting ({{attempts}})",
+    "disconnectedText": "Disconnected (live)",
+    "columnSession": "Session",
+    "columnEnvironment": "Environment",
+    "columnDevice": "Device",
+    "columnConnectedAt": "Connected at",
+    "columnParticipants": "Participants",
+    "refresh": "Refresh",
+    "createSession": "Create session",
+    "liveConnection": "Live connection",
+    "reconnect": "Reconnect",
+    "clearEvents": "Clear events",
+    "clearActivity": "Clear activity log",
+    "exportEventsJson": "Export JSON",
+    "exportEventsCsv": "Export CSV",
+    "saveActivity": "Save activity log",
+    "enterValueTitle": "Enter a value.",
+    "sessionListLoadFailed": "Failed to load session list",
+    "sessionListLoadFailedDescription": "Unable to load the Remote DevTools session API response.",
+    "sessionListTitle": "Session list",
+    "sessionCount": "{{filtered}}/{{total}}",
+    "sessionSearchPlaceholder": "Search sessions",
+    "emptySessions": "No sessions.",
+    "liveEventsTitle": "Live events",
+    "eventTotal": "Total {{total}}",
+    "connectionWarning": "Connection warning",
+    "selectedSession": "Selected session",
+    "selectSessionHint": "Select a session to display live events.",
+    "eventSearchPlaceholder": "Search event message/type/source",
+    "commandValuePlaceholder": "Command value (replay/collect)",
+    "connectionAddress": "Connection address:",
+    "connectionUnset": "Not set",
+    "roomLink": "Recording room link",
+    "lastConnected": "Last connected:",
+    "lastEvent": "Last event:",
+    "liveModeActive": "Live mode active",
+    "liveModeInactive": "Live mode inactive or disconnected",
+    "tabTimeline": "Event timeline",
+    "tabSummary": "Summary",
+    "tabActivity": "Activity log",
+    "emptyEvents": "No events.",
+    "emptyActivity": "No activity log."
   }
 }

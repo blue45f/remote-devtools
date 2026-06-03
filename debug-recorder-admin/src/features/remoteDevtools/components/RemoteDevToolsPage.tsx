@@ -1,80 +1,86 @@
-import { useMemo, useState } from "react";
-import Alert from "antd/es/alert";
-import Badge from "antd/es/badge";
-import Button from "antd/es/button";
-import Card from "antd/es/card";
-import Col from "antd/es/col";
-import Collapse from "antd/es/collapse";
-import Input from "antd/es/input";
-import List from "antd/es/list";
-import Row from "antd/es/row";
-import Select from "antd/es/select";
-import Space from "antd/es/space";
-import Spin from "antd/es/spin";
-import Switch from "antd/es/switch";
-import Table from "antd/es/table";
-import Timeline from "antd/es/timeline";
-import Tabs from "antd/es/tabs";
-import Tag from "antd/es/tag";
-import Typography from "antd/es/typography";
-import type { ColumnsType } from "antd/es/table";
-import BulbOutlined from "@ant-design/icons/es/icons/BulbOutlined";
-import CaretRightOutlined from "@ant-design/icons/es/icons/CaretRightOutlined";
-import CheckCircleOutlined from "@ant-design/icons/es/icons/CheckCircleOutlined";
-import ClearOutlined from "@ant-design/icons/es/icons/ClearOutlined";
-import CloudServerOutlined from "@ant-design/icons/es/icons/CloudServerOutlined";
-import DisconnectOutlined from "@ant-design/icons/es/icons/DisconnectOutlined";
-import DownloadOutlined from "@ant-design/icons/es/icons/DownloadOutlined";
-import FileSearchOutlined from "@ant-design/icons/es/icons/FileSearchOutlined";
-import HistoryOutlined from "@ant-design/icons/es/icons/HistoryOutlined";
-import LinkOutlined from "@ant-design/icons/es/icons/LinkOutlined";
-import PauseCircleOutlined from "@ant-design/icons/es/icons/PauseCircleOutlined";
-import PlayCircleOutlined from "@ant-design/icons/es/icons/PlayCircleOutlined";
-import PlusCircleOutlined from "@ant-design/icons/es/icons/PlusCircleOutlined";
-import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
-import SearchOutlined from "@ant-design/icons/es/icons/SearchOutlined";
-import SyncOutlined from "@ant-design/icons/es/icons/SyncOutlined";
-import ThunderboltOutlined from "@ant-design/icons/es/icons/ThunderboltOutlined";
-import type { ReactNode } from "react";
-import { useRemoteDevTools } from "../hooks";
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import Alert from 'antd/es/alert';
+import Badge from 'antd/es/badge';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Col from 'antd/es/col';
+import Collapse from 'antd/es/collapse';
+import Input from 'antd/es/input';
+import List from 'antd/es/list';
+import Row from 'antd/es/row';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Switch from 'antd/es/switch';
+import Table from 'antd/es/table';
+import Timeline from 'antd/es/timeline';
+import Tabs from 'antd/es/tabs';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import type { ColumnsType } from 'antd/es/table';
+import BulbOutlined from '@ant-design/icons/es/icons/BulbOutlined';
+import CaretRightOutlined from '@ant-design/icons/es/icons/CaretRightOutlined';
+import CheckCircleOutlined from '@ant-design/icons/es/icons/CheckCircleOutlined';
+import ClearOutlined from '@ant-design/icons/es/icons/ClearOutlined';
+import CloudServerOutlined from '@ant-design/icons/es/icons/CloudServerOutlined';
+import DisconnectOutlined from '@ant-design/icons/es/icons/DisconnectOutlined';
+import DownloadOutlined from '@ant-design/icons/es/icons/DownloadOutlined';
+import FileSearchOutlined from '@ant-design/icons/es/icons/FileSearchOutlined';
+import HistoryOutlined from '@ant-design/icons/es/icons/HistoryOutlined';
+import LinkOutlined from '@ant-design/icons/es/icons/LinkOutlined';
+import PauseCircleOutlined from '@ant-design/icons/es/icons/PauseCircleOutlined';
+import PlayCircleOutlined from '@ant-design/icons/es/icons/PlayCircleOutlined';
+import PlusCircleOutlined from '@ant-design/icons/es/icons/PlusCircleOutlined';
+import ReloadOutlined from '@ant-design/icons/es/icons/ReloadOutlined';
+import SearchOutlined from '@ant-design/icons/es/icons/SearchOutlined';
+import SyncOutlined from '@ant-design/icons/es/icons/SyncOutlined';
+import ThunderboltOutlined from '@ant-design/icons/es/icons/ThunderboltOutlined';
+import type { ReactNode } from 'react';
+import { useRemoteDevTools } from '../hooks';
 import {
   getRemoteDevToolsCommandsForStatus,
   doesRemoteDevToolsCommandRequireValue,
   REMOTE_DEVTOOLS_COMMAND_LABELS,
-} from "../utils";
-import { PageContainer } from "@/shared/components";
+} from '../utils';
+import { PageContainer } from '@/shared/components';
 import type {
   RemoteDevToolsEvent,
   RemoteDevToolsCommand,
   RemoteDevToolsEventLevel,
   RemoteDevToolsSession,
   RemoteDevToolsActivity,
-} from "../types";
+} from '../types';
 
 const { Text, Paragraph, Title } = Typography;
 
-const LEVEL_OPTIONS: Array<{
-  value: "all" | RemoteDevToolsEventLevel;
+const buildLevelOptions = (
+  t: TFunction,
+): Array<{
+  value: 'all' | RemoteDevToolsEventLevel;
   label: string;
-}> = [
-  { value: "all", label: "전체" },
-  { value: "info", label: "INFO" },
-  { value: "warn", label: "WARN" },
-  { value: "error", label: "ERROR" },
-  { value: "debug", label: "DEBUG" },
+}> => [
+  { value: 'all', label: t('remoteDevtools.levelFilterAll') },
+  { value: 'info', label: 'INFO' },
+  { value: 'warn', label: 'WARN' },
+  { value: 'error', label: 'ERROR' },
+  { value: 'debug', label: 'DEBUG' },
 ];
 
-const SESSION_STATUS_OPTIONS: Array<{
-  value: "all" | RemoteDevToolsSession["status"];
+const buildSessionStatusOptions = (
+  t: TFunction,
+): Array<{
+  value: 'all' | RemoteDevToolsSession['status'];
   label: string;
-}> = [
-  { value: "all", label: "전체 상태" },
-  { value: "running", label: "running" },
-  { value: "connected", label: "connected" },
-  { value: "waiting", label: "waiting" },
-  { value: "idle", label: "idle" },
-  { value: "stopped", label: "stopped" },
-  { value: "error", label: "error" },
+}> => [
+  { value: 'all', label: t('remoteDevtools.statusFilterAll') },
+  { value: 'running', label: 'running' },
+  { value: 'connected', label: 'connected' },
+  { value: 'waiting', label: 'waiting' },
+  { value: 'idle', label: 'idle' },
+  { value: 'stopped', label: 'stopped' },
+  { value: 'error', label: 'error' },
 ];
 
 const COMMAND_ICON_MAP: Record<RemoteDevToolsCommand, ReactNode> = {
@@ -88,36 +94,32 @@ const COMMAND_ICON_MAP: Record<RemoteDevToolsCommand, ReactNode> = {
 
 const COMMAND_TYPE_MAP: Record<
   RemoteDevToolsCommand,
-  "primary" | "default" | "dashed" | "link" | "text"
+  'primary' | 'default' | 'dashed' | 'link' | 'text'
 > = {
-  start: "primary",
-  pause: "default",
-  resume: "default",
-  replay: "default",
-  disconnect: "default",
-  collect: "default",
+  start: 'primary',
+  pause: 'default',
+  resume: 'default',
+  replay: 'default',
+  disconnect: 'default',
+  collect: 'default',
 };
 
-const ACTIVITY_COLOR_MAP: Record<RemoteDevToolsActivity["level"], string> = {
-  info: "blue",
-  success: "green",
-  warning: "gold",
-  error: "red",
-  debug: "purple",
+const ACTIVITY_COLOR_MAP: Record<RemoteDevToolsActivity['level'], string> = {
+  info: 'blue',
+  success: 'green',
+  warning: 'gold',
+  error: 'red',
+  debug: 'purple',
 };
 
-const toDownloadable = (
-  content: string,
-  filename: string,
-  type = "text/plain",
-) => {
+const toDownloadable = (content: string, filename: string, type = 'text/plain') => {
   const blob = new window.Blob([content], { type });
   const url = window.URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
+  const anchor = document.createElement('a');
 
   anchor.href = url;
   anchor.download = filename;
-  anchor.style.display = "none";
+  anchor.style.display = 'none';
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
@@ -137,21 +139,21 @@ const safeJsonStringify = (value: unknown, spacing = 2): string => {
     const serialized = JSON.stringify(
       value,
       (_key, nestedValue) => {
-        if (typeof nestedValue === "bigint") {
+        if (typeof nestedValue === 'bigint') {
           return `${nestedValue}n`;
         }
 
-        if (typeof nestedValue === "function") {
-          return `[Function: ${nestedValue.name || "anonymous"}]`;
+        if (typeof nestedValue === 'function') {
+          return `[Function: ${nestedValue.name || 'anonymous'}]`;
         }
 
-        if (typeof nestedValue === "symbol") {
+        if (typeof nestedValue === 'symbol') {
           return nestedValue.toString();
         }
 
-        if (typeof nestedValue === "object" && nestedValue !== null) {
+        if (typeof nestedValue === 'object' && nestedValue !== null) {
           if (seen.has(nestedValue)) {
-            return "[Circular]";
+            return '[Circular]';
           }
 
           seen.add(nestedValue);
@@ -169,7 +171,7 @@ const safeJsonStringify = (value: unknown, spacing = 2): string => {
 };
 
 const toCsvField = (value: unknown): string => {
-  const text = typeof value === "string" ? value : safeJsonStringify(value, 0);
+  const text = typeof value === 'string' ? value : safeJsonStringify(value, 0);
   const safeText = escapeCsvFieldValue(text);
 
   const escaped = String(safeText).replace(/"/g, '""');
@@ -177,15 +179,7 @@ const toCsvField = (value: unknown): string => {
 };
 
 const buildEventsCsv = (events: RemoteDevToolsEvent[]) => {
-  const header = [
-    "timestamp",
-    "sessionId",
-    "level",
-    "source",
-    "type",
-    "message",
-    "payload",
-  ];
+  const header = ['timestamp', 'sessionId', 'level', 'source', 'type', 'message', 'payload'];
   const rows = events.map((event) =>
     [
       event.timestamp,
@@ -197,14 +191,13 @@ const buildEventsCsv = (events: RemoteDevToolsEvent[]) => {
       event.payload,
     ]
       .map(toCsvField)
-      .join(","),
+      .join(','),
   );
 
-  return [header.join(","), ...rows].join("\n");
+  return [header.join(','), ...rows].join('\n');
 };
 
-const safeExportTimestamp = () =>
-  new Date().toISOString().replace(/[:.]/g, "-");
+const safeExportTimestamp = () => new Date().toISOString().replace(/[:.]/g, '-');
 
 function buildCommandButton({
   command,
@@ -225,7 +218,7 @@ function buildCommandButton({
     <Button
       key={key}
       type={COMMAND_TYPE_MAP[command]}
-      danger={command === "disconnect"}
+      danger={command === 'disconnect'}
       loading={loading}
       icon={COMMAND_ICON_MAP[command]}
       onClick={onClick}
@@ -237,42 +230,42 @@ function buildCommandButton({
   );
 }
 
-function statusToColor(status: RemoteDevToolsSession["status"]) {
+function statusToColor(status: RemoteDevToolsSession['status']) {
   switch (status) {
-    case "running":
-      return "green";
-    case "connected":
-      return "blue";
-    case "waiting":
-      return "gold";
-    case "error":
-      return "red";
+    case 'running':
+      return 'green';
+    case 'connected':
+      return 'blue';
+    case 'waiting':
+      return 'gold';
+    case 'error':
+      return 'red';
     default:
-      return "default";
+      return 'default';
   }
 }
 
 function toLocalTime(value?: string) {
   if (!value) {
-    return "-";
+    return '-';
   }
 
   try {
     return new Date(value).toLocaleString();
   } catch {
-    return "-";
+    return '-';
   }
 }
 
 function EventMessage({ event }: { event: RemoteDevToolsEvent }) {
   const color =
-    event.level === "error"
-      ? "red"
-      : event.level === "warn"
-        ? "gold"
-        : event.level === "debug"
-          ? "geekblue"
-          : "green";
+    event.level === 'error'
+      ? 'red'
+      : event.level === 'warn'
+        ? 'gold'
+        : event.level === 'debug'
+          ? 'geekblue'
+          : 'green';
 
   return (
     <List.Item>
@@ -287,17 +280,17 @@ function EventMessage({ event }: { event: RemoteDevToolsEvent }) {
           </Space>
         }
         description={
-          <Space direction="vertical" size={4} style={{ width: "100%" }}>
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
             <Text>{event.message}</Text>
-            {typeof event.payload !== "undefined" ? (
+            {typeof event.payload !== 'undefined' ? (
               <Collapse
                 size="small"
                 items={[
                   {
-                    key: "payload",
-                    label: "Payload",
+                    key: 'payload',
+                    label: 'Payload',
                     children: (
-                      <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                         {safeJsonStringify(event.payload)}
                       </pre>
                     ),
@@ -312,32 +305,37 @@ function EventMessage({ event }: { event: RemoteDevToolsEvent }) {
   );
 }
 
-function renderConnectionStatus(status: {
-  connected: boolean;
-  reconnecting: boolean;
-  reconnectAttempts: number;
-}) {
+function renderConnectionStatus(
+  status: {
+    connected: boolean;
+    reconnecting: boolean;
+    reconnectAttempts: number;
+  },
+  t: TFunction,
+) {
   if (status.connected) {
-    return <Badge status="success" text="실시간 연결됨" />;
+    return <Badge status="success" text={t('remoteDevtools.connectedText')} />;
   }
 
   if (status.reconnecting) {
     return (
       <Badge
         status="processing"
-        text={`재연결 중 (${status.reconnectAttempts}회)`}
+        text={t('remoteDevtools.reconnectingText', {
+          attempts: status.reconnectAttempts,
+        })}
       />
     );
   }
 
-  return <Badge status="error" text="실시간 미연결" />;
+  return <Badge status="error" text={t('remoteDevtools.disconnectedText')} />;
 }
 
-const EVENT_COLUMNS: ColumnsType<RemoteDevToolsSession> = [
+const buildEventColumns = (t: TFunction): ColumnsType<RemoteDevToolsSession> => [
   {
-    title: "세션",
-    dataIndex: "name",
-    key: "name",
+    title: t('remoteDevtools.columnSession'),
+    dataIndex: 'name',
+    key: 'name',
     width: 220,
     render: (_: string, record: RemoteDevToolsSession) => (
       <Space direction="vertical" size={2}>
@@ -352,36 +350,35 @@ const EVENT_COLUMNS: ColumnsType<RemoteDevToolsSession> = [
     ),
   },
   {
-    title: "환경",
-    key: "environment",
+    title: t('remoteDevtools.columnEnvironment'),
+    key: 'environment',
     width: 140,
-    render: (_: unknown, record: RemoteDevToolsSession) =>
-      record.environment || "-",
+    render: (_: unknown, record: RemoteDevToolsSession) => record.environment || '-',
   },
   {
-    title: "디바이스",
-    key: "device",
+    title: t('remoteDevtools.columnDevice'),
+    key: 'device',
     width: 180,
     render: (_: unknown, record: RemoteDevToolsSession) =>
-      record.device?.name || record.device?.platform || "-",
+      record.device?.name || record.device?.platform || '-',
   },
   {
-    title: "연결 시각",
-    key: "connectedAt",
+    title: t('remoteDevtools.columnConnectedAt'),
+    key: 'connectedAt',
     width: 190,
     render: (_: unknown, record: RemoteDevToolsSession) =>
       toLocalTime(record.lastHeartbeatAt || record.startedAt),
   },
   {
-    title: "참여자",
-    key: "participants",
+    title: t('remoteDevtools.columnParticipants'),
+    key: 'participants',
     width: 90,
-    render: (_: unknown, record: RemoteDevToolsSession) =>
-      String(record.participantCount || 0),
+    render: (_: unknown, record: RemoteDevToolsSession) => String(record.participantCount || 0),
   },
 ];
 
 export function RemoteDevToolsPage() {
+  const { t } = useTranslation();
   const {
     isFeatureEnabled,
     sessionsFiltered,
@@ -422,7 +419,11 @@ export function RemoteDevToolsPage() {
     latestEvent,
   } = useRemoteDevTools();
 
-  const [commandValue, setCommandValue] = useState("");
+  const [commandValue, setCommandValue] = useState('');
+
+  const levelOptions = useMemo(() => buildLevelOptions(t), [t]);
+  const sessionStatusOptions = useMemo(() => buildSessionStatusOptions(t), [t]);
+  const eventColumns = useMemo(() => buildEventColumns(t), [t]);
 
   const eventItems = useMemo(() => events, [events]);
   const activityItems = useMemo(() => {
@@ -431,8 +432,7 @@ export function RemoteDevToolsPage() {
     }
 
     return activityLog.filter(
-      (activity) =>
-        !activity.sessionId || activity.sessionId === activeSessionId,
+      (activity) => !activity.sessionId || activity.sessionId === activeSessionId,
     );
   }, [activityLog, activeSessionId]);
 
@@ -454,9 +454,7 @@ export function RemoteDevToolsPage() {
           <Space direction="vertical" size={4}>
             <Text strong>{activity.message}</Text>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {activity.sessionId
-                ? `session=${activity.sessionId}`
-                : "scope=system"}
+              {activity.sessionId ? `session=${activity.sessionId}` : 'scope=system'}
             </Text>
             {activity.details ? <Text code>{activity.details}</Text> : null}
           </Space>
@@ -477,7 +475,7 @@ export function RemoteDevToolsPage() {
           void eventsRefetch();
         }}
       >
-        새로고침
+        {t('remoteDevtools.refresh')}
       </Button>,
       <Button
         key="add"
@@ -486,10 +484,10 @@ export function RemoteDevToolsPage() {
         loading={isCreatingSession}
         onClick={() => createSession()}
       >
-        세션 생성
+        {t('remoteDevtools.createSession')}
       </Button>,
       <Space key="live-switch" size={4} align="center">
-        <Text type="secondary">실시간 연결</Text>
+        <Text type="secondary">{t('remoteDevtools.liveConnection')}</Text>
         <Switch
           checked={isLiveMode}
           checkedChildren={<CheckCircleOutlined />}
@@ -504,7 +502,7 @@ export function RemoteDevToolsPage() {
         disabled={!activeSessionId || !isLiveMode}
         onClick={() => reconnectNow()}
       >
-        재연결
+        {t('remoteDevtools.reconnect')}
       </Button>,
       <Button
         key="clear-events"
@@ -512,7 +510,7 @@ export function RemoteDevToolsPage() {
         disabled={!activeSessionId || events.length === 0}
         onClick={clearEvents}
       >
-        이벤트 초기화
+        {t('remoteDevtools.clearEvents')}
       </Button>,
       <Button
         key="clear-activity"
@@ -520,7 +518,7 @@ export function RemoteDevToolsPage() {
         disabled={activityItems.length === 0}
         onClick={clearActivityLog}
       >
-        활동 로그 초기화
+        {t('remoteDevtools.clearActivity')}
       </Button>,
       <Button
         key="export-events-json"
@@ -530,25 +528,21 @@ export function RemoteDevToolsPage() {
           toDownloadable(
             safeJsonStringify(eventItems),
             `${eventExportFileName}.json`,
-            "application/json",
+            'application/json',
           )
         }
       >
-        JSON 내보내기
+        {t('remoteDevtools.exportEventsJson')}
       </Button>,
       <Button
         key="export-events-csv"
         icon={<DownloadOutlined />}
         disabled={events.length === 0}
         onClick={() =>
-          toDownloadable(
-            buildEventsCsv(eventItems),
-            `${eventExportFileName}.csv`,
-            "text/csv",
-          )
+          toDownloadable(buildEventsCsv(eventItems), `${eventExportFileName}.csv`, 'text/csv')
         }
       >
-        CSV 내보내기
+        {t('remoteDevtools.exportEventsCsv')}
       </Button>,
       <Button
         key="export-activity-json"
@@ -558,11 +552,11 @@ export function RemoteDevToolsPage() {
           toDownloadable(
             safeJsonStringify(activityItems),
             `${activityExportFileName}.json`,
-            "application/json",
+            'application/json',
           )
         }
       >
-        활동 로그 저장
+        {t('remoteDevtools.saveActivity')}
       </Button>,
     ];
 
@@ -575,8 +569,7 @@ export function RemoteDevToolsPage() {
     const commands = getRemoteDevToolsCommandsForStatus(selectedSession.status);
     for (const command of commands) {
       const requiresValue = doesRemoteDevToolsCommandRequireValue(command);
-      const commandDisabled =
-        !commandEnabled || (requiresValue && trimCommandValue.length === 0);
+      const commandDisabled = !commandEnabled || (requiresValue && trimCommandValue.length === 0);
 
       list.push(
         buildCommandButton({
@@ -584,14 +577,11 @@ export function RemoteDevToolsPage() {
           key: command,
           loading: isCommandRunning,
           disabled: commandDisabled,
-          title:
-            commandDisabled && requiresValue ? "값을 입력하세요." : undefined,
+          title: commandDisabled && requiresValue ? t('remoteDevtools.enterValueTitle') : undefined,
           onClick: () =>
             sendCommand(
               command,
-              requiresValue
-                ? { value: trimCommandValue || undefined }
-                : undefined,
+              requiresValue ? { value: trimCommandValue || undefined } : undefined,
             ),
         }),
       );
@@ -618,14 +608,15 @@ export function RemoteDevToolsPage() {
     sendCommand,
     setLiveMode,
     eventsRefetch,
+    t,
   ]);
 
   if (!isFeatureEnabled) {
     return (
-      <PageContainer title="Remote DevTools">
+      <PageContainer title={t('remoteDevtools.title')}>
         <Alert
-          message="Remote DevTools 연동 비활성"
-          description="현재 VITE_REMOTE_DEVTOOLS_ENABLED가 false이므로 비활성 상태입니다. `.env`에서 값을 활성화해 주세요."
+          message={t('remoteDevtools.disabledTitle')}
+          description={t('remoteDevtools.disabledDescription')}
           type="warning"
           showIcon
         />
@@ -635,20 +626,20 @@ export function RemoteDevToolsPage() {
 
   return (
     <PageContainer
-      title="Remote DevTools"
+      title={t('remoteDevtools.title')}
       extra={
         <Space size="small" wrap>
-          {renderConnectionStatus(connectionInfo)} {actionButtons}
+          {renderConnectionStatus(connectionInfo, t)} {actionButtons}
         </Space>
       }
     >
       {isSessionsError && (
         <Alert
-          message="세션 목록 조회 실패"
+          message={t('remoteDevtools.sessionListLoadFailed')}
           description={
             sessionsError instanceof Error
               ? sessionsError.message
-              : "원격 DevTools 세션 API 응답을 불러올 수 없습니다."
+              : t('remoteDevtools.sessionListLoadFailedDescription')
           }
           type="error"
           showIcon
@@ -659,10 +650,13 @@ export function RemoteDevToolsPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={10}>
           <Card
-            title="세션 목록"
+            title={t('remoteDevtools.sessionListTitle')}
             extra={
               <Text type="secondary">
-                {filteredSessionCount}/{totalSessionCount}개
+                {t('remoteDevtools.sessionCount', {
+                  filtered: filteredSessionCount,
+                  total: totalSessionCount,
+                })}
               </Text>
             }
           >
@@ -671,7 +665,7 @@ export function RemoteDevToolsPage() {
                 allowClear
                 size="small"
                 prefix={<SearchOutlined />}
-                placeholder="세션 검색"
+                placeholder={t('remoteDevtools.sessionSearchPlaceholder')}
                 onChange={(event) => setSessionSearchQuery(event.target.value)}
               />
               <Select
@@ -679,11 +673,9 @@ export function RemoteDevToolsPage() {
                 style={{ width: 140 }}
                 value={sessionStatusFilter}
                 onChange={(value) =>
-                  setSessionStatusFilter(
-                    value as RemoteDevToolsSession["status"] | "all",
-                  )
+                  setSessionStatusFilter(value as RemoteDevToolsSession['status'] | 'all')
                 }
-                options={SESSION_STATUS_OPTIONS}
+                options={sessionStatusOptions}
               />
             </Space>
 
@@ -693,20 +685,18 @@ export function RemoteDevToolsPage() {
               <Table
                 rowKey="id"
                 size="small"
-                columns={EVENT_COLUMNS}
+                columns={eventColumns}
                 dataSource={sessionsFiltered}
                 pagination={{ pageSize: 8 }}
                 onRow={(record) => ({
                   onClick: () => setSelectedSession(record.id),
                   style: {
-                    cursor: "pointer",
+                    cursor: 'pointer',
                     backgroundColor:
-                      activeSessionId === record.id
-                        ? "rgba(24, 144, 255, 0.08)"
-                        : "unset",
+                      activeSessionId === record.id ? 'rgba(24, 144, 255, 0.08)' : 'unset',
                   },
                 })}
-                locale={{ emptyText: "세션이 없습니다." }}
+                locale={{ emptyText: t('remoteDevtools.emptySessions') }}
               />
             )}
           </Card>
@@ -714,17 +704,21 @@ export function RemoteDevToolsPage() {
 
         <Col xs={24} xl={14}>
           <Card
-            title="실시간 이벤트"
+            title={t('remoteDevtools.liveEventsTitle')}
             extra={
               <Space>
                 <FileSearchOutlined />
-                <Text type="secondary">총 {eventLevelSummary.total}개</Text>
+                <Text type="secondary">
+                  {t('remoteDevtools.eventTotal', {
+                    total: eventLevelSummary.total,
+                  })}
+                </Text>
               </Space>
             }
           >
             {connectionInfo.lastError ? (
               <Alert
-                message="연결 경고"
+                message={t('remoteDevtools.connectionWarning')}
                 description={connectionInfo.lastError}
                 type="warning"
                 showIcon
@@ -732,23 +726,19 @@ export function RemoteDevToolsPage() {
               />
             ) : null}
 
-            <Space
-              direction="vertical"
-              size="middle"
-              style={{ width: "100%", marginBottom: 12 }}
-            >
-              <Title level={5}>선택 세션</Title>
+            <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 12 }}>
+              <Title level={5}>{t('remoteDevtools.selectedSession')}</Title>
               <Paragraph>
                 {selectedSession
                   ? `${selectedSession.name} (${selectedSession.id})`
-                  : "세션을 선택하면 실시간 이벤트를 표시합니다."}
+                  : t('remoteDevtools.selectSessionHint')}
               </Paragraph>
 
               <Space size="small" wrap>
                 <Input.Search
                   allowClear
                   value={eventSearchQuery}
-                  placeholder="이벤트 메시지/타입/소스 검색"
+                  placeholder={t('remoteDevtools.eventSearchPlaceholder')}
                   onSearch={(value) => setSearchQuery(value)}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   style={{ width: 280 }}
@@ -757,43 +747,32 @@ export function RemoteDevToolsPage() {
                 <Select
                   value={eventLevelFilter}
                   style={{ width: 140 }}
-                  onChange={(value) =>
-                    setLevelFilter(value as "all" | RemoteDevToolsEventLevel)
-                  }
-                  options={LEVEL_OPTIONS}
+                  onChange={(value) => setLevelFilter(value as 'all' | RemoteDevToolsEventLevel)}
+                  options={levelOptions}
                 />
                 <Input
                   size="middle"
                   style={{ width: 180 }}
                   value={commandValue}
-                  placeholder="명령 값(재생/수집)"
+                  placeholder={t('remoteDevtools.commandValuePlaceholder')}
                   onChange={(event) => setCommandValue(event.target.value)}
                 />
                 <Space>
                   <Badge color="blue" text={`INFO ${eventLevelSummary.info}`} />
                   <Badge color="gold" text={`WARN ${eventLevelSummary.warn}`} />
-                  <Badge
-                    color="green"
-                    text={`DEBUG ${eventLevelSummary.debug}`}
-                  />
-                  <Badge
-                    color="red"
-                    text={`ERROR ${eventLevelSummary.error}`}
-                  />
+                  <Badge color="green" text={`DEBUG ${eventLevelSummary.debug}`} />
+                  <Badge color="red" text={`ERROR ${eventLevelSummary.error}`} />
                 </Space>
               </Space>
 
               <Space>
                 <Text type="secondary">
-                  연결 주소: <Text code>{connectionUrl || "미설정"}</Text>
+                  {t('remoteDevtools.connectionAddress')}{' '}
+                  <Text code>{connectionUrl || t('remoteDevtools.connectionUnset')}</Text>
                 </Text>
                 {selectedSession?.roomUrl ? (
-                  <a
-                    href={selectedSession.roomUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <LinkOutlined /> 녹화방 링크
+                  <a href={selectedSession.roomUrl} target="_blank" rel="noreferrer">
+                    <LinkOutlined /> {t('remoteDevtools.roomLink')}
                   </a>
                 ) : null}
               </Space>
@@ -801,13 +780,13 @@ export function RemoteDevToolsPage() {
               <Space size="small">
                 {connectionInfo.lastConnectedAt ? (
                   <Text type="secondary">
-                    <HistoryOutlined /> 마지막 연결:{" "}
+                    <HistoryOutlined /> {t('remoteDevtools.lastConnected')}{' '}
                     {toLocalTime(connectionInfo.lastConnectedAt)}
                   </Text>
                 ) : null}
                 {connectionInfo.lastEventAt ? (
                   <Text type="secondary">
-                    <HistoryOutlined /> 마지막 이벤트:{" "}
+                    <HistoryOutlined /> {t('remoteDevtools.lastEvent')}{' '}
                     {toLocalTime(connectionInfo.lastEventAt)}
                   </Text>
                 ) : null}
@@ -815,16 +794,13 @@ export function RemoteDevToolsPage() {
 
               <Space>
                 {connectionInfo.connected ? (
-                  <Badge status="processing" text="라이브 모드 활성" />
+                  <Badge status="processing" text={t('remoteDevtools.liveModeActive')} />
                 ) : (
-                  <Badge
-                    status="default"
-                    text="라이브 모드 비활성 또는 미연결"
-                  />
+                  <Badge status="default" text={t('remoteDevtools.liveModeInactive')} />
                 )}
                 <Text type="secondary">
-                  마지막 이벤트:{" "}
-                  {latestEvent ? toLocalTime(latestEvent.timestamp) : "-"}
+                  {t('remoteDevtools.lastEvent')}{' '}
+                  {latestEvent ? toLocalTime(latestEvent.timestamp) : '-'}
                 </Text>
               </Space>
             </Space>
@@ -834,29 +810,29 @@ export function RemoteDevToolsPage() {
               defaultActiveKey="timeline"
               items={[
                 {
-                  key: "timeline",
-                  label: "이벤트 타임라인",
+                  key: 'timeline',
+                  label: t('remoteDevtools.tabTimeline'),
                   children: isEventsLoading ? (
                     <Spin />
                   ) : (
                     <List
                       bordered
                       dataSource={eventItems}
-                      locale={{ emptyText: "이벤트가 없습니다." }}
+                      locale={{ emptyText: t('remoteDevtools.emptyEvents') }}
                       renderItem={(event) => <EventMessage event={event} />}
                     />
                   ),
                 },
                 {
-                  key: "json",
-                  label: "요약",
+                  key: 'json',
+                  label: t('remoteDevtools.tabSummary'),
                   children: (
                     <pre
                       style={{
                         maxHeight: 420,
-                        overflow: "auto",
+                        overflow: 'auto',
                         margin: 0,
-                        background: "#fafafa",
+                        background: '#fafafa',
                         padding: 12,
                         borderRadius: 8,
                       }}
@@ -871,11 +847,11 @@ export function RemoteDevToolsPage() {
                   ),
                 },
                 {
-                  key: "activity",
-                  label: "활동 로그",
+                  key: 'activity',
+                  label: t('remoteDevtools.tabActivity'),
                   children:
                     activityTimelineItems.length === 0 ? (
-                      <Text type="secondary">활동 로그가 없습니다.</Text>
+                      <Text type="secondary">{t('remoteDevtools.emptyActivity')}</Text>
                     ) : isEventsLoading ? (
                       <Spin />
                     ) : (
