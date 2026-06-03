@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import AntLayout from 'antd/es/layout';
@@ -24,6 +24,17 @@ export function Layout() {
   const { menuItems } = useMenu();
   const { isLoading, isAuthenticated } = useSession();
   const { handleLogout } = useLogout();
+
+  // 라우트 전환 시 본문 콘텐츠(antd Content = <main>)로 포커스를 옮긴다(a11y).
+  // 첫 진입은 제외해 사용자가 직접 연 위치의 포커스를 빼앗지 않는다.
+  const isFirstRouteRef = useRef(true);
+  useEffect(() => {
+    if (isFirstRouteRef.current) {
+      isFirstRouteRef.current = false;
+      return;
+    }
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+  }, [location.pathname]);
 
   const antMenuItems = menuItems.map((item) => ({
     key: item.key,
@@ -96,11 +107,14 @@ export function Layout() {
         </Sider>
 
         <Content
+          id="main-content"
+          tabIndex={-1}
           style={{
             margin: 0,
             minHeight: 'calc(100vh - 64px)',
             background: '#f0f2f5',
             overflow: 'auto',
+            outline: 'none',
           }}
         >
           <ErrorBoundary>
