@@ -1,0 +1,174 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Render Blueprint — managed-host deploy for the Remote DevTools BACKEND.
+#
+# This is the backend analog to the frontend's Vercel deploy
+# (.github/workflows/deploy-vercel.yml + vercel.json, which hosts client/ as a
+# static demo). It provisions the two NestJS services + a managed Postgres.
+#
+# The two NestJS apps share one multi-stage Dockerfile and select which server
+# to boot via the APP env var (see ecosystem.config.js / dockerCommand below):
+#   - internal (port 3000): DevTools UI, session-replay APIs, dashboard, admin
+#   - external (port 3001): SDK serving, CDP data collection, Jira/Slack
+#
+# HOW IT MAPS TO THE "skips without secrets" PATTERN:
+#   Every secret below is `sync: false`, so Render imports the blueprint but
+#   leaves those values blank until the maintainer fills them in the dashboard
+#   (Dashboard → service → Environment). A service will not start cleanly until
+#   its required secrets are set — exactly like the Vercel job that hard-fails
+#   when VERCEL_TOKEN/ORG/PROJECT are unset. Non-secret config is set inline.
+#
+# Apply:  push this file, then in the Render dashboard:
+#   New + → Blueprint → pick this repo → Apply, then set the `sync: false` vars.
+# Docs:   docs/DEPLOYMENT.md (§ Backend — managed host).
+# ─────────────────────────────────────────────────────────────────────────────
+
+databases:
+  - name: remote-devtools-pg
+    databaseName: remote_devtools
+    user: remote_devtools
+    plan: basic-256mb
+    postgresMajorVersion: "15"
+
+services:
+  # ── Internal API: DevTools UI, dashboard, session replay, admin ────────────
+  - type: web
+    name: remote-devtools-internal
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: singapore
+    healthCheckPath: /api/health
+    # The Dockerfile defaults to PM2 (start:container) which reads APP from env.
+    # Boot the internal entrypoint directly for a single-process web service.
+    dockerCommand: node dist/apps/remote-platform-internal/main.js
+    autoDeploy: true
+    envVars:
+      - key: APP
+        value: internal
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      # Render injects the managed Postgres connection parts. The app reads
+      # DB_WRITER_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME.
+      - key: DB_WRITER_HOST
+        fromDatabase:
+          name: remote-devtools-pg
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: remote-devtools-pg
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: remote-devtools-pg
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: remote-devtools-pg
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: remote-devtools-pg
+          property: database
+      # Comma-separated apex domains; subdomains over http/https are allowed.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # JWT signing secret — required in non-dev (see main.ts assertRequiredEnv).
+      - key: AUTH_JWT_SECRET
+        sync: false
+      # Protects admin routes via AdminTokenGuard (Bearer token). Strongly
+      # recommended for any internet-facing internal API.
+      - key: ADMIN_TOKEN
+        sync: false
+      # Full https URLs of the two services (used for screenshots / links).
+      - key: INTERNAL_HOST
+        sync: false
+      - key: EXTERNAL_HOST
+        sync: false
+      # Google Sheets sync for ticket templates (optional).
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_SPREADSHEET_ID
+        sync: false
+      # Stripe billing (optional — billing routes disabled when unset).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Error monitoring (optional — Sentry no-ops when DSN is unset).
+      - key: SENTRY_DSN
+        sync: false
+
+  # ── External API: SDK serving, CDP collection, Jira/Slack ──────────────────
+  - type: web
+    name: remote-devtools-external
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: singapore
+    healthCheckPath: /api/health
+    dockerCommand: node dist/apps/remote-platform-external/main.js
+    autoDeploy: true
+    envVars:
+      - key: APP
+        value: external
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: DB_WRITER_HOST
+        fromDatabase:
+          name: remote-devtools-pg
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: remote-devtools-pg
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: remote-devtools-pg
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: remote-devtools-pg
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: remote-devtools-pg
+          property: database
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: INTERNAL_HOST
+        sync: false
+      - key: EXTERNAL_HOST
+        sync: false
+      # Jira ticket creation (optional).
+      - key: JIRA_HOST_URL
+        sync: false
+      - key: JIRA_API_EMAIL
+        sync: false
+      - key: JIRA_API_TOKEN
+        sync: false
+      # Slack session-creation notifications (optional).
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_CHANNEL_ID
+        sync: false
+      # S3 off-host backup of recorded session artifacts (optional).
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

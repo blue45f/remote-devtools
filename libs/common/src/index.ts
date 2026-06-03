@@ -23,3 +23,10 @@ export { QueryFailedExceptionFilter } from './filters/query-failed-exception.fil
 
 // Interceptors
 export { ResponseInterceptor, StandardResponse } from './interceptors/response.interceptor';
+
+// Security
+export {
+  buildAllowedOriginPatterns,
+  createCorsOriginValidator,
+  isOriginAllowed,
+} from './security/cors-origin';
