@@ -1,14 +1,16 @@
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Space from 'antd/es/space'
-import ReloadOutlined from '@ant-design/icons/es/icons/ReloadOutlined'
-import { PageContainer } from '@/shared/components'
-import { useDashboard } from '../hooks'
-import { StatsCards } from './StatsCards'
-import { PeriodSelector } from './PeriodSelector'
-import { TrendChart } from './TrendChart'
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
+import Space from 'antd/es/space';
+import { useTranslation } from 'react-i18next';
+import ReloadOutlined from '@ant-design/icons/es/icons/ReloadOutlined';
+import { PageContainer } from '@/shared/components';
+import { useDashboard } from '../hooks';
+import { StatsCards } from './StatsCards';
+import { PeriodSelector } from './PeriodSelector';
+import { TrendChart } from './TrendChart';
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const {
     period,
     viewMode,
@@ -20,22 +22,22 @@ export function DashboardPage() {
     handlePeriodChange,
     handleViewModeChange,
     refetch,
-  } = useDashboard()
+  } = useDashboard();
 
   return (
     <PageContainer
-      title="대시보드"
+      title={t('dashboard.title')}
       extra={
         <Button icon={<ReloadOutlined />} onClick={refetch} loading={isLoading}>
-          새로고침
+          {t('dashboard.refresh')}
         </Button>
       }
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {isError && (
           <Alert
-            message="데이터 로드 실패"
-            description="서버에서 데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다."
+            message={t('dashboard.loadErrorTitle')}
+            description={t('dashboard.loadErrorDescription')}
             type="warning"
             showIcon
             closable
@@ -59,5 +61,5 @@ export function DashboardPage() {
         />
       </Space>
     </PageContainer>
-  )
+  );
 }

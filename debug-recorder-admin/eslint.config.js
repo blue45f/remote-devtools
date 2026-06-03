@@ -60,6 +60,32 @@ export default [
     },
   },
   {
+    // Test setup reaches for browser/DOM globals (jsdom polyfills) and Vitest
+    // globals. Supply them here so the curated main-config globals list above
+    // stays focused on app source.
+    files: ['src/test/**/*.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        localStorage: 'readonly',
+        Element: 'readonly',
+        ResizeObserver: 'readonly',
+        IntersectionObserver: 'readonly',
+        IntersectionObserverEntry: 'readonly',
+        IntersectionObserverCallback: 'readonly',
+        IntersectionObserverInit: 'readonly',
+        // Vitest globals (vitest.config.ts sets `globals: true`)
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
+  {
     files: ['scripts/**/*.{mjs,js}'],
     languageOptions: {
       ecmaVersion: 'latest',
