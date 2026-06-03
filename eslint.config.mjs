@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettierPlugin from "eslint-plugin-prettier/recommended";
+import reactHooks from "eslint-plugin-react-hooks";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -68,14 +69,28 @@ export default tseslint.config(
     },
   },
 
-  // Override for client/**
+  // Override for client/** — the client runs the React Compiler, so register
+  // eslint-plugin-react-hooks (v7) and surface its Compiler-safety rules. They
+  // are advisory `warn` (not `error`) so they guide refactors without failing
+  // CI on the existing source.
   {
     files: ["client/**/*.{ts,tsx}"],
+    plugins: {
+      "react-hooks": reactHooks,
+    },
     languageOptions: {
       parserOptions: {
         project: [clientTsconfig, clientEslintTsconfig],
         tsconfigRootDir: clientDir,
       },
+    },
+    rules: {
+      "react-hooks/purity": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/static-components": "warn",
     },
   },
 
