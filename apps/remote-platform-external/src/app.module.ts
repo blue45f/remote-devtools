@@ -10,6 +10,7 @@ import { DatabaseModule, ServicesModule } from '@remote-platform/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FigmaModule } from './modules/figma/figma.module';
+import { HealthModule } from './modules/health/health.module';
 import { ImageBase64Module } from './modules/image-base64/image-base64.module';
 import { JiraModule } from './modules/jira/jira.module';
 import { WebviewGatewayModule } from './modules/webview/webview.module';
@@ -31,6 +32,7 @@ const staticModule = ServeStaticModule.forRoot({
     ImageBase64Module,
     JiraModule,
     FigmaModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
