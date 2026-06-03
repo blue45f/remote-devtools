@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "featureIntroduction": "Features",
+    "userGuide": "User Guide",
+    "devGuide": "Developer Guide",
+    "userInfo": "User Info",
+    "dashboard": "Dashboard",
+    "remoteDevtools": "Remote DevTools"
+  },
+  "layout": {
+    "checkingSession": "Checking session...",
+    "logout": "Log out"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "refresh": "Refresh",
+    "loadErrorTitle": "Failed to load data",
+    "loadErrorDescription": "Failed to load data from the server. Showing temporary data.",
+    "period": {
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly"
+    },
+    "viewMode": {
+      "ticket": "Tickets",
+      "recordRoom": "Recording Rooms"
+    },
+    "stats": {
+      "totalTickets": "Total Tickets",
+      "todayTickets": "Tickets Created Today",
+      "weeklyAverage": "Weekly Average",
+      "resolveRate": "Resolution Rate",
+      "totalRecordRooms": "Total Recording Rooms",
+      "todayRecordRooms": "Recording Rooms Created Today",
+      "activeRecordRooms": "Active Recording Rooms",
+      "countSuffix": "",
+      "percentSuffix": "%"
+    },
+    "trend": {
+      "ticketTitle": "Ticket Trend",
+      "recordRoomTitle": "Recording Room Trend",
+      "empty": "No data available",
+      "series": {
+        "created": "Created",
+        "resolved": "Resolved",
+        "pending": "Pending",
+        "messages": "Messages",
+        "participants": "Participants"
+      }
+    }
+  }
+}

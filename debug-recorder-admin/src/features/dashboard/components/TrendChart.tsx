@@ -1,5 +1,6 @@
-import Card from 'antd/es/card'
-import Empty from 'antd/es/empty'
+import Card from 'antd/es/card';
+import Empty from 'antd/es/empty';
+import { useTranslation } from 'react-i18next';
 import {
   LineChart,
   Line,
@@ -9,14 +10,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts'
-import type { TicketTrendData, RecordRoomTrendData, ViewMode } from '../types'
+} from 'recharts';
+import type { TicketTrendData, RecordRoomTrendData, ViewMode } from '../types';
 
 interface TrendChartProps {
-  viewMode: ViewMode
-  ticketData: TicketTrendData[]
-  recordRoomData: RecordRoomTrendData[]
-  isLoading: boolean
+  viewMode: ViewMode;
+  ticketData: TicketTrendData[];
+  recordRoomData: RecordRoomTrendData[];
+  isLoading: boolean;
 }
 
 const COLORS = {
@@ -25,34 +26,29 @@ const COLORS = {
   pending: '#faad14',
   messages: '#722ed1',
   participants: '#eb2f96',
-}
+};
 
-export function TrendChart({
-  viewMode,
-  ticketData,
-  recordRoomData,
-  isLoading,
-}: TrendChartProps) {
-  const title = viewMode === 'ticket' ? '티켓 추이' : '녹화방 추이'
-  const isTicketView = viewMode === 'ticket'
-  const data = isTicketView ? ticketData : recordRoomData
+export function TrendChart({ viewMode, ticketData, recordRoomData, isLoading }: TrendChartProps) {
+  const { t } = useTranslation();
+  const isTicketView = viewMode === 'ticket';
+  const title = isTicketView
+    ? t('dashboard.trend.ticketTitle')
+    : t('dashboard.trend.recordRoomTitle');
+  const data = isTicketView ? ticketData : recordRoomData;
 
   if (!data.length && !isLoading) {
     return (
       <Card title={title}>
-        <Empty description="데이터가 없습니다" />
+        <Empty description={t('dashboard.trend.empty')} />
       </Card>
-    )
+    );
   }
 
   return (
     <Card title={title} loading={isLoading}>
       <ResponsiveContainer width="100%" height={400}>
         {isTicketView ? (
-          <LineChart
-            data={ticketData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
+          <LineChart data={ticketData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -62,29 +58,26 @@ export function TrendChart({
               type="monotone"
               dataKey="created"
               stroke={COLORS.created}
-              name="생성"
+              name={t('dashboard.trend.series.created')}
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="resolved"
               stroke={COLORS.resolved}
-              name="해결"
+              name={t('dashboard.trend.series.resolved')}
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="pending"
               stroke={COLORS.pending}
-              name="대기"
+              name={t('dashboard.trend.series.pending')}
               strokeWidth={2}
             />
           </LineChart>
         ) : (
-          <LineChart
-            data={recordRoomData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
+          <LineChart data={recordRoomData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
@@ -94,26 +87,26 @@ export function TrendChart({
               type="monotone"
               dataKey="created"
               stroke={COLORS.created}
-              name="생성"
+              name={t('dashboard.trend.series.created')}
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="messages"
               stroke={COLORS.messages}
-              name="메시지"
+              name={t('dashboard.trend.series.messages')}
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="participants"
               stroke={COLORS.participants}
-              name="참여자"
+              name={t('dashboard.trend.series.participants')}
               strokeWidth={2}
             />
           </LineChart>
         )}
       </ResponsiveContainer>
     </Card>
-  )
+  );
 }

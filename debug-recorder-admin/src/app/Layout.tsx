@@ -1,41 +1,43 @@
-import { useState } from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import AntLayout from 'antd/es/layout'
-import Button from 'antd/es/button'
-import Menu from 'antd/es/menu'
-import Typography from 'antd/es/typography'
-import LogoutOutlined from '@ant-design/icons/es/icons/LogoutOutlined'
-import MenuFoldOutlined from '@ant-design/icons/es/icons/MenuFoldOutlined'
-import MenuUnfoldOutlined from '@ant-design/icons/es/icons/MenuUnfoldOutlined'
-import { useMenu } from '@/shared/hooks'
-import { CONFIG, isAuthEnabled } from '@/shared/constants'
-import { useSession, useLogout } from '@/features/auth'
-import { LoadingSpinner, ErrorBoundary } from '@/shared/components'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import AntLayout from 'antd/es/layout';
+import Button from 'antd/es/button';
+import Menu from 'antd/es/menu';
+import Typography from 'antd/es/typography';
+import LogoutOutlined from '@ant-design/icons/es/icons/LogoutOutlined';
+import MenuFoldOutlined from '@ant-design/icons/es/icons/MenuFoldOutlined';
+import MenuUnfoldOutlined from '@ant-design/icons/es/icons/MenuUnfoldOutlined';
+import { useMenu } from '@/shared/hooks';
+import { CONFIG, isAuthEnabled } from '@/shared/constants';
+import { useSession, useLogout } from '@/features/auth';
+import { LoadingSpinner, ErrorBoundary } from '@/shared/components';
 
-const { Header, Sider, Content } = AntLayout
-const { Title } = Typography
+const { Header, Sider, Content } = AntLayout;
+const { Title } = Typography;
 
 export function Layout() {
-  const [collapsed, setCollapsed] = useState(false)
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { menuItems } = useMenu()
-  const { isLoading, isAuthenticated } = useSession()
-  const { handleLogout } = useLogout()
+  const { t } = useTranslation();
+  const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { menuItems } = useMenu();
+  const { isLoading, isAuthenticated } = useSession();
+  const { handleLogout } = useLogout();
 
   const antMenuItems = menuItems.map((item) => ({
     key: item.key,
     icon: <item.icon />,
     label: item.label,
     onClick: () => navigate(item.path),
-  }))
+  }));
 
   const selectedKeys = menuItems
     .filter((item) => location.pathname.startsWith(item.path))
-    .map((item) => item.key)
+    .map((item) => item.key);
 
   if (isLoading && isAuthEnabled()) {
-    return <LoadingSpinner fullScreen tip="세션 확인 중..." />
+    return <LoadingSpinner fullScreen tip={t('layout.checkingSession')} />;
   }
 
   return (
@@ -71,7 +73,7 @@ export function Layout() {
             onClick={handleLogout}
             style={{ color: '#fff' }}
           >
-            로그아웃
+            {t('layout.logout')}
           </Button>
         )}
       </Header>
@@ -90,12 +92,7 @@ export function Layout() {
             left: 0,
           }}
         >
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={selectedKeys}
-            items={antMenuItems}
-          />
+          <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={antMenuItems} />
         </Sider>
 
         <Content
@@ -112,5 +109,5 @@ export function Layout() {
         </Content>
       </AntLayout>
     </AntLayout>
-  )
+  );
 }
