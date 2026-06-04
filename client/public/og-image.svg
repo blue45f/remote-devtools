@@ -1,83 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Remote DevTools">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="0.52" stop-color="#060912"/>
-      <stop offset="1" stop-color="#03050a"/>
-    </linearGradient>
-    <linearGradient id="panel" x1="588" y1="112" x2="1115" y2="510" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#253047"/>
-      <stop offset="1" stop-color="#101827"/>
-    </linearGradient>
-    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3b82f6"/>
-      <stop offset="1" stop-color="#22d3ee"/>
-    </linearGradient>
-    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#22c55e"/>
-      <stop offset="1" stop-color="#14b8a6"/>
-    </linearGradient>
-    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M48 0H0v48" fill="none" stroke="#1f2937" stroke-width="1"/>
-    </pattern>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000" flood-opacity="0.42"/>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#171717" flood-opacity="0.12" />
     </filter>
   </defs>
-
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#grid)" opacity="0.36"/>
-
-  <g transform="translate(92,82)">
-    <rect width="66" height="66" rx="18" fill="#f8fafc"/>
-    <path d="M21 18h18c13 0 23 10 23 23 0 9-5 17-13 21l15 25H47L33 63h-6v24H21V18Zm6 30h13c4 0 7-3 7-7s-3-7-7-7H27v14Z" transform="scale(0.72)" fill="#0b1020"/>
-    <path d="M47 56a14 14 0 0 0 0-20" stroke="#0b1020" stroke-width="5" stroke-linecap="round" opacity="0.42" fill="none"/>
+  <rect width="1200" height="630" fill="#fafafa" />
+  <path d="M0 514h1200" stroke="#e5e5e5" />
+  <g transform="translate(88 80)">
+    <rect width="62" height="62" rx="17" fill="#171717" />
+    <path d="M19 16h18c10 0 17 6 17 15.5 0 7-4 12-10 14l11 17H42L32 46h-8v17H19V16Zm5 8.5V38h12c4.5 0 7.5-2.8 7.5-6.8S40.5 24.5 36 24.5H24Z" fill="#f7f7f7" transform="scale(.82) translate(5 3)" />
   </g>
-
-  <text x="180" y="127" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="31" font-weight="700" fill="#f8fafc">Remote DevTools</text>
-  <text x="92" y="252" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="62" font-weight="760" fill="#f8fafc">Capture, replay,</text>
-  <text x="92" y="326" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="62" font-weight="760" fill="#94a3b8">inspect remotely.</text>
-  <text x="96" y="402" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="450" fill="#cbd5e1">Focused workflows for session evidence,</text>
-  <text x="96" y="436" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="450" fill="#cbd5e1">network insight, and issue handoff.</text>
-
-  <g transform="translate(96,522)">
-    <rect width="232" height="44" rx="22" fill="#111827" stroke="#334155"/>
-    <circle cx="24" cy="22" r="6" fill="#22c55e"/>
-    <text x="42" y="29" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#cbd5e1">Open source debugging</text>
+  <text x="174" y="121" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="31" font-weight="760" fill="#171717">Remote DevTools</text>
+  <text x="88" y="248" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="58" font-weight="780" fill="#171717">Replay sessions</text>
+  <text x="88" y="318" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="58" font-weight="780" fill="#525252">from anywhere.</text>
+  <text x="92" y="402" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="450" fill="#404040">Session evidence, network traces,</text>
+  <text x="92" y="436" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="450" fill="#404040">console streams, and handoff notes.</text>
+  <g transform="translate(92 520)">
+    <rect width="210" height="44" rx="22" fill="#171717" />
+    <circle cx="25" cy="22" r="6" fill="#f97316" />
+    <text x="43" y="29" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="650" fill="#fafafa">Live capture ready</text>
   </g>
-
-  <g transform="translate(592,86)" filter="url(#shadow)">
-    <rect x="0" y="0" width="532" height="432" rx="34" fill="url(#panel)" stroke="#3a465c" stroke-width="2"/>
-    <rect x="28" y="26" width="476" height="252" rx="22" fill="#0d1423" stroke="#475569"/>
-    <circle cx="58" cy="57" r="8" fill="#ef4444"/>
-    <circle cx="86" cy="57" r="8" fill="#f59e0b"/>
-    <circle cx="114" cy="57" r="8" fill="#22c55e"/>
-    <rect x="56" y="92" width="258" height="112" rx="16" fill="#f8fafc"/>
-    <path d="M88 178l58-60 56 47 36-28 48 41H88Z" fill="#94a3b8"/>
-    <circle cx="255" cy="128" r="18" fill="#cbd5e1"/>
-    <rect x="338" y="100" width="118" height="14" rx="7" fill="#94a3b8"/>
-    <rect x="338" y="134" width="148" height="14" rx="7" fill="#64748b"/>
-    <rect x="338" y="168" width="92" height="32" rx="16" fill="url(#blue)"/>
-    <rect x="56" y="226" width="398" height="26" rx="13" fill="#1f2937"/>
-    <path d="M76 239h54l18-11 24 22 16-15 20 10h76l18-13 26 18 18-11 32 11h46" fill="none" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"/>
-
-    <g transform="translate(36,302)">
-      <rect width="128" height="74" rx="18" fill="#111827" stroke="#334155"/>
-      <circle cx="30" cy="28" r="8" fill="#3b82f6"/>
-      <rect x="48" y="22" width="54" height="12" rx="6" fill="#64748b"/>
-      <rect x="24" y="48" width="80" height="10" rx="5" fill="url(#blue)"/>
+  <g transform="translate(588 82)" filter="url(#lift)">
+    <rect width="528" height="436" rx="32" fill="#ffffff" stroke="#d4d4d4" />
+    <rect x="28" y="26" width="476" height="54" rx="18" fill="#f5f5f5" stroke="#e5e5e5" />
+    <circle cx="58" cy="53" r="7" fill="#ef4444" />
+    <circle cx="84" cy="53" r="7" fill="#f59e0b" />
+    <circle cx="110" cy="53" r="7" fill="#16a34a" />
+    <rect x="332" y="43" width="132" height="12" rx="6" fill="#d4d4d4" />
+    <g transform="translate(28 104)">
+      <rect width="188" height="168" rx="20" fill="#fafafa" stroke="#e5e5e5" />
+      <path d="M22 136h44l18-24 24 34 28-46 30 62" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+      <rect x="22" y="24" width="86" height="12" rx="6" fill="#171717" />
+      <rect x="22" y="52" width="132" height="9" rx="4.5" fill="#a3a3a3" />
+      <rect x="22" y="74" width="112" height="9" rx="4.5" fill="#d4d4d4" />
     </g>
-    <g transform="translate(190,302)">
-      <rect width="128" height="74" rx="18" fill="#111827" stroke="#334155"/>
-      <circle cx="30" cy="28" r="8" fill="#22d3ee"/>
-      <rect x="48" y="22" width="54" height="12" rx="6" fill="#64748b"/>
-      <rect x="24" y="48" width="70" height="10" rx="5" fill="#22d3ee"/>
+    <g transform="translate(238 104)">
+      <rect width="266" height="168" rx="20" fill="#fafafa" stroke="#e5e5e5" />
+      <rect x="24" y="24" width="74" height="24" rx="12" fill="#fee2e2" />
+      <text x="61" y="41" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, monospace" font-size="12" font-weight="700" fill="#b91c1c">ERR</text>
+      <path d="M26 86h210M26 118h164" stroke="#d4d4d4" stroke-width="10" stroke-linecap="round" />
+      <path d="M26 146h118" stroke="#171717" stroke-width="10" stroke-linecap="round" />
     </g>
-    <g transform="translate(344,302)">
-      <rect width="128" height="74" rx="18" fill="#111827" stroke="#334155"/>
-      <circle cx="30" cy="28" r="8" fill="#22c55e"/>
-      <rect x="48" y="22" width="54" height="12" rx="6" fill="#64748b"/>
-      <rect x="24" y="48" width="88" height="10" rx="5" fill="url(#green)"/>
+    <g transform="translate(28 296)">
+      <rect width="476" height="88" rx="20" fill="#171717" />
+      <path d="M30 56h64l28-18 26 31 36-44 28 31h210" fill="none" stroke="#3b82f6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="122" cy="38" r="9" fill="#f97316" />
+      <circle cx="212" cy="56" r="9" fill="#ef4444" />
+      <circle cx="332" cy="44" r="9" fill="#16a34a" />
     </g>
   </g>
 </svg>
