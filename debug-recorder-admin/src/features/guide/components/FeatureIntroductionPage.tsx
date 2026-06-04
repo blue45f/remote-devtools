@@ -14,12 +14,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/shared/components';
 import { ROUTES, UX_TERMS } from '@/shared/constants';
-import designHandoffImage from '@/assets/feature-illustrations/design-handoff.jpg';
-import networkRewriteImage from '@/assets/feature-illustrations/network-rewrite.jpg';
-import remoteDevtoolsImage from '@/assets/feature-illustrations/remote-devtools.jpg';
-import sessionRecordingImage from '@/assets/feature-illustrations/session-recording.jpg';
-import teamSharingImage from '@/assets/feature-illustrations/team-sharing.jpg';
-import ticketAutomationImage from '@/assets/feature-illustrations/ticket-automation.jpg';
+import designHandoffImage from '@/assets/feature-illustrations/design-handoff.svg';
+import networkRewriteImage from '@/assets/feature-illustrations/network-rewrite.svg';
+import remoteDevtoolsImage from '@/assets/feature-illustrations/remote-devtools.svg';
+import sessionRecordingImage from '@/assets/feature-illustrations/session-recording.svg';
+import teamSharingImage from '@/assets/feature-illustrations/team-sharing.svg';
+import ticketAutomationImage from '@/assets/feature-illustrations/ticket-automation.svg';
 
 const { Text, Paragraph } = Typography;
 

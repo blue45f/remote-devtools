@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Remote DevTools console preview">
+  <rect width="960" height="540" fill="#fafafa"/>
+  <rect x="52" y="54" width="856" height="418" rx="30" fill="#ffffff" stroke="#d4d4d4"/>
+  <rect x="78" y="86" width="168" height="342" rx="22" fill="#171717"/>
+  <rect x="104" y="118" width="72" height="12" rx="6" fill="#fafafa"/>
+  <path d="M104 172h106M104 216h72M104 260h96M104 304h58" stroke="#737373" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="206" cy="172" r="7" fill="#f97316"/>
+  <circle cx="206" cy="260" r="7" fill="#ef4444"/>
+  <rect x="278" y="86" width="560" height="122" rx="22" fill="#f7f7f7" stroke="#e5e5e5"/>
+  <path d="M316 156h138l42-38 48 66 52-80 54 56h124" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="278" y="238" width="270" height="190" rx="22" fill="#f7f7f7" stroke="#e5e5e5"/>
+  <path d="M316 292h176M316 330h132M316 368h196" stroke="#737373" stroke-width="12" stroke-linecap="round"/>
+  <rect x="578" y="238" width="260" height="190" rx="22" fill="#171717"/>
+  <path d="M612 292h164M612 330h112M612 368h148" stroke="#d4d4d4" stroke-width="12" stroke-linecap="round"/>
+  <rect x="708" y="258" width="78" height="28" rx="14" fill="#fee2e2"/>
+  <text x="747" y="278" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13" font-weight="800" fill="#b91c1c">500</text>
+</svg>
