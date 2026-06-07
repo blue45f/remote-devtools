@@ -1,10 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Remote DevTools">
-  <rect width="512" height="512" rx="112" fill="#171717" />
-  <rect x="64" y="76" width="384" height="336" rx="54" fill="#f7f7f7" />
-  <path d="M106 160h298M106 236h298M106 312h298" stroke="#e5e5e5" stroke-width="16" stroke-linecap="round" />
-  <path d="M130 160h72l34-44 46 88 40-58 58 14" fill="none" stroke="#3b82f6" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M130 236h108m42 0h76M130 312h58m42 0h128" stroke="#171717" stroke-width="24" stroke-linecap="round" />
-  <circle cx="392" cy="112" r="26" fill="#f97316" />
-  <circle cx="392" cy="112" r="12" fill="#fff7ed" />
-  <path d="M316 384h68" stroke="#16a34a" stroke-width="20" stroke-linecap="round" />
+  <defs>
+    <!-- Premium dark background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <!-- Electric blue/cyan code terminal glow -->
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <filter id="neon" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#38bdf8" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)" stroke="#1e293b" stroke-width="8" />
+  
+  <g filter="url(#neon)" transform="translate(64, 64) scale(1.5)">
+    <!-- Browser/Terminal Frame -->
+    <rect x="10" y="10" width="236" height="236" rx="42" fill="#090d16" stroke="#334155" stroke-width="6"/>
+    <!-- Window controls -->
+    <circle cx="42" cy="40" r="10" fill="#ef4444" />
+    <circle cx="72" cy="40" r="10" fill="#f59e0b" />
+    <circle cx="102" cy="40" r="10" fill="#10b981" />
+    
+    <!-- Code prompt ">_" -->
+    <path d="M 45 95 L 85 130 L 45 165" fill="none" stroke="url(#glow)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="105" y1="165" x2="175" y2="165" stroke="url(#glow)" stroke-width="18" stroke-linecap="round" />
+    
+    <!-- Floating status connection dot -->
+    <circle cx="202" cy="40" r="12" fill="#38bdf8" />
+    <circle cx="202" cy="40" r="6" fill="#ffffff" />
+  </g>
 </svg>
