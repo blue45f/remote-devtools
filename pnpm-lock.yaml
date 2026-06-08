@@ -596,8 +596,8 @@ importers:
         version: 2.0.10
     devDependencies:
       '@rrweb/types':
-        specifier: 2.0.0-alpha.20
-        version: 2.0.0-alpha.20
+        specifier: 2.0.1
+        version: 2.0.1
       '@types/crypto-js':
         specifier: ^4.2.2
         version: 4.2.2
@@ -3229,6 +3229,9 @@ packages:
 
   '@rrweb/types@2.0.0-alpha.20':
     resolution: {integrity: sha512-RbnDgKxA/odwB1R4gF7eUUj+rdSrq6ROQJsnMw7MIsGzlbSYvJeZN8YY4XqU0G6sKJvXI6bSzk7w/G94jNwzhw==}
+
+  '@rrweb/types@2.0.1':
+    resolution: {integrity: sha512-x8cNaKFxdvS0/5IfKOj1xG8Htnw1fUwqoPqgP61bOaWqZL6t9UtRPpO9ZlMB2z+FiTxg9zlFFL+Da4ZpFuhoiA==}
 
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
@@ -10573,6 +10576,8 @@ snapshots:
       picomatch: 4.0.4
 
   '@rrweb/types@2.0.0-alpha.20': {}
+
+  '@rrweb/types@2.0.1': {}
 
   '@scarf/scarf@1.4.0': {}
 
