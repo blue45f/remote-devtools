@@ -1,28 +1,25 @@
 {
   "name": "Remote DevTools",
   "short_name": "Remote DevTools",
-  "description": "Open-source remote debugging for the web — capture, replay, inspect.",
-  "start_url": "/dashboard",
+  "description": "원격 디버깅 도구",
+  "lang": "ko-KR",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
   "icons": [
     {
-      "src": "/favicon-192.png",
+      "src": "/favicon.svg",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "/favicon.svg",
-      "sizes": "any",
+      "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
