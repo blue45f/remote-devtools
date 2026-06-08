@@ -19,6 +19,7 @@ concurrency:
 # when the runner is UTC. Aligning CI with production is the simplest fix.
 env:
   TZ: Asia/Seoul
+  NODE_OPTIONS: --max-old-space-size=4096
 
 jobs:
   backend-lint-and-typecheck:
