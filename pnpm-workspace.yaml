@@ -54,6 +54,7 @@ minimumReleaseAgeExclude:
   - i18next
   - lucide-react
   - playwright
+  - react-hook-form
   - react-router
   - react-router-dom
   - storybook
