@@ -79,7 +79,7 @@
     "escape-html": "^1.0.3",
     "express": "^5.2.1",
     "form-data": "^4.0.5",
-    "google-auth-library": "^10.6.2",
+    "google-auth-library": "^10.7.0",
     "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
