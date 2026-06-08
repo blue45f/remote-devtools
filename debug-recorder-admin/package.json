@@ -34,7 +34,7 @@
     "react-router-dom": "^7.16.0",
     "react-syntax-highlighter": "^16.1.1",
     "recharts": "^3.8.1",
-    "vite-plugin-mkcert": "^2.0.0"
+    "vite-plugin-mkcert": "^2.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
