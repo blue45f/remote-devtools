@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -43,6 +44,8 @@ export default function SignUpPage() {
   });
 
   const plan = params.get('plan') ?? 'free';
+  const [demoConsent, setDemoConsent] = useState({ terms: false, telemetry: false });
+  const demoConsentReady = demoConsent.terms && demoConsent.telemetry;
 
   const submit = handleSubmit(
     ({ email }) =>
@@ -100,7 +103,42 @@ export default function SignUpPage() {
             {...register('email')}
           />
         </label>
-        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
+        <div className="rounded-xl border border-border bg-bg-muted/55 p-3 text-xs text-fg-subtle">
+          <p className="mb-2 font-medium text-fg">Demo access checklist</p>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={demoConsent.terms}
+              onChange={(event) =>
+                setDemoConsent((current) => ({ ...current, terms: event.target.checked }))
+              }
+              className="mt-0.5"
+            />
+            <span>
+              Replay data is synthetic in demo mode and should not be treated as production
+              telemetry.
+            </span>
+          </label>
+          <label className="mt-2 flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={demoConsent.telemetry}
+              onChange={(event) =>
+                setDemoConsent((current) => ({ ...current, telemetry: event.target.checked }))
+              }
+              className="mt-0.5"
+            />
+            <span>
+              Self-hosted use requires reviewing auth, retention, and recording consent policies.
+            </span>
+          </label>
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          disabled={isSubmitting || !demoConsentReady}
+        >
           {isSubmitting ? t('auth.reservingSpot') : t('auth.joinWaitlist')}
         </Button>
       </form>
