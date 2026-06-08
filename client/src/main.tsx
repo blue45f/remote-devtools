@@ -67,7 +67,11 @@ createRoot(rootElement).render(
                   <Route path="sessions/:id" element={<SessionDetail />} />
                   <Route path="sandbox/module" element={<SdkModule />} />
                   <Route path="sandbox/script" element={<SdkScript />} />
-                  {/* Legacy redirects (preserve old links) */}
+                  {/* Legacy redirects (preserve old links)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+ */}
                   <Route path="test" element={<Navigate to="/sandbox/script" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
