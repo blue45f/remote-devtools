@@ -67,11 +67,7 @@ createRoot(rootElement).render(
                   <Route path="sessions/:id" element={<SessionDetail />} />
                   <Route path="sandbox/module" element={<SdkModule />} />
                   <Route path="sandbox/script" element={<SdkScript />} />
-                  {/* Legacy redirects (preserve old links)
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
- */}
+                  {/* Legacy redirects (preserve old links) */}
                   <Route path="test" element={<Navigate to="/sandbox/script" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
@@ -83,3 +79,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// PWA: 프로덕션에서만 서비스워커 등록 (sw.js는 vercel.json rewrite 예외 필요)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
