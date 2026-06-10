@@ -113,13 +113,8 @@ pnpm test:cov      # with v8 coverage
 
 ## Tech Stack
 
-- **Backend**: NestJS 11, TypeORM, PostgreSQL, helmet, `@nestjs/throttler`, `@nestjs/swagger`, `@nestjs/terminus`
-- **Frontend**:
-  - React 19, Vite 8, TanStack Query v5, Zustand
-  - Tailwind CSS 4 (via `@tailwindcss/vite`)
-  - Radix UI primitives, cmdk (command palette), framer-motion (motion), lucide-react (icons), sonner (toasts)
-  - Recharts (charts), rrweb-player (session replay)
-- **Testing**: Vitest (backend + frontend), Testing Library + jsdom (frontend)
+런타임 스택(NestJS·React·Vite·Tailwind 등)은 각 `package.json`이 원본이므로 나열하지 않는다.
+
 - **CI/CD**: GitHub Actions (lint, typecheck, test, build)
 - **Infra**: Docker multi-stage (non-root), PM2, nginx
 
