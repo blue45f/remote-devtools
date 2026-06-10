@@ -78,7 +78,7 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
   const { t } = useTranslation();
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl safe-pt">
-      <div className="max-w-6xl mx-auto h-14 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6">
+      <div className="max-w-6xl mx-auto h-14 flex items-center gap-2 sm:gap-3 lg:gap-4 px-3 sm:px-4 lg:px-6">
         <Link to="/" className="flex items-center gap-2 sm:gap-2.5 select-none min-w-0">
           <BrandMark className="size-7 shrink-0" />
           <span className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
@@ -86,7 +86,11 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-5 ml-2 text-sm text-fg-subtle">
+        {/* The bar never wraps (fixed h-14), and the nav appears exactly at
+            md where the row is at capacity. Gaps stay tight until lg and the
+            labels are nowrap so they can't fold to two lines; under pressure
+            the brand name (min-w-0 + truncate) gives way first. */}
+        <nav className="hidden md:flex items-center gap-x-3 lg:gap-x-5 ml-2 text-sm text-fg-subtle whitespace-nowrap">
           <a href="#features" className="hover:text-fg transition-colors">
             {t('landing.navFeatures')}
           </a>
