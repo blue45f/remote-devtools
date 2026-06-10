@@ -266,6 +266,7 @@ export function ReplayTab({
 
 function CommentRow({
   comment,
+  pending = false,
   onSeek,
   onDelete,
   onEditCommit,
@@ -278,6 +279,9 @@ function CommentRow({
     resolved?: boolean;
     author?: string | null;
   };
+  /** True while this row is an optimistic insert still waiting for its
+   * server id — rendered muted with the id-addressed actions disabled. */
+  pending?: boolean;
   onSeek: (offsetMs: number) => void;
   onDelete: () => void;
   onEditCommit: (body: string) => void;
@@ -320,12 +324,20 @@ function CommentRow({
 
   return (
     <li
-      className={cn('flex items-start gap-2 text-xs', resolved && 'opacity-55')}
+      className={cn(
+        'flex items-start gap-2 text-xs',
+        resolved && 'opacity-55',
+        // In-flight rows read as "sending" — slightly muted, never hidden.
+        pending && 'opacity-60',
+      )}
       data-testid="replay-comment"
       data-resolved={resolved ? 'true' : 'false'}
+      data-pending={pending ? 'true' : 'false'}
+      aria-busy={pending}
     >
       <button
         type="button"
+        disabled={pending}
         onClick={() => onToggleResolved(!resolved)}
         aria-label={
           resolved ? t('sessionDetail.reopenComment') : t('sessionDetail.markCommentResolved')
@@ -372,13 +384,14 @@ function CommentRow({
         <div className="flex-1 min-w-0">
           <button
             type="button"
+            disabled={pending}
             onClick={() => setEditing(true)}
             className={cn(
               'w-full text-left text-fg break-words cursor-text hover:bg-bg-muted/60 rounded px-1 -mx-1',
               resolved && 'line-through',
             )}
             data-testid="replay-comment-body"
-            title={t('sessionDetail.clickToEdit')}
+            title={pending ? undefined : t('sessionDetail.clickToEdit')}
           >
             {comment.body}
           </button>
@@ -394,6 +407,7 @@ function CommentRow({
       )}
       <button
         type="button"
+        disabled={pending}
         onClick={onDelete}
         aria-label={t('sessionDetail.deleteComment')}
         data-testid="replay-comment-delete"
@@ -410,6 +424,15 @@ function formatReplayTimestamp(ms: number): string {
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Monotonic ids for optimistic comment inserts. Negative on purpose: they
+// can never collide with the server's auto-increment ids, and `id < 0` is
+// all a row needs to know it is still in flight.
+let tempCommentSeq = 0;
+function nextTempCommentId(): number {
+  tempCommentSeq -= 1;
+  return tempCommentSeq;
 }
 
 function CommentsPanel({
@@ -454,13 +477,45 @@ function CommentsPanel({
         body: JSON.stringify(input),
       });
     },
-    onSuccess: (saved) => {
-      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (prev) =>
-        [...(prev ?? []), saved].sort((a, b) => a.timestampMs - b.timestampMs),
+    onMutate: async ({ timestampMs, body }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<ReplayComment[]>(queryKey);
+      // Drop a placeholder row in right away so the comment appears the
+      // moment it is submitted, not a server round-trip later. The row
+      // renders muted (and its id-addressed actions disabled) until the
+      // real id lands.
+      const tempId = nextTempCommentId();
+      const optimistic: ReplayComment = {
+        id: tempId,
+        timestampMs,
+        body,
+        author: null,
+        createdAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (p) =>
+        [...(p ?? []), optimistic].sort((a, b) => a.timestampMs - b.timestampMs),
       );
-      setDraft('');
+      return { prev, tempId };
     },
-    onError: () => toast.error(t('sessionDetail.couldntSaveComment')),
+    onSuccess: (saved, _vars, ctx) => {
+      // Swap the placeholder for the server row (real id, author, createdAt).
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (prev) =>
+        [...(prev ?? []).filter((c) => c.id !== ctx?.tempId), saved].sort(
+          (a, b) => a.timestampMs - b.timestampMs,
+        ),
+      );
+    },
+    onError: (_err, vars, ctx) => {
+      // `prev` is legitimately undefined when the user submits before the
+      // first list fetch lands — fall back to plucking the placeholder out.
+      queryClient.setQueryData<ReplayComment[] | undefined>(queryKey, (p) =>
+        ctx?.prev ? ctx.prev : p?.filter((c) => c.id !== ctx?.tempId),
+      );
+      // Hand the text back so a failed save never eats the comment — unless
+      // the user already started typing the next one.
+      setDraft((cur) => (cur === '' ? vars.body : cur));
+      toast.error(t('sessionDetail.couldntSaveComment'));
+    },
   });
 
   const deleteMutation = useMutation({
@@ -531,6 +586,9 @@ function CommentsPanel({
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
+    // Clear eagerly — the optimistic row is already in the list, so a
+    // lingering draft would read as "not sent yet". onError hands it back.
+    setDraft('');
     addMutation.mutate({
       timestampMs: Math.max(0, Math.round(playheadMsRef.current)),
       body: text,
@@ -578,6 +636,7 @@ function CommentsPanel({
             <CommentRow
               key={c.id}
               comment={c}
+              pending={c.id < 0}
               onSeek={onSeek}
               onDelete={() => deleteMutation.mutate(c.id)}
               onEditCommit={(body) => editMutation.mutate({ id: c.id, body })}
