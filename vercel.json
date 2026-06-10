@@ -5,7 +5,7 @@
   "framework": null,
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon|og-image|robots|sitemap|manifest).*)",
+      "source": "/((?!assets/|favicon|og-image|robots|sitemap|manifest|sw).*)",
       "destination": "/index.html"
     }
   ],
