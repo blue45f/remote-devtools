@@ -225,6 +225,22 @@
     "allSessions": "All sessions",
     "search": "Search"
   },
+  "policy": {
+    "badge": "Legal",
+    "termsTitle": "Terms of Service",
+    "privacyTitle": "Privacy Policy",
+    "termsLink": "Terms",
+    "privacyLink": "Privacy",
+    "supportLink": "Support",
+    "effectiveAt": "Effective {{date}}",
+    "version": "Version {{label}}",
+    "hashLabel": "Content hash",
+    "viewOnTermsDesk": "View on TermsDesk",
+    "servedFrom": "Published via TermsDesk — append-only, hash-verified",
+    "loadFailedTitle": "Couldn't load this document",
+    "loadFailedBody": "The policy registry didn't respond. The same document is always available on TermsDesk.",
+    "openExternal": "Open on TermsDesk"
+  },
   "errors": {
     "title": "Something went wrong",
     "description": "The interface hit an unexpected error and could not continue.",

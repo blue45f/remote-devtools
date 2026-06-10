@@ -25,6 +25,7 @@ const Sessions = lazy(() => import('@/pages/Sessions'));
 const SessionDetail = lazy(() => import('@/pages/SessionDetail'));
 const SdkModule = lazy(() => import('@/pages/SdkModule'));
 const SdkScript = lazy(() => import('@/pages/SdkScript'));
+const Policy = lazy(() => import('@/pages/Policy'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 function PageLoader() {
@@ -53,6 +54,9 @@ createRoot(rootElement).render(
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
+                {/* Legal pages — TermsDesk publications rendered in-app */}
+                <Route path="/terms" element={<Policy slug="terms-of-service" />} />
+                <Route path="/privacy" element={<Policy slug="privacy-policy" />} />
                 {/* App shell — protected by RequireAuth when the backend has
                    AUTH_JWT_SECRET set; pass-through in demo / self-host. */}
                 <Route
