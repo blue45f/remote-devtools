@@ -17,6 +17,8 @@ const PREFETCHERS: Record<string, () => Promise<unknown>> = {
   '/pricing': () => import('@/pages/Pricing'),
   '/sign-in': () => import('@/pages/SignIn'),
   '/sign-up': () => import('@/pages/SignUp'),
+  '/terms': () => import('@/pages/Policy'),
+  '/privacy': () => import('@/pages/Policy'),
 };
 
 const STARTED = new Set<string>();

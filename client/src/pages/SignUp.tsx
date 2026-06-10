@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toaster';
+import { SUPPORT_URL } from '@/lib/policy';
 import { useAppStore } from '@/lib/store';
 
 import { AuthShell } from './SignIn';
@@ -129,7 +130,24 @@ export default function SignUpPage() {
               className="mt-0.5"
             />
             <span>
-              Self-hosted use requires reviewing auth, retention, and recording consent policies.
+              Self-hosted use requires reviewing{' '}
+              <Link to="/terms" className="underline underline-offset-2">
+                service terms
+              </Link>
+              ,{' '}
+              <Link to="/privacy" className="underline underline-offset-2">
+                privacy policy
+              </Link>
+              , and{' '}
+              <a
+                href={`${SUPPORT_URL}?category=site-inquiry`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                support board
+              </a>{' '}
+              practices.
             </span>
           </label>
         </div>

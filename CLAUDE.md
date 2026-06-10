@@ -72,6 +72,7 @@ When adding a new backend route the frontend needs to call, mirror it here.
 - `/sessions/:id` — session detail with **Overview / Replay / Timeline / Raw JSON** tabs
 - `/sandbox/module` — SDK demo loaded via ESM dynamic import
 - `/sandbox/script` — SDK demo loaded via UMD script tag
+- `/terms`, `/privacy` — legal documents rendered in-app from the TermsDesk public API (`client/src/lib/policy.ts`); the support board stays an external TermsDesk link
 - `/` redirects to `/dashboard`; `/test` redirects to `/sandbox/script` (legacy)
 
 ### Replay event normalisation

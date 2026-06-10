@@ -225,6 +225,22 @@
     "allSessions": "모든 세션",
     "search": "검색"
   },
+  "policy": {
+    "badge": "법적 고지",
+    "termsTitle": "이용약관",
+    "privacyTitle": "개인정보처리방침",
+    "termsLink": "이용약관",
+    "privacyLink": "개인정보처리방침",
+    "supportLink": "문의",
+    "effectiveAt": "시행일 {{date}}",
+    "version": "버전 {{label}}",
+    "hashLabel": "콘텐츠 해시",
+    "viewOnTermsDesk": "TermsDesk에서 보기",
+    "servedFrom": "TermsDesk 게시본 — append-only · 해시 검증",
+    "loadFailedTitle": "문서를 불러오지 못했습니다",
+    "loadFailedBody": "약관 레지스트리가 응답하지 않았습니다. 동일한 문서를 TermsDesk에서 언제든 볼 수 있습니다.",
+    "openExternal": "TermsDesk에서 열기"
+  },
   "errors": {
     "title": "문제가 발생했습니다",
     "description": "인터페이스에서 예기치 않은 오류가 발생하여 계속할 수 없습니다.",

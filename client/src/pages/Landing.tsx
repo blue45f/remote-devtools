@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kbd } from '@/components/ui/kbd';
+import { SUPPORT_URL } from '@/lib/policy';
 import { applyTheme, useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
@@ -663,6 +664,12 @@ function SiteFooter() {
         <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-fg-subtle">
           GitHub
         </a>
+        <Link to="/terms" className="hover:text-fg-subtle">
+          {t('policy.termsLink')}
+        </Link>
+        <Link to="/privacy" className="hover:text-fg-subtle">
+          {t('policy.privacyLink')}
+        </Link>
         <a
           href={GITHUB_URL + '/blob/main/README.md'}
           target="_blank"
@@ -670,6 +677,14 @@ function SiteFooter() {
           className="hover:text-fg-subtle"
         >
           {t('landing.docs')}
+        </a>
+        <a
+          href={`${SUPPORT_URL}?category=site-inquiry`}
+          target="_blank"
+          rel="noreferrer"
+          className="hover:text-fg-subtle"
+        >
+          {t('policy.supportLink')}
         </a>
         <span className="ml-auto">{t('landing.builtWith')}</span>
       </div>
