@@ -26,6 +26,7 @@ interface DemoComment {
 
 const demoCommentStore = new Map<number, DemoComment[]>();
 const demoCommentSeeded = new Set<number>();
+let demoCommentSaveShouldFail = false;
 
 /**
  * Test-only: clear the module-level demo comment state so the in-memory
@@ -34,6 +35,15 @@ const demoCommentSeeded = new Set<number>();
 export function __resetDemoComments(): void {
   demoCommentStore.clear();
   demoCommentSeeded.clear();
+  demoCommentSaveShouldFail = false;
+}
+
+/**
+ * Test-only: make the next demo comment save throw, so optimistic-insert
+ * rollback paths are exercisable offline. No-op effect in production.
+ */
+export function __failNextDemoCommentSave(): void {
+  demoCommentSaveShouldFail = true;
 }
 
 function seedDemoComments(recordId: number): DemoComment[] {
@@ -140,6 +150,12 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
       return getDemoComments(recordId) as T;
     }
     if (method === 'POST' && init?.body) {
+      if (demoCommentSaveShouldFail) {
+        // One-shot test hook — surfaces as a rejected apiFetch, exactly
+        // like a backend 5xx would.
+        demoCommentSaveShouldFail = false;
+        throw new Error('demo: comment save rejected');
+      }
       try {
         const parsed = JSON.parse(init.body as string) as {
           timestampMs?: number;

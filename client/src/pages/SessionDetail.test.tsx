@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __resetDemoComments } from '@/lib/seed-router';
+import { __failNextDemoCommentSave, __resetDemoComments } from '@/lib/seed-router';
 import { renderWithProviders } from '@/test/utils';
 
 import SessionDetail, { buildSessionInsights } from './SessionDetail';
@@ -612,6 +612,65 @@ describe('SessionDetail page', () => {
       expect(after).toBe(before + 1);
     });
     expect(screen.getByText(/regression on the empty cart flow/)).toBeInTheDocument();
+  });
+
+  it('shows a submitted comment optimistically while the save is in flight', async () => {
+    const user = userEvent.setup();
+    // Dedicated session id — the demo comment store is module-level and
+    // leaks across tests, so use an id no other comment test mutates.
+    renderAt(1004);
+
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+    const before = screen.getAllByTestId('replay-comment').length;
+
+    await user.type(screen.getByTestId('replay-comment-input'), 'optimistic insert check');
+    await user.click(screen.getByTestId('replay-comment-add'));
+
+    // The row lands before the (demo: ~120ms) save settles — muted, with
+    // its id-addressed actions disabled — and the input cleared at submit
+    // time, not at server-ack time.
+    expect(screen.getAllByTestId('replay-comment').length).toBe(before + 1);
+    const pendingRow = screen
+      .getAllByTestId('replay-comment')
+      .find((row) => row.getAttribute('data-pending') === 'true');
+    expect(pendingRow).toBeDefined();
+    expect(within(pendingRow as HTMLElement).getByTestId('replay-comment-delete')).toBeDisabled();
+    expect(screen.getByTestId('replay-comment-input')).toHaveValue('');
+
+    // Once the server id arrives the placeholder sheds its pending state.
+    await waitFor(() => {
+      const rows = screen.getAllByTestId('replay-comment');
+      expect(rows.length).toBe(before + 1);
+      expect(rows.every((row) => row.getAttribute('data-pending') === 'false')).toBe(true);
+    });
+    expect(screen.getByText(/optimistic insert check/)).toBeInTheDocument();
+  });
+
+  it('rolls the optimistic comment back and returns the draft when the save fails', async () => {
+    const user = userEvent.setup();
+    // Dedicated session id (see above) so the rollback maths stay stable.
+    renderAt(1005);
+
+    await user.keyboard('2');
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBeGreaterThan(0);
+    });
+    const before = screen.getAllByTestId('replay-comment').length;
+
+    __failNextDemoCommentSave();
+    await user.type(screen.getByTestId('replay-comment-input'), 'doomed comment');
+    await user.click(screen.getByTestId('replay-comment-add'));
+
+    // The failed save rolls the placeholder back out and hands the text
+    // back to the input so nothing the user typed is lost.
+    await waitFor(() => {
+      expect(screen.getAllByTestId('replay-comment').length).toBe(before);
+    });
+    expect(screen.queryByText(/doomed comment/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('replay-comment-input')).toHaveValue('doomed comment');
   });
 
   it('opens a response body dialog when a Network row is clicked', async () => {

@@ -47,4 +47,21 @@ void i18n
     },
   });
 
+/**
+ * Mirror the active language onto `<html lang>` so screen readers pick the
+ * matching speech engine (WCAG 3.1.1 — Language of Page). index.html keeps a
+ * static `lang="en"` to match its English meta/OG copy for crawlers; at
+ * runtime the resolved UI language takes over. No SSR here (Vite SPA), so a
+ * document guard is enough. Resources are bundled, which makes init — and its
+ * `languageChanged` event — synchronous, i.e. it fired before this listener
+ * existed; hence the explicit first sync.
+ */
+if (typeof document !== 'undefined') {
+  const syncHtmlLang = (lng: string) => {
+    document.documentElement.lang = lng;
+  };
+  i18n.on('languageChanged', (lng) => syncHtmlLang(i18n.resolvedLanguage ?? lng));
+  if (i18n.resolvedLanguage) syncHtmlLang(i18n.resolvedLanguage);
+}
+
 export default i18n;
