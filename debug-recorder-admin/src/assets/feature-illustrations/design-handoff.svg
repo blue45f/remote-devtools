@@ -1,18 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Design handoff preview">
-  <rect width="960" height="540" fill="#fafafa"/>
-  <rect x="66" y="62" width="520" height="392" rx="30" fill="#ffffff" stroke="#d4d4d4"/>
-  <rect x="104" y="102" width="202" height="132" rx="20" fill="#f7f7f7" stroke="#e5e5e5"/>
-  <path d="M132 204h72l28-44 38 64" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="342" y="108" width="140" height="16" rx="8" fill="#171717"/>
-  <path d="M342 152h124M342 184h164M342 216h96" stroke="#a3a3a3" stroke-width="11" stroke-linecap="round"/>
-  <rect x="104" y="282" width="410" height="102" rx="20" fill="#f7f7f7" stroke="#e5e5e5"/>
-  <path d="M132 320h268M132 354h178" stroke="#737373" stroke-width="12" stroke-linecap="round"/>
-  <rect x="642" y="92" width="246" height="362" rx="30" fill="#171717"/>
-  <rect x="676" y="130" width="100" height="18" rx="9" fill="#fafafa"/>
-  <rect x="676" y="184" width="156" height="92" rx="18" fill="#262626" stroke="#404040"/>
-  <path d="M706 230h92M706 252h52" stroke="#d4d4d4" stroke-width="9" stroke-linecap="round"/>
-  <rect x="676" y="314" width="156" height="34" rx="17" fill="#eff6ff"/>
-  <text x="754" y="337" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="750" fill="#1d4ed8">inspect link</text>
-  <path d="M568 242h72" stroke="#3b82f6" stroke-width="10" stroke-linecap="round"/>
-  <path d="M622 222l24 20-24 20" fill="none" stroke="#3b82f6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="Design handoff inspection preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111f"/><stop offset=".58" stop-color="#101827"/><stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="78%" cy="18%" r="62%"><stop stop-color="#8b5cf6" stop-opacity=".55"/><stop offset=".66" stop-color="#8b5cf6" stop-opacity=".08"/><stop offset="1" stop-color="#07111f" stop-opacity="0"/></radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#020617" flood-opacity=".34"/></filter>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/><rect width="960" height="540" fill="url(#halo)"/>
+  <path d="M60 430C174 372 276 412 410 448c148 40 254 12 376-72 48-33 86-45 126-42v206H60z" fill="#e0f2fe" opacity=".08"/>
+  <g filter="url(#shadow)">
+    <rect x="86" y="70" width="788" height="400" rx="44" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+    <rect x="118" y="104" width="724" height="52" rx="20" fill="#111827"/>
+    <circle cx="152" cy="130" r="9" fill="#fb7185"/><circle cx="184" cy="130" r="9" fill="#facc15"/><circle cx="216" cy="130" r="9" fill="#34d399"/>
+    <text x="254" y="137" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="800" fill="#cbd5e1">Design handoff inspection preview</text>
+    <rect x="222" y="196" width="212" height="180" rx="32" fill="#f8fafc"/>
+                 <rect x="256" y="230" width="92" height="92" rx="22" fill="#8b5cf6"/>
+                 <path d="M504 206h154M504 258h104M504 310h138M504 362h78" stroke="#e5eefb" stroke-width="14" stroke-linecap="round"/>
+                 <path d="M374 270l74 44 74-84" fill="none" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
