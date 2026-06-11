@@ -116,7 +116,6 @@ export default function PolicyPage({ slug }: { slug: PolicySlug }) {
           <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-fg-subtle">
             GitHub
           </a>
-          <span className="ml-auto">{t('policy.servedFrom')}</span>
         </div>
       </footer>
     </div>

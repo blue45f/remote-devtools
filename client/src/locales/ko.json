@@ -236,7 +236,6 @@
     "version": "버전 {{label}}",
     "hashLabel": "콘텐츠 해시",
     "viewOnTermsDesk": "TermsDesk에서 보기",
-    "servedFrom": "TermsDesk 게시본 — append-only · 해시 검증",
     "loadFailedTitle": "문서를 불러오지 못했습니다",
     "loadFailedBody": "약관 레지스트리가 응답하지 않았습니다. 동일한 문서를 TermsDesk에서 언제든 볼 수 있습니다.",
     "openExternal": "TermsDesk에서 열기"

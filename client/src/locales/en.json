@@ -236,7 +236,6 @@
     "version": "Version {{label}}",
     "hashLabel": "Content hash",
     "viewOnTermsDesk": "View on TermsDesk",
-    "servedFrom": "Published via TermsDesk — append-only, hash-verified",
     "loadFailedTitle": "Couldn't load this document",
     "loadFailedBody": "The policy registry didn't respond. The same document is always available on TermsDesk.",
     "openExternal": "Open on TermsDesk"
