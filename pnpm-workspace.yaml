@@ -23,6 +23,21 @@ allowBuilds:
   esbuild: true
   sharp: true
 
+# @hookform/resolvers 5.x stopped declaring zod as an (optional) peer, yet its
+# dist still imports `zod/v4/core`. Without the link pnpm resolves that import
+# through the hidden hoist at node_modules/.pnpm/node_modules/zod, which
+# eslint-plugin-react-compiler's transitive zod@3 now occupies — breaking the
+# client typecheck (version literal clash) and risking a wrong-instance
+# $ZodError check at runtime. Declare the peer so the workspace zod is linked
+# next to the resolver.
+packageExtensions:
+  '@hookform/resolvers':
+    peerDependencies:
+      zod: '*'
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
 minimumReleaseAgeExclude:
   - '@ant-design/icons'
   - '@aws-sdk/*'

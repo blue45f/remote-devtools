@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettierPlugin from "eslint-plugin-prettier/recommended";
+import reactCompiler from "eslint-plugin-react-compiler";
 import reactHooks from "eslint-plugin-react-hooks";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -102,6 +103,26 @@ export default tseslint.config(
         project: [sdkTsconfig],
         tsconfigRootDir: sdkDir,
       },
+    },
+  },
+
+  // Static assets served verbatim from client/public (service worker, …) are
+  // plain browser scripts outside every tsconfig — lint them without type
+  // information instead of failing on "file not found in project".
+  {
+    files: ["client/public/**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+
+  // React Compiler correctness — the client is compiled (see client/vite.config.ts),
+  // so Rules-of-React violations the compiler cannot handle must fail lint.
+  {
+    files: ["client/**/*.{ts,tsx}"],
+    plugins: {
+      "react-compiler": reactCompiler,
+    },
+    rules: {
+      "react-compiler/react-compiler": "error",
     },
   },
 );

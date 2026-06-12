@@ -1,3 +1,4 @@
+import reactCompiler from 'eslint-plugin-react-compiler';
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
@@ -99,5 +100,14 @@ export default [
   },
   {
     ignores: ['node_modules/', 'dist/', '*.config.js', '*.config.ts'],
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      'react-compiler': reactCompiler,
+    },
+    rules: {
+      'react-compiler/react-compiler': 'error',
+    },
   },
 ];
