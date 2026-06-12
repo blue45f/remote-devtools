@@ -115,8 +115,11 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
   };
   getCommonInfo();
 
-  // autoConnect가 true면 deviceId 로드 후 WebSocket 연결
-  if (autoConnect) {
+  // 데모 모드에서는 실시간 웹소켓 연결이 불필요하므로 생략
+  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo-mode') === '1';
+
+  // autoConnect가 true고 데모 모드가 아니면 deviceId 로드 후 WebSocket 연결
+  if (autoConnect && !isDemoMode) {
     // commonInfo 로드 후 WebSocket 연결 시작
     let retryCount = 0;
     const checkAndConnect = () => {
@@ -296,7 +299,7 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
 
     // WebSocket 연결 오류 처리
     remoteDebugger.addSocketEventListener('error', () => {
-      alert('Unable to connect to remote debugger.');
+      console.warn('[SDK] Unable to connect to remote debugger WebSocket.');
     });
   };
 
