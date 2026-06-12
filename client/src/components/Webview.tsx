@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { API_HOST } from '@/lib/api';
-import { useAppStore } from '@/lib/store';
 
 import DebugPanel from './webview/DebugPanel';
 import ExploreTab from './webview/ExploreTab';
@@ -36,19 +35,10 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [node, setNode] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'explore' | 'debug'>('explore');
-  const demoMode = useAppStore((s) => s.demoMode);
 
   // SDK init
   useEffect(() => {
     if (kind === 'script') {
-      if (demoMode) {
-        window.RemoteDebugSdk ??= {
-          createDebugger: () => undefined,
-        };
-        window.RemoteDebugSdk.createDebugger();
-        return;
-      }
-
       const script = document.createElement('script');
       // Same-origin path (Vite dev proxy forwards /sdk → external in dev;
       // production usually serves both apps behind the same reverse proxy).
@@ -65,12 +55,11 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
         }
       };
     }
-    if (demoMode) return;
 
     void import('remote-debug-sdk').then(({ createDebugger }) => {
       createDebugger();
     });
-  }, [demoMode, kind]);
+  }, [kind]);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -190,10 +179,7 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
         </Tabs>
       </div>
 
-      {/* The public Vercel demo ships no backend, so the DevTools UI it would
-          open does not exist there — only surface the CTA when a backend is
-          actually reachable. */}
-      {!demoMode && <BottomCta />}
+      <BottomCta />
     </div>
   );
 };

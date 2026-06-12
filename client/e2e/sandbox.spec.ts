@@ -33,7 +33,7 @@ function collectFatalConsoleErrors(messages: ConsoleMessage[]) {
 }
 
 test.describe('SDK sandbox pages', () => {
-  test('/sandbox/script renders the playground shell', async ({ page }) => {
+  test('/sandbox/script renders the playground shell and loads the SDK', async ({ page }) => {
     const consoleMessages: ConsoleMessage[] = [];
     const sdkRequests: string[] = [];
     page.on('console', (msg) => consoleMessages.push(msg));
@@ -55,12 +55,15 @@ test.describe('SDK sandbox pages', () => {
     await expect(page.getByRole('tab', { name: /Customer page|고객 페이지/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /Debug actions|디버그 동작/i })).toBeVisible();
 
+    // The debugger widget is loaded and visible.
+    await expect(page.locator('#REMOTE_DEBUGGER')).toBeVisible();
+
     const fatal = collectFatalConsoleErrors(consoleMessages);
     expect(fatal, fatal.join('\n')).toEqual([]);
-    expect(sdkRequests).toEqual([]);
+    expect(sdkRequests.length).toBe(1);
   });
 
-  test('/sandbox/module renders the playground shell', async ({ page }) => {
+  test('/sandbox/module renders the playground shell and loads the SDK', async ({ page }) => {
     const consoleMessages: ConsoleMessage[] = [];
     page.on('console', (msg) => consoleMessages.push(msg));
 
@@ -70,6 +73,9 @@ test.describe('SDK sandbox pages', () => {
     await expect(main.getByText(/SDK Playground|SDK 실험실/i)).toBeVisible();
     await expect(main.getByText(/^Module SDK$|^모듈 SDK$/i)).toBeVisible();
     await expect(page.getByRole('tab', { name: /Customer page|고객 페이지/i })).toBeVisible();
+
+    // The debugger widget is loaded and visible.
+    await expect(page.locator('#REMOTE_DEBUGGER')).toBeVisible();
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
     expect(fatal, fatal.join('\n')).toEqual([]);

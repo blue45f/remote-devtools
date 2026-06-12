@@ -35,16 +35,15 @@ test.describe('Sessions list and detail', () => {
     expect(filtered).toBeLessThanOrEqual(initialRows);
   });
 
-  test('DevTools button shows demo-mode toast', async ({ page }) => {
+  test('DevTools button opens tabbed debugger', async ({ page, context }) => {
     await page.goto('/sessions');
     const row = page.locator('tbody tr').first();
     await row.hover();
-    await row.getByLabel(/Open in DevTools|DevTools에서 열기/).click();
-    // sonner toast — selector is region with role status
-    await expect(
-      page.getByText(/DevTools requires a backend|DevTools에는 백엔드가 필요합니다/i),
-    ).toBeVisible({
-      timeout: 3000,
-    });
+    const [newPage] = await Promise.all([
+      context.waitForEvent('page'),
+      row.getByLabel(/Open in DevTools|DevTools에서 열기/).click(),
+    ]);
+    await newPage.waitForLoadState();
+    expect(newPage.url()).toContain('/tabbed-debug/');
   });
 });
