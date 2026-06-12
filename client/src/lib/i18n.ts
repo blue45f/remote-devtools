@@ -50,7 +50,7 @@ void i18n
 /**
  * Mirror the active language onto `<html lang>` so screen readers pick the
  * matching speech engine (WCAG 3.1.1 — Language of Page). index.html keeps a
- * static `lang="en"` to match its English meta/OG copy for crawlers; at
+ * static `lang="ko"` to match its Korean meta/OG copy for crawlers; at
  * runtime the resolved UI language takes over. No SSR here (Vite SPA), so a
  * document guard is enough. Resources are bundled, which makes init — and its
  * `languageChanged` event — synchronous, i.e. it fired before this listener
