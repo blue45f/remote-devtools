@@ -9,6 +9,14 @@
       "destination": "${BACKEND_URL}/api/:path*"
     },
     {
+      "source": "/devtools/:path*",
+      "destination": "${BACKEND_URL}/devtools/:path*"
+    },
+    {
+      "source": "/tabbed-debug/:path*",
+      "destination": "${BACKEND_URL}/tabbed-debug/:path*"
+    },
+    {
       "source": "/sdk/:path*",
       "destination": "${BACKEND_EXTERNAL_URL}/sdk/:path*"
     },
