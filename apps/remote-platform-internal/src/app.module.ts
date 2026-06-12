@@ -11,6 +11,7 @@ import { DatabaseModule, ServicesModule } from '@remote-platform/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ActivityModule } from './modules/activity/activity.module';
+import { AccountsModule } from './modules/accounts/accounts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -66,6 +67,7 @@ const staticModule = ServeStaticModule.forRoot(
     WorkflowModule,
     DashboardModule,
     ActivityModule,
+    AccountsModule,
     AuthModule,
     BillingModule,
     PresenceModule,

@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,9 +19,9 @@ import { useAppStore } from '@/lib/store';
  *  - Public Vercel demo (VITE_FORCE_DEMO=true): the form is decorative;
  *    submit flips on demo mode and routes to the dashboard.
  *  - Self-host with backend reachable: submit calls
- *    `POST /api/auth/dev-token` to mint a JWT, stores it via `useAuth().signIn`,
- *    and navigates onward. Production deployments swap the body of `submit()`
- *    for Clerk/Supabase/Auth0 — see auth.tsx for the drop-in example.
+ *    `POST /api/auth/login` to mint a JWT, stores it via `useAuth().signIn`,
+ *    and navigates onward. Production deployments can still swap auth.tsx for
+ *    Clerk/Supabase/Auth0 without changing downstream consumers.
  */
 export default function SignInPage() {
   const { t } = useTranslation();
@@ -30,6 +30,7 @@ export default function SignInPage() {
   const setDemoMode = useAppStore((s) => s.setDemoMode);
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
 
   const isForcedDemo = import.meta.env.VITE_FORCE_DEMO === 'true';
@@ -50,10 +51,10 @@ export default function SignInPage() {
         return;
       }
 
-      const res = await fetch(`${API_HOST}/api/auth/dev-token`, {
+      const res = await fetch(`${API_HOST}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sub: email || 'dev-user' }),
+        body: JSON.stringify({ email, password }),
         signal: AbortSignal.timeout(15_000),
       });
 
@@ -118,6 +119,23 @@ export default function SignInPage() {
             autoComplete="email"
           />
         </label>
+        {!isForcedDemo && (
+          <label htmlFor="signin-password" className="block">
+            <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
+              {t('auth.password')}
+            </span>
+            <Input
+              id="signin-password"
+              type="password"
+              required
+              placeholder={t('auth.passwordPlaceholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              leadingIcon={<Lock />}
+              autoComplete="current-password"
+            />
+          </label>
+        )}
         <Button type="submit" variant="primary" className="w-full" disabled={pending}>
           {pending ? t('auth.signingIn') : t('auth.continueWithEmail')}
         </Button>

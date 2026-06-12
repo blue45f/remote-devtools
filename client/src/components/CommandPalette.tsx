@@ -85,9 +85,6 @@ export function CommandPalette() {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 200);
     return () => clearTimeout(timer);
   }, [search]);
-  useEffect(() => {
-    if (!commandOpen) setSearch('');
-  }, [commandOpen]);
 
   const { data: sessionMatches } = useQuery<SessionMatch[]>({
     queryKey: ['palette-session-search', debouncedSearch],
@@ -111,7 +108,13 @@ export function CommandPalette() {
   };
 
   return (
-    <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+    <CommandDialog
+      open={commandOpen}
+      onOpenChange={(open) => {
+        setCommandOpen(open);
+        if (!open) setSearch('');
+      }}
+    >
       <CommandInput
         placeholder={t('command.placeholder')}
         value={search}
@@ -208,9 +211,9 @@ export function CommandPalette() {
             return (
               <CommandItem
                 key={item.to}
-                // English `label` keeps the filter token stable; the localized
-                // label is appended so search works in the active language too.
-                value={`nav ${item.label} ${itemLabel}`}
+                // Include Korean fallback, active localized label, and English
+                // tokens so search works in both supported languages.
+                value={`nav ${[item.label, itemLabel, ...(item.searchTokens ?? [])].join(' ')}`}
                 onSelect={() => run(() => navigate(item.to))}
               >
                 <Icon />

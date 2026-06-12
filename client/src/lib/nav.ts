@@ -15,11 +15,12 @@ export interface NavItem {
    */
   labelKey: string;
   /**
-   * English fallback label. Kept for non-`t()` consumers (breadcrumbs in
-   * Topbar, the 404 "Did you mean?" hint) that read the raw string; UI chrome
-   * should prefer `t(labelKey)`.
+   * Korean-first fallback label for non-`t()` consumers. UI chrome should
+   * still prefer `t(labelKey)`.
    */
   label: string;
+  /** Extra filter tokens for command-palette search in secondary languages. */
+  searchTokens?: string[];
   icon: LucideIcon;
   badge?: string;
   /** Displayed-only keyboard shortcut hint (e.g. "G D"). */
@@ -29,7 +30,7 @@ export interface NavItem {
 export interface NavSection {
   /** i18n key for the section heading, resolved with `t(section.labelKey)`. */
   labelKey?: string;
-  /** English fallback for the section heading. */
+  /** Korean-first fallback for the section heading. */
   label?: string;
   items: NavItem[];
 }
@@ -40,14 +41,16 @@ export const navSections: NavSection[] = [
       {
         to: '/dashboard',
         labelKey: 'sidebar.dashboard',
-        label: 'Dashboard',
+        label: '대시보드',
+        searchTokens: ['Dashboard'],
         icon: LayoutDashboard,
         shortcut: 'G D',
       },
       {
         to: '/sessions',
         labelKey: 'sidebar.sessions',
-        label: 'Sessions',
+        label: '세션',
+        searchTokens: ['Sessions'],
         icon: PlaySquare,
         shortcut: 'G S',
       },
@@ -55,18 +58,20 @@ export const navSections: NavSection[] = [
   },
   {
     labelKey: 'nav.sdkPlayground',
-    label: 'SDK Playground',
+    label: 'SDK 실험실',
     items: [
       {
         to: '/sandbox/module',
         labelKey: 'nav.moduleSdk',
-        label: 'Module SDK',
+        label: '모듈 SDK',
+        searchTokens: ['Module SDK'],
         icon: Sparkles,
       },
       {
         to: '/sandbox/script',
         labelKey: 'nav.scriptSdk',
-        label: 'Script SDK',
+        label: '스크립트 SDK',
+        searchTokens: ['Script SDK'],
         icon: TerminalSquare,
       },
     ],

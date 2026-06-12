@@ -48,12 +48,12 @@ test.describe('SDK sandbox pages', () => {
     // The sidebar also renders a "SDK Playground" group label, so scope the
     // visibility check to the main page surface only.
     const main = page.locator('#main-content');
-    await expect(main.getByText(/SDK Playground/i)).toBeVisible();
-    await expect(main.getByText(/Script SDK \(UMD\)/i)).toBeVisible();
+    await expect(main.getByText(/SDK Playground|SDK 실험실/i)).toBeVisible();
+    await expect(main.getByText(/Script SDK \(UMD\)|스크립트 SDK \(UMD\)/i)).toBeVisible();
 
     // Tab switcher is rendered.
-    await expect(page.getByRole('tab', { name: /Customer page/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /Debug actions/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Customer page|고객 페이지/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Debug actions|디버그 동작/i })).toBeVisible();
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
     expect(fatal, fatal.join('\n')).toEqual([]);
@@ -67,9 +67,9 @@ test.describe('SDK sandbox pages', () => {
     await page.goto('/sandbox/module');
 
     const main = page.locator('#main-content');
-    await expect(main.getByText(/SDK Playground/i)).toBeVisible();
-    await expect(main.getByText(/^Module SDK$/i)).toBeVisible();
-    await expect(page.getByRole('tab', { name: /Customer page/i })).toBeVisible();
+    await expect(main.getByText(/SDK Playground|SDK 실험실/i)).toBeVisible();
+    await expect(main.getByText(/^Module SDK$|^모듈 SDK$/i)).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Customer page|고객 페이지/i })).toBeVisible();
 
     const fatal = collectFatalConsoleErrors(consoleMessages);
     expect(fatal, fatal.join('\n')).toEqual([]);
@@ -77,9 +77,13 @@ test.describe('SDK sandbox pages', () => {
 
   test('can switch between Customer page and Debug actions tabs', async ({ page }) => {
     await page.goto('/sandbox/module');
-    await page.getByRole('tab', { name: /Debug actions/i }).click();
-    await expect(page.getByRole('tab', { name: /Debug actions/i, selected: true })).toBeVisible();
-    await page.getByRole('tab', { name: /Customer page/i }).click();
-    await expect(page.getByRole('tab', { name: /Customer page/i, selected: true })).toBeVisible();
+    await page.getByRole('tab', { name: /Debug actions|디버그 동작/i }).click();
+    await expect(
+      page.getByRole('tab', { name: /Debug actions|디버그 동작/i, selected: true }),
+    ).toBeVisible();
+    await page.getByRole('tab', { name: /Customer page|고객 페이지/i }).click();
+    await expect(
+      page.getByRole('tab', { name: /Customer page|고객 페이지/i, selected: true }),
+    ).toBeVisible();
   });
 });

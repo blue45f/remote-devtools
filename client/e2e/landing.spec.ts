@@ -3,18 +3,22 @@ import { expect, test } from '@playwright/test';
 test.describe('Landing page', () => {
   test('renders hero and primary CTA', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1, name: /Debug any web page/ })).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /Try the live demo|Try the demo/ }),
+      page.getByRole('heading', { level: 1, name: /Debug any web page|어떤 웹 페이지든/ }),
     ).toBeVisible();
-    await expect(page.getByRole('link', { name: /View on GitHub/ })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Try the live demo|Try the demo|데모 체험하기/ }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /View on GitHub|GitHub에서 보기/ })).toBeVisible();
   });
 
   test('Try the demo CTA navigates to the dashboard', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Try the live demo|Try the demo/ }).click();
+    await page
+      .getByRole('button', { name: /Try the live demo|Try the demo|데모 체험하기/ })
+      .click();
     await page.waitForURL(/\/dashboard/);
-    await expect(page.getByRole('heading', { level: 1, name: /Dashboard/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Dashboard|대시보드/ })).toBeVisible();
   });
 
   test('language toggle persists after reload', async ({ page }) => {
@@ -26,8 +30,8 @@ test.describe('Landing page', () => {
     await page.getByRole('menuitem', { name: /한국어/ }).click();
     // i18next.changeLanguage is sync but React's update is via state; allow
     // one tick for the Topbar Badge to re-render.
-    await expect(page.getByText('데모')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('demo-mode-badge')).toContainText('데모', { timeout: 3000 });
     await page.reload();
-    await expect(page.getByText('데모')).toBeVisible();
+    await expect(page.getByTestId('demo-mode-badge')).toContainText('데모');
   });
 });

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from './auth.service';
 
@@ -53,6 +53,30 @@ describe('AuthService', () => {
     expect(claims.email).toBe('a@b.com');
   });
 
+  it('issues remote-devtools session tokens in production-capable flows', () => {
+    process.env.AUTH_JWT_SECRET = 'test-secret';
+    process.env.NODE_ENV = 'production';
+    svc = new AuthService();
+    const token = svc.issueSessionToken({
+      accountId: 'account-1',
+      email: 'member@example.com',
+      memberId: 'member-1',
+      orgId: 'org-1',
+      plan: 'pro',
+      role: 'owner',
+    });
+    const claims = svc.verify(token);
+    expect(claims).toMatchObject({
+      sub: 'account-1',
+      email: 'member@example.com',
+      member: 'member-1',
+      org: 'org-1',
+      plan: 'pro',
+      provider: 'remote-devtools',
+      role: 'owner',
+    });
+  });
+
   it('rejects tampered tokens', () => {
     process.env.AUTH_JWT_SECRET = 'test-secret';
     svc = new AuthService();
@@ -70,5 +94,27 @@ describe('AuthService', () => {
 
   it('verify throws when auth is disabled', () => {
     expect(() => svc.verify('anything')).toThrow(/Auth is disabled/);
+  });
+
+  it('verifyForRequest rejects inactive remote-devtools accounts', async () => {
+    process.env.AUTH_JWT_SECRET = 'test-secret';
+    const accountRepository = {
+      findOne: vi.fn().mockResolvedValue({ id: 'account-1', status: 'suspended' }),
+    };
+    const memberRepository = {
+      findOne: vi.fn(),
+    };
+    svc = new AuthService(accountRepository as never, memberRepository as never);
+    const token = svc.issueSessionToken({
+      accountId: 'account-1',
+      email: 'member@example.com',
+      memberId: 'member-1',
+      orgId: 'org-1',
+      plan: 'free',
+      role: 'member',
+    });
+
+    await expect(svc.verifyForRequest(token)).rejects.toThrow(/Account is not active/);
+    expect(memberRepository.findOne).not.toHaveBeenCalled();
   });
 });

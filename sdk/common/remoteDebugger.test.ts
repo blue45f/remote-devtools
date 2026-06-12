@@ -76,6 +76,44 @@ describe('RemoteDebugger', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    document.querySelectorAll('script[data-test-sdk-script]').forEach((script) => script.remove());
+  });
+
+  it('uses VITE_EXTERNAL_WS when opening the External WebSocket', async () => {
+    vi.stubEnv('VITE_EXTERNAL_WS', 'wss://configured.example.com/socket.io/');
+
+    const { RemoteDebugger } = await import('./remoteDebugger');
+    const remoteDebugger = new RemoteDebugger();
+
+    remoteDebugger.initSocket();
+
+    expect(fakeSockets[0]?.url).toBe('wss://configured.example.com/socket.io/');
+  });
+
+  it('falls back to the SDK script origin for the External WebSocket', async () => {
+    const script = document.createElement('script');
+    script.dataset.testSdkScript = 'true';
+    script.src = 'https://external.example.com/sdk/index.umd.js';
+    document.head.appendChild(script);
+
+    const { RemoteDebugger } = await import('./remoteDebugger');
+    const remoteDebugger = new RemoteDebugger();
+
+    remoteDebugger.initSocket();
+
+    expect(fakeSockets[0]?.url).toBe('wss://external.example.com/socket.io/');
+  });
+
+  it('does not open WebSockets in forced demo mode', async () => {
+    vi.stubEnv('VITE_FORCE_DEMO', 'true');
+
+    const { RemoteDebugger } = await import('./remoteDebugger');
+    const remoteDebugger = new RemoteDebugger();
+
+    remoteDebugger.initSocket();
+
+    expect(fakeSockets).toHaveLength(0);
   });
 
   it('ignores malformed WebSocket messages instead of throwing', async () => {

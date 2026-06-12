@@ -3,9 +3,14 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
-import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { InjectRepository } from '@nestjs/typeorm';
+import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
+import type { Repository } from 'typeorm';
+
+import { AccountEntity, OrganizationMemberEntity } from '@remote-platform/entity';
 
 /**
  * Provider-agnostic JWT signing/verification helper.
@@ -28,11 +33,23 @@ export interface AuthClaims extends JwtPayload {
   org?: string;
   plan?: 'free' | 'starter' | 'pro';
   email?: string;
+  provider?: 'remote-devtools' | string;
+  member?: string;
+  role?: 'owner' | 'admin' | 'member' | 'viewer';
 }
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+
+  public constructor(
+    @Optional()
+    @InjectRepository(AccountEntity)
+    private readonly accountRepository?: Repository<AccountEntity>,
+    @Optional()
+    @InjectRepository(OrganizationMemberEntity)
+    private readonly memberRepository?: Repository<OrganizationMemberEntity>,
+  ) {}
 
   /** True when an env var is set that lets us issue/verify tokens. */
   public get enabled(): boolean {
@@ -70,6 +87,69 @@ export class AuthService {
       algorithms: [...algorithms],
       ...(this.issuer ? { issuer: this.issuer } : {}),
     }) as AuthClaims;
+  }
+
+  public async verifyForRequest(token: string): Promise<AuthClaims> {
+    const claims = this.verify(token);
+    if (claims.provider !== 'remote-devtools') {
+      return claims;
+    }
+    if (!this.accountRepository || !this.memberRepository) {
+      this.logger.warn('Skipping account status validation because repositories are unavailable.');
+      return claims;
+    }
+
+    const account = await this.accountRepository.findOne({ where: { id: claims.sub } });
+    if (!account || account.status !== 'active') {
+      throw new UnauthorizedException('Account is not active.');
+    }
+    const memberId = claims.member?.trim();
+    const orgId = claims.org?.trim();
+    if (!memberId || !orgId) {
+      throw new UnauthorizedException('Organization membership claim is required.');
+    }
+    const member = await this.memberRepository.findOne({
+      where: {
+        id: memberId,
+        orgId,
+        accountId: account.id,
+        status: 'active',
+      },
+    });
+    if (!member) {
+      throw new UnauthorizedException('Organization membership is not active.');
+    }
+    return claims;
+  }
+
+  public issueSessionToken(input: {
+    accountId: string;
+    email: string;
+    memberId: string;
+    orgId: string;
+    plan?: 'free' | 'starter' | 'pro';
+    role: 'owner' | 'admin' | 'member' | 'viewer';
+  }): string {
+    if (!this.secret) {
+      throw new InternalServerErrorException('Session tokens require AUTH_JWT_SECRET');
+    }
+    return jwt.sign(
+      {
+        sub: input.accountId,
+        org: input.orgId,
+        plan: input.plan ?? 'free',
+        email: input.email,
+        provider: 'remote-devtools',
+        member: input.memberId,
+        role: input.role,
+      },
+      this.secret,
+      {
+        algorithm: 'HS256',
+        expiresIn: (process.env.AUTH_SESSION_TTL ?? '7d') as SignOptions['expiresIn'],
+        ...(this.issuer ? { issuer: this.issuer } : {}),
+      },
+    );
   }
 
   /**
