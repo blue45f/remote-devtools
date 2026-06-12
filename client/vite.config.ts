@@ -62,11 +62,18 @@ export default defineConfig(({ command }) => ({
               ws: true,
               changeOrigin: true,
             },
+            // Replay / Playback WebSocket on the internal app
+            '/ws/playback': {
+              target: internalTarget,
+              ws: true,
+              changeOrigin: true,
+            },
           }
         : undefined,
   },
   preview: {
     port: 4173,
+    proxy: {},
   },
   build: {
     outDir: 'dist',

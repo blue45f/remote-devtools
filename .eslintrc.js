@@ -37,9 +37,13 @@ module.exports = {
   overrides: [
     {
       files: ['client/**/*.{ts,tsx}'],
+      plugins: ['react-compiler'],
       parserOptions: {
         project: [clientTsconfig],
         tsconfigRootDir: clientDir,
+      },
+      rules: {
+        'react-compiler/react-compiler': 'error',
       },
     },
     {

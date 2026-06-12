@@ -29,6 +29,77 @@ type RemoteDebuggerRoomCreatedMessage = RemoteDebuggerSocketMessage & {
   roomName: string;
 };
 
+class MockWebSocket {
+  public readyState: number = 0; // CONNECTING
+  public onopen: (() => void) | null = null;
+  public onmessage: ((event: { data: string }) => void) | null = null;
+  public onerror: ((error: unknown) => void) | null = null;
+  public onclose: (() => void) | null = null;
+
+  private listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
+
+  constructor(_url?: string) {
+    setTimeout(() => {
+      this.readyState = 1; // OPEN
+      if (this.onopen) this.onopen();
+      this.dispatchEvent('open', {});
+    }, 50);
+  }
+
+  public addEventListener(event: string, listener: (...args: unknown[]) => void) {
+    this.listeners[event] ??= [];
+    this.listeners[event].push(listener);
+  }
+
+  public removeEventListener(event: string, listener: (...args: unknown[]) => void) {
+    if (!this.listeners[event]) return;
+    this.listeners[event] = this.listeners[event].filter((l) => l !== listener);
+  }
+
+  private dispatchEvent(event: string, data: unknown) {
+    if (!this.listeners[event]) return;
+    for (const listener of this.listeners[event]) {
+      listener(data);
+    }
+  }
+
+  public send(data: string) {
+    const parsed = JSON.parse(data);
+    if (parsed.event === 'createRoom') {
+      setTimeout(() => {
+        const mockRoomName = `demo-room-${Math.floor(Math.random() * 100000)}`;
+        const mockRecordId = Math.floor(Math.random() * 10000);
+        const msg = {
+          data: JSON.stringify({
+            event: 'roomCreated',
+            recordId: mockRecordId,
+            roomName: mockRoomName,
+            timestamp: Date.now(),
+          }),
+        };
+        if (this.onmessage) this.onmessage(msg);
+        this.dispatchEvent('message', msg);
+      }, 100);
+    } else if (parsed.event === 'createTicket') {
+      setTimeout(() => {
+        const msg = {
+          data: JSON.stringify({
+            event: 'ticketCreateSuccess',
+          }),
+        };
+        if (this.onmessage) this.onmessage(msg);
+        this.dispatchEvent('message', msg);
+      }, 100);
+    }
+  }
+
+  public close() {
+    this.readyState = 3; // CLOSED
+    if (this.onclose) this.onclose();
+    this.dispatchEvent('close', {});
+  }
+}
+
 /**
  * 간소화된 RemoteDebugger 클래스
  *
@@ -653,9 +724,80 @@ export class RemoteDebugger {
    * WebSocket 연결 초기화
    */
   public initSocket(recordMode = true): void {
-    if (isSdkDemoMode()) return;
-
     this.isRecordMode = recordMode;
+
+    if (isSdkDemoMode()) {
+      this.socket = new MockWebSocket('ws://demo') as unknown as WebSocket;
+
+      this.socket.onopen = () => {
+        // ChromeDomain을 실제 소켓으로 업데이트하고 활성화
+        this.enableCDPCollection();
+
+        // 연결 즉시 버퍼링 모드 알림
+        this.notifyBufferingMode();
+      };
+
+      this.socket.onmessage = (message) => {
+        const messageData = message.data as string;
+        const data = this.parseSocketMessage(messageData);
+        if (!data) return;
+
+        const event = data.event;
+
+        if (event === 'error') {
+          logger.remote.error(' WebSocket error:', data);
+          return;
+        }
+
+        if (event === 'roomCreated') {
+          if (!this.socket) return;
+
+          if (!this.isRoomCreatedMessage(data)) return;
+
+          this.handleRoomCreated(data);
+
+          this.domain.updateRoomInfo({
+            room: data.roomName,
+            recordMode: this.isRecordMode,
+            socket: this.socket,
+            url: window.location.href,
+            title: document.title,
+          });
+          return;
+        }
+
+        if (event === 'ticketCreateSuccess') {
+          // 티켓 생성 성공 시 커스텀 딥링크로 토스트 메시지 표시 (네이티브 앱 연동 시)
+          // 필요한 경우 앱의 커스텀 스킴으로 변경 가능
+          this.handleTicketSuccess();
+
+          this.disconnect();
+          return;
+        }
+
+        if (event === 'ticketCreateError') {
+          alert('티켓 생성에 실패했습니다');
+        } else if (event === 'protocol') {
+          this.handleProtocolMessage(data);
+        }
+      };
+
+      this.socket.onerror = (error) => {
+        logger.remote.error('WebSocket error:', error);
+      };
+
+      this.socket.onclose = (_event) => {
+        // WebSocket disconnected
+        this.socket = null;
+        this.recordId = null;
+        this.roomName = null;
+
+        // 도메인 리셋
+        this.domain.resetForNewRecording();
+      };
+
+      return;
+    }
 
     // 브라우저 환경인 경우 SDK 스크립트/현재 오리진에 기반한 동적 기본값 생성
     let defaultExternalWs = 'ws://localhost:3001';

@@ -70,7 +70,7 @@ const getFiniteRequestId = (params: Record<string, unknown>): number | null => {
 // Gateway
 // ---------------------------------------------------------------------------
 
-@WebSocketGateway()
+@WebSocketGateway({ path: '/ws/playback' })
 export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebviewGateway.name);
 

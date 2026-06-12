@@ -1034,6 +1034,11 @@
 
       function startConnectionMonitor() {
         if (wsHealthCheckInterval) clearInterval(wsHealthCheckInterval)
+        if (localStorage.getItem('demo-mode') === '1') {
+          setConnectionState('connected', `Device: demo-device-id (Demo Mode)`)
+          retryCount = 0
+          return
+        }
         let checkCount = 0
         wsHealthCheckInterval = setInterval(async () => {
           checkCount++
@@ -1232,10 +1237,15 @@
         }
       })
 
-      // ===== DEVICE / URL INFO =====
-
       async function getCurrentDeviceId() {
         if (currentDeviceId) return currentDeviceId
+        if (localStorage.getItem('demo-mode') === '1') {
+          currentDeviceId = 'demo-device-id'
+          currentUrl = 'https://shop.example.com/'
+          currentDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+          updateCurrentUrlDisplay()
+          return currentDeviceId
+        }
         try {
           const response = await fetch(`${getApiHost()}/sessions/record/${currentRecordId}/info`, {
             signal: AbortSignal.timeout(10000)
@@ -1348,6 +1358,27 @@
         await getCurrentDeviceId()
         if (!currentRecordId) {
           throw new Error('Current record ID must be loaded first.')
+        }
+        if (localStorage.getItem('demo-mode') === '1') {
+          cachedRoomGroups = [
+            {
+              room: 'demo-prev-room-1',
+              recordId: 'demo-prev-1',
+              timestamp: Date.now() - 3600 * 1000,
+              files: [{
+                fileName: 'session_demo.json',
+                filePath: 'demo/path',
+                recordId: 'demo-prev-1',
+                timestamp: Date.now() - 3600 * 1000
+              }],
+              date: new Date().toISOString().split('T')[0],
+              type: 's3',
+              uniqueId: 's3-demo-prev-1'
+            }
+          ]
+          nextRoomIndex = 0
+          previousRecordCount = cachedRoomGroups.length
+          return
         }
         const response = await fetch(`${getApiHost()}/sessions/record/${currentRecordId}/previous`, {
           signal: AbortSignal.timeout(15000)

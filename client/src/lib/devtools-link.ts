@@ -19,8 +19,9 @@ export function buildDevToolsLink(
   const resolvedHost =
     host || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   const wsHost = resolvedHost.replace(/^https?:\/\/(.+)$/, '$1');
+  const path = recordId ? '/ws/playback' : '/socket.io/';
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';
-  const wsUrl = encodeURIComponent(`${wsHost}?room=${room}${record}`);
+  const wsUrl = encodeURIComponent(`${wsHost}${path}?room=${room}${record}`);
   const protocol = resolvedHost.startsWith('https') ? 'wss' : 'ws';
   return `${resolvedHost}/tabbed-debug/?${protocol}=${wsUrl}`;
 }
