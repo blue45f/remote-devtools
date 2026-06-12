@@ -496,6 +496,13 @@ export default function SessionDetailPage() {
     playheadMsRef.current = clamped;
   };
 
+  // rrweb's onTimeUpdate writer lives here, next to the useRef, because the
+  // React Compiler only allows `.current` writes where it can prove the value
+  // is a ref — inside ReplayTab `playheadMsRef` is an opaque prop.
+  const updatePlayheadMs = (ms: number) => {
+    playheadMsRef.current = ms;
+  };
+
   // Record this visit in the recent-sessions ring so the CommandPalette
   // can offer a "Recent" group for quick re-open. Fires once per metadata
   // load — id/name/url only change when the user navigates to a different
@@ -865,6 +872,7 @@ export default function SessionDetailPage() {
               sessionStartMs={sessionStartMs}
               initialReplayOffset={initialReplayOffset}
               playheadMsRef={playheadMsRef}
+              onPlayheadUpdate={updatePlayheadMs}
               onJumpToReplay={jumpToReplay}
               recordId={recordId}
               commentFocusSignal={commentFocusSignal}

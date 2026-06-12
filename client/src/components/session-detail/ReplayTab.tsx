@@ -51,6 +51,11 @@ interface ReplayTabProps {
   sessionStartMs: number;
   initialReplayOffset: number;
   playheadMsRef: React.MutableRefObject<number>;
+  /** Owner-side writer for `playheadMsRef` — the React Compiler only allows
+   * ref mutation where it can prove the value is a ref, so the page that
+   * created the ref passes its updater down instead of us writing `.current`
+   * on an opaque prop here. */
+  onPlayheadUpdate: (ms: number) => void;
   onJumpToReplay: (offsetMs: number) => void;
   /** Numeric record id when this is a DB session (vs. an S3 backup). */
   recordId: number | null;
@@ -67,6 +72,7 @@ export function ReplayTab({
   sessionStartMs,
   initialReplayOffset,
   playheadMsRef,
+  onPlayheadUpdate,
   onJumpToReplay,
   recordId,
   commentFocusSignal,
@@ -245,9 +251,7 @@ export function ReplayTab({
           speed={speed}
           skipInactive={skipInactive}
           restartToken={restartToken}
-          onTimeUpdate={(ms) => {
-            playheadMsRef.current = ms;
-          }}
+          onTimeUpdate={onPlayheadUpdate}
         />
       </Suspense>
       {recordId !== null && (
