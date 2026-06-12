@@ -74,9 +74,24 @@ export default function SignInPage() {
       toast.success(t('auth.signedIn'));
       navigate(next);
     } catch (err) {
-      toast.error(t('auth.couldNotSignIn'), {
-        description: err instanceof Error ? err.message : t('auth.tryAgain'),
-      });
+      // If the backend is unreachable, fall back to demo mode automatically
+      // so the user can still explore the UI.
+      if (err instanceof TypeError || (err instanceof Error && err.message.includes('백엔드'))) {
+        toast(t('auth.backendUnavailable'), {
+          description: t('auth.backendUnavailableDesc'),
+          action: {
+            label: t('auth.enableDemoMode'),
+            onClick: () => {
+              setDemoMode(true);
+              navigate(next);
+            },
+          },
+        });
+      } else {
+        toast.error(t('auth.couldNotSignIn'), {
+          description: err instanceof Error ? err.message : t('auth.tryAgain'),
+        });
+      }
     } finally {
       setPending(false);
     }

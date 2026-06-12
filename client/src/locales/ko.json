@@ -162,7 +162,10 @@
     "reservingSpot": "자리를 예약하는 중…",
     "joinWaitlist": "대기 명단 등록",
     "skipWaitPrefix": "기다리지 않으려면, 오픈소스 릴리스를",
-    "readyToSelfHost": "셀프 호스팅할 수 있습니다"
+    "readyToSelfHost": "셀프 호스팅할 수 있습니다",
+    "backendUnavailable": "백엔드 서버에 연결할 수 없습니다",
+    "backendUnavailableDesc": "백엔드 서버에 연결하지 못했습니다. 대신 데모 모드를 사용하시겠습니까?",
+    "enableDemoMode": "데모 모드 활성화"
   },
   "topbar": {
     "search": "검색…",

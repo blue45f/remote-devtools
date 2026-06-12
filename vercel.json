@@ -5,6 +5,18 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "${BACKEND_URL}/api/:path*"
+    },
+    {
+      "source": "/sdk/:path*",
+      "destination": "${BACKEND_EXTERNAL_URL}/sdk/:path*"
+    },
+    {
+      "source": "/buffer/:path*",
+      "destination": "${BACKEND_EXTERNAL_URL}/buffer/:path*"
+    },
+    {
       "source": "/((?!assets/|favicon|og-image|robots|sitemap|manifest|sw).*)",
       "destination": "/index.html"
     }
@@ -31,10 +43,5 @@
         }
       ]
     }
-  ],
-  "build": {
-    "env": {
-      "VITE_FORCE_DEMO": "true"
-    }
-  }
+  ]
 }

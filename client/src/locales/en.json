@@ -162,7 +162,10 @@
     "reservingSpot": "Reserving your spot…",
     "joinWaitlist": "Join the waitlist",
     "skipWaitPrefix": "Or skip the wait — the open-source release is",
-    "readyToSelfHost": "ready to self-host"
+    "readyToSelfHost": "ready to self-host",
+    "backendUnavailable": "Backend server unreachable",
+    "backendUnavailableDesc": "Could not connect to the backend server. Would you like to use demo mode instead?",
+    "enableDemoMode": "Enable Demo Mode"
   },
   "topbar": {
     "search": "Search…",

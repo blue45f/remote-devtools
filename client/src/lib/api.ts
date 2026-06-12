@@ -80,11 +80,23 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const res = await fetch(`${API_HOST}${path}`, {
-    ...init,
-    headers,
-    signal: init?.signal ?? AbortSignal.timeout(30_000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_HOST}${path}`, {
+      ...init,
+      headers,
+      signal: init?.signal ?? AbortSignal.timeout(30_000),
+    });
+  } catch (err) {
+    // Network error (backend unreachable). If not in demo mode, suggest it.
+    if (!isDemoMode()) {
+      throw new Error(
+        '백엔드 서버에 연결할 수 없습니다. 데모 모드를 사용하거나 백엔드를 시작하세요.',
+        { cause: err },
+      );
+    }
+    throw err;
+  }
   if (!res.ok) {
     // Try to extract the backend's localized error message from the JSON body.
     // Our exception filter always returns { statusCode, message, error }.
