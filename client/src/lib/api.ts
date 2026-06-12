@@ -8,7 +8,7 @@
 import { QueryCache, QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export const API_HOST = import.meta.env.VITE_HOST || 'http://localhost:3000';
+export const API_HOST = import.meta.env.VITE_HOST || '';
 
 export const queryClient = new QueryClient({
   // Global error toast for all useQuery failures.
