@@ -46,9 +46,13 @@
     "lint:fix": "eslint apps/ libs/ --fix",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "ci": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
+    "ci": "pnpm run format:check && pnpm run lint:ci && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "verify": "pnpm run validate:architecture && pnpm run ci",
     "verify:push": "pnpm run verify",
+    "sonar": "sonar-scanner",
+    "lint:strict": "eslint apps/ libs/ --max-warnings=0",
+    "lint:ci": "pnpm run lint:strict",
+    "sonar:ci": "sonar-scanner -Dsonar.qualitygate.wait=true",
     "validate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify",
     "validate:architecture": "node scripts/validate-architecture.mjs"
@@ -133,6 +137,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
+      "eslint --no-warn-ignored --max-warnings=0 --fix",
       "prettier --write"
     ],
     "*.{json,md}": [

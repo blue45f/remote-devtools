@@ -46,6 +46,19 @@ const sampleData: BufferUploadData = {
   timestamp: 1_700_000_000_000,
 };
 
+type S3ServiceTestHarness = {
+  readonly isRemoteStorageEnabled: boolean;
+  saveToLocalFile: (data: BufferUploadData) => Promise<string>;
+  uploadToS3: (data: BufferUploadData) => Promise<string>;
+  getS3BackupFromCloud: (deviceId: string, targetDate?: string) => Promise<BufferUploadData[]>;
+  s3PlaybackCache: Map<string, unknown>;
+  maxS3CacheSize: number;
+};
+
+function getHarness(service: S3Service): S3ServiceTestHarness {
+  return service as unknown as S3ServiceTestHarness;
+}
+
 describe('S3Service (Internal)', () => {
   let service: S3Service;
 
@@ -63,10 +76,9 @@ describe('S3Service (Internal)', () => {
 
   describe('saveBufferData', () => {
     it('saves to local file when remote storage is disabled', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const localSpy = vi.spyOn(service as any, 'saveToLocalFile').mockResolvedValue(undefined);
+      const harness = getHarness(service);
+      vi.spyOn(harness, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      const localSpy = vi.spyOn(harness, 'saveToLocalFile').mockResolvedValue('');
 
       await service.saveBufferData(sampleData);
 
@@ -74,10 +86,9 @@ describe('S3Service (Internal)', () => {
     });
 
     it('uploads to S3 when remote storage is enabled', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const s3Spy = vi.spyOn(service as any, 'uploadToS3').mockResolvedValue(undefined);
+      const harness = getHarness(service);
+      vi.spyOn(harness, 'isRemoteStorageEnabled', 'get').mockReturnValue(true);
+      const s3Spy = vi.spyOn(harness, 'uploadToS3').mockResolvedValue('');
 
       await service.saveBufferData(sampleData);
 
@@ -85,10 +96,9 @@ describe('S3Service (Internal)', () => {
     });
 
     it('re-throws on error', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'saveToLocalFile').mockRejectedValue(new Error('disk full'));
+      const harness = getHarness(service);
+      vi.spyOn(harness, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(harness, 'saveToLocalFile').mockRejectedValue(new Error('disk full'));
 
       await expect(service.saveBufferData(sampleData)).rejects.toThrow('disk full');
     });
@@ -96,31 +106,29 @@ describe('S3Service (Internal)', () => {
 
   describe('s3PlaybackCache eviction', () => {
     it('evicts oldest entries when cache exceeds maxS3CacheSize', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      vi.spyOn(service as any, 'getS3BackupFromCloud').mockResolvedValue([sampleData]);
+      const harness = getHarness(service);
+      vi.spyOn(harness, 'isRemoteStorageEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(harness, 'getS3BackupFromCloud').mockResolvedValue([sampleData]);
 
-      const s = service as unknown as {
-        s3PlaybackCache: Map<string, unknown>;
-        maxS3CacheSize: number;
-      };
-      s.maxS3CacheSize = 3;
+      harness.maxS3CacheSize = 3;
 
       // Fill cache past the limit
       for (let i = 0; i < 4; i++) {
-        s.s3PlaybackCache.set(`key-${i}`, []);
+        harness.s3PlaybackCache.set(`key-${i}`, []);
       }
-      expect(s.s3PlaybackCache.size).toBe(4);
+      expect(harness.s3PlaybackCache.size).toBe(4);
 
       // The cache is managed inside getS3BackupData — the size guard trims on
       // insert. Verify the Map has a size limit that works at the boundary.
       // (Service trims by deleting the first key when over limit.)
-      if (s.s3PlaybackCache.size > s.maxS3CacheSize) {
-        const firstKey = s.s3PlaybackCache.keys().next().value;
-        s.s3PlaybackCache.delete(firstKey!);
+      if (harness.s3PlaybackCache.size > harness.maxS3CacheSize) {
+        const firstKey = harness.s3PlaybackCache.keys().next();
+        expect(firstKey.done).toBe(false);
+        if (!firstKey.done) {
+          harness.s3PlaybackCache.delete(firstKey.value);
+        }
       }
-      expect(s.s3PlaybackCache.size).toBe(3);
+      expect(harness.s3PlaybackCache.size).toBe(3);
     });
   });
 });

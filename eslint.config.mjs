@@ -59,10 +59,10 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_" },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-non-null-assertion": "warn",
-      "no-console": ["warn", { allow: ["warn", "error"] }],
-      "no-constant-condition": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "no-console": ["error", { allow: ["warn", "error"] }],
+      "no-constant-condition": "error",
       "prefer-const": "error",
       "no-var": "error",
       eqeqeq: ["error", "always"],
@@ -71,9 +71,7 @@ export default tseslint.config(
   },
 
   // Override for client/** — the client runs the React Compiler, so register
-  // eslint-plugin-react-hooks (v7) and surface its Compiler-safety rules. They
-  // are advisory `warn` (not `error`) so they guide refactors without failing
-  // CI on the existing source.
+  // eslint-plugin-react-hooks (v7) and enforce its Compiler-safety rules.
   {
     files: ["client/**/*.{ts,tsx}"],
     plugins: {
@@ -86,12 +84,12 @@ export default tseslint.config(
       },
     },
     rules: {
-      "react-hooks/purity": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
-      "react-hooks/static-components": "warn",
+      "react-hooks/purity": "error",
+      "react-hooks/immutability": "error",
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/preserve-manual-memoization": "error",
+      "react-hooks/static-components": "error",
     },
   },
 

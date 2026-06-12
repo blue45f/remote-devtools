@@ -22,7 +22,7 @@ const LANGUAGES: {
 
 export function LanguageMenu({ collapsed }: { collapsed?: boolean }) {
   const { i18n, t } = useTranslation();
-  const current = i18n.resolvedLanguage ?? 'en';
+  const current = i18n.resolvedLanguage ?? 'ko';
 
   return (
     <DropdownMenu>

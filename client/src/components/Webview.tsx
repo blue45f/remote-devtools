@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { API_HOST } from '@/lib/api';
+import { useAppStore } from '@/lib/store';
 
 import DebugPanel from './webview/DebugPanel';
 import ExploreTab from './webview/ExploreTab';
@@ -35,11 +36,12 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [node, setNode] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'explore' | 'debug'>('explore');
+  const demoMode = useAppStore((s) => s.demoMode);
 
   // SDK init
   useEffect(() => {
     if (kind === 'script') {
-      if (import.meta.env.VITE_FORCE_DEMO === 'true') {
+      if (demoMode) {
         window.RemoteDebugSdk ??= {
           createDebugger: () => undefined,
         };
@@ -189,7 +191,7 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
       {/* The public Vercel demo ships no backend, so the DevTools UI it would
           open does not exist there — only surface the CTA when a backend is
           actually reachable. */}
-      {import.meta.env.VITE_FORCE_DEMO !== 'true' && <BottomCta />}
+      {!demoMode && <BottomCta />}
     </div>
   );
 };
