@@ -872,6 +872,20 @@
       }
 
       function getApiHost() {
+        const params = new URLSearchParams(window.location.search)
+        const wsParam = params.get('ws')
+        const wssParam = params.get('wss')
+        const wsUrl = wsParam || wssParam
+        if (wsUrl) {
+          try {
+            const decoded = decodeURIComponent(wsUrl)
+            const hostPart = decoded.split('?')[0].split('/')[0]
+            const protocol = wssParam ? 'https://' : 'http://'
+            return protocol + hostPart
+          } catch (e) {
+            console.error('Failed to parse API host from query param:', e)
+          }
+        }
         const hostname = window.location.hostname
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
           return 'http://localhost:3000'
@@ -880,6 +894,19 @@
       }
 
       function getWsHost() {
+        const params = new URLSearchParams(window.location.search)
+        const wsParam = params.get('ws')
+        const wssParam = params.get('wss')
+        const wsUrl = wsParam || wssParam
+        if (wsUrl) {
+          try {
+            const decoded = decodeURIComponent(wsUrl)
+            const hostPart = decoded.split('?')[0].split('/')[0]
+            return hostPart
+          } catch (e) {
+            console.error('Failed to parse WS host from query param:', e)
+          }
+        }
         const hostname = window.location.hostname
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
           return 'localhost:3000'

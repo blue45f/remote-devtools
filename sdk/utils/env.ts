@@ -9,6 +9,12 @@ export type SdkEnvSource = {
   readonly env?: Partial<Record<SdkEnvKey, string | undefined>>;
 };
 
+declare global {
+  interface Window {
+    REMOTE_DEBUG_SDK_ENV?: Partial<Record<SdkEnvKey, string | undefined>>;
+  }
+}
+
 function readBuildEnv(key: SdkEnvKey): string | undefined {
   switch (key) {
     case 'VITE_INTERNAL_HOST':
@@ -28,6 +34,11 @@ export function readSdkEnv(key: SdkEnvKey, fallback: string, source?: SdkEnvSour
   if (source) {
     const value = source.env?.[key];
     return value || fallback;
+  }
+
+  if (typeof window !== 'undefined' && window.REMOTE_DEBUG_SDK_ENV) {
+    const value = window.REMOTE_DEBUG_SDK_ENV[key];
+    if (value) return value;
   }
 
   const value = readBuildEnv(key);
