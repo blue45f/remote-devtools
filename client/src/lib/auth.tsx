@@ -65,6 +65,9 @@ export interface AuthClaims {
   org?: string;
   plan?: 'free' | 'starter' | 'pro';
   email?: string;
+  provider?: string;
+  member?: string;
+  role?: 'owner' | 'admin' | 'member' | 'viewer';
   exp?: number;
 }
 

@@ -20,4 +20,11 @@ export {
   type OrganizationSubscriptionStatus,
 } from './organization.entity';
 
+export { AccountEntity, type AccountStatus } from './account.entity';
+export {
+  OrganizationMemberEntity,
+  type OrganizationMemberRole,
+  type OrganizationMemberStatus,
+} from './organization-member.entity';
+
 export { BillingWebhookEventEntity } from './billing-webhook-event.entity';

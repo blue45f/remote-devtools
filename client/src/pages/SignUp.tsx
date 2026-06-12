@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, User } from 'lucide-react';
+import { Building2, Lock, Mail, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toaster';
+import { API_HOST } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { SUPPORT_URL } from '@/lib/policy';
 import { useAppStore } from '@/lib/store';
 
@@ -21,19 +23,22 @@ import { AuthShell } from './SignIn';
 const signUpSchema = z.object({
   name: z.string().trim().min(1),
   email: z.string().trim().min(1).email(),
+  password: z.string().optional(),
+  organizationName: z.string().trim().optional(),
 });
 
 type SignUpValues = z.infer<typeof signUpSchema>;
 
 /**
- * Sign-up scaffold. Captures form intent (plan from `?plan=`) and sends a
- * waitlist toast. Wire this to a real auth + waitlist API per LAUNCH.md.
+ * Sign-up scaffold. Public demo builds still route to seed data; hosted SaaS
+ * builds create the account, organization, and owner membership in one call.
  */
 export default function SignUpPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
+  const { signIn } = useAuth();
 
   const {
     register,
@@ -41,29 +46,53 @@ export default function SignUpPage() {
     formState: { errors, isSubmitting },
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { name: '', email: '' },
+    defaultValues: { name: '', email: '', password: '', organizationName: '' },
   });
 
   const plan = params.get('plan') ?? 'free';
+  const isForcedDemo = import.meta.env.VITE_FORCE_DEMO === 'true';
   const [demoConsent, setDemoConsent] = useState({ terms: false, telemetry: false });
   const demoConsentReady = demoConsent.terms && demoConsent.telemetry;
 
-  const submit = handleSubmit(
-    ({ email }) =>
-      // Resolve after the simulated 800ms so `isSubmitting` keeps the button
-      // disabled / in its "reserving spot" state for the same window as before.
-      new Promise<void>((resolve) => {
-        setTimeout(() => {
-          toast.success(t('auth.onTheList'), {
-            description: t('auth.onTheListDesc', { email, plan }),
-          });
-          // Drop the visitor into the demo so they can keep exploring.
-          setDemoMode(true);
-          navigate('/dashboard');
-          resolve();
-        }, 800);
-      }),
-  );
+  const submit = handleSubmit(({ email, name, organizationName, password }) => {
+    if (!isForcedDemo) {
+      return (async () => {
+        if (!organizationName?.trim() || !password || password.length < 8) {
+          throw new Error(t('auth.completeRequiredFields'));
+        }
+        const res = await fetch(`${API_HOST}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name, organizationName, password }),
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (!res.ok) {
+          const message = await res.text().catch(() => t('auth.signUpFailed'));
+          throw new Error(message || `HTTP ${res.status}`);
+        }
+        const { token } = (await res.json()) as { token: string };
+        signIn(token);
+        toast.success(t('auth.workspaceCreated'));
+        navigate('/dashboard');
+      })().catch((error) => {
+        toast.error(t('auth.couldNotSignUp'), {
+          description: error instanceof Error ? error.message : t('auth.tryAgain'),
+        });
+      });
+    }
+
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        toast.success(t('auth.onTheList'), {
+          description: t('auth.onTheListDesc', { email, plan }),
+        });
+        // Drop the visitor into the demo so they can keep exploring.
+        setDemoMode(true);
+        navigate('/dashboard');
+        resolve();
+      }, 800);
+    });
+  });
 
   return (
     <AuthShell>
@@ -104,60 +133,99 @@ export default function SignUpPage() {
             {...register('email')}
           />
         </label>
-        <div className="rounded-xl border border-border bg-bg-muted/55 p-3 text-xs text-fg-subtle">
-          <p className="mb-2 font-medium text-fg">Demo access checklist</p>
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={demoConsent.terms}
-              onChange={(event) =>
-                setDemoConsent((current) => ({ ...current, terms: event.target.checked }))
-              }
-              className="mt-0.5"
-            />
-            <span>
-              Replay data is synthetic in demo mode and should not be treated as production
-              telemetry.
-            </span>
-          </label>
-          <label className="mt-2 flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={demoConsent.telemetry}
-              onChange={(event) =>
-                setDemoConsent((current) => ({ ...current, telemetry: event.target.checked }))
-              }
-              className="mt-0.5"
-            />
-            <span>
-              Self-hosted use requires reviewing{' '}
-              <Link to="/terms" className="underline underline-offset-2">
-                service terms
-              </Link>
-              ,{' '}
-              <Link to="/privacy" className="underline underline-offset-2">
-                privacy policy
-              </Link>
-              , and{' '}
-              <a
-                href={`${SUPPORT_URL}?category=site-inquiry`}
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-2"
-              >
-                support board
-              </a>{' '}
-              practices.
-            </span>
-          </label>
-        </div>
+        {!isForcedDemo && (
+          <>
+            <label htmlFor="signup-organization" className="block">
+              <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
+                {t('auth.organizationName')}
+              </span>
+              <Input
+                id="signup-organization"
+                type="text"
+                placeholder={t('auth.organizationNamePlaceholder')}
+                leadingIcon={<Building2 />}
+                autoComplete="organization"
+                required
+                aria-invalid={errors.organizationName ? true : undefined}
+                {...register('organizationName')}
+              />
+            </label>
+            <label htmlFor="signup-password" className="block">
+              <span className="text-xs font-medium text-fg-subtle mb-1.5 block">
+                {t('auth.password')}
+              </span>
+              <Input
+                id="signup-password"
+                type="password"
+                placeholder={t('auth.passwordPlaceholder')}
+                leadingIcon={<Lock />}
+                autoComplete="new-password"
+                required
+                aria-invalid={errors.password ? true : undefined}
+                {...register('password')}
+              />
+            </label>
+          </>
+        )}
+        {isForcedDemo && (
+          <div className="rounded-xl border border-border bg-bg-muted/55 p-3 text-xs text-fg-subtle">
+            <p className="mb-2 font-medium text-fg">{t('auth.demoChecklistTitle')}</p>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={demoConsent.terms}
+                onChange={(event) =>
+                  setDemoConsent((current) => ({ ...current, terms: event.target.checked }))
+                }
+                className="mt-0.5"
+              />
+              <span>{t('auth.demoChecklistSynthetic')}</span>
+            </label>
+            <label className="mt-2 flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={demoConsent.telemetry}
+                onChange={(event) =>
+                  setDemoConsent((current) => ({ ...current, telemetry: event.target.checked }))
+                }
+                className="mt-0.5"
+              />
+              <span>
+                {t('auth.demoChecklistReviewPrefix')}{' '}
+                <Link to="/terms" className="underline underline-offset-2">
+                  {t('auth.demoChecklistTerms')}
+                </Link>
+                ,{' '}
+                <Link to="/privacy" className="underline underline-offset-2">
+                  {t('auth.demoChecklistPrivacy')}
+                </Link>
+                ,{' '}
+                <a
+                  href={`${SUPPORT_URL}?category=site-inquiry`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  {t('auth.demoChecklistSupport')}
+                </a>{' '}
+                {t('auth.demoChecklistReviewSuffix')}
+              </span>
+            </label>
+          </div>
+        )}
         <Button
           type="submit"
           variant="primary"
           className="w-full"
-          disabled={isSubmitting || !demoConsentReady}
+          disabled={isSubmitting || (isForcedDemo && !demoConsentReady)}
         >
-          {isSubmitting ? t('auth.reservingSpot') : t('auth.joinWaitlist')}
+          {isSubmitting
+            ? isForcedDemo
+              ? t('auth.reservingSpot')
+              : t('auth.creatingAccount')
+            : isForcedDemo
+              ? t('auth.joinWaitlist')
+              : t('auth.createAccount')}
         </Button>
       </form>
 

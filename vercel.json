@@ -17,14 +17,6 @@
       "destination": "${BACKEND_URL}/tabbed-debug/:path*"
     },
     {
-      "source": "/sdk/:path*",
-      "destination": "${BACKEND_EXTERNAL_URL}/sdk/:path*"
-    },
-    {
-      "source": "/buffer/:path*",
-      "destination": "${BACKEND_EXTERNAL_URL}/buffer/:path*"
-    },
-    {
       "source": "/((?!assets/|favicon|og-image|robots|sitemap|manifest|sw).*)",
       "destination": "/index.html"
     }

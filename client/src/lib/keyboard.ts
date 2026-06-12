@@ -98,83 +98,87 @@ export function useGlobalShortcuts() {
  */
 export interface KeyboardShortcut {
   keys: string[];
-  label: string;
-  description?: string;
+  labelKey: string;
+  descriptionKey?: string;
 }
 
 export interface ShortcutGroup {
-  label: string;
+  labelKey: string;
   shortcuts: KeyboardShortcut[];
 }
 
 export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
-    label: 'General',
+    labelKey: 'shortcuts.groupGeneral',
     shortcuts: [
-      { keys: ['⌘', 'K'], label: 'Open command palette' },
-      { keys: ['?'], label: 'Show keyboard shortcuts' },
-      { keys: ['['], label: 'Collapse / expand sidebar' },
-      { keys: ['Esc'], label: 'Close dialog / cancel' },
+      { keys: ['⌘', 'K'], labelKey: 'shortcuts.openCommandPalette' },
+      { keys: ['?'], labelKey: 'shortcuts.showKeyboardShortcuts' },
+      { keys: ['['], labelKey: 'shortcuts.collapseSidebar' },
+      { keys: ['Esc'], labelKey: 'shortcuts.closeDialog' },
     ],
   },
   {
-    label: 'Navigation',
+    labelKey: 'shortcuts.groupNavigation',
     shortcuts: [
-      { keys: ['G', 'D'], label: 'Go to Dashboard' },
-      { keys: ['G', 'S'], label: 'Go to Sessions' },
-      { keys: ['G', 'M'], label: 'Go to Module SDK' },
-      { keys: ['G', 'P'], label: 'Go to Script SDK' },
+      { keys: ['G', 'D'], labelKey: 'shortcuts.goDashboard' },
+      { keys: ['G', 'S'], labelKey: 'shortcuts.goSessions' },
+      { keys: ['G', 'M'], labelKey: 'shortcuts.goModuleSdk' },
+      { keys: ['G', 'P'], labelKey: 'shortcuts.goScriptSdk' },
     ],
   },
   {
-    label: 'Sessions list',
+    labelKey: 'shortcuts.groupSessionsList',
     shortcuts: [
-      { keys: ['J'], label: 'Move cursor down', description: '↓ also works' },
-      { keys: ['K'], label: 'Move cursor up', description: '↑ also works' },
-      { keys: ['Enter'], label: 'Open focused session' },
+      {
+        keys: ['J'],
+        labelKey: 'shortcuts.moveCursorDown',
+        descriptionKey: 'shortcuts.downAlsoWorks',
+      },
+      { keys: ['K'], labelKey: 'shortcuts.moveCursorUp', descriptionKey: 'shortcuts.upAlsoWorks' },
+      { keys: ['Enter'], labelKey: 'shortcuts.openFocusedSession' },
     ],
   },
   {
-    label: 'Session detail',
+    labelKey: 'shortcuts.groupSessionDetail',
     shortcuts: [
-      { keys: ['1'], label: 'Overview tab' },
-      { keys: ['2'], label: 'Replay tab' },
-      { keys: ['3'], label: 'Timeline tab' },
-      { keys: ['4'], label: 'Network tab' },
-      { keys: ['5'], label: 'Console tab' },
-      { keys: ['6'], label: 'Raw JSON tab' },
+      { keys: ['1'], labelKey: 'shortcuts.overviewTab' },
+      { keys: ['2'], labelKey: 'shortcuts.replayTab' },
+      { keys: ['3'], labelKey: 'shortcuts.timelineTab' },
+      { keys: ['4'], labelKey: 'shortcuts.networkTab' },
+      { keys: ['5'], labelKey: 'shortcuts.consoleTab' },
+      { keys: ['6'], labelKey: 'shortcuts.rawJsonTab' },
       {
         keys: ['C'],
-        label: 'Comment at playhead',
-        description: 'Jumps to Replay and focuses the comment input',
+        labelKey: 'shortcuts.commentAtPlayhead',
+        descriptionKey: 'shortcuts.commentAtPlayheadDesc',
       },
     ],
   },
   {
-    label: 'Timeline tab',
+    labelKey: 'shortcuts.groupTimelineTab',
     shortcuts: [
-      { keys: ['J'], label: 'Next event', description: '↓ also works' },
-      { keys: ['K'], label: 'Previous event', description: '↑ also works' },
-      { keys: ['Enter'], label: 'Jump replay to this event' },
+      { keys: ['J'], labelKey: 'shortcuts.nextEvent', descriptionKey: 'shortcuts.downAlsoWorks' },
+      { keys: ['K'], labelKey: 'shortcuts.previousEvent', descriptionKey: 'shortcuts.upAlsoWorks' },
+      { keys: ['Enter'], labelKey: 'shortcuts.jumpReplayToEvent' },
     ],
   },
   {
-    label: 'Replay player',
+    labelKey: 'shortcuts.groupReplayPlayer',
     shortcuts: [
       {
         keys: ['Space'],
-        label: 'Play / pause',
-        description: 'K also pauses (YouTube-style)',
+        labelKey: 'shortcuts.playPause',
+        descriptionKey: 'shortcuts.playPauseDesc',
       },
-      { keys: ['←'], label: 'Back 5 seconds' },
-      { keys: ['→'], label: 'Forward 5 seconds' },
-      { keys: ['J'], label: 'Back 10 seconds' },
-      { keys: ['L'], label: 'Forward 10 seconds' },
-      { keys: ['Home'], label: 'Restart from beginning' },
+      { keys: ['←'], labelKey: 'shortcuts.backFiveSeconds' },
+      { keys: ['→'], labelKey: 'shortcuts.forwardFiveSeconds' },
+      { keys: ['J'], labelKey: 'shortcuts.backTenSeconds' },
+      { keys: ['L'], labelKey: 'shortcuts.forwardTenSeconds' },
+      { keys: ['Home'], labelKey: 'shortcuts.restartFromBeginning' },
       {
         keys: ['F'],
-        label: 'Toggle fullscreen',
-        description: 'Only on Replay tab',
+        labelKey: 'shortcuts.toggleFullscreen',
+        descriptionKey: 'shortcuts.onlyReplayTab',
       },
     ],
   },

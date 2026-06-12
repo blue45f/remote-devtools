@@ -17,6 +17,7 @@ const HEARTBEAT_MS = 10_000;
 
 function isDemoMode(): boolean {
   if (typeof localStorage === 'undefined') return false;
+  if (import.meta.env.VITE_FORCE_DEMO === 'true') return true;
   return localStorage.getItem('demo-mode') === '1';
 }
 
@@ -51,11 +52,13 @@ function presenceWsUrl(sessionId: string, clientId: string): string {
  * count (including self).
  */
 export function usePresence(sessionId: string | undefined, enabled: boolean): PresenceResponse {
-  const [state, setState] = useState<PresenceResponse>({ count: 0, viewers: [] });
+  const emptyState: PresenceResponse = { count: 0, viewers: [] };
+  const [state, setState] = useState<PresenceResponse>(emptyState);
+
+  const active = enabled && !!sessionId;
 
   useEffect(() => {
-    if (!enabled || !sessionId) {
-      setState({ count: 0, viewers: [] });
+    if (!active || !sessionId) {
       return;
     }
 
@@ -99,6 +102,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
       return () => {
         cancelled = true;
         stopPolling();
+        setState({ count: 0, viewers: [] });
       };
     }
 
@@ -146,8 +150,10 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
           /* already closed */
         }
       }
+      setState({ count: 0, viewers: [] });
     };
-  }, [sessionId, enabled]);
+  }, [sessionId, active]);
 
+  if (!active) return emptyState;
   return state;
 }

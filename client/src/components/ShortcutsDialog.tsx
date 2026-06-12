@@ -29,22 +29,27 @@ export function ShortcutsDialog() {
         </DialogHeader>
         <div className="px-6 pb-6 pt-4 space-y-5 max-h-[70vh] overflow-y-auto">
           {SHORTCUT_GROUPS.map((group) => (
-            <section key={group.label}>
+            <section key={group.labelKey}>
               <h3 className="text-[10px] uppercase tracking-wider text-fg-faint font-semibold mb-2">
-                {group.label}
+                {t(group.labelKey)}
               </h3>
               <ul className="divide-y divide-border rounded-md border border-border bg-bg-subtle/50">
                 {group.shortcuts.map((s) => (
-                  <li key={s.label} className="flex items-center justify-between gap-3 px-3 py-2">
+                  <li
+                    key={s.labelKey}
+                    className="flex items-center justify-between gap-3 px-3 py-2"
+                  >
                     <div className="min-w-0">
-                      <p className="text-sm text-fg truncate">{s.label}</p>
-                      {s.description && (
-                        <p className="text-[11px] text-fg-faint truncate mt-0.5">{s.description}</p>
+                      <p className="text-sm text-fg truncate">{t(s.labelKey)}</p>
+                      {s.descriptionKey && (
+                        <p className="text-[11px] text-fg-faint truncate mt-0.5">
+                          {t(s.descriptionKey)}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {s.keys.map((key, idx) => (
-                        <span key={`${s.label}-${idx}`} className="inline-flex items-center">
+                        <span key={`${s.labelKey}-${idx}`} className="inline-flex items-center">
                           {idx > 0 && (
                             <span className="text-[10px] text-fg-faint mx-1">
                               {t('shortcuts.then')}

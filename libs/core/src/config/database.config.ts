@@ -4,9 +4,11 @@ import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
 
 import {
+  AccountEntity,
   DomEntity,
   BillingWebhookEventEntity,
   NetworkEntity,
+  OrganizationMemberEntity,
   OrganizationEntity,
   RecordEntity,
   RuntimeEntity,
@@ -43,6 +45,8 @@ export const ALL_ENTITIES = [
   UserTicketTemplateEntity,
   BillingWebhookEventEntity,
   OrganizationEntity,
+  AccountEntity,
+  OrganizationMemberEntity,
 ] as const;
 
 /** Environments where schema synchronization is allowed. */

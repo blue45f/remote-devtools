@@ -65,10 +65,12 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
         }
       };
     }
+    if (demoMode) return;
+
     void import('remote-debug-sdk').then(({ createDebugger }) => {
       createDebugger();
     });
-  }, [kind]);
+  }, [demoMode, kind]);
 
   useEffect(() => {
     if (!isLoading) return;

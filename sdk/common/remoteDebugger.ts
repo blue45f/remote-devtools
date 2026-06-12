@@ -1,6 +1,6 @@
 import { ChromeDomain } from '../domain';
 import { CommonInfo } from '../types/common';
-import { readSdkEnv } from '../utils/env';
+import { getSdkScriptOrigin, isSdkDemoMode, readSdkEnv, toWebSocketOrigin } from '../utils/env';
 import { logger } from '../utils/logger';
 import { createUserDataText, UserData } from '../utils/userDataText';
 
@@ -65,8 +65,12 @@ export class RemoteDebugger {
       true,
     );
 
-    // 페이지 로드 즉시 버퍼링 시작 (초기 데이터 손실 방지)
-    this.startBuffering();
+    // 페이지 로드 즉시 버퍼링 시작 (초기 데이터 손실 방지).
+    // Public demo builds do not have a capture backend, so keep the SDK UI
+    // inert instead of opening sockets or saving buffers to localhost.
+    if (!isSdkDemoMode()) {
+      this.startBuffering();
+    }
 
     // location.href 할당 감지 설정
     this.setupLocationHrefInterceptor();
@@ -612,7 +616,10 @@ export class RemoteDebugger {
         room: this.bufferRoomName || undefined,
       });
 
-      const apiHost = readSdkEnv('VITE_EXTERNAL_HOST', 'http://localhost:3001');
+      const apiHost = readSdkEnv(
+        'VITE_EXTERNAL_HOST',
+        getSdkScriptOrigin() || 'http://localhost:3001',
+      );
       const endpoint = `${apiHost}/buffer/save`;
 
       const beaconBody = new Blob([beaconPayload], {
@@ -646,17 +653,23 @@ export class RemoteDebugger {
    * WebSocket 연결 초기화
    */
   public initSocket(recordMode = true): void {
+    if (isSdkDemoMode()) return;
+
     this.isRecordMode = recordMode;
 
-    // 브라우저 환경인 경우 현재 오리진에 기반한 동적 기본값 생성
+    // 브라우저 환경인 경우 SDK 스크립트/현재 오리진에 기반한 동적 기본값 생성
     let defaultExternalWs = 'ws://localhost:3001';
     let defaultInternalWs = 'ws://localhost:3000';
     if (typeof window !== 'undefined') {
       const isHttps = window.location.protocol === 'https:';
       const wsProto = isHttps ? 'wss:' : 'ws:';
       const host = window.location.host;
+      const sdkScriptOrigin = getSdkScriptOrigin();
+      const externalWsOrigin = sdkScriptOrigin
+        ? toWebSocketOrigin(sdkScriptOrigin)
+        : `${wsProto}//${host}`;
       // 단일 도메인 self-hosting 또는 프록시 환경 지원
-      defaultExternalWs = `${wsProto}//${host}/socket.io/`;
+      defaultExternalWs = `${externalWsOrigin}/socket.io/`;
       defaultInternalWs = `${wsProto}//${host}/ws/presence`;
     }
 

@@ -21,6 +21,14 @@ interface Crumb {
   to?: string;
 }
 
+const segmentLabelKeys: Record<string, string> = {
+  dashboard: 'sidebar.dashboard',
+  sessions: 'sidebar.sessions',
+  sandbox: 'sidebar.sandbox',
+  module: 'nav.moduleSdk',
+  script: 'nav.scriptSdk',
+};
+
 function buildCrumbs(pathname: string): Crumb[] {
   if (pathname === '/' || pathname === '') {
     return [{ labelKey: 'topbar.home' }];
@@ -36,13 +44,16 @@ function buildCrumbs(pathname: string): Crumb[] {
   crumbs.push(
     navMatch
       ? { labelKey: navMatch.labelKey, to: firstTo }
-      : { label: prettify(parts[0]), to: firstTo },
+      : segmentLabelKeys[parts[0]]
+        ? { labelKey: segmentLabelKeys[parts[0]], to: firstTo }
+        : { label: prettify(parts[0]), to: firstTo },
   );
 
   for (let i = 1; i < parts.length; i++) {
     const isLast = i === parts.length - 1;
+    const labelKey = segmentLabelKeys[parts[i]];
     crumbs.push({
-      label: prettify(parts[i]),
+      ...(labelKey ? { labelKey } : { label: prettify(parts[i]) }),
       to: isLast ? undefined : `/${parts.slice(0, i + 1).join('/')}`,
     });
   }

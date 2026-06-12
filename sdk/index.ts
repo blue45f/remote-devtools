@@ -9,6 +9,7 @@ import { createGuideModal } from './ui/guideModal';
 import { createNetworkRewriteModal } from './ui/networkRewriteModal';
 import { createRecordingToast } from './ui/recordingToast';
 import { createTicketModal, TicketFormData } from './ui/ticketModal';
+import { isSdkDemoMode } from './utils/env';
 import { getCommonInfo } from './utils/helpers';
 import { logger } from './utils/logger';
 
@@ -116,7 +117,7 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
   getCommonInfo();
 
   // 데모 모드에서는 실시간 웹소켓 연결이 불필요하므로 생략
-  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo-mode') === '1';
+  const isDemoMode = isSdkDemoMode();
 
   // autoConnect가 true고 데모 모드가 아니면 deviceId 로드 후 WebSocket 연결
   if (autoConnect && !isDemoMode) {

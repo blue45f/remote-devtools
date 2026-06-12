@@ -22,7 +22,7 @@ import { AuthService, type AuthClaims } from './auth.service';
 export class AuthGuard implements CanActivate {
   constructor(private readonly auth: AuthService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     if (!this.auth.enabled) return true; // self-host bypass
 
     const req = context.switchToHttp().getRequest<RequestWithAuth>();
@@ -31,7 +31,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
     try {
-      req.auth = this.auth.verify(token);
+      req.auth = await this.auth.verifyForRequest(token);
       return true;
     } catch (err) {
       throw new UnauthorizedException(err instanceof Error ? err.message : 'Invalid token');
