@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-node@v6
         if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install Vercel CLI

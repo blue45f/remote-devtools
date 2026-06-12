@@ -2,7 +2,7 @@
 # Multi-stage build for smaller, more secure images
 
 # ---- Build stage ----
-FROM node:22.6.0 AS builder
+FROM node:24.16.0 AS builder
 
 WORKDIR /usr/src/app
 
@@ -19,7 +19,7 @@ COPY . .
 RUN pnpm build:all
 
 # ---- Runtime stage ----
-FROM node:22.6.0-slim AS runtime
+FROM node:24.16.0-slim AS runtime
 
 # Playwright dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
