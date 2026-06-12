@@ -16,9 +16,11 @@ export function buildDevToolsLink(
   recordId?: number,
   host: string = API_HOST,
 ): string {
-  const wsHost = host.replace(/^https?:\/\/(.+)$/, '$1');
+  const resolvedHost =
+    host || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+  const wsHost = resolvedHost.replace(/^https?:\/\/(.+)$/, '$1');
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';
   const wsUrl = encodeURIComponent(`${wsHost}?room=${room}${record}`);
-  const protocol = host.startsWith('https') ? 'wss' : 'ws';
-  return `${host}/tabbed-debug/?${protocol}=${wsUrl}`;
+  const protocol = resolvedHost.startsWith('https') ? 'wss' : 'ws';
+  return `${resolvedHost}/tabbed-debug/?${protocol}=${wsUrl}`;
 }
