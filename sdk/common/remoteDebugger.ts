@@ -648,9 +648,21 @@ export class RemoteDebugger {
   public initSocket(recordMode = true): void {
     this.isRecordMode = recordMode;
 
+    // 브라우저 환경인 경우 현재 오리진에 기반한 동적 기본값 생성
+    let defaultExternalWs = 'ws://localhost:3001';
+    let defaultInternalWs = 'ws://localhost:3000';
+    if (typeof window !== 'undefined') {
+      const isHttps = window.location.protocol === 'https:';
+      const wsProto = isHttps ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      // 단일 도메인 self-hosting 또는 프록시 환경 지원
+      defaultExternalWs = `${wsProto}//${host}/socket.io/`;
+      defaultInternalWs = `${wsProto}//${host}/ws/presence`;
+    }
+
     // 환경 변수 사용 (recordMode = true는 External, false는 Internal)
-    const externalWs = readSdkEnv('VITE_EXTERNAL_WS', 'ws://localhost:3001');
-    const internalWs = readSdkEnv('VITE_INTERNAL_WS', 'ws://localhost:3000');
+    const externalWs = readSdkEnv('VITE_EXTERNAL_WS', defaultExternalWs);
+    const internalWs = readSdkEnv('VITE_INTERNAL_WS', defaultInternalWs);
     const finalHost = recordMode ? externalWs : internalWs;
 
     // Connecting to WebSocket

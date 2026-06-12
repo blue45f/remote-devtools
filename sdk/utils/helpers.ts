@@ -12,7 +12,9 @@ declare global {
  * 방 주소를 변환하는 함수
  */
 export const convertLink = (room: string, recordId: number | null) => {
-  const host = readSdkEnv('VITE_INTERNAL_HOST', 'http://localhost:3000');
+  const defaultHost =
+    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const host = readSdkEnv('VITE_INTERNAL_HOST', defaultHost);
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';
   const wsHost = host.replace(/^https?:\/\/(.+)$/, '$1');
 
