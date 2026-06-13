@@ -826,6 +826,8 @@
     "sdkBadgeScript": "스크립트 SDK (UMD)",
     "connected": "연결됨",
     "openDevtools": "DevTools 열기",
+    "openDevtoolsNoSession": "먼저 녹화 또는 라이브 세션을 시작하세요",
+    "viewSession": "세션 보기",
     "debugPanelTitle": "SDK 디버그 패널",
     "debugPanelSubtitle": "SDK로 계측된 이벤트를 발생시켜 DevTools에서 캡처되는지 확인하세요.",
     "readRequestsTitle": "읽기 요청",

@@ -40,6 +40,18 @@ describe('readSdkEnv', () => {
     );
   });
 
+  it('treats baked placeholder hosts as unset and uses the runtime fallback', () => {
+    // Reproduces the shipped sdk/.env.production placeholders that Vite inlines:
+    // they must NOT shadow the dynamic same-origin default.
+    vi.stubEnv('VITE_EXTERNAL_WS', 'wss://your-external-domain.com');
+    expect(readSdkEnv('VITE_EXTERNAL_WS', 'ws://localhost:3001/socket.io')).toBe(
+      'ws://localhost:3001/socket.io',
+    );
+
+    vi.stubEnv('VITE_INTERNAL_HOST', 'https://your-internal-domain.com');
+    expect(readSdkEnv('VITE_INTERNAL_HOST', 'http://localhost:3000')).toBe('http://localhost:3000');
+  });
+
   it('detects demo mode from Vite env or local storage', () => {
     expect(isSdkDemoMode()).toBe(false);
 
