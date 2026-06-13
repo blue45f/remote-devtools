@@ -2,8 +2,8 @@
  * 피그마 플러그인 메시지 핸들러
  */
 
-import { PluginMessage, PluginUser } from '../types';
 import { registerUserAndFetchDevices } from '../services/api.service';
+import { PluginMessage, PluginUser } from '../types';
 
 /**
  * 메시지 핸들러 초기화

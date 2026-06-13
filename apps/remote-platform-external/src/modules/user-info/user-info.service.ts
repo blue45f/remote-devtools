@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { DeviceInfoEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 /** User information compatible with the legacy UserInfo interface. */
 interface UserInfo {

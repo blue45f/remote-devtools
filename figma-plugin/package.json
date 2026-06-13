@@ -12,7 +12,7 @@
     "clean": "rm -rf dist",
     "verify": "node -e \"const fs = require('fs'); const content = fs.readFileSync('dist/ui.html', 'utf8'); console.log('Built with URL:', content.match(/API_BASE_URL = \\\"([^\\\"]+)\\\"/)?.[1] || 'NOT FOUND')\"",
     "type-check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint ."
   },
   "dependencies": {
     "axios": "^1.16.1"

@@ -1,6 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-
 import { ImageBase64Service } from '@remote-platform/core';
 
 @ApiTags('Image')

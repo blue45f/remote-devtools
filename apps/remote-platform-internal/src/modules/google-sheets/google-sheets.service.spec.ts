@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { GoogleSheetsService } from './google-sheets.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 // Mock googleapis
 vi.mock('googleapis', () => ({

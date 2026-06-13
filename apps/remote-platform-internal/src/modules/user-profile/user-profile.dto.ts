@@ -1,3 +1,5 @@
+import { JobType, AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
@@ -10,8 +12,6 @@ import {
   ValidateNested,
   IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { JobType, AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
 
 class TicketTemplateDto {
   @IsOptional()

@@ -1,10 +1,5 @@
 import { calculate, compare } from 'specificity';
 
-// specificity@1.0 doesn't re-export its types from the package root, so
-// derive the Specificity shape from `calculate`'s return type rather than
-// reaching into the package's internal paths.
-type Specificity = ReturnType<typeof calculate>;
-
 import { DEVTOOL_STYLESHEET } from '../common/constant';
 import nodes from '../common/nodes';
 import * as stylesheet from '../common/stylesheet';
@@ -19,6 +14,11 @@ import {
 import { BaseDomain } from './base';
 import { Page } from './page';
 import { Events } from './protocol';
+
+// specificity@1.0 doesn't re-export its types from the package root, so
+// derive the Specificity shape from `calculate`'s return type rather than
+// reaching into the package's internal paths.
+type Specificity = ReturnType<typeof calculate>;
 
 interface StyleRule {
   selectorText: string;

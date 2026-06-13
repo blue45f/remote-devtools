@@ -1,8 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { BufferUploadData } from './base-s3.service';
 import { BaseS3Service } from './base-s3.service';
+
+import type { BufferUploadData } from './base-s3.service';
 
 function expectPresent<T>(value: T | null | undefined): T {
   expect(value).not.toBeNull();

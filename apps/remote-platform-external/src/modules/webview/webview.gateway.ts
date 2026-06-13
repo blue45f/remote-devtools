@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -9,14 +11,12 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Repository } from 'typeorm';
-import { randomUUID } from 'node:crypto';
-import * as WebSocket from 'ws';
-import { Server } from 'ws';
-
 import { MSG_ID } from '@remote-platform/constants';
 import { DomService, NetworkService, RecordService, ScreenService } from '@remote-platform/core';
 import { TicketComponentEntity, TicketLabelEntity, TicketLogEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
+import * as WebSocket from 'ws';
+import { Server } from 'ws';
 
 import { getDefaultCommonInfo } from '../../utils/common-info';
 import { BufferService, type BufferEvent } from '../buffer/buffer.service';
@@ -26,6 +26,7 @@ import { UserInfoService } from '../user-info/user-info.service';
 
 import { BufferFlushService } from './buffer-flush.service';
 import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+
 import type {
   BufferRoomInfo,
   CommonInfo,

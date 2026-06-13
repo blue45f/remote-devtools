@@ -1,13 +1,14 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 import { ScreenService } from '@remote-platform/core';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { BufferService } from '../buffer/buffer.service';
 import { S3Service } from '../s3/s3.service';
-import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+
 import { BufferFlushService } from './buffer-flush.service';
+import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('BufferFlushService', () => {
   let service: BufferFlushService;

@@ -1,3 +1,6 @@
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+
 import {
   BadRequestException,
   ConflictException,
@@ -7,10 +10,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
-import { promisify } from 'util';
-import type { Repository } from 'typeorm';
-
 import {
   AccountEntity,
   type AccountStatus,
@@ -20,7 +19,6 @@ import {
   type OrganizationMemberStatus,
 } from '@remote-platform/entity';
 
-import type { AuthClaims } from '../auth/auth.service';
 import { AuthService } from '../auth/auth.service';
 
 import type {
@@ -31,6 +29,8 @@ import type {
   UpdateMeDto,
   UpdateOrganizationMemberDto,
 } from './accounts.dto';
+import type { AuthClaims } from '../auth/auth.service';
+import type { Repository } from 'typeorm';
 
 const scrypt = promisify(scryptCallback);
 

@@ -1,9 +1,5 @@
-import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import request from 'supertest';
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
 import {
   BillingWebhookEventEntity,
   OrganizationEntity,
@@ -11,12 +7,16 @@ import {
   ReplayCommentEntity,
   TicketLogEntity,
 } from '@remote-platform/entity';
+import request from 'supertest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ActivityModule } from '../src/modules/activity/activity.module';
 import { ActivityService } from '../src/modules/activity/activity.service';
 import { AuthGuard } from '../src/modules/auth/auth.guard';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { BillingModule } from '../src/modules/billing/billing.module';
+
+import type { INestApplication } from '@nestjs/common';
 
 /**
  * NestJS supertest e2e suites for modules that do NOT need Postgres.

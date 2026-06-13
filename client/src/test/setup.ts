@@ -1,12 +1,11 @@
 import * as matchers from '@testing-library/jest-dom/matchers';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, expect, vi } from 'vitest';
 
 // Side-effect: initialise i18n synchronously before any component test mounts.
 // Components under test use `useTranslation`, which would fall through to the
 // raw key string ("topbar.openCommandPalette") if i18n hadn't booted yet.
 import i18n from '@/lib/i18n';
-
-import { cleanup } from '@testing-library/react';
-import { afterEach, beforeEach, expect, vi } from 'vitest';
 
 expect.extend(matchers);
 

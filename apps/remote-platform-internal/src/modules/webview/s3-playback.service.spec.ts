@@ -1,9 +1,10 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
-import type * as WebSocket from 'ws';
 
 import { S3PlaybackService } from './s3-playback.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type * as WebSocket from 'ws';
 
 describe('S3PlaybackService', () => {
   let service: S3PlaybackService;

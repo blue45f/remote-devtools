@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { createSession, getEvents, getSessions, sendCommand } from './api';
+
 import type { RemoteCommandPayload } from './types';
 
 const SESSIONS_KEY = ['remote-devtools', 'sessions'] as const;

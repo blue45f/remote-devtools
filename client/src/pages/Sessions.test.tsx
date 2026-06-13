@@ -2,9 +2,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { renderWithProviders } from '@/test/utils';
-
 import Sessions from './Sessions';
+
+import { renderWithProviders } from '@/test/utils';
 
 beforeEach(() => {
   // Demo mode short-circuits apiFetch to seed data — avoids any real network.

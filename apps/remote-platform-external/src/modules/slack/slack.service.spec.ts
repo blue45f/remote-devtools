@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import { SlackService } from './slack.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('SlackService', () => {
   let service: SlackService;

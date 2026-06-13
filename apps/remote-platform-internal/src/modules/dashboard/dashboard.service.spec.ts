@@ -1,16 +1,16 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 import {
   DeviceInfoEntity,
   RecordEntity,
   TicketLogEntity,
   UserEntity,
 } from '@remote-platform/entity';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { DashboardService } from './dashboard.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('DashboardService', () => {
   let service: DashboardService;

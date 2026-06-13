@@ -2,10 +2,10 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { ThemeMenu } from './ThemeMenu';
+
 import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
-
-import { ThemeMenu } from './ThemeMenu';
 
 beforeEach(() => {
   act(() => {

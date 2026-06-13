@@ -11,15 +11,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 
 import { Auth } from '../auth/auth.decorator';
 import { AuthGuard } from '../auth/auth.guard';
-import type { AuthClaims } from '../auth/auth.service';
 import { PlanGuard, RequirePlan } from '../auth/plan.guard';
 
 import { CheckoutDto, PortalDto } from './billing.dto';
 import { BillingService } from './billing.service';
+
+import type { AuthClaims } from '../auth/auth.service';
+import type { Request } from 'express';
 
 /**
  * Billing routes — `/api/billing/{checkout,portal,webhook}`.

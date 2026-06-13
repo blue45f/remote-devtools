@@ -1,14 +1,14 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import { MSG_ID } from '@remote-platform/constants';
 import { DomEntity } from '@remote-platform/entity';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { DomService } from './dom.service';
 import { RecordService } from './record.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('DomService', () => {
   let service: DomService;

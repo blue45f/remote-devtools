@@ -1,10 +1,10 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
+import { ImageBase64Service } from '@remote-platform/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { ImageBase64Service } from '@remote-platform/core';
-
 import { ImageBase64Controller } from './image-base64.controller';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('ImageBase64Controller (External)', () => {
   let controller: ImageBase64Controller;

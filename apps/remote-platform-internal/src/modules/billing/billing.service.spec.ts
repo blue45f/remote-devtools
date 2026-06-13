@@ -1,14 +1,13 @@
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Repository } from 'typeorm';
+import { OrganizationEntity, BillingWebhookEventEntity } from '@remote-platform/entity';
 import { QueryFailedError } from 'typeorm';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OrganizationEntity } from '@remote-platform/entity';
-import { BillingWebhookEventEntity } from '@remote-platform/entity';
-
-import type { BillingProvider } from './billing.provider';
 import { BillingService } from './billing.service';
+
 import type { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
+import type { BillingProvider } from './billing.provider';
+import type { Repository } from 'typeorm';
 
 function makeQueryFailedError(code: string, detail?: string): QueryFailedError {
   const driverError = Object.assign(new Error(code), { code, detail });

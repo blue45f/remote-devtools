@@ -3,14 +3,14 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 
+import type { ReplayEvent } from './normaliseEvent';
+
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
-
-import type { ReplayEvent } from './normaliseEvent';
 
 export function RawJsonTab({ events, loading }: { events: ReplayEvent[]; loading: boolean }) {
   const { t } = useTranslation();

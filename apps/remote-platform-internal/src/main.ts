@@ -2,6 +2,21 @@
 import './instrument';
 
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  AllExceptionsFilter,
+  HttpExceptionFilter,
+  QueryFailedExceptionFilter,
+} from '@remote-platform/common';
+import * as express from 'express';
+import helmet from 'helmet';
+
+import { AppModule } from './app.module';
+
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
 
 function assertRequiredEnv(): void {
   const appEnv = (process.env.APP_ENV ?? 'local').toLowerCase();
@@ -20,21 +35,6 @@ function assertRequiredEnv(): void {
 }
 
 assertRequiredEnv();
-import { NestFactory } from '@nestjs/core';
-import type { NestExpressApplication } from '@nestjs/platform-express';
-import { WsAdapter } from '@nestjs/platform-ws';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as express from 'express';
-import type { Request, Response } from 'express';
-import helmet from 'helmet';
-
-import {
-  AllExceptionsFilter,
-  HttpExceptionFilter,
-  QueryFailedExceptionFilter,
-} from '@remote-platform/common';
-
-import { AppModule } from './app.module';
 
 interface RequestWithRawBody extends Request {
   rawBody?: Buffer;

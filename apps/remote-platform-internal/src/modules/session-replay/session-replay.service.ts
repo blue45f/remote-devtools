@@ -3,10 +3,9 @@ import * as path from 'path';
 
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { NetworkService, RuntimeService } from '@remote-platform/core';
 import { RecordEntity, ScreenEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 import { S3Service } from '../s3/s3.service';
 

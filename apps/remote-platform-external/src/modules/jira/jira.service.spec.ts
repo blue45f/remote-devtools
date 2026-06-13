@@ -1,12 +1,13 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { UserInfoService } from '../user-info/user-info.service';
-import type { UserData } from '../webview/webview.types';
 import { getDefaultCommonInfo } from '../../utils/common-info';
+import { UserInfoService } from '../user-info/user-info.service';
 
 import { JiraService } from './jira.service';
+
+import type { UserData } from '../webview/webview.types';
+import type { TestingModule } from '@nestjs/testing';
 
 // Mock axios
 vi.mock('axios', () => {

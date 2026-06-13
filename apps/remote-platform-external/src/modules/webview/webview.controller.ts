@@ -8,10 +8,10 @@ import {
   NotFoundException,
   Query,
 } from '@nestjs/common';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BusinessException, ErrorCode } from '@remote-platform/common';
-import { Like, Repository } from 'typeorm';
-
+import { RecordService } from '@remote-platform/core';
 import {
   DomEntity,
   RecordEntity,
@@ -20,11 +20,10 @@ import {
   TicketLabelEntity,
   TicketLogEntity,
 } from '@remote-platform/entity';
+import { Like, Repository } from 'typeorm';
 
 // HTML을 실제 브라우저로 렌더링
 import { renderHTMLToImage } from '../../utils/html-to-image';
-import { RecordService } from '@remote-platform/core';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { S3Service } from '../s3/s3.service';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

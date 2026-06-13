@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { UserProfileController } from './user-profile.controller';
 import { UserProfileService } from './user-profile.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('UserProfileController', () => {
   let controller: UserProfileController;

@@ -22,6 +22,10 @@ CardHeader.displayName = 'CardHeader';
 
 export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
+    // Heading content is supplied by consumers via `children` in `...props`; the
+    // primitive itself can't carry it, so the empty-heading check is a false
+    // positive here.
+    // eslint-disable-next-line jsx-a11y/heading-has-content
     <h3
       ref={ref}
       className={cn('text-sm font-semibold leading-none tracking-tight', className)}

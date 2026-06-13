@@ -33,18 +33,18 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { copyToClipboard } from '@/lib/clipboard';
+import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -55,9 +55,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
-import { formatUserAgentBadge } from '@/lib/user-agent';
-import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
+import { copyToClipboard } from '@/lib/clipboard';
 import { formatDurationFromNanos, formatTimeAgo, shortHash } from '@/lib/format';
+import { formatUserAgentBadge } from '@/lib/user-agent';
 import { cn } from '@/lib/utils';
 
 interface SessionRecord {
@@ -391,6 +391,7 @@ export default function SessionsPage() {
 
   // Reset the cursor whenever the filter result changes — the row at
   // cursorIdx might not exist any more.
+
   useEffect(() => {
     setCursorIdx(-1);
   }, [tab, search, sort, durationFilter, ageFilter, hostFilter, tagFilter, noteOnly]);
@@ -498,6 +499,9 @@ export default function SessionsPage() {
     }
 
     if (ageFilter !== 'all') {
+      // Intentional read of the current time when computing the age cutoff;
+      // recomputed whenever the filter inputs change.
+      // eslint-disable-next-line react-hooks/purity
       const cutoff = Date.now() - AGE_LIMITS_MS[ageFilter];
       result = result.filter((s) => {
         if (!s.timestamp) return false;

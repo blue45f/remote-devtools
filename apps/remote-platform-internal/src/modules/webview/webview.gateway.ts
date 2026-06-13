@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -8,10 +10,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { randomUUID } from 'node:crypto';
-import { Server } from 'ws';
-import * as WebSocket from 'ws';
-
 import { MSG_ID } from '@remote-platform/constants';
 import {
   DomService,
@@ -21,7 +19,9 @@ import {
   ScreenService,
   type BufferUploadData,
 } from '@remote-platform/core';
-import type { IncomingMessage } from 'node:http';
+import escapeHtml from 'escape-html';
+import { Server } from 'ws';
+import * as WebSocket from 'ws';
 
 import { S3Service } from '../s3/s3.service';
 
@@ -29,10 +29,10 @@ import { ObjectReconstructionService } from './object-reconstruction.service';
 import { S3PlaybackService } from './s3-playback.service';
 import { DevtoolsData, ProtocolEntry, ProtocolMessage, RoomData } from './webview.types';
 
+import type { IncomingMessage } from 'node:http';
+
 // Re-export types for backward compatibility
 export type { DevtoolsData, ProtocolEntry, ProtocolMessage, RoomData } from './webview.types';
-
-import escapeHtml from 'escape-html';
 
 type BufferPlaybackEvent = BufferUploadData['bufferData'][number];
 type PropertySnapshotsMap = Parameters<ObjectReconstructionService['reconstructObjectAsJson']>[1];

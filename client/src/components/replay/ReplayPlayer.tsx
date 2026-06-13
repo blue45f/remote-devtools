@@ -1,9 +1,10 @@
 import 'rrweb-player/dist/style.css';
 
-import type { TFunction } from 'i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import type { TFunction } from 'i18next';
 
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -95,9 +96,13 @@ export function ReplayPlayer({
   const validationError = useMemo(() => getReplayProblem(events), [events]);
 
   // Keep the latest callback in a ref so the effect doesn't tear down the
-  // player every time the parent re-renders with a new arrow function.
+  // player every time the parent re-renders with a new arrow function. The
+  // render-phase write is the documented "latest value in a ref" pattern.
   const onTimeUpdateRef = useRef(onTimeUpdate);
+  // eslint-disable-next-line react-hooks/refs
   onTimeUpdateRef.current = onTimeUpdate;
+
+  // Intentional: clear the prior error before (re)loading the rrweb player.
 
   useEffect(() => {
     if (validationError) return;
@@ -318,12 +323,16 @@ export function ReplayPlayer({
 
   return (
     <Card className={cn('overflow-hidden p-3 [&_.rr-player]:mx-auto', className)}>
+      {/* role="application" + aria-label + keyboard handler make this a
+          deliberate interactive widget; jsx-a11y's heuristic still treats the
+          div as non-interactive (false positive). */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         ref={containerRef}
-        // The wrapper takes the keydown — rrweb-player itself doesn't
-        // bind any. Focusable via tab; clicking the player implicitly
-        // focuses it because tabIndex={0} on an interactive parent makes
-        // mousedown move focus in.
+        // The wrapper takes the keydown — rrweb-player itself doesn't bind any.
+        // Focusable via tab; clicking the player implicitly focuses it because
+        // tabIndex={0} on an interactive parent makes mousedown move focus in.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         onKeyDown={handleKeyDown}
         role="application"

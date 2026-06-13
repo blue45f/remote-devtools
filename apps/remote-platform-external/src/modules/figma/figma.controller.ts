@@ -1,9 +1,8 @@
 import { Body, Controller, Get, Logger, Post } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 interface FigmaUserRequest {
   readonly userId: string;

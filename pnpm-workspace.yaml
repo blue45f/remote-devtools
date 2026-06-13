@@ -21,6 +21,9 @@ allowBuilds:
   '@swc/core': true
   esbuild: true
   sharp: true
+  # napi-rs native resolver pulled in transitively via @heejun/eslint-config
+  # (eslint-plugin-import-x). Build its per-platform binary on install.
+  unrs-resolver: true
 
 # @hookform/resolvers 5.x stopped declaring zod as an (optional) peer, yet its
 # dist still imports `zod/v4/core`. Without the link pnpm resolves that import
@@ -81,3 +84,4 @@ minimumReleaseAgeExclude:
   - vite
   - vitest
   - zustand
+  - '@heejun/eslint-config@4.0.0'

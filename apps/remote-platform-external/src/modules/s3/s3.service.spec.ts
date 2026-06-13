@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { S3Service } from './s3.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 // Mock fs and AWS SDK
 vi.mock('fs', () => ({

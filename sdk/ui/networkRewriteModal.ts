@@ -1,8 +1,10 @@
 import { escapeHtml } from '../common/utils';
 import { Network } from '../domain/network';
-import type { RewriteRule } from '../domain/network-rewrite';
 import { logger } from '../utils/logger';
+
 import { tokens, injectKeyframeAnimations, getStatusColor, getMethodColor } from './theme';
+
+import type { RewriteRule } from '../domain/network-rewrite';
 
 interface NetworkRequest {
   requestId: number;

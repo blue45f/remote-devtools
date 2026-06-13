@@ -1,9 +1,6 @@
-import type { TestingModule } from '@nestjs/testing';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 import { RecordService } from '@remote-platform/core';
 import {
   DomEntity,
@@ -13,9 +10,13 @@ import {
   TicketLabelEntity,
   TicketLogEntity,
 } from '@remote-platform/entity';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { S3Service } from '../s3/s3.service';
+
 import { WebviewController } from './webview.controller';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('WebviewController (External)', () => {
   let controller: WebviewController;
