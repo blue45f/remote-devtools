@@ -90,7 +90,7 @@ export default defineConfig(({ command }) => ({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/react-router')) return 'router';
-          if (id.includes('node_modules/framer-motion')) return 'motion';
+          if (id.includes('node_modules/motion')) return 'motion';
           if (id.includes('node_modules/@radix-ui')) return 'radix';
           if (id.includes('node_modules/cmdk')) return 'cmdk';
           if (id.includes('node_modules/lucide-react')) return 'icons';

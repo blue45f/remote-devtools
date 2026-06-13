@@ -96,7 +96,7 @@
     "archTabClientBullet1": "Synchronized Replay Timeline: Unifies rrweb-player DOM replay viewport with time-aligned console calls and network waterfall charts.",
     "archTabClientBullet2": "Embedded DevTools UI: Mounts a custom-compiled Chromium DevTools UI to inspect element trees and payloads natively.",
     "archTabClientBullet3": "Multiplayer Collaboration: Implements real-time WebSocket rooms showing presence lists and synced commentary for team debugging.",
-    "archTabClientBullet4": "Optimized Aesthetics: Built on Radix UI and framer-motion to deliver high-density, keyboard-friendly light/dark control surfaces."
+    "archTabClientBullet4": "Optimized Aesthetics: Built on Radix UI and motion to deliver high-density, keyboard-friendly light/dark control surfaces."
   },
   "pricing": {
     "badge": "Pricing",
