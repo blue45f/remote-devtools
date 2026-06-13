@@ -8,7 +8,7 @@ import type {
   RemoteEventLevel,
   RemoteSession,
   RemoteSessionStatus,
-} from '@/features/remote-devtools/types';
+} from '@/domains/remote-devtools/types';
 
 import { PageHeader } from '@/components/PageHeader';
 import { Alert } from '@/components/ui/alert';
@@ -33,13 +33,13 @@ import {
   commandLabelKey,
   commandRequiresValue,
   commandsForStatus,
-} from '@/features/remote-devtools/command-policies';
+} from '@/domains/remote-devtools/command-policies';
 import {
   useCreateRemoteSession,
   useRemoteEvents,
   useRemoteSessions,
   useSendCommand,
-} from '@/features/remote-devtools/hooks';
+} from '@/domains/remote-devtools/hooks';
 import { FEATURES } from '@/lib/config';
 
 const STATUS_TONE: Record<RemoteSessionStatus, StatusTone> = {

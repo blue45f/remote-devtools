@@ -6,7 +6,12 @@
  */
 export async function copyToClipboard(text: string): Promise<void> {
   // If the browser supports the modern API and we are in a secure context
-  if (navigator.clipboard && (window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  if (
+    navigator.clipboard &&
+    (window.isSecureContext ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1')
+  ) {
     try {
       await navigator.clipboard.writeText(text);
       return;
@@ -18,7 +23,7 @@ export async function copyToClipboard(text: string): Promise<void> {
   // Fallback method using a temporary textarea
   const textArea = document.createElement('textarea');
   textArea.value = text;
-  
+
   // Position off-screen and make read-only
   textArea.style.position = 'fixed';
   textArea.style.top = '0';
@@ -31,10 +36,10 @@ export async function copyToClipboard(text: string): Promise<void> {
   textArea.style.boxShadow = 'none';
   textArea.style.background = 'transparent';
   textArea.setAttribute('readonly', 'true');
-  
+
   document.body.appendChild(textArea);
   textArea.select();
-  
+
   try {
     const successful = document.execCommand('copy');
     if (!successful) {

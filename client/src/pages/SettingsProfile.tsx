@@ -17,14 +17,14 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TagInput } from '@/components/ui/tag-input';
-import { useCurrentEmpNo, useProfile, useUpdateProfile } from '@/features/profile/hooks';
+import { useCurrentEmpNo, useProfile, useUpdateProfile } from '@/domains/profile/hooks';
 import {
   JOB_TYPES,
   type DeviceInfo,
   type JobType,
   type TicketTemplate,
   type UserProfile,
-} from '@/features/profile/types';
+} from '@/domains/profile/types';
 
 const JOB_LABEL_KEY: Record<JobType, string> = {
   QA: 'profile.jobQA',
