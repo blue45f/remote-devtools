@@ -96,7 +96,7 @@
     "archTabClientBullet1": "Synchronized Replay Timeline: rrweb-player를 기반으로 DOM 리플레이 뷰포트와 콘솔, 네트워크 트래픽 워터폴(Waterfall)의 시점을 밀리초 수준으로 결합하여 동기화합니다.",
     "archTabClientBullet2": "Embedded DevTools UI: 실제 Chromium DevTools UI 소스코드를 래핑하여, 익숙한 인터페이스 그대로 네트워크 응답 본문 및 DOM 요소를 정밀 검사합니다.",
     "archTabClientBullet3": "Multiplayer Collaboration: 실시간 WebSocket 룸을 구현하여 한 세션을 여러 작업자가 실시간 공유 시청하고 코멘트를 나누는 실시간 협업을 제공합니다.",
-    "archTabClientBullet4": "Optimized Aesthetics: Radix UI 프리미티브와 framer-motion을 활용한 밀도 높은 다크 모드 및 애니메이션으로 가독성 높은 제어판을 제공합니다."
+    "archTabClientBullet4": "Optimized Aesthetics: Radix UI 프리미티브와 motion을 활용한 밀도 높은 다크 모드 및 애니메이션으로 가독성 높은 제어판을 제공합니다."
   },
   "pricing": {
     "badge": "요금제",

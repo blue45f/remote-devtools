@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowRight, Check, ChevronDown, Search as SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
