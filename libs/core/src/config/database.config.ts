@@ -11,6 +11,7 @@ import {
   OrganizationMemberEntity,
   OrganizationEntity,
   RecordEntity,
+  ReplayCommentEntity,
   RuntimeEntity,
   ScreenEntity,
   TicketLogEntity,
@@ -34,6 +35,7 @@ export interface DatabaseConfigOptions {
 export const ALL_ENTITIES = [
   NetworkEntity,
   RecordEntity,
+  ReplayCommentEntity,
   DomEntity,
   RuntimeEntity,
   ScreenEntity,
