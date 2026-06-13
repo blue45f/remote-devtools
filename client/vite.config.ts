@@ -41,6 +41,14 @@ export default defineConfig(({ command }) => ({
               target: internalTarget,
               changeOrigin: true,
             },
+            '/tabbed-debug': {
+              target: internalTarget,
+              changeOrigin: true,
+            },
+            '/devtools': {
+              target: internalTarget,
+              changeOrigin: true,
+            },
             '/sessions': {
               target: internalTarget,
               changeOrigin: true,

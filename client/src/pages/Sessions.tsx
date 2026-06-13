@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { copyToClipboard } from '@/lib/clipboard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -1743,7 +1744,7 @@ function SessionRowCopyLink({ id }: { id: number }) {
         ? `${window.location.origin}/sessions/${id}`
         : `/sessions/${id}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await copyToClipboard(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       toast.success(t('sessions.linkCopied'));
