@@ -13,14 +13,56 @@ import { isSdkDemoMode } from './utils/env';
 import { getCommonInfo } from './utils/helpers';
 import { logger } from './utils/logger';
 
+/**
+ * The session the SDK currently has open (record or live), or null when none.
+ * RoomName/RecordId live inside the createDebugger() closure; this mirror is the
+ * supported way for a host page to read them and build a DevTools link for the
+ * active session. Host pages either poll {@link getActiveSession} or listen for
+ * the {@link SDK_SESSION_EVENT} window event (detail = ActiveSdkSession | null).
+ */
+export type ActiveSdkSession = {
+  room: string;
+  recordId: number | null;
+  recordMode: boolean;
+};
+
 // 전역 타입 선언
 declare global {
   interface Window {
     REMOTE_DEBUG_SDK_COMMON_INFO?: (r: string) => Promise<void>;
+    /**
+     * Singleton state shared across every execution of this bundle. A host page
+     * can load the SDK more than once (React StrictMode double-invokes effects
+     * in dev; a customer might embed two <script> tags). Keying the "already
+     * created" guard and the active-session mirror off `window` guarantees ONE
+     * debugger UI and ONE source of truth regardless of how many module
+     * instances run.
+     */
+    __REMOTE_DEBUG_SDK__?: {
+      created: boolean;
+      activeSession: ActiveSdkSession | null;
+    };
   }
 }
 
-let created = false;
+export const SDK_SESSION_EVENT = 'remote-debug-sdk:session';
+
+// Shared singleton state — see Window.__REMOTE_DEBUG_SDK__. Falls back to a
+// plain object in non-browser/SSR contexts where `window` is absent.
+const sdkState: NonNullable<Window['__REMOTE_DEBUG_SDK__']> =
+  typeof window !== 'undefined'
+    ? (window.__REMOTE_DEBUG_SDK__ ??= { created: false, activeSession: null })
+    : { created: false, activeSession: null };
+
+/** Read the SDK's currently-active session (null when no room is open). */
+export const getActiveSession = (): ActiveSdkSession | null => sdkState.activeSession;
+
+const publishSession = (next: ActiveSdkSession | null): void => {
+  sdkState.activeSession = next;
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent(SDK_SESSION_EVENT, { detail: next }));
+  }
+};
 
 const addRewriteAnimationStyles = () => {
   injectKeyframeAnimations();
@@ -91,9 +133,9 @@ const createRewriteTooltip = () => {
 };
 
 export const createDebugger = (onClickDebugger?: () => void, autoConnect = true) => {
-  // 중복 생성 방지
-  if (created) return;
-  created = true;
+  // 중복 생성 방지 (window 스코프 — 번들이 여러 번 로드돼도 단일 인스턴스 보장)
+  if (sdkState.created) return;
+  sdkState.created = true;
 
   const remoteDebugger = new RemoteDebugger();
   const root = document.createElement('div');
@@ -121,31 +163,33 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
 
   // autoConnect가 true고 데모 모드가 아니면 deviceId 로드 후 WebSocket 연결
   if (autoConnect && !isDemoMode) {
-    // commonInfo 로드 후 WebSocket 연결 시작
-    let retryCount = 0;
-    const checkAndConnect = () => {
-      const currentCommonInfo =
-        commonInfo || (window.REMOTE_DEBUG_SDK_COMMON_INFO ? commonInfo : null);
+    // deviceId는 네이티브 WebView 브릿지(JavaScriptInterface)로만 전달된다.
+    // 일반 브라우저에는 브릿지가 없으므로 2초간 폴링하며 매 로드마다 경고를 찍는
+    // 대신 즉시 unknown-device 로 연결한다.
+    if (typeof window === 'undefined' || !window.JavaScriptInterface) {
+      remoteDebugger.initSocket(true);
+    } else {
+      let retryCount = 0;
+      const checkAndConnect = () => {
+        if (commonInfo?.device?.deviceId) {
+          remoteDebugger.setDeviceId(commonInfo.device.deviceId);
+          // deviceId 설정 후 WebSocket 연결
+          remoteDebugger.initSocket(true);
+        } else if (retryCount < 20) {
+          // 100ms * 20 = 2초
+          retryCount += 1;
+          setTimeout(checkAndConnect, 100);
+        } else {
+          logger.remote.debug(
+            '[SDK] deviceId not received within 2s; connecting as unknown-device',
+          );
+          // 타임아웃 시에도 연결은 시작
+          remoteDebugger.initSocket(true);
+        }
+      };
 
-      if (currentCommonInfo?.device?.deviceId) {
-        remoteDebugger.setDeviceId(currentCommonInfo.device.deviceId);
-
-        // deviceId 설정 후 WebSocket 연결
-        remoteDebugger.initSocket(true);
-      } else if (retryCount < 20) {
-        // 100ms * 20 = 2초
-        retryCount += 1;
-        setTimeout(checkAndConnect, 100);
-      } else {
-        console.warn(
-          '[SDK] Could not load deviceId within 2 seconds, connecting with unknown-device',
-        );
-        // 타임아웃 시에도 연결은 시작
-        remoteDebugger.initSocket(true);
-      }
-    };
-
-    checkAndConnect();
+      checkAndConnect();
+    }
   }
 
   const handleClickFloatingButton = () => {
@@ -288,6 +332,10 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
 
     // WebSocket 연결 종료 시 UI 복구
     remoteDebugger.addSocketEventListener('close', () => {
+      // The session is gone — tell host pages so their "Open DevTools" affordance
+      // disables itself.
+      publishSession(null);
+
       if (root.contains(recordingToast.element)) {
         root.removeChild(recordingToast.element);
       }
@@ -320,6 +368,14 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
         type: currentRoomType,
         getRoomName: () => remoteDebugger.RoomName,
         getRecordId: () => remoteDebugger.RecordId,
+      });
+
+      // Publish the active session so host pages (e.g. the sandbox "Open
+      // DevTools" button) can build a link for it.
+      publishSession({
+        room: remoteDebugger.RoomName ?? '',
+        recordId: remoteDebugger.RecordId,
+        recordMode: currentRoomType === 'record',
       });
 
       // floatingButton이 root에 있는지 확인

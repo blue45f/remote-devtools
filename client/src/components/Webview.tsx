@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { API_HOST } from '@/lib/api';
+import { buildDevToolsLink } from '@/lib/devtools-link';
 
 import DebugPanel from './webview/DebugPanel';
 import ExploreTab from './webview/ExploreTab';
@@ -221,15 +221,45 @@ function LoadingPanel() {
 
 function BottomCta() {
   const { t } = useTranslation();
+  // The SDK publishes its active room/recordId. With no session there is nothing
+  // to open, so the button is disabled.
+  const [session, setSession] = useState<RemoteDebugSdkSession | null>(
+    () => window.RemoteDebugSdk?.getActiveSession?.() ?? null,
+  );
+
+  useEffect(() => {
+    // The useState initializer above seeds the current session; this only needs
+    // to track future open/close events the SDK publishes.
+    const onSession = (e: WindowEventMap['remote-debug-sdk:session']) => setSession(e.detail);
+    window.addEventListener('remote-debug-sdk:session', onSession);
+    return () => window.removeEventListener('remote-debug-sdk:session', onSession);
+  }, []);
+
+  const disabled = !session?.room;
+  // Smart target: a RECORDED session opens its dashboard detail page (which
+  // renders the captured replay/network/console); a LIVE session opens the
+  // Chrome DevTools view for real-time inspection.
+  const isRecorded = !!(session?.recordMode && session.recordId !== null);
+  const label = isRecorded ? t('webview.viewSession') : t('webview.openDevtools');
+
+  const handleOpen = () => {
+    if (!session?.room) return;
+    const url = isRecorded ? `/sessions/${session.recordId}` : buildDevToolsLink(session.room);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-20">
       <Button
         variant="primary"
-        onClick={() => window.open(`${API_HOST}/devtools/index.html`, '_blank')}
+        onClick={handleOpen}
+        disabled={disabled}
+        title={disabled ? t('webview.openDevtoolsNoSession') : undefined}
+        aria-label={disabled ? t('webview.openDevtoolsNoSession') : label}
         className="shadow-lg"
       >
         <ExternalLink />
-        {t('webview.openDevtools')}
+        {disabled ? t('webview.openDevtools') : label}
       </Button>
     </div>
   );

@@ -17,11 +17,11 @@ export function createDebuggerButtons(
     gap: '8px',
   });
 
-  const ticketButton = createActionButton('Create Ticket', () => onClick?.('ticket'));
-  const recordButton = createActionButton('Start Recording', () => onClick?.('record'));
+  const ticketButton = createActionButton('티켓 생성', () => onClick?.('ticket'));
+  const recordButton = createActionButton('녹화 시작', () => onClick?.('record'));
 
   // Network Rewrite button with amber dot indicator
-  const networkRewriteButton = createActionButton('Network Rewrite', () =>
+  const networkRewriteButton = createActionButton('네트워크 리라이트', () =>
     onClick?.('network-rewrite'),
   );
   const dot = document.createElement('span');
@@ -95,6 +95,10 @@ function createActionButton(text: string, onClick: () => void): HTMLButtonElemen
  */
 export const createFloatingButton = (onClick: () => void) => {
   const button = document.createElement('button');
+  // Icon-only button — give assistive tech an accessible name.
+  button.type = 'button';
+  button.setAttribute('aria-label', '원격 디버거 메뉴 열기');
+  button.title = '원격 디버거';
 
   Object.assign(button.style, {
     background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',

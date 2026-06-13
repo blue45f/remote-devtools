@@ -38,7 +38,7 @@ export function createGuideButton(onClick: () => void) {
   icon.style.alignItems = 'center';
 
   const text = document.createElement('span');
-  text.textContent = 'Quick Guide';
+  text.textContent = '빠른 가이드';
 
   button.appendChild(icon);
   button.appendChild(text);

@@ -3,3 +3,9 @@
 
 /dist
 /coverage
+
+# Build-time env — never commit (placeholders here used to bake a dead host into
+# dist/ and break the SDK). Use .env.production.example as the documented template
+# and prefer the runtime window.REMOTE_DEBUG_SDK_ENV override for multi-domain.
+.env.production
+.env*.local

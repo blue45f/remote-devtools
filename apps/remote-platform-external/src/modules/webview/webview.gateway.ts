@@ -80,7 +80,12 @@ const hasProtocolMethod = (
  * 이벤트 영속화 로직은 {@link CdpEventPersistenceService},
  * 버퍼 플러시 로직은 {@link BufferFlushService}로 분리되었다.
  */
-@WebSocketGateway()
+// Path-scoped so the dev Vite proxy (`/socket.io` -> external) and the prod
+// nginx route (`location /socket.io`) reach this gateway. NestJS `WsAdapter`
+// matches the *exact* request pathname against `normalizePath(path)`, which
+// strips the trailing slash — so the path is `/socket.io` (no trailing slash)
+// and SDK clients MUST connect to `/socket.io` (not `/socket.io/`).
+@WebSocketGateway({ path: '/socket.io' })
 export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebviewGateway.name);
 
@@ -209,15 +214,24 @@ export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
         params: { maxPostDataSize: 65536 },
       },
     });
+    // These two were previously sent WITHOUT the `{ event: 'protocol', message }`
+    // envelope, so the SDK's parseSocketMessage rejected them ("missing event")
+    // and the CDP commands never applied. Wrap them like the others.
     this.sendMessage(client, {
-      id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
-      method: 'Network.setAttachDebugStack',
-      params: { enabled: true },
+      event: 'protocol',
+      message: {
+        id: MSG_ID.NETWORK.SET_ATTACH_DEBUG_STACK,
+        method: 'Network.setAttachDebugStack',
+        params: { enabled: true },
+      },
     });
     this.sendMessage(client, {
-      id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
-      method: 'Network.clearAcceptedEncodingsOverride',
-      params: {},
+      event: 'protocol',
+      message: {
+        id: MSG_ID.NETWORK.CLEAR_ACCEPTED_ENCODINGS_OVERRIDE,
+        method: 'Network.clearAcceptedEncodingsOverride',
+        params: {},
+      },
     });
     this.sendMessage(client, {
       event: 'protocol',

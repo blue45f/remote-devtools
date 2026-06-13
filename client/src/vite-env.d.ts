@@ -20,8 +20,25 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+/** A session the SDK has open. Mirrors `ActiveSdkSession` in sdk/index.ts. */
+interface RemoteDebugSdkSession {
+  room: string;
+  recordId: number | null;
+  recordMode: boolean;
+}
+
 interface Window {
   RemoteDebugSdk?: {
     createDebugger: (onClick?: () => void) => void;
+    /** The SDK's currently-active session, or null when no room is open. */
+    getActiveSession?: () => RemoteDebugSdkSession | null;
   };
+}
+
+/**
+ * Dispatched on `window` whenever the SDK opens or closes a session.
+ * `detail` is the active session, or null when it closed.
+ */
+interface WindowEventMap {
+  'remote-debug-sdk:session': CustomEvent<RemoteDebugSdkSession | null>;
 }

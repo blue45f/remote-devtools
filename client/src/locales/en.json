@@ -826,6 +826,8 @@
     "sdkBadgeScript": "Script SDK (UMD)",
     "connected": "connected",
     "openDevtools": "Open DevTools",
+    "openDevtoolsNoSession": "Start a recording or live session first",
+    "viewSession": "View session",
     "debugPanelTitle": "SDK debug panel",
     "debugPanelSubtitle": "Trigger SDK-instrumented events to verify capture in the DevTools.",
     "readRequestsTitle": "Read requests",
