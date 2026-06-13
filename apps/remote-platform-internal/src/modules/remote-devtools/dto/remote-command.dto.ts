@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsObject, IsOptional, IsString } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 export const REMOTE_COMMANDS = [
   'start',
@@ -13,18 +13,12 @@ export const REMOTE_COMMANDS = [
 export type RemoteCommand = (typeof REMOTE_COMMANDS)[number];
 
 /** Body of POST /api/remote-devtools/sessions/:id/commands. */
-export class RemoteCommandDto {
-  @ApiProperty({ enum: REMOTE_COMMANDS })
-  @IsIn(REMOTE_COMMANDS)
-  public command: RemoteCommand;
+export const remoteCommandSchema = z
+  .object({
+    command: z.enum(REMOTE_COMMANDS),
+    value: z.string().optional(),
+    payload: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  public value?: string;
-
-  @ApiPropertyOptional({ type: Object })
-  @IsOptional()
-  @IsObject()
-  public payload?: Record<string, unknown>;
-}
+export class RemoteCommandDto extends createZodDto(remoteCommandSchema) {}

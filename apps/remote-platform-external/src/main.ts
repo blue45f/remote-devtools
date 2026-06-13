@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 
 function assertRequiredEnv(): void {
   const appEnv = (process.env.APP_ENV ?? 'local').toLowerCase();
@@ -22,12 +22,14 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 
 import {
   AllExceptionsFilter,
   createCorsOriginValidator,
   HttpExceptionFilter,
   QueryFailedExceptionFilter,
+  ZodValidationPipe,
 } from '@remote-platform/common';
 
 import { AppModule } from './app.module';
@@ -46,13 +48,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '30mb' }));
   app.use(express.urlencoded({ limit: '30mb', extended: true }));
   app.useWebSocketAdapter(new WsAdapter(app));
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(new ZodValidationPipe());
 
   app.enableCors({
     // Origin allow-listing lives in `@remote-platform/common` so it is a pure,
@@ -75,7 +71,11 @@ async function bootstrap() {
     .setDescription('외부 플랫폼 API (SDK, CDP 데이터 수집, Jira/Slack 연동)')
     .setVersion('1.0')
     .build();
-  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig));
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    cleanupOpenApiDoc(SwaggerModule.createDocument(app, swaggerConfig)),
+  );
 
   await app.listen(process.env.PORT || 3001);
 
