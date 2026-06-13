@@ -14,6 +14,22 @@
       }
     }
   </style>
+  <script>
+    // Default the screen-mirror (screencast) pane OFF for this embedded build.
+    // The screencast relies on a custom `ScreenPreview` CDP domain that the
+    // standard (vendored) DevTools rejects, so it renders blank AND occupies
+    // ~75% width, squeezing the real panels (Elements/Console/Network/…) into a
+    // narrow column. Defaulting it off lets the panels fill the viewport; the
+    // toolbar "Toggle screencast" button still works and the user's choice
+    // persists (we only set the default when unset).
+    try {
+      if (localStorage.getItem('screencast-enabled') === null) {
+        localStorage.setItem('screencast-enabled', 'false');
+      }
+    } catch (e) {
+      /* localStorage unavailable — fall back to the built-in default */
+    }
+  </script>
   <script type="module" src="./entrypoints/inspector/inspector.js"></script>
   <body class="undocked" id="-blink-dev-tools"></body>
 </html>
