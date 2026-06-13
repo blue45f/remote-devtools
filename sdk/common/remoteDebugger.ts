@@ -799,9 +799,12 @@ export class RemoteDebugger {
       return;
     }
 
-    // 브라우저 환경인 경우 SDK 스크립트/현재 오리진에 기반한 동적 기본값 생성
-    let defaultExternalWs = 'ws://localhost:3001';
-    let defaultInternalWs = 'ws://localhost:3000';
+    // 브라우저 환경인 경우 SDK 스크립트/현재 오리진에 기반한 동적 기본값 생성.
+    // 경로는 게이트웨이와 정확히 일치해야 한다: 외부 인제스천 게이트웨이는
+    // `@WebSocketGateway({ path: '/socket.io' })`(트레일링 슬래시 없음, WsAdapter는
+    // pathname 정확 매칭)이므로 `/socket.io` 로 끝나야 한다.
+    let defaultExternalWs = 'ws://localhost:3001/socket.io';
+    let defaultInternalWs = 'ws://localhost:3000/ws/presence';
     if (typeof window !== 'undefined') {
       const isHttps = window.location.protocol === 'https:';
       const wsProto = isHttps ? 'wss:' : 'ws:';
@@ -811,7 +814,7 @@ export class RemoteDebugger {
         ? toWebSocketOrigin(sdkScriptOrigin)
         : `${wsProto}//${host}`;
       // 단일 도메인 self-hosting 또는 프록시 환경 지원
-      defaultExternalWs = `${externalWsOrigin}/socket.io/`;
+      defaultExternalWs = `${externalWsOrigin}/socket.io`;
       defaultInternalWs = `${wsProto}//${host}/ws/presence`;
     }
 

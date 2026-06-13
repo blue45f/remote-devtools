@@ -102,7 +102,10 @@ describe('RemoteDebugger', () => {
 
     remoteDebugger.initSocket();
 
-    expect(fakeSockets[0]?.url).toBe('wss://external.example.com/socket.io/');
+    // No trailing slash: must match the external gateway's
+    // `@WebSocketGateway({ path: '/socket.io' })` (WsAdapter exact-matches the
+    // pathname against normalizePath('/socket.io') = '/socket.io').
+    expect(fakeSockets[0]?.url).toBe('wss://external.example.com/socket.io');
   });
 
   it('does not open WebSockets in forced demo mode', async () => {

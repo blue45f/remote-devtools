@@ -15,13 +15,15 @@ describe('convertLink', () => {
     // The query parameter "ws" is URI-encoded; decode and inspect.
     const query = new URL(url).searchParams.get('ws');
     expect(query).not.toBeNull();
-    expect(query).toBe('localhost:3000?room=my-room');
+    // No recordId -> live viewer path (/socket.io/).
+    expect(query).toBe('localhost:3000/socket.io/?room=my-room');
   });
 
   it('includes the recordMode + recordId fragment when given a recordId', () => {
     const url = convertLink('room42', 7);
     const query = new URL(url).searchParams.get('ws');
-    expect(query).toBe('localhost:3000?room=room42&recordMode=true&recordId=7');
+    // A recorded session replays from the internal /ws/playback gateway.
+    expect(query).toBe('localhost:3000/ws/playback?room=room42&recordMode=true&recordId=7');
   });
 
   it('URL-encodes special characters in the room name', () => {
@@ -29,13 +31,13 @@ describe('convertLink', () => {
     // The room name lives inside the doubly-encoded `ws` query param;
     // the outer searchParams.get already decodes one layer.
     const query = new URL(url).searchParams.get('ws');
-    expect(query).toBe('localhost:3000?room=a&b=c');
+    expect(query).toBe('localhost:3000/socket.io/?room=a&b=c');
   });
 
   it("treats a falsy recordId (0) as 'no record'", () => {
     const url = convertLink('r', 0);
     const query = new URL(url).searchParams.get('ws');
-    expect(query).toBe('localhost:3000?room=r');
+    expect(query).toBe('localhost:3000/socket.io/?room=r');
     expect(query?.includes('recordMode')).toBe(false);
   });
 });

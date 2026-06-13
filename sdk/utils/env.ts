@@ -15,19 +15,37 @@ declare global {
   }
 }
 
+// The SDK historically shipped a committed `sdk/.env.production` whose
+// placeholder hosts (e.g. `wss://your-external-domain.com`) were inlined by
+// `vite build` into the bundle. Such a baked placeholder is a non-empty string,
+// so it used to shadow the correct runtime same-origin default and the SDK
+// dialed a dead domain. Treat any unresolved placeholder as "unset" so the
+// dynamic same-origin fallback wins — the SDK ships ONE bundle to many origins,
+// so the runtime origin (or `window.REMOTE_DEBUG_SDK_ENV`) is the source of
+// truth for connection hosts, not whatever was inlined at build time.
+const PLACEHOLDER_HOST_RE = /your-(?:internal|external)-domain\.com/i;
+
 function readBuildEnv(key: SdkEnvKey): string | undefined {
+  let value: string | undefined;
   switch (key) {
     case 'VITE_INTERNAL_HOST':
-      return import.meta.env.VITE_INTERNAL_HOST;
+      value = import.meta.env.VITE_INTERNAL_HOST;
+      break;
     case 'VITE_INTERNAL_WS':
-      return import.meta.env.VITE_INTERNAL_WS;
+      value = import.meta.env.VITE_INTERNAL_WS;
+      break;
     case 'VITE_EXTERNAL_HOST':
-      return import.meta.env.VITE_EXTERNAL_HOST;
+      value = import.meta.env.VITE_EXTERNAL_HOST;
+      break;
     case 'VITE_EXTERNAL_WS':
-      return import.meta.env.VITE_EXTERNAL_WS;
+      value = import.meta.env.VITE_EXTERNAL_WS;
+      break;
     case 'VITE_FORCE_DEMO':
       return import.meta.env.VITE_FORCE_DEMO;
   }
+
+  if (value && PLACEHOLDER_HOST_RE.test(value)) return undefined;
+  return value;
 }
 
 export function readSdkEnv(key: SdkEnvKey, fallback: string, source?: SdkEnvSource): string {

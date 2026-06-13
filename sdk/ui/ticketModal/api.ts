@@ -24,7 +24,19 @@ export async function getUserTemplates(deviceId: string): Promise<UserTemplatesR
 
     // VPN 체크: 403 에러 확인
     if (fetchResponse.status === 403) {
-      console.error('[RemoteDebug-SDK][VPN Error] VPN 연결이 필요합니다.');
+      logger.remote.warn('[RemoteDebug-SDK] 템플릿 조회: VPN 연결이 필요할 수 있습니다 (403).');
+      return null;
+    }
+
+    // 404 = 해당 디바이스에 등록된 템플릿이 없음. 정상적인 "빈 상태"이므로
+    // 에러가 아니라 조용히 null을 반환해 호스트 콘솔을 더럽히지 않는다.
+    if (fetchResponse.status === 404) {
+      logger.remote.debug('[RemoteDebug-SDK] 등록된 사용자 템플릿이 없습니다 (404).');
+      return null;
+    }
+
+    if (!fetchResponse.ok) {
+      logger.remote.warn(`[RemoteDebug-SDK] 템플릿 목록 조회 실패 (HTTP ${fetchResponse.status}).`);
       return null;
     }
 
@@ -32,14 +44,12 @@ export async function getUserTemplates(deviceId: string): Promise<UserTemplatesR
 
     if (response.success && response.data) {
       return response.data;
-    } else {
-      console.error('[RemoteDebug-SDK][API Error] 템플릿 목록 조회 실패:', response);
-      return null;
     }
+    logger.remote.debug('[RemoteDebug-SDK] 템플릿 응답에 데이터가 없습니다.');
+    return null;
   } catch (error) {
-    // 네트워크 에러 (ERR_ADDRESS_UNREACHABLE, ERR_CONNECTION_REFUSED 등)
-    // Internal 서버 접근 실패는 VPN 미연결로 간주
-    console.error('[RemoteDebug-SDK][VPN Error] 네트워크 연결 실패 (VPN 필요):', error);
+    // 네트워크 에러(오프라인/연결 거부 등)는 흔한 빈-상태 경로이므로 debug 수준으로만 남긴다.
+    logger.remote.debug('[RemoteDebug-SDK] 템플릿 조회 네트워크 오류 (무시):', error);
     return null;
   }
 }
@@ -125,65 +135,36 @@ export async function loadTicketFormDataFromAPI({
   submitButton,
   createTicketDirect,
 }: LoadFormDataParams) {
-  const deviceId = commonInfo?.device?.deviceId || 'OPUD85CE1A76-1EE7-49DB-BE5C-81C3C72C3EF1';
+  // Fall back to the SDK-wide unknown-device sentinel (never a real, leaked id).
+  const deviceId = commonInfo?.device?.deviceId || 'unknown-device';
+
+  const showNoTemplates = () => {
+    loadingDiv.innerHTML =
+      '<div style="text-align: center; line-height: 1.6;">' +
+      '<div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">No ticket templates available</div>' +
+      '<div style="color: #a1a1aa;">Register a template in the admin panel and make sure the server is reachable, then try again.</div>' +
+      '</div>';
+    submitButton.style.display = 'none';
+    cancelButton.textContent = 'OK';
+  };
+
+  // Without a native device id there are no device-scoped templates to fetch, and
+  // /api/user-templates would 404 (logged by the browser). Skip the request
+  // entirely and show the empty state — keeps the host console clean.
+  if (deviceId === 'unknown-device') {
+    showNoTemplates();
+    return;
+  }
 
   try {
-    if (!deviceId) {
-      throw new Error('Device ID is missing.');
-    }
-
     // 1. 사용자 템플릿 목록 조회 및 선택 UI 생성
     const userTemplates = await getUserTemplates(deviceId);
 
-    // 템플릿 조회 실패 시 조기 리턴 (VPN 체크 포함)
-    if (!userTemplates) {
-      // VPN 에러인지 확인하기 위해 다시 시도
-      const apiHost = getAPIHost();
-      const testUrl = `${apiHost}/api/user-templates?deviceId=${encodeURIComponent(deviceId)}`;
-      try {
-        const testResponse = await fetch(testUrl, { signal: AbortSignal.timeout(10_000) });
-        if (testResponse.status === 403) {
-          // 403 에러 - VPN 필요
-          loadingDiv.innerHTML =
-            '<div style="text-align: center; line-height: 1.6;">' +
-            '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
-            '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation is unavailable.</div>' +
-            '<div style="color: #a1a1aa;">Check your server connection and try again.</div>' +
-            '</div>';
-          submitButton.style.display = 'none';
-          cancelButton.textContent = 'OK';
-          return;
-        }
-      } catch (e) {
-        // 네트워크 에러 (ERR_ADDRESS_UNREACHABLE 등) - VPN 필요
-        console.error('[RemoteDebug-SDK][VPN Error] 네트워크 연결 실패:', e);
-        loadingDiv.innerHTML =
-          '<div style="text-align: center; line-height: 1.6;">' +
-          '<div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">VPN Connection Required</div>' +
-          '<div style="color: #a1a1aa; margin-bottom: 8px;">Ticket creation requires a corporate VPN connection.</div>' +
-          '<div style="color: #a1a1aa;">Connect to VPN and try again.</div>' +
-          '</div>';
-        submitButton.style.display = 'none';
-        cancelButton.textContent = 'OK';
-        return;
-      }
-
-      loadingDiv.innerHTML =
-        'Could not load ticket template data.<br/>' + 'Check your server connection.';
-
-      submitButton.style.display = 'none';
-      cancelButton.textContent = 'OK';
-      return;
-    }
-
-    // 템플릿이 비어있는 경우 조기 리턴
-    if (userTemplates.ticketTemplateList.length === 0) {
-      console.error('[RemoteDebug-SDK][Template Error] 등록된 템플릿이 없음');
-      loadingDiv.innerHTML =
-        'No templates registered.<br/>' + 'Register a template in the admin panel first.';
-
-      submitButton.style.display = 'none';
-      cancelButton.textContent = 'OK';
+    // 템플릿이 없거나 불러오지 못한 경우: 재시도(추가 요청)로 원인을 분류하지 않는다.
+    // getUserTemplates가 이미 구체 원인(403/네트워크/404)을 logger로 남겼으므로,
+    // 여기서는 사용자에게 단일 빈-상태만 보여 콘솔 노이즈와 중복 요청을 없앤다.
+    if (!userTemplates || userTemplates.ticketTemplateList.length === 0) {
+      showNoTemplates();
       return;
     }
 
