@@ -43,9 +43,28 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const toParams = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
 
-const parseProtocolMessage = (message: string | object): ProtocolMessage | null => {
+const parseProtocolMessage = (message: unknown): ProtocolMessage | null => {
   try {
-    const parsed = typeof message === 'string' ? JSON.parse(message) : message;
+    // The `ws` library delivers text frames as a Buffer (not a string), so the
+    // DevTools playback requests (DOM.getDocument, Network.getResponseBody,
+    // Runtime.getProperties …) arrive as Buffers. Decode before parsing —
+    // otherwise `isRecord(buffer)` is true, `.method` is undefined, and every
+    // DevTools request is silently ignored (e.g. an empty Elements tree).
+    let parsed: unknown;
+    if (typeof message === 'string') {
+      parsed = JSON.parse(message);
+    } else if (Buffer.isBuffer(message)) {
+      parsed = JSON.parse(message.toString('utf8'));
+    } else if (ArrayBuffer.isView(message)) {
+      parsed = JSON.parse(
+        Buffer.from(message.buffer, message.byteOffset, message.byteLength).toString('utf8'),
+      );
+    } else if (isRecord(message)) {
+      // Already a parsed object (some callers pass `data.message`).
+      parsed = message;
+    } else {
+      return null;
+    }
     return isRecord(parsed) ? (parsed as ProtocolMessage) : null;
   } catch {
     return null;
