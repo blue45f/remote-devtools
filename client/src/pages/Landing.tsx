@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import {
   Activity,
   ArrowRight,
+  CheckCircle2,
   CircuitBoard,
   Code2,
   PlayCircle,
@@ -63,6 +64,7 @@ export default function LandingPage() {
         <DashboardMockup />
         <StatsStrip />
         <Features />
+        <TechnicalDeepDive />
         <QuickStart />
         <ClosingCta onEnterDemo={enterDemo} />
       </main>
@@ -93,6 +95,9 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
         <nav className="hidden md:flex items-center gap-x-3 lg:gap-x-5 ml-2 text-sm text-fg-subtle whitespace-nowrap">
           <a href="#features" className="hover:text-fg transition-colors">
             {t('landing.navFeatures')}
+          </a>
+          <a href="#architecture" className="hover:text-fg transition-colors">
+            {t('landing.navArchitecture')}
           </a>
           <a href="#quickstart" className="hover:text-fg transition-colors">
             {t('landing.navQuickStart')}
@@ -505,6 +510,296 @@ docker-compose up
 # Internal API: http://localhost:3000
 # External API: http://localhost:3001`,
 };
+
+/* ───────── Technical Deep Dive & Architecture ───────── */
+
+function TechnicalDeepDive() {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<'sdk' | 'gateway' | 'internal' | 'client'>('sdk');
+
+  const tabs = [
+    {
+      id: 'sdk' as const,
+      label: t('landing.archTabSdk'),
+      title: t('landing.archTabSdkTitle'),
+      subtitle: 'Browser Client',
+      desc: t('landing.archTabSdkDesc'),
+      bullets: [
+        t('landing.archTabSdkBullet1'),
+        t('landing.archTabSdkBullet2'),
+        t('landing.archTabSdkBullet3'),
+        t('landing.archTabSdkBullet4'),
+      ],
+      techs: ['rrweb v2', 'MutationObserver', 'Monkeypatching', 'TypeScript'],
+      icon: Code2,
+    },
+    {
+      id: 'gateway' as const,
+      label: t('landing.archTabGateway'),
+      title: t('landing.archTabGatewayTitle'),
+      subtitle: 'Port 3001',
+      desc: t('landing.archTabGatewayDesc'),
+      bullets: [
+        t('landing.archTabGatewayBullet1'),
+        t('landing.archTabGatewayBullet2'),
+        t('landing.archTabGatewayBullet3'),
+        t('landing.archTabGatewayBullet4'),
+      ],
+      techs: ['NestJS 11', 'WebSockets', '@nestjs/throttler', 'AWS S3'],
+      icon: Radio,
+    },
+    {
+      id: 'internal' as const,
+      label: t('landing.archTabInternal'),
+      title: t('landing.archTabInternalTitle'),
+      subtitle: 'Port 3000 & DB',
+      desc: t('landing.archTabInternalDesc'),
+      bullets: [
+        t('landing.archTabInternalBullet1'),
+        t('landing.archTabInternalBullet2'),
+        t('landing.archTabInternalBullet3'),
+        t('landing.archTabInternalBullet4'),
+      ],
+      techs: ['NestJS 11', 'PostgreSQL', 'TypeORM', 'OpenAPI / Swagger'],
+      icon: ServerCog,
+    },
+    {
+      id: 'client' as const,
+      label: t('landing.archTabClient'),
+      title: t('landing.archTabClientTitle'),
+      subtitle: 'Port 8080',
+      desc: t('landing.archTabClientDesc'),
+      bullets: [
+        t('landing.archTabClientBullet1'),
+        t('landing.archTabClientBullet2'),
+        t('landing.archTabClientBullet3'),
+        t('landing.archTabClientBullet4'),
+      ],
+      techs: ['React 19', 'Chromium DevTools UI', 'rrweb-player', 'Radix UI'],
+      icon: TerminalSquare,
+    },
+  ];
+
+  const current = tabs.find((x) => x.id === activeTab) || tabs[0];
+
+  return (
+    <section
+      id="architecture"
+      className="py-20 lg:py-28 border-t border-border bg-bg animate-fadeIn"
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes archDash {
+          to {
+            stroke-dashoffset: -28;
+          }
+        }
+        .animate-dash {
+          animation: archDash 1.2s linear infinite;
+        }
+      `,
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 lg:px-6">
+        <div className="max-w-2xl mb-12">
+          <Badge variant="accent" size="sm" className="mb-3 uppercase tracking-wider">
+            {t('landing.archBadge')}
+          </Badge>
+          <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
+            {t('landing.archTitle')}
+          </h2>
+          <p className="text-fg-subtle">{t('landing.archSubtitle')}</p>
+        </div>
+
+        {/* Node Flow Map */}
+        <div className="mb-12">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-1">
+            {tabs.map((tab, idx) => {
+              const Icon = tab.icon;
+              const isSelected = activeTab === tab.id;
+              return (
+                <div
+                  key={tab.id}
+                  className="flex flex-col lg:flex-row flex-1 items-stretch lg:items-center"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'flex-1 text-left p-5 rounded-xl border transition-all duration-300 select-none cursor-pointer outline-none relative overflow-hidden',
+                      isSelected
+                        ? 'border-accent bg-accent-soft/20 dark:bg-accent-soft/5 shadow-md'
+                        : 'border-border bg-surface hover:border-border-strong hover:bg-bg-subtle',
+                    )}
+                  >
+                    {/* Glowing highlight indicator */}
+                    {isSelected && <div className="absolute top-0 left-0 w-1 h-full bg-accent" />}
+
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'size-10 rounded-lg border flex items-center justify-center shrink-0 transition-colors',
+                          isSelected
+                            ? 'bg-accent text-accent-fg border-accent'
+                            : 'bg-bg-muted text-fg-subtle border-border',
+                        )}
+                      >
+                        <Icon className="size-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] uppercase font-mono tracking-wider text-fg-faint">
+                          {tab.subtitle}
+                        </div>
+                        <h3 className="text-sm font-semibold truncate mt-0.5">{tab.label}</h3>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Connectors */}
+                  {idx < tabs.length - 1 && (
+                    <>
+                      <DesktopConnector
+                        isActive={activeTab === tab.id || activeTab === tabs[idx + 1].id}
+                      />
+                      <MobileConnector
+                        isActive={activeTab === tab.id || activeTab === tabs[idx + 1].id}
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected Tab Details */}
+        <div className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border bg-bg-subtle">
+            <span className="size-2 rounded-full bg-[#ff5f57]" />
+            <span className="size-2 rounded-full bg-[#febc2e]" />
+            <span className="size-2 rounded-full bg-[#28c840]" />
+            <span className="ml-3 text-[11px] font-mono text-fg-faint uppercase tracking-wider">
+              Technical Specification
+            </span>
+          </div>
+
+          <div className="p-6 lg:p-8">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="grid grid-cols-1 lg:grid-cols-[1fr_1.8fr] gap-8 lg:gap-12"
+            >
+              {/* Left Column: Tech Stack & Overview */}
+              <div className="flex flex-col gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">{current.title}</h3>
+                  <p className="text-sm text-fg-subtle leading-relaxed">{current.desc}</p>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-fg-faint mb-3">
+                    Core Technologies
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {current.techs.map((tech) => (
+                      <span
+                        key={tech}
+                        className="px-2.5 py-1 rounded bg-bg-muted border border-border text-xs font-medium font-mono text-fg-subtle"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Detailed Bullets (Seminar style) */}
+              <div className="border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-8 flex flex-col gap-4">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-fg-faint mb-1 lg:mb-2">
+                  Technical Breakdown
+                </h4>
+                <div className="space-y-4">
+                  {current.bullets.map((bullet, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="size-5 rounded-full bg-success-soft text-success border border-success/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle2 className="size-3.5" />
+                      </div>
+                      <div className="text-sm leading-relaxed text-fg-subtle">{bullet}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DesktopConnector({ isActive }: { isActive: boolean }) {
+  return (
+    <div className="hidden lg:flex flex-1 items-center justify-center min-w-[32px] max-w-[80px]">
+      <svg viewBox="0 0 60 20" className="w-full h-5 overflow-visible" fill="none">
+        <path
+          d="M0,10 L60,10"
+          stroke="hsl(var(--border-strong))"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+        />
+        <path
+          d="M0,10 L60,10"
+          stroke="hsl(var(--accent))"
+          strokeWidth="2.5"
+          strokeDasharray="8 6"
+          className={cn(
+            'opacity-0 transition-opacity duration-300',
+            isActive && 'opacity-100 animate-dash',
+          )}
+        />
+        <polygon
+          points="54,7 60,10 54,13"
+          fill={isActive ? 'hsl(var(--accent))' : 'hsl(var(--border-strong))'}
+          className="transition-colors duration-300"
+        />
+      </svg>
+    </div>
+  );
+}
+
+function MobileConnector({ isActive }: { isActive: boolean }) {
+  return (
+    <div className="flex lg:hidden justify-center py-2">
+      <svg viewBox="0 0 20 40" className="w-5 h-10 overflow-visible" fill="none">
+        <path
+          d="M10,0 L10,40"
+          stroke="hsl(var(--border-strong))"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+        />
+        <path
+          d="M10,0 L10,40"
+          stroke="hsl(var(--accent))"
+          strokeWidth="2.5"
+          strokeDasharray="8 6"
+          className={cn(
+            'opacity-0 transition-opacity duration-300',
+            isActive && 'opacity-100 animate-dash',
+          )}
+        />
+        <polygon
+          points="7,34 10,40 13,34"
+          fill={isActive ? 'hsl(var(--accent))' : 'hsl(var(--border-strong))'}
+          className="transition-colors duration-300"
+        />
+      </svg>
+    </div>
+  );
+}
 
 function QuickStart() {
   const { t } = useTranslation();
