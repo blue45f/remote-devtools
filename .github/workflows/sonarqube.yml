@@ -25,26 +25,36 @@ jobs:
       SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
+      - name: Check SonarQube secrets
+        id: secrets
+        run: |
+          if [ -n "$SONAR_HOST_URL" ] && [ -n "$SONAR_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SonarQube secrets not configured; skipping scan."
+          fi
+
       - uses: actions/checkout@v6
+        if: steps.secrets.outputs.configured == 'true'
         with:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
+        if: steps.secrets.outputs.configured == 'true'
 
       - uses: actions/setup-node@v6
+        if: steps.secrets.outputs.configured == 'true'
         with:
           node-version: 24
           cache: pnpm
 
       - name: Install dependencies
+        if: steps.secrets.outputs.configured == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Verify SonarQube secrets
-        run: |
-          test -n "$SONAR_HOST_URL"
-          test -n "$SONAR_TOKEN"
-
       - name: SonarQube scan
+        if: steps.secrets.outputs.configured == 'true'
         uses: SonarSource/sonarqube-scan-action@v8.2.0
         env:
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
