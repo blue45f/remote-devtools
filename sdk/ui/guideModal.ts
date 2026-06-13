@@ -30,7 +30,7 @@ export function createGuideModal(onClose: () => void) {
   });
 
   const title = document.createElement('h2');
-  title.textContent = 'Quick Guide';
+  title.textContent = '빠른 가이드';
   Object.assign(title.style, {
     margin: '0',
     fontSize: '18px',
@@ -76,26 +76,25 @@ export function createGuideModal(onClose: () => void) {
   content.innerHTML = `
     <div style="display: flex; flex-direction: column; gap: 16px; font-family: ${tokens.font.system};">
       <div style="background: ${tokens.color.bg.elevated}; border-left: 3px solid ${tokens.color.accent.violet}; padding: 16px; border-radius: ${tokens.radius.sm};">
-        <h3 style="margin: 0 0 8px 0; color: #c4b5fd; font-size: 14px; font-weight: 600;">What is this tool?</h3>
+        <h3 style="margin: 0 0 8px 0; color: #c4b5fd; font-size: 14px; font-weight: 600;">이 도구는 무엇인가요?</h3>
         <p style="margin: 0; color: ${tokens.color.text.muted}; line-height: 1.6; font-size: 13px;">
-          A remote debugging toolkit that records and shares web page issues in real time, enabling efficient cross-team collaboration.
+          웹 페이지의 문제를 실시간으로 기록하고 공유하는 원격 디버깅 도구입니다. 팀 간 협업을 효율적으로 돕습니다.
         </p>
         <p style="margin: 8px 0 0 0; color: ${tokens.color.text.dim}; line-height: 1.6; font-size: 13px;">
-          Refer to the project documentation for detailed guides.
+          자세한 사용법은 프로젝트 문서를 참고하세요.
         </p>
       </div>
 
       <div style="background: ${tokens.color.bg.elevated}; border-left: 3px solid ${tokens.color.accent.amber}; padding: 16px; border-radius: ${tokens.radius.sm};">
-        <h3 style="margin: 0 0 12px 0; color: #fcd34d; font-size: 14px; font-weight: 600;">Key Features</h3>
+        <h3 style="margin: 0 0 12px 0; color: #fcd34d; font-size: 14px; font-weight: 600;">주요 기능</h3>
         <ul style="margin: 0; padding-left: 20px; color: ${tokens.color.text.muted}; line-height: 2; font-size: 13px;">
-          <li><strong style="color: ${tokens.color.text.secondary};">Create Ticket:</strong> Generate issue tickets with recording sessions and device info. (Setup required)</li>
-          <li><strong style="color: ${tokens.color.text.secondary};">Start Recording:</strong> Capture and store network activity remotely, then share via URL.</li>
-          <li><strong style="color: ${tokens.color.text.secondary};">Live Session:</strong> Share your screen in real time.</li>
-          <li><strong style="color: ${tokens.color.text.secondary};">Network Rewrite:</strong> Intercept and modify API responses to test different scenarios.</li>
+          <li><strong style="color: ${tokens.color.text.secondary};">티켓 생성:</strong> 녹화 세션과 기기 정보를 담아 이슈 티켓을 생성합니다. (설정 필요)</li>
+          <li><strong style="color: ${tokens.color.text.secondary};">녹화 시작:</strong> 네트워크·콘솔·DOM 활동을 원격으로 캡처·저장한 뒤 URL로 공유합니다.</li>
+          <li><strong style="color: ${tokens.color.text.secondary};">네트워크 리라이트:</strong> API 응답을 가로채 수정하며 다양한 시나리오를 테스트합니다.</li>
         </ul>
         <hr style="margin: 12px 0; border: none; border-top: 1px solid ${tokens.color.border.subtle};" />
         <p style="margin: 0; color: ${tokens.color.text.dim}; line-height: 1.6; font-size: 13px;">
-          Share recording session or ticket URLs with your team via any messenger.
+          녹화 세션 또는 티켓 URL을 메신저로 팀과 공유하세요.
         </p>
       </div>
     </div>
@@ -111,7 +110,7 @@ export function createGuideModal(onClose: () => void) {
   });
 
   const confirmButton = document.createElement('button');
-  confirmButton.textContent = 'Got it';
+  confirmButton.textContent = '확인';
   applyButtonStyles(confirmButton, 'primary');
   confirmButton.style.padding = '10px 24px';
 

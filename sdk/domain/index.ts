@@ -217,6 +217,17 @@ export class ChromeDomain {
   }
 
   /**
+   * Push the full DOM snapshot once on record start so the recorded session's
+   * Elements panel populates during DevTools playback (see Dom.flushEntireDomForRecord).
+   */
+  public flushDomForRecord(): void {
+    const domDomain = this.domains.find((domain) => domain.namespace === 'DOM') as Dom | undefined;
+    if (domDomain && typeof domDomain.flushEntireDomForRecord === 'function') {
+      domDomain.flushEntireDomForRecord();
+    }
+  }
+
+  /**
    * 모든 도메인 비활성화 - 연결 해제 시 상태 초기화
    */
   public disable(): void {
