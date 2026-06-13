@@ -1,127 +1,82 @@
-import { Transform } from 'class-transformer';
-import {
-  IsEmail,
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-import type {
-  AccountStatus,
-  OrganizationMemberRole,
-  OrganizationMemberStatus,
-} from '@remote-platform/entity';
+// Trim + lowercase, then validate as an email (matches the old
+// `@Transform(trim().toLowerCase())` + `@IsEmail()` + `@MaxLength(320)`).
+const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email().max(320));
 
-export class RegisterAccountDto {
-  @IsEmail()
-  @MaxLength(320)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
-  public email: string;
+// Trimmed, non-empty display name capped at 120 chars.
+const trimmedName = z.string().trim().min(1).max(120);
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public name: string;
+const organizationSlug = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(
+    z
+      .string()
+      .max(64)
+      .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/),
+  );
 
-  @IsString()
-  @MinLength(8)
-  @MaxLength(128)
-  public password: string;
+const organizationMemberRole = z.enum(['owner', 'admin', 'member', 'viewer']);
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public organizationName?: string;
+export const registerAccountSchema = z
+  .object({
+    email: normalizedEmail,
+    name: trimmedName,
+    password: z.string().min(8).max(128),
+    organizationName: z.string().trim().max(200).optional(),
+    organizationSlug: organizationSlug.optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  @Matches(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
-  public organizationSlug?: string;
-}
+export class RegisterAccountDto extends createZodDto(registerAccountSchema) {}
 
-export class LoginAccountDto {
-  @IsEmail()
-  @MaxLength(320)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
-  public email: string;
+export const loginAccountSchema = z
+  .object({
+    email: normalizedEmail,
+    password: z.string().min(1).max(128),
+  })
+  .strict();
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(128)
-  public password: string;
-}
+export class LoginAccountDto extends createZodDto(loginAccountSchema) {}
 
-export class UpdateMeDto {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public name?: string;
+export const updateMeSchema = z
+  .object({
+    name: trimmedName.optional(),
+    password: z.string().min(8).max(128).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsString()
-  @MinLength(8)
-  @MaxLength(128)
-  public password?: string;
-}
+export class UpdateMeDto extends createZodDto(updateMeSchema) {}
 
-export class InviteOrganizationMemberDto {
-  @IsEmail()
-  @MaxLength(320)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
-  public email: string;
+export const inviteOrganizationMemberSchema = z
+  .object({
+    email: normalizedEmail,
+    name: trimmedName.optional(),
+    role: organizationMemberRole.optional(),
+    status: z.enum(['active', 'invited', 'suspended']).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public name?: string;
+export class InviteOrganizationMemberDto extends createZodDto(inviteOrganizationMemberSchema) {}
 
-  @IsOptional()
-  @IsIn(['owner', 'admin', 'member', 'viewer'])
-  public role?: OrganizationMemberRole;
+export const updateOrganizationMemberSchema = z
+  .object({
+    name: trimmedName.optional(),
+    role: organizationMemberRole.optional(),
+    status: z.enum(['active', 'invited', 'suspended', 'deleted']).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsIn(['active', 'invited', 'suspended'])
-  public status?: Exclude<OrganizationMemberStatus, 'deleted'>;
-}
+export class UpdateOrganizationMemberDto extends createZodDto(updateOrganizationMemberSchema) {}
 
-export class UpdateOrganizationMemberDto {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public name?: string;
+export const adminUpdateAccountSchema = z
+  .object({
+    name: trimmedName.optional(),
+    status: z.enum(['active', 'suspended', 'deleted']).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsIn(['owner', 'admin', 'member', 'viewer'])
-  public role?: OrganizationMemberRole;
-
-  @IsOptional()
-  @IsIn(['active', 'invited', 'suspended', 'deleted'])
-  public status?: OrganizationMemberStatus;
-}
-
-export class AdminUpdateAccountDto {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public name?: string;
-
-  @IsOptional()
-  @IsIn(['active', 'suspended', 'deleted'])
-  public status?: AccountStatus;
-}
+export class AdminUpdateAccountDto extends createZodDto(adminUpdateAccountSchema) {}

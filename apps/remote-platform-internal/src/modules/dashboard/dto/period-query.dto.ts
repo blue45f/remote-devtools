@@ -1,23 +1,23 @@
-import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class PeriodQueryDto {
-  /** Query period granularity */
-  @IsIn(['day', 'week', 'month'])
-  readonly period: 'day' | 'week' | 'month';
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-  /** Start date (YYYY-MM-DD) */
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'startDate must be in YYYY-MM-DD format',
+export const periodQuerySchema = z
+  .object({
+    /** Query period granularity */
+    period: z.enum(['day', 'week', 'month']),
+    /** Start date (YYYY-MM-DD) */
+    startDate: z
+      .string()
+      .regex(DATE_PATTERN, { message: 'startDate must be in YYYY-MM-DD format' })
+      .optional(),
+    /** End date (YYYY-MM-DD) */
+    endDate: z
+      .string()
+      .regex(DATE_PATTERN, { message: 'endDate must be in YYYY-MM-DD format' })
+      .optional(),
   })
-  readonly startDate?: string;
+  .strict();
 
-  /** End date (YYYY-MM-DD) */
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'endDate must be in YYYY-MM-DD format',
-  })
-  readonly endDate?: string;
-}
+export class PeriodQueryDto extends createZodDto(periodQuerySchema) {}

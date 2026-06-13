@@ -1,61 +1,57 @@
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
 import { describe, expect, it } from 'vitest';
 
-import { CheckoutDto, PortalDto } from './billing.dto';
+import { checkoutSchema, portalSchema } from './billing.dto';
 
 describe('Billing DTOs', () => {
-  describe('CheckoutDto', () => {
-    it('trims string fields via transformation', async () => {
-      const dto = plainToInstance(CheckoutDto, {
+  describe('checkoutSchema', () => {
+    it('trims string fields via transformation', () => {
+      const result = checkoutSchema.safeParse({
         priceId: '  price_pro  ',
         successUrl: 'https://app.example.com/  ',
         cancelUrl: '  https://app.example.com/cancel  ',
       });
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(0);
-      expect(dto).toEqual({
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
         priceId: 'price_pro',
         successUrl: 'https://app.example.com/',
         cancelUrl: 'https://app.example.com/cancel',
       });
     });
 
-    it('rejects missing/blank checkout fields', async () => {
-      const dto = plainToInstance(CheckoutDto, {
+    it('rejects missing/blank checkout fields', () => {
+      const result = checkoutSchema.safeParse({
         priceId: '   ',
         successUrl: '',
         cancelUrl: 'https://app.example.com/cancel',
       });
 
-      const errors = await validate(dto);
-      const keys = new Set(errors.map((error) => error.property));
+      expect(result.success).toBe(false);
+      const keys = new Set(result.error?.issues.map((issue) => issue.path[0]));
       expect(keys.has('priceId')).toBe(true);
       expect(keys.has('successUrl')).toBe(true);
       expect(keys.has('cancelUrl')).toBe(false);
     });
   });
 
-  describe('PortalDto', () => {
-    it('trims and validates returnUrl', async () => {
-      const dto = plainToInstance(PortalDto, {
+  describe('portalSchema', () => {
+    it('trims and validates returnUrl', () => {
+      const result = portalSchema.safeParse({
         returnUrl: '  https://app.example.com/account  ',
       });
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(0);
-      expect(dto.returnUrl).toBe('https://app.example.com/account');
+      expect(result.success).toBe(true);
+      expect(result.data?.returnUrl).toBe('https://app.example.com/account');
     });
 
-    it('rejects blank portal returnUrl', async () => {
-      const dto = plainToInstance(PortalDto, {
+    it('rejects blank portal returnUrl', () => {
+      const result = portalSchema.safeParse({
         returnUrl: '   ',
       });
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(1);
-      expect(errors[0].property).toBe('returnUrl');
+      expect(result.success).toBe(false);
+      expect(result.error?.issues).toHaveLength(1);
+      expect(result.error?.issues[0].path[0]).toBe('returnUrl');
     });
   });
 });
