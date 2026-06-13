@@ -7,7 +7,7 @@ describe('buildDevToolsLink', () => {
     const url = buildDevToolsLink('checkout-flow', undefined, 'http://localhost:3000');
     expect(url).toBe(
       'http://localhost:3000/tabbed-debug/?ws=' +
-        encodeURIComponent('localhost:3000?room=checkout-flow'),
+        encodeURIComponent('localhost:3000/socket.io/?room=checkout-flow'),
     );
   });
 
@@ -33,6 +33,8 @@ describe('buildDevToolsLink', () => {
 
   it('encodes special characters in the room identifier', () => {
     const url = buildDevToolsLink('room with spaces & %', undefined, 'http://localhost:3000');
-    expect(url).toContain(encodeURIComponent('localhost:3000?room=room with spaces & %'));
+    expect(url).toContain(
+      encodeURIComponent('localhost:3000/socket.io/?room=room with spaces & %'),
+    );
   });
 });
