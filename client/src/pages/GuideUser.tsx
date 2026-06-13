@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/ui/card';
 import { Steps } from '@/components/ui/steps';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { USER_GUIDE_TABS } from '@/features/guide/content';
+import { USER_GUIDE_TABS } from '@/domains/guide/content';
 
 export default function GuideUser() {
   const { t, i18n } = useTranslation();
