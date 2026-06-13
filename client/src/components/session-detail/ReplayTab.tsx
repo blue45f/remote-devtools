@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toaster';
 import { apiFetch } from '@/lib/api';
+import { copyToClipboard } from '@/lib/clipboard';
 import { REPLAY_SPEEDS, useReplayPrefs } from '@/lib/replay-prefs';
 import { cn } from '@/lib/utils';
 
@@ -1075,7 +1076,7 @@ function ShareReplayLinkButton({
     const url = playhead > 0 ? `${base}?t=${playhead}` : base;
 
     try {
-      await navigator.clipboard.writeText(url);
+      await copyToClipboard(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
       toast.success(t('sessionDetail.shareLinkCopied'), {
