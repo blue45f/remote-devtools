@@ -13,6 +13,7 @@ import {
   liveSeedSessions,
   recordSeedSessions,
 } from './seed';
+import { resolveAdminSeed } from './seed-admin';
 import { buildSeedRrwebEvents } from './seed-rrweb';
 
 interface DemoComment {
@@ -120,6 +121,9 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
   // also has this fallback but reaching it here keeps the test surface
   // visible.
   const method = (init?.method ?? 'GET').toUpperCase();
+  // Unified admin surfaces (remote-devtools, profile, team) seed first.
+  const adminSeed = resolveAdminSeed<T>(path, init, method);
+  if (adminSeed !== undefined) return adminSeed;
   if (method === 'PUT' && /^\/sessions\/record\/\d+\/tags$/.test(path)) {
     const id = Number(path.split('/')[3]);
     try {

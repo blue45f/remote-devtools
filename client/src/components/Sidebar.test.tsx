@@ -23,9 +23,15 @@ afterEach(() => {
 describe('Sidebar', () => {
   it('renders the brand and every nav item', () => {
     renderWithProviders(<Sidebar />);
-    expect(screen.getByText('Remote DevTools')).toBeInTheDocument();
+    // "Remote DevTools" is both the brand wordmark and (now) a nav item, so it
+    // appears more than once — assert at least the brand is present.
+    expect(screen.getAllByText('Remote DevTools').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /Dashboard/ })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: /Sessions/ })).toHaveAttribute('href', '/sessions');
+    expect(screen.getByRole('link', { name: /Remote DevTools/ })).toHaveAttribute(
+      'href',
+      '/remote-devtools',
+    );
     expect(screen.getByRole('link', { name: /Module SDK/ })).toHaveAttribute(
       'href',
       '/sandbox/module',
@@ -33,6 +39,10 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /Script SDK/ })).toHaveAttribute(
       'href',
       '/sandbox/script',
+    );
+    expect(screen.getByRole('link', { name: /My profile/ })).toHaveAttribute(
+      'href',
+      '/settings/profile',
     );
   });
 

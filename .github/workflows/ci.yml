@@ -119,22 +119,6 @@ jobs:
           path: sdk/coverage/
           retention-days: 14
 
-  debug-recorder-admin-check:
-    name: Debug recorder admin lint/typecheck/build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm --filter debug-recorder-admin lint
-      - run: pnpm --filter debug-recorder-admin typecheck
-      - run: pnpm --filter debug-recorder-admin build
-
   figma-plugin-check:
     name: Figma plugin lint/typecheck/build
     runs-on: ubuntu-latest
@@ -152,7 +136,7 @@ jobs:
       - run: pnpm --filter figma-plugin build
 
   build:
-    name: Build (backend + React apps + plugins + SDK + admin)
+    name: Build (backend + React apps + plugins + SDK)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
@@ -161,7 +145,6 @@ jobs:
       - client-typecheck
       - client-test
       - sdk-check
-      - debug-recorder-admin-check
       - figma-plugin-check
     steps:
       - uses: actions/checkout@v6
@@ -187,7 +170,6 @@ jobs:
       - client-typecheck
       - client-test
       - sdk-check
-      - debug-recorder-admin-check
       - figma-plugin-check
       - build
     if: always()
@@ -204,7 +186,6 @@ jobs:
             "client-typecheck:${{ needs.client-typecheck.result }}"
             "client-test:${{ needs.client-test.result }}"
             "sdk-check:${{ needs.sdk-check.result }}"
-            "debug-recorder-admin-check:${{ needs.debug-recorder-admin-check.result }}"
             "figma-plugin-check:${{ needs.figma-plugin-check.result }}"
             "build:${{ needs.build.result }}"
           )
