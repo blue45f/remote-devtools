@@ -1031,6 +1031,7 @@ export class RemoteDebugger {
       this.domain.flushNetworkCacheForRecord();
       this.domain.flushConsoleCacheForRecord();
       this.domain.flushSessionReplayForRecord();
+      this.domain.flushDomForRecord();
     }
 
     // 녹화 세션 생성 완료 플래그 설정

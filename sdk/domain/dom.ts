@@ -96,6 +96,29 @@ export class Dom extends BaseDomain {
     };
   }
 
+  /**
+   * Proactively push the full DOM document to the server when a recording
+   * starts, so a recorded session's Elements panel populates during playback.
+   * Without this the `entireDom` is only stored if a live viewer happened to
+   * request DOM.getDocument during the recording — pure recordings (no viewer)
+   * would replay with an empty Elements tree. Best-effort; never throws.
+   */
+  public flushEntireDomForRecord(): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    // Only for real record rooms (not the pre-record Buffer room).
+    if (!this.room || this.room.startsWith('Buffer-')) return;
+    try {
+      this.socket.send(
+        JSON.stringify({
+          event: 'saveEntireDom',
+          data: { room: this.room, dom: this.getDocument() },
+        }),
+      );
+    } catch {
+      /* best-effort — DOM capture must never disrupt recording */
+    }
+  }
+
   public requestChildNodes({ nodeId }: { nodeId: number }) {
     if (nodes.hasRequestedChildNode.has(nodeId)) {
       return;
