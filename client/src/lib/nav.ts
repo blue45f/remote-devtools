@@ -1,23 +1,27 @@
 import {
+  BookOpen,
+  Code2,
+  Compass,
   LayoutDashboard,
   PlaySquare,
+  Radio,
   Sparkles,
   TerminalSquare,
+  UserCog,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
+
+import type { FeatureFlag } from '@/lib/config';
+import type { Role } from '@/lib/roles';
 
 export interface NavItem {
   to: string;
   /**
    * i18n key for the item label, resolved with `t(item.labelKey)` at render.
-   * Reuses existing `sidebar.*` keys for Dashboard/Sessions; `nav.*` for the
-   * SDK playground items.
    */
   labelKey: string;
-  /**
-   * Korean-first fallback label for non-`t()` consumers. UI chrome should
-   * still prefer `t(labelKey)`.
-   */
+  /** Korean-first fallback label for non-`t()` consumers. */
   label: string;
   /** Extra filter tokens for command-palette search in secondary languages. */
   searchTokens?: string[];
@@ -25,6 +29,10 @@ export interface NavItem {
   badge?: string;
   /** Displayed-only keyboard shortcut hint (e.g. "G D"). */
   shortcut?: string;
+  /** Restrict the item to these roles. Absent → visible to everyone. */
+  roles?: readonly Role[];
+  /** Hide the item unless the named feature flag is on. */
+  flag?: FeatureFlag;
 }
 
 export interface NavSection {
@@ -37,6 +45,8 @@ export interface NavSection {
 
 export const navSections: NavSection[] = [
   {
+    labelKey: 'sidebar.sectionOperate',
+    label: '운영',
     items: [
       {
         to: '/dashboard',
@@ -53,6 +63,15 @@ export const navSections: NavSection[] = [
         searchTokens: ['Sessions'],
         icon: PlaySquare,
         shortcut: 'G S',
+      },
+      {
+        to: '/remote-devtools',
+        labelKey: 'sidebar.remoteDevtools',
+        label: '원격 DevTools',
+        searchTokens: ['Remote DevTools', 'CDP', 'live console'],
+        icon: Radio,
+        shortcut: 'G R',
+        flag: 'remoteDevtools',
       },
     ],
   },
@@ -73,6 +92,55 @@ export const navSections: NavSection[] = [
         label: '스크립트 SDK',
         searchTokens: ['Script SDK'],
         icon: TerminalSquare,
+      },
+    ],
+  },
+  {
+    labelKey: 'sidebar.sectionGuide',
+    label: '가이드',
+    items: [
+      {
+        to: '/guide',
+        labelKey: 'sidebar.guideFeatures',
+        label: '기능 소개',
+        searchTokens: ['Feature introduction', '기능'],
+        icon: Compass,
+      },
+      {
+        to: '/guide/user',
+        labelKey: 'sidebar.guideUser',
+        label: '사용자 가이드',
+        searchTokens: ['User guide'],
+        icon: BookOpen,
+      },
+      {
+        to: '/guide/dev',
+        labelKey: 'sidebar.guideDev',
+        label: '개발자 가이드',
+        searchTokens: ['Developer guide', 'SDK'],
+        icon: Code2,
+      },
+    ],
+  },
+  {
+    labelKey: 'sidebar.sectionSettings',
+    label: '설정',
+    items: [
+      {
+        to: '/settings/profile',
+        labelKey: 'sidebar.settingsProfile',
+        label: '내 정보',
+        searchTokens: ['Profile', 'devices', 'ticket template', '디바이스', '템플릿'],
+        icon: UserCog,
+      },
+      {
+        to: '/settings/team',
+        labelKey: 'sidebar.settingsTeam',
+        label: '팀 관리',
+        searchTokens: ['Team', 'members', 'organization', '멤버', '조직'],
+        icon: Users,
+        roles: ['owner', 'admin'],
+        flag: 'team',
       },
     ],
   },

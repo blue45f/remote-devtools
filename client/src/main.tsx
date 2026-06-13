@@ -23,6 +23,12 @@ const SignUp = lazy(() => import('@/pages/SignUp'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Sessions = lazy(() => import('@/pages/Sessions'));
 const SessionDetail = lazy(() => import('@/pages/SessionDetail'));
+const RemoteDevTools = lazy(() => import('@/pages/RemoteDevTools'));
+const GuideFeatures = lazy(() => import('@/pages/GuideFeatures'));
+const GuideUser = lazy(() => import('@/pages/GuideUser'));
+const GuideDev = lazy(() => import('@/pages/GuideDev'));
+const SettingsProfile = lazy(() => import('@/pages/SettingsProfile'));
+const SettingsTeam = lazy(() => import('@/pages/SettingsTeam'));
 const SdkModule = lazy(() => import('@/pages/SdkModule'));
 const SdkScript = lazy(() => import('@/pages/SdkScript'));
 const Policy = lazy(() => import('@/pages/Policy'));
@@ -69,10 +75,20 @@ createRoot(rootElement).render(
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="sessions" element={<Sessions />} />
                   <Route path="sessions/:id" element={<SessionDetail />} />
+                  <Route path="remote-devtools" element={<RemoteDevTools />} />
+                  <Route path="guide" element={<GuideFeatures />} />
+                  <Route path="guide/user" element={<GuideUser />} />
+                  <Route path="guide/dev" element={<GuideDev />} />
+                  <Route path="settings/profile" element={<SettingsProfile />} />
+                  <Route path="settings/team" element={<SettingsTeam />} />
                   <Route path="sandbox/module" element={<SdkModule />} />
                   <Route path="sandbox/script" element={<SdkScript />} />
                   {/* Legacy redirects (preserve old links) */}
                   <Route path="test" element={<Navigate to="/sandbox/script" replace />} />
+                  <Route path="user-info" element={<Navigate to="/settings/profile" replace />} />
+                  <Route path="feature-introduction" element={<Navigate to="/guide" replace />} />
+                  <Route path="user-guide" element={<Navigate to="/guide/user" replace />} />
+                  <Route path="dev-guide" element={<Navigate to="/guide/dev" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

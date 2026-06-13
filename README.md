@@ -81,8 +81,7 @@ Vitest 기반.
 | 영역 | 파일 | 케이스 |
 |------|------|--------|
 | 백엔드 | 44 | 350+ |
-| 클라이언트 (`client/`) | 45+ | 158+ |
-| 관리자 대시보드 (`debug-recorder-admin/`) | 별도 패키지 | typecheck/build |
+| 클라이언트 (`client/`, 어드민 통합) | 45+ | 158+ |
 | **합계** | **89+** | **510+** |
 
 ```bash
@@ -134,8 +133,7 @@ remote-devtools/
 │   ├── constants/                  # 상수
 │   └── interfaces/                 # 타입
 ├── sdk/                            # 프론트엔드 SDK (Vite 빌드)
-├── client/                         # React 19 + Vite 클라이언트
-├── debug-recorder-admin/           # Debug Recorder 관리자 대시보드
+├── client/                         # React 19 + Vite 통합 클라이언트 (운영 콘솔 + 어드민)
 ├── devtools-frontend/              # Chrome DevTools UI
 ├── figma-plugin/                   # Figma 플러그인
 ├── eslint.config.mjs               # ESLint flat config

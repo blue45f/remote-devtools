@@ -4,6 +4,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, type MemoryRouterProps } from 'react-router-dom';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AuthProvider } from '@/lib/auth';
 
 interface WrapperOptions {
   routerProps?: MemoryRouterProps;
@@ -28,9 +29,11 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter {...routerProps}>
-          <TooltipProvider>{children}</TooltipProvider>
-        </MemoryRouter>
+        <AuthProvider>
+          <MemoryRouter {...routerProps}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </MemoryRouter>
+        </AuthProvider>
       </QueryClientProvider>
     );
   }

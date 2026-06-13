@@ -16,7 +16,6 @@
   - `client-typecheck`
   - `client-test`
   - `sdk-check`
-  - `debug-recorder-admin-check`
   - `figma-plugin-check`
   - `build`
 - [ ] `skipped` 항목이 하나라도 있으면 PR 병합 대기

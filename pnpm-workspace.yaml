@@ -1,6 +1,5 @@
 packages:
   - client
-  - debug-recorder-admin
   - sdk
   - figma-plugin
   - .

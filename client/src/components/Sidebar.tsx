@@ -6,7 +6,9 @@ import { Brand } from '@/components/Brand';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { navSections, type NavItem } from '@/lib/nav';
+import { isFeatureEnabled } from '@/lib/config';
+import { navSections, type NavItem, type NavSection } from '@/lib/nav';
+import { hasRole, useRole } from '@/lib/roles';
 import { prefetchRoute } from '@/lib/route-prefetch';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -24,11 +26,23 @@ interface SidebarProps {
 
 export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) {
   const { t } = useTranslation();
+  const role = useRole();
   const storeCollapsed = useAppStore((s) => s.sidebarCollapsed);
   const toggleCollapsed = useAppStore((s) => s.toggleSidebarCollapsed);
   // Mobile drawer always renders the expanded sidebar — collapsed-rail mode
   // is a desktop affordance only.
   const collapsed = mobile ? false : storeCollapsed;
+
+  // Hide items the current user cannot reach (role) or that a feature flag
+  // turns off, then drop any section left empty.
+  const visibleSections: NavSection[] = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => isFeatureEnabled(item.flag) && (!item.roles || hasRole(role, item.roles)),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div
@@ -62,7 +76,7 @@ export function Sidebar({ onItemClick, mobile = false, onClose }: SidebarProps) 
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label={t('sidebar.mainNav')}>
-        {navSections.map((section, idx) => (
+        {visibleSections.map((section, idx) => (
           <div key={idx} className={cn(idx > 0 && 'mt-5')}>
             {section.labelKey && !collapsed && (
               <div className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-fg-faint">
