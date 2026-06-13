@@ -33,6 +33,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [status, setStatus] = useState<'checking' | 'open' | 'locked'>('checking');
 
+  // Intentional: derive the auth-gate status from token/demo flags on change.
+
   useEffect(() => {
     if (isDemo || isForcedDemo) {
       setStatus('open');

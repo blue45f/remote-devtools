@@ -13,7 +13,6 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '../auth/auth.decorator';
 import { AuthGuard } from '../auth/auth.guard';
-import type { AuthClaims } from '../auth/auth.service';
 
 import {
   AdminUpdateAccountDto,
@@ -22,6 +21,8 @@ import {
   UpdateOrganizationMemberDto,
 } from './accounts.dto';
 import { AccountsService } from './accounts.service';
+
+import type { AuthClaims } from '../auth/auth.service';
 
 @ApiTags('Accounts')
 @Controller('api/accounts')

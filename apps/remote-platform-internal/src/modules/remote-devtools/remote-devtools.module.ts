@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { RecordEntity, RuntimeEntity } from '@remote-platform/entity';
 
 import { AuthModule } from '../auth/auth.module';

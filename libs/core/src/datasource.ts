@@ -7,8 +7,9 @@
  * settings without booting the whole NestJS application.
  */
 import { join } from 'path';
-import { DataSource } from 'typeorm';
+
 import * as dotenv from 'dotenv';
+import { DataSource } from 'typeorm';
 
 import { ALL_ENTITIES } from './config/database.config';
 

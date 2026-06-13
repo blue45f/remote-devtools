@@ -1,11 +1,11 @@
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
-import type { Request } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AuthClaims } from '../auth/auth.service';
-
 import { BillingController } from './billing.controller';
+
 import type { BillingService } from './billing.service';
+import type { AuthClaims } from '../auth/auth.service';
+import type { Request } from 'express';
 
 describe('BillingController', () => {
   let mockBilling: {

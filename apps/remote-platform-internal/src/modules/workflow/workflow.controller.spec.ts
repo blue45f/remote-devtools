@@ -1,9 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import axios from 'axios';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { WorkflowController } from './workflow.controller';
+
+import type { TestingModule } from '@nestjs/testing';
 
 vi.mock('axios', () => ({
   default: {
@@ -11,8 +13,6 @@ vi.mock('axios', () => ({
     post: vi.fn(),
   },
 }));
-
-import axios from 'axios';
 
 describe('WorkflowController', () => {
   let controller: WorkflowController;

@@ -3,13 +3,13 @@
  * team). Kept separate from seed.ts/seed-router.ts so the operator-console seeds
  * stay readable. resolveAdminSeed() is called first by the seed router.
  */
-import type { Member } from '@/features/team/types';
 import type { UserProfile } from '@/features/profile/types';
 import type {
   RemoteEvent,
   RemoteEventLevel,
   RemoteSession,
 } from '@/features/remote-devtools/types';
+import type { Member } from '@/features/team/types';
 
 let createdCounter = 0;
 

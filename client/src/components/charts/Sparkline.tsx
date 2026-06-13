@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-
-import { cn } from '@/lib/utils';
+import { useId, useMemo } from 'react';
 
 import { buildSmoothPath, type Point } from './path';
+
+import { cn } from '@/lib/utils';
 
 interface SparklineProps {
   /** Numeric series (already in chronological order). */
@@ -40,7 +40,9 @@ export function Sparkline({ data, area = true, intensity = 'fg', className }: Sp
   }, [data]);
 
   const opacity = intensity === 'fg' ? 0.18 : 0.08;
-  const gradId = useMemo(() => `spark-${Math.random().toString(36).slice(2, 9)}`, []);
+  // useId() gives a stable, SSR-safe unique id for the gradient — no impure
+  // Math.random() at render.
+  const gradId = `spark-${useId()}`;
 
   return (
     <svg

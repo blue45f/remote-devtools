@@ -6,15 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import axios from 'axios';
-import { Repository } from 'typeorm';
-
 import {
   DeviceInfoEntity,
   JobType,
   UserEntity,
   UserTicketTemplateEntity,
 } from '@remote-platform/entity';
+import axios from 'axios';
+import { Repository } from 'typeorm';
 
 import {
   CreateUserProfileDto,

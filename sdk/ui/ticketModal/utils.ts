@@ -1,5 +1,6 @@
-import { SimpleColumnData } from './types';
 import { readSdkEnv } from '../../utils/env';
+
+import { SimpleColumnData } from './types';
 
 /**
  * API 호스트 주소 가져오기

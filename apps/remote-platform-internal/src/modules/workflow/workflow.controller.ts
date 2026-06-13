@@ -10,8 +10,8 @@ import {
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import axios from 'axios';
 import FormData from 'form-data';
 

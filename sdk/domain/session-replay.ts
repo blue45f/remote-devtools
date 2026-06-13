@@ -1,9 +1,10 @@
-import type { eventWithTime } from '@rrweb/types';
 import * as rrweb from 'rrweb';
 
 import { logger } from '../utils/logger';
 
 import { BaseDomain } from './base';
+
+import type { eventWithTime } from '@rrweb/types';
 
 type MutableEventData = Record<string, unknown> & {
   width?: number;

@@ -1,6 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { ServicesModule } from '@remote-platform/core';
 import {
   TicketLogEntity,
@@ -17,8 +16,8 @@ import { S3Module } from '../s3/s3.module';
 import { SlackModule } from '../slack/slack.module';
 import { UserInfoModule } from '../user-info/user-info.module';
 
-import { BufferController } from './buffer.controller';
 import { BufferFlushService } from './buffer-flush.service';
+import { BufferController } from './buffer.controller';
 import { CdpEventPersistenceService } from './cdp-event-persistence.service';
 import { WebviewController } from './webview.controller';
 import { WebviewGateway } from './webview.gateway';

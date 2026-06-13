@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AuthClaims } from '../auth/auth.service';
-
 import { ActivityController } from './activity.controller';
+
 import type { ActivityEntry, ActivityPage, ActivityService } from './activity.service';
+import type { AuthClaims } from '../auth/auth.service';
 
 describe('ActivityController', () => {
   let mockService: { getFeedPage: ReturnType<typeof vi.fn> };

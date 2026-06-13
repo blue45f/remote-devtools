@@ -1,11 +1,11 @@
 import { CommonInfo } from '../../../types/common';
-import { loadTicketFormDataFromAPI } from '../api';
-import { applyButtonStyles } from '../styles';
 import {
   applyModalOverlayStyles,
   applyModalContainerStyles,
   injectKeyframeAnimations,
 } from '../../theme';
+import { loadTicketFormDataFromAPI } from '../api';
+import { applyButtonStyles } from '../styles';
 import { CreateTicketFunction } from '../types';
 
 /**

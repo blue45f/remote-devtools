@@ -1,9 +1,9 @@
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { cn } from '@/lib/utils';
-
 import { buildSmoothPath, type Point } from './path';
+
+import { cn } from '@/lib/utils';
 
 interface AreaChartDatum {
   /** X-axis label (string is rendered as-is). */

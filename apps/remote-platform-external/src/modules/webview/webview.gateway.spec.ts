@@ -1,18 +1,19 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 import { DomService, NetworkService, RecordService, ScreenService } from '@remote-platform/core';
 import { TicketComponentEntity, TicketLabelEntity, TicketLogEntity } from '@remote-platform/entity';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { BufferService } from '../buffer/buffer.service';
 import { JiraService } from '../jira/jira.service';
 import { SlackService } from '../slack/slack.service';
 import { UserInfoService } from '../user-info/user-info.service';
+
 import { BufferFlushService } from './buffer-flush.service';
 import { CdpEventPersistenceService } from './cdp-event-persistence.service';
 import { WebviewGateway } from './webview.gateway';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('WebviewGateway (External)', () => {
   let gateway: WebviewGateway;

@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('DashboardController', () => {
   let controller: DashboardController;

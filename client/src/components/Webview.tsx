@@ -3,13 +3,13 @@ import { CircuitBoard, ExternalLink, Terminal, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import DebugPanel from './webview/DebugPanel';
+import ExploreTab from './webview/ExploreTab';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { buildDevToolsLink } from '@/lib/devtools-link';
-
-import DebugPanel from './webview/DebugPanel';
-import ExploreTab from './webview/ExploreTab';
 
 export type SdkKind = 'module' | 'script';
 

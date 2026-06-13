@@ -1,9 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 
-import { useAppStore } from '@/lib/store';
-
 import { Sidebar } from './Sidebar';
+
+import type { Meta, StoryObj } from '@storybook/react';
+
+import { useAppStore } from '@/lib/store';
 
 const meta = {
   title: 'Composed/Sidebar',

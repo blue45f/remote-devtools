@@ -1,11 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DeviceInfoEntity } from '@remote-platform/entity';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DeviceInfoEntity } from '@remote-platform/entity';
-
 import { UserInfoService } from './user-info.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('UserInfoService (Internal)', () => {
   let service: UserInfoService;

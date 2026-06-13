@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'crypto';
 
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+
 import type { Request } from 'express';
 
 /**

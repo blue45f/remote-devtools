@@ -1,6 +1,7 @@
-import type { StorybookConfig } from '@storybook/react-vite';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import type { StorybookConfig } from '@storybook/react-vite';
 
 // Storybook 10 loads this config as ESM, so `__dirname` is no longer
 // defined. Derive it from `import.meta.url` to keep the `@` alias

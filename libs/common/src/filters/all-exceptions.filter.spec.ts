@@ -1,4 +1,3 @@
-import type { ArgumentsHost } from '@nestjs/common';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -6,6 +5,8 @@ import { BusinessException } from '../exceptions/business.exception';
 import { ErrorCode } from '../exceptions/error-codes.enum';
 
 import { AllExceptionsFilter } from './all-exceptions.filter';
+
+import type { ArgumentsHost } from '@nestjs/common';
 
 type MockHttpResponse = {
   status: ReturnType<typeof vi.fn>;

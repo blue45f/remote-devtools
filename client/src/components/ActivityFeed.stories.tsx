@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 
-import { useAppStore } from '@/lib/store';
-
 import { ActivityFeed } from './ActivityFeed';
+
+import type { Meta, StoryObj } from '@storybook/react';
+
+import { useAppStore } from '@/lib/store';
 
 /**
  * ActivityFeed pulls data through `apiFetch`, which the app's demo-mode short

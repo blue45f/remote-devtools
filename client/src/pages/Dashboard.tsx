@@ -16,9 +16,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-
 import { Link } from 'react-router-dom';
+
+import type { TFunction } from 'i18next';
 
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { AreaChart, Sparkline } from '@/components/charts';

@@ -1,6 +1,6 @@
-import { apiFetch } from '@/lib/api';
-
 import type { RemoteCommandPayload, RemoteEvent, RemoteSession } from './types';
+
+import { apiFetch } from '@/lib/api';
 
 const BASE = '/api/remote-devtools';
 

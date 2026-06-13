@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { WebviewPage } from './Webview';
+
 // Hoisted mock so the factory closes over a real reference.
 const { axiosGetMock, createDebuggerMock } = vi.hoisted(() => ({
   axiosGetMock: vi.fn(),
@@ -15,8 +17,6 @@ vi.mock('axios', () => ({
 vi.mock('remote-debug-sdk', () => ({
   createDebugger: createDebuggerMock,
 }));
-
-import { WebviewPage } from './Webview';
 
 let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 

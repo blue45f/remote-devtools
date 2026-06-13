@@ -1,5 +1,4 @@
 import { Logger, Module } from '@nestjs/common';
-
 import { ServicesModule } from '@remote-platform/core';
 
 import { AuthModule } from '../auth/auth.module';

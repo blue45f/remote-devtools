@@ -1,11 +1,10 @@
 import { join } from 'path';
 
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import * as dotenv from 'dotenv';
-
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule, ServicesModule } from '@remote-platform/core';
+import * as dotenv from 'dotenv';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';

@@ -1,9 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway } from '@nestjs/websockets';
-import type { IncomingMessage } from 'node:http';
 import * as WebSocket from 'ws';
 
 import { PresenceService } from './presence.service';
+
+import type { IncomingMessage } from 'node:http';
 
 interface SocketMeta {
   sessionId: string;

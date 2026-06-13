@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { toast } from '@/components/ui/toaster';
 import {
   CommandDialog,
   CommandEmpty,
@@ -26,9 +25,10 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command';
+import { toast } from '@/components/ui/toaster';
 import { apiFetch, queryClient } from '@/lib/api';
-import { allNavItems } from '@/lib/nav';
 import { shortHash } from '@/lib/format';
+import { allNavItems } from '@/lib/nav';
 import { clearRecentSessions, useRecentSessions } from '@/lib/recent-sessions';
 import { useReplayPrefs } from '@/lib/replay-prefs';
 import { useAppStore } from '@/lib/store';

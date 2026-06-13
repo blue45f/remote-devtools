@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { SessionReplayController } from './session-replay.controller';
 import { SessionReplayService } from './session-replay.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('SessionReplayController', () => {
   let controller: SessionReplayController;

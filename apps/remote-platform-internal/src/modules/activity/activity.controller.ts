@@ -1,13 +1,13 @@
 import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-
 import { resolveLang } from '@remote-platform/common';
 
 import { Auth } from '../auth/auth.decorator';
 import { AuthGuard } from '../auth/auth.guard';
-import type { AuthClaims } from '../auth/auth.service';
 
 import { ActivityEntry, ActivityPage, ActivityService } from './activity.service';
+
+import type { AuthClaims } from '../auth/auth.service';
 
 @ApiTags('Activity')
 @Controller('api/activity')

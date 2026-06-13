@@ -1,10 +1,11 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { PublicPolicy } from '@/lib/policy';
-import { renderWithProviders } from '@/test/utils';
-
 import PolicyPage from './Policy';
+
+import type { PublicPolicy } from '@/lib/policy';
+
+import { renderWithProviders } from '@/test/utils';
 
 const TERMS_FIXTURE: PublicPolicy = {
   orgName: 'Remote DevTools',

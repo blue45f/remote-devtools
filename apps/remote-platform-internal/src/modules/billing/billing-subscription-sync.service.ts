@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { DeepPartial, Repository } from 'typeorm';
-
 import { OrganizationEntity } from '@remote-platform/entity';
 
 import type { BillingSyncResult, VerifiedBillingEvent } from './billing.types';
+import type { DeepPartial, Repository } from 'typeorm';
 
 @Injectable()
 export class BillingSubscriptionSyncService {

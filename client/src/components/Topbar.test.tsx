@@ -1,10 +1,10 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { Topbar } from './Topbar';
+
 import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
-
-import { Topbar } from './Topbar';
 
 beforeEach(() => {
   act(() => {

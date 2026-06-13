@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { useAuth } from '@/lib/auth';
-
 import { getProfile, updateProfile } from './api';
+
 import type { UpdateProfilePayload } from './types';
+
+import { useAuth } from '@/lib/auth';
 
 /**
  * The employee number used to key the profile. In JWT mode it comes from the

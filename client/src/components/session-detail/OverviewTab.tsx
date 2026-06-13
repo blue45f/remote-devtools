@@ -1,11 +1,11 @@
 import { Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { getEventMeta } from './event-utils';
+
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
-
-import { getEventMeta } from './event-utils';
 
 export function OverviewTab({
   loading,

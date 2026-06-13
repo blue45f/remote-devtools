@@ -2,6 +2,14 @@ import { Download, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type {
+  RemoteActivity,
+  RemoteEvent,
+  RemoteEventLevel,
+  RemoteSession,
+  RemoteSessionStatus,
+} from '@/features/remote-devtools/types';
+
 import { PageHeader } from '@/components/PageHeader';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -32,13 +40,6 @@ import {
   useRemoteSessions,
   useSendCommand,
 } from '@/features/remote-devtools/hooks';
-import type {
-  RemoteActivity,
-  RemoteEvent,
-  RemoteEventLevel,
-  RemoteSession,
-  RemoteSessionStatus,
-} from '@/features/remote-devtools/types';
 import { FEATURES } from '@/lib/config';
 
 const STATUS_TONE: Record<RemoteSessionStatus, StatusTone> = {

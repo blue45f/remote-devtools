@@ -1,13 +1,13 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import { RuntimeEntity } from '@remote-platform/entity';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { RecordService } from './record.service';
 import { RuntimeService } from './runtime.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('RuntimeService', () => {
   let service: RuntimeService;
