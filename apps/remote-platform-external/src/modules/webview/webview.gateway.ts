@@ -478,6 +478,40 @@ export class WebviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   // -------------------------------------------------------------------------
+  // Save entire DOM (proactive, sent by the SDK on record start)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Persists the full DOM document the SDK pushes when a recording starts, so a
+   * recorded session's Elements panel populates during playback even when no
+   * live viewer ever requested DOM.getDocument. Stored as the same `entireDom`
+   * row that {@link handleMessageToDevtools} writes for the live-viewer path.
+   */
+  @SubscribeMessage('saveEntireDom')
+  public async handleSaveEntireDom(
+    @MessageBody() data: { room?: string; dom?: object },
+    @ConnectedSocket() client: WebSocket,
+  ): Promise<void> {
+    try {
+      const room = data.room || this.clientMap.get(client);
+      const roomData = room ? this.rooms.get(room) : undefined;
+      if (!roomData?.recordId) return;
+
+      const [seconds, nanoseconds] = process.hrtime();
+      await this.domService.upsert({
+        recordId: roomData.recordId,
+        protocol: data.dom ?? {},
+        timestamp: seconds * 1e9 + nanoseconds,
+        type: 'entireDom',
+      });
+    } catch (error) {
+      this.logger.warn(
+        `[SAVE_ENTIRE_DOM] ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Protocol to all DevTools
   // -------------------------------------------------------------------------
 
