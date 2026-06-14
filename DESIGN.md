@@ -2,30 +2,30 @@
 name: Remote DevTools
 description: Operator-grade monochrome control surface for remote CDP debugging
 colors:
-  bg: 'hsl(0 0% 100%)'
-  bg-subtle: 'hsl(0 0% 98%)'
-  bg-muted: 'hsl(0 0% 96%)'
-  surface: 'hsl(0 0% 100%)'
-  surface-overlay: 'hsl(0 0% 100%)'
-  fg: 'hsl(0 0% 9%)'
-  fg-muted: 'hsl(0 0% 28%)'
-  fg-subtle: 'hsl(0 0% 38%)'
-  fg-faint: 'hsl(0 0% 42%)'
-  border: 'hsl(0 0% 92%)'
-  border-strong: 'hsl(0 0% 85%)'
-  accent: 'hsl(217 91% 60%)'
-  accent-fg: 'hsl(0 0% 100%)'
-  accent-soft: 'hsl(217 100% 97%)'
-  accent-soft-fg: 'hsl(217 91% 40%)'
-  success: 'hsl(142 71% 28%)'
-  success-soft: 'hsl(142 71% 95%)'
-  warning: 'hsl(38 92% 42%)'
-  warning-soft: 'hsl(38 92% 95%)'
-  danger: 'hsl(0 72% 42%)'
-  danger-soft: 'hsl(0 72% 96%)'
-  live: 'hsl(24 90% 52%)'
-  live-soft: 'hsl(24 90% 96%)'
-  live-soft-fg: 'hsl(22 85% 36%)'
+  bg: 'oklch(1 0 0)'
+  bg-subtle: 'oklch(0.98481 0 0)'
+  bg-muted: 'oklch(0.96955 0 0)'
+  surface: 'oklch(1 0 0)'
+  surface-overlay: 'oklch(1 0 0)'
+  fg: 'oklch(0.20441 0 0)'
+  fg-muted: 'oklch(0.39942 0 0)'
+  fg-subtle: 'oklch(0.49225 0 0)'
+  fg-faint: 'oklch(0.52814 0 0)'
+  border: 'oklch(0.93886 0 0)'
+  border-strong: 'oklch(0.88454 0 0)'
+  accent: 'oklch(0.62613 0.18593 259.596)'
+  accent-fg: 'oklch(1 0 0)'
+  accent-soft: 'oklch(0.97015 0.0141 259.945)'
+  accent-soft-fg: 'oklch(0.46986 0.19048 260.71)'
+  success: 'oklch(0.50988 0.13224 149.972)'
+  success-soft: 'oklch(0.97251 0.02427 158.169)'
+  warning: 'oklch(0.67644 0.14392 70.995)'
+  warning-soft: 'oklch(0.97399 0.02166 81.491)'
+  danger: 'oklch(0.50531 0.18844 27.33)'
+  danger-soft: 'oklch(0.95906 0.01593 17.435)'
+  live: 'oklch(0.68956 0.18398 46.934)'
+  live-soft: 'oklch(0.97064 0.01542 56.214)'
+  live-soft-fg: 'oklch(0.52169 0.14394 44.457)'
 typography:
   display:
     fontFamily: 'Inter Variable, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif'
@@ -124,7 +124,7 @@ It explicitly rejects the SaaS-marketing reflex. No gradient washes, no neon, no
 
 **Key Characteristics:**
 
-- Pure-neutral grayscale (hue 0, saturation 0%) for all structural color; one Signal Blue accent used sparingly.
+- Pure-neutral grayscale (OKLCH chroma 0; formerly HSL saturation 0%) for all structural color; one Signal Blue accent used sparingly.
 - The default primary action is Ink (near-black), not blue. Blue is a deliberate secondary affordance.
 - Flat by default: hairline borders define structure, shadows are reserved for floating layers.
 - Inter for interface, JetBrains Mono for machine data (IDs, timestamps, URLs, payload sizes).
@@ -135,28 +135,30 @@ It explicitly rejects the SaaS-marketing reflex. No gradient washes, no neon, no
 
 A pure-neutral spine with a single chromatic accent and a small, sparingly-used status vocabulary. Light values are listed below; every token has a paired dark value (see the sidecar for the dark ramp).
 
+Colors are authored in **OKLCH** (a perceptually-uniform color space): lightness reads as actual visual lightness, so the neutral ramp and the soft-tint steps are evenly spaced to the eye. Each OKLCH value is the exact equivalent of the original HSL recipe and round-trips to the identical sRGB color — the palette is unchanged, only the color space it is expressed in. The legacy HSL recipe is kept inline below for intent, with the authored OKLCH alongside.
+
 ### Primary
 
-- **Signal Blue** (`hsl(217 91% 60%)`): The one accent. Reserved for the `accent` button variant, current selection, links, focus rings, and state indicators. Not a surface color, not decoration.
-- **Signal Blue Soft** (`hsl(217 100% 97%)` bg / `hsl(217 91% 40%)` text): Low-emphasis accent fills (soft button, accent badge, selected-row tint).
+- **Signal Blue** (`oklch(0.62613 0.18593 259.596)`, was `hsl(217 91% 60%)`): The one accent. Reserved for the `accent` button variant, current selection, links, focus rings, and state indicators. Not a surface color, not decoration.
+- **Signal Blue Soft** (`oklch(0.97015 0.0141 259.945)` bg / `oklch(0.46986 0.19048 260.71)` text): Low-emphasis accent fills (soft button, accent badge, selected-row tint).
 
 ### Neutral
 
-- **Ink** (`hsl(0 0% 9%)`): Primary text, and the fill of the default primary button. Near-black, never pure `#000`.
-- **Ash 28 / 38 / 42** (`hsl(0 0% 28%)` / `38%` / `42%`): Muted, subtle, and faint foreground tiers for secondary text, captions, and placeholders. Each step is tuned to hold WCAG AA on its intended background.
-- **Paper** (`hsl(0 0% 100%)`): Base background and card surface. Subtle and muted backgrounds step down to `98%` and `96%` for sidebars, toolbars, and inset panels.
-- **Hairline** (`hsl(0 0% 92%)`, strong `hsl(0 0% 85%)`): Borders and dividers. The primary structural tool of the whole system.
+- **Ink** (`oklch(0.20441 0 0)`, was `hsl(0 0% 9%)`): Primary text, and the fill of the default primary button. Near-black, never pure `#000`.
+- **Ash 28 / 38 / 42** (`oklch(0.39942 0 0)` / `0.49225` / `0.52814`, was `hsl(0 0% 28%)` / `38%` / `42%`): Muted, subtle, and faint foreground tiers for secondary text, captions, and placeholders. Each step is tuned to hold WCAG AA on its intended background.
+- **Paper** (`oklch(1 0 0)`, was `hsl(0 0% 100%)`): Base background and card surface. Subtle and muted backgrounds step down to `oklch(0.98481 …)` and `oklch(0.96955 …)` (was `98%` / `96%`) for sidebars, toolbars, and inset panels.
+- **Hairline** (`oklch(0.93886 0 0)`, strong `oklch(0.88454 0 0)`, was `hsl(0 0% 92%)` / `85%`): Borders and dividers. The primary structural tool of the whole system.
 
 ### Status (sparingly)
 
-- **Terminal Green** (`hsl(142 71% 28%)`), **Caution Amber** (`hsl(38 92% 42%)`), **Alarm Red** (`hsl(0 72% 42%)`): success / warning / danger. Each pairs with a `*-soft` tint for badge and callout fills. Lightness is intentionally darkened from the usual 500-weight so small numerals pass AA on their soft backgrounds.
-- **Record Orange** (`hsl(24 90% 52%)`, soft `hsl(24 90% 96%)` bg / `hsl(22 85% 36%)` text): The live/recording state — the pulse dot and the `live` badge. A warm "REC" hue, deliberately shifted off Alarm Red (hue 0) so a live session never reads as an error. The `live` badge keys to `live-soft`/`live-soft-fg`, not the danger tokens.
+- **Terminal Green** (`oklch(0.50988 0.13224 149.972)`), **Caution Amber** (`oklch(0.67644 0.14392 70.995)`), **Alarm Red** (`oklch(0.50531 0.18844 27.33)`): success / warning / danger (was `hsl(142 71% 28%)` / `hsl(38 92% 42%)` / `hsl(0 72% 42%)`). Each pairs with a `*-soft` tint for badge and callout fills. Lightness is intentionally darkened from the usual 500-weight so small numerals pass AA on their soft backgrounds.
+- **Record Orange** (`oklch(0.68956 0.18398 46.934)`, soft `oklch(0.97064 0.01542 56.214)` bg / `oklch(0.52169 0.14394 44.457)` text, was `hsl(24 90% 52%)` / `hsl(24 90% 96%)` / `hsl(22 85% 36%)`): The live/recording state — the pulse dot and the `live` badge. A warm "REC" hue, deliberately shifted off Alarm Red so a live session never reads as an error. The `live` badge keys to `live-soft`/`live-soft-fg`, not the danger tokens.
 
 ### Named Rules
 
 **The One Voice Rule.** Signal Blue appears on a small fraction of any screen. Primary actions use Ink, not blue; blue marks the _one_ thing that is selected, focused, or the explicit accent action. Its rarity is the point.
 
-**The Pure Neutral Rule.** Structural neutrals carry zero hue (saturation 0%). The monochrome is deliberate and is the brand. Do not warm or cool the grays toward a hue.
+**The Pure Neutral Rule.** Structural neutrals carry zero chroma (OKLCH chroma 0; formerly HSL saturation 0%). The monochrome is deliberate and is the brand. Do not warm or cool the grays toward a hue.
 
 **The Color-Is-Information Rule.** If a color appears, it must mean something (state, selection, severity). Never introduce a hue for visual interest alone.
 
@@ -248,7 +250,7 @@ Refined and restrained surfaces with one precise tactile cue: interactive contro
 - **Do** keep radii tight: `rounded-md` (7px) for controls, `rounded-xl` (14px) for cards.
 - **Do** animate only opacity and transform with `ease-out-expo` / `ease-out-quart` over 150 to 280ms, and honor `prefers-reduced-motion`.
 - **Do** ship every interactive state (default, hover, focus-visible, active, disabled) and the consistent 2px Signal Blue focus ring.
-- **Do** keep neutrals pure grayscale (saturation 0%) and let color mean something.
+- **Do** keep neutrals pure grayscale (OKLCH chroma 0) and let color mean something.
 
 ### Don't:
 
