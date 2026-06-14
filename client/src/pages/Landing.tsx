@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import {
   Activity,
   ArrowRight,
@@ -11,6 +10,7 @@ import {
   Sparkles,
   TerminalSquare,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -233,7 +233,7 @@ function BackgroundGrid() {
       className="absolute inset-0 -z-10 opacity-60 dark:opacity-30"
       style={{
         backgroundImage:
-          'linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)',
+          'linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)',
         backgroundSize: '48px 48px',
         maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
         WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
@@ -258,7 +258,7 @@ function DashboardMockup() {
         className="absolute inset-x-0 -top-12 -z-10 h-64 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse 60% 60% at 50% 50%, hsl(var(--accent) / 0.10), transparent 70%)',
+            'radial-gradient(ellipse 60% 60% at 50% 50%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 70%)',
         }}
       />
       <motion.div
@@ -332,8 +332,8 @@ function DashboardMockup() {
                 >
                   <defs>
                     <linearGradient id="mockg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--fg))" stopOpacity="0.16" />
-                      <stop offset="100%" stopColor="hsl(var(--fg))" stopOpacity="0" />
+                      <stop offset="0%" stopColor="var(--fg)" stopOpacity="0.16" />
+                      <stop offset="100%" stopColor="var(--fg)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <path
@@ -342,7 +342,7 @@ function DashboardMockup() {
                   />
                   <path
                     d="M0,42 L20,38 L40,40 L60,30 L80,28 L100,22 L120,30 L140,18 L160,24 L180,16 L200,12 L220,16 L240,8 L260,14 L280,4"
-                    stroke="hsl(var(--fg))"
+                    stroke="var(--fg)"
                     strokeWidth="1.4"
                     fill="none"
                   />
@@ -748,13 +748,13 @@ function DesktopConnector({ isActive }: { isActive: boolean }) {
       <svg viewBox="0 0 60 20" className="w-full h-5 overflow-visible" fill="none">
         <path
           d="M0,10 L60,10"
-          stroke="hsl(var(--border-strong))"
+          stroke="var(--border-strong)"
           strokeWidth="2"
           strokeDasharray="4 4"
         />
         <path
           d="M0,10 L60,10"
-          stroke="hsl(var(--accent))"
+          stroke="var(--accent)"
           strokeWidth="2.5"
           strokeDasharray="8 6"
           className={cn(
@@ -764,7 +764,7 @@ function DesktopConnector({ isActive }: { isActive: boolean }) {
         />
         <polygon
           points="54,7 60,10 54,13"
-          fill={isActive ? 'hsl(var(--accent))' : 'hsl(var(--border-strong))'}
+          fill={isActive ? 'var(--accent)' : 'var(--border-strong)'}
           className="transition-colors duration-300"
         />
       </svg>
@@ -778,13 +778,13 @@ function MobileConnector({ isActive }: { isActive: boolean }) {
       <svg viewBox="0 0 20 40" className="w-5 h-10 overflow-visible" fill="none">
         <path
           d="M10,0 L10,40"
-          stroke="hsl(var(--border-strong))"
+          stroke="var(--border-strong)"
           strokeWidth="2"
           strokeDasharray="4 4"
         />
         <path
           d="M10,0 L10,40"
-          stroke="hsl(var(--accent))"
+          stroke="var(--accent)"
           strokeWidth="2.5"
           strokeDasharray="8 6"
           className={cn(
@@ -794,7 +794,7 @@ function MobileConnector({ isActive }: { isActive: boolean }) {
         />
         <polygon
           points="7,34 10,40 13,34"
-          fill={isActive ? 'hsl(var(--accent))' : 'hsl(var(--border-strong))'}
+          fill={isActive ? 'var(--accent)' : 'var(--border-strong)'}
           className="transition-colors duration-300"
         />
       </svg>
@@ -888,7 +888,7 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
         className="absolute inset-0 -z-10 pointer-events-none opacity-60"
         style={{
           background:
-            'radial-gradient(ellipse 50% 60% at 50% 50%, hsl(var(--accent) / 0.12), transparent 70%)',
+            'radial-gradient(ellipse 50% 60% at 50% 50%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%)',
         }}
       />
       <div className="max-w-3xl mx-auto px-4 lg:px-6">

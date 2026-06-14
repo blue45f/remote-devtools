@@ -962,7 +962,7 @@ function TicketsByRoleChart({ data }: { data: TrendItem[] }) {
                 className="h-full rounded-full transition-[width] duration-700 ease-out"
                 style={{
                   width: `${pct}%`,
-                  background: `hsl(var(--fg) / ${0.85 - i * 0.12})`,
+                  background: `color-mix(in oklab, var(--fg) ${(0.85 - i * 0.12) * 100}%, transparent)`,
                 }}
               />
             </div>

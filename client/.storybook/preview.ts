@@ -19,9 +19,9 @@ const preview: Preview = {
       // Match design tokens (--bg / --bg in .dark) so the stage matches the app.
       default: 'app',
       values: [
-        { name: 'app', value: 'hsl(0 0% 100%)' },
-        { name: 'app-dark', value: 'hsl(0 0% 4%)' },
-        { name: 'subtle', value: 'hsl(0 0% 98%)' },
+        { name: 'app', value: 'oklch(1 0 0)' },
+        { name: 'app-dark', value: 'oklch(0.14575 0 0)' },
+        { name: 'subtle', value: 'oklch(0.98481 0 0)' },
       ],
     },
     a11y: {
