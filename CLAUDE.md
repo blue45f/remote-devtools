@@ -137,7 +137,7 @@ pnpm test:cov      # with v8 coverage
 - File naming: kebab-case (`user-profile.service.ts`)
 - Path aliases: `@remote-platform/core`, `@remote-platform/entity`, `@remote-platform/common`, `@remote-platform/constants`
 - Error handling: use `BusinessException` or NestJS built-in exceptions, never generic `Error`
-- Validation: class-validator DTOs with `ValidationPipe`
+- Validation: nestjs-zod DTOs with `ValidationPipe`
 - Logging: NestJS `Logger` (never `console.log`)
 - Timezone: use `getLocalDateString()` from `@remote-platform/constants` (never manual KST offset)
 - Cache: use `lru-cache` for in-memory caching
