@@ -9,6 +9,7 @@ import {
   AllExceptionsFilter,
   HttpExceptionFilter,
   QueryFailedExceptionFilter,
+  validateEnv,
   ZodValidationPipe,
 } from '@remote-platform/common';
 import * as express from 'express';
@@ -37,6 +38,8 @@ function assertRequiredEnv(): void {
 }
 
 assertRequiredEnv();
+// Non-fatal: warns on malformed env vars / insecure production defaults. Never throws.
+validateEnv();
 
 interface RequestWithRawBody extends Request {
   rawBody?: Buffer;
