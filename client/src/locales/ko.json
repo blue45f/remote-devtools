@@ -863,7 +863,7 @@
     "debugPanelTitle": "SDK 디버그 패널",
     "debugPanelSubtitle": "SDK로 계측된 이벤트를 발생시켜 DevTools에서 캡처되는지 확인하세요.",
     "readRequestsTitle": "읽기 요청",
-    "readRequestsDesc": "fetch / XHR / Axios 전반의 요청 가로채기를 확인합니다.",
+    "readRequestsDesc": "fetch / XHR / ky 전반의 요청 가로채기를 확인합니다.",
     "mutationRequestsTitle": "변경 요청",
     "mutationRequestsDesc": "쓰기 작업의 메서드 캡처를 테스트합니다.",
     "domConsoleTitle": "DOM & 콘솔",

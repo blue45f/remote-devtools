@@ -23,7 +23,7 @@ interface DebugPanelProps {
   onToggleLoading: () => void;
   onFetchRequest: () => void;
   onXhrRequest: () => void;
-  onAxiosRequest: () => void;
+  onKyRequest: () => void;
   onPostRequest: () => void;
   onPutRequest: () => void;
   onPatchRequest: () => void;
@@ -37,7 +37,7 @@ export default function DebugPanel({
   onToggleLoading,
   onFetchRequest,
   onXhrRequest,
-  onAxiosRequest,
+  onKyRequest,
   onPostRequest,
   onPutRequest,
   onPatchRequest,
@@ -67,9 +67,9 @@ export default function DebugPanel({
           <ArrowDownToLine />
           XMLHttpRequest
         </Button>
-        <Button variant="secondary" size="sm" onClick={onAxiosRequest}>
+        <Button variant="secondary" size="sm" onClick={onKyRequest}>
           <ArrowDownToLine />
-          Axios
+          ky
         </Button>
       </Section>
 
