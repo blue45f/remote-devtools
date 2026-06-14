@@ -68,8 +68,6 @@
     "@sentry/nestjs": "^10.55.0",
     "@types/express": "^5.0.6",
     "axios": "^1.16.1",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
@@ -84,6 +82,7 @@
     "jsonwebtoken": "^9.0.3",
     "lru-cache": "^11.5.1",
     "mime": "^4.1.0",
+    "nestjs-zod": "^5.4.0",
     "p-retry": "^8.0.0",
     "pg": "^8.21.0",
     "playwright": "^1.60.0",
@@ -93,7 +92,8 @@
     "stripe": "^22.2.0",
     "typeorm": "^1.0.0",
     "ua-parser-js": "^2.0.10",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",

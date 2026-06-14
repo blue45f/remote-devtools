@@ -1,33 +1,24 @@
-import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, IsUrl, MaxLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class CheckoutDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public priceId: string;
+// Trim first, reject blanks, cap length, then validate as a URL. `z.url()` only
+// requires a protocol (no TLD), matching the old `@IsUrl({ require_tld: false })`.
+const trimmedUrl = z.string().trim().min(1).max(2048).pipe(z.url());
 
-  @IsString()
-  @IsNotEmpty()
-  @IsUrl({ require_tld: false })
-  @MaxLength(2048)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public successUrl: string;
+export const checkoutSchema = z
+  .object({
+    priceId: z.string().trim().min(1).max(100),
+    successUrl: trimmedUrl,
+    cancelUrl: trimmedUrl,
+  })
+  .strict();
 
-  @IsString()
-  @IsNotEmpty()
-  @IsUrl({ require_tld: false })
-  @MaxLength(2048)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public cancelUrl: string;
-}
+export class CheckoutDto extends createZodDto(checkoutSchema) {}
 
-export class PortalDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsUrl({ require_tld: false })
-  @MaxLength(2048)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  public returnUrl: string;
-}
+export const portalSchema = z
+  .object({
+    returnUrl: trimmedUrl,
+  })
+  .strict();
+
+export class PortalDto extends createZodDto(portalSchema) {}
