@@ -1,132 +1,68 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsArray,
-  IsEnum,
-  IsUrl,
-  Matches,
-  MaxLength,
-  ValidateNested,
-  IsNumber,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { JobType, AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-class TicketTemplateDto {
-  @IsOptional()
-  @IsNumber()
-  readonly id?: number;
+import { JobType } from '@remote-platform/entity';
+import type { AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  readonly name: string;
+// The element shapes below mirror the `DeviceInfo` / `AssigneeInfo` entity
+// interfaces. They are `.loose()` so unknown keys survive, matching the old
+// behaviour where these lists were only checked with `@IsArray` (no nested
+// whitelist), while still inferring the correct element types.
+const deviceInfoSchema = z.object({
+  name: z.string().optional(),
+  deviceId: z.string(),
+});
 
-  @IsOptional()
-  @IsString()
-  @IsUrl()
-  @MaxLength(500)
-  readonly tcSheetLink?: string;
+const assigneeInfoSchema = z.object({
+  displayName: z.string(),
+  username: z.string().optional(),
+  email: z.string().optional(),
+});
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  readonly jiraProjectKey?: string;
+// Nested ticket template. The old DTO validated this via `@ValidateNested`, so
+// `forbidNonWhitelisted` applied here too — hence `.strict()`.
+export const ticketTemplateSchema = z
+  .object({
+    id: z.number().optional(),
+    name: z.string().min(1).max(100),
+    tcSheetLink: z.url().max(500).optional(),
+    jiraProjectKey: z.string().max(50).optional(),
+    epicTicket: z.string().max(50).optional(),
+    titlePrefix: z.string().max(100).optional(),
+    assigneeInfoList: z.array(assigneeInfoSchema).optional(),
+    componentList: z.array(z.string()).optional(),
+    labelList: z.array(z.string()).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  readonly epicTicket?: string;
+export const createUserProfileSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    username: z.string().max(100).optional(),
+    jobType: z.enum(JobType),
+    slackId: z.string().min(1).max(50),
+    empNo: z.string().regex(/^\d{8}$/, { message: 'empNo must be an 8-digit number' }),
+    deviceInfoList: z.array(deviceInfoSchema),
+    ticketTemplateList: z.array(ticketTemplateSchema),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  readonly titlePrefix?: string;
+export class CreateUserProfileDto extends createZodDto(createUserProfileSchema) {}
 
-  @IsOptional()
-  @IsArray()
-  readonly assigneeInfoList?: AssigneeInfo[];
+export const updateUserProfileSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    username: z.string().min(1).max(100),
+    jobType: z.enum(JobType),
+    empNo: z.string().regex(/^\d{8}$/, { message: 'empNo must be an 8-digit number' }),
+    email: z.string().min(1).max(254),
+    deviceInfoList: z.array(deviceInfoSchema).optional(),
+    ticketTemplateList: z.array(ticketTemplateSchema).optional(),
+    lastSelectedTemplateName: z.string().max(100).optional(),
+  })
+  .strict();
 
-  @IsOptional()
-  @IsArray()
-  readonly componentList?: string[];
-
-  @IsOptional()
-  @IsArray()
-  readonly labelList?: string[];
-}
-
-export class CreateUserProfileDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  readonly name: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  readonly username?: string;
-
-  @IsEnum(JobType)
-  readonly jobType: JobType;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
-  readonly slackId: string;
-
-  @IsString()
-  @Matches(/^\d{8}$/, { message: 'empNo must be an 8-digit number' })
-  readonly empNo: string;
-
-  @IsArray()
-  readonly deviceInfoList: DeviceInfo[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TicketTemplateDto)
-  readonly ticketTemplateList: TicketTemplateDto[];
-}
-
-export class UpdateUserProfileDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  readonly name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  readonly username: string;
-
-  @IsEnum(JobType)
-  readonly jobType: JobType;
-
-  @IsString()
-  @Matches(/^\d{8}$/, { message: 'empNo must be an 8-digit number' })
-  readonly empNo: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(254)
-  readonly email: string;
-
-  @IsOptional()
-  @IsArray()
-  readonly deviceInfoList?: DeviceInfo[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TicketTemplateDto)
-  readonly ticketTemplateList?: TicketTemplateDto[];
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  readonly lastSelectedTemplateName?: string;
-}
+export class UpdateUserProfileDto extends createZodDto(updateUserProfileSchema) {}
 
 export interface UserProfileResponseDto {
   readonly id: number;

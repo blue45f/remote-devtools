@@ -24,6 +24,9 @@ export { QueryFailedExceptionFilter } from './filters/query-failed-exception.fil
 // Interceptors
 export { ResponseInterceptor, StandardResponse } from './interceptors/response.interceptor';
 
+// Pipes
+export { ZodValidationPipe } from './pipes/zod-validation.pipe';
+
 // Security
 export {
   buildAllowedOriginPatterns,

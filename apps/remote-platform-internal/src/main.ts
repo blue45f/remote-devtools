@@ -1,7 +1,7 @@
 // MUST be the first import — installs Sentry hooks before NestJS wires modules.
 import './instrument';
 
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 
 function assertRequiredEnv(): void {
   const appEnv = (process.env.APP_ENV ?? 'local').toLowerCase();
@@ -27,11 +27,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import type { Request, Response } from 'express';
 import helmet from 'helmet';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 
 import {
   AllExceptionsFilter,
   HttpExceptionFilter,
   QueryFailedExceptionFilter,
+  ZodValidationPipe,
 } from '@remote-platform/common';
 
 import { AppModule } from './app.module';
@@ -60,13 +62,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '30mb', verify: preserveBillingWebhookRawBody }));
   app.use(express.urlencoded({ limit: '30mb', extended: true }));
   app.useWebSocketAdapter(new WsAdapter(app));
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  app.useGlobalPipes(new ZodValidationPipe());
 
   app.useGlobalFilters(
     new AllExceptionsFilter({ sdkCompatible: true }),
@@ -106,7 +102,11 @@ async function bootstrap() {
     .setDescription('내부 플랫폼 API (세션 리플레이, 대시보드, 사용자 관리)')
     .setVersion('1.0')
     .build();
-  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig));
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    cleanupOpenApiDoc(SwaggerModule.createDocument(app, swaggerConfig)),
+  );
 
   await app.listen(process.env.PORT || 3000);
 
