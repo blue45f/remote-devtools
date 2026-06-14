@@ -7,57 +7,64 @@
 /* ─────────────────────────────────────────────────────────
    Design Tokens — Vercel/Linear inspired monochrome system
    Single accent color (blue), semantic status colors used sparingly
+
+   Colors are authored in OKLCH (perceptually-uniform color space). Each value
+   is the exact OKLCH equivalent of the prior HSL token — converted via the
+   sRGB → linear → OKLab → OKLCH path and verified to round-trip to the
+   identical 8-bit sRGB color (zero drift). The legacy HSL recipe is kept in
+   trailing comments so the palette intent stays auditable. Consume tokens with
+   `var(--token)` directly (they are full colors now, not bare channels).
    ───────────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --bg: 0 0% 100%;
-  --bg-subtle: 0 0% 98%;
-  --bg-muted: 0 0% 96%;
-  --surface: 0 0% 100%;
-  --surface-raised: 0 0% 100%;
-  --surface-overlay: 0 0% 100%;
+  --bg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --bg-subtle: oklch(0.98481 0 0); /* hsl(0 0% 98%) */
+  --bg-muted: oklch(0.96955 0 0); /* hsl(0 0% 96%) */
+  --surface: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --surface-raised: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --surface-overlay: oklch(1 0 0); /* hsl(0 0% 100%) */
 
   /* Foreground (tuned for WCAG AA on 11px+ small text on white) */
-  --fg: 0 0% 9%;
-  --fg-muted: 0 0% 28%;
-  --fg-subtle: 0 0% 38%;
-  --fg-faint: 0 0% 42%;
+  --fg: oklch(0.20441 0 0); /* hsl(0 0% 9%) */
+  --fg-muted: oklch(0.39942 0 0); /* hsl(0 0% 28%) */
+  --fg-subtle: oklch(0.49225 0 0); /* hsl(0 0% 38%) */
+  --fg-faint: oklch(0.52814 0 0); /* hsl(0 0% 42%) */
 
   /* Borders */
-  --border: 0 0% 92%;
-  --border-strong: 0 0% 85%;
-  --ring: 217 91% 60%;
+  --border: oklch(0.93886 0 0); /* hsl(0 0% 92%) */
+  --border-strong: oklch(0.88454 0 0); /* hsl(0 0% 85%) */
+  --ring: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
 
   /* Accent (single, clean blue — Linear-like) */
-  --accent: 217 91% 60%;
-  --accent-fg: 0 0% 100%;
-  --accent-soft: 217 100% 97%;
-  --accent-soft-fg: 217 91% 40%;
+  --accent: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
+  --accent-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --accent-soft: oklch(0.97015 0.0141 259.945); /* hsl(217 100% 97%) */
+  --accent-soft-fg: oklch(0.46986 0.19048 260.71); /* hsl(217 91% 40%) */
 
   /* Status (used sparingly) */
   /* Bumped 36 → 28 so small `text-success` numerals on `bg-bg-subtle` (#fafafa)
      meet WCAG 2 AA contrast (4.5:1 for normal text). */
-  --success: 142 71% 28%;
-  --success-soft: 142 71% 95%;
-  --success-fg: 0 0% 100%;
-  --warning: 38 92% 42%;
-  --warning-soft: 38 92% 95%;
-  --warning-fg: 0 0% 100%;
+  --success: oklch(0.50988 0.13224 149.972); /* hsl(142 71% 28%) */
+  --success-soft: oklch(0.97251 0.02427 158.169); /* hsl(142 71% 95%) */
+  --success-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --warning: oklch(0.67644 0.14392 70.995); /* hsl(38 92% 42%) */
+  --warning-soft: oklch(0.97399 0.02166 81.491); /* hsl(38 92% 95%) */
+  --warning-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
   /* Bumped lightness 51 → 42 so small `text-danger` on `bg-danger-soft`
      meets WCAG 2 AA contrast (4.5:1 for normal text). */
-  --danger: 0 72% 42%;
-  --danger-soft: 0 72% 96%;
-  --danger-fg: 0 0% 100%;
-  --info: 217 91% 60%;
-  --info-soft: 217 91% 96%;
-  --info-fg: 0 0% 100%;
+  --danger: oklch(0.50531 0.18844 27.33); /* hsl(0 72% 42%) */
+  --danger-soft: oklch(0.95906 0.01593 17.435); /* hsl(0 72% 96%) */
+  --danger-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --info: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
+  --info-soft: oklch(0.96103 0.01716 259.946); /* hsl(217 91% 96%) */
+  --info-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
 
   /* Live / recording indicator — a warm "REC" orange, deliberately NOT the
      danger red (hue 0). Color = information: a live session is a *state*, not
      an error, so it earns its own hue distinct from danger/warning/success. */
-  --live: 24 90% 52%;
-  --live-soft: 24 90% 96%;
-  --live-soft-fg: 22 85% 36%;
+  --live: oklch(0.68956 0.18398 46.934); /* hsl(24 90% 52%) */
+  --live-soft: oklch(0.97064 0.01542 56.214); /* hsl(24 90% 96%) */
+  --live-soft-fg: oklch(0.52169 0.14394 44.457); /* hsl(22 85% 36%) */
 
   /* Elevation */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
@@ -71,43 +78,43 @@
 }
 
 .dark {
-  --bg: 0 0% 4%;
-  --bg-subtle: 0 0% 6%;
-  --bg-muted: 0 0% 9%;
-  --surface: 0 0% 6%;
-  --surface-raised: 0 0% 8%;
-  --surface-overlay: 0 0% 10%;
+  --bg: oklch(0.14575 0 0); /* hsl(0 0% 4%) */
+  --bg-subtle: oklch(0.16981 0 0); /* hsl(0 0% 6%) */
+  --bg-muted: oklch(0.20441 0 0); /* hsl(0 0% 9%) */
+  --surface: oklch(0.16981 0 0); /* hsl(0 0% 6%) */
+  --surface-raised: oklch(0.19305 0 0); /* hsl(0 0% 8%) */
+  --surface-overlay: oklch(0.21561 0 0); /* hsl(0 0% 10%) */
 
-  --fg: 0 0% 98%;
-  --fg-muted: 0 0% 80%;
-  --fg-subtle: 0 0% 66%;
-  --fg-faint: 0 0% 52%;
+  --fg: oklch(0.98481 0 0); /* hsl(0 0% 98%) */
+  --fg-muted: oklch(0.84522 0 0); /* hsl(0 0% 80%) */
+  --fg-subtle: oklch(0.73256 0 0); /* hsl(0 0% 66%) */
+  --fg-faint: oklch(0.61536 0 0); /* hsl(0 0% 52%) */
 
-  --border: 0 0% 14%;
-  --border-strong: 0 0% 22%;
-  --ring: 217 91% 60%;
+  --border: oklch(0.25908 0 0); /* hsl(0 0% 14%) */
+  --border-strong: oklch(0.34109 0 0); /* hsl(0 0% 22%) */
+  --ring: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
 
-  --accent: 217 91% 60%;
-  --accent-fg: 0 0% 100%;
-  --accent-soft: 217 91% 14%;
-  --accent-soft-fg: 217 91% 75%;
+  --accent: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
+  --accent-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --accent-soft: oklch(0.23654 0.08205 259.075); /* hsl(217 91% 14%) */
+  --accent-soft-fg: oklch(0.75914 0.11425 259.642); /* hsl(217 91% 75%) */
 
-  --success: 142 71% 45%;
-  --success-soft: 142 71% 12%;
-  --success-fg: 0 0% 4%;
-  --warning: 38 92% 50%;
-  --warning-soft: 38 92% 12%;
-  --warning-fg: 0 0% 4%;
-  --danger: 0 84% 60%;
-  --danger-soft: 0 84% 12%;
-  --danger-fg: 0 0% 100%;
-  --info: 217 91% 60%;
-  --info-soft: 217 91% 14%;
-  --info-fg: 0 0% 100%;
+  --success: oklch(0.72046 0.19204 149.493); /* hsl(142 71% 45%) */
+  --success-soft: oklch(0.28917 0.06807 151.371); /* hsl(142 71% 12%) */
+  --success-fg: oklch(0.14575 0 0); /* hsl(0 0% 4%) */
+  --warning: oklch(0.76973 0.16452 70.606); /* hsl(38 92% 50%) */
+  --warning-soft: oklch(0.28746 0.05766 76.258); /* hsl(38 92% 12%) */
+  --warning-fg: oklch(0.14575 0 0); /* hsl(0 0% 4%) */
+  --danger: oklch(0.63558 0.2082 25.378); /* hsl(0 84% 60%) */
+  --danger-soft: oklch(0.22268 0.0802 26.746); /* hsl(0 84% 12%) */
+  --danger-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
+  --info: oklch(0.62613 0.18593 259.596); /* hsl(217 91% 60%) */
+  --info-soft: oklch(0.23654 0.08205 259.075); /* hsl(217 91% 14%) */
+  --info-fg: oklch(1 0 0); /* hsl(0 0% 100%) */
 
-  --live: 28 90% 58%;
-  --live-soft: 24 80% 13%;
-  --live-soft-fg: 30 95% 64%;
+  --live: oklch(0.74097 0.15864 57.001); /* hsl(28 90% 58%) */
+  --live-soft: oklch(0.2666 0.05916 51.19); /* hsl(24 80% 13%) */
+  --live-soft-fg: oklch(0.78773 0.14445 62.742); /* hsl(30 95% 64%) */
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
@@ -120,44 +127,46 @@
 }
 
 @theme inline {
-  /* Map CSS vars to Tailwind utility namespace */
-  --color-bg: hsl(var(--bg));
-  --color-bg-subtle: hsl(var(--bg-subtle));
-  --color-bg-muted: hsl(var(--bg-muted));
-  --color-surface: hsl(var(--surface));
-  --color-surface-raised: hsl(var(--surface-raised));
-  --color-surface-overlay: hsl(var(--surface-overlay));
+  /* Map CSS vars to Tailwind utility namespace. Tokens hold full OKLCH colors,
+     so reference them directly; Tailwind's `/opacity` modifier wraps them in
+     color-mix automatically. */
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-muted: var(--bg-muted);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
 
-  --color-fg: hsl(var(--fg));
-  --color-fg-muted: hsl(var(--fg-muted));
-  --color-fg-subtle: hsl(var(--fg-subtle));
-  --color-fg-faint: hsl(var(--fg-faint));
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
 
-  --color-border: hsl(var(--border));
-  --color-border-strong: hsl(var(--border-strong));
-  --color-ring: hsl(var(--ring));
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--ring);
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-fg: hsl(var(--accent-fg));
-  --color-accent-soft: hsl(var(--accent-soft));
-  --color-accent-soft-fg: hsl(var(--accent-soft-fg));
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-fg: var(--accent-soft-fg);
 
-  --color-success: hsl(var(--success));
-  --color-success-soft: hsl(var(--success-soft));
-  --color-success-fg: hsl(var(--success-fg));
-  --color-warning: hsl(var(--warning));
-  --color-warning-soft: hsl(var(--warning-soft));
-  --color-warning-fg: hsl(var(--warning-fg));
-  --color-danger: hsl(var(--danger));
-  --color-danger-soft: hsl(var(--danger-soft));
-  --color-danger-fg: hsl(var(--danger-fg));
-  --color-info: hsl(var(--info));
-  --color-info-soft: hsl(var(--info-soft));
-  --color-info-fg: hsl(var(--info-fg));
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-fg: var(--info-fg);
 
-  --color-live: hsl(var(--live));
-  --color-live-soft: hsl(var(--live-soft));
-  --color-live-soft-fg: hsl(var(--live-soft-fg));
+  --color-live: var(--live);
+  --color-live-soft: var(--live-soft);
+  --color-live-soft-fg: var(--live-soft-fg);
 
   /* Typography */
   --font-sans:
@@ -190,7 +199,7 @@
 
 * {
   box-sizing: border-box;
-  border-color: hsl(var(--border));
+  border-color: var(--border);
 }
 
 html,
@@ -199,8 +208,8 @@ body {
 }
 
 body {
-  background: hsl(var(--bg));
-  color: hsl(var(--fg));
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
@@ -210,8 +219,8 @@ body {
 
 /* Selection */
 ::selection {
-  background: hsl(var(--accent) / 0.2);
-  color: hsl(var(--fg));
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  color: var(--fg);
 }
 
 /* Scrollbar — slim, unobtrusive. Hidden on touch devices so users don't see
@@ -224,13 +233,13 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border-strong));
+  background: var(--border-strong);
   border: 2px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--fg-faint));
+  background: var(--fg-faint);
   background-clip: padding-box;
   border: 2px solid transparent;
 }
@@ -318,7 +327,7 @@ a {
 
 /* Focus ring — visible only via keyboard */
 :focus-visible {
-  outline: 2px solid hsl(var(--ring));
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -390,9 +399,9 @@ textarea:focus,
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    hsl(var(--bg-muted)) 0%,
-    hsl(var(--bg-subtle)) 50%,
-    hsl(var(--bg-muted)) 100%
+    var(--bg-muted) 0%,
+    var(--bg-subtle) 50%,
+    var(--bg-muted) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;

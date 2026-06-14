@@ -127,8 +127,8 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--fg))" stopOpacity={0.16} />
-            <stop offset="100%" stopColor="hsl(var(--fg))" stopOpacity={0} />
+            <stop offset="0%" stopColor="var(--fg)" stopOpacity={0.16} />
+            <stop offset="100%" stopColor="var(--fg)" stopOpacity={0} />
           </linearGradient>
         </defs>
 
@@ -142,18 +142,12 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
                 x2={padLeft + innerW}
                 y1={y}
                 y2={y}
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
                 strokeDasharray="3 3"
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
-              <text
-                x={padLeft - 6}
-                y={y + 3}
-                textAnchor="end"
-                fontSize={10}
-                fill="hsl(var(--fg-faint))"
-              >
+              <text x={padLeft - 6} y={y + 3} textAnchor="end" fontSize={10} fill="var(--fg-faint)">
                 {v}
               </text>
             </g>
@@ -176,7 +170,7 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
               y={H - 6}
               textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
               fontSize={10}
-              fill="hsl(var(--fg-faint))"
+              fill="var(--fg-faint)"
             >
               {d.label}
             </text>
@@ -189,7 +183,7 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
           <path
             d={linePath}
             fill="none"
-            stroke="hsl(var(--fg))"
+            stroke="var(--fg)"
             strokeWidth={1.5}
             vectorEffect="non-scaling-stroke"
           />
@@ -203,7 +197,7 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
               x2={hoverPt.x}
               y1={padTop}
               y2={padTop + innerH}
-              stroke="hsl(var(--border-strong))"
+              stroke="var(--border-strong)"
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
             />
@@ -211,8 +205,8 @@ export function AreaChart({ data, className, valueLabel, yTicks = 4 }: AreaChart
               cx={hoverPt.x}
               cy={hoverPt.y}
               r={4}
-              fill="hsl(var(--fg))"
-              stroke="hsl(var(--bg))"
+              fill="var(--fg)"
+              stroke="var(--bg)"
               strokeWidth={2}
               vectorEffect="non-scaling-stroke"
             />

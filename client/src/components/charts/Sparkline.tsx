@@ -53,8 +53,8 @@ export function Sparkline({ data, area = true, intensity = 'fg', className }: Sp
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--fg))" stopOpacity={opacity} />
-          <stop offset="100%" stopColor="hsl(var(--fg))" stopOpacity={0} />
+          <stop offset="0%" stopColor="var(--fg)" stopOpacity={opacity} />
+          <stop offset="100%" stopColor="var(--fg)" stopOpacity={0} />
         </linearGradient>
       </defs>
       {area && areaPath && <path d={areaPath} fill={`url(#${gradId})`} />}
@@ -62,7 +62,7 @@ export function Sparkline({ data, area = true, intensity = 'fg', className }: Sp
         <path
           d={linePath}
           fill="none"
-          stroke="hsl(var(--fg))"
+          stroke="var(--fg)"
           strokeWidth={1.5}
           vectorEffect="non-scaling-stroke"
         />
