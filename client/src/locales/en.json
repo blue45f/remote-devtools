@@ -863,7 +863,7 @@
     "debugPanelTitle": "SDK debug panel",
     "debugPanelSubtitle": "Trigger SDK-instrumented events to verify capture in the DevTools.",
     "readRequestsTitle": "Read requests",
-    "readRequestsDesc": "Verify request interception across fetch / XHR / Axios.",
+    "readRequestsDesc": "Verify request interception across fetch / XHR / ky.",
     "mutationRequestsTitle": "Mutation requests",
     "mutationRequestsDesc": "Test method capture for write operations.",
     "domConsoleTitle": "DOM & Console",
