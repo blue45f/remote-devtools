@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite';
-import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import { resolve } from 'path';
+
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
-import { resolve } from 'path';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 // Vite 8. React Compiler is wired through plugin-react v6's `reactCompilerPreset`
 // helper fed into `@rolldown/plugin-babel` (plugin-react v4's `babel` escape

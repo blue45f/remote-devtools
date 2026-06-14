@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react';
-
 import ErrorBoundary from './ErrorBoundary';
+
+import type { Meta, StoryObj } from '@storybook/react';
 
 /**
  * ErrorBoundary renders the fallback when a child throws. To showcase that

@@ -1,6 +1,6 @@
-import { apiFetch } from '@/lib/api';
-
 import type { UpdateProfilePayload, UserProfile } from './types';
+
+import { apiFetch } from '@/lib/api';
 
 /**
  * The backend wraps user-profile responses in `{ success, data }`. apiFetch

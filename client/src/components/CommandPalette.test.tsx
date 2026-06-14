@@ -2,10 +2,10 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { CommandPalette } from './CommandPalette';
+
 import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
-
-import { CommandPalette } from './CommandPalette';
 
 beforeEach(() => {
   act(() => {

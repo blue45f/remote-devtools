@@ -1,5 +1,6 @@
-import type { Preview } from '@storybook/react';
 import { withThemeByClassName } from '@storybook/addon-themes';
+
+import type { Preview } from '@storybook/react';
 
 // Load Tailwind tokens + base styles so stories render with the real design system.
 import '../src/index.css';

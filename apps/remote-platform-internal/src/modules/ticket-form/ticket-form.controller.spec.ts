@@ -1,13 +1,14 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BusinessException } from '@remote-platform/common';
+import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
-import { BusinessException } from '@remote-platform/common';
+import { UserInfoService } from '../user-info/user-info.service';
 
 import { TicketFormController } from './ticket-form.controller';
-import { UserInfoService } from '../user-info/user-info.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('TicketFormController', () => {
   let controller: TicketFormController;

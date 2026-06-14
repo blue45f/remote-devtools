@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { S3Service } from './s3.service';
+
+import type { TestingModule } from '@nestjs/testing';
 import type { BufferUploadData } from '@remote-platform/core';
 
 vi.mock('fs', () => ({

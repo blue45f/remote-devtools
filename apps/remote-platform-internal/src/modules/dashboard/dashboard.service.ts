@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { endOfDay, format, startOfDay, subDays, subMonths, subWeeks } from 'date-fns';
-import { Between, MoreThanOrEqual, Repository } from 'typeorm';
-
 import {
   DeviceInfoEntity,
   JobType,
@@ -10,6 +7,8 @@ import {
   TicketLogEntity,
   UserEntity,
 } from '@remote-platform/entity';
+import { endOfDay, format, startOfDay, subDays, subMonths, subWeeks } from 'date-fns';
+import { Between, MoreThanOrEqual, Repository } from 'typeorm';
 
 import { DashboardStatsData } from './dto/dashboard-stats.dto';
 import { RecordSessionTrendItem } from './dto/record-session-trend.dto';

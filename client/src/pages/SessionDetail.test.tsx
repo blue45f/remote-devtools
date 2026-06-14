@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import SessionDetail, { buildSessionInsights } from './SessionDetail';
+
 import { __failNextDemoCommentSave, __resetDemoComments } from '@/lib/seed-router';
 import { renderWithProviders } from '@/test/utils';
-
-import SessionDetail, { buildSessionInsights } from './SessionDetail';
 
 // Mock rrweb-player import — its DOM attach behaviour is not the subject under test.
 vi.mock('@/components/replay/ReplayPlayer', () => ({

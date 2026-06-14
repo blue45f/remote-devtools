@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { GUIDE_FEATURES } from '@/features/guide/content';
+import { GUIDE_FEATURES } from '@/domains/guide/content';
 import { cn } from '@/lib/utils';
 
 export default function GuideFeatures() {

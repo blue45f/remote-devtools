@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { ReplayCommentEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 /**
  * Service backing the replay-comments feature. Single-table CRUD; the

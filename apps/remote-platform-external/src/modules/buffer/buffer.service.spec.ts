@@ -1,9 +1,10 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { BufferEvent, SessionBuffer } from './buffer.service';
 import { BufferService } from './buffer.service';
+
+import type { BufferEvent, SessionBuffer } from './buffer.service';
+import type { TestingModule } from '@nestjs/testing';
 
 function expectPresent<T>(value: T | null | undefined): T {
   expect(value).not.toBeNull();

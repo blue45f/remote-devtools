@@ -3,14 +3,15 @@ import { Activity, ListTree, PlayCircle, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { formatTimestampWithMillis, getEventMeta } from './event-utils';
+
+import type { ReplayEvent } from './normaliseEvent';
+
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-
-import { formatTimestampWithMillis, getEventMeta } from './event-utils';
-import type { ReplayEvent } from './normaliseEvent';
 
 export function TimelineTab({
   events,
@@ -65,6 +66,7 @@ export function TimelineTab({
 
   // Reset cursor whenever the visible result set changes — the row at
   // `cursorIdx` might no longer exist.
+
   useEffect(() => {
     setCursorIdx(-1);
   }, [activeTypes, search]);

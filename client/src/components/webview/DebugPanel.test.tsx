@@ -12,7 +12,7 @@ function makeProps() {
     onToggleLoading: vi.fn(),
     onFetchRequest: vi.fn(),
     onXhrRequest: vi.fn(),
-    onAxiosRequest: vi.fn(),
+    onKyRequest: vi.fn(),
     onPostRequest: vi.fn(),
     onPutRequest: vi.fn(),
     onPatchRequest: vi.fn(),
@@ -39,8 +39,8 @@ describe('DebugPanel', () => {
     await user.click(screen.getByRole('button', { name: /XMLHttpRequest/ }));
     expect(props.onXhrRequest).toHaveBeenCalledOnce();
 
-    await user.click(screen.getByRole('button', { name: /Axios/ }));
-    expect(props.onAxiosRequest).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: /^ky$/ }));
+    expect(props.onKyRequest).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole('button', { name: /^POST$/ }));
     expect(props.onPostRequest).toHaveBeenCalledOnce();

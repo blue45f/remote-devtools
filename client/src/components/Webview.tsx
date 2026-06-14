@@ -1,22 +1,22 @@
-import axios from 'axios';
+import ky from 'ky';
 import { CircuitBoard, ExternalLink, Terminal, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import DebugPanel from './webview/DebugPanel';
+import ExploreTab from './webview/ExploreTab';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { buildDevToolsLink } from '@/lib/devtools-link';
 
-import DebugPanel from './webview/DebugPanel';
-import ExploreTab from './webview/ExploreTab';
-
 export type SdkKind = 'module' | 'script';
 
 const SAMPLE_ENDPOINTS = {
   fetchTodo: 'https://jsonplaceholder.typicode.com/todos/1?dd=1',
   xhrTodo: 'https://jsonplaceholder.typicode.com/todos/2',
-  axiosTodo: 'https://jsonplaceholder.typicode.com/todos/3',
+  kyTodo: 'https://jsonplaceholder.typicode.com/todos/3',
   posts: 'https://jsonplaceholder.typicode.com/posts',
   post: 'https://jsonplaceholder.typicode.com/posts/1',
 } as const;
@@ -85,12 +85,12 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
     xhr.send();
   };
 
-  const handleAxiosRequest = async () => {
+  const handleKyRequest = async () => {
     try {
-      const response = await axios.get(SAMPLE_ENDPOINTS.axiosTodo);
-      emitSampleLog('Axios Response:', response.data);
+      const data = await ky.get(SAMPLE_ENDPOINTS.kyTodo).json();
+      emitSampleLog('ky Response:', data);
     } catch (error) {
-      console.error('Axios error:', error);
+      console.error('ky error:', error);
     }
   };
 
@@ -152,7 +152,7 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
               onToggleLoading={() => setIsLoading(true)}
               onFetchRequest={handleApiRequest}
               onXhrRequest={handleXhrRequest}
-              onAxiosRequest={handleAxiosRequest}
+              onKyRequest={handleKyRequest}
               onPostRequest={() =>
                 makeRequest('POST', SAMPLE_ENDPOINTS.posts, {
                   title: 'New',

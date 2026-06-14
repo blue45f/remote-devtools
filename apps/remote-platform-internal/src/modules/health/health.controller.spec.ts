@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
-import type { HealthCheckResult } from '@nestjs/terminus';
 import { HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { HealthController } from './health.controller';
+
+import type { HealthCheckResult } from '@nestjs/terminus';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('HealthController', () => {
   let controller: HealthController;

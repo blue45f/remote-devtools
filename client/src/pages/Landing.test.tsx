@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from '@/test/utils';
-
 import LandingPage from './Landing';
+
+import { renderWithProviders } from '@/test/utils';
 
 // jsdom does no layout, so the mid-breakpoint (768–1023px) fit is guarded
 // structurally: the classes asserted here are exactly the ones that keep the

@@ -56,7 +56,7 @@ export class ApiClient {
     try {
       const response = await this.client.get('/api/health');
       return response.status === 200;
-    } catch (error) {
+    } catch {
       // health 엔드포인트가 없는 경우를 위한 fallback
       try {
         const response = await this.client.get('/');

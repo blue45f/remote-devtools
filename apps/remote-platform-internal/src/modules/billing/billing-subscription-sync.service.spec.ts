@@ -1,10 +1,10 @@
-import type { Repository, UpdateResult } from 'typeorm';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { OrganizationEntity } from '@remote-platform/entity';
-
 import { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
+
 import type { VerifiedBillingEvent } from './billing.types';
+import type { OrganizationEntity } from '@remote-platform/entity';
+import type { Repository, UpdateResult } from 'typeorm';
 
 describe('BillingSubscriptionSyncService', () => {
   const makeService = () => {

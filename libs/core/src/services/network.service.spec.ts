@@ -1,13 +1,13 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import { NetworkEntity } from '@remote-platform/entity';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { NetworkService } from './network.service';
 import { RecordService } from './record.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('NetworkService', () => {
   let service: NetworkService;

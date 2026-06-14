@@ -1,10 +1,12 @@
-import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Lock, Mail, User } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
+
+import { AuthShell } from './SignIn';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,8 +16,6 @@ import { API_HOST } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { SUPPORT_URL } from '@/lib/policy';
 import { useAppStore } from '@/lib/store';
-
-import { AuthShell } from './SignIn';
 
 // Mirrors the previous native constraints: name `required`, email `required` +
 // `type="email"`. Invalid input blocks the submit side-effects exactly as the

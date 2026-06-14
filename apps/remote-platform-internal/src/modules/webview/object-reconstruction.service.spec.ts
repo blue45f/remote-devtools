@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { ObjectReconstructionService } from './object-reconstruction.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 type PropertySnapshotsMap = Parameters<ObjectReconstructionService['reconstructObjectAsJson']>[1];
 

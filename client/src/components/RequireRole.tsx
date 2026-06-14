@@ -1,6 +1,6 @@
+import { ShieldAlert } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShieldAlert } from 'lucide-react';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { hasRole, useRole, type Role } from '@/lib/roles';

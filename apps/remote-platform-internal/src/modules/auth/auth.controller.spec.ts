@@ -2,6 +2,7 @@ import { BadRequestException, ServiceUnavailableException } from '@nestjs/common
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthController } from './auth.controller';
+
 import type { AuthService } from './auth.service';
 
 describe('AuthController', () => {

@@ -1,8 +1,4 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type * as WebSocket from 'ws';
-
 import {
   DomService,
   NetworkService,
@@ -10,12 +6,17 @@ import {
   RuntimeService,
   ScreenService,
 } from '@remote-platform/core';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { S3Service } from '../s3/s3.service';
+
 import { ObjectReconstructionService } from './object-reconstruction.service';
 import { S3PlaybackService } from './s3-playback.service';
 import { WebviewGateway } from './webview.gateway';
+
 import type { RoomData } from './webview.types';
+import type { TestingModule } from '@nestjs/testing';
+import type * as WebSocket from 'ws';
 
 describe('WebviewGateway (Internal)', () => {
   let gateway: WebviewGateway;

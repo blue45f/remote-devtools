@@ -1,7 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useState } from 'react';
 
 import { AnimatedNumber } from './animated-number';
+
+import type { Meta, StoryObj } from '@storybook/react';
 
 const meta = {
   title: 'UI/AnimatedNumber',

@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from '@/test/utils';
-
 import NotFound from './NotFound';
+
+import { renderWithProviders } from '@/test/utils';
 
 describe('NotFound', () => {
   it('renders the 404 message and primary actions', () => {

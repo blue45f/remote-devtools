@@ -2,21 +2,24 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { WebviewPage } from './Webview';
+
 // Hoisted mock so the factory closes over a real reference.
-const { axiosGetMock, createDebuggerMock } = vi.hoisted(() => ({
-  axiosGetMock: vi.fn(),
+const { kyGetMock, createDebuggerMock } = vi.hoisted(() => ({
+  kyGetMock: vi.fn(),
   createDebuggerMock: vi.fn(),
 }));
-vi.mock('axios', () => ({
+// `Webview` calls `ky.get` directly; transitively it also imports the api
+// module which calls `ky.create` at load time, so the mock must expose both.
+vi.mock('ky', () => ({
   default: {
-    get: axiosGetMock,
+    get: kyGetMock,
+    create: vi.fn(() => vi.fn()),
   },
 }));
 vi.mock('remote-debug-sdk', () => ({
   createDebugger: createDebuggerMock,
 }));
-
-import { WebviewPage } from './Webview';
 
 let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
@@ -25,8 +28,9 @@ function clearInjectedScripts() {
 }
 
 beforeEach(() => {
-  axiosGetMock.mockReset();
-  axiosGetMock.mockResolvedValue({ data: { ok: true } });
+  kyGetMock.mockReset();
+  // ky's `.get()` returns a response whose `.json()` resolves the body.
+  kyGetMock.mockReturnValue({ json: vi.fn().mockResolvedValue({ ok: true }) });
   consoleLogSpy = vi.spyOn(globalThis.console, 'log').mockImplementation(() => undefined);
   createDebuggerMock.mockClear();
   clearInjectedScripts();
@@ -63,14 +67,14 @@ describe('WebviewPage', () => {
     expect(screen.getByRole('heading', { name: /SDK debug panel/ })).toBeInTheDocument();
   });
 
-  it('uses axios for the Axios sample request', async () => {
+  it('uses ky for the ky sample request', async () => {
     const user = userEvent.setup();
     render(<WebviewPage />);
 
     await user.click(screen.getByRole('tab', { name: /Debug actions/ }));
-    await user.click(screen.getByRole('button', { name: /Axios/ }));
+    await user.click(screen.getByRole('button', { name: /^ky$/ }));
 
-    expect(axiosGetMock).toHaveBeenCalledWith('https://jsonplaceholder.typicode.com/todos/3');
+    expect(kyGetMock).toHaveBeenCalledWith('https://jsonplaceholder.typicode.com/todos/3');
   });
 
   it('shows the SDK badge that matches the chosen kind', () => {
