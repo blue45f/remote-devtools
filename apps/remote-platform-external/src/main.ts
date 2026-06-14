@@ -7,6 +7,7 @@ import {
   createCorsOriginValidator,
   HttpExceptionFilter,
   QueryFailedExceptionFilter,
+  validateEnv,
   ZodValidationPipe,
 } from '@remote-platform/common';
 import * as express from 'express';
@@ -33,6 +34,8 @@ function assertRequiredEnv(): void {
 }
 
 assertRequiredEnv();
+// Non-fatal: warns on malformed env vars / insecure production defaults. Never throws.
+validateEnv();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

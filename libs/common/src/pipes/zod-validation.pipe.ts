@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { createZodValidationPipe } from 'nestjs-zod';
+
 import type { ZodError } from 'zod';
 
 // Drop-in replacement for the class-validator `ValidationPipe`. It preserves the

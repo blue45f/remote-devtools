@@ -33,3 +33,6 @@ export {
   createCorsOriginValidator,
   isOriginAllowed,
 } from './security/cors-origin';
+
+// Config
+export { validateEnv } from './config/env';
