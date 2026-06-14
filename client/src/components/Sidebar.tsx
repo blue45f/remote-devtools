@@ -2,6 +2,9 @@ import { ChevronsLeft, ChevronsRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 
+import { LanguageMenu } from './LanguageMenu';
+import { ThemeMenu } from './ThemeMenu';
+
 import { Brand } from '@/components/Brand';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,9 +15,6 @@ import { hasRole, useRole } from '@/lib/roles';
 import { prefetchRoute } from '@/lib/route-prefetch';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-
-import { LanguageMenu } from './LanguageMenu';
-import { ThemeMenu } from './ThemeMenu';
 
 interface SidebarProps {
   onItemClick?: () => void;

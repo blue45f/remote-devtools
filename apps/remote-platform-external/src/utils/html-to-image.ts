@@ -4,8 +4,9 @@
  */
 
 import { Logger } from '@nestjs/common';
-import type { Page } from 'playwright';
 import { chromium } from 'playwright';
+
+import type { Page } from 'playwright';
 
 const logger = new Logger('HtmlToImageRenderer');
 

@@ -7,15 +7,16 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, QueryFailedError, type Repository } from 'typeorm';
-
-import { BILLING_PROVIDER, type BillingProvider, StripeBillingProvider } from './billing.provider';
 import {
   BillingWebhookEventEntity,
   OrganizationPlan,
   OrganizationEntity,
 } from '@remote-platform/entity';
+import { LessThan, QueryFailedError, type Repository } from 'typeorm';
+
 import { BillingSubscriptionSyncService } from './billing-subscription-sync.service';
+import { BILLING_PROVIDER, type BillingProvider, StripeBillingProvider } from './billing.provider';
+
 import type {
   BillingPlan,
   BillingStatus,

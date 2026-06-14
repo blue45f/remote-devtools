@@ -7,9 +7,10 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
-import type { Logger } from '@nestjs/common';
 import { getLocalDateString } from '@remote-platform/constants';
 import { LRUCache } from 'lru-cache';
+
+import type { Logger } from '@nestjs/common';
 
 // ---------------------------------------------------------------------------
 // Shared types

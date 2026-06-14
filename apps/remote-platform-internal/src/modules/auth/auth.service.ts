@@ -7,10 +7,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
-import type { Repository } from 'typeorm';
-
 import { AccountEntity, OrganizationMemberEntity } from '@remote-platform/entity';
+import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
+
+import type { Repository } from 'typeorm';
 
 /**
  * Provider-agnostic JWT signing/verification helper.

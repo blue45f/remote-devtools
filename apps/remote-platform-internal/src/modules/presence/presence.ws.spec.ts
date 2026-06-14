@@ -1,12 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import { WsAdapter } from '@nestjs/platform-ws';
-import { WebSocketGateway, type OnGatewayConnection } from '@nestjs/websockets';
 import { Test } from '@nestjs/testing';
-import type { AddressInfo } from 'node:net';
-import WebSocket from 'ws';
+import { WebSocketGateway, type OnGatewayConnection } from '@nestjs/websockets';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import WebSocket from 'ws';
 
 import { PresenceModule } from './presence.module';
+
+import type { AddressInfo } from 'node:net';
 
 // A second gateway on the DEFAULT path, standing in for the DevTools
 // gateway. Its presence verifies the WsAdapter routes by path so the two

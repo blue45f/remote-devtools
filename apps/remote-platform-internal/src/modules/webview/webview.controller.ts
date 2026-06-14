@@ -18,19 +18,18 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
-
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-
 import { getLocalDateString } from '@remote-platform/constants';
 import { RecordService, ReplayCommentService } from '@remote-platform/core';
-import { S3Service } from '../s3/s3.service';
 
 import { Auth } from '../auth/auth.decorator';
 import { AuthGuard } from '../auth/auth.guard';
-import type { AuthClaims } from '../auth/auth.service';
+import { S3Service } from '../s3/s3.service';
 
 import { WebviewGateway } from './webview.gateway'; // Import Gateway to retrieve session list
+
+import type { AuthClaims } from '../auth/auth.service';
+import type { Response } from 'express';
 
 const MAX_TAG_LENGTH = 24;
 const MAX_TAGS_PER_RECORD = 16;

@@ -1,9 +1,8 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { BusinessException, ErrorCode } from '@remote-platform/common';
 import { AssigneeInfo, DeviceInfoEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 /** User information compatible with the legacy UserInfo interface */
 interface UserInfo {

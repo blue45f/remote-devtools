@@ -2,9 +2,9 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from '@/test/utils';
-
 import Dashboard from './Dashboard';
+
+import { renderWithProviders } from '@/test/utils';
 
 beforeEach(() => {
   localStorage.setItem('demo-mode', '1');

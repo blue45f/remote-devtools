@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
 import { RecordEntity } from '@remote-platform/entity';
+import { Repository } from 'typeorm';
 
 /**
  * 녹화 세션의 생명주기를 관리하는 서비스.

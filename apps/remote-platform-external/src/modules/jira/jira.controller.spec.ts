@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import { BadRequestException, HttpException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { JiraController } from './jira.controller';
 import { JiraService } from './jira.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('JiraController', () => {
   let controller: JiraController;

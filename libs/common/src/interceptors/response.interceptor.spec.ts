@@ -1,9 +1,10 @@
-import type { CallHandler, ExecutionContext } from '@nestjs/common';
 import { of, firstValueFrom } from 'rxjs';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import type { StandardResponse } from './response.interceptor';
 import { ResponseInterceptor } from './response.interceptor';
+
+import type { StandardResponse } from './response.interceptor';
+import type { CallHandler, ExecutionContext } from '@nestjs/common';
 
 describe('ResponseInterceptor', () => {
   let interceptor: ResponseInterceptor<unknown>;

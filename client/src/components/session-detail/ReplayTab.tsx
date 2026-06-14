@@ -18,6 +18,10 @@ import {
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { formatPlayhead } from './event-utils';
+
+import type { ReplayEvent } from './normaliseEvent';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,9 +32,6 @@ import { apiFetch } from '@/lib/api';
 import { copyToClipboard } from '@/lib/clipboard';
 import { REPLAY_SPEEDS, useReplayPrefs } from '@/lib/replay-prefs';
 import { cn } from '@/lib/utils';
-
-import { formatPlayhead } from './event-utils';
-import type { ReplayEvent } from './normaliseEvent';
 
 const ReplayPlayer = lazy(() =>
   import('@/components/replay/ReplayPlayer').then((m) => ({
@@ -299,6 +300,7 @@ function CommentRow({
 
   // Mirror server state whenever the prop changes (other tab edits,
   // optimistic rollbacks, refetches).
+
   useEffect(() => {
     if (!editing) setDraft(comment.body);
   }, [comment.body, editing]);

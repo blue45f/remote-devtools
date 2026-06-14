@@ -1,12 +1,12 @@
-import type { TestingModule } from '@nestjs/testing';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { DeviceInfoEntity, JobType, UserEntity } from '@remote-platform/entity';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DeviceInfoEntity, JobType, UserEntity } from '@remote-platform/entity';
-
 import { UserProfileService } from './user-profile.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('UserProfileService', () => {
   let service: UserProfileService;

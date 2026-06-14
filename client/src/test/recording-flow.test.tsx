@@ -6,11 +6,11 @@
  */
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import Sessions from '@/pages/Sessions';
 import SessionDetail from '@/pages/SessionDetail';
+import Sessions from '@/pages/Sessions';
 import { renderWithProviders } from '@/test/utils';
 
 vi.mock('@/components/replay/ReplayPlayer', () => ({

@@ -34,13 +34,13 @@ import {
   useMembers,
   useRemoveMember,
   useUpdateMember,
-} from '@/features/team/hooks';
+} from '@/domains/team/hooks';
 import {
   MEMBER_ROLES,
   type Member,
   type MemberRole,
   type MemberStatus,
-} from '@/features/team/types';
+} from '@/domains/team/types';
 
 const STATUS_TONE: Record<MemberStatus, StatusTone> = {
   active: 'success',

@@ -1,8 +1,9 @@
-import type { IncomingMessage } from 'node:http';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PresenceGateway } from './presence.gateway';
 import { PresenceService } from './presence.service';
+
+import type { IncomingMessage } from 'node:http';
 
 // Minimal ws-like stub. readyState 1 === OPEN.
 function makeSocket() {

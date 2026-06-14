@@ -1,6 +1,6 @@
-import { apiFetch } from '@/lib/api';
-
 import type { InviteMemberPayload, Member, UpdateMemberPayload } from './types';
+
+import { apiFetch } from '@/lib/api';
 
 const BASE = '/api/accounts/organization/members';
 

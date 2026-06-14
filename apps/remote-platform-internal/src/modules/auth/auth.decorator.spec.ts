@@ -1,8 +1,9 @@
-import type { ExecutionContext } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 
 import { Auth } from './auth.decorator';
+
 import type { AuthClaims } from './auth.service';
+import type { ExecutionContext } from '@nestjs/common';
 
 /**
  * Param decorators register their factory under a non-enumerable key. We can

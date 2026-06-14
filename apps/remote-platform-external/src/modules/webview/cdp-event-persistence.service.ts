@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-
 import { DomService, NetworkService, RuntimeService, ScreenService } from '@remote-platform/core';
 
 import type { BufferEvent } from '../buffer/buffer.service';

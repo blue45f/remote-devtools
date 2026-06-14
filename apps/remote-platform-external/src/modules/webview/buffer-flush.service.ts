@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-
 import { getLocalDateString } from '@remote-platform/constants';
 import { ScreenService } from '@remote-platform/core';
 
@@ -7,6 +6,7 @@ import { BufferService, type BufferEvent } from '../buffer/buffer.service';
 import { S3Service } from '../s3/s3.service';
 
 import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+
 import type { BufferRoomInfo, LastBufferInfo } from './webview.types';
 
 /** 최소 의미 있는 이벤트 수 */

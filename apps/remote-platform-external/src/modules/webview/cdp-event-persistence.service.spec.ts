@@ -1,10 +1,10 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
+import { DomService, NetworkService, RuntimeService, ScreenService } from '@remote-platform/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DomService, NetworkService, RuntimeService, ScreenService } from '@remote-platform/core';
-
 import { CdpEventPersistenceService } from './cdp-event-persistence.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('CdpEventPersistenceService', () => {
   let service: CdpEventPersistenceService;

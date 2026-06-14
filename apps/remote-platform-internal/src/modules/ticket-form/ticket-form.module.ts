@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { UserEntity, DeviceInfoEntity, UserTicketTemplateEntity } from '@remote-platform/entity';
 
 import { UserInfoModule } from '../user-info/user-info.module';

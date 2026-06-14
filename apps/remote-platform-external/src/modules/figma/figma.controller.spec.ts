@@ -1,11 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { DeviceInfoEntity, UserEntity } from '@remote-platform/entity';
-
 import { FigmaController } from './figma.controller';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('FigmaController', () => {
   let controller: FigmaController;

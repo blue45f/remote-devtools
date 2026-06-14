@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { ReplayPlayer } from './ReplayPlayer';
+
 const playerCtor = vi.fn();
 vi.mock('rrweb-player', () => ({
   default: class {
@@ -11,8 +13,6 @@ vi.mock('rrweb-player', () => ({
   },
 }));
 vi.mock('rrweb-player/dist/style.css', () => ({}));
-
-import { ReplayPlayer } from './ReplayPlayer';
 
 const validEvents = [
   { type: 4, timestamp: 0, data: { href: 'x', width: 1, height: 1 } },

@@ -1,9 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { RecordEntity, ReplayCommentEntity, TicketLogEntity } from '@remote-platform/entity';
 import { Repository } from 'typeorm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { RecordEntity, ReplayCommentEntity, TicketLogEntity } from '@remote-platform/entity';
 
 import { ActivityService } from './activity.service';
 

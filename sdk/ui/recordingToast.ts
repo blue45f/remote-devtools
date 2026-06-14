@@ -1,4 +1,5 @@
 import { buildShareLink } from '../utils/helpers';
+
 import { tokens, injectKeyframeAnimations } from './theme';
 
 type ToastVariant = 'primary' | 'default' | 'danger';

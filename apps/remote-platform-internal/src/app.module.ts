@@ -2,20 +2,20 @@ import { join } from 'path';
 
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import * as dotenv from 'dotenv';
-
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule, ServicesModule } from '@remote-platform/core';
+import * as dotenv from 'dotenv';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ActivityModule } from './modules/activity/activity.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
+import { ActivityModule } from './modules/activity/activity.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GoogleSheetsModule } from './modules/google-sheets/google-sheets.module';
+import { HealthModule } from './modules/health/health.module';
 import { ImageBase64Module } from './modules/image-base64/image-base64.module';
 import { PresenceModule } from './modules/presence/presence.module';
 import { RemoteDevToolsModule } from './modules/remote-devtools/remote-devtools.module';
@@ -24,7 +24,6 @@ import { SessionReplayModule } from './modules/session-replay/session-replay.mod
 import { TicketFormModule } from './modules/ticket-form/ticket-form.module';
 import { UserInfoModule } from './modules/user-info/user-info.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
-import { HealthModule } from './modules/health/health.module';
 import { WebviewGatewayModule } from './modules/webview/webview.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 

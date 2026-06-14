@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import { Copy, Download, LogOut, Settings, Trash2, User } from 'lucide-react';
 
 import { Button } from './button';
@@ -12,6 +11,8 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from './dropdown-menu';
+
+import type { Meta, StoryObj } from '@storybook/react';
 
 const meta = {
   title: 'UI/DropdownMenu',

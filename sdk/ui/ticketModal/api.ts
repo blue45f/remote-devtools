@@ -1,6 +1,7 @@
+import { logger } from '../../utils/logger';
+
 import { createFormFields } from './components/fields';
 import { createTemplateSelector, reloadFormWithTemplate } from './components/templateSelector';
-import { logger } from '../../utils/logger';
 import { applyButtonStyles } from './styles';
 import {
   ApiResponse,

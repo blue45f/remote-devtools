@@ -1,10 +1,11 @@
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { BufferController } from './buffer.controller';
 import { WebviewGateway } from './webview.gateway';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('BufferController', () => {
   let controller: BufferController;

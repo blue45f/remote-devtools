@@ -1,9 +1,10 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DataSource } from 'typeorm';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { RemoveRecordService } from './remove-record.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('RemoveRecordService', () => {
   let service: RemoveRecordService;

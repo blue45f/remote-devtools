@@ -38,12 +38,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
-import { SessionPreviewCard } from '@/components/replay/SessionPreviewCard';
-import { OverviewTab } from '@/components/session-detail/OverviewTab';
-import { RawJsonTab } from '@/components/session-detail/RawJsonTab';
-import { ReplayTab } from '@/components/session-detail/ReplayTab';
+import type { ReplayEvent, RawEvent } from '@/components/session-detail/normaliseEvent';
 import type { ReplayComment } from '@/components/session-detail/ReplayTab';
-import { TimelineTab } from '@/components/session-detail/TimelineTab';
+
+import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
+import { SessionPreviewCard } from '@/components/replay/SessionPreviewCard';
 import {
   formatBytes,
   formatPlayhead,
@@ -51,8 +50,10 @@ import {
   normaliseOffsetMs,
 } from '@/components/session-detail/event-utils';
 import { normaliseEvent } from '@/components/session-detail/normaliseEvent';
-import type { ReplayEvent, RawEvent } from '@/components/session-detail/normaliseEvent';
-
+import { OverviewTab } from '@/components/session-detail/OverviewTab';
+import { RawJsonTab } from '@/components/session-detail/RawJsonTab';
+import { ReplayTab } from '@/components/session-detail/ReplayTab';
+import { TimelineTab } from '@/components/session-detail/TimelineTab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -71,13 +72,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toaster';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiFetch } from '@/lib/api';
-import i18n from '@/lib/i18n';
-import { DevToolsLinkButton } from '@/components/DevToolsLinkButton';
-import { formatDurationFromNanos, shortHash } from '@/lib/format';
 import { buildCurlCommand } from '@/lib/curl';
+import { formatDurationFromNanos, shortHash } from '@/lib/format';
 import { buildHar } from '@/lib/har';
-import { recordSessionVisit } from '@/lib/recent-sessions';
+import i18n from '@/lib/i18n';
 import { usePresence } from '@/lib/presence';
+import { recordSessionVisit } from '@/lib/recent-sessions';
 import { formatUserAgentBadge } from '@/lib/user-agent';
 import { cn } from '@/lib/utils';
 
@@ -2299,6 +2299,7 @@ function NoteEditor({
 
   // Re-sync when the metadata cache updates (e.g. after a save round-trips
   // the server-trimmed value, or when navigating between sessions).
+
   useEffect(() => {
     setDraft(note);
   }, [note]);

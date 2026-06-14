@@ -1,8 +1,9 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import { ImageBase64Service } from './image-base64.service';
+
+import type { TestingModule } from '@nestjs/testing';
 
 describe('ImageBase64Service', () => {
   let service: ImageBase64Service;

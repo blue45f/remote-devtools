@@ -1,8 +1,5 @@
 import { join } from 'path';
 
-import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import * as dotenv from 'dotenv';
-
 import {
   AccountEntity,
   DomEntity,
@@ -21,6 +18,9 @@ import {
   DeviceInfoEntity,
   UserTicketTemplateEntity,
 } from '@remote-platform/entity';
+import * as dotenv from 'dotenv';
+
+import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 dotenv.config();
 

@@ -1,10 +1,10 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { ShortcutsDialog } from './ShortcutsDialog';
+
 import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
-
-import { ShortcutsDialog } from './ShortcutsDialog';
 
 beforeEach(() => {
   act(() => {

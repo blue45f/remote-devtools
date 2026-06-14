@@ -1,7 +1,7 @@
+import { JobType } from '@remote-platform/entity';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { JobType } from '@remote-platform/entity';
 import type { AssigneeInfo, DeviceInfo } from '@remote-platform/entity';
 
 // The element shapes below mirror the `DeviceInfo` / `AssigneeInfo` entity

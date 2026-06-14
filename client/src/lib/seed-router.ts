@@ -2,7 +2,6 @@
  * Maps API paths to seed responses for demo mode.
  * Returns undefined for unmatched paths so the caller falls back to network.
  */
-import i18n from '@/lib/i18n';
 
 import {
   buildRecordTrend,
@@ -15,6 +14,8 @@ import {
 } from './seed';
 import { resolveAdminSeed } from './seed-admin';
 import { buildSeedRrwebEvents } from './seed-rrweb';
+
+import i18n from '@/lib/i18n';
 
 interface DemoComment {
   id: number;

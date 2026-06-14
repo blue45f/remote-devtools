@@ -1,7 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import type { Request } from 'express';
 
 import { AuthService, type AuthClaims } from './auth.service';
+
+import type { Request } from 'express';
 
 /**
  * Provider-agnostic JWT guard.

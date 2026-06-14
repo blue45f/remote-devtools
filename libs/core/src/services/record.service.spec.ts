@@ -1,12 +1,12 @@
-import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import type { DeleteResult, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
+import { RecordEntity } from '@remote-platform/entity';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { RecordEntity } from '@remote-platform/entity';
-
 import { RecordService } from './record.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { DeleteResult, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
 
 describe('RecordService', () => {
   let service: RecordService;

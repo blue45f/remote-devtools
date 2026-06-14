@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { AccountEntity, OrganizationMemberEntity } from '@remote-platform/entity';
 
 import { AuthController } from './auth.controller';

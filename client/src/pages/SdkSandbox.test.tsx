@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import SdkModule from './SdkModule';
+import SdkScript from './SdkScript';
+
 const createDebuggerMock = vi.fn();
 vi.mock('remote-debug-sdk', () => ({
   createDebugger: createDebuggerMock,
 }));
-
-import SdkModule from './SdkModule';
-import SdkScript from './SdkScript';
 
 beforeEach(() => {
   createDebuggerMock.mockClear();

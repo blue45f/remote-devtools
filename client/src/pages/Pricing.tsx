@@ -5,8 +5,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-import { Brand } from '@/components/Brand';
 import { SkipLink } from '@/components/a11y/SkipLink';
+import { Brand } from '@/components/Brand';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

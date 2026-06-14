@@ -1,10 +1,11 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
+
+import { Topbar } from './Topbar';
+
+import type { Meta, StoryObj } from '@storybook/react';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAppStore } from '@/lib/store';
-
-import { Topbar } from './Topbar';
 
 const meta = {
   title: 'Composed/Topbar',

@@ -11,9 +11,21 @@ import {
   Sparkles,
   TerminalSquare,
 } from 'lucide-react';
-import type { ComponentType } from 'react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+
+import type { ComponentType } from 'react';
+
+import { SkipLink } from '@/components/a11y/SkipLink';
+import { BrandMark } from '@/components/Brand';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Kbd } from '@/components/ui/kbd';
+import { SUPPORT_URL } from '@/lib/policy';
+import { applyTheme, useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 /** GitHub mark — kept as inline SVG since lucide-react v1+ dropped brand icons. */
 function Github({ className }: { className?: string }) {
@@ -23,17 +35,6 @@ function Github({ className }: { className?: string }) {
     </svg>
   );
 }
-import { Link, useNavigate } from 'react-router-dom';
-
-import { BrandMark } from '@/components/Brand';
-import { SkipLink } from '@/components/a11y/SkipLink';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Kbd } from '@/components/ui/kbd';
-import { SUPPORT_URL } from '@/lib/policy';
-import { applyTheme, useAppStore } from '@/lib/store';
-import { cn } from '@/lib/utils';
 
 const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 

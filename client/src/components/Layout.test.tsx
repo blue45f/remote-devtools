@@ -1,12 +1,12 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import Layout from './Layout';
 
 import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
-
-import Layout from './Layout';
 
 function HomeMock() {
   return <div>page-content</div>;
