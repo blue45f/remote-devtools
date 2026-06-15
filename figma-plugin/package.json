@@ -20,9 +20,9 @@
   "devDependencies": {
     "@figma/plugin-typings": "^1.127.0",
     "@types/node": "^25.9.1",
-    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.60.1",
-    "eslint": "^10.4.0",
+    "eslint": "^10.5.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
     "vite-plugin-singlefile": "^2.3.3"
