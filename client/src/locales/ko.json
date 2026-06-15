@@ -52,6 +52,7 @@
     "quickStartHeading": "SDK를 설치하고 대시보드를 여세요.",
     "quickStartLead": "module, script, self-host 경로 중 하나를 골라 실제 세션 캡처를 시작하세요.",
     "docs": "문서",
+    "designSystem": "디자인 시스템",
     "builtWith": "Chrome DevTools Protocol 기반",
     "mockDemoMode": "데모 모드",
     "mockLiveNow": "현재 라이브",

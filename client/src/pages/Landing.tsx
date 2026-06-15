@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import {
   Activity,
   ArrowRight,
@@ -11,6 +10,7 @@ import {
   Sparkles,
   TerminalSquare,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -978,6 +978,9 @@ function SiteFooter() {
         >
           {t('landing.docs')}
         </a>
+        <Link to="/design" className="hover:text-fg-subtle">
+          {t('landing.designSystem')}
+        </Link>
         <a
           href={`${SUPPORT_URL}?category=site-inquiry`}
           target="_blank"

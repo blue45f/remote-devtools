@@ -52,6 +52,7 @@
     "quickStartHeading": "Install the SDK, open the dashboard.",
     "quickStartLead": "Choose the module, script, or self-host path and start capturing a real session.",
     "docs": "Docs",
+    "designSystem": "Design system",
     "builtWith": "Built with Chrome DevTools Protocol",
     "mockDemoMode": "demo mode",
     "mockLiveNow": "LIVE NOW",
