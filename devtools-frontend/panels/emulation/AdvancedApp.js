@@ -55,8 +55,8 @@ export class AdvancedApp {
         if (this.toolboxWindow) {
             return;
         }
-        const url = window.location.href.replace('devtools_app.html', 'device_mode_emulation_frame.html');
-        this.toolboxWindow = window.open(url, undefined);
+        const url = globalThis.location.href.replace('devtools_app.html', 'device_mode_emulation_frame.html');
+        this.toolboxWindow = globalThis.open(url, undefined);
     }
     deviceModeEmulationFrameLoaded(toolboxDocument) {
         ThemeSupport.ThemeSupport.instance().addDocumentToTheme(toolboxDocument);
@@ -136,7 +136,7 @@ export class AdvancedApp {
             return;
         }
         const window = this.inspectedPagePlaceholder.element.window();
-        if (!window.innerWidth || !window.innerHeight) {
+        if (!globalThis.innerWidth || !globalThis.innerHeight) {
             return;
         }
         if (!this.inspectedPagePlaceholder.isShowing()) {

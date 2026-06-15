@@ -106,7 +106,7 @@ export class TimelineMiniMap extends Common.ObjectWrapper.eventMixin(UI.Widget.V
         if (!this.breadcrumbs) {
             return;
         }
-        // Find the smallest breadcrumb that fits this window.
+        // Find the smallest breadcrumb that fits this globalThis.
         // Breadcrumbs are a linked list from largest to smallest so we have to
         // walk through until we find one that does not fit, and pick the last
         // before that.
@@ -127,7 +127,7 @@ export class TimelineMiniMap extends Common.ObjectWrapper.eventMixin(UI.Widget.V
             }
             currentBreadcrumb = currentBreadcrumb.child;
         }
-        // Activate the breadcrumb that fits the visible window. We do not update
+        // Activate the breadcrumb that fits the visible globalThis. We do not update
         // the visible window here as we are doing this work as a reaction to
         // something else triggering a change in the window visibility.
         this.#activateBreadcrumb(lastBreadcrumbThatFits, { removeChildBreadcrumbs: false, updateVisibleWindow: false });

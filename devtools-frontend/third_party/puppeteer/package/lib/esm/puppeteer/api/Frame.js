@@ -554,7 +554,7 @@ let Frame = (() => {
          * const page = await browser.newPage();
          * const watchDog = page
          *   .mainFrame()
-         *   .waitForFunction('window.innerWidth < 100');
+         *   .waitForFunction('globalThis.innerWidth < 100');
          * page.setViewport({width: 50, height: 50});
          * await watchDog;
          * await browser.close();

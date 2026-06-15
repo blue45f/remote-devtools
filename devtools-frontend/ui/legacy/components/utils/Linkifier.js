@@ -891,7 +891,7 @@ function listenForNewComponentLinkifierEvents() {
         return;
     }
     listeningToNewEvents = true;
-    window.addEventListener('linkifieractivated', function (event) {
+    globalThis.addEventListener('linkifieractivated', function (event) {
         const eventWithData = event;
         Linkifier.handleClickFromNewComponentLand(eventWithData.data);
     });

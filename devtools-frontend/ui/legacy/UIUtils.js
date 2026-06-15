@@ -113,7 +113,7 @@ export function installDragHandle(element, elementDragStart, elementDrag, elemen
         const dragHandler = new DragHandler();
         const dragStart = () => dragHandler.elementDragStart(element, elementDragStart, elementDrag, elementDragEnd, cursor, event, mouseDownPreventDefault);
         if (startDelay) {
-            startTimer = window.setTimeout(dragStart, startDelay);
+            startTimer = globalThis.setTimeout(dragStart, startDelay);
         }
         else {
             dragStart();
@@ -121,7 +121,7 @@ export function installDragHandle(element, elementDragStart, elementDrag, elemen
     }
     function onMouseUp() {
         if (startTimer) {
-            window.clearTimeout(startTimer);
+            globalThis.clearTimeout(startTimer);
         }
         startTimer = null;
     }
@@ -707,19 +707,19 @@ export function endBatchUpdate() {
     }
 }
 export function animateFunction(window, func, params, duration, animationComplete) {
-    const start = window.performance.now();
-    let raf = window.requestAnimationFrame(animationStep);
+    const start = globalThis.performance.now();
+    let raf = globalThis.requestAnimationFrame(animationStep);
     function animationStep(timestamp) {
         const progress = Platform.NumberUtilities.clamp((timestamp - start) / duration, 0, 1);
         func(...params.map(p => p.from + (p.to - p.from) * progress));
         if (progress < 1) {
-            raf = window.requestAnimationFrame(animationStep);
+            raf = globalThis.requestAnimationFrame(animationStep);
         }
         else if (animationComplete) {
             animationComplete();
         }
     }
-    return () => window.cancelAnimationFrame(raf);
+    return () => globalThis.cancelAnimationFrame(raf);
 }
 export class LongClickController {
     element;
@@ -758,7 +758,7 @@ export class LongClickController {
         function keyDown(e) {
             if (this.editKey(e)) {
                 const callback = this.callback;
-                this.longClickInterval = window.setTimeout(callback.bind(null, e), LongClickController.TIME_MS);
+                this.longClickInterval = globalThis.setTimeout(callback.bind(null, e), LongClickController.TIME_MS);
             }
         }
         function keyUp(e) {
@@ -771,7 +771,7 @@ export class LongClickController {
                 return;
             }
             const callback = this.callback;
-            this.longClickInterval = window.setTimeout(callback.bind(null, e), LongClickController.TIME_MS);
+            this.longClickInterval = globalThis.setTimeout(callback.bind(null, e), LongClickController.TIME_MS);
         }
         function mouseUp(e) {
             if (e.which !== 1) {

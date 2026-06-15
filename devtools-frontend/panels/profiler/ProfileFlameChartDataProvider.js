@@ -311,7 +311,7 @@ export class OverviewPane extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox
         if (!context) {
             throw new Error('Failed to get canvas context');
         }
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         const offsetFromBottom = ratio;
         const lineWidth = 1;
         const yScaleFactor = canvasHeight / (this.dataProvider.maxStackDepth() * 1.1);
@@ -352,7 +352,7 @@ export class OverviewPane extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox
         return drawData;
     }
     resetCanvas(width, height) {
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         this.overviewCanvas.width = width * ratio;
         this.overviewCanvas.height = height * ratio;
         this.overviewCanvas.style.width = width + 'px';

@@ -33,12 +33,12 @@ export async function importDebug() {
  * DEBUG=foo* // logs any channels starting with `foo`
  * ```
  *
- * In the browser, set `window.__PUPPETEER_DEBUG` to a string:
+ * In the browser, set `globalThis.__PUPPETEER_DEBUG` to a string:
  *
  * ```
- * window.__PUPPETEER_DEBUG='*'; // logs all channels
- * window.__PUPPETEER_DEBUG='foo'; // logs the `foo` channel
- * window.__PUPPETEER_DEBUG='foo*'; // logs any channels starting with `foo`
+ * globalThis.__PUPPETEER_DEBUG='*'; // logs all channels
+ * globalThis.__PUPPETEER_DEBUG='foo'; // logs the `foo` channel
+ * globalThis.__PUPPETEER_DEBUG='foo*'; // logs any channels starting with `foo`
  * ```
  *
  * @example

@@ -16,7 +16,7 @@ export const FREESTYLER_BINDING_NAME = '__freestyler';
 function freestylerBindingFunc(bindingName) {
     // Executed in another world
     const global = globalThis;
-    if (!global.freestyler) {
+    if (!globalThis.freestyler) {
         const freestyler = (args) => {
             const { resolve, reject, promise } = Promise.withResolvers();
             freestyler.callbacks.set(freestyler.id, {
@@ -52,7 +52,7 @@ function freestylerBindingFunc(bindingName) {
             }
             freestyler.callbacks.delete(callbackId);
         };
-        global.freestyler = freestyler;
+        globalThis.freestyler = freestyler;
     }
 }
 export const freestylerBinding = `(${String(freestylerBindingFunc)})('${FREESTYLER_BINDING_NAME}')`;
@@ -81,7 +81,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
 
     // __freestylerClassName is not exposed to the page due to this being
     // run in the isolated world.
-    const className = el.__freestylerClassName ?? \`\${prefix}-\${global.freestyler.id}\`;
+    const className = el.__freestylerClassName ?? \`\${prefix}-\${globalThis.freestyler.id}\`;
     el.__freestylerClassName = className;
     el.classList.add(className);
 
@@ -95,7 +95,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
 
     const bindingError = new Error();
 
-    const result = await global.freestyler({
+    const result = await globalThis.freestyler({
       method: 'setElementStyles',
       selector,
       className,
@@ -131,7 +131,7 @@ const setupSetElementStyles = `function setupSetElementStyles(prefix) {
     }
   }
 
-  global.setElementStyles = setElementStyles;
+  globalThis.setElementStyles = setElementStyles;
 }`;
 export const injectedFunctions = `(${setupSetElementStyles})('${AI_ASSISTANCE_CSS_CLASS_NAME}')`;
 //# sourceMappingURL=injected.js.map

@@ -32,7 +32,7 @@ export class SourceMapCache {
         if (this.#cachePromise) {
             return await this.#cachePromise;
         }
-        this.#cachePromise = window.caches.open(this.#name);
+        this.#cachePromise = globalThis.caches.open(this.#name);
         return await this.#cachePromise;
     }
     /** The Cache API only allows URL as keys, so we construct a simple one. Given that we have our own cache, we have no risk of conflicting URLs */
@@ -40,7 +40,7 @@ export class SourceMapCache {
         return 'http://debug.id/' + encodeURIComponent(debugId);
     }
     async disposeForTest() {
-        await window.caches.delete(this.#name);
+        await globalThis.caches.delete(this.#name);
     }
 }
 const IN_MEMORY_INSTANCE = new (class {

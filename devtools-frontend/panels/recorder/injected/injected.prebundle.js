@@ -50,7 +50,7 @@ class DevToolsRecorder {
         }
     }
 }
-if (!window.DevToolsRecorder) {
-    window.DevToolsRecorder = new DevToolsRecorder();
+if (!globalThis.DevToolsRecorder) {
+    globalThis.DevToolsRecorder = new DevToolsRecorder();
 }
 //# sourceMappingURL=injected.prebundle.js.map

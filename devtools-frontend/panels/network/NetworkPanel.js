@@ -480,9 +480,9 @@ export class NetworkPanel extends UI.Panel.Panel {
     load() {
         if (this.filmStripRecorder?.isRecording()) {
             if (this.pendingStopTimer) {
-                window.clearTimeout(this.pendingStopTimer);
+                globalThis.clearTimeout(this.pendingStopTimer);
             }
-            this.pendingStopTimer = window.setTimeout(this.stopFilmStripRecording.bind(this), this.displayScreenshotDelay);
+            this.pendingStopTimer = globalThis.setTimeout(this.stopFilmStripRecording.bind(this), this.displayScreenshotDelay);
         }
     }
     stopFilmStripRecording() {

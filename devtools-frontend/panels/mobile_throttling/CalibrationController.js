@@ -99,9 +99,9 @@ export class CalibrationController {
             expression: `
           (${setupTestPage})(${JSON.stringify(i18nString(UIStrings.runningCalibration))});
 
-          window.runBenchmark = () => {
-            window.runs = window.runs ?? 0;
-            moon.textContent = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'][window.runs++ % 8];
+          globalThis.runBenchmark = () => {
+            globalThis.runs = globalThis.runs ?? 0;
+            moon.textContent = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'][globalThis.runs++ % 8];
             return (${computeBenchmarkIndex})(${benchmarkDurationMs});
           }`,
         });
@@ -232,7 +232,7 @@ export class CalibrationController {
         }
         else {
             await this.#runtimeModel.agent.invoke_evaluate({
-                expression: `window.location.href = ${JSON.stringify(this.#originalUrl)}`,
+                expression: `globalThis.location.href = ${JSON.stringify(this.#originalUrl)}`,
             });
         }
     }

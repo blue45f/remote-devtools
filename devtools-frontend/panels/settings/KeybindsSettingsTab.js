@@ -473,7 +473,7 @@ export class ShortcutListItem {
             }
             else if (!UI.KeyboardShortcut.KeyboardShortcut.isModifier(eventDescriptor.key)) {
                 userDescriptors[0] = eventDescriptor;
-                this.secondKeyTimeout = window.setTimeout(() => {
+                this.secondKeyTimeout = globalThis.setTimeout(() => {
                     this.secondKeyTimeout = null;
                 }, UI.ShortcutRegistry.KeyTimeout);
             }

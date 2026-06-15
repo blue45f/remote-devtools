@@ -67,8 +67,8 @@ const DEFAULT_VIEW = (input, output, target) => {
     })} class=${classMap({ suspended: input.suspended })}></devtools-widget>
     <div class="perfmon-chart-container ${classMap({ suspended: input.suspended })}">
       <canvas tabindex="-1" aria-label=${i18nString(UIStrings.graphsDisplayingARealtimeViewOf)}
-          .width=${Math.round(input.width * window.devicePixelRatio)} .height=${input.height}
-          style="height:${input.height / window.devicePixelRatio}px" ${ref(e => {
+          .width=${Math.round(input.width * globalThis.devicePixelRatio)} .height=${input.height}
+          style="height:${input.height / globalThis.devicePixelRatio}px" ${ref(e => {
         if (e) {
             const canvas = e;
             output.graphRenderingContext = canvas.getContext('2d');
@@ -201,7 +201,7 @@ export class PerformanceMonitorImpl extends UI.Widget.HBox {
         this.requestUpdate();
     }
     startPolling() {
-        this.pollTimer = window.setInterval(() => this.poll(), this.pollIntervalMs);
+        this.pollTimer = globalThis.setInterval(() => this.poll(), this.pollIntervalMs);
         this.onResize();
         const animate = () => {
             this.draw();
@@ -212,7 +212,7 @@ export class PerformanceMonitorImpl extends UI.Widget.HBox {
         animate();
     }
     stopPolling() {
-        window.clearInterval(this.pollTimer);
+        globalThis.clearInterval(this.pollTimer);
         this.contentElement.window().cancelAnimationFrame(this.animationId);
         this.metricsBuffer = [];
     }
@@ -240,7 +240,7 @@ export class PerformanceMonitorImpl extends UI.Widget.HBox {
         }
         const ctx = this.graphRenderingContext;
         ctx.save();
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         ctx.clearRect(0, 0, this.width, this.height);
         ctx.save();
         ctx.translate(0, this.scaleHeight); // Reserve space for the scale bar.
@@ -442,7 +442,7 @@ export class PerformanceMonitorImpl extends UI.Widget.HBox {
                 height += this.graphHeight;
             }
         }
-        this.height = Math.ceil(height * window.devicePixelRatio);
+        this.height = Math.ceil(height * globalThis.devicePixelRatio);
         this.requestUpdate();
     }
     createChartInfos() {

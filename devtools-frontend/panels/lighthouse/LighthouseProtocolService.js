@@ -199,7 +199,7 @@ export class ProtocolService {
     initWorker() {
         this.lighthouseWorkerPromise = new Promise(resolve => {
             const workerUrl = new URL('../../entrypoints/lighthouse_worker/lighthouse_worker.js', import.meta.url);
-            const remoteBaseSearchParam = new URL(self.location.href).searchParams.get('remoteBase');
+            const remoteBaseSearchParam = new URL(globalThis.location.href).searchParams.get('remoteBase');
             if (remoteBaseSearchParam) {
                 // Allows Lighthouse worker to fetch remote locale files.
                 workerUrl.searchParams.set('remoteBase', remoteBaseSearchParam);

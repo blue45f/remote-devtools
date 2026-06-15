@@ -577,7 +577,7 @@ export class CSS extends BaseDomain {
       if (
         rule.media &&
         rule.media.length &&
-        !rule.media.find((query) => window.matchMedia(query.text).matches)
+        !rule.media.find((query) => globalThis.matchMedia(query.text).matches)
       )
         return;
       if (
@@ -672,9 +672,9 @@ export class CSS extends BaseDomain {
     if (!isElement(node) && !['::before', '::after'].includes(node.nodeName?.toLowerCase())) return;
 
     const _computedStyle = isElement(node)
-      ? window.getComputedStyle(node)
+      ? globalThis.getComputedStyle(node)
       : isElement(node.parentNode)
-        ? window.getComputedStyle(node.parentNode, node.nodeName)
+        ? globalThis.getComputedStyle(node.parentNode, node.nodeName)
         : [];
     const computedStyle = Array.from(_computedStyle).map((style) => ({
       name: style,

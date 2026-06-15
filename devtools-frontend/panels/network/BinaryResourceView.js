@@ -117,7 +117,7 @@ export class BinaryResourceView extends UI.Widget.VBox {
             clearTimeout(this.addFadeoutSettimeoutId);
             this.addFadeoutSettimeoutId = null;
         }
-        this.addFadeoutSettimeoutId = window.setTimeout(addFadeoutClass.bind(this), 2000);
+        this.addFadeoutSettimeoutId = globalThis.setTimeout(addFadeoutClass.bind(this), 2000);
     }
     updateView() {
         const newViewObject = this.getCurrentViewObject();

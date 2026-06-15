@@ -506,14 +506,14 @@ export class TimelinePanel extends Common.ObjectWrapper.eventMixin(UI.Panel.Pane
             this.#setActiveInsight({ model, insightSetKey });
             // Open the summary panel for the 3p insight.
             if (model.insightKey === "ThirdParties" /* Trace.Insights.Types.InsightKeys.THIRD_PARTIES */) {
-                void window.scheduler.postTask(() => {
+                void globalThis.scheduler.postTask(() => {
                     this.#openSummaryTab();
                 }, { priority: 'background' });
             }
         });
         this.#sideBar.element.addEventListener(TimelineInsights.SidebarInsight.InsightProvideOverlays.eventName, event => {
             const { overlays, options } = event;
-            void window.scheduler.postTask(() => {
+            void globalThis.scheduler.postTask(() => {
                 this.flameChart.setOverlays(overlays, options);
                 const overlaysBounds = Overlays.Overlays.traceWindowContainingOverlays(overlays);
                 if (overlaysBounds) {
@@ -1418,7 +1418,7 @@ export class TimelinePanel extends Common.ObjectWrapper.eventMixin(UI.Panel.Pane
     #launchRehydratedSession(traceJson) {
         let rehydratingWindow = null;
         let pathToLaunch = null;
-        const url = new URL(window.location.href);
+        const url = new URL(globalThis.location.href);
         const pathToEntrypoint = url.pathname.slice(0, url.pathname.lastIndexOf('/'));
         url.pathname = `${pathToEntrypoint}/trace_app.html`;
         url.search = '';
@@ -1931,7 +1931,7 @@ export class TimelinePanel extends Common.ObjectWrapper.eventMixin(UI.Panel.Pane
      * 2. The user had it open, and we hid it (for example, during recording), so now we need to bring it back.
      */
     #showSidebarIfRequired() {
-        const disabledByLocalStorage = window.localStorage.getItem('disable-auto-show-rpp-sidebar-for-test') === 'true';
+        const disabledByLocalStorage = globalThis.localStorage.getItem('disable-auto-show-rpp-sidebar-for-test') === 'true';
         if (Root.Runtime.Runtime.queryParam('disable-auto-performance-sidebar-reveal') !== null || disabledByLocalStorage) {
             // Used in interaction tests & screenshot tests.
             return;
@@ -2352,7 +2352,7 @@ export class TimelinePanel extends Common.ObjectWrapper.eventMixin(UI.Panel.Pane
             resolveSourceMap: this.#createSourceMapResolver(isFreshRecording, metadata),
             isCPUProfile: metadata?.dataOrigin === "CPUProfile" /* Trace.Types.File.DataOrigin.CPU_PROFILE */,
         };
-        if (window.location.href.includes('devtools/bundled') || window.location.search.includes('debugFrontend')) {
+        if (globalThis.location.href.includes('devtools/bundled') || globalThis.location.search.includes('debugFrontend')) {
             // Someone is debugging DevTools, enable the logger to give timings
             // when tracing the performance panel itself.
             const times = {};

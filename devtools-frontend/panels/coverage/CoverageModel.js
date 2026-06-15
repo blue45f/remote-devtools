@@ -146,7 +146,7 @@ export class CoverageModel extends SDK.SDKModel.SDKModel {
         this.currentPollPromise = this.pollAndCallback();
         await this.currentPollPromise;
         if (this.suspensionState === "Active" /* SuspensionState.ACTIVE */ || this.performanceTraceRecording) {
-            this.pollTimer = window.setTimeout(() => this.pollLoop(), COVERAGE_POLLING_PERIOD_MS);
+            this.pollTimer = globalThis.setTimeout(() => this.pollLoop(), COVERAGE_POLLING_PERIOD_MS);
         }
     }
     async stopPolling() {

@@ -190,7 +190,7 @@ export class AiCodeCompletionDisclaimer extends UI.Widget.Widget {
             this.#loading = false;
             const duration = performance.now() - this.#loadingStartTime;
             const remainingTime = Math.max(MINIMUM_LOADING_STATE_TIMEOUT - duration, 0);
-            this.#spinnerLoadingTimeout = window.setTimeout(() => {
+            this.#spinnerLoadingTimeout = globalThis.setTimeout(() => {
                 this.#viewOutput.setLoading?.(false);
                 this.#spinnerLoadingTimeout = undefined;
             }, remainingTime);

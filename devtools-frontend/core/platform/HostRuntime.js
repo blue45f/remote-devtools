@@ -7,7 +7,7 @@ export const IS_NODE = typeof process !== 'undefined' && process.versions?.node 
 export const IS_BROWSER = 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore 'window' is not available when type-checking against node.js types.
-typeof window !== 'undefined' || (typeof self !== 'undefined' && typeof self.postMessage === 'function');
+typeof window !== 'undefined' || (typeof self !== 'undefined' && typeof globalThis.postMessage === 'function');
 export const HOST_RUNTIME = await (async () => {
     // Check IS_BROWSER first: in some embedder environments, both IS_NODE
     // and IS_BROWSER can be true because `process` is available in renderer

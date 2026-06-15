@@ -319,7 +319,7 @@ export class SamplingHeapProfileType extends SamplingHeapProfileTypeBase {
         }
         void heapProfilerModel.startSampling();
         if (Root.Runtime.experiments.isEnabled(Root.ExperimentNames.ExperimentName.SAMPLING_HEAP_PROFILER_TIMELINE)) {
-            this.updateTimer = window.setTimeout(() => {
+            this.updateTimer = globalThis.setTimeout(() => {
                 void this.updateStats();
             }, this.updateIntervalMs);
         }
@@ -333,7 +333,7 @@ export class SamplingHeapProfileType extends SamplingHeapProfileTypeBase {
         return null;
     }
     async stopSampling() {
-        window.clearTimeout(this.updateTimer);
+        globalThis.clearTimeout(this.updateTimer);
         this.updateTimer = 0;
         this.dispatchEventToListeners("RecordingStopped" /* SamplingHeapProfileType.Events.RECORDING_STOPPED */);
         const heapProfilerModel = this.obtainRecordingProfile();
@@ -356,7 +356,7 @@ export class SamplingHeapProfileType extends SamplingHeapProfileTypeBase {
             return;
         }
         this.dispatchEventToListeners("StatsUpdate" /* SamplingHeapProfileType.Events.STATS_UPDATE */, profile);
-        this.updateTimer = window.setTimeout(() => {
+        this.updateTimer = globalThis.setTimeout(() => {
             void this.updateStats();
         }, this.updateIntervalMs);
     }

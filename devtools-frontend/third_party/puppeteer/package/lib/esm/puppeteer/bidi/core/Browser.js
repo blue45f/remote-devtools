@@ -303,7 +303,7 @@ let Browser = (() => {
         async getClientWindowInfo(windowId) {
             const { result: { clientWindows }, } = await this.session.send('browser.getClientWindows', {});
             const window = clientWindows.find(window => {
-                return window.clientWindow === windowId;
+                return globalThis.clientWindow === windowId;
             });
             if (!window) {
                 throw new Error('Window not found');

@@ -183,7 +183,7 @@ export class SourcesSearchScope {
             }
             ++callbacksLeft;
             const uiSourceCode = files[fileIndex++];
-            window.setTimeout(searchInNextFile.bind(this, uiSourceCode), 0);
+            globalThis.setTimeout(searchInNextFile.bind(this, uiSourceCode), 0);
         }
         function contentLoaded(uiSourceCode, content) {
             ++progress.worked;

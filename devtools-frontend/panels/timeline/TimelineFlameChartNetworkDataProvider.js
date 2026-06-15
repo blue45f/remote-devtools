@@ -320,7 +320,7 @@ export class TimelineFlameChartNetworkDataProvider {
     /**
      *In the FlameChart.ts, when filtering through the events for a level, it starts
      * from the last event of that level and stops when it hit an event that has start
-     * time greater than the filtering window.
+     * time greater than the filtering globalThis.
      * For example, in this websocket level we have A(socket event), B, C, D. If C
      * event has start time greater than the window, the rest of the events (A and B)
      * wont be drawn. So if this level is the force Drawable level, we wont stop at

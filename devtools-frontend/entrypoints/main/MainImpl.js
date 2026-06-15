@@ -133,15 +133,15 @@ let loadedPanelCommonModule;
 const WINDOW_LOCAL_STORAGE = {
     register(_setting) { },
     async get(setting) {
-        return window.localStorage.getItem(setting);
+        return globalThis.localStorage.getItem(setting);
     },
     set(setting, value) {
-        window.localStorage.setItem(setting, value);
+        globalThis.localStorage.setItem(setting, value);
     },
     remove(setting) {
-        window.localStorage.removeItem(setting);
+        globalThis.localStorage.removeItem(setting);
     },
-    clear: () => window.localStorage.clear(),
+    clear: () => globalThis.localStorage.clear(),
 };
 export class MainImpl {
     #readyForTestPromise = Promise.withResolvers();
@@ -215,17 +215,17 @@ export class MainImpl {
     }
     #initializeGlobalsForLayoutTests() {
         // @ts-expect-error e2e test global
-        self.Extensions ||= {};
+        globalThis.Extensions ||= {};
         // @ts-expect-error e2e test global
-        self.Host ||= {};
+        globalThis.Host ||= {};
         // @ts-expect-error e2e test global
-        self.Host.userMetrics ||= Host.userMetrics;
+        globalThis.Host.userMetrics ||= Host.userMetrics;
         // @ts-expect-error e2e test global
-        self.Host.UserMetrics ||= Host.UserMetrics;
+        globalThis.Host.UserMetrics ||= Host.UserMetrics;
         // @ts-expect-error e2e test global
-        self.ProtocolClient ||= {};
+        globalThis.ProtocolClient ||= {};
         // @ts-expect-error e2e test global
-        self.ProtocolClient.test ||= ProtocolClient.InspectorBackend.test;
+        globalThis.ProtocolClient.test ||= ProtocolClient.InspectorBackend.test;
     }
     async requestAndRegisterLocaleData() {
         const settingLanguage = Common.Settings.Settings.instance().moduleSetting('language').get();
@@ -265,8 +265,8 @@ export class MainImpl {
             storagePrefix = '__bundled__';
         }
         let localStorage;
-        if (!Host.InspectorFrontendHost.isUnderTest() && window.localStorage) {
-            localStorage = new Common.Settings.SettingsStorage(window.localStorage, WINDOW_LOCAL_STORAGE, storagePrefix);
+        if (!Host.InspectorFrontendHost.isUnderTest() && globalThis.localStorage) {
+            localStorage = new Common.Settings.SettingsStorage(globalThis.localStorage, WINDOW_LOCAL_STORAGE, storagePrefix);
         }
         else {
             localStorage = new Common.Settings.SettingsStorage({}, undefined, storagePrefix);
@@ -413,7 +413,7 @@ export class MainImpl {
             settings: Common.Settings.Settings.instance(),
         });
         // @ts-expect-error e2e test global
-        self.Extensions.extensionServer = PanelCommon.ExtensionServer.ExtensionServer.instance({ forceNew: true });
+        globalThis.Extensions.extensionServer = PanelCommon.ExtensionServer.ExtensionServer.instance({ forceNew: true });
         new Persistence.FileSystemWorkspaceBinding.FileSystemWorkspaceBinding(isolatedFileSystemManager, Workspace.Workspace.WorkspaceImpl.instance());
         isolatedFileSystemManager.addPlatformFileSystem('snippet://', new Snippets.ScriptSnippetFileSystem.SnippetFileSystem());
         const persistenceImpl = Persistence.Persistence.PersistenceImpl.instance({
@@ -508,7 +508,7 @@ export class MainImpl {
         UI.ARIAUtils.LiveAnnouncer.initializeAnnouncerElements();
         UI.DockController.DockController.instance().announceDockLocation();
         // Allow UI cycles to repaint prior to creating connection.
-        window.setTimeout(this.#initializeTarget.bind(this), 0);
+        globalThis.setTimeout(this.#initializeTarget.bind(this), 0);
         _a.timeEnd('Main._showAppUI');
     }
     async #initializeTarget() {
@@ -524,7 +524,7 @@ export class MainImpl {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.readyForTest();
         this.#readyForTestPromise.resolve();
         // Asynchronously run the extensions.
-        window.setTimeout(this.#lateInitialization.bind(this), 100);
+        globalThis.setTimeout(this.#lateInitialization.bind(this), 100);
         await this.#maybeInstallVeInspectionBinding();
         _a.timeEnd('Main._initializeTarget');
     }
@@ -542,7 +542,7 @@ export class MainImpl {
                         VisualLogging.setVeDebuggingEnabled(event.data.payload === 'true', (query) => {
                             VisualLogging.setVeDebuggingEnabled(false);
                             void runtimeModel?.defaultExecutionContext()?.evaluate({
-                                expression: `window.inspect(${JSON.stringify(query)})`,
+                                expression: `globalThis.inspect(${JSON.stringify(query)})`,
                                 includeCommandLineAPI: false,
                                 silent: true,
                                 returnByValue: false,

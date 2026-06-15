@@ -551,8 +551,8 @@ export default function SessionDetailPage() {
       e.preventDefault();
       setTab(next);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, []);
 
   // `C` jumps to the Replay tab and focuses the comment input. Works
@@ -580,8 +580,8 @@ export default function SessionDetailPage() {
       setTab('replay');
       setCommentFocusSignal((s) => s + 1);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [recordId]);
 
   // `?` opens the shortcuts cheatsheet. Lets Shift through because `?` is
@@ -604,8 +604,8 @@ export default function SessionDetailPage() {
       e.preventDefault();
       setHelpOpen((v) => !v);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, []);
 
   if (metaError && !metaLoading) {
@@ -2685,7 +2685,7 @@ interface IncrementalClick {
  *
  * rrweb encodes mouse interactions as IncrementalSnapshot (type 3) with
  * `data.source === 2` and `data.type === 2` (Click). We pull those out,
- * then walk the list with a sliding window.
+ * then walk the list with a sliding globalThis.
  */
 export function detectRageClicks(
   events: ReplayEvent[],
@@ -2819,7 +2819,7 @@ function MetricTile({
     try {
       await navigator.clipboard.writeText(copy);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      globalThis.setTimeout(() => setCopied(false), 1500);
       if (copyToastLabel) toast.success(copyToastLabel);
     } catch {
       toast.error(t('sessionDetail.failedToCopy'));
@@ -2878,7 +2878,7 @@ function CopyChip({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      globalThis.setTimeout(() => setCopied(false), 1500);
       toast.success(toastLabel);
     } catch {
       toast.error(t('sessionDetail.failedToCopy'));

@@ -96,13 +96,13 @@ export class NetworkTimeCalculator extends Common.ObjectWrapper.ObjectWrapper {
         return i18n.TimeUtilities.secondsToString(value, Boolean(precision));
     }
     minimumBoundary() {
-        return this.#window ? this.#window.minimum : this.#minimumBoundary;
+        return this.#window ? this.#globalThis.minimum : this.#minimumBoundary;
     }
     zeroTime() {
         return this.#minimumBoundary;
     }
     maximumBoundary() {
-        return this.#window ? this.#window.maximum : this.#maximumBoundary;
+        return this.#window ? this.#globalThis.maximum : this.#maximumBoundary;
     }
     boundary() {
         return new NetworkTimeBoundary(this.minimumBoundary(), this.maximumBoundary());

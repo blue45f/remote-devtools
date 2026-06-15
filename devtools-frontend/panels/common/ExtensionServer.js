@@ -172,8 +172,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         this.registerHandler("createRecorderView" /* Extensions.ExtensionAPI.PrivateAPI.Commands.CreateRecorderView */, this.onCreateRecorderView.bind(this));
         this.registerHandler("showRecorderView" /* Extensions.ExtensionAPI.PrivateAPI.Commands.ShowRecorderView */, this.onShowRecorderView.bind(this));
         this.registerHandler("showNetworkPanel" /* Extensions.ExtensionAPI.PrivateAPI.Commands.ShowNetworkPanel */, this.onShowNetworkPanel.bind(this));
-        window.addEventListener('message', this.onWindowMessage, false); // Only for main window.
-        const existingTabId = window.DevToolsAPI?.getInspectedTabId?.();
+        globalThis.addEventListener('message', this.onWindowMessage, false); // Only for main globalThis.
+        const existingTabId = globalThis.DevToolsAPI?.getInspectedTabId?.();
         if (existingTabId) {
             this.setInspectedTabId({ data: existingTabId });
         }
@@ -189,7 +189,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         // Set up by this.initExtensions in the constructor.
         SDK.TargetManager.TargetManager.instance().removeEventListener("InspectedURLChanged" /* SDK.TargetManager.Events.INSPECTED_URL_CHANGED */, this.inspectedURLChanged, this);
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.events.removeEventListener(Host.InspectorFrontendHostAPI.Events.SetInspectedTabId, this.setInspectedTabId, this);
-        window.removeEventListener('message', this.onWindowMessage, false);
+        globalThis.removeEventListener('message', this.onWindowMessage, false);
     }
     #onThemeChange = () => {
         const themeName = ThemeSupport.ThemeSupport.instance().themeName();
@@ -976,7 +976,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         function handleEventEntry(entry) {
             // Fool around closure compiler -- it has its own notion of both KeyboardEvent constructor
             // and initKeyboardEvent methods and overriding these in externs.js does not have effect.
-            const event = new window.KeyboardEvent(entry.eventType, {
+            const event = new globalThis.KeyboardEvent(entry.eventType, {
                 key: entry.key,
                 code: entry.code,
                 keyCode: entry.keyCode,
@@ -1058,7 +1058,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         iframe.src = startPage;
         iframe.dataset.devtoolsExtension = name;
         iframe.style.display = 'none';
-        document.body.appendChild(iframe); // Only for main window.
+        document.body.appendChild(iframe); // Only for main globalThis.
     }
     addExtension(extensionInfo) {
         const startPage = extensionInfo.startPage;
@@ -1089,7 +1089,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
             }
             if (!this.registeredExtensions.get(extensionOrigin)) {
                 // See ExtensionAPI.js for details.
-                const injectedAPI = self.buildExtensionAPIInjectedScript(extensionInfo, this.inspectedTabId, ThemeSupport.ThemeSupport.instance().themeName(), UI.ShortcutRegistry.ShortcutRegistry.instance().globalShortcutKeys(), ExtensionServer.instance().extensionAPITestHook);
+                const injectedAPI = globalThis.buildExtensionAPIInjectedScript(extensionInfo, this.inspectedTabId, ThemeSupport.ThemeSupport.instance().themeName(), UI.ShortcutRegistry.ShortcutRegistry.instance().globalShortcutKeys(), ExtensionServer.instance().extensionAPITestHook);
                 Host.InspectorFrontendHost.InspectorFrontendHostInstance.setInjectedScriptForOrigin(extensionOrigin, injectedAPI);
                 this.registeredExtensions.set(extensionOrigin, extensionRegistration);
             }
@@ -1103,7 +1103,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
     }
     registerExtension(origin, port) {
         if (!this.registeredExtensions.has(origin)) {
-            if (origin !== window.location.origin) { // Just ignore inspector frames.
+            if (origin !== globalThis.location.origin) { // Just ignore inspector frames.
                 console.error('Ignoring unauthorized client request from ' + origin);
             }
             return;
@@ -1308,7 +1308,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper {
         if (!kPermittedSchemes.includes(parsedURL.protocol)) {
             return false;
         }
-        if ((window.DevToolsAPI?.getOriginsForbiddenForExtensions?.() || []).includes(parsedURL.origin)) {
+        if ((globalThis.DevToolsAPI?.getOriginsForbiddenForExtensions?.() || []).includes(parsedURL.origin)) {
             return false;
         }
         if (this.#isUrlFromChromeWebStore(parsedURL)) {

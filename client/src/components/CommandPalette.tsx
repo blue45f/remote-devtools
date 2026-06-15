@@ -306,8 +306,8 @@ export function CommandPalette() {
             onSelect={() =>
               run(() => {
                 try {
-                  window.localStorage.removeItem('sessions-prefs:v1');
-                  window.localStorage.removeItem('sessions-pins:v1');
+                  globalThis.localStorage.removeItem('sessions-prefs:v1');
+                  globalThis.localStorage.removeItem('sessions-pins:v1');
                   clearRecentSessions();
                   toast.success(t('command.sessionsCleared'), {
                     description: t('command.sessionsClearedDesc'),

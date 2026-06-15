@@ -253,7 +253,7 @@ export class GenericSettingsTab extends UI.Widget.VBox {
     }
     willHide() {
         if (this.#updateSyncSectionTimerId > 0) {
-            window.clearTimeout(this.#updateSyncSectionTimerId);
+            globalThis.clearTimeout(this.#updateSyncSectionTimerId);
             this.#updateSyncSectionTimerId = -1;
         }
         super.willHide();
@@ -261,7 +261,7 @@ export class GenericSettingsTab extends UI.Widget.VBox {
     }
     updateSyncSection() {
         if (this.#updateSyncSectionTimerId > 0) {
-            window.clearTimeout(this.#updateSyncSectionTimerId);
+            globalThis.clearTimeout(this.#updateSyncSectionTimerId);
             this.#updateSyncSectionTimerId = -1;
         }
         this.#syncSectionUpdatePromise =
@@ -269,7 +269,7 @@ export class GenericSettingsTab extends UI.Widget.VBox {
                 .then(syncInfo => {
                 this.syncSection.syncInfo = syncInfo;
                 if (!syncInfo.isSyncActive || !syncInfo.arePreferencesSynced) {
-                    this.#updateSyncSectionTimerId = window.setTimeout(this.updateSyncSection.bind(this), 500);
+                    this.#updateSyncSectionTimerId = globalThis.setTimeout(this.updateSyncSection.bind(this), 500);
                 }
             });
     }

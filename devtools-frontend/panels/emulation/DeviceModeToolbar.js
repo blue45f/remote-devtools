@@ -424,7 +424,7 @@ export class DeviceModeToolbar {
         const defaultValue = this.model.uaSetting().get() === "Mobile" /* EmulationModel.DeviceModeModel.UA.MOBILE */ ||
             this.model.uaSetting().get() === "Mobile (no touch)" /* EmulationModel.DeviceModeModel.UA.MOBILE_NO_TOUCH */ ?
             EmulationModel.DeviceModeModel.defaultMobileScaleFactor :
-            window.devicePixelRatio;
+            globalThis.devicePixelRatio;
         const values = [1, 2, 3];
         if (!values.includes(defaultValue)) {
             values.push(defaultValue);

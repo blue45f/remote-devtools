@@ -591,7 +591,7 @@ export class DeviceModeModel extends Common.ObjectWrapper.ObjectWrapper {
         const positionY = insets.top;
         const screenOrientationAngle = screenOrientation === "landscapePrimary" /* Protocol.Emulation.ScreenOrientationType.LandscapePrimary */ ? 90 : 0;
         this.#appliedDeviceSize = screenSize;
-        this.#appliedDeviceScaleFactor = deviceScaleFactor || window.devicePixelRatio;
+        this.#appliedDeviceScaleFactor = deviceScaleFactor || globalThis.devicePixelRatio;
         this.#screenRect = new Rect(Math.max(0, (this.#availableSize.width - screenSize.width * scale) / 2), outline.top * scale, screenSize.width * scale, screenSize.height * scale);
         this.#outlineRect = new Rect(this.#screenRect.left - outline.left * scale, 0, (outline.left + screenSize.width + outline.right) * scale, (outline.top + screenSize.height + outline.bottom) * scale);
         this.#visiblePageRect = new Rect(positionX * scale, positionY * scale, Math.min(pageWidth * scale, this.#availableSize.width - this.#screenRect.left - positionX * scale), Math.min(pageHeight * scale, this.#availableSize.height - this.#screenRect.top - positionY * scale));

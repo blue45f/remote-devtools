@@ -133,7 +133,7 @@ export class CallStackSidebarPane extends UI.View.SimpleView {
         this.items = new UI.ListModel.ListModel();
         this.list = new UI.ListControl.ListControl(this.items, this, UI.ListControl.ListMode.NonViewport);
         this.list.element.addEventListener('contextmenu', this.onContextMenu.bind(this), false);
-        self.onInvokeElement(this.list.element, event => {
+        globalThis.onInvokeElement(this.list.element, event => {
             const item = this.list.itemForNode(event.target);
             if (item) {
                 this.activateItem(item);

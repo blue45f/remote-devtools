@@ -75,13 +75,13 @@ export class RAFPoller {
             }
             const result = await this.#fn();
             if (!result) {
-                window.requestAnimationFrame(poll);
+                globalThis.requestAnimationFrame(poll);
                 return;
             }
             deferred.resolve(result);
             await this.stop();
         };
-        window.requestAnimationFrame(poll);
+        globalThis.requestAnimationFrame(poll);
     }
     async stop() {
         assert(this.#deferred, 'Polling never started.');

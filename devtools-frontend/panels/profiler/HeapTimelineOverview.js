@@ -94,8 +94,8 @@ export class HeapTimelineOverview extends Common.ObjectWrapper.eventMixin(UI.Wid
         }
         aggregateAndCall(sizes, maxSizeCallback);
         const yScaleFactor = this.yScale.nextScale(maxSize ? height / (maxSize * 1.1) : 0.0);
-        this.overviewCanvas.width = width * window.devicePixelRatio;
-        this.overviewCanvas.height = height * window.devicePixelRatio;
+        this.overviewCanvas.width = width * globalThis.devicePixelRatio;
+        this.overviewCanvas.height = height * globalThis.devicePixelRatio;
         this.overviewCanvas.style.width = width + 'px';
         this.overviewCanvas.style.height = height + 'px';
         const maybeContext = this.overviewCanvas.getContext('2d');
@@ -103,7 +103,7 @@ export class HeapTimelineOverview extends Common.ObjectWrapper.eventMixin(UI.Wid
             throw new Error('Failed to get canvas context');
         }
         const context = maybeContext;
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         if (this.running) {
             context.beginPath();
             context.lineWidth = 2;
@@ -160,7 +160,7 @@ export class HeapTimelineOverview extends Common.ObjectWrapper.eventMixin(UI.Wid
             const labelWidth = 2 * labelPadding + context.measureText(label).width;
             context.beginPath();
             context.textBaseline = 'bottom';
-            context.font = '10px ' + window.getComputedStyle(this.element, null).getPropertyValue('font-family');
+            context.font = '10px ' + globalThis.getComputedStyle(this.element, null).getPropertyValue('font-family');
             // Background behind text for better contrast. Some opacity so canvas can still bleed through
             context.fillStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background-opacity-80');
             context.fillRect(labelX, labelY - gridLabelHeight, labelWidth, gridLabelHeight);
@@ -176,14 +176,14 @@ export class HeapTimelineOverview extends Common.ObjectWrapper.eventMixin(UI.Wid
     }
     onWindowChanged() {
         if (!this.updateGridTimerId) {
-            this.updateGridTimerId = window.setTimeout(this.updateGrid.bind(this), 10);
+            this.updateGridTimerId = globalThis.setTimeout(this.updateGrid.bind(this), 10);
         }
     }
     scheduleUpdate() {
         if (this.updateTimerId) {
             return;
         }
-        this.updateTimerId = window.setTimeout(this.update.bind(this), 10);
+        this.updateTimerId = globalThis.setTimeout(this.update.bind(this), 10);
     }
     updateBoundaries() {
         this.windowLeftRatio = this.overviewGrid.windowLeftRatio();

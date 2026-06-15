@@ -543,7 +543,7 @@ export class ColorRenderer extends rendererBase(SDK.CSSPropertyParserMatchers.Co
         if (match.relativeColor) {
             const fakeSpan = document.body.appendChild(document.createElement('span'));
             fakeSpan.style.backgroundColor = colorText;
-            colorText = window.getComputedStyle(fakeSpan).backgroundColor?.toString() || colorText;
+            colorText = globalThis.getComputedStyle(fakeSpan).backgroundColor?.toString() || colorText;
             fakeSpan.remove();
         }
         // Now try render a color swatch if the result is parsable.
@@ -866,7 +866,7 @@ export class ContrastColorRenderer extends rendererBase(SDK.CSSPropertyParserMat
         const colorText = context.matchedResult.getComputedText(match.node);
         const fakeSpan = document.body.appendChild(document.createElement('span'));
         fakeSpan.style.color = colorText;
-        const resolvedColorText = window.getComputedStyle(fakeSpan).color;
+        const resolvedColorText = globalThis.getComputedStyle(fakeSpan).color;
         fakeSpan.remove();
         const color = Common.Color.parse(resolvedColorText);
         if (!color) {

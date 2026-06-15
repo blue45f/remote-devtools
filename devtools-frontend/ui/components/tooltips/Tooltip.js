@@ -334,9 +334,9 @@ export class Tooltip extends HTMLElement {
             return;
         }
         if (this.#timeout) {
-            window.clearTimeout(this.#timeout);
+            globalThis.clearTimeout(this.#timeout);
         }
-        this.#timeout = window.setTimeout(() => {
+        this.#timeout = globalThis.setTimeout(() => {
             this.showPopover();
             Tooltip.lastOpenedTooltipId = this.id;
         }, this.hoverDelay);
@@ -346,7 +346,7 @@ export class Tooltip extends HTMLElement {
     }
     hideTooltip = (event) => {
         if (this.#timeout) {
-            window.clearTimeout(this.#timeout);
+            globalThis.clearTimeout(this.#timeout);
         }
         // If the event is a blur event, then:
         // 1. event.currentTarget = the element that got blurred
@@ -430,7 +430,7 @@ export class Tooltip extends HTMLElement {
         if (event.newState === 'closed') {
             this.#closing = true;
             if (this.#timeout) {
-                window.clearTimeout(this.#timeout);
+                globalThis.clearTimeout(this.#timeout);
             }
         }
     };
@@ -494,7 +494,7 @@ export class Tooltip extends HTMLElement {
     }
     #removeEventListeners() {
         if (this.#timeout) {
-            window.clearTimeout(this.#timeout);
+            globalThis.clearTimeout(this.#timeout);
         }
         // Should always exist when this component is used, but in test
         // environments on Chromium this isn't always the case, hence the body? check.
@@ -552,7 +552,7 @@ export class Tooltip extends HTMLElement {
             for (const mutation of mutations) {
                 if (mutation.type === 'childList' && [...mutation.removedNodes].includes(anchor)) {
                     if (this.#timeout) {
-                        window.clearTimeout(this.#timeout);
+                        globalThis.clearTimeout(this.#timeout);
                     }
                     this.hidePopover();
                 }

@@ -168,7 +168,7 @@ class LinearEasingUI {
             return;
         }
         this.#pointIndexForDoubleClick = this.#selectedPointIndex;
-        this.#doubleClickTimer = window.setTimeout(() => {
+        this.#doubleClickTimer = globalThis.setTimeout(() => {
             this.#pointIndexForDoubleClick = undefined;
         }, DOUBLE_CLICK_DELAY);
     }

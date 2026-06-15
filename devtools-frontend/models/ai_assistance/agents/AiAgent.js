@@ -350,7 +350,7 @@ export class AiAgent {
             }
         }
         if (isStructuredLogEnabled()) {
-            window.dispatchEvent(new CustomEvent('aiassistancedone'));
+            globalThis.dispatchEvent(new CustomEvent('aiassistancedone'));
         }
         return;
     }

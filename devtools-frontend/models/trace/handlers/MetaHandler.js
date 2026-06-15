@@ -262,7 +262,7 @@ export function handleEvent(event) {
         const navigationId = event.args.data.navigationId;
         if (navigationsByNavigationId.has(navigationId)) {
             // We have only ever seen this situation once, in crbug.com/1503982, where the user ran:
-            // window.location.href = 'javascript:console.log("foo")'
+            // globalThis.location.href = 'javascript:console.log("foo")'
             // In this situation two identical navigationStart events are emitted with the same data, URL and ID.
             // So, in this situation we drop/ignore any subsequent navigations if we have already seen that ID.
             return;
@@ -328,7 +328,7 @@ export async function finalize(options) {
         // on the time of the current + next window, we need them sorted in ASC
         // order.
         const processWindowValues = [...processWindows.values()].flat().sort((a, b) => {
-            return a.window.min - b.window.min;
+            return a.globalThis.min - b.globalThis.min;
         });
         for (let i = 0; i < processWindowValues.length; i++) {
             const currentWindow = processWindowValues[i];
@@ -336,12 +336,12 @@ export async function finalize(options) {
             // For the last window we set its max to be positive infinity.
             // TODO: Move the trace bounds handler into meta so we can clamp first and last windows.
             if (!nextWindow) {
-                currentWindow.window.max = Types.Timing.Micro(traceBounds.max);
-                currentWindow.window.range = Types.Timing.Micro(traceBounds.max - currentWindow.window.min);
+                currentWindow.globalThis.max = Types.Timing.Micro(traceBounds.max);
+                currentWindow.globalThis.range = Types.Timing.Micro(traceBounds.max - currentWindow.globalThis.min);
             }
             else {
-                currentWindow.window.max = Types.Timing.Micro(nextWindow.window.min - 1);
-                currentWindow.window.range = Types.Timing.Micro(currentWindow.window.max - currentWindow.window.min);
+                currentWindow.globalThis.max = Types.Timing.Micro(nextWindow.globalThis.min - 1);
+                currentWindow.globalThis.range = Types.Timing.Micro(currentWindow.globalThis.max - currentWindow.globalThis.min);
             }
         }
     }

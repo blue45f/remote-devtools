@@ -87,7 +87,7 @@ class Logger {
 
       // 개발 환경 감지
       const isDev =
-        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
       if (isDev) {
         this.config.showDebug = true;
       }
@@ -141,10 +141,10 @@ class Logger {
     try {
       const consoleMethod =
         level === 'error'
-          ? window.console.error.bind(window.console)
+          ? globalThis.console.error.bind(globalThis.console)
           : level === 'warn'
-            ? window.console.warn.bind(window.console)
-            : window.console.log.bind(window.console);
+            ? globalThis.console.warn.bind(globalThis.console)
+            : globalThis.console.log.bind(globalThis.console);
 
       if (args.length > 0) {
         consoleMethod(
@@ -228,8 +228,8 @@ class Logger {
 export const logger = new Logger();
 
 // 전역에서 디버그 모드 활성화할 수 있도록 (호스트의 동명 전역과 충돌 시 덮어쓰지 않음)
-if (typeof window !== 'undefined' && !window.remoteDebugLogger) {
-  window.remoteDebugLogger = {
+if (typeof window !== 'undefined' && !globalThis.remoteDebugLogger) {
+  globalThis.remoteDebugLogger = {
     setLevel: (level: LogLevel) => logger.setLevel(level),
     enable: () => logger.setEnabled(true),
     disable: () => logger.setEnabled(false),

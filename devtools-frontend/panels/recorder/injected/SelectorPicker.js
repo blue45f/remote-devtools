@@ -15,22 +15,22 @@ class SelectorPicker {
     #handleClickEvent = (event) => {
         haultImmediateEvent(event);
         const target = getClickableTargetFromEvent(event);
-        window.captureSelectors(JSON.stringify({
+        globalThis.captureSelectors(JSON.stringify({
             selectors: this.#computer.getSelectors(target),
             ...getMouseEventOffsets(event, target),
         }));
     };
     start = () => {
         this.#logger.log('Setting up selector listeners');
-        window.addEventListener('click', this.#handleClickEvent, true);
-        window.addEventListener('mousedown', haultImmediateEvent, true);
-        window.addEventListener('mouseup', haultImmediateEvent, true);
+        globalThis.addEventListener('click', this.#handleClickEvent, true);
+        globalThis.addEventListener('mousedown', haultImmediateEvent, true);
+        globalThis.addEventListener('mouseup', haultImmediateEvent, true);
     };
     stop = () => {
         this.#logger.log('Tearing down selector listeners');
-        window.removeEventListener('click', this.#handleClickEvent, true);
-        window.removeEventListener('mousedown', haultImmediateEvent, true);
-        window.removeEventListener('mouseup', haultImmediateEvent, true);
+        globalThis.removeEventListener('click', this.#handleClickEvent, true);
+        globalThis.removeEventListener('mousedown', haultImmediateEvent, true);
+        globalThis.removeEventListener('mouseup', haultImmediateEvent, true);
     };
 }
 export { SelectorPicker };

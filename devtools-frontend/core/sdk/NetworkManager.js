@@ -240,7 +240,7 @@ export class NetworkManager extends SDKModel {
             const { postData, base64Encoded } = await manager.#networkAgent.invoke_getRequestPostData({ requestId });
             if (base64Encoded && postData) {
                 // Decode base64 to get raw bytes as an ArrayBuffer.
-                const binaryString = window.atob(postData);
+                const binaryString = globalThis.atob(postData);
                 const bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);

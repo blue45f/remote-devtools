@@ -30,7 +30,7 @@ const FILTER_STORAGE_KEY = 'activity-prefs:v1';
 function readStoredKinds(): Set<ActivityKind> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    const raw = globalThis.localStorage.getItem(FILTER_STORAGE_KEY);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as { kinds?: unknown };
     if (!Array.isArray(parsed?.kinds)) return new Set();
@@ -49,7 +49,7 @@ function readStoredKinds(): Set<ActivityKind> {
 function persistKinds(kinds: Set<ActivityKind>) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ kinds: Array.from(kinds) }));
+    globalThis.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ kinds: Array.from(kinds) }));
   } catch {
     /* quota / private mode — best effort */
   }

@@ -66,7 +66,7 @@ export class HeapSnapshotWorkerDispatcher {
                         };
                         // @ts-expect-error
                         globalThis.HeapSnapshotModel = HeapSnapshotModel;
-                        response.result = await self.eval(data.source);
+                        response.result = await globalThis.eval(data.source);
                     }
                     catch (error) {
                         response.result = error.toString();

@@ -69,13 +69,13 @@ export class InspectorFrontendHostStub {
     closeWindow() {
     }
     setIsDocked(_isDocked, callback) {
-        window.setTimeout(callback, 0);
+        globalThis.setTimeout(callback, 0);
     }
     showSurvey(_trigger, callback) {
-        window.setTimeout(() => callback({ surveyShown: false }), 0);
+        globalThis.setTimeout(() => callback({ surveyShown: false }), 0);
     }
     canShowSurvey(_trigger, callback) {
-        window.setTimeout(() => callback({ canShowSurvey: false }), 0);
+        globalThis.setTimeout(() => callback({ canShowSurvey: false }), 0);
     }
     /**
      * Requests inspected page to be placed atop of the inspector frontend with specified bounds.
@@ -102,7 +102,7 @@ export class InspectorFrontendHostStub {
         if (Common.ParsedURL.schemeIs(url, 'javascript:')) {
             return;
         }
-        window.open(url, '_blank');
+        globalThis.open(url, '_blank');
     }
     openSearchResultsInNewTab(_query) {
         Common.Console.Console.instance().error('Search is not enabled in hosted mode. Please inspect using chrome://inspect');
@@ -207,7 +207,7 @@ export class InspectorFrontendHostStub {
             };
             this.events.dispatchEventToListeners(Events.FileSystemAdded, { fileSystem });
         };
-        window.webkitRequestFileSystem(window.TEMPORARY, 1024 * 1024, onFileSystem);
+        globalThis.webkitRequestFileSystem(globalThis.TEMPORARY, 1024 * 1024, onFileSystem);
     }
     removeFileSystem(_fileSystemPath) {
         const removalCallback = (entries) => {
@@ -252,22 +252,22 @@ export class InspectorFrontendHostStub {
     }
     getPreferences(callback) {
         const prefs = {};
-        for (const name in window.localStorage) {
-            prefs[name] = window.localStorage[name];
+        for (const name in globalThis.localStorage) {
+            prefs[name] = globalThis.localStorage[name];
         }
         callback(prefs);
     }
     getPreference(name, callback) {
-        callback(window.localStorage[name]);
+        callback(globalThis.localStorage[name]);
     }
     setPreference(name, value) {
-        window.localStorage[name] = value;
+        globalThis.localStorage[name] = value;
     }
     removePreference(name) {
-        delete window.localStorage[name];
+        delete globalThis.localStorage[name];
     }
     clearPreferences() {
-        window.localStorage.clear();
+        globalThis.localStorage.clear();
     }
     getSyncInformation(callback) {
         if ('getSyncInformationForTesting' in globalThis) {

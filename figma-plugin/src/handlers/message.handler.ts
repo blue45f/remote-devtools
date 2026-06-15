@@ -9,7 +9,7 @@ import { PluginMessage, PluginUser } from '../types';
  * 메시지 핸들러 초기화
  */
 export function initializeMessageHandler() {
-  window.onmessage = async (event) => {
+  globalThis.onmessage = async (event) => {
     const msg = event.data?.pluginMessage as PluginMessage;
     if (!msg) return;
 

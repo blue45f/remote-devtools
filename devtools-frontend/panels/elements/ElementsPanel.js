@@ -513,7 +513,7 @@ export class ElementsPanel extends UI.Panel.Panel {
         // soon as we can, but continue trying to restore the stale node.
         let didSetFallbackSelection = false;
         // Retry with exponential-ish backoff, capping total wait at ~3s.
-        // Most async-rendered pages settle well within this window.
+        // Most async-rendered pages settle well within this globalThis.
         const attemptDelaysMs = [0, 250, 500, 1000, 1500];
         // Capture the restoration generation so any user interaction (node
         // selection, style editing, node reveal, etc.) cancels pending retries.
@@ -527,7 +527,7 @@ export class ElementsPanel extends UI.Panel.Panel {
                 return;
             }
             if (attemptDelaysMs[attempt]) {
-                await new Promise(resolve => window.setTimeout(resolve, attemptDelaysMs[attempt]));
+                await new Promise(resolve => globalThis.setTimeout(resolve, attemptDelaysMs[attempt]));
             }
             if (savedSelectedNodeOnReset !== this.selectedNodeOnReset) {
                 return;

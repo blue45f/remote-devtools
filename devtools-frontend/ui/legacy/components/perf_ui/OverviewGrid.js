@@ -42,10 +42,10 @@ export class OverviewGrid {
         this.window = new Window(this.element, this.grid.dividersLabelBarElement, calculator);
     }
     enableCreateBreadcrumbsButton() {
-        return this.window.enableCreateBreadcrumbsButton();
+        return this.globalThis.enableCreateBreadcrumbsButton();
     }
     set showingScreenshots(isShowing) {
-        this.window.showingScreenshots = isShowing;
+        this.globalThis.showingScreenshots = isShowing;
     }
     clientWidth() {
         return this.element.clientWidth;
@@ -60,41 +60,41 @@ export class OverviewGrid {
         this.grid.removeEventDividers();
     }
     reset() {
-        this.window.reset();
+        this.globalThis.reset();
     }
     // The ratio of the left slider position compare to the whole overview grid.
     // It should be a number between 0 and 1.
     windowLeftRatio() {
-        return this.window.windowLeftRatio || 0;
+        return this.globalThis.windowLeftRatio || 0;
     }
     // The ratio of the right slider position compare to the whole overview grid.
     // It should be a number between 0 and 1.
     windowRightRatio() {
-        return this.window.windowRightRatio || 0;
+        return this.globalThis.windowRightRatio || 0;
     }
     /**
-     * This function will return the raw value of the slider window.
+     * This function will return the raw value of the slider globalThis.
      * Since the OverviewGrid is used in Performance panel or Memory panel, the raw value can be in milliseconds or bytes.
      *
      * @returns the pair of start/end value of the slider window in milliseconds or bytes
      */
     calculateWindowValue() {
-        return this.window.calculateWindowValue();
+        return this.globalThis.calculateWindowValue();
     }
     setWindowRatio(leftRatio, rightRatio) {
-        this.window.setWindowRatio(leftRatio, rightRatio);
+        this.globalThis.setWindowRatio(leftRatio, rightRatio);
     }
     addEventListener(eventType, listener, thisObject) {
-        return this.window.addEventListener(eventType, listener, thisObject);
+        return this.globalThis.addEventListener(eventType, listener, thisObject);
     }
     setClickHandler(clickHandler) {
-        this.window.setClickHandler(clickHandler);
+        this.globalThis.setClickHandler(clickHandler);
     }
     zoom(zoomFactor, referencePoint) {
-        this.window.zoom(zoomFactor, referencePoint);
+        this.globalThis.zoom(zoomFactor, referencePoint);
     }
     setResizeEnabled(enabled) {
-        this.window.setResizeEnabled(enabled);
+        this.globalThis.setResizeEnabled(enabled);
     }
 }
 const MinSelectableSize = 14;
@@ -301,28 +301,28 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper {
         const mouseEvent = event;
         const window = this.overviewWindowSelector.close(mouseEvent.x - this.offsetLeft);
         // prevent selecting a window on clicking the minimap if breadcrumbs are enabled
-        if (this.#breadcrumbsEnabled && window.start === window.end) {
+        if (this.#breadcrumbsEnabled && globalThis.start === globalThis.end) {
             return;
         }
         delete this.overviewWindowSelector;
         const clickThreshold = 3;
-        if (window.end - window.start < clickThreshold) {
+        if (globalThis.end - globalThis.start < clickThreshold) {
             if (this.clickHandler?.call(null, event)) {
                 return;
             }
-            const middle = window.end;
-            window.start = Math.max(0, middle - MinSelectableSize / 2);
-            window.end = Math.min(this.parentElement.clientWidth, middle + MinSelectableSize / 2);
+            const middle = globalThis.end;
+            globalThis.start = Math.max(0, middle - MinSelectableSize / 2);
+            globalThis.end = Math.min(this.parentElement.clientWidth, middle + MinSelectableSize / 2);
         }
-        else if (window.end - window.start < MinSelectableSize) {
-            if (this.parentElement.clientWidth - window.end > MinSelectableSize) {
-                window.end = window.start + MinSelectableSize;
+        else if (globalThis.end - globalThis.start < MinSelectableSize) {
+            if (this.parentElement.clientWidth - globalThis.end > MinSelectableSize) {
+                globalThis.end = globalThis.start + MinSelectableSize;
             }
             else {
-                window.start = window.end - MinSelectableSize;
+                globalThis.start = globalThis.end - MinSelectableSize;
             }
         }
-        this.setWindowPosition(window.start, window.end);
+        this.setWindowPosition(globalThis.start, globalThis.end);
     }
     startWindowDragging(event) {
         const mouseEvent = event;
@@ -415,7 +415,7 @@ export class Window extends Common.ObjectWrapper.ObjectWrapper {
         UI.ARIAUtils.setAriaValueText(this.rightResizeElement, rightValue);
     }
     /**
-     * This function will return the raw value of the slider window.
+     * This function will return the raw value of the slider globalThis.
      * Since the OverviewGrid is used in Performance panel or Memory panel, the raw value can be in milliseconds or bytes.
      *
      * @returns the pair of start/end value of the slider window in milliseconds or bytes

@@ -158,22 +158,22 @@ export class BrickBreaker extends HTMLElement {
         document.addEventListener('keydown', this.#keyDownHandlerBound, false);
         document.addEventListener('keyup', this.#keyUpHandlerBound, false);
         document.addEventListener('keypress', this.#keyPressHandlerBound, false);
-        window.addEventListener('resize', this.#closeGameBound);
+        globalThis.addEventListener('resize', this.#closeGameBound);
         document.addEventListener('mousemove', this.#mouseMoveHandlerBound, false);
         this.tabIndex = 1;
         this.focus();
     }
     disconnectedCallback() {
         this.#boundingElement.removeEventListener('keydown', this.#keyDownHandlerBound);
-        window.removeEventListener('resize', this.#closeGameBound);
+        globalThis.removeEventListener('resize', this.#closeGameBound);
         document.removeEventListener('keydown', this.#keyDownHandlerBound, false);
         document.removeEventListener('keyup', this.#keyUpHandlerBound, false);
-        window.removeEventListener('resize', this.#closeGameBound);
+        globalThis.removeEventListener('resize', this.#closeGameBound);
         document.removeEventListener('keypress', this.#keyPressHandlerBound, false);
         document.removeEventListener('mousemove', this.#mouseMoveHandlerBound, false);
     }
     #resetCanvas() {
-        const dPR = window.devicePixelRatio;
+        const dPR = globalThis.devicePixelRatio;
         const height = Math.round(this.offsetHeight * dPR);
         const width = Math.round(this.offsetWidth * dPR);
         this.#canvas.height = height;
@@ -206,7 +206,7 @@ export class BrickBreaker extends HTMLElement {
             this.#createGame();
             return;
         }
-        const dPR = window.devicePixelRatio;
+        const dPR = globalThis.devicePixelRatio;
         const currentOffsetOnDPR = Math.round(currentOffset * dPR);
         const newOffset = Math.max(currentOffset - 4, 0);
         const newOffsetOnDPR = Math.round(newOffset * dPR);
@@ -328,7 +328,7 @@ export class BrickBreaker extends HTMLElement {
             this.#running = false;
         }
         if (this.#lives === 0) {
-            window.alert('GAME OVER');
+            globalThis.alert('GAME OVER');
             this.#closeGame();
             return;
         }
@@ -485,8 +485,8 @@ export class BrickBreaker extends HTMLElement {
                 const confettiContainerElement = document.createElement('span');
                 confettiContainerElement.className = 'confetti-100';
                 confettiContainerElement.append(this.#createConfettiElement((i % columnCount) * xSpacing + randomOffset(), (i % rowCount) * ySpacing + randomOffset()));
-                timeoutIDs.push(window.setTimeout(() => this.append(confettiContainerElement), Math.random() * 100));
-                timeoutIDs.push(window.setTimeout(() => {
+                timeoutIDs.push(globalThis.setTimeout(() => this.append(confettiContainerElement), Math.random() * 100));
+                timeoutIDs.push(globalThis.setTimeout(() => {
                     confettiContainerElement.remove();
                 }, 1000));
             }
@@ -494,7 +494,7 @@ export class BrickBreaker extends HTMLElement {
                 setTimeout(drawConfetti, Math.random() * 100 + 400);
                 return;
             }
-            window.alert(`${i18nString(UIStrings.congrats)}\n${i18nString(UIStrings.ps)}`);
+            globalThis.alert(`${i18nString(UIStrings.congrats)}\n${i18nString(UIStrings.ps)}`);
             timeoutIDs.forEach(id => clearTimeout(id));
             this.#closeGame();
         };

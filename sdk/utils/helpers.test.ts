@@ -44,7 +44,7 @@ describe('convertLink', () => {
 
 describe('getCommonInfo', () => {
   afterEach(() => {
-    delete window.JavaScriptInterface;
+    delete globalThis.JavaScriptInterface;
   });
 
   it('is a no-op when JavaScriptInterface is not on window', () => {
@@ -53,7 +53,7 @@ describe('getCommonInfo', () => {
 
   it('invokes JavaScriptInterface.getCommonInfo with the expected key', () => {
     const spy = vi.fn();
-    window.JavaScriptInterface = { getCommonInfo: spy };
+    globalThis.JavaScriptInterface = { getCommonInfo: spy };
 
     getCommonInfo();
 

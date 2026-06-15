@@ -22,7 +22,7 @@ export class SrgbOverlay extends HTMLElement {
         if (width === 0 || height === 0) {
             return null;
         }
-        const step = 1 / window.devicePixelRatio;
+        const step = 1 / globalThis.devicePixelRatio;
         const linePoints = [];
         let x = 0;
         for (let y = 0; y < height; y += step) {

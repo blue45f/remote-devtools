@@ -893,7 +893,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         container.style.setProperty('--max-rows', String(this.#maxRowsShown));
         container.classList.add('elements-tree-truncated');
         // We use a microtask to wait for rendering so all node lines are rendered.
-        window.requestAnimationFrame(() => {
+        globalThis.requestAnimationFrame(() => {
             // The container has a max-height (based on --max-rows). If the total content height
             // (scrollHeight) is greater than the visible height (clientHeight), it means
             // some rows are hidden due to truncation, and we should show the "Show all" button.
@@ -912,7 +912,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
                 this.shadowRoot.appendChild(this.#showAllButton);
             }
             this.#showAllButton.classList.remove('hidden');
-            const computedStyle = window.getComputedStyle(container);
+            const computedStyle = globalThis.getComputedStyle(container);
             const lineHeight = parseFloat(computedStyle.lineHeight) || 16;
             const truncatedLines = Math.round((container.scrollHeight - container.clientHeight) / lineHeight);
             if (truncatedLines > 0) {
@@ -1561,7 +1561,7 @@ export class ElementsTreeOutline extends Common.ObjectWrapper.eventMixin(UI.Tree
         if (this.updateModifiedNodesTimeout) {
             return;
         }
-        this.updateModifiedNodesTimeout = window.setTimeout(this.updateModifiedNodes.bind(this), 50);
+        this.updateModifiedNodesTimeout = globalThis.setTimeout(this.updateModifiedNodes.bind(this), 50);
     }
     /**
      * TODO: this is made public for unit tests until the ElementsTreeOutline is

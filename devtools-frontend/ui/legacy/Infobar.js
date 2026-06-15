@@ -78,7 +78,7 @@ export class Infobar {
         this.closeButton.setTabbable(true);
         this.closeButton.setSize("SMALL" /* Buttons.Button.Size.SMALL */);
         ARIAUtils.setDescription(this.closeButton, i18nString(UIStrings.close));
-        self.onInvokeElement(this.closeButton, this.dispose.bind(this));
+        globalThis.onInvokeElement(this.closeButton, this.dispose.bind(this));
         if (type !== "issue" /* Type.ISSUE */) {
             this.contentElement.tabIndex = 0;
         }

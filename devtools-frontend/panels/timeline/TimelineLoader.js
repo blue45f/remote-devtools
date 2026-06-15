@@ -41,7 +41,7 @@ export class TimelineLoader {
     }
     static loadFromParsedJsonFile(contents, client) {
         const loader = new TimelineLoader(client);
-        window.setTimeout(async () => {
+        globalThis.setTimeout(async () => {
             client.loadingStarted();
             try {
                 loader.#processParsedFile(contents);
@@ -57,14 +57,14 @@ export class TimelineLoader {
     }
     static loadFromEvents(events, client) {
         const loader = new TimelineLoader(client);
-        window.setTimeout(async () => {
+        globalThis.setTimeout(async () => {
             void loader.addEvents(events, null);
         });
         return loader;
     }
     static loadFromTraceFile(traceFile, client) {
         const loader = new TimelineLoader(client);
-        window.setTimeout(async () => {
+        globalThis.setTimeout(async () => {
             void loader.addEvents(traceFile.traceEvents, traceFile.metadata);
         });
         return loader;
@@ -74,7 +74,7 @@ export class TimelineLoader {
         loader.#traceIsCPUProfile = true;
         try {
             const contents = Trace.Helpers.SamplesIntegrator.SamplesIntegrator.createFakeTraceFromCpuProfile(profile, Trace.Types.Events.ThreadID(1));
-            window.setTimeout(async () => {
+            globalThis.setTimeout(async () => {
                 void loader.addEvents(contents.traceEvents, null);
             });
         }
@@ -155,7 +155,7 @@ export class TimelineLoader {
             const chunk = events.slice(i, i + eventsPerChunk);
             this.#collectEvents(chunk);
             this.client?.loadingProgress((i + chunk.length) / events.length);
-            await new Promise(r => window.setTimeout(r, 0)); // Yield event loop to paint.
+            await new Promise(r => globalThis.setTimeout(r, 0)); // Yield event loop to paint.
         }
         void this.close();
     }

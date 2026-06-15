@@ -462,7 +462,7 @@ export class StylesSidebarPane extends Common.ObjectWrapper.eventMixin(ElementsS
     }
     async #innerDoUpdate(signal) {
         if (!this.initialUpdateCompleted) {
-            window.setTimeout(() => {
+            globalThis.setTimeout(() => {
                 if (signal?.aborted) {
                     return;
                 }
@@ -1459,7 +1459,7 @@ export class IdleCallbackManager {
         this.scheduleIdleCallback(/* timeout=*/ 100);
     }
     scheduleIdleCallback(timeout) {
-        window.requestIdleCallback(() => {
+        globalThis.requestIdleCallback(() => {
             const next = this.queue.shift();
             assertNotNullOrUndefined(next);
             try {

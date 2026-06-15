@@ -19,7 +19,7 @@ export class TextEditor extends HTMLElement {
     #resizeTimeout = -1;
     #resizeListener = () => {
         if (this.#resizeTimeout < 0) {
-            this.#resizeTimeout = window.setTimeout(() => {
+            this.#resizeTimeout = globalThis.setTimeout(() => {
                 this.#resizeTimeout = -1;
                 if (this.#activeEditor) {
                     CodeMirror.repositionTooltips(this.#activeEditor);
@@ -107,7 +107,7 @@ export class TextEditor extends HTMLElement {
             this.#activeEditor.dispatch({ effects: clearHighlightedLine.of(null) });
             this.#pendingState = this.#activeEditor.state;
             this.#devtoolsResizeObserver.disconnect();
-            window.removeEventListener('resize', this.#resizeListener);
+            globalThis.removeEventListener('resize', this.#resizeListener);
             this.#activeEditor.destroy();
             this.#activeEditor = undefined;
             this.#ensureSettingListeners();
@@ -147,7 +147,7 @@ export class TextEditor extends HTMLElement {
         if (devtoolsElement) {
             this.#devtoolsResizeObserver.observe(devtoolsElement);
         }
-        window.addEventListener('resize', this.#resizeListener);
+        globalThis.addEventListener('resize', this.#resizeListener);
     }
     #maybeDispatchInput(transaction) {
         const userEvent = transaction.annotation(CodeMirror.Transaction.userEvent);

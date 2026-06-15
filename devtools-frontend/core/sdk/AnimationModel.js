@@ -256,7 +256,7 @@ export class AnimationModel extends SDKModel {
         this.dispatchEventToListeners(Events.ModelReset);
     }
     async devicePixelRatio() {
-        const evaluateResult = await this.target().runtimeAgent().invoke_evaluate({ expression: 'window.devicePixelRatio' });
+        const evaluateResult = await this.target().runtimeAgent().invoke_evaluate({ expression: 'globalThis.devicePixelRatio' });
         if (evaluateResult?.result.type === 'number') {
             return evaluateResult?.result.value ?? 1;
         }

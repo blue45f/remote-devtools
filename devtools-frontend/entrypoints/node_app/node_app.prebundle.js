@@ -98,7 +98,7 @@ UI.ViewManager.registerViewExtension({
     tags: [],
 });
 // @ts-expect-error Exposed for legacy layout tests
-self.runtime = Root.Runtime.Runtime.instance({ forceNew: true });
+globalThis.runtime = Root.Runtime.Runtime.instance({ forceNew: true });
 Common.Runnable.registerEarlyInitializationRunnable(NodeMainImpl.instance);
 new Main.MainImpl.MainImpl();
 //# sourceMappingURL=node_app.prebundle.js.map

@@ -166,17 +166,17 @@ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 // Command Menu.
 const supportsPrefersReducedData = () => {
     const query = 'not all and (prefers-reduced-data), (prefers-reduced-data)';
-    return window.matchMedia(query).matches;
+    return globalThis.matchMedia(query).matches;
 };
 // TODO(1424879): remove this feature detection and expose the UI
 // unconditionally once prefers-reduced-transparency ships unflagged.
 const supportsPrefersReducedTransparency = () => {
     const query = 'not all and (prefers-reduced-transparency), (prefers-reduced-transparency)';
-    return window.matchMedia(query).matches;
+    return globalThis.matchMedia(query).matches;
 };
 const supportsPrefersContrast = () => {
     const query = 'not all and (prefers-contrast), (prefers-contrast)';
-    return window.matchMedia(query).matches;
+    return globalThis.matchMedia(query).matches;
 };
 const supportsJpegXl = () => {
     return Boolean(Root.Runtime.hostConfig.devToolsJpegXlImageFormat?.enabled);

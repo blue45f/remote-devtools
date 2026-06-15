@@ -132,7 +132,7 @@ export class PopoverHelper {
         if (!this.hidePopoverCallback || this.hidePopoverTimer) {
             return;
         }
-        this.hidePopoverTimer = window.setTimeout(() => {
+        this.hidePopoverTimer = globalThis.setTimeout(() => {
             this.#hidePopover();
             this.hidePopoverTimer = null;
         }, timeout);
@@ -142,7 +142,7 @@ export class PopoverHelper {
         if (!this.scheduledRequest) {
             return;
         }
-        this.showPopoverTimer = window.setTimeout(() => {
+        this.showPopoverTimer = globalThis.setTimeout(() => {
             this.showPopoverTimer = null;
             this.stopHidePopoverTimer();
             this.#hidePopover();

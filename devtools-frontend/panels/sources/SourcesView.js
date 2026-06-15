@@ -106,8 +106,8 @@ export class SourcesView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox)
                 void Common.Revealer.reveal(sourceCode);
             }
         }
-        if (!window.opener) {
-            window.addEventListener('beforeunload', handleBeforeUnload, true);
+        if (!globalThis.opener) {
+            globalThis.addEventListener('beforeunload', handleBeforeUnload, true);
         }
     }
     placeholderElement() {

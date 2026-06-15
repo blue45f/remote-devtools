@@ -108,7 +108,7 @@ describe('logger', () => {
   });
 
   it('exposes a remoteDebugLogger handle on window', () => {
-    const handle = window.remoteDebugLogger;
+    const handle = globalThis.remoteDebugLogger;
     if (!handle) throw new Error('Expected remoteDebugLogger on window');
     expect(typeof handle.setLevel).toBe('function');
     expect(typeof handle.enable).toBe('function');

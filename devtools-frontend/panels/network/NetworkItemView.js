@@ -295,7 +295,7 @@ export class NetworkItemView extends UI.TabbedPane.TabbedPane {
         if (!this.selectTab(tabId)) {
             // maybeAppendPayloadPanel might cause payload tab to appear asynchronously, so
             // it makes sense to retry on the next tick
-            window.setTimeout(() => {
+            globalThis.setTimeout(() => {
                 if (!this.selectTab(tabId)) {
                     this.selectTab(this.#firstTab);
                 }

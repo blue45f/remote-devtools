@@ -177,7 +177,7 @@ export class StatusDialog extends UI.Widget.VBox {
     }
     startTimer() {
         this.#startTime = Date.now();
-        this.#timeUpdateTimer = window.setInterval(this.#updateTimerTick.bind(this), 100);
+        this.#timeUpdateTimer = globalThis.setInterval(this.#updateTimerTick.bind(this), 100);
         this.#updateTimerTick();
     }
     stopTimer() {

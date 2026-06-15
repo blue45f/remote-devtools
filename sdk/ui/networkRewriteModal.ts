@@ -672,7 +672,7 @@ function createCardItem(item: NetworkCardItem, onEditClick: (item: NetworkCardIt
       setTimeout(() => {
         document.body.removeChild(successMsg);
         // Reload page
-        window.location.reload();
+        globalThis.location.reload();
       }, 1500);
     }
   });
@@ -1304,7 +1304,7 @@ function createEditView(item: NetworkCardItem, onSave: SaveRewriteHandler, onBac
             overlay.remove();
           }
           // Reload page to apply rewrite
-          window.location.reload();
+          globalThis.location.reload();
         }, 1500);
       } catch {
         alert('Invalid JSON format.');

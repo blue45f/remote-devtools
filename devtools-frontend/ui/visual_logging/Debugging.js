@@ -99,7 +99,7 @@ function showDebugPopover(content, rect) {
         const debugPopoverReact = debugPopover.getBoundingClientRect();
         // If there is no space under the element
         // render render it above the element
-        if (window.innerHeight < rect.bottom + debugPopoverReact.height + 8) {
+        if (globalThis.innerHeight < rect.bottom + debugPopoverReact.height + 8) {
             debugPopover.style.top = `${rect.top - debugPopoverReact.height - 8}px`;
         }
         else {
@@ -107,7 +107,7 @@ function showDebugPopover(content, rect) {
         }
         // If the element will go outside the viewport on the right
         // render it with it's and at the viewport end.
-        if (window.innerWidth < rect.left + debugPopoverReact.width) {
+        if (globalThis.innerWidth < rect.left + debugPopoverReact.width) {
             debugPopover.style.right = '0px';
             debugPopover.style.left = '';
         }

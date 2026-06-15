@@ -129,7 +129,7 @@ const LOCALIZED_INSTRUMENTATION_NAMES = {
     ["Geolocation.getCurrentPosition" /* SDK.EventBreakpointsModel.InstrumentationNames.GEOLOCATION_GET_CURRENT_POSITION */]: i18n.i18n.lockedLazyString('getCurrentPosition'),
     ["Geolocation.watchPosition" /* SDK.EventBreakpointsModel.InstrumentationNames.GEOLOCATION_WATCH_POSITION */]: i18n.i18n.lockedLazyString('watchPosition'),
     ["Notification.requestPermission" /* SDK.EventBreakpointsModel.InstrumentationNames.NOTIFICATION_REQUEST_PERMISSION */]: i18n.i18n.lockedLazyString('requestPermission'),
-    ["DOMWindow.close" /* SDK.EventBreakpointsModel.InstrumentationNames.DOM_WINDOW_CLOSE */]: i18n.i18n.lockedLazyString('window.close'),
+    ["DOMWindow.close" /* SDK.EventBreakpointsModel.InstrumentationNames.DOM_WINDOW_CLOSE */]: i18n.i18n.lockedLazyString('globalThis.close'),
     ["Document.write" /* SDK.EventBreakpointsModel.InstrumentationNames.DOCUMENT_WRITE */]: i18n.i18n.lockedLazyString('document.write'),
     ["audioContextCreated" /* SDK.EventBreakpointsModel.InstrumentationNames.AUDIO_CONTEXT_CREATED */]: i18nLazyString(UIStrings.createAudiocontext),
     ["audioContextClosed" /* SDK.EventBreakpointsModel.InstrumentationNames.AUDIO_CONTEXT_CLOSED */]: i18nLazyString(UIStrings.closeAudiocontext),

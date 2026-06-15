@@ -183,7 +183,7 @@ export class RemoteDebugger {
       recordMode: true,
       socket: this.socket,
       deviceId: this.deviceId,
-      url: window.location.href,
+      url: globalThis.location.href,
       title: document.title,
     });
 
@@ -192,9 +192,9 @@ export class RemoteDebugger {
     // Immediate capture started
   }
 
-  private lastLocationHref: string = window.location.href;
-  private originalLocationReplace: typeof window.location.replace | null = null;
-  private originalLocationAssign: typeof window.location.assign | null = null;
+  private lastLocationHref: string = globalThis.location.href;
+  private originalLocationReplace: typeof globalThis.location.replace | null = null;
+  private originalLocationAssign: typeof globalThis.location.assign | null = null;
 
   /**
    * URL이 앱 딥링크인지 확인하고 적절한 로거 카테고리 반환
@@ -252,9 +252,9 @@ export class RemoteDebugger {
    * 5. popstate/hashchange 이벤트 (히스토리 변경 감지)
    */
   private setupLocationHrefInterceptor(): void {
-    this.lastLocationHref = window.location.href;
+    this.lastLocationHref = globalThis.location.href;
 
-    // 1. Navigation API 사용 (window.location.href = "value" 포함 모든 네비게이션 감지)
+    // 1. Navigation API 사용 (globalThis.location.href = "value" 포함 모든 네비게이션 감지)
     if (!this.setupNavigationAPI()) {
       // 2. Location.prototype.assign/replace 후킹
       this.setupLocationPrototypeHooks();
@@ -267,17 +267,17 @@ export class RemoteDebugger {
     this.setupHistoryAPIHooks();
 
     // 5. popstate/hashchange 이벤트 감지 (뒤로가기/앞으로가기, 해시 변경)
-    window.addEventListener('popstate', () => {
-      const currentHref = window.location.href;
+    globalThis.addEventListener('popstate', () => {
+      const currentHref = globalThis.location.href;
       if (currentHref !== this.lastLocationHref) {
         logger.hrefChange.info(`[popstate] ${currentHref}`);
         this.lastLocationHref = currentHref;
       }
     });
 
-    window.addEventListener('hashchange', (event) => {
+    globalThis.addEventListener('hashchange', (event) => {
       logger.hrefChange.info(`[hashchange] ${event.newURL}`);
-      this.lastLocationHref = window.location.href;
+      this.lastLocationHref = globalThis.location.href;
     });
   }
 
@@ -285,15 +285,15 @@ export class RemoteDebugger {
    * Navigation API 설정 (가장 확실한 방법)
    * Chrome 102+, Edge 102+ 지원
    *
-   * window.location.href = "value" 할당을 포함한 모든 네비게이션 감지 가능
+   * globalThis.location.href = "value" 할당을 포함한 모든 네비게이션 감지 가능
    */
   private setupNavigationAPI(): boolean {
     // Navigation API 지원 확인
-    if (typeof window.navigation === 'undefined') {
+    if (typeof globalThis.navigation === 'undefined') {
       return false;
     }
 
-    const navigation = window.navigation as NavigationWithNavigateEvent;
+    const navigation = globalThis.navigation as NavigationWithNavigateEvent;
 
     try {
       navigation.addEventListener('navigate', (event) => {
@@ -307,7 +307,7 @@ export class RemoteDebugger {
         let displayUrl = destinationUrl;
         try {
           const url = new URL(destinationUrl);
-          if (url.origin === window.location.origin) {
+          if (url.origin === globalThis.location.origin) {
             displayUrl = url.pathname + url.search + url.hash;
           }
         } catch {
@@ -343,10 +343,10 @@ export class RemoteDebugger {
 
       // 원본 메서드 저장 (bind 없이 저장, 호출 시 apply 사용)
       this.originalLocationReplace = (url: string | URL) => {
-        return Function.prototype.apply.call(originalReplace, window.location, [url]);
+        return Function.prototype.apply.call(originalReplace, globalThis.location, [url]);
       };
       this.originalLocationAssign = (url: string | URL) => {
-        return Function.prototype.apply.call(originalAssign, window.location, [url]);
+        return Function.prototype.apply.call(originalAssign, globalThis.location, [url]);
       };
 
       // 바인딩된 메서드 참조
@@ -415,7 +415,7 @@ export class RemoteDebugger {
       // 바인딩된 메서드 참조
       const boundLogUrl = this.logUrl.bind(this);
       const updateLastHref = (url: string) => {
-        this.lastLocationHref = new URL(url, window.location.href).href;
+        this.lastLocationHref = new URL(url, globalThis.location.href).href;
       };
 
       history.pushState = function (data: unknown, unused: string, url?: string | URL | null) {
@@ -494,7 +494,7 @@ export class RemoteDebugger {
 
   /**
    * 디버깅용: location 후킹 상태 확인
-   * 브라우저 콘솔에서 window.remoteDebugger?.checkLocationHooks() 호출 가능
+   * 브라우저 콘솔에서 globalThis.remoteDebugger?.checkLocationHooks() 호출 가능
    */
   public checkLocationHooks(): {
     navigationAPISupported: boolean;
@@ -502,7 +502,7 @@ export class RemoteDebugger {
     assignHooked: boolean;
     historyHooked: boolean;
   } {
-    const navigationAPISupported = typeof window.navigation !== 'undefined';
+    const navigationAPISupported = typeof globalThis.navigation !== 'undefined';
 
     // Location.prototype 후킹 확인
     const replaceHooked =
@@ -525,7 +525,7 @@ export class RemoteDebugger {
 
   /**
    * 테스트용: URL 변경 시뮬레이션 (실제 이동 없이 로깅만)
-   * 브라우저 콘솔에서 window.remoteDebugger?.testLocationLog("test-url") 호출 가능
+   * 브라우저 콘솔에서 globalThis.remoteDebugger?.testLocationLog("test-url") 호출 가능
    */
   public testLocationLog(url: string): void {
     logger.hrefChange.info(`[테스트] ${url}`, { inputUrl: url });
@@ -602,7 +602,7 @@ export class RemoteDebugger {
     });
 
     // 페이지 언로드 (닫기, 새로고침, 다른 페이지로 이동) - 웹뷰 종료 시 가장 확실한 이벤트
-    window.addEventListener('beforeunload', (_event) => {
+    globalThis.addEventListener('beforeunload', (_event) => {
       // 기존 타이머가 있으면 취소 (중복 방지)
       if (unloadTimer) {
         clearTimeout(unloadTimer);
@@ -617,18 +617,18 @@ export class RemoteDebugger {
     });
 
     // 모바일 페이지 숨김
-    window.addEventListener('pagehide', () => {
+    globalThis.addEventListener('pagehide', () => {
       handlePageUnload('pagehide');
     });
 
     // 추가 웹뷰 종료 감지
-    window.addEventListener('unload', () => {
+    globalThis.addEventListener('unload', () => {
       // Page unload
       handlePageUnload('unload', true);
     });
 
     // 모바일 앱 백그라운드에서 복귀 시 플래그 리셋
-    window.addEventListener('pageshow', (_event) => {
+    globalThis.addEventListener('pageshow', (_event) => {
       if (_event.persisted) {
         // Return from background - reset flags
         lastUnloadTime = 0;
@@ -655,7 +655,7 @@ export class RemoteDebugger {
       event: 'saveBuffer',
       data: {
         deviceId: this.deviceId,
-        url: window.location.href,
+        url: globalThis.location.href,
         trigger: trigger,
         timestamp: sessionTimestamp, // 녹화 세션 생성 시간 사용 (파일명으로 활용)
         title: document.title,
@@ -680,7 +680,7 @@ export class RemoteDebugger {
     if (preferBeacon || !deliveredViaWebSocket) {
       const beaconPayload = JSON.stringify({
         deviceId: this.deviceId,
-        url: window.location.href,
+        url: globalThis.location.href,
         trigger,
         timestamp: sessionTimestamp,
         title: document.title,
@@ -760,7 +760,7 @@ export class RemoteDebugger {
             room: data.roomName,
             recordMode: this.isRecordMode,
             socket: this.socket,
-            url: window.location.href,
+            url: globalThis.location.href,
             title: document.title,
           });
           return;
@@ -806,9 +806,9 @@ export class RemoteDebugger {
     let defaultExternalWs = 'ws://localhost:3001/socket.io';
     let defaultInternalWs = 'ws://localhost:3000/ws/presence';
     if (typeof window !== 'undefined') {
-      const isHttps = window.location.protocol === 'https:';
+      const isHttps = globalThis.location.protocol === 'https:';
       const wsProto = isHttps ? 'wss:' : 'ws:';
-      const host = window.location.host;
+      const host = globalThis.location.host;
       const sdkScriptOrigin = getSdkScriptOrigin();
       const externalWsOrigin = sdkScriptOrigin
         ? toWebSocketOrigin(sdkScriptOrigin)
@@ -860,7 +860,7 @@ export class RemoteDebugger {
           room: data.roomName,
           recordMode: this.isRecordMode,
           socket: this.socket,
-          url: window.location.href,
+          url: globalThis.location.href,
           title: document.title,
         });
         return;
@@ -924,7 +924,7 @@ export class RemoteDebugger {
       recordMode: this.isRecordMode,
       socket: this.socket,
       deviceId: deviceId, // deviceId만 업데이트
-      url: window.location.href,
+      url: globalThis.location.href,
       title: document.title,
     });
   }
@@ -950,7 +950,7 @@ export class RemoteDebugger {
       event: 'enableBuffering',
       data: {
         deviceId: this.deviceId,
-        url: window.location.href,
+        url: globalThis.location.href,
         userAgent: navigator.userAgent,
         room: this.bufferRoomName,
         timestamp: Date.now(),
@@ -988,7 +988,7 @@ export class RemoteDebugger {
     const userData: UserData = {
       commonInfo,
       userAgent: navigator.userAgent,
-      URL: window.location.href,
+      URL: globalThis.location.href,
       webTitle: document.title,
     };
 
@@ -1023,7 +1023,7 @@ export class RemoteDebugger {
       room: this.roomName,
       recordMode: this.isRecordMode,
       socket: this.socket,
-      url: window.location.href,
+      url: globalThis.location.href,
       title: document.title,
     });
 
@@ -1091,7 +1091,7 @@ export class RemoteDebugger {
     // Ticket created - stop buffering
 
     // 네이티브 앱과 연동 시 커스텀 딥링크로 토스트 메시지 표시 가능
-    // 예: window.location.href = 'app-action://showToast?message=티켓이 생성되었습니다'
+    // 예: globalThis.location.href = 'app-action://showToast?message=티켓이 생성되었습니다'
     alert('티켓이 생성되었습니다');
     this.disconnect();
   }

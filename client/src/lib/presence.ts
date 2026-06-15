@@ -28,10 +28,10 @@ function isDemoMode(): boolean {
 export function getPresenceClientId(): string {
   if (typeof window === 'undefined') return 'ssr';
   try {
-    let id = window.sessionStorage.getItem(CLIENT_ID_KEY);
+    let id = globalThis.sessionStorage.getItem(CLIENT_ID_KEY);
     if (!id) {
       id = `c_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
-      window.sessionStorage.setItem(CLIENT_ID_KEY, id);
+      globalThis.sessionStorage.setItem(CLIENT_ID_KEY, id);
     }
     return id;
   } catch {
@@ -40,9 +40,9 @@ export function getPresenceClientId(): string {
 }
 
 function presenceWsUrl(sessionId: string, clientId: string): string {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const proto = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const qs = new URLSearchParams({ sessionId, clientId });
-  return `${proto}//${window.location.host}/ws/presence?${qs.toString()}`;
+  return `${proto}//${globalThis.location.host}/ws/presence?${qs.toString()}`;
 }
 
 /**
@@ -69,7 +69,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
     let pingTimer: number | undefined;
 
     const stopPolling = () => {
-      if (pollTimer !== undefined) window.clearInterval(pollTimer);
+      if (pollTimer !== undefined) globalThis.clearInterval(pollTimer);
       pollTimer = undefined;
     };
 
@@ -92,7 +92,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
     const startPolling = () => {
       if (cancelled || pollTimer !== undefined) return;
       void poll();
-      pollTimer = window.setInterval(() => void poll(), HEARTBEAT_MS);
+      pollTimer = globalThis.setInterval(() => void poll(), HEARTBEAT_MS);
     };
 
     // Demo mode / SSR: no live socket server, so poll the (seed-routed) HTTP
@@ -119,7 +119,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
         }
       };
       socket.onopen = () => {
-        pingTimer = window.setInterval(() => {
+        pingTimer = globalThis.setInterval(() => {
           if (socket?.readyState === WebSocket.OPEN) socket.send('ping');
         }, HEARTBEAT_MS);
       };
@@ -127,7 +127,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
       // presence still works even where the ws path isn't reachable.
       const fallback = () => {
         if (cancelled) return;
-        if (pingTimer !== undefined) window.clearInterval(pingTimer);
+        if (pingTimer !== undefined) globalThis.clearInterval(pingTimer);
         pingTimer = undefined;
         startPolling();
       };
@@ -140,7 +140,7 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
     return () => {
       cancelled = true;
       stopPolling();
-      if (pingTimer !== undefined) window.clearInterval(pingTimer);
+      if (pingTimer !== undefined) globalThis.clearInterval(pingTimer);
       if (socket) {
         socket.onclose = null;
         socket.onerror = null;

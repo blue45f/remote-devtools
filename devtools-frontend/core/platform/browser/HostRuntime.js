@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 class WebWorkerScope {
     postMessage(message) {
-        self.postMessage(message);
+        globalThis.postMessage(message);
     }
     set onmessage(listener) {
-        self.addEventListener('message', listener);
+        globalThis.addEventListener('message', listener);
     }
 }
 class WebWorker {

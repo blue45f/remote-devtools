@@ -943,7 +943,7 @@ export class ToolbarMenuButton extends ToolbarItem {
             return;
         }
         if (!this.triggerTimeoutId) {
-            this.triggerTimeoutId = window.setTimeout(this.trigger.bind(this, event), this.#triggerDelay);
+            this.triggerTimeoutId = globalThis.setTimeout(this.trigger.bind(this, event), this.#triggerDelay);
         }
     }
     trigger(event) {

@@ -15,7 +15,7 @@ export const checkVisibility = (node, visible) => {
         return node;
     }
     const element = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
-    const style = window.getComputedStyle(element);
+    const style = globalThis.getComputedStyle(element);
     const isVisible = style &&
         !HIDDEN_VISIBILITY_VALUES.includes(style.visibility) &&
         !isBoundingBoxEmpty(element);

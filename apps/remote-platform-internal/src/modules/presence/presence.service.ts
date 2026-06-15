@@ -21,7 +21,7 @@ interface ViewerState {
  */
 @Injectable()
 export class PresenceService {
-  /** Viewer is considered gone if no heartbeat within this window. */
+  /** Viewer is considered gone if no heartbeat within this globalThis. */
   static readonly TTL_MS = 20_000;
 
   private readonly sessions = new Map<string, Map<string, ViewerState>>();

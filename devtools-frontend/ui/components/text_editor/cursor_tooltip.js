@@ -42,7 +42,7 @@ export function cursorTooltip(source) {
             if (this.pending > -1) {
                 clearTimeout(this.pending);
             }
-            this.pending = window.setTimeout(() => this.#startUpdate(view), 50);
+            this.pending = globalThis.setTimeout(() => this.#startUpdate(view), 50);
         }
         #startUpdate(view) {
             this.pending = -1;

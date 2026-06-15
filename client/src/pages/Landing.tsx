@@ -501,7 +501,7 @@ createDebugger();
 // to ws://localhost:3001 (configurable)`,
   Script: `<script
   src="https://cdn.your-domain/sdk/index.umd.js"
-  onload="window.RemoteDebugSdk.createDebugger()"
+  onload="globalThis.RemoteDebugSdk.createDebugger()"
 ></script>`,
   Docker: `git clone https://github.com/blue45f/remote-devtools
 cd remote-devtools

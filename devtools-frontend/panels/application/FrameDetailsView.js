@@ -577,7 +577,7 @@ function renderSingleCSP(cspInfo, divider) {
             .accessibleLabel=${i18nString(UIStrings.learnMore)}
             .variant=${"icon" /* Buttons.Button.Variant.ICON */}
             .size=${"SMALL" /* Buttons.Button.Size.SMALL */}
-            @click=${() => { window.location.href = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only'; }}
+            @click=${() => { globalThis.location.href = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only'; }}
             jslog=${VisualLogging.link('learn-more.csp-report-only').track({ click: true })}
             ></devtools-button>`}
       </devtools-report-key>

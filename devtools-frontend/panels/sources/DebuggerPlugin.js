@@ -704,7 +704,7 @@ export class DebuggerPlugin extends Plugin {
             clearTimeout(this.controlTimeout);
             this.controlTimeout = undefined;
             if (state && this.executionLocation) {
-                this.controlTimeout = window.setTimeout(() => {
+                this.controlTimeout = globalThis.setTimeout(() => {
                     if (this.executionLocation && this.controlDown) {
                         void this.showContinueToLocations();
                     }
@@ -872,7 +872,7 @@ export class DebuggerPlugin extends Plugin {
             return null;
         }
         while (CodeMirror.syntaxParserRunning(this.editor.editor)) {
-            await new Promise(resolve => window.requestIdleCallback(resolve));
+            await new Promise(resolve => globalThis.requestIdleCallback(resolve));
             // After the `await` the DebuggerPlugin could have been disposed. Re-check `this.editor`.
             if (!this.editor) {
                 return null;
@@ -1156,8 +1156,8 @@ export class DebuggerPlugin extends Plugin {
             }
         }
         // These tend to arrive in bursts, so debounce them
-        window.clearTimeout(this.refreshBreakpointsTimeout);
-        this.refreshBreakpointsTimeout = window.setTimeout(() => this.refreshBreakpoints(), 50);
+        globalThis.clearTimeout(this.refreshBreakpointsTimeout);
+        this.refreshBreakpointsTimeout = globalThis.setTimeout(() => this.refreshBreakpoints(), 50);
     }
     onInlineBreakpointMarkerClick(event, breakpoint) {
         event.consume(true);
@@ -1496,7 +1496,7 @@ export class DebuggerPlugin extends Plugin {
         Workspace.IgnoreListManager.IgnoreListManager.instance().removeChangeListener(this.ignoreListCallback);
         debuggerPluginForUISourceCode.delete(this.uiSourceCode);
         super.dispose();
-        window.clearTimeout(this.refreshBreakpointsTimeout);
+        globalThis.clearTimeout(this.refreshBreakpointsTimeout);
         // Clear `this.editor` to signal that we are disposed. Any function from this `DebuggerPlugin` instance
         // still running or scheduled will early return and not do any work.
         this.editor = undefined;

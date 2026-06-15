@@ -140,7 +140,7 @@ const ACTIONABLE_FAILURE_REASONS = [
         failure: "SVG_TARGET_HAS_INDEPENDENT_TRANSFORM_PROPERTY" /* AnimationFailureReasons.SVG_TARGET_HAS_INDEPENDENT_TRANSFORM_PROPERTY */,
     },
 ];
-// 500ms window.
+// 500ms globalThis.
 // Use this window to consider events and requests that may have caused a layout shift.
 const ROOT_CAUSE_WINDOW = Helpers.Timing.secondsToMicro(Types.Timing.Seconds(0.5));
 /**

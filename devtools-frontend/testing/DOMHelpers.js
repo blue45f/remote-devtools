@@ -78,15 +78,15 @@ export function waitForScrollLeft(element, desiredScrollLeft) {
             // we want, we're done!
             if (lastScrollLeft === newScrollLeft && newScrollLeft >= desiredScrollLeft) {
                 if (scrollLeftTimeout) {
-                    window.clearTimeout(scrollLeftTimeout);
+                    globalThis.clearTimeout(scrollLeftTimeout);
                 }
                 resolve();
                 return;
             }
             lastScrollLeft = newScrollLeft;
-            scrollLeftTimeout = window.setTimeout(pollForScrollLeft, timeBetweenPolls);
+            scrollLeftTimeout = globalThis.setTimeout(pollForScrollLeft, timeBetweenPolls);
         };
-        window.setTimeout(pollForScrollLeft, timeBetweenPolls);
+        globalThis.setTimeout(pollForScrollLeft, timeBetweenPolls);
     });
 }
 /**
@@ -258,13 +258,13 @@ export async function assertScreenshot(filename) {
     await raf();
     // Pending activity before taking screenshots results in flakiness.
     await checkForPendingActivity();
-    if (!window.assertScreenshot) {
-        window.assertScreenshot = async () => {
+    if (!globalThis.assertScreenshot) {
+        globalThis.assertScreenshot = async () => {
             debugger; // eslint-disable-line no-debugger
             return undefined;
         };
     }
-    const errorMessage = await window.assertScreenshot(`#${TEST_CONTAINER_ID}`, filename);
+    const errorMessage = await globalThis.assertScreenshot(`#${TEST_CONTAINER_ID}`, filename);
     if (errorMessage) {
         throw new Error(errorMessage);
     }

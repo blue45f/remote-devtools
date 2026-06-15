@@ -39,7 +39,7 @@ export class AccessiblePlaceholder extends CM.WidgetType {
         if (!boundingClientRect) {
             return null;
         }
-        const style = window.getComputedStyle(dom.parentNode);
+        const style = globalThis.getComputedStyle(dom.parentNode);
         const rect = flattenRect(boundingClientRect, style.direction !== 'rtl');
         const lineHeight = parseInt(style.lineHeight, 10);
         if (rect.bottom - rect.top > lineHeight * 1.5) {

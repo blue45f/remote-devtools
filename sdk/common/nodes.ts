@@ -116,8 +116,8 @@ class Nodes {
     }
 
     if (isElement(node)) {
-      const beforeContent = window.getComputedStyle(node, '::before').content;
-      const afterContent = window.getComputedStyle(node, '::after').content;
+      const beforeContent = globalThis.getComputedStyle(node, '::before').content;
+      const afterContent = globalThis.getComputedStyle(node, '::after').content;
       const pseudoTypes = [];
       if (beforeContent !== 'none') {
         pseudoTypes.push('before');

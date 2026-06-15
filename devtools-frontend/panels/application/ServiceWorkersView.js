@@ -513,7 +513,7 @@ export class Section {
             errorsLabel.classList.add('devtools-link', 'link');
             errorsLabel.tabIndex = 0;
             UI.ARIAUtils.setLabel(errorsLabel, i18nString(UIStrings.sRegistrationErrors, { PH1: this.registration.errors.length }));
-            self.onInvokeElement(errorsLabel, () => Common.Console.Console.instance().show());
+            globalThis.onInvokeElement(errorsLabel, () => Common.Console.Console.instance().show());
             name.appendChild(errorsLabel);
         }
         if (version.scriptResponseTime !== undefined) {

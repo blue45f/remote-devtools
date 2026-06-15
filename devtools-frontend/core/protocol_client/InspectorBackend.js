@@ -19,7 +19,7 @@ export class InspectorBackend {
     enumMap = new Map();
     constructor() {
         // Create the global here because registering commands will involve putting
-        // items onto the global.
+        // items onto the globalThis.
         // @ts-expect-error Global namespace instantiation
         globalThis.Protocol ||= {};
         InspectorBackendCommands.registerCommands(this);

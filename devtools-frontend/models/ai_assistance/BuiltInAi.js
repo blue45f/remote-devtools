@@ -31,7 +31,7 @@ export class BuiltInAi extends Common.ObjectWrapper.ObjectWrapper {
         }
         try {
             // @ts-expect-error
-            this.#availability = await window.LanguageModel.availability({
+            this.#availability = await globalThis.LanguageModel.availability({
                 expectedInputs: [{
                         type: 'text',
                         languages: ['en'],
@@ -124,7 +124,7 @@ export class BuiltInAi extends Common.ObjectWrapper.ObjectWrapper {
         };
         try {
             // @ts-expect-error
-            this.#consoleInsightsSession = await window.LanguageModel.create({
+            this.#consoleInsightsSession = await globalThis.LanguageModel.create({
                 monitor,
                 initialPrompts: [{
                         role: 'system',

@@ -977,9 +977,9 @@ let Page = (() => {
                     .isolatedRealm()
                     .evaluate(() => {
                     return [
-                        window.visualViewport.width * window.devicePixelRatio,
-                        window.visualViewport.height * window.devicePixelRatio,
-                        window.devicePixelRatio,
+                        globalThis.visualViewport.width * globalThis.devicePixelRatio,
+                        globalThis.visualViewport.height * globalThis.devicePixelRatio,
+                        globalThis.devicePixelRatio,
                     ];
                 });
             }
@@ -1398,7 +1398,7 @@ let Page = (() => {
          *
          * const browser = await puppeteer.launch();
          * const page = await browser.newPage();
-         * const watchDog = page.waitForFunction('window.innerWidth < 100');
+         * const watchDog = page.waitForFunction('globalThis.innerWidth < 100');
          * await page.setViewport({width: 50, height: 50});
          * await watchDog;
          * await browser.close();

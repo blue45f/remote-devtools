@@ -41,11 +41,11 @@ export class Panel extends VBox {
         this.element.setAttribute('aria-label', name);
         this.element.classList.add(name);
         this.panelName = name;
-        // @ts-expect-error: Legacy global. Requires rewriting tests to get rid of.
+        // @ts-expect-error: Legacy globalThis. Requires rewriting tests to get rid of.
         // For testing.
-        self.UI = self.UI || {};
+        globalThis.UI = globalThis.UI || {};
         // @ts-expect-error
-        self.UI.panels = self.UI.panels || {};
+        globalThis.UI.panels = globalThis.UI.panels || {};
         // @ts-expect-error
         UI.panels[name] = this;
     }

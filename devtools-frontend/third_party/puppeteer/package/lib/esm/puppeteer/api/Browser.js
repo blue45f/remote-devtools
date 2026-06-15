@@ -79,10 +79,10 @@ export class Browser extends EventEmitter {
      *
      * This will look all open {@link BrowserContext | browser contexts}.
      *
-     * @example Finding a target for a page opened via `window.open`:
+     * @example Finding a target for a page opened via `globalThis.open`:
      *
      * ```ts
-     * await page.evaluate(() => window.open('https://www.example.com/'));
+     * await page.evaluate(() => globalThis.open('https://www.example.com/'));
      * const newWindowTarget = await browser.waitForTarget(
      *   target => target.url() === 'https://www.example.com/',
      * );

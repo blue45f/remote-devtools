@@ -14,6 +14,11 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_RELEASE?: string;
   readonly VITE_SENTRY_TRACES_SAMPLE_RATE?: string;
   readonly VITE_SENTRY_REPLAYS_SAMPLE_RATE?: string;
+  /**
+   * SurveyDesk endpoint for the shared feedback widget. When unset the widget
+   * is not rendered at all (default today — SurveyDesk not yet deployed).
+   */
+  readonly VITE_SURVEYDESK_URL?: string;
 }
 
 interface ImportMeta {

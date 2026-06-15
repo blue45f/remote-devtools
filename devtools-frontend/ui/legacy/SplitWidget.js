@@ -460,9 +460,9 @@ export class SplitWidget extends Common.ObjectWrapper.eventMixin(Widget) {
             if (!startTime) {
                 // Kick animation on first frame.
                 this.contentElement.style.setProperty(animatedMarginPropertyName, marginTo);
-                startTime = window.performance.now();
+                startTime = globalThis.performance.now();
             }
-            else if (window.performance.now() < startTime + animationTime) {
+            else if (globalThis.performance.now() < startTime + animationTime) {
                 // Process regular animation frame.
                 if (this.#mainWidget) {
                     this.#mainWidget.doResize();

@@ -135,17 +135,17 @@ export class Snackbar extends HTMLElement {
     #show() {
         this.#container.appendChild(this);
         if (this.#timeout) {
-            window.clearTimeout(this.#timeout);
+            globalThis.clearTimeout(this.#timeout);
         }
         if (!this.closable) {
-            this.#timeout = window.setTimeout(() => {
+            this.#timeout = globalThis.setTimeout(() => {
                 this.#close();
             }, this.dismissTimeout);
         }
     }
     #close() {
         if (this.#timeout) {
-            window.clearTimeout(this.#timeout);
+            globalThis.clearTimeout(this.#timeout);
         }
         this.remove();
         Snackbar.snackbarQueue.shift();

@@ -281,10 +281,10 @@ export class InspectorView extends VBox {
     #observedResize() {
         const rect = this.element.getBoundingClientRect();
         this.element.style.setProperty('--devtools-window-left', `${rect.left}px`);
-        this.element.style.setProperty('--devtools-window-right', `${window.innerWidth - rect.right}px`);
+        this.element.style.setProperty('--devtools-window-right', `${globalThis.innerWidth - rect.right}px`);
         this.element.style.setProperty('--devtools-window-width', `${rect.width}px`);
         this.element.style.setProperty('--devtools-window-top', `${rect.top}px`);
-        this.element.style.setProperty('--devtools-window-bottom', `${window.innerHeight - rect.bottom}px`);
+        this.element.style.setProperty('--devtools-window-bottom', `${globalThis.innerHeight - rect.bottom}px`);
         this.element.style.setProperty('--devtools-window-height', `${rect.height}px`);
     }
     wasShown() {
@@ -648,7 +648,7 @@ function reloadDevTools() {
     if (DockController.instance().canDock() && DockController.instance().dockSide() === "undocked" /* DockState.UNDOCKED */) {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.setIsDocked(true, function () { });
     }
-    Host.InspectorFrontendHost.InspectorFrontendHostInstance.reattach(() => window.location.reload());
+    Host.InspectorFrontendHost.InspectorFrontendHostInstance.reattach(() => globalThis.location.reload());
 }
 function reloadDebuggedTab() {
     void ActionRegistry.instance().getAction('inspector-main.reload').execute();

@@ -236,7 +236,7 @@ export class WalkthroughView extends UI.Widget.Widget {
             return;
         }
         this.#isProgrammaticScroll = true;
-        window.requestAnimationFrame(() => {
+        globalThis.requestAnimationFrame(() => {
             const lastElement = this.#output.stepsContainer?.lastElementChild;
             if (lastElement) {
                 lastElement.scrollIntoView({

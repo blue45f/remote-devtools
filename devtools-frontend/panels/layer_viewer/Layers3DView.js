@@ -298,8 +298,8 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox
         uniformSamplerLocations.set(this.shaderProgram, uSamplerLocation);
     }
     resizeCanvas() {
-        this.#canvasElement.width = this.#canvasElement.offsetWidth * window.devicePixelRatio;
-        this.#canvasElement.height = this.#canvasElement.offsetHeight * window.devicePixelRatio;
+        this.#canvasElement.width = this.#canvasElement.offsetWidth * globalThis.devicePixelRatio;
+        this.#canvasElement.height = this.#canvasElement.offsetHeight * globalThis.devicePixelRatio;
     }
     updateTransformAndConstraints() {
         const paddingFraction = 0.1;
@@ -337,10 +337,10 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox
             bounds = Geometry.boundsForTransformedPoints(scaleAndRotationMatrix, this.rects[i].vertices, bounds);
         }
         if (bounds) {
-            this.transformController.clampOffsets((paddingX - bounds.maxX) / window.devicePixelRatio, (canvasWidth - paddingX - bounds.minX) / window.devicePixelRatio, (paddingY - bounds.maxY) / window.devicePixelRatio, (canvasHeight - paddingY - bounds.minY) / window.devicePixelRatio);
+            this.transformController.clampOffsets((paddingX - bounds.maxX) / globalThis.devicePixelRatio, (canvasWidth - paddingX - bounds.minX) / globalThis.devicePixelRatio, (paddingY - bounds.maxY) / globalThis.devicePixelRatio, (canvasHeight - paddingY - bounds.minY) / globalThis.devicePixelRatio);
         }
-        const offsetX = this.transformController.offsetX() * window.devicePixelRatio;
-        const offsetY = this.transformController.offsetY() * window.devicePixelRatio;
+        const offsetX = this.transformController.offsetX() * globalThis.devicePixelRatio;
+        const offsetY = this.transformController.offsetY() * globalThis.devicePixelRatio;
         // Multiply to translation matrix on the right rather than translate (which would implicitly multiply on the left).
         this.projectionMatrix = new WebKitCSSMatrix().translate(offsetX, offsetY, 0).multiply(scaleAndRotationMatrix);
         const glProjectionMatrix = new WebKitCSSMatrix()
@@ -721,8 +721,8 @@ export class Layers3DView extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox
         let closestIntersectionPoint = Infinity;
         let closestObject = null;
         const projectionMatrix = new WebKitCSSMatrix().scale(1, -1, -1).translate(-1, -1, 0).multiply(this.projectionMatrix);
-        const x0 = (mouseEvent.clientX - this.#canvasElement.getBoundingClientRect().left) * window.devicePixelRatio;
-        const y0 = -(mouseEvent.clientY - this.#canvasElement.getBoundingClientRect().top) * window.devicePixelRatio;
+        const x0 = (mouseEvent.clientX - this.#canvasElement.getBoundingClientRect().left) * globalThis.devicePixelRatio;
+        const y0 = -(mouseEvent.clientY - this.#canvasElement.getBoundingClientRect().top) * globalThis.devicePixelRatio;
         function checkIntersection(rect) {
             if (!rect.relatedObject) {
                 return;

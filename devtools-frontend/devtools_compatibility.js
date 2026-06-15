@@ -381,7 +381,7 @@ const DevToolsAPIImpl = class {
 };
 
 const DevToolsAPI = new DevToolsAPIImpl();
-window.DevToolsAPI = DevToolsAPI;
+globalThis.DevToolsAPI = DevToolsAPI;
 
 // InspectorFrontendHostImpl --------------------------------------------------
 
@@ -489,10 +489,10 @@ const InspectorFrontendHostImpl = class {
   loadCompleted() {
     DevToolsAPI.sendMessageToEmbedder('loadCompleted', [], null);
     // Support for legacy (<57) frontends.
-    if (window.Runtime && window.Runtime.queryParam) {
-      const panelToOpen = window.Runtime.queryParam('panel');
+    if (globalThis.Runtime && globalThis.Runtime.queryParam) {
+      const panelToOpen = globalThis.Runtime.queryParam('panel');
       if (panelToOpen) {
-        window.DevToolsAPI.showPanel(panelToOpen);
+        globalThis.DevToolsAPI.showPanel(panelToOpen);
       }
     }
   }
@@ -1050,7 +1050,7 @@ const InspectorFrontendHostImpl = class {
   }
 };
 
-window.InspectorFrontendHost = new InspectorFrontendHostImpl();
+globalThis.InspectorFrontendHost = new InspectorFrontendHostImpl();
 
 // DevToolsApp ---------------------------------------------------------------
 
@@ -1307,7 +1307,7 @@ function installObjectObserve() {
     }
   }
 
-  window.Object.observe = objectObserve;
+  globalThis.Object.observe = objectObserve;
 }
 
 /** @type {!Map<number, string>} */
@@ -1505,7 +1505,7 @@ function installBackwardsCompatibility() {
   }
 
   if (majorVersion <= 53) {
-    Object.defineProperty(window.KeyboardEvent.prototype, 'keyIdentifier', {
+    Object.defineProperty(globalThis.KeyboardEvent.prototype, 'keyIdentifier', {
       /**
        * @return {string}
        * @this {KeyboardEvent}
@@ -1530,7 +1530,7 @@ function installBackwardsCompatibility() {
   }
 
   if (majorVersion <= 54) {
-    window.FileError = /** @type {!function (new: FileError) : ?} */ ({
+    globalThis.FileError = /** @type {!function (new: FileError) : ?} */ ({
       NOT_FOUND_ERR: DOMException.NOT_FOUND_ERR,
       ABORT_ERR: DOMException.ABORT_ERR,
       INVALID_MODIFICATION_ERR: DOMException.INVALID_MODIFICATION_ERR,
@@ -1546,7 +1546,7 @@ function installBackwardsCompatibility() {
  */
 function getRemoteMajorVersion() {
   try {
-    const remoteVersion = new URLSearchParams(window.location.search).get('remoteVersion');
+    const remoteVersion = new URLSearchParams(globalThis.location.search).get('remoteVersion');
     if (!remoteVersion) {
       return null;
     }

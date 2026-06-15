@@ -4,7 +4,7 @@
 import * as ProtocolClient from '../core/protocol_client/protocol_client.js';
 /**
  * This class fulfills a similar role as `describeWithMockConnection` with the main difference
- * being that it doesn't operate global.
+ * being that it doesn't operate globalThis.
  *
  * The right usage is to create a `MockCDPConnection` instance with your handlers, and then pass
  * it along to {@link createTarget}.

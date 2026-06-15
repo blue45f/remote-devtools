@@ -26,9 +26,9 @@ export class RootView extends VBox {
         if (this.window) {
             const size = this.constraints().minimum;
             const zoom = ZoomManager.instance().zoomFactor();
-            const right = Math.min(0, this.window.innerWidth - size.width / zoom);
+            const right = Math.min(0, this.globalThis.innerWidth - size.width / zoom);
             this.element.style.marginRight = right + 'px';
-            const bottom = Math.min(0, this.window.innerHeight - size.height / zoom);
+            const bottom = Math.min(0, this.globalThis.innerHeight - size.height / zoom);
             this.element.style.marginBottom = bottom + 'px';
         }
         super.doResize();

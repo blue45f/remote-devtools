@@ -233,7 +233,7 @@ export class AICallTree {
         return output;
     }
     /*
-    * Each node is serialized into a single line to minimize token usage in the context window.
+    * Each node is serialized into a single line to minimize token usage in the context globalThis.
     * The format is a semicolon-separated string with the following fields:
     * Format: `id;name;duration;selfTime;urlIndex;childRange;[S]
     *
@@ -362,7 +362,7 @@ export class AICallTree {
         if (str.length > 45_000) {
             // Manual testing shows 45k fits. 50k doesn't.
             // Max is 32k _tokens_, but tokens to bytes is wishywashy, so... hard to know for sure.
-            console.warn('Output will likely not fit in the context window. Expect an AIDA error.');
+            console.warn('Output will likely not fit in the context globalThis. Expect an AIDA error.');
         }
     }
 }

@@ -559,7 +559,7 @@ export class JSONEditor extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
     };
     /**
      * When devtools-suggestion-input closes, it blurs itself resulting in
-     * the focus shifting to the overall DevTools window.
+     * the focus shifting to the overall DevTools globalThis.
      *
      * This method focuses on the next focusable element (button or input)
      * so that the focus remains in the Editor and Ctrl + Shift works.

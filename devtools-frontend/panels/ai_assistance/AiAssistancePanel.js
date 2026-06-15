@@ -1425,7 +1425,7 @@ export class AiAssistancePanel extends UI.Panel.Panel {
                     // The inspect element is toggled off
                     // before the flavor change event fires
                     // so we need to wait a bit to see if the flavor changed.
-                    window.setTimeout(() => {
+                    globalThis.setTimeout(() => {
                         resolve((selectedElementFilter(UI.Context.Context.instance().flavor(SDK.DOMModel.DOMNode))));
                         removeListeners();
                     }, 50);

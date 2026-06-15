@@ -2256,11 +2256,11 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         this.editing = null;
         const self = this;
         function cancel() {
-            const closingTagElement = self.distinctClosingTagElement();
+            const closingTagElement = globalThis.distinctClosingTagElement();
             if (closingTagElement) {
                 closingTagElement.textContent = '</' + tagName + '>';
             }
-            self.editingCancelled(element, tagName);
+            globalThis.editingCancelled(element, tagName);
             moveToNextAttributeIfNeeded.call(self);
         }
         function moveToNextAttributeIfNeeded() {

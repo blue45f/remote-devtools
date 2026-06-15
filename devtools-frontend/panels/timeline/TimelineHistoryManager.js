@@ -319,7 +319,7 @@ export class TimelineHistoryManager {
     }
     #buildOverview(parsedTrace) {
         const container = document.createElement('div');
-        const dPR = window.devicePixelRatio;
+        const dPR = globalThis.devicePixelRatio;
         container.style.width = previewWidth + 'px';
         container.style.height = this.totalHeight + 'px';
         const canvas = container.createChild('canvas');

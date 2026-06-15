@@ -325,7 +325,7 @@ const UIStrings = {
     /**
      * Description text for PrenderFinalStatus::kWindowClosed.
      */
-    prerenderFinalStatusWindowClosed: 'The prerendered page was unloaded because it called window.close().',
+    prerenderFinalStatusWindowClosed: 'The prerendered page was unloaded because it called globalThis.close().',
     /**
      * Description text for PrenderFinalStatus::kBrowsingDataRemoved.
      */

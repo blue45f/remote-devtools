@@ -171,7 +171,7 @@ export class NetworkOverview extends PerfUI.TimelineOverviewPane.TimelineOvervie
         }
         context.clearRect(0, 0, this.width(), this.height());
         context.save();
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         context.lineWidth = 2;
         drawLines("total" /* NetworkTimeCalculator.RequestTimeRangeNames.TOTAL */);
         drawLines("blocking" /* NetworkTimeCalculator.RequestTimeRangeNames.BLOCKING */);

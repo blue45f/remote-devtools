@@ -455,7 +455,7 @@ export class BackForwardCacheView extends UI.Widget.Widget {
         // BFCache' button again too soon, leading to the browser stepping back in
         // history without returning to the correct page.
         if (historyResults.currentIndex === this.#historyIndex) {
-            window.setTimeout(this.#waitAndGoBackInHistory.bind(this, delay * 2), delay);
+            globalThis.setTimeout(this.#waitAndGoBackInHistory.bind(this, delay * 2), delay);
         }
         else {
             SDK.TargetManager.TargetManager.instance().addModelListener(SDK.ResourceTreeModel.ResourceTreeModel, SDK.ResourceTreeModel.Events.FrameNavigated, this.#renderBackForwardCacheTestResult, this);

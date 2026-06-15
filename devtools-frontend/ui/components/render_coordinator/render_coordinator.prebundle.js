@@ -61,7 +61,7 @@ export function done(options) {
         logIfEnabled('[Queue empty]');
         return Promise.resolve();
     }
-    return new Promise(resolve => window.addEventListener(RenderCoordinatorQueueEmptyEvent.eventName, () => resolve(), { once: true }));
+    return new Promise(resolve => globalThis.addEventListener(RenderCoordinatorQueueEmptyEvent.eventName, () => resolve(), { once: true }));
 }
 export async function read(labelOrCallback, callback) {
     if (typeof labelOrCallback === 'string') {
@@ -131,12 +131,12 @@ function scheduleWork() {
         if (!hasPendingWork()) {
             // All pending work has completed.
             // The events dispatched below are mostly for testing contexts.
-            window.dispatchEvent(new RenderCoordinatorQueueEmptyEvent());
+            globalThis.dispatchEvent(new RenderCoordinatorQueueEmptyEvent());
             logIfEnabled('[Queue empty]');
             scheduledWorkId = 0;
             return;
         }
-        window.dispatchEvent(new RenderCoordinatorNewFrameEvent());
+        globalThis.dispatchEvent(new RenderCoordinatorNewFrameEvent());
         logIfEnabled('[New frame]');
         const readers = pendingReaders;
         pendingReaders = [];
@@ -153,7 +153,7 @@ function scheduleWork() {
             await Promise.race([
                 Promise.all(readers.map(r => r.promise)),
                 new Promise((_, reject) => {
-                    window.setTimeout(() => reject(new Error(`Readers took over ${DEADLOCK_TIMEOUT}ms. Possible deadlock?`)), DEADLOCK_TIMEOUT);
+                    globalThis.setTimeout(() => reject(new Error(`Readers took over ${DEADLOCK_TIMEOUT}ms. Possible deadlock?`)), DEADLOCK_TIMEOUT);
                 }),
             ]);
         }
@@ -170,7 +170,7 @@ function scheduleWork() {
             await Promise.race([
                 Promise.all(writers.map(w => w.promise)),
                 new Promise((_, reject) => {
-                    window.setTimeout(() => reject(new Error(`Writers took over ${DEADLOCK_TIMEOUT}ms. Possible deadlock?`)), DEADLOCK_TIMEOUT);
+                    globalThis.setTimeout(() => reject(new Error(`Writers took over ${DEADLOCK_TIMEOUT}ms. Possible deadlock?`)), DEADLOCK_TIMEOUT);
                 }),
             ]);
         }

@@ -8,6 +8,6 @@ export function reload() {
         UI.DockController.DockController.instance().dockSide() === "undocked" /* UI.DockController.DockState.UNDOCKED */) {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.setIsDocked(true, function () { });
     }
-    Host.InspectorFrontendHost.InspectorFrontendHostInstance.reattach(() => window.location.reload());
+    Host.InspectorFrontendHost.InspectorFrontendHostInstance.reattach(() => globalThis.location.reload());
 }
 //# sourceMappingURL=Reload.js.map

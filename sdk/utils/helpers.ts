@@ -13,7 +13,7 @@ declare global {
  */
 export const convertLink = (room: string, recordId: number | null) => {
   const defaultHost =
-    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    typeof window !== 'undefined' ? globalThis.location.origin : 'http://localhost:3000';
   const host = readSdkEnv('VITE_INTERNAL_HOST', defaultHost);
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';
   const wsHost = host.replace(/^https?:\/\/(.+)$/, '$1');
@@ -34,12 +34,12 @@ export const convertLink = (room: string, recordId: number | null) => {
 /**
  * 대시보드(React 클라이언트 SPA, Session Detail 페이지가 사는 곳)의 origin 해석.
  * 기본값은 현재 페이지 origin(샌드박스·단일 도메인 리버스 프록시 배포에서 정확).
- * 멀티 도메인은 VITE_INTERNAL_HOST / window.REMOTE_DEBUG_SDK_ENV 로 재정의.
+ * 멀티 도메인은 VITE_INTERNAL_HOST / globalThis.REMOTE_DEBUG_SDK_ENV 로 재정의.
  */
 const resolveDashboardHost = () =>
   readSdkEnv(
     'VITE_INTERNAL_HOST',
-    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+    typeof window !== 'undefined' ? globalThis.location.origin : 'http://localhost:3000',
   );
 
 /**
@@ -61,9 +61,9 @@ export const buildShareLink = (room: string, recordId: number | null) =>
  * 네이티브 앱에서 공통 정보를 가져오는 함수
  */
 export const getCommonInfo = () => {
-  if (!window.JavaScriptInterface) {
+  if (!globalThis.JavaScriptInterface) {
     return;
   }
 
-  window.JavaScriptInterface.getCommonInfo('REMOTE_DEBUG_SDK_COMMON_INFO');
+  globalThis.JavaScriptInterface.getCommonInfo('REMOTE_DEBUG_SDK_COMMON_INFO');
 };

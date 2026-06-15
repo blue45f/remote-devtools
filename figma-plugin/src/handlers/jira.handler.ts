@@ -92,7 +92,7 @@ export async function handleCaptureComplete(
  */
 export function initJiraHandlers(appState: AppState) {
   // 메시지 리스너 등록 - 캡처 완료 이벤트 처리
-  window.addEventListener('message', (event) => {
+  globalThis.addEventListener('message', (event) => {
     const { type, data } = event.data?.pluginMessage || {};
 
     if (type === 'capture-complete') {

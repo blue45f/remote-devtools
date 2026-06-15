@@ -25,7 +25,7 @@ export const DevToolsLinkButton = forwardRef<HTMLButtonElement, DevToolsLinkButt
 
     const handleClick = () => {
       const url = buildDevToolsLink(room, recordId);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      globalThis.open(url, '_blank', 'noopener,noreferrer');
     };
 
     return (

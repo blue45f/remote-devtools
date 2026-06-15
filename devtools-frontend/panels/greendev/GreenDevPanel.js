@@ -270,7 +270,7 @@ export class GreenDevPanel extends UI.Panel.Panel {
 }
 // Expose global method for browser process to call
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-window.GreenDevPanel = {
+globalThis.GreenDevPanel = {
     closeSession: (sessionId) => {
         if (greenDevPanelInstance) {
             greenDevPanelInstance.closeSession(String(sessionId));

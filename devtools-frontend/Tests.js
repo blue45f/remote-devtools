@@ -92,7 +92,7 @@
     const self = this;
     const timeoutInSec = 20 * slownessFactor;
     this.timerId_ = setTimeout(function() {
-      self.reportFailure_(`Timeout exceeded: ${timeoutInSec} sec`);
+      globalThis.reportFailure_(`Timeout exceeded: ${timeoutInSec} sec`);
     }, timeoutInSec * 1000);
   };
 
@@ -138,18 +138,18 @@
       Workspace,
     ] =
          await Promise.all([
-           self.runtime.loadLegacyModule('core/common/common.js'),
-           self.runtime.loadLegacyModule('core/host/host.js'),
-           self.runtime.loadLegacyModule('core/root/root.js'),
-           self.runtime.loadLegacyModule('core/sdk/sdk.js'),
-           self.runtime.loadLegacyModule('ui/legacy/legacy.js'),
-           self.runtime.loadLegacyModule('models/workspace/workspace.js'),
+           globalThis.runtime.loadLegacyModule('core/common/common.js'),
+           globalThis.runtime.loadLegacyModule('core/host/host.js'),
+           globalThis.runtime.loadLegacyModule('core/root/root.js'),
+           globalThis.runtime.loadLegacyModule('core/sdk/sdk.js'),
+           globalThis.runtime.loadLegacyModule('ui/legacy/legacy.js'),
+           globalThis.runtime.loadLegacyModule('models/workspace/workspace.js'),
          ]));
 
     // We have to map 'Host.InspectorFrontendHost' as the C++ uses it directly.
-    self.Host = {};
-    self.Host.InspectorFrontendHost = HostModule.InspectorFrontendHost.InspectorFrontendHostInstance;
-    self.Host.InspectorFrontendHostAPI = HostModule.InspectorFrontendHostAPI;
+    globalThis.Host = {};
+    globalThis.Host.InspectorFrontendHost = HostModule.InspectorFrontendHost.InspectorFrontendHostInstance;
+    globalThis.Host.InspectorFrontendHostAPI = HostModule.InspectorFrontendHostAPI;
   };
 
   /**
@@ -378,7 +378,7 @@
     this.addSniffer(SDK.NetworkManager.NetworkDispatcher.prototype, 'finishNetworkRequest', finishRequest);
 
     // Reload inspected page to sniff network events
-    test.evaluateInConsole_('window.location.reload(true);', function(resultText) {});
+    test.evaluateInConsole_('globalThis.location.reload(true);', function(resultText) {});
 
     this.takeControl({slownessFactor: 10});
   };
@@ -422,7 +422,7 @@
     this.addSniffer(SDK.NetworkManager.NetworkDispatcher.prototype, 'finishNetworkRequest', finishRequest);
 
     // Reload inspected page to sniff network events
-    test.evaluateInConsole_('window.location.reload(true);', function(resultText) {});
+    test.evaluateInConsole_('globalThis.location.reload(true);', function(resultText) {});
 
     this.takeControl({slownessFactor: 10});
   };
@@ -457,7 +457,7 @@
     this.addSniffer(SDK.NetworkManager.NetworkDispatcher.prototype, 'finishNetworkRequest', finishRequest);
 
     // Reload inspected page to sniff network events
-    test.evaluateInConsole_('window.location.reload(true);', function(resultText) {});
+    test.evaluateInConsole_('globalThis.location.reload(true);', function(resultText) {});
 
     this.takeControl({slownessFactor: 10});
   };
@@ -614,7 +614,7 @@
   TestSuite.prototype.testDeviceMetricsOverrides = function() {
     function dumpPageMetrics() {
       return JSON.stringify(
-          {width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio});
+          {width: globalThis.innerWidth, height: globalThis.innerHeight, deviceScaleFactor: globalThis.devicePixelRatio});
     }
 
     const test = this;
@@ -1126,7 +1126,7 @@
   TestSuite.prototype.testInspectedElementIs = async function(nodeName) {
     this.takeControl();
     /** @type {import('./panels/elements/elements.js')} */
-    const Elements = await self.runtime.loadLegacyModule('panels/elements/elements.js');
+    const Elements = await globalThis.runtime.loadLegacyModule('panels/elements/elements.js');
     if (!Elements.ElementsPanel.ElementsPanel.firstInspectElementNodeNameForTest) {
       await new Promise(
           f => this.addSniffer(Elements.ElementsPanel.ElementsPanel, 'firstInspectElementCompletedForTest', f));
@@ -1234,8 +1234,8 @@
     async function takeLogs(target) {
       return await evalCode(target, `
         (function() {
-          var result = window.logs.join(' ');
-          window.logs = [];
+          var result = globalThis.logs.join(' ');
+          globalThis.logs = [];
           return result;
         })()`);
     }
@@ -1492,7 +1492,7 @@
    * Waits until all the scripts are parsed and invokes the callback.
    */
   TestSuite.prototype._waitUntilScriptsAreParsed = async function(expectedScripts, callback) {
-    const Sources = await self.runtime.loadLegacyModule('panels/sources/sources.js');
+    const Sources = await globalThis.runtime.loadLegacyModule('panels/sources/sources.js');
     const test = this;
 
     function waitForAllScripts() {
@@ -1534,5 +1534,5 @@
     }
   };
 
-  window.uiTests = new TestSuite(window.domAutomationController);
+  globalThis.uiTests = new TestSuite(globalThis.domAutomationController);
 })(window);

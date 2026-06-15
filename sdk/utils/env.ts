@@ -21,7 +21,7 @@ declare global {
 // so it used to shadow the correct runtime same-origin default and the SDK
 // dialed a dead domain. Treat any unresolved placeholder as "unset" so the
 // dynamic same-origin fallback wins — the SDK ships ONE bundle to many origins,
-// so the runtime origin (or `window.REMOTE_DEBUG_SDK_ENV`) is the source of
+// so the runtime origin (or `globalThis.REMOTE_DEBUG_SDK_ENV`) is the source of
 // truth for connection hosts, not whatever was inlined at build time.
 const PLACEHOLDER_HOST_RE = /your-(?:internal|external)-domain\.com/i;
 
@@ -54,8 +54,8 @@ export function readSdkEnv(key: SdkEnvKey, fallback: string, source?: SdkEnvSour
     return value || fallback;
   }
 
-  if (typeof window !== 'undefined' && window.REMOTE_DEBUG_SDK_ENV) {
-    const value = window.REMOTE_DEBUG_SDK_ENV[key];
+  if (typeof window !== 'undefined' && globalThis.REMOTE_DEBUG_SDK_ENV) {
+    const value = globalThis.REMOTE_DEBUG_SDK_ENV[key];
     if (value) return value;
   }
 
@@ -67,7 +67,7 @@ function originFromUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
 
   try {
-    return new URL(url, window.location.href).origin;
+    return new URL(url, globalThis.location.href).origin;
   } catch {
     return undefined;
   }
@@ -75,7 +75,7 @@ function originFromUrl(url: string | undefined): string | undefined {
 
 function isSdkScriptUrl(url: string): boolean {
   try {
-    const { pathname } = new URL(url, window.location.href);
+    const { pathname } = new URL(url, globalThis.location.href);
     return /\/sdk\/(?:dist\/)?index\.(?:umd\.)?js$/.test(pathname);
   } catch {
     return false;
@@ -121,7 +121,7 @@ export function isSdkDemoMode(): boolean {
   if (readSdkEnv('VITE_FORCE_DEMO', '') === 'true') return true;
 
   try {
-    return typeof window !== 'undefined' && window.localStorage.getItem('demo-mode') === '1';
+    return typeof window !== 'undefined' && globalThis.localStorage.getItem('demo-mode') === '1';
   } catch {
     return false;
   }

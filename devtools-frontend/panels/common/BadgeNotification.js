@@ -152,9 +152,9 @@ export class BadgeNotification extends UI.Widget.Widget {
             this.#positionNotification();
         });
         if (this.#autoCloseTimeout) {
-            window.clearTimeout(this.#autoCloseTimeout);
+            globalThis.clearTimeout(this.#autoCloseTimeout);
         }
-        this.#autoCloseTimeout = window.setTimeout(this.#onAutoClose, AUTO_CLOSE_TIME_IN_MS);
+        this.#autoCloseTimeout = globalThis.setTimeout(this.#onAutoClose, AUTO_CLOSE_TIME_IN_MS);
     }
     #presentStarterBadgeSettingsNudge(badge) {
         this.#show({
@@ -241,7 +241,7 @@ export class BadgeNotification extends UI.Widget.Widget {
         });
     }
     onDetach() {
-        window.clearTimeout(this.#autoCloseTimeout);
+        globalThis.clearTimeout(this.#autoCloseTimeout);
     }
     #onDismissClick = () => {
         this.detach();

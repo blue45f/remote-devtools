@@ -51,7 +51,7 @@ export const SDK_SESSION_EVENT = 'remote-debug-sdk:session';
 // plain object in non-browser/SSR contexts where `window` is absent.
 const sdkState: NonNullable<Window['__REMOTE_DEBUG_SDK__']> =
   typeof window !== 'undefined'
-    ? (window.__REMOTE_DEBUG_SDK__ ??= { created: false, activeSession: null })
+    ? (globalThis.__REMOTE_DEBUG_SDK__ ??= { created: false, activeSession: null })
     : { created: false, activeSession: null };
 
 /** Read the SDK's currently-active session (null when no room is open). */
@@ -59,8 +59,8 @@ export const getActiveSession = (): ActiveSdkSession | null => sdkState.activeSe
 
 const publishSession = (next: ActiveSdkSession | null): void => {
   sdkState.activeSession = next;
-  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-    window.dispatchEvent(new CustomEvent(SDK_SESSION_EVENT, { detail: next }));
+  if (typeof window !== 'undefined' && typeof globalThis.dispatchEvent === 'function') {
+    globalThis.dispatchEvent(new CustomEvent(SDK_SESSION_EVENT, { detail: next }));
   }
 };
 
@@ -148,7 +148,7 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
   let commonInfo: CommonInfo | null;
   let currentRoomType: 'record' | 'live' | null = null; // 현재 방 타입을 저장할 변수
 
-  window.REMOTE_DEBUG_SDK_COMMON_INFO = async (r: string) => {
+  globalThis.REMOTE_DEBUG_SDK_COMMON_INFO = async (r: string) => {
     try {
       commonInfo = JSON.parse(r);
       logger.commonInfo.info('', commonInfo);
@@ -166,7 +166,7 @@ export const createDebugger = (onClickDebugger?: () => void, autoConnect = true)
     // deviceId는 네이티브 WebView 브릿지(JavaScriptInterface)로만 전달된다.
     // 일반 브라우저에는 브릿지가 없으므로 2초간 폴링하며 매 로드마다 경고를 찍는
     // 대신 즉시 unknown-device 로 연결한다.
-    if (typeof window === 'undefined' || !window.JavaScriptInterface) {
+    if (typeof window === 'undefined' || !globalThis.JavaScriptInterface) {
       remoteDebugger.initSocket(true);
     } else {
       let retryCount = 0;
@@ -457,7 +457,7 @@ export const createTicketDirect = (
   commonInfo: CommonInfo | null,
   formData?: TicketFormData,
 ) => {
-  const URL = window.location.href;
+  const URL = globalThis.location.href;
 
   // WebSocket이 연결되어 있지 않은 경우에만 새로 연결
   if (!remoteDebugger.Connected) {

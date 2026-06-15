@@ -401,7 +401,7 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
         const range = new Range();
         range.setStart(textNode, startIndex);
         range.setEnd(textNode, endIndex);
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         if (selection) {
             selection.removeAllRanges();
             selection.addRange(range);
@@ -635,7 +635,7 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper {
         const immediately = this.isSuggestBoxVisible() || force;
         if (!this.completeTimeout) {
             this.completeTimeout =
-                window.setTimeout(this.complete.bind(this, force), immediately ? 0 : this.autocompletionTimeout);
+                globalThis.setTimeout(this.complete.bind(this, force), immediately ? 0 : this.autocompletionTimeout);
         }
     }
     async complete(force) {

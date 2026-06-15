@@ -225,7 +225,7 @@ let SuggestionInput = class SuggestionInput extends LitElement {
         return node;
     }
     #handleBlurEvent = () => {
-        window.getSelection()?.removeAllRanges();
+        globalThis.getSelection()?.removeAllRanges();
         this.value = this.#editableContent.value;
         this.expression = this.#editableContent.value;
     };
@@ -233,7 +233,7 @@ let SuggestionInput = class SuggestionInput extends LitElement {
         assert(event.target instanceof Node);
         const range = document.createRange();
         range.selectNodeContents(event.target);
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         selection.removeAllRanges();
         selection.addRange(range);
     };

@@ -516,7 +516,7 @@ export class RecordingSession extends Common.ObjectWrapper.ObjectWrapper {
         // Generally an new target implies all other targets are not waiting for something special in their event buffers, so we flush them here.
         await this.#setUpTarget(target);
         // Emitted for e2e tests.
-        window.dispatchEvent(new Event('recorderAttachedToTarget'));
+        globalThis.dispatchEvent(new Event('recorderAttachedToTarget'));
     }
     async #handleTargetClosed(event) {
         const stepPendingNavigation = this.#stepsPendingNavigationByTargetId.get(event.target.id());

@@ -21,7 +21,7 @@ export class Log {
         return { version: '1.2', creator: log.creator(), pages: log.buildPages(requests), entries };
     }
     creator() {
-        const webKitVersion = /AppleWebKit\/([^ ]+)/.exec(window.navigator.userAgent);
+        const webKitVersion = /AppleWebKit\/([^ ]+)/.exec(globalThis.navigator.userAgent);
         return { name: 'WebInspector', version: webKitVersion ? webKitVersion[1] : 'n/a' };
     }
     buildPages(requests) {

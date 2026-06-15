@@ -146,7 +146,7 @@ export class LiveMetrics extends Common.ObjectWrapper.ObjectWrapper {
             return null;
         }
         const { result } = await this.#target.runtimeAgent().invoke_evaluate({
-            expression: `window.getNodeForIndex(${index})`,
+            expression: `globalThis.getNodeForIndex(${index})`,
             contextId: executionContextId,
         });
         if (!result) {

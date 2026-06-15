@@ -228,7 +228,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         if (this.loadTimeout || provider !== this.provider) {
             return;
         }
-        this.loadTimeout = window.setTimeout(this.updateAfterItemsLoaded.bind(this), 0);
+        this.loadTimeout = globalThis.setTimeout(this.updateAfterItemsLoaded.bind(this), 0);
     }
     updateAfterItemsLoaded() {
         this.loadTimeout = 0;
@@ -347,7 +347,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         const bestItemsToCollect = 100;
         let minBestScore = 0;
         const overflowItems = [];
-        const scoreStartTime = window.performance.now();
+        const scoreStartTime = globalThis.performance.now();
         const maxWorkItems = Platform.NumberUtilities.clamp(10, 500, (this.provider.itemCount() / 10) | 0);
         scoreItems.call(this, 0);
         function compareIntegers(a, b) {
@@ -396,13 +396,13 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
             this.refreshListWithCurrentResult = this.refreshList.bind(this, bestItems, overflowItems, filteredItems);
             // Process everything in chunks.
             if (i < this.provider.itemCount()) {
-                this.scoringTimer = window.setTimeout(scoreItems.bind(this, i), 0);
-                if (window.performance.now() - scoreStartTime > 50) {
+                this.scoringTimer = globalThis.setTimeout(scoreItems.bind(this, i), 0);
+                if (globalThis.performance.now() - scoreStartTime > 50) {
                     this.progressBarElement.style.transform = 'scaleX(' + i / this.provider.itemCount() + ')';
                 }
                 return;
             }
-            if (window.performance.now() - scoreStartTime > 100) {
+            if (globalThis.performance.now() - scoreStartTime > 100) {
                 this.progressBarElement.style.transform = 'scaleX(1)';
                 this.progressBarElement.classList.add('filtered-widget-progress-fade');
             }
@@ -491,7 +491,7 @@ export class FilteredListWidget extends Common.ObjectWrapper.eventMixin(UI.Widge
         if (this.filterTimer) {
             return;
         }
-        this.filterTimer = window.setTimeout(this.filterItems.bind(this), 0);
+        this.filterTimer = globalThis.setTimeout(this.filterItems.bind(this), 0);
     }
     selectItem(itemIndex) {
         this.promptHistory.push(this.query);

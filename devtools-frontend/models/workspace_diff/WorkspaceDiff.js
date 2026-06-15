@@ -161,7 +161,7 @@ export class UISourceCodeDiff extends Common.ObjectWrapper.ObjectWrapper {
         this.#requestDiffPromise = null;
         const content = this.#uiSourceCode.content();
         const delay = (!content || content.length < 65536) ? 0 : 200;
-        this.#pendingChanges = window.setTimeout(emitDiffChanged.bind(this), delay);
+        this.#pendingChanges = globalThis.setTimeout(emitDiffChanged.bind(this), delay);
         function emitDiffChanged() {
             if (this.dispose) {
                 return;

@@ -44,7 +44,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     const { error, componentStack } = this.state;
     const lines = [
       `Message: ${error?.message ?? '(no message)'}`,
-      `URL: ${typeof window !== 'undefined' ? window.location.href : ''}`,
+      `URL: ${typeof window !== 'undefined' ? globalThis.location.href : ''}`,
       `User-Agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`,
       `Time: ${new Date().toISOString()}`,
       '',
@@ -57,7 +57,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     try {
       await navigator.clipboard.writeText(lines.join('\n'));
       this.setState({ copied: true });
-      window.setTimeout(() => this.setState({ copied: false }), 1500);
+      globalThis.setTimeout(() => this.setState({ copied: false }), 1500);
     } catch {
       /* user denied clipboard or unsupported — ignore */
     }
@@ -95,7 +95,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           )}
 
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button variant="primary" onClick={() => window.location.reload()}>
+            <Button variant="primary" onClick={() => globalThis.location.reload()}>
               <RotateCw />
               {i18n.t('errors.reload')}
             </Button>

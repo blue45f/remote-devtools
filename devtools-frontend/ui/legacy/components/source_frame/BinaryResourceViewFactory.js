@@ -14,7 +14,7 @@ export class BinaryResourceViewFactory {
         this.resourceType = resourceType;
     }
     hex() {
-        const binaryString = window.atob(this.base64());
+        const binaryString = globalThis.atob(this.base64());
         const array = Uint8Array.from(binaryString, m => m.codePointAt(0));
         return BinaryResourceViewFactory.#uint8ArrayToHexString(array);
     }

@@ -1042,7 +1042,7 @@ class PuppeteerStringifyExtension extends StringifyExtension {
             });
         }
         else {
-            out.appendLine(`await targetPage.evaluate((x, y) => { window.scroll(x, y); }, ${step.x}, ${step.y})`);
+            out.appendLine(`await targetPage.evaluate((x, y) => { globalThis.scroll(x, y); }, ${step.x}, ${step.y})`);
         }
     }
     #appendStepType(out, step) {
@@ -1567,7 +1567,7 @@ class PuppeteerRunnerExtension extends RunnerExtension {
                     startWaitingForEvents();
                     await localFrame.evaluate((x, y) => {
                         /* c8 ignore start */
-                        window.scroll(x, y);
+                        globalThis.scroll(x, y);
                         /* c8 ignore stop */
                     }, step.x || 0, step.y || 0);
                 }

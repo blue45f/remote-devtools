@@ -359,7 +359,7 @@ function renderAuthenticatorSection(authenticatorId, authenticator, active, edit
         if (!section) {
             return;
         }
-        const mediaQueryList = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const mediaQueryList = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
         const prefersReducedMotion = mediaQueryList.matches;
         section.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     }

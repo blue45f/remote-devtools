@@ -181,9 +181,9 @@ export async function frameworkEventListeners(object) {
         let fetchers = [jQueryFetcher];
         try {
             // @ts-expect-error Here because of layout tests.
-            if (self.devtoolsFrameworkEventListeners && isArrayLike(self.devtoolsFrameworkEventListeners)) {
+            if (globalThis.devtoolsFrameworkEventListeners && isArrayLike(globalThis.devtoolsFrameworkEventListeners)) {
                 // @ts-expect-error Here because of layout tests.
-                fetchers = fetchers.concat(self.devtoolsFrameworkEventListeners);
+                fetchers = fetchers.concat(globalThis.devtoolsFrameworkEventListeners);
             }
         }
         catch (e) {
