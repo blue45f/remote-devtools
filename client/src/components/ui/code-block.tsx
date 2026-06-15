@@ -48,7 +48,9 @@ export function CodeBlock({ code, language, noCopy, className, wrap }: CodeBlock
           size="icon-sm"
           onClick={copy}
           aria-label={t('common.copy')}
-          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          // Reveal on hover/focus for pointer users; stay visible on touch
+          // devices (no hover) so the copy affordance isn't unreachable there.
+          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
         >
           {copied ? <Check className="text-success" /> : <Copy />}
         </Button>

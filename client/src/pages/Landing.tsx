@@ -978,6 +978,9 @@ function SiteFooter() {
         >
           {t('landing.docs')}
         </a>
+        <Link to="/design" className="hover:text-fg-subtle">
+          {t('landing.designSystem')}
+        </Link>
         <a
           href={`${SUPPORT_URL}?category=site-inquiry`}
           target="_blank"

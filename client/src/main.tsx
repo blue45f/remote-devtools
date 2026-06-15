@@ -32,6 +32,7 @@ const SettingsTeam = lazy(() => import('@/pages/SettingsTeam'));
 const SdkModule = lazy(() => import('@/pages/SdkModule'));
 const SdkScript = lazy(() => import('@/pages/SdkScript'));
 const Policy = lazy(() => import('@/pages/Policy'));
+const Design = lazy(() => import('@/pages/Design'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 function PageLoader() {
@@ -63,6 +64,8 @@ createRoot(rootElement).render(
                 {/* Legal pages — TermsDesk publications rendered in-app */}
                 <Route path="/terms" element={<Policy slug="terms-of-service" />} />
                 <Route path="/privacy" element={<Policy slug="privacy-policy" />} />
+                {/* Living design-system style guide — public, no app shell */}
+                <Route path="/design" element={<Design />} />
                 {/* App shell — protected by RequireAuth when the backend has
                    AUTH_JWT_SECRET set; pass-through in demo / self-host. */}
                 <Route
