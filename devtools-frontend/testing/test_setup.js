@@ -18,7 +18,7 @@ const LOADING_TIMEOUT = 5_000;
 async function setupTestFont() {
     document.documentElement.classList.add('platform-screenshot-test');
     await new Promise((resolve, reject) => {
-        const timer = window.setTimeout(() => reject('Failing loading the fonts from the network'), LOADING_TIMEOUT);
+        const timer = globalThis.setTimeout(() => reject('Failing loading the fonts from the network'), LOADING_TIMEOUT);
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap';

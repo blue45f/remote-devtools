@@ -263,7 +263,7 @@ export class AiCodeCompletionProvider {
             }
             const { suggestionText, sampleId, citations, rpcGlobalId, } = sampleResponse;
             const remainingDelay = Math.max(DELAY_BEFORE_SHOWING_RESPONSE_MS - (performance.now() - startTime), 0);
-            this.#suggestionRenderingTimeout = window.setTimeout(() => {
+            this.#suggestionRenderingTimeout = globalThis.setTimeout(() => {
                 const currentCursorPosition = this.#editor?.editor.state.selection.main.head;
                 if (currentCursorPosition !== cursorPositionAtRequest) {
                     this.#aiCodeCompletionConfig?.onResponseReceived();
@@ -373,7 +373,7 @@ function aiCodeCompletionTeaserExtension(teaser) {
             this.#setupDecoration();
         }
         destroy() {
-            window.clearTimeout(this.#teaserDisplayTimeout);
+            globalThis.clearTimeout(this.#teaserDisplayTimeout);
         }
         update(update) {
             const currentTeaserMode = update.state.field(aiCodeCompletionTeaserModeState);
@@ -388,7 +388,7 @@ function aiCodeCompletionTeaserExtension(teaser) {
             else if (this.#teaserMode === AiCodeCompletionTeaserMode.ON) {
                 if (update.docChanged) {
                     this.#teaserDecoration = CodeMirror.Decoration.none;
-                    window.clearTimeout(this.#teaserDisplayTimeout);
+                    globalThis.clearTimeout(this.#teaserDisplayTimeout);
                     this.#updateTeaserDecorationForOnMode();
                 }
                 else if (update.selectionSet && update.state.doc.length > 0) {
@@ -421,7 +421,7 @@ function aiCodeCompletionTeaserExtension(teaser) {
             }
         }
         #updateTeaserDecorationForOnMode = Common.Debouncer.debounce(() => {
-            this.#teaserDisplayTimeout = window.setTimeout(() => {
+            this.#teaserDisplayTimeout = globalThis.setTimeout(() => {
                 this.#updateTeaserDecorationForOnModeImmediately();
                 this.view.dispatch({});
             }, DELAY_BEFORE_SHOWING_RESPONSE_MS);

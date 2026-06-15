@@ -3137,7 +3137,7 @@ export class JSHeapSnapshotNode extends HeapSnapshotNode {
     // '{propName, otherProp, thirdProp, ..., secondToLastProp, lastProp}'.
     // A variable number of property names is included, depending on the length
     // of the property names, so that the result fits nicely in a reasonably
-    // sized DevTools window.
+    // sized DevTools globalThis.
     #plainObjectName() {
         const snapshot = this.snapshot;
         const { edgeFieldsCount, edgePropertyType } = snapshot;

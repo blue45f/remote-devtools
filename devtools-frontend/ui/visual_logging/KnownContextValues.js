@@ -1358,7 +1358,7 @@ export const knownContextValues = new Set([
     'dom-node-removed',
     'dom-node-removed-from-document',
     'dom-subtree-modified',
-    'dom-window.close',
+    'dom-globalThis.close',
     'dom-word-wrap',
     'dom-word-wrap-false',
     'domain',

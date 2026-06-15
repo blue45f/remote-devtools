@@ -199,7 +199,7 @@ export class TabbedEditorContainer extends Common.ObjectWrapper.ObjectWrapper {
             if (this.scrollTimer) {
                 clearTimeout(this.scrollTimer);
             }
-            this.scrollTimer = window.setTimeout(() => this.previouslyViewedFilesSetting.set(this.history.toObject()), 100);
+            this.scrollTimer = globalThis.setTimeout(() => this.previouslyViewedFilesSetting.set(this.history.toObject()), 100);
             if (this.#currentFile) {
                 const { editor } = this.currentView.textEditor;
                 const topBlock = editor.lineBlockAtHeight(editor.scrollDOM.getBoundingClientRect().top - editor.documentTop);

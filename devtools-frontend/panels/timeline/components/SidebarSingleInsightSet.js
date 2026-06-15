@@ -102,16 +102,16 @@ export class SidebarSingleInsightSet extends UI.Widget.Widget {
     }
     willHide() {
         super.willHide();
-        window.clearTimeout(this.#activeHighlightTimeout);
+        globalThis.clearTimeout(this.#activeHighlightTimeout);
     }
     async highlightActiveInsight() {
-        window.clearTimeout(this.#activeHighlightTimeout);
+        globalThis.clearTimeout(this.#activeHighlightTimeout);
         this.#isActiveInsightHighlighted = false;
         this.requestUpdate();
         await this.updateComplete;
         this.#isActiveInsightHighlighted = true;
         this.requestUpdate();
-        this.#activeHighlightTimeout = window.setTimeout(() => {
+        this.#activeHighlightTimeout = globalThis.setTimeout(() => {
             this.#isActiveInsightHighlighted = false;
             this.requestUpdate();
         }, 2_000);

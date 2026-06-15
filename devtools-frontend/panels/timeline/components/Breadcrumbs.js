@@ -60,7 +60,7 @@ export class Breadcrumbs {
     /**
      * Sets a breadcrumb to be active.
      * Doing this will update the minimap bounds and optionally based on the
-     * `updateVisibleWindow` parameter, it will also update the active window.
+     * `updateVisibleWindow` parameter, it will also update the active globalThis.
      * The reason `updateVisibleWindow` is configurable is because if we are
      * changing which breadcrumb is active because we want to reveal something to
      * the user, we may have already updated the visible timeline window, but we
@@ -75,7 +75,7 @@ export class Breadcrumbs {
             activeBreadcrumb.child = null;
         }
         // When we assign a new active breadcrumb, both the minimap bounds and the visible
-        // window get set to that breadcrumb's window.
+        // window get set to that breadcrumb's globalThis.
         this.activeBreadcrumb = activeBreadcrumb;
         TraceBounds.TraceBounds.BoundsManager.instance().setMiniMapBounds(activeBreadcrumb.window);
         if (options.updateVisibleWindow) {

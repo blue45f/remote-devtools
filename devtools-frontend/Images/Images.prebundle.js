@@ -128,7 +128,7 @@ style.setProperty('--image-file-difference', 'url(\"' + new URL('./src/differenc
 style.setProperty('--image-file-dock-bottom', 'url(\"' + new URL('./src/dock-bottom.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-dock-left', 'url(\"' + new URL('./src/dock-left.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-dock-right', 'url(\"' + new URL('./src/dock-right.svg', import.meta.url).toString() + '\")');
-style.setProperty('--image-file-dock-window', 'url(\"' + new URL('./src/dock-window.svg', import.meta.url).toString() + '\")');
+style.setProperty('--image-file-dock-window', 'url(\"' + new URL('./src/dock-globalThis.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-document', 'url(\"' + new URL('./src/document.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-dog-paw', 'url(\"' + new URL('./src/dog-paw.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-dom-detective-badge', 'url(\"' + new URL('./src/dom-detective-badge.svg', import.meta.url).toString() + '\")');
@@ -175,7 +175,7 @@ style.setProperty('--image-file-frame', 'url(\"' + new URL('./src/frame.svg', im
 style.setProperty('--image-file-gear-filled', 'url(\"' + new URL('./src/gear-filled.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-gear', 'url(\"' + new URL('./src/gear.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-gears', 'url(\"' + new URL('./src/gears.svg', import.meta.url).toString() + '\")');
-style.setProperty('--image-file-global', 'url(\"' + new URL('./src/global.svg', import.meta.url).toString() + '\")');
+style.setProperty('--image-file-global', 'url(\"' + new URL('./src/globalThis.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-google', 'url(\"' + new URL('./src/google.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-goto-filled', 'url(\"' + new URL('./src/goto-filled.svg', import.meta.url).toString() + '\")');
 style.setProperty('--image-file-grid-direction', 'url(\"' + new URL('./src/grid-direction.svg', import.meta.url).toString() + '\")');

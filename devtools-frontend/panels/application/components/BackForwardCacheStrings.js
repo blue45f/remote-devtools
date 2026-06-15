@@ -13,9 +13,9 @@ const UIStrings = {
     backForwardCacheDisabled: 'Back/forward cache is disabled by flags. Visit chrome://flags/#back-forward-cache to enable it locally on this device.',
     /**
      * @description Description text for not restored reason RelatedActiveContentsExist.
-     * Note: "window.open()" is the name of a JavaScript method and should not be translated.
+     * Note: "globalThis.open()" is the name of a JavaScript method and should not be translated.
      */
-    relatedActiveContentsExist: 'The page was opened using \'`window.open()`\' and another tab has a reference to it, or the page opened a window.',
+    relatedActiveContentsExist: 'The page was opened using \'`globalThis.open()`\' and another tab has a reference to it, or the page opened a globalThis.',
     /**
      * @description Description text for not restored reason HTTPStatusNotOK.
      */

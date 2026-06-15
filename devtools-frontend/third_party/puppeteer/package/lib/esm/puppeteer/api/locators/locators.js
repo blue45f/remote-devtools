@@ -227,9 +227,9 @@ export class Locator extends EventEmitter {
             // Note we don't use waitForFunction because that relies on RAF.
             return from(handle.evaluate(element => {
                 return new Promise(resolve => {
-                    window.requestAnimationFrame(() => {
+                    globalThis.requestAnimationFrame(() => {
                         const rect1 = element.getBoundingClientRect();
-                        window.requestAnimationFrame(() => {
+                        globalThis.requestAnimationFrame(() => {
                             const rect2 = element.getBoundingClientRect();
                             resolve([
                                 {

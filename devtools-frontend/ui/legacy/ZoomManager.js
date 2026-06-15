@@ -10,7 +10,7 @@ export class ZoomManager extends Common.ObjectWrapper.ObjectWrapper {
         super();
         this.frontendHost = frontendHost;
         this.#zoomFactor = this.frontendHost.zoomFactor();
-        window.addEventListener('resize', this.onWindowResize.bind(this), true);
+        globalThis.addEventListener('resize', this.onWindowResize.bind(this), true);
     }
     static instance(opts = { forceNew: null, win: null, frontendHost: null }) {
         const { forceNew, win, frontendHost } = opts;

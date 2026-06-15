@@ -371,7 +371,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
         UI.UIUtils.setTitle(paletteSwitcher, i18nString(UIStrings.previewPalettes));
         UI.ARIAUtils.markAsButton(paletteSwitcher);
         paletteSwitcher.tabIndex = 0;
-        self.onInvokeElement(paletteSwitcher, event => {
+        globalThis.onInvokeElement(paletteSwitcher, event => {
             this.togglePalettePanel(true);
             event.consume(true);
         });
@@ -811,7 +811,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
         for (; i < colorsPerPreviewRow; i++) {
             previewElement.createChild('div', 'spectrum-palette-color empty-color');
         }
-        self.onInvokeElement(previewElement, event => {
+        globalThis.onInvokeElement(previewElement, event => {
             this.paletteSelected(palette);
             event.consume(true);
         });
@@ -1258,7 +1258,7 @@ export class Spectrum extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) {
         else if (IS_NATIVE_EYE_DROPPER_AVAILABLE && enabled) {
             // Use EyeDropper API, can pick up colors outside the browser window,
             // Note: The current EyeDropper API is not designed to pick up colors continuously.
-            const eyeDropper = new window.EyeDropper();
+            const eyeDropper = new globalThis.EyeDropper();
             this.eyeDropperAbortController = new AbortController();
             try {
                 const hexColor = await eyeDropper.open({ signal: this.eyeDropperAbortController.signal });
@@ -1465,7 +1465,7 @@ export class Swatch {
         UI.ARIAUtils.markAsButton(this.swatchOverlayElement);
         UI.ARIAUtils.setPressed(this.swatchOverlayElement, false);
         this.swatchOverlayElement.tabIndex = 0;
-        self.onInvokeElement(this.swatchOverlayElement, this.onCopyText.bind(this));
+        globalThis.onInvokeElement(this.swatchOverlayElement, this.onCopyText.bind(this));
         this.swatchOverlayElement.addEventListener('mouseout', this.onCopyIconMouseout.bind(this));
         this.swatchOverlayElement.addEventListener('blur', this.onCopyIconMouseout.bind(this));
         this.swatchCopyIcon = createIcon('copy', 'copy-color-icon');

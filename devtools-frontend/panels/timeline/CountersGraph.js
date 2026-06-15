@@ -168,8 +168,8 @@ export class CountersGraph extends UI.Widget.VBox {
     }
     resize() {
         const parentElement = this.canvas.parentElement;
-        this.canvas.width = parentElement.clientWidth * window.devicePixelRatio;
-        this.canvas.height = parentElement.clientHeight * window.devicePixelRatio;
+        this.canvas.width = parentElement.clientWidth * globalThis.devicePixelRatio;
+        this.canvas.height = parentElement.clientHeight * globalThis.devicePixelRatio;
         this.calculator.setDisplayWidth(this.canvas.width);
         this.refresh();
     }
@@ -201,7 +201,7 @@ export class CountersGraph extends UI.Widget.VBox {
                 continue;
             }
             const index = counterUI.recordIndexAt(x);
-            const distance = Math.abs(x * window.devicePixelRatio - counterUI.counter.x[index]);
+            const distance = Math.abs(x * globalThis.devicePixelRatio - counterUI.counter.x[index]);
             if (distance < minDistance) {
                 minDistance = distance;
                 bestTime = counterUI.counter.times[index];
@@ -389,7 +389,7 @@ export class CounterUI {
         this.countersPane.refresh();
     }
     recordIndexAt(x) {
-        return Platform.ArrayUtilities.upperBound(this.counter.x, x * window.devicePixelRatio, Platform.ArrayUtilities.DEFAULT_COMPARATOR, this.counter.minimumIndex + 1, this.counter.maximumIndex + 1) -
+        return Platform.ArrayUtilities.upperBound(this.counter.x, x * globalThis.devicePixelRatio, Platform.ArrayUtilities.DEFAULT_COMPARATOR, this.counter.minimumIndex + 1, this.counter.maximumIndex + 1) -
             1;
     }
     updateCurrentValue(x) {
@@ -399,7 +399,7 @@ export class CounterUI {
         const index = this.recordIndexAt(x);
         const value = this.formatter(this.counter.values[index]);
         this.value.textContent = `${this.counterName}: ${value}`;
-        const y = this.graphYValues[index] / window.devicePixelRatio;
+        const y = this.graphYValues[index] / globalThis.devicePixelRatio;
         this.marker.style.left = x + 'px';
         this.marker.style.top = y + 'px';
         this.marker.classList.remove('hidden');
@@ -436,7 +436,7 @@ export class CounterUI {
         const maxYRange = maxValue - minValue;
         const yFactor = maxYRange ? height / (maxYRange) : 1;
         ctx.save();
-        ctx.lineWidth = window.devicePixelRatio;
+        ctx.lineWidth = globalThis.devicePixelRatio;
         if (ctx.lineWidth % 2) {
             ctx.translate(0.5, 0.5);
         }

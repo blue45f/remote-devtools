@@ -1193,7 +1193,7 @@ export class TreeElement {
     isEventWithinDisclosureTriangle(event) {
         const arrowToggleWidth = 10;
         // FIXME: We should not use getComputedStyle(). For that we need to get rid of using ::before for disclosure triangle. (http://webk.it/74446)
-        const paddingLeftValue = window.getComputedStyle(this.listItemNode).paddingLeft;
+        const paddingLeftValue = globalThis.getComputedStyle(this.listItemNode).paddingLeft;
         console.assert(paddingLeftValue.endsWith('px'));
         const computedLeftPadding = parseFloat(paddingLeftValue);
         const left = this.listItemNode.getBoundingClientRect().left + computedLeftPadding;

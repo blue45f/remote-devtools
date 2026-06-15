@@ -45,7 +45,7 @@ describe('ErrorBoundary', () => {
     const reloadMock = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...window.location, reload: reloadMock },
+      value: { ...globalThis.location, reload: reloadMock },
     });
     render(
       <ErrorBoundary>

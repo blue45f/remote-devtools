@@ -85,7 +85,7 @@ export const DEFAULT_COOKIE_PREVIEW_WIDGET_VIEW = (input, output, target) => {
         event.preventDefault();
         const range = document.createRange();
         range.selectNode(event.currentTarget);
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         if (!selection) {
             return;
         }

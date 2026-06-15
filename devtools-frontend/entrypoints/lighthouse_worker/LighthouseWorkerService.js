@@ -39,7 +39,7 @@ async function invokeLH(action, args) {
         args.flags.maxWaitForLoad = 2 * 1000;
     }
     // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-    self.listenForStatus(message => {
+    globalThis.listenForStatus(message => {
         notifyFrontendViaWorkerMessage('statusUpdate', { message: message[1] });
     });
     let puppeteerHandle;
@@ -60,10 +60,10 @@ async function invokeLH(action, args) {
         flags.channel = 'devtools';
         flags.locale = locale;
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-        const config = args.config || self.createConfig(args.categoryIDs, flags.formFactor);
+        const config = args.config || globalThis.createConfig(args.categoryIDs, flags.formFactor);
         const url = args.url;
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-        self.thirdPartyWeb.provideThirdPartyWeb(ThirdPartyWeb.ThirdPartyWeb);
+        globalThis.thirdPartyWeb.provideThirdPartyWeb(ThirdPartyWeb.ThirdPartyWeb);
         const { rootTargetId, mainSessionId } = args;
         cdpTransport = new WorkerConnectionTransport();
         const connection = new ProtocolClient.DevToolsCDPConnection.DevToolsCDPConnection(cdpTransport);
@@ -81,16 +81,16 @@ async function invokeLH(action, args) {
         }
         if (action === 'snapshot') {
             // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            return await self.snapshot(page, { config, flags });
+            return await globalThis.snapshot(page, { config, flags });
         }
         if (action === 'startTimespan') {
             // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-            const timespan = await self.startTimespan(page, { config, flags });
+            const timespan = await globalThis.startTimespan(page, { config, flags });
             endTimespan = timespan.endTimespan;
             return;
         }
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-        return await self.navigation(page, url, { config, flags });
+        return await globalThis.navigation(page, url, { config, flags });
     }
     catch (err) {
         return ({
@@ -113,7 +113,7 @@ async function invokeLH(action, args) {
  */
 async function fetchLocaleData(locales) {
     // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-    const locale = self.lookupLocale(locales);
+    const locale = globalThis.lookupLocale(locales);
     // If the locale is en-US, no need to fetch locale data.
     if (locale === 'en-US' || locale === 'en') {
         return;
@@ -131,7 +131,7 @@ async function fetchLocaleData(locales) {
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timed out fetching locale')), 5000));
         const localeData = await Promise.race([timeoutPromise, fetch(localeUrl).then(result => result.json())]);
         // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-        self.registerLocaleData(locale, localeData);
+        globalThis.registerLocaleData(locale, localeData);
         return locale;
     }
     catch (err) {
@@ -147,7 +147,7 @@ async function fetchLocaleData(locales) {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function notifyFrontendViaWorkerMessage(action, args) {
-    self.postMessage({ action, args });
+    globalThis.postMessage({ action, args });
 }
 async function onFrontendMessage(event) {
     const messageFromFrontend = event.data;
@@ -168,7 +168,7 @@ async function onFrontendMessage(event) {
                     result.artifacts.Timing = JSON.parse(JSON.stringify(result.artifacts.Timing));
                 }
             }
-            self.postMessage({ id: messageFromFrontend.id, result });
+            globalThis.postMessage({ id: messageFromFrontend.id, result });
             break;
         }
         case 'dispatchProtocolMessage': {
@@ -180,17 +180,17 @@ async function onFrontendMessage(event) {
         }
     }
 }
-self.onmessage = onFrontendMessage;
+globalThis.onmessage = onFrontendMessage;
 // Make lighthouse and traceviewer happy.
 globalThis.global = self;
 // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-globalThis.global.isVinn = true;
+globalThis.globalThis.isVinn = true;
 // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-globalThis.global.document = {};
+globalThis.globalThis.document = {};
 // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-globalThis.global.document.documentElement = {};
+globalThis.globalThis.document.documentElement = {};
 // @ts-expect-error https://github.com/GoogleChrome/lighthouse/issues/11628
-globalThis.global.document.documentElement.style = {
+globalThis.globalThis.document.documentElement.style = {
     WebkitAppearance: 'WebkitAppearance',
 };
 //# sourceMappingURL=LighthouseWorkerService.js.map

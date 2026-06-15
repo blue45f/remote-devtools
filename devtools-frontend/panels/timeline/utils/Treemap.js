@@ -19,7 +19,7 @@ async function openTabWithUrlData(data, urlString, windowName) {
     const url = new URL(urlString);
     url.hash = await toCompressedBase64(JSON.stringify(data));
     url.searchParams.set('gzip', '1');
-    window.open(url.toString(), windowName);
+    globalThis.open(url.toString(), windowName);
 }
 /**
  * Opens a new tab to the treemap app and sends the data using URL.fragment

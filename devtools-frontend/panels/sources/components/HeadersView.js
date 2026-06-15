@@ -161,7 +161,7 @@ export class HeadersViewComponent extends HTMLElement {
         }
     }
     #selectAllText(target) {
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         const range = document.createRange();
         range.selectNodeContents(target);
         selection?.removeAllRanges();
@@ -190,7 +190,7 @@ export class HeadersViewComponent extends HTMLElement {
             }
         }
         // clear selection
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         selection?.removeAllRanges();
         this.#uiSourceCode?.commitWorkingCopy();
     }
@@ -284,7 +284,7 @@ export class HeadersViewComponent extends HTMLElement {
             range.insertNode(textNode);
             range.selectNodeContents(textNode);
             range.collapse(false);
-            const selection = window.getSelection();
+            const selection = globalThis.getSelection();
             selection?.removeAllRanges();
             selection?.addRange(range);
             this.#onChange(event.target);

@@ -627,7 +627,7 @@ export class StylePropertiesSection {
         if (this.hoverTimer) {
             clearTimeout(this.hoverTimer);
         }
-        this.hoverTimer = window.setTimeout(this.highlight.bind(this), 300);
+        this.hoverTimer = globalThis.setTimeout(this.highlight.bind(this), 300);
     }
     highlight(mode = 'all') {
         SDK.OverlayModel.OverlayModel.hideDOMNodeHighlight();

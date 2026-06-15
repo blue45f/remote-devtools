@@ -59,7 +59,7 @@ export class ExtensionView extends UI.Widget.Widget {
         if (!this.#iframe) {
             return;
         }
-        const frames = window.frames;
+        const frames = globalThis.frames;
         this.#frameIndex = Array.prototype.indexOf.call(frames, this.#iframe.contentWindow);
         if (this.isShowing()) {
             this.#server.notifyViewShown(this.#id, this.#frameIndex);

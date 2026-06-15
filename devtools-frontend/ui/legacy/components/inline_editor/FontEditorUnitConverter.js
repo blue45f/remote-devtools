@@ -121,7 +121,7 @@ function findHtmlNode(selectedNode) {
     return node;
 }
 const widthEvaluateParams = {
-    expression: 'window.innerWidth',
+    expression: 'globalThis.innerWidth',
     includeCommandLineAPI: false,
     silent: true,
     returnByValue: false,
@@ -134,7 +134,7 @@ const widthEvaluateParams = {
     allowUnsafeEvalBlockedByCSP: false,
 };
 const heightEvaluateParams = {
-    expression: 'window.innerHeight',
+    expression: 'globalThis.innerHeight',
     includeCommandLineAPI: false,
     silent: true,
     returnByValue: false,

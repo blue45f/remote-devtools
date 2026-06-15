@@ -437,7 +437,7 @@ export class EntryLabelOverlay extends HTMLElement {
         if (!this.#inputField) {
             return;
         }
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         const range = document.createRange();
         range.selectNodeContents(this.#inputField);
         range.collapse(false);
@@ -690,7 +690,7 @@ export class EntryLabelOverlay extends HTMLElement {
          */
         const relatedTarget = event.relatedTarget;
         // If the related target is null, it means the focus has left the browser
-        // window. If it's not null, we check if the new focused element is a
+        // globalThis. If it's not null, we check if the new focused element is a
         // descendant of this component's shadow root. If it is, we don't do anything.
         if (relatedTarget && this.#shadow.contains(relatedTarget)) {
             return;

@@ -85,8 +85,8 @@ export class SessionReplay extends BaseDomain {
           // FullSnapshot 이벤트
           const data = typedEvent.data as MutableEventData;
           if (!data.width || !data.height) {
-            data.width = window.innerWidth;
-            data.height = window.innerHeight;
+            data.width = globalThis.innerWidth;
+            data.height = globalThis.innerHeight;
           }
         }
 

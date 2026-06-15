@@ -65,7 +65,7 @@ export class ContentData {
         if (!this.isTextContent) {
             throw new Error('Cannot interpret binary data as text');
         }
-        const binaryString = window.atob(this.#contentAsBase64);
+        const binaryString = globalThis.atob(this.#contentAsBase64);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
         for (let i = 0; i < len; i++) {

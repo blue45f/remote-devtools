@@ -276,7 +276,7 @@ const baseKeymap = CM.keymap.of([
 ]);
 function themeIsDark() {
     const setting = Common.Settings.Settings.instance().moduleSetting('ui-theme').get();
-    return setting === 'systemPreferred' ? window.matchMedia('(prefers-color-scheme: dark)').matches : setting === 'dark';
+    return setting === 'systemPreferred' ? globalThis.matchMedia('(prefers-color-scheme: dark)').matches : setting === 'dark';
 }
 export const dummyDarkTheme = CM.EditorView.theme({}, { dark: true });
 export const themeSelection = new CM.Compartment();

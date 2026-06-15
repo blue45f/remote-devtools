@@ -60,7 +60,7 @@ export const URLS = [
     '//static.tumblr.com/x5qdx0r/nPOnngtff/angular-resource.min_1_.js',
     '//storage.googleapis.com/assets-prod.urbansitter.net/us-sym/assets/vendor/angular-sanitize/angular-sanitize.min.js',
     '//twitter.github.io/labella.js/bower_components/angular/angular.min.js',
-    '//cdn2-casinoroom.global.ssl.fastly.net/js/lib/angular-animate.min.js',
+    '//cdn2-casinoroom.globalThis.ssl.fastly.net/js/lib/angular-animate.min.js',
     '//www.adobe.com/devnet-apps/flashshowcase/lib/angular/angular.1.1.5.min.js',
     '//eternal-sunset.herokuapp.com/bower_components/angular/angular.js',
     '//cdn.bootcss.com/angular.js/1.2.0/angular.min.js'

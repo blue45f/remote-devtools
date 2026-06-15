@@ -398,7 +398,7 @@ export class NetworkLogViewColumns {
         // (see crbug.com/1019723) this.waterfallScroller.offsetTop does
         // not return the value it's supposed to return as of the applied
         // css classes.
-        window.requestAnimationFrame(() => {
+        globalThis.requestAnimationFrame(() => {
             this.waterfallColumn.setHeaderHeight(this.waterfallScroller.offsetTop);
             this.waterfallColumn.scheduleDraw();
         });
@@ -419,7 +419,7 @@ export class NetworkLogViewColumns {
         // Request an animation frame because when the filter is cleared the
         // NetworkLogView can be empty until it has been invalidated (see
         // crbug.com/379762016).
-        window.requestAnimationFrame(() => {
+        globalThis.requestAnimationFrame(() => {
             this.#dataGrid.scheduleUpdate();
         });
     }

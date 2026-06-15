@@ -131,7 +131,7 @@ export class TabbedPane extends Common.ObjectWrapper.eventMixin(VBox) {
         this.autoSelectFirstItemOnShow = true;
         this.triggerDropDownTimeout = null;
         this.dropDownButton = this.createDropDownButton();
-        this.currentDevicePixelRatio = window.devicePixelRatio;
+        this.currentDevicePixelRatio = globalThis.devicePixelRatio;
         ZoomManager.instance().addEventListener("ZoomChanged" /* ZoomManagerEvents.ZOOM_CHANGED */, this.zoomChanged, this);
         this.makeTabSlider();
         if (Annotations.AnnotationRepository.annotationsEnabled()) {
@@ -503,10 +503,10 @@ export class TabbedPane extends Common.ObjectWrapper.eventMixin(VBox) {
         }
     }
     onResize() {
-        if (this.currentDevicePixelRatio !== window.devicePixelRatio) {
+        if (this.currentDevicePixelRatio !== globalThis.devicePixelRatio) {
             // Force recalculation of all tab widths on a DPI change
             this.clearMeasuredWidths();
-            this.currentDevicePixelRatio = window.devicePixelRatio;
+            this.currentDevicePixelRatio = globalThis.devicePixelRatio;
         }
         this.requestUpdate();
     }
@@ -663,7 +663,7 @@ export class TabbedPane extends Common.ObjectWrapper.eventMixin(VBox) {
             if (event.button !== 0 || this.triggerDropDownTimeout) {
                 return;
             }
-            this.triggerDropDownTimeout = window.setTimeout(this.dropDownClicked.bind(this, event), 200);
+            this.triggerDropDownTimeout = globalThis.setTimeout(this.dropDownClicked.bind(this, event), 200);
         });
         return dropDownContainer;
     }
@@ -874,7 +874,7 @@ export class TabbedPane extends Common.ObjectWrapper.eventMixin(VBox) {
             }
         }
         const sliderWidth = this.currentTab.shown ? this.currentTab.measuredWidth : this.dropDownButton.offsetWidth;
-        const scaleFactor = window.devicePixelRatio >= 1.5 ? ' scaleY(0.75)' : '';
+        const scaleFactor = globalThis.devicePixelRatio >= 1.5 ? ' scaleY(0.75)' : '';
         this.tabSlider.style.transform = 'translateX(' + left + 'px)' + scaleFactor;
         this.tabSlider.style.width = sliderWidth + 'px';
         if (this.tabSlider.parentElement !== this.headerContentsElement) {

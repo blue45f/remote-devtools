@@ -71,18 +71,18 @@ export class Runtime extends BaseDomain {
    */
 
   private static setCommandLineApi() {
-    if (typeof window.$ !== 'function') {
-      window.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
+    if (typeof globalThis.$ !== 'function') {
+      globalThis.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelector(selector);
       };
     }
 
-    if (typeof window.clear !== 'function') {
-      window.clear = () => window.console.clear();
+    if (typeof globalThis.clear !== 'function') {
+      globalThis.clear = () => globalThis.console.clear();
     }
 
-    if (typeof window.copy !== 'function') {
-      window.copy = (object) => {
+    if (typeof globalThis.copy !== 'function') {
+      globalThis.copy = (object) => {
         function fallbackCopyTextToClipboard(text: string) {
           if (typeof document !== 'object') {
             console.error('Copy text failed, running environment is not a browser');
@@ -121,24 +121,24 @@ export class Runtime extends BaseDomain {
       };
     }
 
-    if (typeof window.dir !== 'function') {
-      window.dir = (object) => window.console.dir(object);
+    if (typeof globalThis.dir !== 'function') {
+      globalThis.dir = (object) => globalThis.console.dir(object);
     }
 
-    if (typeof window.dirxml !== 'function') {
-      window.dirxml = (object) => window.console.dirxml(object);
+    if (typeof globalThis.dirxml !== 'function') {
+      globalThis.dirxml = (object) => globalThis.console.dirxml(object);
     }
 
-    if (typeof window.keys !== 'function') {
-      window.keys = (object) => Object.keys(object);
+    if (typeof globalThis.keys !== 'function') {
+      globalThis.keys = (object) => Object.keys(object);
     }
 
-    if (typeof window.values !== 'function') {
-      window.values = (object: object) => Object.values(object);
+    if (typeof globalThis.values !== 'function') {
+      globalThis.values = (object: object) => Object.values(object);
     }
 
-    if (typeof window.table !== 'function') {
-      window.table = (object) => window.console.table(object);
+    if (typeof globalThis.table !== 'function') {
+      globalThis.table = (object) => globalThis.console.table(object);
     }
   }
 
@@ -146,7 +146,7 @@ export class Runtime extends BaseDomain {
     super(option);
     // 최신 Runtime 인스턴스를 window에 저장 (클로저 문제 해결)
     // Runtime이 여러 번 생성되어도 항상 최신 인스턴스의 캐시로 로그가 저장됨
-    window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ = this;
+    globalThis.__REMOTE_DEBUG_RUNTIME_INSTANCE__ = this;
 
     // enable() 전에 발생하는 로그도 캐시하기 위해 미리 후킹
     // 중복 방지 로직이 있으므로 enable()에서 다시 호출해도 안전
@@ -189,14 +189,14 @@ export class Runtime extends BaseDomain {
    */
   private hookConsole() {
     // HMR 환경에서도 유지되는 중복 후킹 방지 (window 객체에 저장)
-    if (window.__REMOTE_DEBUG_CONSOLE_HOOKED__) {
+    if (globalThis.__REMOTE_DEBUG_CONSOLE_HOOKED__) {
       return;
     }
-    window.__REMOTE_DEBUG_CONSOLE_HOOKED__ = true;
+    globalThis.__REMOTE_DEBUG_CONSOLE_HOOKED__ = true;
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
     // Runtime이 여러 번 생성되어도 항상 최신 인스턴스로 전달됨
-    const getRuntimeInstance = (): Runtime => window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
+    const getRuntimeInstance = (): Runtime => globalThis.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
     const methods: Record<ConsoleKeys, string> = {
       info: 'info',
@@ -217,8 +217,8 @@ export class Runtime extends BaseDomain {
     Object.keys(methods).forEach((_key) => {
       const key = _key as ConsoleKeys;
 
-      const nativeConsoleFunc = window.console[key];
-      window.console[key] = (...args: unknown[]) => {
+      const nativeConsoleFunc = globalThis.console[key];
+      globalThis.console[key] = (...args: unknown[]) => {
         // 원본 console 함수 먼저 호출 (항상 실행되도록)
         nativeConsoleFunc?.(...args);
 
@@ -296,13 +296,13 @@ export class Runtime extends BaseDomain {
    */
   private listenError(): void {
     // HMR 환경에서도 유지되는 중복 리스너 방지 (window 객체에 저장)
-    if (window.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__) {
+    if (globalThis.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__) {
       return;
     }
-    window.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__ = true;
+    globalThis.__REMOTE_DEBUG_ERROR_LISTENER_ADDED__ = true;
 
     // 클로저 대신 window 객체의 인스턴스 참조 사용
-    const getRuntimeInstance = (): Runtime => window.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
+    const getRuntimeInstance = (): Runtime => globalThis.__REMOTE_DEBUG_RUNTIME_INSTANCE__ ?? this;
 
     const exceptionThrown = (error: unknown) => {
       const exception =
@@ -335,8 +335,8 @@ export class Runtime extends BaseDomain {
       getRuntimeInstance().socketSend('error', data);
     };
 
-    window.addEventListener('error', (e) => exceptionThrown(e.error));
-    window.addEventListener('unhandledrejection', (e) => exceptionThrown(e.reason));
+    globalThis.addEventListener('error', (e) => exceptionThrown(e.error));
+    globalThis.addEventListener('unhandledrejection', (e) => exceptionThrown(e.reason));
   }
 
   // Runtime Domain methods
@@ -420,9 +420,9 @@ export class Runtime extends BaseDomain {
     // Modifying the scope to the global scope enables variables defined
     // with var to be accessible globally.
 
-    const res = window.eval(expression);
+    const res = globalThis.eval(expression);
     // chrome-api
-    window.$_ = res;
+    globalThis.$_ = res;
     return {
       result: objectFormat(res, { preview: generatePreview }),
     };

@@ -151,7 +151,7 @@ function TeamInner() {
           size="icon-sm"
           aria-label={t('team.remove')}
           onClick={() => {
-            if (window.confirm(t('team.removeConfirm'))) removeMember.mutate(m.id);
+            if (globalThis.confirm(t('team.removeConfirm'))) removeMember.mutate(m.id);
           }}
         >
           <Trash2 />

@@ -67,8 +67,8 @@ export class TimelineGrid {
     }
     static drawCanvasGrid(context, dividersData) {
         context.save();
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
-        const height = Math.floor(context.canvas.height / window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
+        const height = Math.floor(context.canvas.height / globalThis.devicePixelRatio);
         context.strokeStyle = getComputedStyle(document.body).getPropertyValue('--app-color-strokestyle');
         context.lineWidth = 1;
         context.translate(0.5, 0.5);
@@ -82,8 +82,8 @@ export class TimelineGrid {
     }
     static drawCanvasHeaders(context, dividersData, formatTimeFunction, paddingTop, headerHeight, freeZoneAtLeft) {
         context.save();
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
-        const width = Math.ceil(context.canvas.width / window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
+        const width = Math.ceil(context.canvas.width / globalThis.devicePixelRatio);
         context.beginPath();
         context.fillStyle = ThemeSupport.ThemeSupport.instance().getComputedValue('--color-background-opacity-80');
         context.fillRect(0, 0, width, headerHeight);

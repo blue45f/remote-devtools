@@ -17,7 +17,7 @@ export function buildDevToolsLink(
   host: string = API_HOST,
 ): string {
   const resolvedHost =
-    host || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    host || (typeof window !== 'undefined' ? globalThis.location.origin : 'http://localhost:3000');
   const wsHost = resolvedHost.replace(/^https?:\/\/(.+)$/, '$1');
   const path = recordId ? '/ws/playback' : '/socket.io/';
   const record = recordId ? `&recordMode=true&recordId=${recordId}` : '';

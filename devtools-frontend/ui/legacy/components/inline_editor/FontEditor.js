@@ -639,7 +639,7 @@ class FontPropertyInputs {
         displaySwitcher.appendChild(icon);
         UI.UIUtils.setTitle(displaySwitcher, i18nString(UIStrings.sToggleInputType, { PH1: this.propertyName }));
         displaySwitcher.tabIndex = 0;
-        self.onInvokeElement(displaySwitcher, this.toggleInputType.bind(this));
+        globalThis.onInvokeElement(displaySwitcher, this.toggleInputType.bind(this));
         UI.ARIAUtils.markAsButton(displaySwitcher);
         displaySwitcher.setAttribute('jslog', `${VisualLogging.toggle(jslogContext).track({ click: true })}`);
     }

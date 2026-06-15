@@ -44,8 +44,8 @@ export const WebviewPage = ({ kind = 'module' }: WebviewPageProps) => {
       // production usually serves both apps behind the same reverse proxy).
       script.src = '/sdk/index.umd.js';
       script.onload = () => {
-        if (window.RemoteDebugSdk) {
-          window.RemoteDebugSdk.createDebugger();
+        if (globalThis.RemoteDebugSdk) {
+          globalThis.RemoteDebugSdk.createDebugger();
         }
       };
       document.head.appendChild(script);
@@ -224,15 +224,15 @@ function BottomCta() {
   // The SDK publishes its active room/recordId. With no session there is nothing
   // to open, so the button is disabled.
   const [session, setSession] = useState<RemoteDebugSdkSession | null>(
-    () => window.RemoteDebugSdk?.getActiveSession?.() ?? null,
+    () => globalThis.RemoteDebugSdk?.getActiveSession?.() ?? null,
   );
 
   useEffect(() => {
     // The useState initializer above seeds the current session; this only needs
     // to track future open/close events the SDK publishes.
     const onSession = (e: WindowEventMap['remote-debug-sdk:session']) => setSession(e.detail);
-    window.addEventListener('remote-debug-sdk:session', onSession);
-    return () => window.removeEventListener('remote-debug-sdk:session', onSession);
+    globalThis.addEventListener('remote-debug-sdk:session', onSession);
+    return () => globalThis.removeEventListener('remote-debug-sdk:session', onSession);
   }, []);
 
   const disabled = !session?.room;
@@ -245,7 +245,7 @@ function BottomCta() {
   const handleOpen = () => {
     if (!session?.room) return;
     const url = isRecorded ? `/sessions/${session.recordId}` : buildDevToolsLink(session.room);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    globalThis.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (

@@ -205,7 +205,7 @@ export class ImageView extends UI.View.SimpleView {
         }
         const blob = await fetch(imageDataURL).then(r => r.blob());
         try {
-            const handle = await window.showSaveFilePicker({ suggestedName });
+            const handle = await globalThis.showSaveFilePicker({ suggestedName });
             const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();

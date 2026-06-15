@@ -209,7 +209,7 @@ export function activeURLForFrameAtTime(frameId, time, rendererProcessesByFrame)
     }
     for (const processes of processData.values()) {
         for (const processInfo of processes) {
-            if (processInfo.window.min > time || processInfo.window.max < time) {
+            if (processInfo.globalThis.min > time || processInfo.globalThis.max < time) {
                 continue;
             }
             return processInfo.frame.url;

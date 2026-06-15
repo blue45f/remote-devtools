@@ -39,7 +39,7 @@ export class EditableSpan extends HTMLElement {
     }
     #selectAllText(event) {
         const target = event.target;
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         const range = document.createRange();
         range.selectNodeContents(target);
         selection?.removeAllRanges();

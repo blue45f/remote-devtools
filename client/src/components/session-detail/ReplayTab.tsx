@@ -143,8 +143,8 @@ export function ReplayTab({
       e.preventDefault();
       toggleFullscreen();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
     // toggleFullscreen reads fresh refs each call — safe to omit from deps
   }, [fullscreenSupported]);
 
@@ -169,8 +169,8 @@ export function ReplayTab({
         seekTo(next);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [errorMarkers, playheadMsRef, seekTo]);
 
   return (
@@ -1074,13 +1074,13 @@ function ShareReplayLinkButton({
   const copy = async () => {
     const playhead = Math.max(0, Math.round(playheadMsRef.current));
     const base =
-      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+      typeof window !== 'undefined' ? `${globalThis.location.origin}${globalThis.location.pathname}` : '';
     const url = playhead > 0 ? `${base}?t=${playhead}` : base;
 
     try {
       await copyToClipboard(url);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      globalThis.setTimeout(() => setCopied(false), 1500);
       toast.success(t('sessionDetail.shareLinkCopied'), {
         description:
           playhead > 0

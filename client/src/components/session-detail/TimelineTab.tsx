@@ -126,8 +126,8 @@ export function TimelineTab({
           return;
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [filtered, cursorIdx, onJumpToReplay, sessionStartMs]);
 
   if (loading) {
@@ -355,7 +355,7 @@ function VirtualEventList({
   });
 
   // When the keyboard cursor moves to a row that's been virtualised out
-  // of view, scroll the virtualizer to bring it into the window.
+  // of view, scroll the virtualizer to bring it into the globalThis.
   useEffect(() => {
     if (cursorIdx === undefined || cursorIdx < 0) return;
     if (cursorIdx >= events.length) return;

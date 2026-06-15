@@ -1241,7 +1241,7 @@ export class NavigatorSourceTreeElement extends UI.TreeOutline.TreeElement {
             super.selectOnMouseDown(event);
             return;
         }
-        window.setTimeout(rename.bind(this), 300);
+        globalThis.setTimeout(rename.bind(this), 300);
         function rename() {
             if (this.shouldRenameOnMouseDown()) {
                 this.navigatorView.rename(this.node, false);

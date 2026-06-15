@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import Layout from '@/components/Layout';
 import { RequireAuth } from '@/components/RequireAuth';
 import { Spinner } from '@/components/ui/spinner';
@@ -96,6 +97,15 @@ createRoot(rootElement).render(
                 </Route>
               </Routes>
             </Suspense>
+            {/* Shared SurveyDesk feedback widget — fixed floating button on every
+                page. Rendered only when VITE_SURVEYDESK_URL is set; with the env
+                unset (default today) the app is completely unaffected. */}
+            {import.meta.env.VITE_SURVEYDESK_URL && (
+              <FeedbackWidget
+                appId="remotedevtools"
+                endpoint={import.meta.env.VITE_SURVEYDESK_URL}
+              />
+            )}
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>

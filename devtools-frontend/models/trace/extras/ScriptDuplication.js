@@ -24,7 +24,7 @@ function shouldIgnoreSource(source) {
     if (source.includes('(webpack)/buildin')) {
         return true;
     }
-    // Ignore webpack module shims, i.e. aliases of the form `module.exports = window.jQuery`
+    // Ignore webpack module shims, i.e. aliases of the form `module.exports = globalThis.jQuery`
     if (source.includes('external ')) {
         return true;
     }

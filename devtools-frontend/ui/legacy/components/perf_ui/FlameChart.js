@@ -456,7 +456,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         return ctx.createPattern(candyStripeCanvas, 'repeat');
     }
     resetCanvas() {
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         const width = Math.round(this.offsetWidth * ratio);
         const height = Math.round(this.offsetHeight * ratio);
         this.canvas.width = width;
@@ -1278,7 +1278,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         }
         // If we use the (x, y) of the entry, that is relative to the canvas, so we
         // add on the left / top of the canvas' rect to place the contextmenu in
-        // the correct place within the entire DevTools window.
+        // the correct place within the entire DevTools globalThis.
         const x = this.chartViewport.timeToPosition(startTime) + boundingRect.left;
         const y = this.levelToOffset(level) - this.getScrollOffset() + boundingRect.top;
         // Set the `detail` key so in the context menu handler we can differentiate
@@ -1314,7 +1314,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         const canvasWidth = this.offsetWidth;
         const canvasHeight = this.offsetHeight;
         context.save();
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         context.scale(ratio, ratio);
         context.fillStyle = 'rgba(0, 0, 0, 0)';
         context.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -1889,7 +1889,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         const canvasHeight = this.offsetHeight;
         const context = this.context;
         context.save();
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         const top = this.chartViewport.scrollOffset();
         context.scale(ratio, ratio);
         // Clear the canvas area by drawing a white square first
@@ -2276,7 +2276,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
     drawGroupHeaders(width, height) {
         const context = this.context;
         const top = this.chartViewport.scrollOffset();
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         if (!this.rawTimelineData) {
             return;
         }
@@ -2716,7 +2716,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
             return;
         }
         const { entryTotalTimes, entryStartTimes, entryLevels } = timelineData;
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         const top = this.chartViewport.scrollOffset();
         const arrowLineWidth = 6;
         const arrowWidth = 3;
@@ -2859,7 +2859,7 @@ export class FlameChart extends Common.ObjectWrapper.eventMixin(UI.Widget.VBox) 
         const timeToPixel = this.chartViewport.timeToPixel();
         const context = this.context;
         context.save();
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         context.scale(ratio, ratio);
         context.translate(0, 3);
         const height = RulerHeight - 1;

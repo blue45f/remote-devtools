@@ -63,7 +63,7 @@ export class RehydratingConnectionTransport {
         if (this.#rehydratingWindow.opener) {
             this.#rehydratingWindow.opener.postMessage({ type: 'REHYDRATING_WINDOW_READY' });
         }
-        else if (this.#rehydratingWindow !== window.top) {
+        else if (this.#rehydratingWindow !== globalThis.top) {
             this.#rehydratingWindow.parent.postMessage({ type: 'REHYDRATING_IFRAME_READY' }, '*');
         }
         else {
@@ -71,7 +71,7 @@ export class RehydratingConnectionTransport {
         }
     }
     /**
-     * This is a callback for rehydrated session to receive payload from host window. Payload includes but not limited to
+     * This is a callback for rehydrated session to receive payload from host globalThis. Payload includes but not limited to
      * the trace event and all necessary data to power a rehydrated session.
      */
     onReceiveHostWindowPayload(event) {

@@ -296,7 +296,7 @@ export class NetworkWaterfallColumn extends UI.Widget.VBox {
         this.draw();
     }
     resetCanvas() {
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         this.canvas.width = this.offsetWidth * ratio;
         this.canvas.height = this.offsetHeight * ratio;
         this.canvas.style.width = this.offsetWidth + 'px';
@@ -329,7 +329,7 @@ export class NetworkWaterfallColumn extends UI.Widget.VBox {
             return;
         }
         context.save();
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         context.translate(0, this.headerHeight);
         context.rect(0, 0, this.offsetWidth, this.offsetHeight);
         context.clip();
@@ -368,7 +368,7 @@ export class NetworkWaterfallColumn extends UI.Widget.VBox {
         PerfUI.TimelineGrid.TimelineGrid.drawCanvasGrid(context, dividersData);
         PerfUI.TimelineGrid.TimelineGrid.drawCanvasHeaders(context, dividersData, time => this.calculator.formatValue(time, dividersData.precision), this.fontSize, this.headerHeight, freeZoneAtLeft);
         context.save();
-        context.scale(window.devicePixelRatio, window.devicePixelRatio);
+        context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         context.clearRect(this.offsetWidth - freeZoneAtRight, 0, freeZoneAtRight, this.headerHeight);
         context.restore();
         this.didDrawForTest();

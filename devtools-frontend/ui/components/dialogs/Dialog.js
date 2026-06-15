@@ -170,7 +170,7 @@ export class Dialog extends HTMLElement {
         void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
     }
     connectedCallback() {
-        window.addEventListener('resize', this.#forceDialogCloseInDevToolsBound);
+        globalThis.addEventListener('resize', this.#forceDialogCloseInDevToolsBound);
         this.#devtoolsMutationObserver.observe(this.#devToolsBoundingElement, { childList: true, subtree: true });
         this.#devToolsBoundingElement.addEventListener('wheel', this.#handleScrollAttemptBound);
         this.style.setProperty('--dialog-padding', '0');
@@ -179,7 +179,7 @@ export class Dialog extends HTMLElement {
         this.style.setProperty('--dialog-padding', `${DIALOG_VERTICAL_PADDING}px ${DIALOG_SIDE_PADDING}px`);
     }
     disconnectedCallback() {
-        window.removeEventListener('resize', this.#forceDialogCloseInDevToolsBound);
+        globalThis.removeEventListener('resize', this.#forceDialogCloseInDevToolsBound);
         this.#devToolsBoundingElement.removeEventListener('wheel', this.#handleScrollAttemptBound);
         this.#devtoolsMutationObserver.disconnect();
         this.#dialogResizeObserver.disconnect();

@@ -388,7 +388,7 @@ class ExpandableContainerWidget extends VBox {
         ARIAUtils.setLabel(this.titleElement, titleText);
         ARIAUtils.setExpanded(this.titleElement, false);
         this.titleElement.tabIndex = 0;
-        self.onInvokeElement(this.titleElement, this.toggleExpanded.bind(this));
+        globalThis.onInvokeElement(this.titleElement, this.toggleExpanded.bind(this));
         this.titleElement.addEventListener('keydown', this.onTitleKeyDown.bind(this), false);
         this.contentElement.insertBefore(this.titleElement, this.contentElement.firstChild);
         ARIAUtils.setControls(this.titleElement, this.contentElement.createChild('slot'));

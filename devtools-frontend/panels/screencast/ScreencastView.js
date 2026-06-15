@@ -171,8 +171,8 @@ export class ScreencastView extends UI.Widget.VBox {
             this.isCasting = false;
             return;
         }
-        dimensions.width *= window.devicePixelRatio;
-        dimensions.height *= window.devicePixelRatio;
+        dimensions.width *= globalThis.devicePixelRatio;
+        dimensions.height *= globalThis.devicePixelRatio;
         // Note: startScreencast width and height are expected to be integers so must be floored.
         this.screencastOperationId = await this.screenCaptureModel.startScreencast("jpeg" /* Protocol.Page.StartScreencastRequestFormat.Jpeg */, 80, Math.floor(Math.min(maxImageDimension, dimensions.width)), Math.floor(Math.min(maxImageDimension, dimensions.height)), undefined, this.screencastFrame.bind(this), this.screencastVisibilityChanged.bind(this));
         if (this.overlayModel) {
@@ -204,8 +204,8 @@ export class ScreencastView extends UI.Widget.VBox {
             this.imageZoom = Math.min(dimensionsCSS.width / this.imageElement.naturalWidth, dimensionsCSS.height / (this.imageElement.naturalWidth * deviceSizeRatio));
             this.viewportElement.classList.remove('hidden');
             const bordersSize = BORDERS_SIZE;
-            if (this.imageZoom < 1.01 / window.devicePixelRatio) {
-                this.imageZoom = 1 / window.devicePixelRatio;
+            if (this.imageZoom < 1.01 / globalThis.devicePixelRatio) {
+                this.imageZoom = 1 / globalThis.devicePixelRatio;
             }
             this.screenZoom = this.imageElement.naturalWidth * this.imageZoom / metadata.deviceWidth;
             this.viewportElement.style.width = metadata.deviceWidth * this.screenZoom + bordersSize + 'px';
@@ -326,7 +326,7 @@ export class ScreencastView extends UI.Widget.VBox {
             delete this.deferredCasting;
         }
         this.stopCasting();
-        this.deferredCasting = window.setTimeout(this.startCasting.bind(this), 100);
+        this.deferredCasting = globalThis.setTimeout(this.startCasting.bind(this), 100);
     }
     highlightInOverlay(data, config) {
         void this.updateHighlightInOverlayAndRepaint(data, config);
@@ -384,10 +384,10 @@ export class ScreencastView extends UI.Widget.VBox {
         const config = this.config;
         const canvasWidth = this.canvasElement.getBoundingClientRect().width;
         const canvasHeight = this.canvasElement.getBoundingClientRect().height;
-        this.canvasElement.width = window.devicePixelRatio * canvasWidth;
-        this.canvasElement.height = window.devicePixelRatio * canvasHeight;
+        this.canvasElement.width = globalThis.devicePixelRatio * canvasWidth;
+        this.canvasElement.height = globalThis.devicePixelRatio * canvasHeight;
         this.context.save();
-        this.context.scale(window.devicePixelRatio, window.devicePixelRatio);
+        this.context.scale(globalThis.devicePixelRatio, globalThis.devicePixelRatio);
         // Paint top and bottom gutter.
         this.context.save();
         if (this.checkerboardPattern) {
@@ -704,7 +704,7 @@ export class ProgressTracker {
     onLoad() {
         this.requestIds = null;
         this.updateProgress(1); // Display 100% progress on load, hide it in 0.5s.
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
             if (!this.navigationProgressVisible()) {
                 this.displayProgress(0);
             }
@@ -736,7 +736,7 @@ export class ProgressTracker {
             return;
         }
         ++this.finishedRequests;
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
             this.updateProgress(this.finishedRequests / this.startedRequests * 0.9); // Finished requests drive the progress up to 90%.
         }, 500); // Delay to give the new requests time to start. This makes the progress smoother.
     }

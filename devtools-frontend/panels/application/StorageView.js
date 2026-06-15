@@ -350,7 +350,7 @@ export class StorageView extends UI.Widget.VBox {
             this.quotaOverrideControlRow.classList.remove('hidden');
             this.quotaOverrideCheckbox.checked = true;
             this.quotaOverrideEditor.value = this.previousOverrideFieldValue;
-            window.setTimeout(() => this.quotaOverrideEditor.focus(), 500);
+            globalThis.setTimeout(() => this.quotaOverrideEditor.focus(), 500);
         }
         else if (this.target && this.securityOrigin) {
             this.quotaOverrideControlRow.classList.add('hidden');
@@ -377,7 +377,7 @@ export class StorageView extends UI.Widget.VBox {
         this.clearButton.disabled = true;
         const label = this.clearButton.textContent;
         this.clearButton.textContent = i18nString(UIStrings.clearing);
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
             this.clearButton.disabled = false;
             this.clearButton.textContent = label;
             this.clearButton.focus();

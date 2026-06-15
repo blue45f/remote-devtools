@@ -67,8 +67,8 @@ export class ProfileType extends Common.ObjectWrapper.ObjectWrapper {
         super();
         this.#id = id;
         this.#name = name;
-        if (!window.opener) {
-            window.addEventListener('pagehide', this.clearTempStorage.bind(this), false);
+        if (!globalThis.opener) {
+            globalThis.addEventListener('pagehide', this.clearTempStorage.bind(this), false);
         }
     }
     typeName() {

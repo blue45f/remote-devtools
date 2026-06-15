@@ -59,7 +59,7 @@ export class RemoteDebuggingTerminatedScreen extends VBox {
         const input = {
             reason,
             onReconnect: () => {
-                window.location.reload();
+                globalThis.location.reload();
             },
         };
         view(input, {}, this.contentElement);

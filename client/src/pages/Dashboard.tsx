@@ -60,7 +60,7 @@ const ALL_PERIODS: Period[] = ['day', 'week', 'month'];
 function readStoredPeriod(): Period | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(DASHBOARD_PREFS_KEY);
+    const raw = globalThis.localStorage.getItem(DASHBOARD_PREFS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { period?: string };
     return ALL_PERIODS.includes(parsed?.period as Period) ? (parsed.period as Period) : null;
@@ -72,7 +72,7 @@ function readStoredPeriod(): Period | null {
 function persistPeriod(period: Period) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify({ period }));
+    globalThis.localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify({ period }));
   } catch {
     /* private mode / quota — the toggle still works in-session */
   }
@@ -102,8 +102,8 @@ export default function DashboardPage() {
   // Re-render every 5s so the "Updated Xs ago" label stays fresh
   // without depending on every query firing onSettled.
   useEffect(() => {
-    const i = window.setInterval(() => forceTick((n) => n + 1), 5_000);
-    return () => window.clearInterval(i);
+    const i = globalThis.setInterval(() => forceTick((n) => n + 1), 5_000);
+    return () => globalThis.clearInterval(i);
   }, []);
 
   // Persist the period preference so reopens land on the user's last

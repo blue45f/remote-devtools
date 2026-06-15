@@ -1348,10 +1348,10 @@ export class ConsoleView extends UI.Widget.VBox {
         }
         if (index === this.visibleViewMessages.length) {
             this.cleanupAfterSearch();
-            window.setTimeout(this.searchFinishedForTests.bind(this), 0);
+            globalThis.setTimeout(this.searchFinishedForTests.bind(this), 0);
             return;
         }
-        this.#searchTimeoutId = window.setTimeout(this.#search.bind(this, index), 100);
+        this.#searchTimeoutId = globalThis.setTimeout(this.#search.bind(this, index), 100);
         if (this.searchProgressIndicator) {
             this.searchProgressIndicator.worked = index;
         }
@@ -1416,7 +1416,7 @@ export class ConsoleView extends UI.Widget.VBox {
         // Delay querying isScrolledToBottom to give time for smooth scroll
         // events to arrive. The value for the longest timeout duration is
         // retrieved from crbug.com/575409.
-        this.waitForScrollTimeout = window.setTimeout(updateViewportState.bind(this), 200);
+        this.waitForScrollTimeout = globalThis.setTimeout(updateViewportState.bind(this), 200);
         function updateViewportState() {
             this.muteViewportUpdates = false;
             if (this.isShowing()) {

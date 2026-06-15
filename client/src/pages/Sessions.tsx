@@ -137,7 +137,7 @@ const DEFAULT_PAGE_SIZE: PageSize = 50;
  */
 function pickDefaultView(): ViewMode {
   if (typeof window === 'undefined') return 'table';
-  return window.innerWidth >= 1024 ? 'table' : 'grid';
+  return globalThis.innerWidth >= 1024 ? 'table' : 'grid';
 }
 
 function getHostname(url?: string): string | null {
@@ -161,7 +161,7 @@ interface SessionsPrefs {
 function readStoredPrefs(): SessionsPrefs {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = window.localStorage.getItem(PREFS_STORAGE_KEY);
+    const raw = globalThis.localStorage.getItem(PREFS_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as SessionsPrefs;
     // Defend against future-version garbage by only allowing known values.
@@ -187,7 +187,7 @@ function readStoredPrefs(): SessionsPrefs {
 function persistPrefs(prefs: SessionsPrefs) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
+    globalThis.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
   } catch {
     /* quota or private-mode — best effort */
   }
@@ -198,7 +198,7 @@ const PINS_STORAGE_KEY = 'sessions-pins:v1';
 function readPinnedIds(): Set<number> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = window.localStorage.getItem(PINS_STORAGE_KEY);
+    const raw = globalThis.localStorage.getItem(PINS_STORAGE_KEY);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return new Set();
@@ -211,7 +211,7 @@ function readPinnedIds(): Set<number> {
 function persistPinnedIds(ids: Set<number>) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(PINS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+    globalThis.localStorage.setItem(PINS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
   } catch {
     /* best effort */
   }
@@ -621,8 +621,8 @@ export default function SessionsPage() {
       e.preventDefault();
       searchInputRef.current?.focus();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, []);
 
   // Keyboard nav: j/↓ next, k/↑ prev, Enter opens detail. Ignored
@@ -681,8 +681,8 @@ export default function SessionsPage() {
           return;
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [filtered, cursorIdx, navigate, tab]);
 
   const SortIcon = SORT_ICONS[sort];
@@ -1743,7 +1743,7 @@ function SessionRowCopyLink({ id }: { id: number }) {
   const copy = async () => {
     const url =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/sessions/${id}`
+        ? `${globalThis.location.origin}/sessions/${id}`
         : `/sessions/${id}`;
     try {
       await copyToClipboard(url);

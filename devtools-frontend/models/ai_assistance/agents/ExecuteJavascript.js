@@ -58,7 +58,7 @@ const data = {
       tagName: el.tagName,
       id: el.id,
       className: el.className,
-      zIndex: window.getComputedStyle(el)['z-index']
+      zIndex: globalThis.getComputedStyle(el)['z-index']
     }))
 };
 \`\`\`

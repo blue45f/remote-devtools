@@ -477,10 +477,10 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         event.consume(true);
         const mouseEvent = event;
         if (mouseEvent.detail === 1) {
-            this.preventClickTimeout = window.setTimeout(handleClick.bind(this), 333);
+            this.preventClickTimeout = globalThis.setTimeout(handleClick.bind(this), 333);
         }
         else if (this.preventClickTimeout !== undefined) {
-            window.clearTimeout(this.preventClickTimeout);
+            globalThis.clearTimeout(this.preventClickTimeout);
             this.preventClickTimeout = undefined;
         }
         function handleClick() {

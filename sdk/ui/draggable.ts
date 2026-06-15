@@ -22,8 +22,8 @@ export const makeDraggable = (element: HTMLElement) => {
 
     initialX = clientX - startX;
     initialY = clientY - startY;
-    element.style.right = `${window.innerWidth - initialX}px`;
-    element.style.bottom = `${window.innerHeight - initialY}px`;
+    element.style.right = `${globalThis.innerWidth - initialX}px`;
+    element.style.bottom = `${globalThis.innerHeight - initialY}px`;
   };
 
   const handleEnd = () => {

@@ -340,7 +340,7 @@ export class AiCodeGenerationTeaser extends UI.Widget.Widget {
         this.#stopLoadingAnimation();
         this.#loadStartTime = performance.now();
         this.#viewOutput.setTimerText?.('(0s)');
-        this.#timerIntervalId = window.setInterval(() => {
+        this.#timerIntervalId = globalThis.setInterval(() => {
             if (this.#loadStartTime) {
                 const elapsedSeconds = Math.floor((performance.now() - this.#loadStartTime) / 1000);
                 this.#viewOutput.setTimerText?.(`(${elapsedSeconds}s)`);

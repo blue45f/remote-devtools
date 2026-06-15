@@ -457,7 +457,7 @@ export class SourcesPanel extends UI.Panel.Panel {
             // the "Threads" list while stepping or hitting the same breakpoint multiple points.
             void this.sidebarPaneStack?.showView(this.threadsSidebarPane);
         }
-        window.focus();
+        globalThis.focus();
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.bringToFront();
         const withOverlay = UI.Context.Context.instance().flavor(SDK.Target.Target)?.model(SDK.OverlayModel.OverlayModel) &&
             !Common.Settings.Settings.instance().moduleSetting('disable-paused-state-overlay').get();
@@ -478,7 +478,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         // the Debugger.resumed event. The latter however will trigger
         // Debugger.paused shortly after, while the former won't. Here we guess
         // which one was clicked by checking if we are paused again after 0.5s.
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
             if (!this.overlayLoggables) {
                 return;
             }
@@ -503,7 +503,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         this.#paused = false;
         this.clearInterface();
         this.toggleDebuggerSidebarButton.setEnabled(true);
-        this.switchToPausedTargetTimeout = window.setTimeout(this.switchToPausedTarget.bind(this, debuggerModel), 500);
+        this.switchToPausedTargetTimeout = globalThis.setTimeout(this.switchToPausedTarget.bind(this, debuggerModel), 500);
     }
     debuggerWasEnabled(event) {
         const debuggerModel = event.data;
@@ -562,7 +562,7 @@ export class SourcesPanel extends UI.Panel.Panel {
         this.addSettingMenuItem(contextMenu.viewSection(), 'navigator-just-my-code', i18nString(UIStrings.hideIgnoreListed));
     }
     updateLastModificationTime() {
-        this.lastModificationTime = window.performance.now();
+        this.lastModificationTime = globalThis.performance.now();
     }
     async callFrameChanged() {
         const frameFlavor = UI.Context.Context.instance().flavor(StackTrace.StackTrace.DebuggableFrameFlavor);
@@ -570,7 +570,7 @@ export class SourcesPanel extends UI.Panel.Panel {
             return;
         }
         const uiLocation = new Workspace.UISourceCode.UILocation(frameFlavor.frame.uiSourceCode, frameFlavor.frame.line, frameFlavor.frame.column);
-        if (window.performance.now() - this.lastModificationTime < lastModificationTimeout) {
+        if (globalThis.performance.now() - this.lastModificationTime < lastModificationTimeout) {
             return;
         }
         this.#sourcesView.showSourceLocation(uiLocation.uiSourceCode, uiLocation, undefined, true);

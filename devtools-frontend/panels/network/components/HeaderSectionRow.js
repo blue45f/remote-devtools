@@ -317,7 +317,7 @@ export class HeaderSectionRow extends HTMLElement {
             void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
         }
         // Clear selection (needed when pressing 'enter' in editable span).
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         selection?.removeAllRanges();
         // Reset pasted header name
         this.#header.originalName = '';
@@ -338,7 +338,7 @@ export class HeaderSectionRow extends HTMLElement {
             void ComponentHelpers.ScheduledRender.scheduleRender(this, this.#render);
         }
         // Clear selection (needed when pressing 'enter' in editable span).
-        const selection = window.getSelection();
+        const selection = globalThis.getSelection();
         selection?.removeAllRanges();
     }
     #onRemoveOverrideClick() {

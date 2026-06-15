@@ -28,20 +28,20 @@ export class Dom extends BaseDomain {
    * @static
    */
   private static set$Function() {
-    if (typeof window.$ !== 'function') {
-      window.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
+    if (typeof globalThis.$ !== 'function') {
+      globalThis.$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelector(selector);
       };
     }
 
-    if (typeof window.$$ !== 'function') {
-      window.$$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
+    if (typeof globalThis.$$ !== 'function') {
+      globalThis.$$ = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         return document.querySelectorAll(selector);
       };
     }
 
-    if (typeof window.$x !== 'function') {
-      window.$x = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
+    if (typeof globalThis.$x !== 'function') {
+      globalThis.$x = function <K extends keyof HTMLElementTagNameMap>(selector: K) {
         const xpathResult = document.evaluate(
           selector,
           document,
@@ -172,7 +172,7 @@ export class Dom extends BaseDomain {
   }
 
   public setInspectedNode({ nodeId }: { nodeId: number }) {
-    window.$0 = nodes.getNodeById(nodeId);
+    globalThis.$0 = nodes.getNodeById(nodeId);
   }
 
   public removeNode({ nodeId }: { nodeId: number }) {
@@ -266,7 +266,7 @@ export class Dom extends BaseDomain {
   public getBoxModel({ nodeId }: { nodeId: number }) {
     const node = nodes.getNodeById(nodeId);
     if (!isElement(node)) return;
-    const styles = window.getComputedStyle(node);
+    const styles = globalThis.getComputedStyle(node);
 
     const margin = Overlay.getStylePropertyValue(
       ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
@@ -342,7 +342,7 @@ export class Dom extends BaseDomain {
       document.removeEventListener('click', this.inspectClickHandler, true);
     }
     this.inspectClickHandler = (e: Event) => {
-      if (window.$$inspectMode !== 'searchForNode') return;
+      if (globalThis.$$inspectMode !== 'searchForNode') return;
 
       e.stopPropagation();
       e.preventDefault();

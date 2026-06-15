@@ -57,7 +57,7 @@ function loadSeedRouter() {
  */
 function resolveBaseUrl(): string {
   if (API_HOST) return API_HOST;
-  if (typeof window !== 'undefined' && window.location) return window.location.origin;
+  if (typeof window !== 'undefined' && globalThis.location) return globalThis.location.origin;
   return 'http://localhost';
 }
 

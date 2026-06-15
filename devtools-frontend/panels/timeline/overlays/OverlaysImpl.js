@@ -1488,7 +1488,7 @@ export class Overlays extends EventTarget {
     /**
      * Calculates if an entry is visible horizontally. This is easy because we
      * don't have to consider any pixels and can instead check that its start and
-     * end times intersect with the visible window.
+     * end times intersect with the visible globalThis.
      */
     #entryIsHorizontallyVisibleOnChart(entry) {
         if (this.#dimensions.trace.visibleWindow === null) {
@@ -1604,7 +1604,7 @@ export class Overlays extends EventTarget {
      */
     #xPixelForMicroSeconds(chart, timestamp) {
         if (this.#dimensions.trace.visibleWindow === null) {
-            console.error('Cannot calculate xPixel without visible trace window.');
+            console.error('Cannot calculate xPixel without visible trace globalThis.');
             return null;
         }
         const canvasWidthPixels = this.#dimensions.charts[chart]?.widthPixels ?? null;
@@ -1618,7 +1618,7 @@ export class Overlays extends EventTarget {
     }
     /**
      * Calculate the Y pixel position for the event on the timeline relative to
-     * the entire window.
+     * the entire globalThis.
      * This means if the event is in the main flame chart and below the network,
      * we add the height of the network chart to the Y value to position it
      * correctly.

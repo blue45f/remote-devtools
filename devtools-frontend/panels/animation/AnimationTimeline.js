@@ -871,7 +871,7 @@ export class AnimationTimeline extends UI.Widget.VBox {
         this.#animationsContainer.window().requestAnimationFrame(this.render.bind(this));
     }
     render(timestamp) {
-        while (this.#renderQueue.length && (!timestamp || window.performance.now() - timestamp < 50)) {
+        while (this.#renderQueue.length && (!timestamp || globalThis.performance.now() - timestamp < 50)) {
             const animationUI = this.#renderQueue.shift();
             if (animationUI) {
                 animationUI.redraw();

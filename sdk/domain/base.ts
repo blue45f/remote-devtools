@@ -82,7 +82,7 @@ export abstract class BaseDomain {
           room: this.room,
           recordId: 0, // Buffer 모드에서는 recordId가 0
           deviceId: this.deviceId || 'unknown-device',
-          url: this.url || window.location.href,
+          url: this.url || globalThis.location.href,
           userAgent: navigator.userAgent,
           title: this.title || latestTitle || '',
           event: {

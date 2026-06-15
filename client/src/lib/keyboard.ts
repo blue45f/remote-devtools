@@ -23,7 +23,7 @@ export function useGlobalShortcuts() {
     const clearPending = () => {
       pendingG = false;
       if (pendingTimer) {
-        window.clearTimeout(pendingTimer);
+        globalThis.clearTimeout(pendingTimer);
         pendingTimer = null;
       }
     };
@@ -60,7 +60,7 @@ export function useGlobalShortcuts() {
       if (!pendingG && e.key === 'g' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         pendingG = true;
-        pendingTimer = window.setTimeout(clearPending, 1000);
+        pendingTimer = globalThis.setTimeout(clearPending, 1000);
         return;
       }
 
@@ -83,9 +83,9 @@ export function useGlobalShortcuts() {
       }
     };
 
-    window.addEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
     return () => {
-      window.removeEventListener('keydown', handler);
+      globalThis.removeEventListener('keydown', handler);
       clearPending();
     };
   }, [navigate, setCommandOpen, toggleCommand, toggleShortcuts, toggleSidebarCollapsed]);

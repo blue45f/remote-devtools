@@ -468,7 +468,7 @@ export class IDBDataView extends UI.View.SimpleView {
             this.updateToolbarEnablement();
             this.updatedDataForTests();
         }
-        const idbKeyRange = key ? window.IDBKeyRange.lowerBound(key) : null;
+        const idbKeyRange = key ? globalThis.IDBKeyRange.lowerBound(key) : null;
         if (this.isIndex && this.index) {
             this.model.loadIndexData(this.databaseId, this.objectStore.name, this.index.name, idbKeyRange, skipCount, pageSize, callback.bind(this));
         }
@@ -549,7 +549,7 @@ export class IDBDataView extends UI.View.SimpleView {
         }
         const key = (this.isIndex ? node.data['primary-key'] : node.data.key);
         const keyValue = key.subtype === 'array' ? await this.resolveArrayKey(key) : key.value;
-        await this.model.deleteEntries(this.databaseId, this.objectStore.name, window.IDBKeyRange.only(keyValue));
+        await this.model.deleteEntries(this.databaseId, this.objectStore.name, globalThis.IDBKeyRange.only(keyValue));
         this.refreshObjectStoreCallback();
     }
     clear() {

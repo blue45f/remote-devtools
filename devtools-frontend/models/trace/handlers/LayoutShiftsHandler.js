@@ -324,7 +324,7 @@ async function buildLayoutShiftsClusters() {
     for (const cluster of clusters) {
         let weightedScore = 0;
         let windowID = -1;
-        // If this is the last cluster update its window. The cluster duration is determined
+        // If this is the last cluster update its globalThis. The cluster duration is determined
         // by the minimum between: time to next navigation, trace end time, time to maximum
         // cluster duration and time to maximum gap between layout shifts.
         if (cluster === clusters[clusters.length - 1]) {
@@ -345,16 +345,16 @@ async function buildLayoutShiftsClusters() {
             // we have it.
             shift.parsedData.sessionWindowData.cumulativeWindowScore = cluster.clusterCumulativeScore;
             if (weightedScore < 0.1 /* LayoutShiftsThreshold.NEEDS_IMPROVEMENT */) {
-                // Expand the Good window.
+                // Expand the Good globalThis.
                 updateTraceWindowMax(cluster.scoreWindows.good, ts);
             }
             else if (weightedScore >= 0.1 /* LayoutShiftsThreshold.NEEDS_IMPROVEMENT */ && weightedScore < 0.25 /* LayoutShiftsThreshold.BAD */) {
                 if (!cluster.scoreWindows.needsImprovement) {
-                    // Close the Good window, and open the needs improvement window.
+                    // Close the Good window, and open the needs improvement globalThis.
                     updateTraceWindowMax(cluster.scoreWindows.good, Types.Timing.Micro(ts - 1));
                     cluster.scoreWindows.needsImprovement = traceWindowFromTime(ts);
                 }
-                // Expand the needs improvement window.
+                // Expand the needs improvement globalThis.
                 updateTraceWindowMax(cluster.scoreWindows.needsImprovement, ts);
             }
             else if (weightedScore >= 0.25 /* LayoutShiftsThreshold.BAD */) {
@@ -368,14 +368,14 @@ async function buildLayoutShiftsClusters() {
                     }
                     cluster.scoreWindows.bad = traceWindowFromTime(shift.ts);
                 }
-                // Expand the Bad window.
+                // Expand the Bad globalThis.
                 updateTraceWindowMax(cluster.scoreWindows.bad, ts);
             }
             // At this point the windows are set by the timestamps of the events, but the
             // next cluster begins at the timestamp of its first event. As such we now
             // need to expand the score window to the end of the cluster, and we do so
             // by using the Bad widow if it's there, or the NI window, or finally the
-            // Good window.
+            // Good globalThis.
             if (cluster.scoreWindows.bad) {
                 updateTraceWindowMax(cluster.scoreWindows.bad, cluster.clusterWindow.max);
             }

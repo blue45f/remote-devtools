@@ -33,13 +33,13 @@ export const UIStrings = {
      */
     CrossOriginAccessBasedOnDocumentDomain: "Relaxing the same-origin policy by setting `document.domain` is deprecated, and will be disabled by default. This deprecation warning is for a cross-origin access that was enabled by setting `document.domain`.",
     /**
-     * @description Issue text shown when the web page uses a deprecated web API. The window.alert is the deprecated web API function.
+     * @description Issue text shown when the web page uses a deprecated web API. The globalThis.alert is the deprecated web API function.
      */
-    CrossOriginWindowAlert: "Triggering window.alert from cross origin iframes has been deprecated and will be removed in the future.",
+    CrossOriginWindowAlert: "Triggering globalThis.alert from cross origin iframes has been deprecated and will be removed in the future.",
     /**
-     * @description Issue text shown when the web page uses a deprecated web API. The window.confirm is the deprecated web API function.
+     * @description Issue text shown when the web page uses a deprecated web API. The globalThis.confirm is the deprecated web API function.
      */
-    CrossOriginWindowConfirm: "Triggering window.confirm from cross origin iframes has been deprecated and will be removed in the future.",
+    CrossOriginWindowConfirm: "Triggering globalThis.confirm from cross origin iframes has been deprecated and will be removed in the future.",
     /**
      * @description Warning displayed to developers when they hide the Cast button on a video element using the deprecated CSS selector instead of using the disableRemotePlayback attribute on the element.
      */

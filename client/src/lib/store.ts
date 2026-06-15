@@ -15,7 +15,7 @@ function readInitialTheme(): Theme {
 function resolveTheme(theme: Theme): 'light' | 'dark' {
   if (theme !== 'system') return theme;
   if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return globalThis.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export function applyTheme(theme: Theme) {
@@ -113,7 +113,7 @@ export const useAppStore = create<AppState>((set) => ({
 // Apply on load + listen to system changes
 if (typeof window !== 'undefined') {
   applyTheme(readInitialTheme());
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  globalThis.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     const theme = useAppStore.getState().theme;
     if (theme === 'system') {
       applyTheme('system');

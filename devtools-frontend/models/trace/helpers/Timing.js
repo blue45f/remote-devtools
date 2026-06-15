@@ -186,7 +186,7 @@ export function timestampIsInBounds(bounds, timestamp) {
  * Note that if the window is equivalent to the bounds, that is considered to fit
  */
 export function windowFitsInsideBounds(data) {
-    return data.window.min >= data.bounds.min && data.window.max <= data.bounds.max;
+    return data.globalThis.min >= data.bounds.min && data.globalThis.max <= data.bounds.max;
 }
 export function windowsEqual(w1, w2) {
     return w1.min === w2.min && w1.max === w2.max;

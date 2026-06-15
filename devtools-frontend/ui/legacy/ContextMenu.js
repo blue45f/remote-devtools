@@ -908,7 +908,7 @@ export class MenuButton extends HTMLElement {
     #triggerContextMenu(event) {
         const triggerTimeout = 50;
         if (!this.#triggerTimeoutId) {
-            this.#triggerTimeoutId = window.setTimeout(this.#openMenu.bind(this, event), triggerTimeout);
+            this.#triggerTimeoutId = globalThis.setTimeout(this.#openMenu.bind(this, event), triggerTimeout);
         }
     }
     attributeChangedCallback(_, oldValue, newValue) {

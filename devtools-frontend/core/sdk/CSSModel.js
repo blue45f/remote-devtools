@@ -57,7 +57,7 @@ export class CSSModel extends SDKModel {
     }
     async colorScheme() {
         if (!this.#colorScheme) {
-            const colorSchemeResponse = await this.domModel()?.target().runtimeAgent().invoke_evaluate({ expression: 'window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches' });
+            const colorSchemeResponse = await this.domModel()?.target().runtimeAgent().invoke_evaluate({ expression: 'globalThis.matchMedia && globalThis.matchMedia("(prefers-color-scheme: dark)").matches' });
             if (colorSchemeResponse && !colorSchemeResponse.exceptionDetails && !colorSchemeResponse.getError()) {
                 this.#colorScheme = colorSchemeResponse.result.value ? "dark" /* ColorScheme.DARK */ : "light" /* ColorScheme.LIGHT */;
             }

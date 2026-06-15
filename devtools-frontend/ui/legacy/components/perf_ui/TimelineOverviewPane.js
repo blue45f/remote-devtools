@@ -409,8 +409,8 @@ export class TimelineOverviewBase extends UI.Widget.VBox {
         }
     }
     setCanvasSize(width, height) {
-        this.canvas.width = width * window.devicePixelRatio;
-        this.canvas.height = height * window.devicePixelRatio;
+        this.canvas.width = width * globalThis.devicePixelRatio;
+        this.canvas.height = height * globalThis.devicePixelRatio;
     }
 }
 export class OverviewInfo {
@@ -448,7 +448,7 @@ export class OverviewInfo {
     }
     show() {
         this.visible = true;
-        this.glassPane.show(window.document);
+        this.glassPane.show(globalThis.document);
     }
 }
 //# sourceMappingURL=TimelineOverviewPane.js.map

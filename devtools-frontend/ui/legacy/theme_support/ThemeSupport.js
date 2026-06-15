@@ -40,7 +40,7 @@ const themeValueByTargetByName = new Map();
 export class ThemeSupport extends EventTarget {
     setting;
     #themeName = 'default';
-    computedStyleOfHTML = Common.Lazy.lazy(() => window.getComputedStyle(document.documentElement));
+    computedStyleOfHTML = Common.Lazy.lazy(() => globalThis.getComputedStyle(document.documentElement));
     #documentsToTheme = new Set([document]);
     #darkThemeMediaQuery;
     #highContrastMediaQuery;
@@ -52,8 +52,8 @@ export class ThemeSupport extends EventTarget {
         // When the theme changes we instantiate a new theme support and reapply.
         // Equally if the user has set to match the system and the OS preference changes
         // we perform the same change.
-        this.#darkThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        this.#highContrastMediaQuery = window.matchMedia('(forced-colors: active)');
+        this.#darkThemeMediaQuery = globalThis.matchMedia('(prefers-color-scheme: dark)');
+        this.#highContrastMediaQuery = globalThis.matchMedia('(forced-colors: active)');
         this.#darkThemeMediaQuery.addEventListener('change', this.#onThemeChangeListener);
         this.#highContrastMediaQuery.addEventListener('change', this.#onThemeChangeListener);
         setting.addChangeListener(this.#onThemeChangeListener);
@@ -83,7 +83,7 @@ export class ThemeSupport extends EventTarget {
     }
     /**
      * Adds additional `Document` instances that should be themed besides the default
-     * `window.document` in which this ThemeSupport instance was created.
+     * `globalThis.document` in which this ThemeSupport instance was created.
      */
     addDocumentToTheme(document) {
         this.#documentsToTheme.add(document);
@@ -104,7 +104,7 @@ export class ThemeSupport extends EventTarget {
         // knowing that the cache will be invalidated by virtue of a reload when the theme changes.
         let themeValue = themeValueByName.get(propertyName);
         if (!themeValue) {
-            const styleDeclaration = target ? window.getComputedStyle(target) : this.computedStyleOfHTML();
+            const styleDeclaration = target ? globalThis.getComputedStyle(target) : this.computedStyleOfHTML();
             if (typeof styleDeclaration === 'symbol') {
                 throw new Error(`Computed value for property (${propertyName}) could not be found on documentElement.`);
             }
@@ -127,8 +127,8 @@ export class ThemeSupport extends EventTarget {
         }
     }
     #applyThemeToDocument(document) {
-        const isForcedColorsMode = window.matchMedia('(forced-colors: active)').matches;
-        const systemPreferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
+        const isForcedColorsMode = globalThis.matchMedia('(forced-colors: active)').matches;
+        const systemPreferredTheme = globalThis.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
         const useSystemPreferred = this.setting.get() === 'systemPreferred' || isForcedColorsMode;
         this.#themeName = useSystemPreferred ? systemPreferredTheme : this.setting.get();
         document.documentElement.classList.toggle('theme-with-dark-background', this.#themeName === 'dark');

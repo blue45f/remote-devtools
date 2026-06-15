@@ -358,7 +358,7 @@ export class OverlayModel extends SDKModel {
     }
     delayedHideHighlight(delay) {
         if (this.#hideHighlightTimeout === null) {
-            this.#hideHighlightTimeout = window.setTimeout(() => this.highlightInOverlay({ clear: true }), delay);
+            this.#hideHighlightTimeout = globalThis.setTimeout(() => this.highlightInOverlay({ clear: true }), delay);
         }
     }
     highlightFrame(frameId) {

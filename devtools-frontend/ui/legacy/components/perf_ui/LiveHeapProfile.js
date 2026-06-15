@@ -62,7 +62,7 @@ export class LiveHeapProfile {
             }
             Memory.instance().initialize(profilesAndTargets);
             await Promise.race([
-                new Promise(r => window.setTimeout(r, Host.InspectorFrontendHost.isUnderTest() ? 10 : 5000)),
+                new Promise(r => globalThis.setTimeout(r, Host.InspectorFrontendHost.isUnderTest() ? 10 : 5000)),
                 new Promise(r => {
                     this.loadEventCallback = r;
                 }),

@@ -88,7 +88,7 @@ function sendEventToDevTools(event) {
  * This function is used by `Runtime.evaluate` calls to get a remote object
  * for the specified index.
  */
-window.getNodeForIndex = (index) => {
+globalThis.getNodeForIndex = (index) => {
     return nodeList[index].deref();
 };
 function limitScripts(loafs) {
@@ -114,7 +114,7 @@ function isPrerendered() {
     if (document.prerendering) {
         return true;
     }
-    const firstNavStart = self.performance.getEntriesByType?.('navigation')[0]?.activationStart;
+    const firstNavStart = globalThis.performance.getEntriesByType?.('navigation')[0]?.activationStart;
     return firstNavStart !== undefined && firstNavStart > 0;
 }
 let startedHidden = null;

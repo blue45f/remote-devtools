@@ -13,7 +13,7 @@ export interface RecentSession {
 function readStorage(): RecentSession[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = globalThis.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -34,8 +34,8 @@ function readStorage(): RecentSession[] {
 function writeStorage(list: RecentSession[]) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event('recent-sessions:change'));
+    globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    globalThis.dispatchEvent(new Event('recent-sessions:change'));
   } catch {
     /* localStorage is sometimes unavailable (private mode, quota) — silent skip */
   }
@@ -54,8 +54,8 @@ export function recordSessionVisit(entry: Omit<RecentSession, 'visitedAt'>) {
 export function clearRecentSessions() {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.dispatchEvent(new Event('recent-sessions:change'));
+    globalThis.localStorage.removeItem(STORAGE_KEY);
+    globalThis.dispatchEvent(new Event('recent-sessions:change'));
   } catch {
     /* see writeStorage */
   }
@@ -77,11 +77,11 @@ export function useRecentSessions(): RecentSession[] {
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) sync();
     };
-    window.addEventListener('recent-sessions:change', sync);
-    window.addEventListener('storage', onStorage);
+    globalThis.addEventListener('recent-sessions:change', sync);
+    globalThis.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener('recent-sessions:change', sync);
-      window.removeEventListener('storage', onStorage);
+      globalThis.removeEventListener('recent-sessions:change', sync);
+      globalThis.removeEventListener('storage', onStorage);
     };
   }, [sync]);
 

@@ -106,7 +106,7 @@ export class Overlay extends BaseDomain {
       ) ||
       ['LINK', 'SCRIPT', 'HEAD'].includes(node.nodeName) ||
       !(node instanceof HTMLElement) ||
-      window.getComputedStyle(node).display === 'none' ||
+      globalThis.getComputedStyle(node).display === 'none' ||
       Object.values(highlightConfig).length === 0
     ) {
       return;
@@ -128,7 +128,7 @@ export class Overlay extends BaseDomain {
     mode: string;
     highlightConfig: HighlightConfig;
   }) {
-    window.$$inspectMode = mode;
+    globalThis.$$inspectMode = mode;
     this.highlightConfig = highlightConfig;
   }
 
@@ -169,7 +169,7 @@ export class Overlay extends BaseDomain {
       document.removeEventListener('touchmove', this.highlightHandler);
     }
     const highlight = (e: MouseEvent | TouchEvent) => {
-      if (window.$$inspectMode !== 'searchForNode') return;
+      if (globalThis.$$inspectMode !== 'searchForNode') return;
       e.stopPropagation();
       e.preventDefault();
 
@@ -236,7 +236,7 @@ export class Overlay extends BaseDomain {
 
   private updateHighlightBox(highlightConfig: HighlightConfig, node: Node) {
     if (!isElement(node)) throw new Error('node is not an element');
-    const styles = window.getComputedStyle(node);
+    const styles = globalThis.getComputedStyle(node);
     const margin = Overlay.getStylePropertyValue(
       ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
       styles,
@@ -251,7 +251,7 @@ export class Overlay extends BaseDomain {
     );
     const width = Overlay.getStylePropertyValue('width', styles);
     const height = Overlay.getStylePropertyValue('height', styles);
-    const isBorderBox = window.getComputedStyle(node).boxSizing === 'border-box';
+    const isBorderBox = globalThis.getComputedStyle(node).boxSizing === 'border-box';
     const { left, top } = node.getBoundingClientRect();
 
     const contentWidth = isBorderBox

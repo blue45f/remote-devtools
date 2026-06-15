@@ -78,9 +78,9 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         this.context = this.canvas.getContext('2d');
         this.#selectionWindow = new PerfUI.OverviewGrid.Window(this.canvasContainer);
         this.#selectionWindow.addEventListener("WindowChanged" /* PerfUI.OverviewGrid.Events.WINDOW_CHANGED */, this.onWindowChanged, this);
-        this.innerBarWidth = 4 * window.devicePixelRatio;
-        this.minBarHeight = window.devicePixelRatio;
-        this.barPaddingWidth = 2 * window.devicePixelRatio;
+        this.innerBarWidth = 4 * globalThis.devicePixelRatio;
+        this.minBarHeight = globalThis.devicePixelRatio;
+        this.barPaddingWidth = 2 * globalThis.devicePixelRatio;
         this.outerBarWidth = this.innerBarWidth + this.barPaddingWidth;
         this.pendingScale = 1;
         this.scale = this.pendingScale;
@@ -188,8 +188,8 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         }
     }
     update() {
-        this.canvas.width = this.canvasContainer.clientWidth * window.devicePixelRatio;
-        this.canvas.height = this.canvasContainer.clientHeight * window.devicePixelRatio;
+        this.canvas.width = this.canvasContainer.clientWidth * globalThis.devicePixelRatio;
+        this.canvas.height = this.canvasContainer.clientHeight * globalThis.devicePixelRatio;
         this.samplesPerBar = 0;
         if (!this.profiles?.length || !this.logCategories) {
             return;
@@ -227,7 +227,7 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
                 lastBarIndex = i;
             }
         }
-        const paddingHeight = 4 * window.devicePixelRatio;
+        const paddingHeight = 4 * globalThis.devicePixelRatio;
         const scale = (this.canvas.height - paddingHeight - this.minBarHeight) / maxBarTime;
         for (let i = 0; i < barTimes.length; ++i) {
             for (const categoryName in barHeightByCategory[i]) {
@@ -256,7 +256,7 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         if (this.updateImageTimer) {
             return;
         }
-        this.updateImageTimer = window.setTimeout(this.updateImage.bind(this), 100);
+        this.updateImageTimer = globalThis.setTimeout(this.updateImage.bind(this), 100);
     }
     updatePieChart() {
         const { total, slices } = this.calculatePieChart();
@@ -269,7 +269,7 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         }
         let totalTime = 0;
         const timeByCategory = {};
-        for (let i = window.left; i < window.right; ++i) {
+        for (let i = globalThis.left; i < globalThis.right; ++i) {
             const logEntry = this.log[i];
             const category = PaintProfilerView.categoryForLogItem(logEntry);
             timeByCategory[category.color] = timeByCategory[category.color] || 0;
@@ -316,8 +316,8 @@ export class PaintProfilerView extends Common.ObjectWrapper.eventMixin(UI.Widget
         let right;
         const window = this.selectionWindow();
         if (this.profiles?.length && window) {
-            left = this.log[window.left].commandIndex;
-            right = this.log[window.right - 1].commandIndex;
+            left = this.log[globalThis.left].commandIndex;
+            right = this.log[globalThis.right - 1].commandIndex;
         }
         const scale = this.pendingScale;
         if (!this.snapshot) {

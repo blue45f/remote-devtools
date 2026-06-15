@@ -14,7 +14,7 @@ Platform.HostRuntime.HOST_RUNTIME.workerScope.onmessage = function (event) {
             Platform.HostRuntime.HOST_RUNTIME.workerScope.postMessage(FormatterWorker.FormatterWorker.format(params.mimeType, params.content, params.indentString));
             break;
         case "parseCSS" /* FormatterActions.PARSE_CSS */:
-            FormatterWorker.CSSRuleParser.parseCSS(params.content, self.postMessage);
+            FormatterWorker.CSSRuleParser.parseCSS(params.content, globalThis.postMessage);
             break;
         case "javaScriptSubstitute" /* FormatterActions.JAVASCRIPT_SUBSTITUTE */: {
             Platform.HostRuntime.HOST_RUNTIME.workerScope.postMessage(FormatterWorker.Substitute.substituteExpression(params.content, params.mapping));

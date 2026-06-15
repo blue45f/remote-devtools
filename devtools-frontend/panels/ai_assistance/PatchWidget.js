@@ -694,7 +694,7 @@ export function isAiAssistancePatchingEnabled() {
     return Boolean(Root.Runtime.hostConfig.devToolsFreestyler?.patching);
 }
 // @ts-expect-error temporary global function for local testing.
-window.aiAssistanceTestPatchPrompt =
+globalThis.aiAssistanceTestPatchPrompt =
     async (projectName, changeSummary, expectedChanges) => {
         if (!isAiAssistancePatchingEnabled()) {
             return;

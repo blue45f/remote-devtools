@@ -11,7 +11,7 @@
  */
 (function axeFunction(window) {
   var global = window;
-  var document = window.document;
+  var document = globalThis.document;
   'use strict';
   function _typeof(obj) {
     if (typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol') {
@@ -37,8 +37,8 @@
     axe.source = '(' + axeFunction.toString() + ')(typeof window === "object" ? window : this);';
     module.exports = axe;
   }
-  if (typeof window.getComputedStyle === 'function') {
-    window.axe = axe;
+  if (typeof globalThis.getComputedStyle === 'function') {
+    globalThis.axe = axe;
   }
   var commons;
   function SupportError(error) {
@@ -935,7 +935,7 @@
             pathname: urlParsingNode.pathname.charAt(0) === '/' ? urlParsingNode.pathname : '/' + urlParsingNode.pathname
           };
         }
-        originURL = resolveURL(window.location.href);
+        originURL = resolveURL(globalThis.location.href);
         return function isURLSameOrigin(requestURL) {
           var parsed = utils.isString(requestURL) ? resolveURL(requestURL) : requestURL;
           return parsed.protocol === originURL.protocol && parsed.host === originURL.host;
@@ -1730,7 +1730,7 @@
     32: [ function(_dereq_, module, exports) {
       (function(process, global) {
         (function(global, factory) {
-          typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : global.ES6Promise = factory();
+          typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : globalThis.ES6Promise = factory();
         })(this, function() {
           'use strict';
           function objectOrFunction(x) {
@@ -2410,7 +2410,7 @@
       (function(global) {
         (function(self) {
           'use strict';
-          if (self.WeakMap) {
+          if (globalThis.WeakMap) {
             return;
           }
           var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -2425,7 +2425,7 @@
               object[name] = value;
             }
           };
-          self.WeakMap = function() {
+          globalThis.WeakMap = function() {
             function WeakMap() {
               if (this === void 0) {
                 throw new TypeError('Constructor WeakMap requires \'new\'');
@@ -3252,8 +3252,8 @@
     var self = this;
     var checkQueue = axe.utils.queue();
     this[type].forEach(function(c) {
-      var check = self._audit.checks[c.id || c];
-      var option = axe.utils.getCheckOption(check, self.id, options);
+      var check = globalThis._audit.checks[c.id || c];
+      var option = axe.utils.getCheckOption(check, globalThis.id, options);
       checkQueue.defer(function(res, rej) {
         check.run(node, option, context, res, rej);
       });
@@ -3273,8 +3273,8 @@
     var self = this;
     var results = [];
     this[type].forEach(function(c) {
-      var check = self._audit.checks[c.id || c];
-      var option = axe.utils.getCheckOption(check, self.id, options);
+      var check = globalThis._audit.checks[c.id || c];
+      var option = axe.utils.getCheckOption(check, globalThis.id, options);
       results.push(check.runSync(node, option, context));
     });
     results = results.filter(function(check) {
@@ -4687,7 +4687,7 @@
   'use strict';
   function areStylesSet(el, styles, stopAt) {
     'use strict';
-    var styl = window.getComputedStyle(el, null);
+    var styl = globalThis.getComputedStyle(el, null);
     var set = false;
     if (!styl) {
       return false;
@@ -5069,7 +5069,7 @@
         if (!realArray.length) {
           realArray = getSlotChildren(node);
         }
-        var styl = window.getComputedStyle(node);
+        var styl = globalThis.getComputedStyle(node);
         if (false && styl.display !== 'contents') {
           retVal = new VirtualNode(node, parent, shadowId);
           retVal.children = realArray.reduce(function(res, child) {
@@ -5276,7 +5276,7 @@
   };
   'use strict';
   axe.utils.getNodeAttributes = function getNodeAttributes(node) {
-    if (node.attributes instanceof window.NamedNodeMap) {
+    if (node.attributes instanceof globalThis.NamedNodeMap) {
       return node.attributes;
     }
     return node.cloneNode(false).attributes;
@@ -5297,7 +5297,7 @@
     if (!(overflowX || overflowY)) {
       return;
     }
-    var style = window.getComputedStyle(elm);
+    var style = globalThis.getComputedStyle(elm);
     var overflowXStyle = style.getPropertyValue('overflow-x');
     var overflowYStyle = style.getPropertyValue('overflow-y');
     var scrollableX = overflowXStyle !== 'visible' && overflowXStyle !== 'hidden';
@@ -5687,7 +5687,7 @@
     if (node && node._isHidden !== null) {
       return node._isHidden;
     }
-    var style = window.getComputedStyle(el, null);
+    var style = globalThis.getComputedStyle(el, null);
     if (!style || !el.parentNode || style.getPropertyValue('display') === 'none' || !recursed && style.getPropertyValue('visibility') === 'hidden' || el.getAttribute('aria-hidden') === 'true') {
       return true;
     }
@@ -5921,8 +5921,8 @@
   utils.performanceTimer = function() {
     'use strict';
     function now() {
-      if (window.performance && window.performance) {
-        return window.performance.now();
+      if (globalThis.performance && globalThis.performance) {
+        return globalThis.performance.now();
       }
     }
     var originalTime = null;
@@ -5945,22 +5945,22 @@
         this.logMeasures();
       },
       mark: function mark(markName) {
-        if (window.performance && window.performance.mark !== undefined) {
-          window.performance.mark(markName);
+        if (globalThis.performance && globalThis.performance.mark !== undefined) {
+          globalThis.performance.mark(markName);
         }
       },
       measure: function measure(measureName, startMark, endMark) {
-        if (window.performance && window.performance.measure !== undefined) {
-          window.performance.measure(measureName, startMark, endMark);
+        if (globalThis.performance && globalThis.performance.measure !== undefined) {
+          globalThis.performance.measure(measureName, startMark, endMark);
         }
       },
       logMeasures: function logMeasures(measureName) {
         function log(req) {
           axe.log('Measure ' + req.name + ' took ' + req.duration + 'ms');
         }
-        if (window.performance && window.performance.getEntriesByType !== undefined) {
-          var axeStart = window.performance.getEntriesByName('mark_axe_start')[0];
-          var measures = window.performance.getEntriesByType('measure').filter(function(measure) {
+        if (globalThis.performance && globalThis.performance.getEntriesByType !== undefined) {
+          var axeStart = globalThis.performance.getEntriesByName('mark_axe_start')[0];
+          var measures = globalThis.performance.getEntriesByType('measure').filter(function(measure) {
             return measure.startTime >= axeStart.startTime;
           });
           for (var i = 0; i < measures.length; ++i) {
@@ -6070,7 +6070,7 @@
       return elements;
     };
   };
-  if (typeof window.addEventListener === 'function') {
+  if (typeof globalThis.addEventListener === 'function') {
     document.elementsFromPoint = axe.utils.pollyfillElementsFromPoint();
   }
   if (!Array.prototype.includes) {
@@ -6930,8 +6930,8 @@
       }
       return data;
     }
-    if (typeof window.addEventListener === 'function') {
-      window.addEventListener('message', function(e) {
+    if (typeof globalThis.addEventListener === 'function') {
+      globalThis.addEventListener('message', function(e) {
         var data = parseMessage(e.data);
         if (!data) {
           return;
@@ -10707,7 +10707,7 @@
         var bgNodes = [];
         var bgColor = color.getBackgroundColor(node, bgNodes, noScroll);
         var fgColor = color.getForegroundColor(node, noScroll);
-        var nodeStyle = window.getComputedStyle(node);
+        var nodeStyle = globalThis.getComputedStyle(node);
         var fontSize = parseFloat(nodeStyle.getPropertyValue('font-size'));
         var fontWeight = nodeStyle.getPropertyValue('font-weight');
         var bold = [ 'bold', 'bolder', '600', '700', '800', '900' ].indexOf(fontWeight) !== -1;
@@ -10756,7 +10756,7 @@
         }
         var blockLike = [ 'block', 'list-item', 'table', 'flex', 'grid', 'inline-block' ];
         function isBlock(elm) {
-          var display = window.getComputedStyle(elm).getPropertyValue('display');
+          var display = globalThis.getComputedStyle(elm).getPropertyValue('display');
           return blockLike.indexOf(display) !== -1 || display.substr(0, 6) === 'table-';
         }
         if (isBlock(node)) {
@@ -10872,18 +10872,18 @@
         function checkFieldset(group, name) {
           var firstNode = group.firstElementChild;
           if (!firstNode || firstNode.nodeName.toUpperCase() !== 'LEGEND') {
-            self.relatedNodes([ group ]);
+            globalThis.relatedNodes([ group ]);
             failureCode = 'no-legend';
             return false;
           }
           if (!axe.commons.text.accessibleText(firstNode)) {
-            self.relatedNodes([ firstNode ]);
+            globalThis.relatedNodes([ firstNode ]);
             failureCode = 'empty-legend';
             return false;
           }
           var otherElements = getUnrelatedElements(group, name);
           if (otherElements.length) {
-            self.relatedNodes(otherElements);
+            globalThis.relatedNodes(otherElements);
             failureCode = 'mixed-inputs';
             return false;
           }
@@ -10895,13 +10895,13 @@
           });
           var ariaLabel = group.getAttribute('aria-label');
           if (!hasLabelledByText && !(ariaLabel && axe.commons.text.sanitize(ariaLabel))) {
-            self.relatedNodes(group);
+            globalThis.relatedNodes(group);
             failureCode = 'no-group-label';
             return false;
           }
           var otherElements = getUnrelatedElements(group, name);
           if (otherElements.length) {
-            self.relatedNodes(otherElements);
+            globalThis.relatedNodes(otherElements);
             failureCode = 'group-mixed-inputs';
             return false;
           }
@@ -10923,7 +10923,7 @@
           var group = axe.commons.dom.findUpVirtual(virtualNode, '[role="group"]' + (virtualNode.actualNode.type === 'radio' ? ',[role="radiogroup"]' : ''));
           if (!group && !fieldset) {
             failureCode = 'no-group';
-            self.relatedNodes(spliceCurrentNode(matchingNodes, virtualNode.actualNode));
+            globalThis.relatedNodes(spliceCurrentNode(matchingNodes, virtualNode.actualNode));
             return false;
           } else if (fieldset) {
             return checkFieldset(fieldset, name);
@@ -11923,7 +11923,7 @@
           return !isNaN(weight) ? weight : 400;
         }
         function getStyleValues(node) {
-          var style = window.getComputedStyle(getTextContainer(node));
+          var style = globalThis.getComputedStyle(getTextContainer(node));
           return {
             fontWeight: normalizeFontWeight(style.getPropertyValue('font-weight')),
             fontSize: parseInt(style.getPropertyValue('font-size')),
@@ -12415,12 +12415,12 @@
       evaluate: function evaluate(node, options, virtualNode, context) {
         var whitelist = [ 'SCRIPT', 'HEAD', 'TITLE', 'NOSCRIPT', 'STYLE', 'TEMPLATE' ];
         if (!whitelist.includes(node.nodeName.toUpperCase()) && axe.commons.dom.hasContentVirtual(virtualNode)) {
-          var styles = window.getComputedStyle(node);
+          var styles = globalThis.getComputedStyle(node);
           if (styles.getPropertyValue('display') === 'none') {
             return undefined;
           } else if (styles.getPropertyValue('visibility') === 'hidden') {
             var parent = axe.commons.dom.getComposedParent(node);
-            var parentStyle = parent && window.getComputedStyle(parent);
+            var parentStyle = parent && globalThis.getComputedStyle(parent);
             if (!parentStyle || parentStyle.getPropertyValue('visibility') !== 'hidden') {
               return undefined;
             }
@@ -14634,14 +14634,14 @@
         }
       };
       color.centerPointOfRect = function centerPointOfRect(rect) {
-        if (rect.left > window.innerWidth) {
+        if (rect.left > globalThis.innerWidth) {
           return undefined;
         }
-        if (rect.top > window.innerHeight) {
+        if (rect.top > globalThis.innerHeight) {
           return undefined;
         }
-        var x = Math.min(Math.ceil(rect.left + rect.width / 2), window.innerWidth - 1);
-        var y = Math.min(Math.ceil(rect.top + rect.height / 2), window.innerHeight - 1);
+        var x = Math.min(Math.ceil(rect.left + rect.width / 2), globalThis.innerWidth - 1);
+        var y = Math.min(Math.ceil(rect.top + rect.height / 2), globalThis.innerHeight - 1);
         return {
           x: x,
           y: y
@@ -14731,7 +14731,7 @@
           axe.commons.color.incompleteData.set('bgColor', 'imgNode');
           return true;
         }
-        style = style || window.getComputedStyle(elm);
+        style = style || globalThis.getComputedStyle(elm);
         var bgImageStyle = style.getPropertyValue('background-image');
         var hasBgImage = bgImageStyle !== 'none';
         if (hasBgImage) {
@@ -14746,7 +14746,7 @@
         });
       }
       function elementIsDistinct(node, ancestorNode) {
-        var nodeStyle = window.getComputedStyle(node);
+        var nodeStyle = globalThis.getComputedStyle(node);
         if (nodeStyle.getPropertyValue('background-image') !== 'none') {
           return true;
         }
@@ -14758,7 +14758,7 @@
         if (hasBorder) {
           return true;
         }
-        var parentStyle = window.getComputedStyle(ancestorNode);
+        var parentStyle = globalThis.getComputedStyle(ancestorNode);
         if (_getFonts(nodeStyle)[0] !== _getFonts(parentStyle)[0]) {
           return true;
         }
@@ -14777,13 +14777,13 @@
         var noScroll = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         if (noScroll !== true) {
           var clientHeight = elm.getBoundingClientRect().height;
-          var alignToTop = clientHeight - 2 >= window.innerHeight * 2;
+          var alignToTop = clientHeight - 2 >= globalThis.innerHeight * 2;
           elm.scrollIntoView(alignToTop);
         }
         var bgColors = [];
         var elmStack = color.getBackgroundStack(elm);
         (elmStack || []).some(function(bgElm) {
-          var bgElmStyle = window.getComputedStyle(bgElm);
+          var bgElmStyle = globalThis.getComputedStyle(bgElm);
           var bgColor = color.getOwnBackgroundColor(bgElmStyle);
           if (elmPartiallyObscured(elm, bgElm, bgColor) || color.elementHasImage(bgElm, bgElmStyle)) {
             bgColors = null;
@@ -14877,7 +14877,7 @@
         var bodyIndex = elmStack.indexOf(document.body);
         var bgNodes = elmStack;
         var sortBodyElement = bodyIndex > 1 || bodyIndex === -1;
-        if (sortBodyElement && !color.elementHasImage(document.documentElement) && color.getOwnBackgroundColor(window.getComputedStyle(document.documentElement)).alpha === 0) {
+        if (sortBodyElement && !color.elementHasImage(document.documentElement) && color.getOwnBackgroundColor(globalThis.getComputedStyle(document.documentElement)).alpha === 0) {
           if (bodyIndex > 1) {
             bgNodes.splice(bodyIndex, 1);
           }
@@ -14948,11 +14948,11 @@
         return false;
       }
       dom.isOpaque = function(node) {
-        var style = window.getComputedStyle(node);
+        var style = globalThis.getComputedStyle(node);
         return color.elementHasImage(node, style) || color.getOwnBackgroundColor(style).alpha === 1;
       };
       color.getForegroundColor = function(node, noScroll) {
-        var nodeStyle = window.getComputedStyle(node);
+        var nodeStyle = globalThis.getComputedStyle(node);
         var fgColor = new color.Color();
         fgColor.parseRgbString(nodeStyle.getPropertyValue('color'));
         var opacity = nodeStyle.getPropertyValue('opacity');
@@ -15004,7 +15004,7 @@
           if (currentNode === targetNode) {
             targetFound = true;
           }
-          style = window.getComputedStyle(currentNode);
+          style = globalThis.getComputedStyle(currentNode);
           if (!targetFound && floatingPositions.indexOf(style.position) !== -1) {
             finalElements = [];
             continue;
@@ -15227,7 +15227,7 @@
         if ([ 'STYLE', 'SCRIPT' ].includes(el.nodeName.toUpperCase())) {
           return false;
         }
-        var style = window.getComputedStyle(el, null);
+        var style = globalThis.getComputedStyle(el, null);
         if (!style) {
           throw new Error('Style does not exist for the given element.');
         }
@@ -15265,7 +15265,7 @@
       }
       var blockLike = [ 'block', 'list-item', 'table', 'flex', 'grid', 'inline-block' ];
       function isBlock(elm) {
-        var display = window.getComputedStyle(elm).getPropertyValue('display');
+        var display = globalThis.getComputedStyle(elm).getPropertyValue('display');
         return blockLike.includes(display) || display.substr(0, 6) === 'table-';
       }
       function getBlockParent(node) {
@@ -15335,8 +15335,8 @@
       dom.isOffscreen = function(element) {
         var leftBoundary;
         var docElement = document.documentElement;
-        var styl = window.getComputedStyle(element);
-        var dir = window.getComputedStyle(document.body || docElement).getPropertyValue('direction');
+        var styl = globalThis.getComputedStyle(element);
+        var dir = globalThis.getComputedStyle(document.body || docElement).getPropertyValue('direction');
         var coords = dom.getElementCoordinates(element);
         if (coords.bottom < 0 && (noParentScrolled(element, coords.bottom) || styl.position === 'absolute')) {
           return true;
@@ -15394,7 +15394,7 @@
         if (node && typeof node[cacheName] !== 'undefined') {
           return node[cacheName];
         }
-        var style = window.getComputedStyle(el, null);
+        var style = globalThis.getComputedStyle(el, null);
         if (style === null) {
           return false;
         }
@@ -15481,7 +15481,7 @@
           left: parentLeft - parent.scrollLeft,
           right: parentLeft - parent.scrollLeft + parent.scrollWidth
         };
-        var style = window.getComputedStyle(parent);
+        var style = globalThis.getComputedStyle(parent);
         if (style.getPropertyValue('display') === 'inline') {
           return true;
         }
@@ -15506,7 +15506,7 @@
         if (rect.left > parentScrollArea.right && rect.left > parentRect.right || rect.top > parentScrollArea.bottom && rect.top > parentRect.bottom || rect.right < parentScrollArea.left && rect.right < parentRect.left || rect.bottom < parentScrollArea.top && rect.bottom < parentRect.top) {
           return false;
         }
-        var style = window.getComputedStyle(parent);
+        var style = globalThis.getComputedStyle(parent);
         if (rect.left > parentRect.right || rect.top > parentRect.bottom) {
           return style.overflow === 'scroll' || style.overflow === 'auto' || parent instanceof HTMLBodyElement || parent instanceof HTMLHtmlElement;
         }
@@ -15781,15 +15781,15 @@
         var bgColor, bgImage;
         for (rowIndex = 0; rowIndex < rowLength; rowIndex++) {
           row = node.rows[rowIndex];
-          if (bgColor && bgColor !== window.getComputedStyle(row).getPropertyValue('background-color')) {
+          if (bgColor && bgColor !== globalThis.getComputedStyle(row).getPropertyValue('background-color')) {
             return true;
           } else {
-            bgColor = window.getComputedStyle(row).getPropertyValue('background-color');
+            bgColor = globalThis.getComputedStyle(row).getPropertyValue('background-color');
           }
-          if (bgImage && bgImage !== window.getComputedStyle(row).getPropertyValue('background-image')) {
+          if (bgImage && bgImage !== globalThis.getComputedStyle(row).getPropertyValue('background-image')) {
             return true;
           } else {
-            bgImage = window.getComputedStyle(row).getPropertyValue('background-image');
+            bgImage = globalThis.getComputedStyle(row).getPropertyValue('background-image');
           }
         }
         if (rowLength >= 20) {

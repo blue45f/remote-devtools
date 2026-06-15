@@ -83,7 +83,7 @@ export class GlobalAiButton extends UI.Widget.Widget {
         super.willHide();
         this.#removeHoverEventListeners();
         if (this.#returnToDefaultStateTimeout) {
-            window.clearTimeout(this.#returnToDefaultStateTimeout);
+            globalThis.clearTimeout(this.#returnToDefaultStateTimeout);
         }
     }
     #handleMainToolbarMouseEnter = () => {
@@ -119,9 +119,9 @@ export class GlobalAiButton extends UI.Widget.Widget {
     }
     #scheduleReturnToDefaultState() {
         if (this.#returnToDefaultStateTimeout) {
-            window.clearTimeout(this.#returnToDefaultStateTimeout);
+            globalThis.clearTimeout(this.#returnToDefaultStateTimeout);
         }
-        this.#returnToDefaultStateTimeout = window.setTimeout(() => {
+        this.#returnToDefaultStateTimeout = globalThis.setTimeout(() => {
             // If the mouse is currently on the main toolbar,
             // we don't want to trigger the animation from promotion & to the default
             // state to not cause a layout shift when the user is not expecting it

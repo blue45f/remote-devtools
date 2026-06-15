@@ -65,7 +65,7 @@ export class CdpWebWorker extends WebWorker {
             }
             default:
                 await this.evaluate(() => {
-                    self.close();
+                    globalThis.close();
                 });
         }
     }

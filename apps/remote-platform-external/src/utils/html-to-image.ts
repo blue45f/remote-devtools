@@ -63,7 +63,7 @@ async function convertFixedElementsToAbsolute(page: Page): Promise<void> {
     const stickyElements: HTMLElement[] = [];
 
     allElements.forEach((element) => {
-      const style = window.getComputedStyle(element);
+      const style = globalThis.getComputedStyle(element);
       const htmlElement = element as HTMLElement;
 
       const isFixed =
@@ -78,7 +78,7 @@ async function convertFixedElementsToAbsolute(page: Page): Promise<void> {
 
     // Convert bottom-fixed elements (e.g. CTA buttons) to absolute
     fixedElements.forEach((element) => {
-      const style = window.getComputedStyle(element);
+      const style = globalThis.getComputedStyle(element);
       const rect = element.getBoundingClientRect();
       const bottom = style.bottom;
 
@@ -112,7 +112,7 @@ async function convertFixedElementsToAbsolute(page: Page): Promise<void> {
         if (
           style.width === '100%' ||
           style.width === '100vw' ||
-          rect.width >= window.innerWidth - 10
+          rect.width >= globalThis.innerWidth - 10
         ) {
           element.style.width = '100%';
           element.style.left = '0';

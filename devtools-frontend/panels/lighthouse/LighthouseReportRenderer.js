@@ -39,7 +39,7 @@ export class LighthouseReportRenderer {
         }
         async function onPrintOverride(rootEl) {
             const clonedReport = rootEl.cloneNode(true);
-            const printWindow = window.open('', '_blank', 'channelmode=1,status=1,resizable=1');
+            const printWindow = globalThis.open('', '_blank', 'channelmode=1,status=1,resizable=1');
             if (!printWindow) {
                 return;
             }

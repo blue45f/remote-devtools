@@ -33,7 +33,7 @@ export class TypeToAllowDialog {
             header.createChild('div', 'title').textContent = options.header;
             const closeButton = header.createChild('dt-close-button', 'dialog-close-button');
             closeButton.setTabbable(true);
-            self.onInvokeElement(closeButton, event => {
+            globalThis.onInvokeElement(closeButton, event => {
                 dialog.hide();
                 event.consume(true);
                 resolve(false);

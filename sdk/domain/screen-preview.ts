@@ -87,8 +87,8 @@ export class ScreenPreview extends BaseDomain {
         head: ScreenPreview.getStyleElementString(),
         body: getBody(),
         bodyClass: document.body.className,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: globalThis.innerWidth,
+        height: globalThis.innerHeight,
         baseHref: document.baseURI,
       },
     });
@@ -116,8 +116,8 @@ export class ScreenPreview extends BaseDomain {
               head: ScreenPreview.getStyleElementString(),
               body: getBody(),
               bodyClass: document.body.className,
-              width: window.innerWidth,
-              height: window.innerHeight,
+              width: globalThis.innerWidth,
+              height: globalThis.innerHeight,
               isMobile: isMobile(),
               baseHref: document.baseURI,
             },
@@ -144,8 +144,8 @@ export class ScreenPreview extends BaseDomain {
           head: ScreenPreview.getStyleElementString(),
           body: getBody(),
           bodyClass: document.body.className,
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width: globalThis.innerWidth,
+          height: globalThis.innerHeight,
           isMobile: isMobile(),
           baseHref: document.baseURI,
         },
@@ -161,10 +161,10 @@ export class ScreenPreview extends BaseDomain {
     });
 
     // 마우스/스크롤 이벤트 동기화
-    window.addEventListener('scroll', this.syncScroll);
+    globalThis.addEventListener('scroll', this.syncScroll);
     ['mousemove', 'mousedown', 'mouseup', 'touchmove', 'touchstart', 'touchend'].forEach(
       (event) => {
-        window.addEventListener(event, this.syncMouse as EventListener);
+        globalThis.addEventListener(event, this.syncMouse as EventListener);
       },
     );
   }
@@ -196,8 +196,8 @@ export class ScreenPreview extends BaseDomain {
           head: ScreenPreview.getStyleElementString(),
           body: getBody(),
           bodyClass: document.body.className,
-          width: window.innerWidth,
-          height: window.innerHeight,
+          width: globalThis.innerWidth,
+          height: globalThis.innerHeight,
           isMobile: isMobile(),
           baseHref: document.baseURI,
         },
@@ -215,10 +215,10 @@ export class ScreenPreview extends BaseDomain {
     }
 
     this.isPaused = false;
-    window.removeEventListener('scroll', this.syncScroll);
+    globalThis.removeEventListener('scroll', this.syncScroll);
     ['mousemove', 'mousedown', 'mouseup', 'touchmove', 'touchstart', 'touchend'].forEach(
       (event) => {
-        window.removeEventListener(event, this.syncMouse as EventListener);
+        globalThis.removeEventListener(event, this.syncMouse as EventListener);
       },
     );
   }

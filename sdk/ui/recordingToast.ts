@@ -109,7 +109,7 @@ export const createRecordingToast = (onClickDisconnect: () => void) => {
   openButton.onclick = () => {
     const url = currentLink();
     if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    globalThis.open(url, '_blank', 'noopener,noreferrer');
   };
 
   copyButton.onclick = async () => {

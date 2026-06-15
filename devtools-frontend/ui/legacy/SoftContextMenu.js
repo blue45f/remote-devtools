@@ -357,7 +357,7 @@ export class SoftContextMenu {
             return;
         }
         if (detailsForElement.subMenuTimer) {
-            window.clearTimeout(detailsForElement.subMenuTimer);
+            globalThis.clearTimeout(detailsForElement.subMenuTimer);
             delete detailsForElement.subMenuTimer;
         }
         if (this.subMenu || !this.document) {
@@ -402,7 +402,7 @@ export class SoftContextMenu {
             this.highlightedMenuItemElement.classList.remove('force-white-icons');
             this.highlightedMenuItemElement.classList.remove('soft-context-menu-item-mouse-over');
             if (detailsForElement?.subItems && detailsForElement.subMenuTimer) {
-                window.clearTimeout(detailsForElement.subMenuTimer);
+                globalThis.clearTimeout(detailsForElement.subMenuTimer);
                 delete detailsForElement.subMenuTimer;
             }
         }
@@ -419,7 +419,7 @@ export class SoftContextMenu {
             }
             if (scheduleSubMenu && detailsForElement?.subItems && !detailsForElement.subMenuTimer) {
                 detailsForElement.subMenuTimer =
-                    window.setTimeout(this.showSubMenu.bind(this, this.highlightedMenuItemElement), 150);
+                    globalThis.setTimeout(this.showSubMenu.bind(this, this.highlightedMenuItemElement), 150);
             }
         }
         if (this.contextMenuElement) {

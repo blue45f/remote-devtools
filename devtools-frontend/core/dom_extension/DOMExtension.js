@@ -147,13 +147,13 @@ Element.prototype.removeChildren = function () {
         this.textContent = '';
     }
 };
-self.createElement = function (tagName, customElementType) {
+globalThis.createElement = function (tagName, customElementType) {
     return document.createElement(tagName, { is: customElementType });
 };
-self.createTextNode = function (data) {
+globalThis.createTextNode = function (data) {
     return document.createTextNode(data);
 };
-self.createDocumentFragment = function () {
+globalThis.createDocumentFragment = function () {
     return document.createDocumentFragment();
 };
 DocumentFragment.prototype.createChild = Element.prototype.createChild = function (elementName, className) {
@@ -164,7 +164,7 @@ DocumentFragment.prototype.createChild = Element.prototype.createChild = functio
     this.appendChild(element);
     return element;
 };
-self.AnchorBox = class {
+globalThis.AnchorBox = class {
     constructor(x, y, width, height) {
         this.x = x || 0;
         this.y = y || 0;
@@ -353,7 +353,7 @@ Node.prototype.getComponentRoot = function () {
     }
     return node;
 };
-self.onInvokeElement = function (element, callback) {
+globalThis.onInvokeElement = function (element, callback) {
     element.addEventListener('keydown', event => {
         if (Platform.KeyboardUtilities.isEnterOrSpaceKey(event)) {
             callback(event);

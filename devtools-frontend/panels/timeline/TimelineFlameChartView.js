@@ -603,7 +603,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
             this.#bulkExpandGroupsForEntries(entries);
             const overlaysBounds = Overlays.Overlays.traceWindowContainingOverlays(this.#currentInsightOverlays);
             if (overlaysBounds) {
-                // Trace window covering all overlays expanded by 50% so that the overlays cover 2/3 (100/150) of the visible window. (Or use provided override)
+                // Trace window covering all overlays expanded by 50% so that the overlays cover 2/3 (100/150) of the visible globalThis. (Or use provided override)
                 const percentage = options.updateTraceWindowPercentage ?? 50;
                 const expandedBounds = Trace.Helpers.Timing.expandWindowByPercentOrToOneMillisecond(overlaysBounds, traceBounds, percentage);
                 // Set the timeline visible window and ignore the minimap bounds. This
@@ -661,7 +661,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
         if (firstEntry) {
             this.revealEventVertically(firstEntry);
         }
-        // Trace window covering all overlays expanded by 100% so that the overlays cover 50% of the visible window.
+        // Trace window covering all overlays expanded by 100% so that the overlays cover 50% of the visible globalThis.
         const expandedBounds = Trace.Helpers.Timing.expandWindowByPercentOrToOneMillisecond(annotationWindow, traceBounds, 100);
         TraceBounds.TraceBounds.BoundsManager.instance().setTimelineVisibleWindow(expandedBounds, { ignoreMiniMapBounds: true, shouldAnimate: true });
     }
@@ -799,7 +799,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
             return false;
         }
         // The amount we increment the time range by when using the arrow keys is
-        // 2% of the visible window.
+        // 2% of the visible globalThis.
         const timeRangeIncrementValue = visibleWindow.range * 0.02;
         switch (event.key) {
             // ArrowLeft + ArrowRight adjusts the right hand bound (the max) of the time range
@@ -817,7 +817,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
                     }
                     return false;
                 }
-                // Grow the RHS of the range, but limit it to the visible window.
+                // Grow the RHS of the range, but limit it to the visible globalThis.
                 this.#timeRangeSelectionAnnotation.bounds.max = Trace.Types.Timing.Micro(Math.min(this.#timeRangeSelectionAnnotation.bounds.max + timeRangeIncrementValue, visibleWindow.max));
                 this.#timeRangeSelectionAnnotation.bounds.range = Trace.Types.Timing.Micro(this.#timeRangeSelectionAnnotation.bounds.max - this.#timeRangeSelectionAnnotation.bounds.min);
                 ModificationsManager.activeManager()?.updateAnnotation(this.#timeRangeSelectionAnnotation);
@@ -851,7 +851,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
                     return false;
                 }
                 this.#timeRangeSelectionAnnotation.bounds.min = Trace.Types.Timing.Micro(
-                // Decrease the LHS, but make sure it cannot go beyond the minimum visible window.
+                // Decrease the LHS, but make sure it cannot go beyond the minimum visible globalThis.
                 Math.max(this.#timeRangeSelectionAnnotation.bounds.min - timeRangeIncrementValue, visibleWindow.min));
                 this.#timeRangeSelectionAnnotation.bounds.range = Trace.Types.Timing.Micro(this.#timeRangeSelectionAnnotation.bounds.max - this.#timeRangeSelectionAnnotation.bounds.min);
                 ModificationsManager.activeManager()?.updateAnnotation(this.#timeRangeSelectionAnnotation);
@@ -931,7 +931,7 @@ export class TimelineFlameChartView extends Common.ObjectWrapper.eventMixin(UI.W
         }
         const visibleWindow = event.state.milli.timelineTraceWindow;
         // If the user has set a preference for reduced motion, we disable any animations.
-        const userHasReducedMotionSet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const userHasReducedMotionSet = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const shouldAnimate = Boolean(event.options.shouldAnimate) && (this.#checkReducedMotion ? !userHasReducedMotionSet : true);
         this.mainFlameChart.setWindowTimes(visibleWindow.min, visibleWindow.max, shouldAnimate);
         this.networkDataProvider.setWindowTimes(visibleWindow.min, visibleWindow.max);

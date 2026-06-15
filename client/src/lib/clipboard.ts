@@ -8,9 +8,9 @@ export async function copyToClipboard(text: string): Promise<void> {
   // If the browser supports the modern API and we are in a secure context
   if (
     navigator.clipboard &&
-    (window.isSecureContext ||
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1')
+    (globalThis.isSecureContext ||
+      globalThis.location.hostname === 'localhost' ||
+      globalThis.location.hostname === '127.0.0.1')
   ) {
     try {
       await navigator.clipboard.writeText(text);

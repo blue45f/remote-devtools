@@ -90,7 +90,7 @@ export class StreamingContentHexView extends LinearMemoryInspectorView {
         this.#streamingContentData.removeEventListener("ChunkAdded" /* TextUtils.StreamingContentData.Events.CHUNK_ADDED */, this.#updateMemoryFromContentData, this);
     }
     #updateMemoryFromContentData() {
-        const binaryString = window.atob(this.#streamingContentData.content().base64);
+        const binaryString = globalThis.atob(this.#streamingContentData.content().base64);
         const memory = Uint8Array.from(binaryString, m => m.codePointAt(0));
         this.setMemory(memory);
     }

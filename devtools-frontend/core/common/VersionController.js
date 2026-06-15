@@ -208,12 +208,12 @@ export class VersionController {
     }
     updateVersionFrom9To10() {
         // This one is localStorage specific, which is fine.
-        if (!window.localStorage) {
+        if (!globalThis.localStorage) {
             return;
         }
-        for (const key in window.localStorage) {
+        for (const key in globalThis.localStorage) {
             if (key.startsWith('revision-history')) {
-                window.localStorage.removeItem(key);
+                globalThis.localStorage.removeItem(key);
             }
         }
     }
@@ -758,15 +758,15 @@ export class VersionController {
             'workspaceExcludedFolders',
             'xhrBreakpoints',
         ]);
-        if (!window.localStorage) {
+        if (!globalThis.localStorage) {
             return;
         }
-        for (const key in window.localStorage) {
+        for (const key in globalThis.localStorage) {
             if (localSettings.has(key)) {
                 continue;
             }
-            const value = window.localStorage[key];
-            window.localStorage.removeItem(key);
+            const value = globalThis.localStorage[key];
+            globalThis.localStorage.removeItem(key);
             this.#settings.globalStorage.set(key, value);
         }
     }

@@ -164,7 +164,7 @@ export async function javascriptCompletionSource(cx) {
         ]);
         if (scope.completions.length) {
             result = scope;
-            for (const r of global.completions) {
+            for (const r of globalThis.completions) {
                 result.add(r);
             }
         }
@@ -248,7 +248,7 @@ class PropertyCache {
     }
     set(expression, value) {
         this.#cache.set(expression, value);
-        window.setTimeout(() => {
+        globalThis.setTimeout(() => {
             if (this.#cache.get(expression) === value) {
                 this.#cache.delete(expression);
             }

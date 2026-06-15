@@ -831,7 +831,7 @@ export class CdpPage extends Page {
                 const viewport = await this.mainFrame()
                     .isolatedRealm()
                     .evaluate(() => {
-                    const { height, pageLeft: x, pageTop: y, width, } = window.visualViewport;
+                    const { height, pageLeft: x, pageTop: y, width, } = globalThis.visualViewport;
                     return { x, y, height, width };
                 });
                 clip = getIntersectionRect(clip, viewport);

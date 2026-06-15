@@ -37,7 +37,7 @@ export function setPlatformForTests(platform) {
 let _isCustomDevtoolsFrontend;
 export function isCustomDevtoolsFrontend() {
     if (typeof _isCustomDevtoolsFrontend === 'undefined') {
-        _isCustomDevtoolsFrontend = window.location.toString().startsWith('devtools://devtools/custom/');
+        _isCustomDevtoolsFrontend = globalThis.location.toString().startsWith('devtools://devtools/custom/');
     }
     return _isCustomDevtoolsFrontend;
 }

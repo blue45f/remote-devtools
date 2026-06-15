@@ -155,7 +155,7 @@ var T=Object.defineProperty;var N=(n,t)=>{for(var e in t)T(n,e,{get:t[e],enumera
           </devtools-button>
         </div>
       </div>
-    </div>`}function F(n,t,e,a,i,r,p,C,L,V,U){function H(c){if(!c)return;let R=window.matchMedia("(prefers-reduced-motion: reduce)").matches;c.scrollIntoView({block:"nearest",behavior:R?"auto":"smooth"})}return d`
+    </div>`}function F(n,t,e,a,i,r,p,C,L,V,U){function H(c){if(!c)return;let R=globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;c.scrollIntoView({block:"nearest",behavior:R?"auto":"smooth"})}return d`
     <div class="authenticator-section" data-authenticator-id=${n}
          jslog=${l.section("authenticator")}
           ${y(c=>{U.revealSection.set(n,H.bind(null,c))})}>

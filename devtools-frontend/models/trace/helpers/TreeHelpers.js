@@ -196,7 +196,7 @@ function walkTreeByNode(entryToNode, rootNode, onEntryStart, onEntryEnd, traceWi
 }
 /**
  * Returns true if the provided node is partially or fully within the trace
- * window. The entire node does not have to fit inside the window, but it does
+ * globalThis. The entire node does not have to fit inside the window, but it does
  * have to partially intersect it.
  */
 function treeNodeIsInWindow(node, traceWindow) {

@@ -61,25 +61,25 @@ class RecordingClient {
     }
     start = () => {
         this.#logger.log('Setting up recording listeners');
-        window.addEventListener('keydown', this.#onKeyDown, true);
-        window.addEventListener('beforeinput', this.#onBeforeInput, true);
-        window.addEventListener('input', this.#onInput, true);
-        window.addEventListener('keyup', this.#onKeyUp, true);
-        window.addEventListener('pointerdown', this.#onPointerDown, true);
-        window.addEventListener('click', this.#onClick, true);
-        window.addEventListener('auxclick', this.#onClick, true);
-        window.addEventListener('beforeunload', this.#onBeforeUnload, true);
+        globalThis.addEventListener('keydown', this.#onKeyDown, true);
+        globalThis.addEventListener('beforeinput', this.#onBeforeInput, true);
+        globalThis.addEventListener('input', this.#onInput, true);
+        globalThis.addEventListener('keyup', this.#onKeyUp, true);
+        globalThis.addEventListener('pointerdown', this.#onPointerDown, true);
+        globalThis.addEventListener('click', this.#onClick, true);
+        globalThis.addEventListener('auxclick', this.#onClick, true);
+        globalThis.addEventListener('beforeunload', this.#onBeforeUnload, true);
     };
     stop = () => {
         this.#logger.log('Tearing down client listeners');
-        window.removeEventListener('keydown', this.#onKeyDown, true);
-        window.removeEventListener('beforeinput', this.#onBeforeInput, true);
-        window.removeEventListener('input', this.#onInput, true);
-        window.removeEventListener('keyup', this.#onKeyUp, true);
-        window.removeEventListener('pointerdown', this.#onPointerDown, true);
-        window.removeEventListener('click', this.#onClick, true);
-        window.removeEventListener('auxclick', this.#onClick, true);
-        window.removeEventListener('beforeunload', this.#onBeforeUnload, true);
+        globalThis.removeEventListener('keydown', this.#onKeyDown, true);
+        globalThis.removeEventListener('beforeinput', this.#onBeforeInput, true);
+        globalThis.removeEventListener('input', this.#onInput, true);
+        globalThis.removeEventListener('keyup', this.#onKeyUp, true);
+        globalThis.removeEventListener('pointerdown', this.#onPointerDown, true);
+        globalThis.removeEventListener('click', this.#onClick, true);
+        globalThis.removeEventListener('auxclick', this.#onClick, true);
+        globalThis.removeEventListener('beforeunload', this.#onBeforeUnload, true);
     };
     getSelectors = (node) => {
         return this.#computer.getSelectors(node);
@@ -99,7 +99,7 @@ class RecordingClient {
                 event.keyCode === shortcut.keyCode) {
                 this.stop();
                 haultImmediateEvent(event);
-                window.stopShortcut(getShortcutLength(shortcut));
+                globalThis.stopShortcut(getShortcutLength(shortcut));
                 return true;
             }
         }
@@ -215,7 +215,7 @@ class RecordingClient {
     #addStep = (step) => {
         const payload = JSON.stringify(step);
         this.#logger.log(`Adding step: ${payload}`);
-        window.addStep(payload);
+        globalThis.addStep(payload);
     };
 }
 export { RecordingClient };

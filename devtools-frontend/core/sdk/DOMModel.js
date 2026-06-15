@@ -1369,7 +1369,7 @@ export class DOMModel extends SDKModel {
     inlineStyleInvalidated(nodeIds) {
         nodeIds.forEach(nodeId => this.#attributeLoadNodeIds.add(nodeId));
         if (!this.#loadNodeAttributesTimeout) {
-            this.#loadNodeAttributesTimeout = window.setTimeout(this.loadNodeAttributes.bind(this), 20);
+            this.#loadNodeAttributesTimeout = globalThis.setTimeout(this.loadNodeAttributes.bind(this), 20);
         }
     }
     loadNodeAttributes() {

@@ -255,11 +255,11 @@ export class TickingFlameChart extends UI.Widget.VBox {
             return;
         }
         // 16 ms is roughly 60 fps.
-        this.intervalTimer = window.setInterval(this.updateRender.bind(this), 16);
+        this.intervalTimer = globalThis.setInterval(this.updateRender.bind(this), 16);
         this.ticking = true;
     }
     stop(permanently = false) {
-        window.clearInterval(this.intervalTimer);
+        globalThis.clearInterval(this.intervalTimer);
         this.intervalTimer = 0;
         if (permanently) {
             this.stoppedPermanently = true;

@@ -1021,7 +1021,7 @@ let ElementHandle = (() => {
                             return null;
                         }
                         const rect = element.getBoundingClientRect();
-                        const style = window.getComputedStyle(element);
+                        const style = globalThis.getComputedStyle(element);
                         return {
                             left: rect.left +
                                 parseInt(style.paddingLeft, 10) +
@@ -1126,7 +1126,7 @@ let ElementHandle = (() => {
                     return null;
                 }
                 const rect = element.getBoundingClientRect();
-                const style = window.getComputedStyle(element);
+                const style = globalThis.getComputedStyle(element);
                 const offsets = {
                     padding: {
                         left: parseInt(style.paddingLeft, 10),
@@ -1222,7 +1222,7 @@ let ElementHandle = (() => {
                             return null;
                         }
                         const rect = element.getBoundingClientRect();
-                        const style = window.getComputedStyle(element);
+                        const style = globalThis.getComputedStyle(element);
                         return {
                             left: rect.left +
                                 parseInt(style.paddingLeft, 10) +
@@ -1258,12 +1258,12 @@ let ElementHandle = (() => {
             }
             const elementClip = await this.#nonEmptyVisibleBoundingBox();
             const [pageLeft, pageTop] = await this.evaluate(() => {
-                if (!window.visualViewport) {
-                    throw new Error('window.visualViewport is not supported.');
+                if (!globalThis.visualViewport) {
+                    throw new Error('globalThis.visualViewport is not supported.');
                 }
                 return [
-                    window.visualViewport.pageLeft,
-                    window.visualViewport.pageTop,
+                    globalThis.visualViewport.pageLeft,
+                    globalThis.visualViewport.pageTop,
                 ];
             });
             elementClip.x += pageLeft;

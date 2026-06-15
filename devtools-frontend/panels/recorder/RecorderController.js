@@ -816,7 +816,7 @@ let RecorderController = class RecorderController extends LitElement {
     }
     async #exportContent(suggestedName, data) {
         try {
-            const handle = await window.showSaveFilePicker({ suggestedName });
+            const handle = await globalThis.showSaveFilePicker({ suggestedName });
             const writable = await handle.createWritable();
             await writable.write(data);
             await writable.close();

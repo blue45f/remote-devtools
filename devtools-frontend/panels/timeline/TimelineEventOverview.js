@@ -136,11 +136,11 @@ export class TimelineEventOverviewCPUActivity extends TimelineEventOverview {
     resetCanvas() {
         super.resetCanvas();
         this.#drawn = false;
-        this.backgroundCanvas.width = this.element.clientWidth * window.devicePixelRatio;
-        this.backgroundCanvas.height = this.element.clientHeight * window.devicePixelRatio;
+        this.backgroundCanvas.width = this.element.clientWidth * globalThis.devicePixelRatio;
+        this.backgroundCanvas.height = this.element.clientHeight * globalThis.devicePixelRatio;
     }
     #draw(parsedTrace) {
-        const quantSizePx = 4 * window.devicePixelRatio;
+        const quantSizePx = 4 * globalThis.devicePixelRatio;
         const width = this.width();
         const height = this.height();
         const baseLine = height;
@@ -238,7 +238,7 @@ export class TimelineEventOverviewCPUActivity extends TimelineEventOverview {
             }
         }
         function applyPattern(ctx) {
-            const step = 4 * window.devicePixelRatio;
+            const step = 4 * globalThis.devicePixelRatio;
             ctx.save();
             ctx.lineWidth = step / Math.sqrt(8);
             for (let x = 0.5; x < width + height; x += step) {
@@ -318,7 +318,7 @@ export class TimelineEventOverviewResponsiveness extends TimelineEventOverview {
         }
         ctx.fillStyle = 'hsl(0, 80%, 90%)';
         ctx.strokeStyle = 'red';
-        ctx.lineWidth = 2 * window.devicePixelRatio;
+        ctx.lineWidth = 2 * globalThis.devicePixelRatio;
         ctx.fill(fillPath);
         ctx.stroke(markersPath);
         function paintWarningDecoration(event) {
@@ -468,7 +468,7 @@ export class TimelineEventOverviewMemory extends TimelineEventOverview {
     }
     update(start, end) {
         this.resetCanvas();
-        const ratio = window.devicePixelRatio;
+        const ratio = globalThis.devicePixelRatio;
         if (this.#parsedTrace.data.Memory.updateCountersByProcess.size === 0) {
             this.resetHeapSizeLabels();
             return;

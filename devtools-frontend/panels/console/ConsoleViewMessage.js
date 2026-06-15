@@ -560,7 +560,7 @@ export class ConsoleViewMessage {
         let debounce;
         this.expandTrace = (expand) => {
             if (expand) {
-                debounce = window.setTimeout(() => {
+                debounce = globalThis.setTimeout(() => {
                     Host.userMetrics.actionTaken(Host.UserMetrics.Action.TraceExpanded);
                 }, DEBOUNCE_MS);
             }

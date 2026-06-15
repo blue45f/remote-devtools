@@ -540,15 +540,15 @@ export class BottomUpNode extends Node {
                     return;
                 }
             }
-            if (node.id !== id || eventIdStack.length < self.depth) {
+            if (node.id !== id || eventIdStack.length < globalThis.depth) {
                 return;
             }
-            const childId = eventIdStack[eventIdStack.length - self.depth];
+            const childId = eventIdStack[eventIdStack.length - globalThis.depth];
             node = nodeById.get(childId);
             if (!node) {
-                const event = eventStack[eventStack.length - self.depth];
-                const hasChildren = eventStack.length > self.depth;
-                node = new BottomUpNode(self.root, childId, event, hasChildren, self);
+                const event = eventStack[eventStack.length - globalThis.depth];
+                const hasChildren = eventStack.length > globalThis.depth;
+                node = new BottomUpNode(globalThis.root, childId, event, hasChildren, self);
                 nodeById.set(childId, node);
             }
             else {

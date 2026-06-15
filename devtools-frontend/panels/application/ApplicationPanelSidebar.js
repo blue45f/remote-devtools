@@ -969,7 +969,7 @@ export class AppManifestTreeElement extends ApplicationPanelTreeElement {
         super(storagePanel, i18nString(UIStrings.manifest), true, 'manifest');
         const icon = createIcon('document');
         this.setLeadingIcons([icon]);
-        self.onInvokeElement(this.listItemElement, this.onInvoke.bind(this));
+        globalThis.onInvokeElement(this.listItemElement, this.onInvoke.bind(this));
         this.view = new AppManifestView();
         UI.ARIAUtils.setLabel(this.listItemElement, i18nString(UIStrings.onInvokeManifestAlert));
         const handleExpansion = (hasManifest) => {

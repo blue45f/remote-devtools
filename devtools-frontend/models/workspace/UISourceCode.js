@@ -177,14 +177,14 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         if (!content) {
             return null;
         }
-        return content.isEncoded && content.content ? window.atob(content.content) : content.content;
+        return content.isEncoded && content.content ? globalThis.atob(content.content) : content.content;
     }
     /** Only used to compare whether content changed */
     #unsafeDecodeContentData(content) {
         if (!content || TextUtils.ContentData.ContentData.isError(content)) {
             return null;
         }
-        return content.createdFromBase64 ? window.atob(content.base64) : content.text;
+        return content.createdFromBase64 ? globalThis.atob(content.base64) : content.text;
     }
     async checkContentUpdated() {
         if (!this.#content && !this.#forceLoadOnCheckContent) {
@@ -218,8 +218,8 @@ export class UISourceCode extends Common.ObjectWrapper.ObjectWrapper {
         }
         await Common.Revealer.reveal(this);
         // Make sure we are in the next frame before stopping the world with confirm
-        await new Promise(resolve => window.setTimeout(resolve, 0));
-        const shouldUpdate = window.confirm(i18nString(UIStrings.thisFileWasChangedExternally));
+        await new Promise(resolve => globalThis.setTimeout(resolve, 0));
+        const shouldUpdate = globalThis.confirm(i18nString(UIStrings.thisFileWasChangedExternally));
         if (shouldUpdate) {
             this.#contentCommitted(updatedContent.content, false);
         }

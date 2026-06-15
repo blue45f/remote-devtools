@@ -30,7 +30,7 @@ class GreenDevFloaty {
     #syncChannel;
     #isFloatyWindow;
     constructor(document) {
-        const params = new URLSearchParams(window.location.hash.substring(1));
+        const params = new URLSearchParams(globalThis.location.hash.substring(1));
         this.#backendNodeId = parseInt(params.get('backendNodeId') || '0', 10);
         this.#isFloatyWindow = !!this.#backendNodeId;
         this.#syncChannel = new BroadcastChannel('green-dev-sync');
@@ -322,18 +322,18 @@ async function init() {
         };
         const syncedStorage = new Common.Settings.SettingsStorage(prefs, hostUnsyncedStorage, '');
         const globalStorage = new Common.Settings.SettingsStorage(prefs, hostUnsyncedStorage, '');
-        const localStorage = new Common.Settings.SettingsStorage(window.localStorage, {
+        const localStorage = new Common.Settings.SettingsStorage(globalThis.localStorage, {
             register(_setting) { },
             async get(setting) {
-                return window.localStorage.getItem(setting);
+                return globalThis.localStorage.getItem(setting);
             },
             set(setting, value) {
-                window.localStorage.setItem(setting, value);
+                globalThis.localStorage.setItem(setting, value);
             },
             remove(setting) {
-                window.localStorage.removeItem(setting);
+                globalThis.localStorage.removeItem(setting);
             },
-            clear: () => window.localStorage.clear(),
+            clear: () => globalThis.localStorage.clear(),
         }, '');
         Common.Settings.Settings.instance({
             forceNew: true,
@@ -368,7 +368,7 @@ async function init() {
         Root.DevToolsContext.setGlobalInstance(universe.context);
         await i18n.i18n.fetchAndRegisterLocaleData('en-US');
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.connectionReady();
-        const hash = window.location.hash.substring(1);
+        const hash = globalThis.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const backendNodeId = parseInt(params.get('backendNodeId') || '0', 10);
         const floaty = GreenDevFloaty.instance({ forceNew: null, document });

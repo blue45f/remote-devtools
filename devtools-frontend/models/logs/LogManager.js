@@ -54,7 +54,7 @@ export class LogManager {
             if (SDK.TargetManager.TargetManager.instance().targetById(workerId)) {
                 return;
             }
-            window.setTimeout(() => {
+            globalThis.setTimeout(() => {
                 if (!SDK.TargetManager.TargetManager.instance().targetById(workerId)) {
                     consoleModel?.addMessage(consoleMessage);
                 }

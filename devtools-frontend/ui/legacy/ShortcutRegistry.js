@@ -191,7 +191,7 @@ export class ShortcutRegistry {
                 this.activePrefixTimeout = null;
                 await maybeExecuteActionForKey.call(this, event);
             };
-            this.activePrefixTimeout = window.setTimeout(this.consumePrefix, KeyTimeout);
+            this.activePrefixTimeout = globalThis.setTimeout(this.consumePrefix, KeyTimeout);
         }
         else {
             await maybeExecuteActionForKey.call(this, event);

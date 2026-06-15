@@ -349,7 +349,7 @@ export class StatusView {
         if (!this.currentPhase || this.scheduledFastFactTimeout) {
             return;
         }
-        this.scheduledFastFactTimeout = window.setTimeout(() => {
+        this.scheduledFastFactTimeout = globalThis.setTimeout(() => {
             this.updateFastFactIfNecessary();
             this.scheduledFastFactTimeout = null;
             this.scheduleFastFactCheck();
@@ -375,7 +375,7 @@ export class StatusView {
     renderBugReport(err) {
         console.error(err);
         if (this.scheduledFastFactTimeout) {
-            window.clearTimeout(this.scheduledFastFactTimeout);
+            globalThis.clearTimeout(this.scheduledFastFactTimeout);
         }
         this.resetProgressBarClasses();
         this.progressBarClass = 'errored';

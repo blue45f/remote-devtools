@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 // jsdom polyfills
-if (!window.matchMedia) {
+if (!globalThis.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -41,8 +41,8 @@ if (!window.matchMedia) {
   });
 }
 
-if (!window.ResizeObserver) {
-  window.ResizeObserver = class {
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
@@ -62,8 +62,8 @@ if (typeof Element.prototype.hasPointerCapture !== 'function') {
 }
 
 // IntersectionObserver
-if (!window.IntersectionObserver) {
-  window.IntersectionObserver = class implements IntersectionObserver {
+if (!globalThis.IntersectionObserver) {
+  globalThis.IntersectionObserver = class implements IntersectionObserver {
     readonly root = null;
     readonly rootMargin = '';
     readonly scrollMargin = '';

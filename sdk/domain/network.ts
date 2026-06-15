@@ -205,7 +205,7 @@ export class Network extends BaseDomain {
 
     // 원본 fetch를 전역으로 저장 (이미 저장되지 않았다면)
     if (!originalFetch) {
-      originalFetch = window.fetch.bind(window);
+      originalFetch = globalThis.fetch.bind(window);
     }
     this.originFetch = originalFetch;
 
@@ -628,11 +628,11 @@ export class Network extends BaseDomain {
 
     // 원본 fetch를 전역으로 저장 (최초 1회만)
     if (!originalFetch) {
-      originalFetch = window.fetch.bind(window);
+      originalFetch = globalThis.fetch.bind(window);
     }
 
     const instance = this;
-    window.fetch = function (request, initConfig = {}) {
+    globalThis.fetch = function (request, initConfig = {}) {
       // Instrumentation must NEVER break the host page's fetch. If anything in
       // the synchronous setup (URL parse, rewrite, socket send) throws, fall
       // through to the original fetch with the caller's original arguments.
@@ -1032,7 +1032,7 @@ export class Network extends BaseDomain {
           room: this.room,
           recordId: 0, // Buffer 모드에서는 recordId가 0
           deviceId: this.deviceId || 'unknown-device',
-          url: this.url || window.location.href,
+          url: this.url || globalThis.location.href,
           userAgent: navigator.userAgent,
           event: {
             method: 'updateResponseBody',

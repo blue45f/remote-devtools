@@ -91,19 +91,19 @@ export class InplaceEditor {
             if (pasteCallback) {
                 element.removeEventListener('paste', pasteEventListener, true);
             }
-            if (self.focusRestorer) {
-                self.focusRestorer.restore();
+            if (globalThis.focusRestorer) {
+                globalThis.focusRestorer.restore();
             }
-            self.closeEditor(editingContext);
+            globalThis.closeEditor(editingContext);
         }
         function editingCancelled() {
-            self.cancelEditing(editingContext);
+            globalThis.cancelEditing(editingContext);
             cleanUpAfterEditing();
             cancelledCallback(this, context);
         }
         function editingCommitted() {
             cleanUpAfterEditing();
-            committedCallback(this, self.editorContent(editingContext), editingContext.oldText, context, moveDirection);
+            committedCallback(this, globalThis.editorContent(editingContext), editingContext.oldText, context, moveDirection);
             element.dispatchEvent(new Event('change'));
         }
         function defaultFinishHandler(event) {

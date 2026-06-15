@@ -466,7 +466,7 @@ export class PerformanceTraceFormatter {
     /**
      * This is the data passed to a network request when the Performance Insights
      * agent is asking for information. It is a slimmed down version of the
-     * request's data to avoid using up too much of the context window.
+     * request's data to avoid using up too much of the context globalThis.
      * IMPORTANT: these set of fields have been reviewed by Chrome Privacy &
      * Security; be careful about adding new data here. If you are in doubt please
      * talk to jacktfranklin@.

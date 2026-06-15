@@ -1,9 +1,9 @@
 // Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, keysToForward, testHook, injectedScriptId, targetWindowForTest) {
+globalThis.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, keysToForward, testHook, injectedScriptId, targetWindowForTest) {
     const keysToForwardSet = new Set(keysToForward);
-    const chrome = window.chrome || {};
+    const chrome = globalThis.chrome || {};
     const devtools_descriptor = Object.getOwnPropertyDescriptor(chrome, 'devtools');
     if (devtools_descriptor) {
         return;
@@ -95,7 +95,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
             extensionServer.sendRequest({ command: "getHAR" /* PrivateAPI.Commands.GetHAR */ }, callback && callbackWrapper);
         },
         addRequestHeaders: function (headers) {
-            extensionServer.sendRequest({ command: "addRequestHeaders" /* PrivateAPI.Commands.AddRequestHeaders */, headers, extensionId: window.location.hostname });
+            extensionServer.sendRequest({ command: "addRequestHeaders" /* PrivateAPI.Commands.AddRequestHeaders */, headers, extensionId: globalThis.location.hostname });
         },
     };
     function RequestImpl(id) {
@@ -190,7 +190,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         function dispatchShowEvent(message) {
             const frameIndex = message.arguments[0];
             if (typeof frameIndex === 'number') {
-                this._fire(window.parent.frames[frameIndex]);
+                this._fire(globalThis.parent.frames[frameIndex]);
             }
             else {
                 this._fire();
@@ -395,7 +395,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         reportResourceLoad: function (resourceUrl, status) {
             return new Promise(resolve => extensionServer.sendRequest({
                 command: "reportResourceLoad" /* PrivateAPI.Commands.ReportResourceLoad */,
-                extensionId: window.location.origin,
+                extensionId: globalThis.location.origin,
                 resourceUrl,
                 status,
             }, resolve));
@@ -702,7 +702,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         };
         keyboardEventRequestQueue.push(requestPayload);
         if (!forwardTimer) {
-            forwardTimer = window.setTimeout(forwardEventQueue, 0);
+            forwardTimer = globalThis.setTimeout(forwardEventQueue, 0);
         }
     }
     function forwardEventQueue() {
@@ -789,7 +789,7 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
             }
         }
     }
-    const extensionServer = new (Constructor(ExtensionServerClient))(targetWindowForTest || window.parent);
+    const extensionServer = new (Constructor(ExtensionServerClient))(targetWindowForTest || globalThis.parent);
     const coreAPI = new (Constructor(InspectorExtensionAPI))();
     Object.defineProperty(chrome, 'devtools', { value: {}, enumerable: true });
     // Only expose tabId on chrome.devtools.inspectedWindow, not webInspector.inspectedWindow.
@@ -818,17 +818,17 @@ self.injectedExtensionAPI = function (extensionInfo, inspectedTabId, themeName, 
         chrome.experimental.devtools.inspectedWindow = chrome.devtools.inspectedWindow;
     }
     if (extensionInfo.exposeWebInspectorNamespace) {
-        window.webInspector = coreAPI;
+        globalThis.webInspector = coreAPI;
     }
     testHook(extensionServer, coreAPI);
 };
-self.buildExtensionAPIInjectedScript = function (extensionInfo, inspectedTabId, themeName, keysToForward, testHook) {
+globalThis.buildExtensionAPIInjectedScript = function (extensionInfo, inspectedTabId, themeName, keysToForward, testHook) {
     const argumentsJSON = [extensionInfo, inspectedTabId || null, themeName, keysToForward].map(_ => JSON.stringify(_)).join(',');
     if (!testHook) {
         testHook = () => { };
     }
     return '(function(injectedScriptId){ ' +
-        '(' + self.injectedExtensionAPI.toString() + ')(' + argumentsJSON + ',' + testHook + ', injectedScriptId);' +
+        '(' + globalThis.injectedExtensionAPI.toString() + ')(' + argumentsJSON + ',' + testHook + ', injectedScriptId);' +
         '})';
 };
 export {};

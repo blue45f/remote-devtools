@@ -488,12 +488,12 @@ let BidiPage = (() => {
                     // need to convert this to viewport coordinates when we aren't capturing
                     // beyond the viewport.
                     const [pageLeft, pageTop] = await this.evaluate(() => {
-                        if (!window.visualViewport) {
-                            throw new Error('window.visualViewport is not supported.');
+                        if (!globalThis.visualViewport) {
+                            throw new Error('globalThis.visualViewport is not supported.');
                         }
                         return [
-                            window.visualViewport.pageLeft,
-                            window.visualViewport.pageTop,
+                            globalThis.visualViewport.pageLeft,
+                            globalThis.visualViewport.pageTop,
                         ];
                     });
                     box = {

@@ -281,8 +281,8 @@ let BrowsingContext = (() => {
             // eslint-disable-next-line @typescript-eslint/no-this-alias -- Required
             const self = this;
             return (function* () {
-                yield self.defaultRealm;
-                yield* self.#realms.values();
+                yield globalThis.defaultRealm;
+                yield* globalThis.#realms.values();
             })();
         }
         get top() {

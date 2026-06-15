@@ -6,7 +6,7 @@ import * as PanelCommon from '../panels/common/common.js';
 import { describeWithEnvironment, setupActionRegistry } from './EnvironmentHelpers.js';
 import { describeWithMockConnection } from './MockConnection.js';
 export function getExtensionOrigin() {
-    return window.location.origin;
+    return globalThis.location.origin;
 }
 export function describeWithDevtoolsExtension(title, extension, fn) {
     const extensionDescriptor = {
@@ -27,8 +27,8 @@ export function describeWithDevtoolsExtension(title, extension, fn) {
             .callsFake((origin, _script) => {
             if (origin === getExtensionOrigin()) {
                 const chrome = {};
-                window.chrome = chrome;
-                self.injectedExtensionAPI(extensionDescriptor, 'main', 'dark', [], () => { }, 1, window);
+                globalThis.chrome = chrome;
+                globalThis.injectedExtensionAPI(extensionDescriptor, 'main', 'dark', [], () => { }, 1, window);
                 context.chrome = chrome;
             }
         });
@@ -36,7 +36,7 @@ export function describeWithDevtoolsExtension(title, extension, fn) {
     }
     function cleanup() {
         const chrome = {};
-        window.chrome = chrome;
+        globalThis.chrome = chrome;
         context.chrome = chrome;
     }
     return describeWithMockConnection(`with-extension-${title}`, function () {
