@@ -589,6 +589,19 @@ export default function SessionsPage() {
     tagFilter !== null ||
     noteOnly;
 
+  // Single source of truth for "reset every filter". Used by both the toolbar
+  // clear chip and the no-results empty state so they can never drift — the
+  // empty-state button previously left `tag`/`note` filters set, stranding the
+  // user on an empty list they couldn't clear from there.
+  const clearAllFilters = () => {
+    setSearch('');
+    setDurationFilter('all');
+    setAgeFilter('all');
+    setHostFilter(null);
+    setTagFilter(null);
+    setNoteOnly(false);
+  };
+
   // `/` focuses the search box (GitHub / Linear convention). Ignored
   // while already typing so it doesn't hijack a literal slash.
   useEffect(() => {
@@ -860,14 +873,7 @@ export default function SessionsPage() {
           onDurationChange={setDurationFilter}
           age={ageFilter}
           onAgeChange={setAgeFilter}
-          onClear={() => {
-            setSearch('');
-            setDurationFilter('all');
-            setAgeFilter('all');
-            setHostFilter(null);
-            setTagFilter(null);
-            setNoteOnly(false);
-          }}
+          onClear={clearAllFilters}
           showClear={filtersActive}
         />
 
@@ -1039,15 +1045,7 @@ export default function SessionsPage() {
           }
           action={
             filtersActive ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearch('');
-                  setDurationFilter('all');
-                  setAgeFilter('all');
-                  setHostFilter(null);
-                }}
-              >
+              <Button variant="outline" onClick={clearAllFilters}>
                 {t('sessions.clearFilters')}
               </Button>
             ) : (
