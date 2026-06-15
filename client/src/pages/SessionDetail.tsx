@@ -1087,6 +1087,14 @@ function NetworkTab({
     });
   };
 
+  const networkFiltersActive =
+    filter !== '' || activeTypes.size > 0 || activeStatusClasses.size > 0;
+  const resetNetworkFilters = () => {
+    setFilter('');
+    setActiveTypes(new Set());
+    setActiveStatusClasses(new Set());
+  };
+
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       const type = r.resourceType ?? 'Other';
@@ -1374,18 +1382,36 @@ function NetworkTab({
               </tr>
             </thead>
             <tbody>
-              {sorted.map((r) => (
-                <NetworkRowView
-                  key={r.id}
-                  row={r}
-                  onSelect={() => setSelected(r)}
-                  onJump={
-                    onJumpToReplay && sessionStartMs !== undefined
-                      ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
-                      : undefined
-                  }
-                />
-              ))}
+              {sorted.length === 0 ? (
+                <tr data-testid="session-network-no-match">
+                  <td colSpan={6} className="px-3 py-10 text-center">
+                    <p className="text-sm font-medium text-fg">
+                      {t('sessionDetail.noFilterMatchTitle')}
+                    </p>
+                    <p className="text-sm text-fg-subtle mt-1 mb-3">
+                      {t('sessionDetail.noFilterMatchDescription')}
+                    </p>
+                    {networkFiltersActive && (
+                      <Button variant="outline" size="sm" onClick={resetNetworkFilters}>
+                        {t('sessionDetail.resetFilters')}
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                sorted.map((r) => (
+                  <NetworkRowView
+                    key={r.id}
+                    row={r}
+                    onSelect={() => setSelected(r)}
+                    onJump={
+                      onJumpToReplay && sessionStartMs !== undefined
+                        ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                        : undefined
+                    }
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -1843,12 +1869,38 @@ function ConsoleTab({
     });
   };
 
+  const consoleFiltersActive = filter !== '' || activeLevels.size > 0;
+  const resetConsoleFilters = () => {
+    setFilter('');
+    setActiveLevels(new Set());
+  };
+
+  // Shared serialisation so the clipboard copy and the file export can never
+  // drift in format.
+  const serialiseFiltered = () =>
+    filtered
+      .map((r) => `[${new Date(r.timestamp).toISOString()}] [${r.level.toUpperCase()}] ${r.text}`)
+      .join('\n');
+
+  const copyFiltered = async () => {
+    if (filtered.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(serialiseFiltered() + '\n');
+      toast.success(t('sessionDetail.consoleCopied'), {
+        description: t(
+          filtered.length === 1
+            ? 'sessionDetail.messageCountOne'
+            : 'sessionDetail.messageCountOther',
+          { n: filtered.length },
+        ),
+      });
+    } catch {
+      toast.error(t('sessionDetail.failedToCopy'));
+    }
+  };
+
   const exportFiltered = () => {
-    const lines = filtered.map((r) => {
-      const ts = new Date(r.timestamp).toISOString();
-      return `[${ts}] [${r.level.toUpperCase()}] ${r.text}`;
-    });
-    const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain' });
+    const blob = new Blob([serialiseFiltered() + '\n'], { type: 'text/plain' });
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
     a.href = url;
@@ -1938,6 +1990,17 @@ function ConsoleTab({
         <Button
           variant="outline"
           size="sm"
+          onClick={copyFiltered}
+          data-testid="session-console-copy"
+          title={t('sessionDetail.copyConsoleTitle')}
+          disabled={filtered.length === 0}
+        >
+          <Copy />
+          <span className="hidden sm:inline">{t('sessionDetail.copyConsole')}</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={exportFiltered}
           data-testid="session-console-export"
           title={t('sessionDetail.exportConsoleTitle')}
@@ -1992,19 +2055,33 @@ function ConsoleTab({
             </span>
           )}
         </div>
-        <ul className="divide-y divide-border" data-testid="session-console-list">
-          {filtered.map((r) => (
-            <ConsoleRowView
-              key={r.id}
-              row={r}
-              onJump={
-                onJumpToReplay && sessionStartMs !== undefined
-                  ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
-                  : undefined
-              }
-            />
-          ))}
-        </ul>
+        {filtered.length === 0 ? (
+          <div className="px-3 py-10 text-center" data-testid="session-console-no-match">
+            <p className="text-sm font-medium text-fg">{t('sessionDetail.noFilterMatchTitle')}</p>
+            <p className="text-sm text-fg-subtle mt-1 mb-3">
+              {t('sessionDetail.noFilterMatchDescription')}
+            </p>
+            {consoleFiltersActive && (
+              <Button variant="outline" size="sm" onClick={resetConsoleFilters}>
+                {t('sessionDetail.resetFilters')}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <ul className="divide-y divide-border" data-testid="session-console-list">
+            {filtered.map((r) => (
+              <ConsoleRowView
+                key={r.id}
+                row={r}
+                onJump={
+                  onJumpToReplay && sessionStartMs !== undefined
+                    ? () => onJumpToReplay(normaliseOffsetMs(r.timestamp, sessionStartMs))
+                    : undefined
+                }
+              />
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   );
