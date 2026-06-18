@@ -82,7 +82,7 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof globalThis.copy !== 'function') {
-      globalThis.copy = (object) => {
+      globalThis.copy = (object: unknown) => {
         function fallbackCopyTextToClipboard(text: string) {
           if (typeof document !== 'object') {
             console.error('Copy text failed, running environment is not a browser');
@@ -122,15 +122,15 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof globalThis.dir !== 'function') {
-      globalThis.dir = (object) => globalThis.console.dir(object);
+      globalThis.dir = (object: unknown) => globalThis.console.dir(object);
     }
 
     if (typeof globalThis.dirxml !== 'function') {
-      globalThis.dirxml = (object) => globalThis.console.dirxml(object);
+      globalThis.dirxml = (object: unknown) => globalThis.console.dirxml(object);
     }
 
     if (typeof globalThis.keys !== 'function') {
-      globalThis.keys = (object) => Object.keys(object);
+      globalThis.keys = (object: object) => Object.keys(object);
     }
 
     if (typeof globalThis.values !== 'function') {
@@ -138,7 +138,7 @@ export class Runtime extends BaseDomain {
     }
 
     if (typeof globalThis.table !== 'function') {
-      globalThis.table = (object) => globalThis.console.table(object);
+      globalThis.table = (object: unknown) => globalThis.console.table(object);
     }
   }
 

@@ -3,6 +3,7 @@ import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
+import { DeskCloudWidgets } from '@/components/deskcloud/DeskCloudWidgets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import Layout from '@/components/Layout';
@@ -106,6 +107,10 @@ createRoot(rootElement).render(
                 endpoint={import.meta.env.VITE_SURVEYDESK_URL}
               />
             )}
+            {/* Shared DeskCloud widgets (ChangelogDesk / NotifyDesk / SearchDesk).
+                Each renders only when its VITE_*_URL is set; all unset by default
+                so the app is completely unaffected today. */}
+            <DeskCloudWidgets />
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>

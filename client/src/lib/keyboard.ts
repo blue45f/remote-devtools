@@ -18,7 +18,7 @@ export function useGlobalShortcuts() {
 
   useEffect(() => {
     let pendingG = false;
-    let pendingTimer: number | null = null;
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
     const clearPending = () => {
       pendingG = false;

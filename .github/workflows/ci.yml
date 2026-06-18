@@ -34,7 +34,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm lint
+      - run: pnpm run lint:ci
       - run: pnpm typecheck
 
   backend-test:
