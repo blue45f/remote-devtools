@@ -25,6 +25,7 @@ import {
   type TicketTemplate,
   type UserProfile,
 } from '@/domains/profile/types';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const JOB_LABEL_KEY: Record<JobType, string> = {
   QA: 'profile.jobQA',
@@ -36,6 +37,7 @@ const JOB_LABEL_KEY: Record<JobType, string> = {
 
 export default function SettingsProfile() {
   const { t } = useTranslation();
+  useDocumentTitle(t('profile.title'));
   const empNo = useCurrentEmpNo();
   const { data, isLoading } = useProfile(empNo);
 

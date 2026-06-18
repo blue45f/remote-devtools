@@ -18,6 +18,7 @@ import {
   type PolicySlug,
   type PublicPolicy,
 } from '@/lib/policy';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 
@@ -31,6 +32,7 @@ const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 export default function PolicyPage({ slug }: { slug: PolicySlug }) {
   const { t } = useTranslation();
   const isTerms = slug === POLICY_SLUGS.terms;
+  useDocumentTitle(isTerms ? t('policy.termsTitle') : t('policy.privacyTitle'));
 
   const {
     data: policy,

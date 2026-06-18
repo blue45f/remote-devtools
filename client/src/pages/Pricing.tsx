@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
 import { ArrowRight, Check, ChevronDown, Search as SearchIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/api';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { cn } from '@/lib/utils';
 
 interface BillingStatus {
@@ -102,6 +103,7 @@ const PLANS: Plan[] = [
 
 export default function PricingPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('pricing.title'));
   // Probe the backend so we can adapt CTAs / show a status pill. The query
   // never throws — a missing/disabled backend just resolves to enabled:false.
   const { data: billing } = useQuery({

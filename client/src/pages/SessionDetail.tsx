@@ -78,6 +78,7 @@ import { buildHar } from '@/lib/har';
 import i18n from '@/lib/i18n';
 import { usePresence } from '@/lib/presence';
 import { recordSessionVisit } from '@/lib/recent-sessions';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { formatUserAgentBadge } from '@/lib/user-agent';
 import { cn } from '@/lib/utils';
 
@@ -281,6 +282,7 @@ type TabValue = 'overview' | 'replay' | 'timeline' | 'network' | 'console' | 'ra
 export default function SessionDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  useDocumentTitle(id ? `${t('sidebar.sessions')} · ${id}` : t('sidebar.sessions'));
   const [searchParams, setSearchParams] = useSearchParams();
 
   // S3-backed sessions can't be edited (no DB row to update). Only DB

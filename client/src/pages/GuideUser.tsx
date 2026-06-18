@@ -5,10 +5,12 @@ import { Card } from '@/components/ui/card';
 import { Steps } from '@/components/ui/steps';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { USER_GUIDE_TABS } from '@/domains/guide/content';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 export default function GuideUser() {
   const { t, i18n } = useTranslation();
   const ko = i18n.language.startsWith('ko');
+  useDocumentTitle(t('guide.userTitle'));
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 flex flex-col gap-6">

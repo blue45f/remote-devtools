@@ -57,6 +57,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { apiFetch } from '@/lib/api';
 import { copyToClipboard } from '@/lib/clipboard';
 import { formatDurationFromNanos, formatTimeAgo, shortHash } from '@/lib/format';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { formatUserAgentBadge } from '@/lib/user-agent';
 import { cn } from '@/lib/utils';
 
@@ -277,6 +278,7 @@ function sessionsToCsv(rows: SessionRecord[]): string {
 
 export default function SessionsPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('sessions.title'));
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 

@@ -41,6 +41,7 @@ import {
   useSendCommand,
 } from '@/domains/remote-devtools/hooks';
 import { FEATURES } from '@/lib/config';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const STATUS_TONE: Record<RemoteSessionStatus, StatusTone> = {
   idle: 'neutral',
@@ -101,6 +102,7 @@ function localTime(iso?: string): string {
 
 export default function RemoteDevTools() {
   const { t } = useTranslation();
+  useDocumentTitle(t('remotedevtools.title'));
 
   if (!FEATURES.remoteDevtools) {
     return (

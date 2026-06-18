@@ -308,6 +308,9 @@
     "goToDashboard": "대시보드로 이동",
     "copyDetails": "오류 세부 정보 복사"
   },
+  "a11y": {
+    "navigatedTo": "{{title}} 페이지로 이동했습니다"
+  },
   "ui": {
     "commandPalette": "명령 팔레트",
     "commandPaletteDesc": "작업, 세션, 페이지를 검색하세요",

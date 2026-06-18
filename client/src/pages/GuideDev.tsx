@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeBlock } from '@/components/ui/code-block';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const ESM_SNIPPET = `import { RemoteDebug } from 'remote-debug-sdk';
 
@@ -22,6 +23,7 @@ const CURL_SNIPPET = `curl -X POST https://your-host/buffer/save \\
 
 export default function GuideDev() {
   const { t } = useTranslation();
+  useDocumentTitle(t('guide.devTitle'));
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 flex flex-col gap-6">
