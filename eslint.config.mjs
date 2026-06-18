@@ -28,6 +28,11 @@ export default defineConfig(
     'migrations/**',
     'vitest*.config.ts',
     'figma-plugin/**',
+    // Vendored single-file DeskCloud/SurveyDesk widgets (copy-pasted
+    // self-contained components, react-only). They intentionally don't follow
+    // our react-compiler/react-hooks/jsx-a11y rules, so keep them out of the gate.
+    '**/components/deskcloud/**',
+    '**/components/feedback/**',
   ]),
 
   // Shared base (TS + import hygiene + custom rules + prettier conflict off).

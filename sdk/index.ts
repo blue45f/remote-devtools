@@ -43,6 +43,51 @@ declare global {
       activeSession: ActiveSdkSession | null;
     };
   }
+
+  // The SDK reads/writes these globals through `globalThis.*`. TypeScript only
+  // surfaces `var` declarations on `typeof globalThis` (NOT `interface Window`
+  // members), so the custom globals must be declared here as `var` to be typed
+  // — otherwise every `globalThis.<name>` access is a TS7017 "no index
+  // signature" error. Two groups:
+  //   1. DevTools command-line API helpers the SDK polyfills onto the page
+  //      ($, $$, $x, $0, $_, $$inspectMode, copy/clear/dir/dirxml/keys/values/
+  //      table). Loose signatures mirror Chrome's injected console API and give
+  //      the polyfill callbacks a contextual param type.
+  //   2. SDK-internal singletons/bridges (HMR guards, the native WebView
+  //      bridge, the env override map, the logger handle, the active runtime).
+  /* eslint-disable @typescript-eslint/no-explicit-any -- DevTools/host globals are inherently loosely typed */
+  // 1) DevTools command-line API the SDK polyfills onto the page. Chrome's own
+  // injected helpers are loosely typed; `any` here both matches that reality and
+  // accepts the SDK's generic `<K extends keyof HTMLElementTagNameMap>` polyfill
+  // assignments while giving the polyfill callbacks a contextual param type.
+  var $: any;
+  var $$: any;
+  var $x: any;
+  var $0: any;
+  var $_: any;
+  var $$inspectMode: string | undefined;
+  var clear: any;
+  var copy: any;
+  var dir: any;
+  var dirxml: any;
+  var keys: any;
+  var values: any;
+  var table: any;
+  // 2) SDK-internal singletons/bridges. Shapes mirror the per-module
+  // `interface Window` augmentations; the runtime instance / logger are `any`
+  // because their concrete classes aren't importable from this ambient block.
+  var __REMOTE_DEBUG_SDK__:
+    | { created: boolean; activeSession: ActiveSdkSession | null }
+    | undefined;
+  var REMOTE_DEBUG_SDK_COMMON_INFO: ((r: string) => Promise<void>) | undefined;
+  var __REMOTE_DEBUG_RUNTIME_INSTANCE__: any;
+  var __REMOTE_DEBUG_CONSOLE_HOOKED__: boolean | undefined;
+  var __REMOTE_DEBUG_ERROR_LISTENER_ADDED__: boolean | undefined;
+  var remoteDebugger: any;
+  var JavaScriptInterface: { getCommonInfo: (callbackName: string) => void } | undefined;
+  var REMOTE_DEBUG_SDK_ENV: Record<string, string | undefined> | undefined;
+  var remoteDebugLogger: any;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 export const SDK_SESSION_EVENT = 'remote-debug-sdk:session';

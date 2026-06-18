@@ -134,11 +134,11 @@
     "vitest": "^4.1.7"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --no-warn-ignored --max-warnings=0 --fix",
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --max-warnings=0 --no-warn-ignored --fix",
       "prettier --write"
     ],
-    "*.{json,md}": [
+    "*.{json,md,yml,yaml,html,css}": [
       "prettier --write"
     ]
   },

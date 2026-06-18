@@ -65,8 +65,8 @@ export function usePresence(sessionId: string | undefined, enabled: boolean): Pr
     let cancelled = false;
     const clientId = getPresenceClientId();
     let socket: WebSocket | null = null;
-    let pollTimer: number | undefined;
-    let pingTimer: number | undefined;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
+    let pingTimer: ReturnType<typeof setInterval> | undefined;
 
     const stopPolling = () => {
       if (pollTimer !== undefined) globalThis.clearInterval(pollTimer);
