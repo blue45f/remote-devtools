@@ -25,6 +25,7 @@ import { Card } from '@/components/ui/card';
 import { Kbd } from '@/components/ui/kbd';
 import { SUPPORT_URL } from '@/lib/policy';
 import { applyTheme, useAppStore } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { cn } from '@/lib/utils';
 
 /** GitHub mark — kept as inline SVG since lucide-react v1+ dropped brand icons. */
@@ -39,6 +40,7 @@ function Github({ className }: { className?: string }) {
 const GITHUB_URL = 'https://github.com/blue45f/remote-devtools';
 
 export default function LandingPage() {
+  useDocumentTitle();
   const navigate = useNavigate();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
   const theme = useAppStore((s) => s.theme);

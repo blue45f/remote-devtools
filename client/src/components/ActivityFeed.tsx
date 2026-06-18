@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
   Clapperboard,
@@ -11,6 +10,7 @@ import {
   UserPlus,
   type LucideIcon,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -49,7 +49,10 @@ function readStoredKinds(): Set<ActivityKind> {
 function persistKinds(kinds: Set<ActivityKind>) {
   if (typeof window === 'undefined') return;
   try {
-    globalThis.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ kinds: Array.from(kinds) }));
+    globalThis.localStorage.setItem(
+      FILTER_STORAGE_KEY,
+      JSON.stringify({ kinds: Array.from(kinds) }),
+    );
   } catch {
     /* quota / private mode — best effort */
   }

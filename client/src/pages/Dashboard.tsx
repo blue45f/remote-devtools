@@ -29,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api';
 import { formatNumber } from '@/lib/format';
 import { useAppStore } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { cn } from '@/lib/utils';
 
 interface DashboardStats {
@@ -95,6 +96,7 @@ const ROLE_LABEL_KEYS: Record<(typeof ROLE_KEYS)[number], string> = {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('dashboard.title'));
   const [period, setPeriod] = useState<Period>(() => readStoredPeriod() ?? 'day');
   const queryClient = useQueryClient();
   const [, forceTick] = useState(0);

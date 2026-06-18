@@ -41,6 +41,7 @@ import {
   type MemberRole,
   type MemberStatus,
 } from '@/domains/team/types';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const STATUS_TONE: Record<MemberStatus, StatusTone> = {
   active: 'success',
@@ -66,6 +67,7 @@ type InviteForm = z.infer<typeof inviteSchema>;
 
 function TeamInner() {
   const { t } = useTranslation();
+  useDocumentTitle(t('team.title'));
   const { data: members = [], isLoading } = useMembers();
   const invite = useInviteMember();
   const updateMember = useUpdateMember();

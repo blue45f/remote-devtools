@@ -71,6 +71,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { applyTheme, useAppStore, type Theme } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { cn } from '@/lib/utils';
 
 /* ─────────────────────────────────────────────────────────
@@ -1049,19 +1050,13 @@ export default function DesignPage() {
   const theme = useAppStore((s) => s.theme);
   const activeId = useScrollSpy(SECTION_IDS);
 
+  useDocumentTitle('Design System');
+
   // /design is public and renders outside the app shell, so keep the .dark
   // class in sync with the saved theme the same way the Landing page does.
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Design System · Remote DevTools';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
 
   return (
     <TooltipProvider delayDuration={250} skipDelayDuration={400}>

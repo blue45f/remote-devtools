@@ -308,6 +308,9 @@
     "goToDashboard": "Go to dashboard",
     "copyDetails": "Copy error details"
   },
+  "a11y": {
+    "navigatedTo": "Navigated to {{title}}"
+  },
   "ui": {
     "commandPalette": "Command palette",
     "commandPaletteDesc": "Search for actions, sessions, and pages",

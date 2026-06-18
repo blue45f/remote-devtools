@@ -1,5 +1,5 @@
-import { motion } from 'motion/react';
 import { ArrowLeft, Compass, Home, Search } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
 import { allNavItems } from '@/lib/nav';
 import { useAppStore } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -34,6 +35,7 @@ function distance(a: string, b: string): number {
 
 export default function NotFound() {
   const { t } = useTranslation();
+  useDocumentTitle(t('notFound.title'));
   const location = useLocation();
   const setCommandOpen = useAppStore((s) => s.setCommandOpen);
 

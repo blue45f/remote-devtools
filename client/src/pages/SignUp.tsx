@@ -16,6 +16,7 @@ import { API_HOST } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { SUPPORT_URL } from '@/lib/policy';
 import { useAppStore } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 // Mirrors the previous native constraints: name `required`, email `required` +
 // `type="email"`. Invalid input blocks the submit side-effects exactly as the
@@ -35,6 +36,7 @@ type SignUpValues = z.infer<typeof signUpSchema>;
  */
 export default function SignUpPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('auth.createAccount'));
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
+import { RouteAnnouncer } from '@/components/a11y/RouteAnnouncer';
 import { SkipLink } from '@/components/a11y/SkipLink';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ShortcutsDialog } from '@/components/ShortcutsDialog';
@@ -49,21 +50,13 @@ export default function Layout() {
     return () => document.removeEventListener('keydown', onKey);
   }, [sidebarOpen, setSidebarOpen]);
 
-  // On route change move focus to the main landmark (same start point as the
-  // skip link) so keyboard/SR users don't have to re-traverse from the top.
-  // Skip the first render so a directly-opened page keeps its focus.
-  const isFirstRouteRef = useRef(true);
-  useEffect(() => {
-    if (isFirstRouteRef.current) {
-      isFirstRouteRef.current = false;
-      return;
-    }
-    document.getElementById('main-content')?.focus({ preventScroll: true });
-  }, [location.pathname]);
+  // Route-change focus + scroll + SR announcement live in <RouteAnnouncer />
+  // below (it targets the same #main-content landmark as the skip link).
 
   return (
     <TooltipProvider delayDuration={250} skipDelayDuration={400}>
       <SkipLink />
+      <RouteAnnouncer />
       <div className="flex h-screen overflow-hidden bg-bg text-fg">
         {/* Mobile overlay */}
         <AnimatePresence>

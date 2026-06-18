@@ -6,11 +6,13 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { GUIDE_FEATURES } from '@/domains/guide/content';
+import { useDocumentTitle } from '@/lib/use-document-title';
 import { cn } from '@/lib/utils';
 
 export default function GuideFeatures() {
   const { t, i18n } = useTranslation();
   const ko = i18n.language.startsWith('ko');
+  useDocumentTitle(t('guide.featuresTitle'));
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 flex flex-col gap-6">

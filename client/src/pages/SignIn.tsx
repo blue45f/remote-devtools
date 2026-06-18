@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/toaster';
 import { API_HOST } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAppStore } from '@/lib/store';
+import { useDocumentTitle } from '@/lib/use-document-title';
 
 /**
  * Sign-in page.
@@ -25,6 +26,7 @@ import { useAppStore } from '@/lib/store';
  */
 export default function SignInPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('auth.welcomeBack'));
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setDemoMode = useAppStore((s) => s.setDemoMode);
