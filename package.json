@@ -43,10 +43,12 @@
     "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "ci": "pnpm run format:check && pnpm run lint:ci && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "verify": "pnpm run validate:architecture && pnpm run ci",
-    "verify:push": "pnpm run verify",
+    "verify:push": "pnpm run verify && pnpm run lint:security",
     "sonar": "sonar-scanner",
     "lint:strict": "eslint apps/ libs/ --max-warnings=0",
     "lint:ci": "pnpm run lint:strict",
+    "audit:security": "pnpm audit --audit-level high --ignore GHSA-2p57-rm9w-gvfp",
+    "lint:security": "pnpm run lint:strict && pnpm run audit:security",
     "sonar:ci": "sonar-scanner -Dsonar.qualitygate.wait=true",
     "validate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify",
@@ -75,7 +77,7 @@
     "dotenv": "^17.4.2",
     "escape-html": "^1.0.3",
     "express": "^5.2.1",
-    "form-data": "^4.0.5",
+    "form-data": "^4.0.6",
     "google-auth-library": "^10.7.0",
     "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
@@ -110,7 +112,7 @@
     "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.60.1",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.9",
     "browser-sync": "^3.0.4",
     "embedded-postgres": "18.3.0-beta.17",
     "eslint": "^10.5.0",
@@ -131,7 +133,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
     "unplugin-swc": "^1.5.9",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
