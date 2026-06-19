@@ -298,7 +298,7 @@ export function resolveSeed<T>(path: string, init?: RequestInit): T | undefined 
     for (const s of recordSeedSessions()) {
       for (const t of s.tags ?? []) all.add(t);
     }
-    return Array.from(all).sort() as unknown as T;
+    return Array.from(all).sort((a, b) => a.localeCompare(b)) as unknown as T;
   }
   // /sessions, /sessions/record (with optional pagination/search query string)
   if (path === '/sessions') {

@@ -1,17 +1,19 @@
 import {
   Activity,
   ArrowRight,
+  Check,
   CheckCircle2,
   CircuitBoard,
   Code2,
+  Copy,
   PlayCircle,
   Radio,
   ServerCog,
   Sparkles,
   TerminalSquare,
 } from 'lucide-react';
-import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -19,10 +21,13 @@ import type { ComponentType } from 'react';
 
 import { SkipLink } from '@/components/a11y/SkipLink';
 import { BrandMark } from '@/components/Brand';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kbd } from '@/components/ui/kbd';
+import { Reveal } from '@/components/ui/reveal';
+import { Toaster, toast } from '@/components/ui/toaster';
 import { SUPPORT_URL } from '@/lib/policy';
 import { applyTheme, useAppStore } from '@/lib/store';
 import { useDocumentTitle } from '@/lib/use-document-title';
@@ -52,10 +57,61 @@ export default function LandingPage() {
     applyTheme(theme);
   }, [theme]);
 
-  const enterDemo = () => {
+  const enterDemo = useCallback(() => {
     setDemoMode(true);
     navigate('/dashboard');
-  };
+  }, [setDemoMode, navigate]);
+
+  // Public-route shortcuts: the landing teaches the in-app hotkeys, so it
+  // should honour the headline one. `D` opens the demo; `G` then `S` jumps to
+  // sessions. Kept local (the app shell's useGlobalShortcuts only mounts inside
+  // the authenticated Layout) and inert while typing or with modifiers held.
+  useEffect(() => {
+    let pendingG = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const clearPending = () => {
+      pendingG = false;
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+    const isEditable = (el: EventTarget | null) =>
+      el instanceof HTMLElement &&
+      (el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isEditable(e.target)) return;
+      const key = e.key.toLowerCase();
+      if (pendingG) {
+        clearPending();
+        if (key === 's') {
+          e.preventDefault();
+          setDemoMode(true);
+          navigate('/sessions');
+        } else if (key === 'd') {
+          e.preventDefault();
+          enterDemo();
+        }
+        return;
+      }
+      if (key === 'g') {
+        pendingG = true;
+        timer = setTimeout(clearPending, 900);
+        return;
+      }
+      if (key === 'd') {
+        e.preventDefault();
+        enterDemo();
+      }
+    };
+    globalThis.addEventListener('keydown', onKey);
+    return () => {
+      globalThis.removeEventListener('keydown', onKey);
+      clearPending();
+    };
+  }, [enterDemo, navigate, setDemoMode]);
 
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col">
@@ -73,6 +129,53 @@ export default function LandingPage() {
       </main>
 
       <SiteFooter />
+      {/* The public route renders outside the app shell, so it carries its own
+          toast outlet for the quick-start copy confirmation. */}
+      <Toaster />
+    </div>
+  );
+}
+
+/* ───────── Scroll progress ───────── */
+
+/**
+ * A 2px ink rail under the sticky header that fills with scroll depth. It is a
+ * wayfinding cue (how far through the page am I), not decoration, and it never
+ * animates layout — only `scaleX` on the GPU.
+ */
+function ScrollProgress() {
+  const prefersReducedMotion = useReducedMotion();
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const el = document.documentElement;
+      const max = el.scrollHeight - el.clientHeight;
+      setProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    globalThis.addEventListener('scroll', onScroll, { passive: true });
+    globalThis.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      globalThis.removeEventListener('scroll', onScroll);
+      globalThis.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  if (prefersReducedMotion) return null;
+
+  return (
+    <div aria-hidden className="absolute inset-x-0 bottom-0 h-px overflow-hidden">
+      <div
+        className="h-full w-full origin-left bg-fg"
+        style={{ transform: `scaleX(${progress})` }}
+      />
     </div>
   );
 }
@@ -84,8 +187,12 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl safe-pt">
       <div className="max-w-6xl mx-auto h-14 flex items-center gap-2 sm:gap-3 lg:gap-4 px-3 sm:px-4 lg:px-6">
-        <Link to="/" className="flex items-center gap-2 sm:gap-2.5 select-none min-w-0">
-          <BrandMark className="size-7 shrink-0" />
+        <Link
+          to="/"
+          className="group flex items-center gap-2 sm:gap-2.5 select-none min-w-0"
+          aria-label="Remote DevTools"
+        >
+          <BrandMark className="size-7 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-105" />
           <span className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
             Remote DevTools
           </span>
@@ -96,19 +203,29 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
             labels are nowrap so they can't fold to two lines; under pressure
             the brand name (min-w-0 + truncate) gives way first. */}
         <nav className="hidden md:flex items-center gap-x-3 lg:gap-x-5 ml-2 text-sm text-fg-subtle whitespace-nowrap">
-          <a href="#features" className="hover:text-fg transition-colors">
-            {t('landing.navFeatures')}
-          </a>
-          <a href="#architecture" className="hover:text-fg transition-colors">
-            {t('landing.navArchitecture')}
-          </a>
-          <a href="#quickstart" className="hover:text-fg transition-colors">
-            {t('landing.navQuickStart')}
-          </a>
-          <Link to="/pricing" className="hover:text-fg transition-colors">
+          {[
+            { href: '#features', label: t('landing.navFeatures') },
+            { href: '#architecture', label: t('landing.navArchitecture') },
+            { href: '#quickstart', label: t('landing.navQuickStart') },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="relative py-1 transition-colors hover:text-fg after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-fg after:transition-transform after:duration-200 after:ease-[cubic-bezier(0.16,1,0.3,1)] hover:after:scale-x-100"
+            >
+              {item.label}
+            </a>
+          ))}
+          <Link
+            to="/pricing"
+            className="relative py-1 transition-colors hover:text-fg after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-fg after:transition-transform after:duration-200 after:ease-[cubic-bezier(0.16,1,0.3,1)] hover:after:scale-x-100"
+          >
             {t('nav.pricing')}
           </Link>
-          <a href={GITHUB_URL} className="hover:text-fg transition-colors">
+          <a
+            href={GITHUB_URL}
+            className="relative py-1 transition-colors hover:text-fg after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-fg after:transition-transform after:duration-200 after:ease-[cubic-bezier(0.16,1,0.3,1)] hover:after:scale-x-100"
+          >
             GitHub
           </a>
         </nav>
@@ -139,6 +256,7 @@ function TopNav({ onTheme }: { onTheme: () => void }) {
           </Link>
         </Button>
       </div>
+      <ScrollProgress />
     </header>
   );
 }
@@ -160,6 +278,10 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           <Badge variant="accent" size="lg" className="mb-5 gap-1.5 inline-flex">
             <Sparkles className="size-3" />
             {t('landing.heroBadge')}
+            <span
+              aria-hidden
+              className="ml-0.5 inline-block h-3 w-px translate-y-px bg-accent-soft-fg animate-caret-blink"
+            />
           </Badge>
         </motion.div>
 
@@ -193,11 +315,11 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
             variant="primary"
             size="lg"
             onClick={onEnterDemo}
-            className="w-full xs:w-auto sm:w-auto touch-target"
+            className="group w-full xs:w-auto sm:w-auto touch-target"
           >
             <PlayCircle />
             {t('landing.tryDemo')}
-            <ArrowRight />
+            <ArrowRight className="transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5" />
           </Button>
           <Button
             asChild
@@ -216,9 +338,14 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-6 text-xs text-fg-faint"
+          className="mt-6 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-fg-faint"
         >
           {t('landing.heroNote')}
+          <span className="hidden sm:inline-flex items-center gap-1 text-fg-faint">
+            <span className="text-border-strong">·</span>
+            {t('landing.heroPressHint')}
+            <Kbd>D</Kbd>
+          </span>
         </motion.p>
       </div>
     </section>
@@ -228,19 +355,41 @@ function Hero({ onEnterDemo }: { onEnterDemo: () => void }) {
 function BackgroundGrid() {
   // Operator identity: the hero leans on the hairline grid alone — no colored
   // glow. Color is information in this product, so the landing must not spend
-  // the accent hue on decoration. Depth comes from the hairline + radial mask.
+  // the accent hue on decoration. Depth comes from the hairline + radial mask,
+  // and the one live element is a monochrome signal trace travelling the grid —
+  // the product's "is this live" heartbeat, extended to the marketing surface.
   return (
-    <div
-      aria-hidden
-      className="absolute inset-0 -z-10 opacity-60 dark:opacity-30"
-      style={{
-        backgroundImage:
-          'linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)',
-        backgroundSize: '48px 48px',
-        maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
-        WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
-      }}
-    />
+    <div aria-hidden className="absolute inset-0 -z-10">
+      <div
+        className="absolute inset-0 opacity-60 dark:opacity-30"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, #000 50%, transparent 100%)',
+        }}
+      />
+      <svg
+        className="absolute inset-x-0 top-0 h-72 w-full opacity-70 dark:opacity-40"
+        preserveAspectRatio="none"
+        viewBox="0 0 1200 288"
+        fill="none"
+        style={{
+          maskImage: 'radial-gradient(ellipse 70% 90% at 50% 0%, #000 30%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 70% 90% at 50% 0%, #000 30%, transparent 80%)',
+        }}
+      >
+        <path
+          d="M0,96 L360,96 L408,48 L600,48 L648,144 L840,144 L888,96 L1200,96"
+          stroke="var(--fg)"
+          strokeOpacity="0.18"
+          strokeWidth="1.5"
+          fill="none"
+          className="animate-signal-trace"
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -249,10 +398,13 @@ function BackgroundGrid() {
 /**
  * A miniature, statically-rendered version of the live Dashboard, scaled and
  * elevated to look like a captured screenshot. Pure SVG-ish HTML so it scales
- * cleanly on any DPI without shipping a real screenshot file.
+ * cleanly on any DPI without shipping a real screenshot file. It rises into
+ * view on scroll and lifts a hairline on hover — the "capture" settling onto
+ * the page, then responding to the cursor.
  */
 function DashboardMockup() {
   const { t } = useTranslation();
+  const prefersReducedMotion = useReducedMotion();
   return (
     <section className="relative -mt-4 lg:-mt-8 pb-16 lg:pb-24 px-4 lg:px-6">
       <div
@@ -264,12 +416,14 @@ function DashboardMockup() {
         }}
       />
       <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="relative max-w-5xl mx-auto"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 32, scale: 0.97 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        whileHover={prefersReducedMotion ? undefined : { y: -4 }}
+        className="group relative max-w-5xl mx-auto"
       >
-        <div className="rounded-xl border border-border bg-surface shadow-2xl overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface shadow-2xl overflow-hidden transition-[border-color,box-shadow] duration-300 group-hover:border-border-strong">
           {/* macOS-style traffic lights bar */}
           <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border bg-bg-subtle">
             <span className="size-2.5 rounded-full bg-[#ff5f57]" />
@@ -407,10 +561,16 @@ function MockTile({ label, value, tone }: { label: string; value: string; tone: 
 
 /* ───────── Stats stripe ───────── */
 
+/**
+ * Numeric stats count up the first time the strip scrolls into view — a real
+ * "tallying the dataset" beat rather than a static figure. Non-numeric stats
+ * (rrweb v2, MIT) just reveal. The whole strip is silenced under reduced
+ * motion via AnimatedNumber + Reveal.
+ */
 function StatsStrip() {
   const { t } = useTranslation();
-  const stats = [
-    { value: '8.4k+', label: t('landing.stat1Label') },
+  const stats: { value: string; label: string; count?: number; suffix?: string }[] = [
+    { value: '8.4k+', label: t('landing.stat1Label'), count: 8.4, suffix: 'k+' },
     { value: 'rrweb v2', label: t('landing.stat2Label') },
     { value: 'MIT', label: t('landing.stat3Label') },
     { value: '0 DB', label: t('landing.stat4Label') },
@@ -419,20 +579,52 @@ function StatsStrip() {
     <section className="border-y border-border bg-bg-subtle">
       <div className="max-w-6xl mx-auto px-4 lg:px-6 py-7 grid grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((s, i) => (
-          <motion.div
-            key={s.value}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 + i * 0.05 }}
-          >
+          <Reveal key={s.value} delay={i * 0.06}>
             <div className="text-2xl lg:text-3xl font-semibold tracking-[-0.02em] tabular-nums">
-              {s.value}
+              {s.count != null ? (
+                <CountUpOnView value={s.count} suffix={s.suffix} fallback={s.value} />
+              ) : (
+                s.value
+              )}
             </div>
             <div className="mt-1 text-[11px] text-fg-faint leading-tight">{s.label}</div>
-          </motion.div>
+          </Reveal>
         ))}
       </div>
     </section>
+  );
+}
+
+/** Counts up to `value` once it scrolls into view; renders `fallback` verbatim
+ *  under reduced motion so the figure is always correct and never blank. */
+function CountUpOnView({
+  value,
+  suffix = '',
+  fallback,
+}: {
+  value: number;
+  suffix?: string;
+  fallback: string;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const [active, setActive] = useState(false);
+
+  if (prefersReducedMotion) return <>{fallback}</>;
+
+  return (
+    <motion.span
+      onViewportEnter={() => setActive(true)}
+      viewport={{ once: true, amount: 0.6 }}
+      className="inline-flex items-baseline"
+    >
+      <AnimatedNumber
+        value={active ? value : 0}
+        duration={1100}
+        format={(n) => n.toFixed(1)}
+        className="tabular-nums"
+      />
+      {suffix}
+    </motion.span>
   );
 }
 
@@ -458,7 +650,7 @@ function Features() {
   return (
     <section id="features" className="py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-4 lg:px-6">
-        <div className="max-w-2xl mb-10 lg:mb-14">
+        <Reveal className="max-w-2xl mb-10 lg:mb-14">
           <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
             {t('landing.featuresBadge')}
           </Badge>
@@ -466,26 +658,21 @@ function Features() {
             {t('landing.featuresHeading')}
           </h2>
           <p className="text-fg-subtle">{t('landing.featuresLead')}</p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.titleKey}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 + i * 0.04 }}
-            >
-              <Card className="p-5 h-full">
-                <div className="size-9 rounded-lg bg-bg-muted border border-border flex items-center justify-center mb-3">
-                  <f.icon className="size-4 text-fg-subtle" />
+            <Reveal key={f.titleKey} delay={(i % 3) * 0.06}>
+              <Card className="group h-full p-5 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-border-strong">
+                <div className="mb-3 flex size-9 items-center justify-center rounded-lg border border-border bg-bg-muted transition-colors duration-200 group-hover:border-border-strong group-hover:bg-bg">
+                  <f.icon className="size-4 text-fg-subtle transition-colors duration-200 group-hover:text-fg" />
                 </div>
                 <h3 className="text-sm font-semibold mb-1.5">{t(`landing.${f.titleKey}`)}</h3>
                 <p className="text-sm text-fg-subtle leading-relaxed">
                   {t(`landing.${f.bodyKey}`)}
                 </p>
               </Card>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -586,10 +773,7 @@ function TechnicalDeepDive() {
   const current = tabs.find((x) => x.id === activeTab) || tabs[0];
 
   return (
-    <section
-      id="architecture"
-      className="py-20 lg:py-28 border-t border-border bg-bg animate-fadeIn"
-    >
+    <section id="architecture" className="py-20 lg:py-28 border-t border-border bg-bg">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -606,7 +790,7 @@ function TechnicalDeepDive() {
       />
 
       <div className="max-w-6xl mx-auto px-4 lg:px-6">
-        <div className="max-w-2xl mb-12">
+        <Reveal className="max-w-2xl mb-12">
           <Badge variant="accent" size="sm" className="mb-3 uppercase tracking-wider">
             {t('landing.archBadge')}
           </Badge>
@@ -614,7 +798,7 @@ function TechnicalDeepDive() {
             {t('landing.archTitle')}
           </h2>
           <p className="text-fg-subtle">{t('landing.archSubtitle')}</p>
-        </div>
+        </Reveal>
 
         {/* Node Flow Map */}
         <div className="mb-12">
@@ -631,10 +815,10 @@ function TechnicalDeepDive() {
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex-1 text-left p-5 rounded-xl border transition-all duration-300 select-none cursor-pointer outline-none relative overflow-hidden',
+                      'flex-1 text-left p-5 rounded-xl border transition-all duration-300 select-none cursor-pointer outline-none relative overflow-hidden active:scale-[0.99]',
                       isSelected
                         ? 'border-accent bg-accent-soft/20 dark:bg-accent-soft/5 shadow-md'
-                        : 'border-border bg-surface hover:border-border-strong hover:bg-bg-subtle',
+                        : 'border-border bg-surface hover:border-border-strong hover:bg-bg-subtle hover:-translate-y-0.5',
                     )}
                   >
                     {/* Glowing highlight indicator */}
@@ -813,16 +997,19 @@ function QuickStart() {
     try {
       await navigator.clipboard.writeText(SNIPPETS[active]);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      toast(t('landing.copiedToast'), {
+        description: t('landing.copiedToastDesc', { lang: active }),
+      });
+      setTimeout(() => setCopied(false), 1600);
     } catch {
-      /* ignore */
+      toast(t('landing.copyFailedToast'));
     }
   };
 
   return (
     <section id="quickstart" className="py-20 lg:py-28 border-y border-border bg-bg-subtle">
       <div className="max-w-5xl mx-auto px-4 lg:px-6">
-        <div className="max-w-2xl mb-8">
+        <Reveal className="max-w-2xl mb-8">
           <Badge variant="neutral" size="sm" className="mb-3 uppercase tracking-wider">
             {t('landing.quickStartBadge')}
           </Badge>
@@ -830,50 +1017,58 @@ function QuickStart() {
             {t('landing.quickStartHeading')}
           </h2>
           <p className="text-fg-subtle">{t('landing.quickStartLead')}</p>
-        </div>
+        </Reveal>
 
-        <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-border bg-surface-raised px-2 py-1.5 gap-2">
-            <div className="scroll-rail flex flex-1 min-w-0">
-              {Object.keys(SNIPPETS).map((key) => (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => setActive(key as keyof typeof SNIPPETS)}
-                  className={cn(
-                    'px-3 h-7 rounded-sm text-xs font-medium transition-colors shrink-0',
-                    key === active ? 'bg-bg text-fg shadow-xs' : 'text-fg-subtle hover:text-fg',
-                  )}
-                >
-                  {key}
-                </button>
-              ))}
+        <Reveal delay={0.08}>
+          <Card className="overflow-hidden p-0">
+            <div className="flex items-center justify-between border-b border-border bg-surface-raised px-2 py-1.5 gap-2">
+              <div className="scroll-rail flex flex-1 min-w-0">
+                {Object.keys(SNIPPETS).map((key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => setActive(key as keyof typeof SNIPPETS)}
+                    className={cn(
+                      'px-3 h-7 rounded-sm text-xs font-medium transition-colors shrink-0',
+                      key === active ? 'bg-bg text-fg shadow-xs' : 'text-fg-subtle hover:text-fg',
+                    )}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={copy}
+                aria-label={copied ? t('common.copied') : t('common.copy')}
+                className="inline-flex items-center gap-1.5 text-xs text-fg-subtle hover:text-fg px-2 py-1 rounded-md hover:bg-bg-muted transition-colors shrink-0 active:scale-[0.97]"
+              >
+                {copied ? (
+                  <Check className="size-3.5 text-success" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+                {copied ? t('common.copied') : t('common.copy')}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={copy}
-              className="text-xs text-fg-subtle hover:text-fg px-2 py-1 rounded shrink-0"
-            >
-              {copied ? t('common.copied') : t('common.copy')}
-            </button>
-          </div>
-          <pre className="font-mono text-[12px] sm:text-[12.5px] leading-relaxed p-4 sm:p-5 text-fg-subtle overflow-x-auto">
-            {SNIPPETS[active]}
-          </pre>
-        </Card>
+            <pre className="font-mono text-[12px] sm:text-[12.5px] leading-relaxed p-4 sm:p-5 text-fg-subtle overflow-x-auto">
+              {SNIPPETS[active]}
+            </pre>
+          </Card>
 
-        <div className="mt-5 flex items-center gap-2 text-xs text-fg-faint">
-          <CircuitBoard className="size-3.5" />
-          {t('landing.needGuide')}{' '}
-          <a
-            href={GITHUB_URL + '/blob/main/README.md'}
-            className="underline-offset-2 hover:underline text-fg-subtle"
-            target="_blank"
-            rel="noreferrer"
-          >
-            README →
-          </a>
-        </div>
+          <div className="mt-5 flex items-center gap-2 text-xs text-fg-faint">
+            <CircuitBoard className="size-3.5" />
+            {t('landing.needGuide')}{' '}
+            <a
+              href={GITHUB_URL + '/blob/main/README.md'}
+              className="underline-offset-2 hover:underline text-fg-subtle"
+              target="_blank"
+              rel="noreferrer"
+            >
+              README →
+            </a>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -893,7 +1088,7 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
             'radial-gradient(ellipse 50% 60% at 50% 50%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%)',
         }}
       />
-      <div className="max-w-3xl mx-auto px-4 lg:px-6">
+      <Reveal className="max-w-3xl mx-auto px-4 lg:px-6">
         <h2 className="text-3xl lg:text-4xl font-semibold tracking-tight mb-3">
           {t('landing.ctaHeading')}
         </h2>
@@ -903,10 +1098,11 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
             variant="primary"
             size="lg"
             onClick={onEnterDemo}
-            className="w-full xs:w-auto sm:w-auto touch-target"
+            className="group w-full xs:w-auto sm:w-auto touch-target"
           >
             <PlayCircle />
             {t('landing.openTheDemo')}
+            <ArrowRight className="transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5" />
           </Button>
           <Button
             asChild
@@ -921,7 +1117,7 @@ function ClosingCta({ onEnterDemo }: { onEnterDemo: () => void }) {
           </Button>
         </div>
         <ShortcutHints />
-      </div>
+      </Reveal>
     </section>
   );
 }

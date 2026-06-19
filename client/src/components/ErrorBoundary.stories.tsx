@@ -7,10 +7,8 @@ import type { Meta, StoryObj } from '@storybook/react';
  * state in Storybook we deliberately throw from a child component during
  * render. The boundary catches it and shows the recovery UI.
  */
-function Bomb({ message = 'Replay buffer overflowed at frame 142' }: { message?: string }) {
+function Bomb({ message = 'Replay buffer overflowed at frame 142' }: { message?: string }): never {
   throw new Error(message);
-  // unreachable
-  return null;
 }
 
 const meta = {

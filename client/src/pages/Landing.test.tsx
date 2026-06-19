@@ -1,8 +1,11 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Routes, Route } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import LandingPage from './Landing';
 
+import { useAppStore } from '@/lib/store';
 import { renderWithProviders } from '@/test/utils';
 
 // jsdom does no layout, so the mid-breakpoint (768–1023px) fit is guarded
@@ -43,5 +46,43 @@ describe('LandingPage footer', () => {
       'href',
       expect.stringContaining('termsdesk'),
     );
+  });
+});
+
+describe('LandingPage features', () => {
+  afterEach(() => {
+    useAppStore.setState({ demoMode: false });
+  });
+
+  it('copies the active quick-start snippet to the clipboard', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderWithProviders(<LandingPage />);
+
+    await user.click(screen.getByRole('button', { name: /Copy/i }));
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    // The default tab is the Module snippet — its first line imports the SDK.
+    expect(writeText.mock.calls[0][0]).toContain('createDebugger');
+  });
+
+  it('opens the demo in seed mode when D is pressed', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<div>Dashboard route</div>} />
+      </Routes>,
+      { routerProps: { initialEntries: ['/'] } },
+    );
+
+    fireEvent.keyDown(window, { key: 'd' });
+
+    await waitFor(() => expect(screen.getByText('Dashboard route')).toBeInTheDocument());
+    expect(useAppStore.getState().demoMode).toBe(true);
   });
 });
