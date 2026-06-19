@@ -18,6 +18,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Self-driving demo that ticks the value upward. Lives in its own PascalCase
+ *  component so the hooks sit in a real component, not the story render fn. */
+function TickingDemo() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setN((v) => v + Math.floor(Math.random() * 60)), 1200);
+    return () => clearInterval(t);
+  }, []);
+  return <AnimatedNumber value={n} className="text-4xl font-semibold tabular-nums text-fg" />;
+}
+
 export const Default: Story = {
   args: {
     value: 1284,
@@ -48,12 +59,5 @@ export const Ticking: Story = {
       },
     },
   },
-  render: () => {
-    const [n, setN] = useState(0);
-    useEffect(() => {
-      const t = setInterval(() => setN((v) => v + Math.floor(Math.random() * 60)), 1200);
-      return () => clearInterval(t);
-    }, []);
-    return <AnimatedNumber value={n} className="text-4xl font-semibold tabular-nums text-fg" />;
-  },
+  render: () => <TickingDemo />,
 };

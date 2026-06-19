@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "@fontsource-variable/inter/wght.css";
-@import "@fontsource-variable/jetbrains-mono/wght.css";
+@import 'tailwindcss';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -69,10 +69,8 @@
   /* Elevation */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-md:
-    0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-  --shadow-lg:
-    0 12px 32px -8px rgb(0 0 0 / 0.1), 0 4px 8px -4px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.1), 0 4px 8px -4px rgb(0 0 0 / 0.06);
 
   color-scheme: light;
 }
@@ -118,10 +116,8 @@
 
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-  --shadow-md:
-    0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-  --shadow-lg:
-    0 12px 32px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.5);
 
   color-scheme: dark;
 }
@@ -169,12 +165,9 @@
   --color-live-soft-fg: var(--live-soft-fg);
 
   /* Typography */
-  --font-sans:
-    "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono:
-    "JetBrains Mono Variable", ui-monospace, SFMono-Regular, "SF Mono",
-    Consolas, monospace;
+    'JetBrains Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Consolas, monospace;
 
   /* Radius — slightly tighter than Tailwind defaults */
   --radius-xs: 0.1875rem;
@@ -211,7 +204,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -319,8 +312,8 @@ body {
 
 /* Prevent iOS double-tap zoom on tappable controls */
 button,
-[role="button"],
-[role="tab"],
+[role='button'],
+[role='tab'],
 a {
   touch-action: manipulation;
 }
@@ -337,8 +330,8 @@ button:focus,
 input:focus,
 select:focus,
 textarea:focus,
-[role="button"]:focus,
-[role="tab"]:focus {
+[role='button']:focus,
+[role='tab']:focus {
   outline: none;
 }
 
@@ -441,4 +434,48 @@ textarea:focus,
 .animate-marker-arrive {
   transform-origin: center bottom;
   animation: marker-arrive 320ms var(--ease-out-quart);
+}
+
+/* Hero signal trace — a hairline pulse that travels along the capture path in
+   the landing hero. This is the product's one persistent "is this live"
+   heartbeat extended to the marketing surface: it reports the capture state,
+   it is not decoration. Strokes only, monochrome; silenced by the global
+   reduced-motion rule. */
+@keyframes signal-trace {
+  0% {
+    stroke-dashoffset: 240;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.animate-signal-trace {
+  stroke-dasharray: 60 180;
+  animation: signal-trace 3.6s var(--ease-out-quart) infinite;
+}
+
+/* Terminal caret — blinks beside the hero eyebrow to read as a live console
+   prompt. State cue (a console is awaiting input), not ornament. */
+@keyframes caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-caret-blink {
+  animation: caret-blink 1.1s steps(1, end) infinite;
 }

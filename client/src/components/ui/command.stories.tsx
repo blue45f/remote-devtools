@@ -82,31 +82,35 @@ export const Inline: Story = {
   ),
 };
 
+/** Opens the command palette in a dialog. Extracted to a PascalCase component
+ *  so the `open` state hook lives in a real component, not the story render fn. */
+function AsDialogDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        Open palette
+      </Button>
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandInput placeholder="Search anything…" />
+        <CommandList>
+          <CommandEmpty>No matches</CommandEmpty>
+          <CommandGroup heading="Sessions">
+            <CommandItem>
+              <PlaySquare />
+              <span>Session #142 – Chrome / macOS</span>
+            </CommandItem>
+            <CommandItem>
+              <PlaySquare />
+              <span>Session #141 – Safari / iOS</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+    </>
+  );
+}
+
 export const AsDialog: Story = {
-  render: () => {
-    const [open, setOpen] = useState(false);
-    return (
-      <>
-        <Button variant="outline" onClick={() => setOpen(true)}>
-          Open palette
-        </Button>
-        <CommandDialog open={open} onOpenChange={setOpen}>
-          <CommandInput placeholder="Search anything…" />
-          <CommandList>
-            <CommandEmpty>No matches</CommandEmpty>
-            <CommandGroup heading="Sessions">
-              <CommandItem>
-                <PlaySquare />
-                <span>Session #142 – Chrome / macOS</span>
-              </CommandItem>
-              <CommandItem>
-                <PlaySquare />
-                <span>Session #141 – Safari / iOS</span>
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
-        </CommandDialog>
-      </>
-    );
-  },
+  render: () => <AsDialogDemo />,
 };
