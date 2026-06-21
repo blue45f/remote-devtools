@@ -1,7 +1,33 @@
 {
-  "extends": ["//"],
-  "$schema": "https://turborepo.org/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "tasks": {
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "format:check": {
+      "outputs": []
+    },
+    "format": {
+      "outputs": []
+    },
+    "check:bundle": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
     "build:internal": {
       "dependsOn": ["build"],
       "outputs": ["dist/**", "sdk/dist/**", "client/out/**"]
@@ -9,12 +35,6 @@
     "build:external": {
       "dependsOn": ["build"],
       "outputs": ["dist/**", "sdk/dist/**", "client/out/**"]
-    },
-    "build": {
-      "dependsOn": ["^build"]
-    },
-    "typecheck": {
-      "outputs": []
     }
   }
 }
