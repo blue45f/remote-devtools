@@ -52,7 +52,11 @@
     "sonar:ci": "sonar-scanner -Dsonar.qualitygate.wait=true",
     "validate": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:all",
     "devtools:dev": "browser-sync start --proxy 'localhost:3000' --files 'devtools-frontend/**/*' --port 3002 --no-open --no-notify",
-    "validate:architecture": "node scripts/validate-architecture.mjs"
+    "validate:architecture": "node scripts/validate-architecture.mjs",
+    "turbo:build": "pnpm exec turbo run build",
+    "turbo:typecheck": "pnpm exec turbo run typecheck",
+    "turbo:lint": "pnpm exec turbo run lint",
+    "turbo:test": "pnpm exec turbo run test --concurrency=1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
@@ -130,6 +134,7 @@
     "ts-loader": "^9.6.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "turbo": "^2.9.18",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
     "unplugin-swc": "^1.5.9",
