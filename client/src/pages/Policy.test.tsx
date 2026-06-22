@@ -46,7 +46,7 @@ describe('PolicyPage', () => {
     expect(items.map((li) => li.textContent)).toEqual(['세션 녹화', '원격 디버깅']);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://termsdesk.vercel.app/api/public/remote-devtools/policies/terms-of-service',
+      'https://desk-platform.vercel.app/termsdesk/api/public/remote-devtools/policies/terms-of-service',
       expect.objectContaining({ headers: { Accept: 'application/json' } }),
     );
   });
@@ -64,7 +64,7 @@ describe('PolicyPage', () => {
 
     expect(screen.getByRole('link', { name: /View on TermsDesk/ })).toHaveAttribute(
       'href',
-      'https://termsdesk.vercel.app/p/remote-devtools/terms-of-service',
+      'https://desk-platform.vercel.app/termsdesk/p/remote-devtools/terms-of-service',
     );
   });
 
@@ -84,7 +84,7 @@ describe('PolicyPage', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Open on TermsDesk/ })).toHaveAttribute(
       'href',
-      'https://termsdesk.vercel.app/p/remote-devtools/privacy-policy',
+      'https://desk-platform.vercel.app/termsdesk/p/remote-devtools/privacy-policy',
     );
   });
 });
