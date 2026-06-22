@@ -8,7 +8,7 @@
  * router, neither of which applies to an external registry.
  */
 
-export const TERMSDESK_BASE = 'https://termsdesk.vercel.app';
+export const TERMSDESK_BASE = 'https://desk-platform.vercel.app/termsdesk';
 export const TERMSDESK_ORG = 'remote-devtools';
 
 /** Canonical TermsDesk slugs for the documents this app links to. */

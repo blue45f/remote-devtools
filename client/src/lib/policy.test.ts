@@ -11,15 +11,15 @@ import {
 describe('policy urls', () => {
   it('builds the canonical TermsDesk page url per slug', () => {
     expect(policyExternalUrl(POLICY_SLUGS.terms)).toBe(
-      'https://termsdesk.vercel.app/p/remote-devtools/terms-of-service',
+      'https://desk-platform.vercel.app/termsdesk/p/remote-devtools/terms-of-service',
     );
     expect(policyExternalUrl(POLICY_SLUGS.privacy)).toBe(
-      'https://termsdesk.vercel.app/p/remote-devtools/privacy-policy',
+      'https://desk-platform.vercel.app/termsdesk/p/remote-devtools/privacy-policy',
     );
   });
 
   it('keeps the support board on the TermsDesk host', () => {
-    expect(SUPPORT_URL).toBe('https://termsdesk.vercel.app/support/remote-devtools');
+    expect(SUPPORT_URL).toBe('https://desk-platform.vercel.app/termsdesk/support/remote-devtools');
   });
 });
 
@@ -38,7 +38,7 @@ describe('fetchPublicPolicy', () => {
 
     expect(result.name).toBe('이용약관');
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://termsdesk.vercel.app/api/public/remote-devtools/policies/terms-of-service',
+      'https://desk-platform.vercel.app/termsdesk/api/public/remote-devtools/policies/terms-of-service',
       expect.objectContaining({ headers: { Accept: 'application/json' } }),
     );
   });
