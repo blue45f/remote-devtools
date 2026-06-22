@@ -15,7 +15,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "axios": "^1.16.1"
+    "axios": "^1.18.0"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.127.0",
