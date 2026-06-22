@@ -391,8 +391,8 @@ importers:
         specifier: ^10.4.4
         version: 10.4.4(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@storybook/addon-themes':
-        specifier: ^10.4.1
-        version: 10.4.1(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
+        specifier: ^10.4.6
+        version: 10.4.6(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@storybook/react':
         specifier: ^10.4.1
         version: 10.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@6.0.3)
@@ -3102,10 +3102,10 @@ packages:
     peerDependencies:
       storybook: ^10.4.4
 
-  '@storybook/addon-themes@10.4.1':
-    resolution: {integrity: sha512-nxNskZwpgptCUWyci+jiM5IrKY6xSaTpv3xzgkL6NCU+5PyCxyp0Z6jE8NDvew9jolzOC9pBhGJAW26A/jbFqg==}
+  '@storybook/addon-themes@10.4.6':
+    resolution: {integrity: sha512-80d622oB9xWZs3VH4uywkLOA5L2DAx04lVouvCM4XH+pLnJElidoylOLm3i3ByvlGkRjCbB27OUVsW94IgyDrw==}
     peerDependencies:
-      storybook: ^10.4.1
+      storybook: ^10.4.6
 
   '@storybook/builder-vite@10.4.6':
     resolution: {integrity: sha512-BHBtD81HiXUiDQz/CaFynLtWmm7AFUQn8VnXuHipZ8KlnUANopa4yqdVuy/Gwz8ub254uFI5NMZsW/KlgWNgNg==}
@@ -7351,8 +7351,8 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
-  ts-dedent@2.2.0:
-    resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
+  ts-dedent@2.3.0:
+    resolution: {integrity: sha512-JfJeIHke7y2egdGGgRAvpCwYFUsHlM2gPcrVOxFkznt/4uzQ7HFmvE63iFHVLBJNDuyDOQgijDK/tXH/f6Msjg==}
     engines: {node: '>=6.10'}
 
   ts-dedent@2.3.0:
@@ -10394,10 +10394,10 @@ snapshots:
       axe-core: 4.12.1
       storybook: 10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
-  '@storybook/addon-themes@10.4.1(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
+  '@storybook/addon-themes@10.4.6(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
     dependencies:
       storybook: 10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      ts-dedent: 2.2.0
+      ts-dedent: 2.3.0
 
   '@storybook/builder-vite@10.4.6(esbuild@0.27.7)(storybook@10.4.1(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(vite@8.0.16(@types/node@25.9.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))(webpack@5.107.2(@swc/core@1.15.40)(esbuild@0.27.7))':
     dependencies:
@@ -14989,7 +14989,7 @@ snapshots:
     dependencies:
       typescript: 6.0.3
 
-  ts-dedent@2.2.0: {}
+  ts-dedent@2.3.0: {}
 
   ts-dedent@2.3.0: {}
 
