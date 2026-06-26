@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 /** Primitive table parts. Replaces antd <Table> markup; pair with DataTable for paging/sorting. */
 export const Table = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="w-full overflow-x-auto">
+    <div className="table-scroll w-full">
       <table ref={ref} className={cn('w-full text-sm border-collapse', className)} {...props} />
     </div>
   ),

@@ -27,7 +27,7 @@ export function StatusDot({ tone, label, pulse, className }: StatusDotProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted',
+        'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-fg-muted',
         className,
       )}
     >

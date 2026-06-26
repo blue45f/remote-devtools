@@ -281,6 +281,39 @@ body {
   );
 }
 
+/* Horizontally-scrollable table affordance. A data table can overflow on a
+   narrow viewport (e.g. the session table at 360px), where the trailing
+   columns sit at/past the edge and read as clipped. This adds CSS-only
+   scroll shadows on the right (and left once scrolled) so the overflow is
+   signalled the same way `.scroll-rail-fade` cues chip rails — purely
+   informational, auto-hiding at each end, and invisible when the table fits.
+   Technique: pinned `--surface` cover gradients mask the shadows at the
+   start/end via `background-attachment: local`. */
+.table-scroll {
+  overflow-x: auto;
+  background:
+    /* left cover */
+    linear-gradient(to right, var(--surface) 30%, transparent) left center / 24px 100%,
+    /* right cover */ linear-gradient(to left, var(--surface) 30%, transparent) right center / 24px
+      100%,
+    /* left shadow */ radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 0.09), transparent) left
+      center / 14px 100%,
+    /* right shadow */ radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.09), transparent)
+      right center / 14px 100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
+.dark .table-scroll {
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left center / 24px 100%,
+    linear-gradient(to left, var(--surface) 30%, transparent) right center / 24px 100%,
+    radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 0.5), transparent) left center / 14px 100%,
+    radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.5), transparent) right center / 14px
+      100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
+
 /* Safe-area helpers for iOS / Android notch and home-indicator. */
 .safe-px {
   padding-left: max(1rem, env(safe-area-inset-left));

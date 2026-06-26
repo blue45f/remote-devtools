@@ -213,7 +213,7 @@ function Console() {
       key: 'device',
       header: t('remotedevtools.colDevice'),
       cell: (s) => (
-        <span className="text-xs text-fg-subtle truncate">
+        <span className="block max-w-[10rem] truncate text-xs text-fg-subtle">
           {s.device?.name || s.deviceId || '—'}
         </span>
       ),
