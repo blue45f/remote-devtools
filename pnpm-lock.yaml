@@ -101,8 +101,8 @@ importers:
         specifier: '>=4.0.6'
         version: 4.0.6
       google-auth-library:
-        specifier: ^10.7.0
-        version: 10.7.0
+        specifier: ^10.9.0
+        version: 10.9.0
       googleapis:
         specifier: ^173.0.0
         version: 173.0.0
@@ -5275,8 +5275,8 @@ packages:
     resolution: {integrity: sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==}
     engines: {node: '>= 0.4'}
 
-  google-auth-library@10.7.0:
-    resolution: {integrity: sha512-QpTAbNJ36TliZLx3TTtahR8HG0hN9RllL1e3FymOvQSIKK8JmgV58H924ub2wa2DsS3ANjjP1Aw1N+Ramc8hqQ==}
+  google-auth-library@10.9.0:
+    resolution: {integrity: sha512-xtvUqvINPhTaBm7nXqlYPcrMHJPm1lCNdSovxnKKhTm+4JsvQ+KGVYJViLoH9Yxu8w+T0Qv5HubzYT9BLrppJg==}
     engines: {node: '>=18'}
 
   google-logging-utils@1.1.3:
@@ -12627,7 +12627,7 @@ snapshots:
       define-properties: 1.2.1
       gopd: 1.2.0
 
-  google-auth-library@10.7.0:
+  google-auth-library@10.9.0:
     dependencies:
       base64-js: 1.5.1
       ecdsa-sig-formatter: 1.0.11
@@ -12644,7 +12644,7 @@ snapshots:
     dependencies:
       extend: 3.0.2
       gaxios: 7.1.5
-      google-auth-library: 10.7.0
+      google-auth-library: 10.9.0
       qs: 6.15.2
       url-template: 2.0.8
     transitivePeerDependencies:
@@ -12652,7 +12652,7 @@ snapshots:
 
   googleapis@173.0.0:
     dependencies:
-      google-auth-library: 10.7.0
+      google-auth-library: 10.9.0
       googleapis-common: 8.0.1
     transitivePeerDependencies:
       - supports-color
