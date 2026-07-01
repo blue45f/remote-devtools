@@ -35,7 +35,7 @@ jobs:
             echo "::notice::SonarQube secrets not configured; skipping scan."
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: steps.secrets.outputs.configured == 'true'
         with:
           fetch-depth: 0
