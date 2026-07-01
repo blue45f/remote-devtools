@@ -40,7 +40,7 @@ jobs:
         if: env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == ''
         run: echo "::notice::Vercel secrets (VERCEL_TOKEN/ORG_ID/PROJECT_ID) not configured; skipping deploy."
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
         with:
           fetch-depth: 1
