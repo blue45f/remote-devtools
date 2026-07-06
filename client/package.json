@@ -55,7 +55,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.3",
+    "@axe-core/playwright": "^4.12.1",
     "@babel/core": "^7.29.7",
     "@playwright/test": "^1.61.1",
     "@radix-ui/react-popover": "^1.1.18",
