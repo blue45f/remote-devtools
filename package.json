@@ -103,7 +103,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
+    "@commitlint/config-conventional": "^21.2.0",
     "@eslint/js": "^10.0.1",
     "@heejun/eslint-config": "^5.0.0",
     "@nestjs/cli": "^11.0.21",
