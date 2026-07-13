@@ -86,7 +86,7 @@
     "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
-    "lru-cache": "^11.5.1",
+    "lru-cache": "^11.5.2",
     "mime": "^4.1.0",
     "nestjs-zod": "^5.4.0",
     "p-retry": "^8.0.0",
