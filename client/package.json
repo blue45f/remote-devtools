@@ -58,7 +58,7 @@
     "@axe-core/playwright": "^4.12.1",
     "@babel/core": "^8.0.1",
     "@playwright/test": "^1.61.1",
-    "@radix-ui/react-popover": "^1.1.18",
+    "@radix-ui/react-popover": "^1.1.19",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.4.6",
     "@storybook/addon-themes": "^10.4.6",
