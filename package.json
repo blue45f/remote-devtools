@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
-    "@nestjs/common": "^11.1.27",
+    "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.26",
     "@nestjs/platform-express": "^11.1.28",
     "@nestjs/platform-ws": "^11.1.24",
