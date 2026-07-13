@@ -71,7 +71,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.2",
     "@nestjs/websockets": "^11.1.28",
-    "@sentry/nestjs": "^10.63.0",
+    "@sentry/nestjs": "^10.65.0",
     "@types/express": "^5.0.6",
     "axios": "^1.18.1",
     "crypto-js": "^4.2.0",
