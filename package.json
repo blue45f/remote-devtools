@@ -108,7 +108,7 @@
     "@heejun/eslint-config": "^5.0.0",
     "@nestjs/cli": "^11.0.23",
     "@nestjs/schematics": "^11.1.0",
-    "@nestjs/testing": "^11.1.26",
+    "@nestjs/testing": "^11.1.28",
     "@types/escape-html": "^1.0.4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
