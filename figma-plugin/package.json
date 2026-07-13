@@ -23,7 +23,7 @@
     "@typescript-eslint/eslint-plugin": "^8.63.0",
     "@typescript-eslint/parser": "^8.63.0",
     "eslint": "^10.7.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "^8.1.4",
     "vite-plugin-singlefile": "^2.3.3"
   }
