@@ -48,7 +48,7 @@
     "react-i18next": "^17.0.10",
     "react-router-dom": "^7.18.1",
     "rrweb": "2.1.1",
-    "rrweb-player": "2.1.0",
+    "rrweb-player": "2.1.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3",
