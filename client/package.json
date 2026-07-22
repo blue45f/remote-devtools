@@ -45,7 +45,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
-    "react-i18next": "^17.0.9",
+    "react-i18next": "^17.0.10",
     "react-router-dom": "^7.18.1",
     "rrweb": "2.1.1",
     "rrweb-player": "2.1.0",
