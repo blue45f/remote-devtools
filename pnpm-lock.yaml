@@ -140,8 +140,8 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
       stripe:
-        specifier: ^22.3.0
-        version: 22.3.0(@types/node@26.1.1)
+        specifier: ^22.3.2
+        version: 22.3.2(@types/node@26.1.1)
       typeorm:
         specifier: ^1.0.0
         version: 1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@26.1.1)(typescript@7.0.2))
@@ -7040,8 +7040,8 @@ packages:
     resolution: {integrity: sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA==}
     engines: {node: '>=12'}
 
-  stripe@22.3.0:
-    resolution: {integrity: sha512-ypO6xjVrMWs9SmIMeHr8naCx3dAQ0clxMdUTxn7Ejd7hmY9meBGfE+N4pVHkf9sUNebAHp6uJo6mV3GxDIc2cA==}
+  stripe@22.3.2:
+    resolution: {integrity: sha512-O13QOvgEIQvDlTy6Ubb5kB980wpbhmoZNsgCXKILjCMZS67f+bW+6w99k3gnSi/N1lkryoj1WYdpGT5Wc5edjg==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -14529,7 +14529,7 @@ snapshots:
 
   strip-indent@4.1.1: {}
 
-  stripe@22.3.0(@types/node@26.1.1):
+  stripe@22.3.2(@types/node@26.1.1):
     optionalDependencies:
       '@types/node': 26.1.1
 
