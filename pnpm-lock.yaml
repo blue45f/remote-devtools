@@ -86,8 +86,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(date-fns@4.4.0)
       devtools-protocol:
-        specifier: ^0.0.1646372
-        version: 0.0.1646372
+        specifier: ^0.0.1666022
+        version: 0.0.1666022
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -4717,8 +4717,8 @@ packages:
     engines: {node: '>= 0.8.0'}
     hasBin: true
 
-  devtools-protocol@0.0.1646372:
-    resolution: {integrity: sha512-pW7e4J7A+v0t7Kg4SecHpP18+ZmnRxw1pt6s9r9hUtfOna3tJ4D6c/apwLWWOGLxxB35kVMmdbEDIfi2RTNyAQ==}
+  devtools-protocol@0.0.1666022:
+    resolution: {integrity: sha512-Uw0eHcMONo8i2LyJTqW9AbXVkuHlxw61+KNDVsfrd/eCSgPW2wuxjqsjFYFnN+HjQJ4SEn76VoziNnNYdGLRPw==}
 
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
@@ -11867,7 +11867,7 @@ snapshots:
 
   dev-ip@1.0.1: {}
 
-  devtools-protocol@0.0.1646372: {}
+  devtools-protocol@0.0.1666022: {}
 
   dezalgo@1.0.4:
     dependencies:
