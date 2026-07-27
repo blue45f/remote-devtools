@@ -42,7 +42,7 @@
     "ky": "^2.0.2",
     "lucide-react": "^1.24.0",
     "motion": "^12.42.2",
-    "react": "^19.2.7",
+    "react": "^19.2.8",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.82.0",
     "react-i18next": "^17.0.10",
