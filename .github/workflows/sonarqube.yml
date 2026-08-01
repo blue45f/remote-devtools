@@ -55,7 +55,7 @@ jobs:
 
       - name: SonarQube scan
         if: steps.secrets.outputs.configured == 'true'
-        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
         env:
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
