@@ -57,7 +57,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@babel/core": "^8.0.1",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "@radix-ui/react-popover": "^1.1.23",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.5.3",
