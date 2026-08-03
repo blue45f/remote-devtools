@@ -73,7 +73,7 @@
     "@nestjs/websockets": "^11.1.28",
     "@sentry/nestjs": "^10.69.0",
     "@types/express": "^5.0.6",
-    "axios": "^1.18.1",
+    "axios": "^1.19.0",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
