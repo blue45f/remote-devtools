@@ -78,7 +78,7 @@
     "eslint": "^10.8.0",
     "jsdom": "^30.0.1",
     "remote-debug-sdk": "workspace:*",
-    "storybook": "^10.5.3",
+    "storybook": "^10.5.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
