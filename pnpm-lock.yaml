@@ -86,8 +86,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(date-fns@4.4.0)
       devtools-protocol:
-        specifier: ^0.0.1670834
-        version: 0.0.1670834
+        specifier: ^0.0.1674729
+        version: 0.0.1674729
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -618,6 +618,9 @@ packages:
   '@aws-sdk/credential-provider-ini@3.973.12':
     resolution: {integrity: sha512-pNEf/OeyN5X3VmLKlgSO6TqaWmW10CvI3TfwL1XhsuhYjSLT2VDaxFnCPHnOeQXSaFisMX4jNhpETriqN8DOmg==}
     engines: {node: '>=20.0.0'}
+    deprecated: |-
+      Deprecated due to Document number parsing bug in JSON, see
+        https://github.com/aws/aws-sdk-js-v3/issues/8246. Newer version available.
 
   '@aws-sdk/credential-provider-login@3.972.74':
     resolution: {integrity: sha512-0AQfDcf99TNmqVKv0owHrw/TQs6i4ZE5t9qmz6NvO53bE/sA/tpXhXL9AAcEP1qHc6Zzjd1UMb69+/9zdhvY3g==}
@@ -4864,8 +4867,8 @@ packages:
     engines: {node: '>= 0.8.0'}
     hasBin: true
 
-  devtools-protocol@0.0.1670834:
-    resolution: {integrity: sha512-O5ypoNxHSTiz4Kli6lfF1i8q8rPMWGTaXPAcVlfTbqU8DveLKuT8Gvj+njQgcjhpyR17/lmStVPTC6oWc2TXug==}
+  devtools-protocol@0.0.1674729:
+    resolution: {integrity: sha512-i4tJOKEw0gm4ccrH9donjjSAaR8wToyoqD9fYiIlHhlrS6xx0HSu5TSi2iFqBa6KoiAomDvCH1994zDzPY0ASA==}
 
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
@@ -12152,7 +12155,7 @@ snapshots:
 
   dev-ip@1.0.1: {}
 
-  devtools-protocol@0.0.1670834: {}
+  devtools-protocol@0.0.1674729: {}
 
   dezalgo@1.0.4:
     dependencies:
