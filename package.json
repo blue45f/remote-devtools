@@ -59,7 +59,7 @@
     "turbo:test": "pnpm exec turbo run test --concurrency=1"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1099.0",
+    "@aws-sdk/client-s3": "^3.1105.0",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.28",
