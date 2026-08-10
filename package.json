@@ -91,7 +91,7 @@
     "nestjs-zod": "^5.5.0",
     "p-retry": "^8.0.0",
     "pg": "^8.22.0",
-    "playwright": "^1.61.1",
+    "playwright": "^1.62.1",
     "pm2": "^7.0.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
