@@ -140,8 +140,8 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
       stripe:
-        specifier: ^22.3.2
-        version: 22.3.2(@types/node@26.1.2)
+        specifier: ^22.4.0
+        version: 22.4.0(@types/node@26.1.2)
       typeorm:
         specifier: ^1.1.0
         version: 1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@26.1.2)(typescript@7.0.2))
@@ -597,6 +597,9 @@ packages:
   '@aws-sdk/core@3.977.4':
     resolution: {integrity: sha512-CEkcQlMOQJCvul60U7wdAOACjtdgFWDsfJI+6wUOGdhGNV2lGbuJpi/R50QLpFG3Tp+sQxa/RmzC3X7KHbhuTA==}
     engines: {node: '>=20.0.0'}
+    deprecated: |-
+      Deprecated due to Document number parsing bug in JSON, see
+        https://github.com/aws/aws-sdk-js-v3/issues/8246. Newer version available.
 
   '@aws-sdk/credential-provider-env@3.972.65':
     resolution: {integrity: sha512-lJT2aRw9wCV8jPHyFJjdZLD4HTydL6/22AnCSOB8e/LqOc55nEJGLHkJQeSxhn8QiqyjFwPKQFtMw0ovjRUY/g==}
@@ -4539,6 +4542,11 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  baseline-browser-mapping@2.11.13:
+    resolution: {integrity: sha512-k9HNuUVMlqVjQ9UHzfPjIqiDbWw7WqT1AoT7GL8VwvF3r0ZfArtgiSPAlmupyNquNgOJHTuH4CKYf8ttMTWBTQ==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
   basic-ftp@5.3.1:
     resolution: {integrity: sha512-bopVNp6ugyA150DDuZfPFdt1KZ5a94ZDiwX4hMgZDzF+GttD80lEy8kj98kbyhLXnPvhtIo93mdnLIjpCAeeOw==}
     engines: {node: '>=10.0.0'}
@@ -4603,6 +4611,11 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  browserslist@4.28.8:
+    resolution: {integrity: sha512-V2NpofLblG64mfOtSgDhOJESZEGogzDMBv/q+W6oc4LXWP/q75eOXoOaaOu1EOadB9U4Bwx/e0yzbvwKH8zalA==}
+    engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
+    hasBin: true
+
   bs-recipes@1.3.4:
     resolution: {integrity: sha512-BXvDkqhDNxXEjeGM8LFkSbR+jzmP/CYpCiVKYn+soB1dDldeU15EBNDkwVXndKuX35wnNUaPd0qSoQEAkmQtMw==}
 
@@ -4652,6 +4665,9 @@ packages:
 
   caniuse-lite@1.0.30001806:
     resolution: {integrity: sha512-72Cuvd95zbSYPKq6Fhg8eDJRlzgWDf7/mtoZv6Qe/DYNCEBdNxoA3+rZAU2ZhGCpZlns3EssFavaZomckT5Uuw==}
+
+  caniuse-lite@1.0.30001809:
+    resolution: {integrity: sha512-xxWVywk6a6Arlk+hymeycyn/VgqEfLDxupvhH/xiY5SJ/18kmi9o6MiO320DCUzypORHLtvh0I4i04tUhCNHNQ==}
 
   chai@5.3.3:
     resolution: {integrity: sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw==}
@@ -4885,6 +4901,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   css-tree@2.3.1:
     resolution: {integrity: sha512-6Fv1DV/TYw//QF5IzQdqsNDjx/wc8TrMBZsqjL9eW01tWb7R7k/mq+/VXfJCl7SoD5emsJop9cOByJZfs8hYIw==}
@@ -5106,6 +5123,9 @@ packages:
 
   electron-to-chromium@1.5.399:
     resolution: {integrity: sha512-lEcqhErbHjXRvd41rnWLpzbyU/IXfIYo7QwaFWmxGeLiLyY2TBCdHnWY88vB+p3ubnihRypDm66panXl7TylLA==}
+
+  electron-to-chromium@1.5.403:
+    resolution: {integrity: sha512-MQsYmdaLzvaCX5j+ZZBr5Fm6uCCnPQcRtlvmvRlWqrXy+BH2O4ffXIAScF+JQznQWB9brWp4lSD9Z4yNmaf2BA==}
 
   embedded-postgres@18.3.0-beta.17:
     resolution: {integrity: sha512-1biFWyuPVtAV5S9RBgcr4PGuAdNL9WhnNZVQ5Arp3gsB24Ci9X9s/8Z7RFYFSc6tJWcj9kzF55YcDAcr3jLUbQ==}
@@ -6589,6 +6609,10 @@ packages:
     resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
 
+  node-releases@2.0.53:
+    resolution: {integrity: sha512-D9UOmYG3UH1V+ENW56t5QXBwJw1YEY18ruVeus89Rw+SyIgjPkCO84bRzO3uNIYosJbNwiabWVn48o3uJLjxFQ==}
+    engines: {node: '>=18'}
+
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -7408,8 +7432,8 @@ packages:
     resolution: {integrity: sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA==}
     engines: {node: '>=12'}
 
-  stripe@22.3.2:
-    resolution: {integrity: sha512-O13QOvgEIQvDlTy6Ubb5kB980wpbhmoZNsgCXKILjCMZS67f+bW+6w99k3gnSi/N1lkryoj1WYdpGT5Wc5edjg==}
+  stripe@22.4.0:
+    resolution: {integrity: sha512-LVJ+tcSYeqOSnXr3i+Kz2tZ7y0crLLdP2uwD/4wccrmEVyn0g/Heo0pF7as7rxS/sOjJzrb1lxgZY0Y0Dx1pSA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -7792,6 +7816,12 @@ packages:
 
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
+    hasBin: true
+    peerDependencies:
+      browserslist: '>= 4.21.0'
+
+  update-browserslist-db@1.3.0:
+    resolution: {integrity: sha512-x/M6q3w4Ybp91CNaS4S69UnliqR3BzRpOT6LWbksjth0S/+jhfaPJsWjt/TewpT8j9eLIojUf5jr29WextHroA==}
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
@@ -11976,6 +12006,8 @@ snapshots:
 
   baseline-browser-mapping@2.11.10: {}
 
+  baseline-browser-mapping@2.11.13: {}
+
   basic-ftp@5.3.1: {}
 
   batch@0.6.1: {}
@@ -12106,6 +12138,14 @@ snapshots:
       node-releases: 2.0.51
       update-browserslist-db: 1.2.3(browserslist@4.28.7)
 
+  browserslist@4.28.8:
+    dependencies:
+      baseline-browser-mapping: 2.11.13
+      caniuse-lite: 1.0.30001809
+      electron-to-chromium: 1.5.403
+      node-releases: 2.0.53
+      update-browserslist-db: 1.3.0(browserslist@4.28.8)
+
   bs-recipes@1.3.4: {}
 
   buffer-equal-constant-time@1.0.1: {}
@@ -12151,6 +12191,8 @@ snapshots:
   caniuse-lite@1.0.30001805: {}
 
   caniuse-lite@1.0.30001806: {}
+
+  caniuse-lite@1.0.30001809: {}
 
   chai@5.3.3:
     dependencies:
@@ -12548,6 +12590,8 @@ snapshots:
   electron-to-chromium@1.5.389: {}
 
   electron-to-chromium@1.5.399: {}
+
+  electron-to-chromium@1.5.403: {}
 
   embedded-postgres@18.3.0-beta.17:
     dependencies:
@@ -14111,6 +14155,8 @@ snapshots:
 
   node-releases@2.0.51: {}
 
+  node-releases@2.0.53: {}
+
   normalize-path@3.0.0: {}
 
   object-assign@4.1.1: {}
@@ -15161,7 +15207,7 @@ snapshots:
 
   strip-indent@4.1.1: {}
 
-  stripe@22.3.2(@types/node@26.1.2):
+  stripe@22.4.0(@types/node@26.1.2):
     optionalDependencies:
       '@types/node': 26.1.2
 
@@ -15555,6 +15601,12 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
+  update-browserslist-db@1.3.0(browserslist@4.28.8):
+    dependencies:
+      browserslist: 4.28.8
+      escalade: 3.2.0
+      picocolors: 1.1.1
+
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
@@ -15709,7 +15761,7 @@ snapshots:
       '@webassemblyjs/wasm-parser': 1.14.1
       acorn: 8.18.0
       acorn-import-phases: 1.0.4(acorn@8.18.0)
-      browserslist: 4.28.7
+      browserslist: 4.28.8
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.24.5
       es-module-lexer: 2.3.1
