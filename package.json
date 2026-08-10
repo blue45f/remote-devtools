@@ -98,7 +98,7 @@
     "stripe": "^22.4.0",
     "typeorm": "^1.1.0",
     "ua-parser-js": "^2.0.10",
-    "ws": "^8.21.1",
+    "ws": "^8.21.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
