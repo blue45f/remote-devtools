@@ -60,7 +60,7 @@
     "@playwright/test": "^1.62.1",
     "@radix-ui/react-popover": "^1.1.23",
     "@rolldown/plugin-babel": "^0.2.3",
-    "@storybook/addon-a11y": "^10.5.7",
+    "@storybook/addon-a11y": "^10.5.8",
     "@storybook/addon-themes": "^10.5.7",
     "@storybook/react": "^10.5.7",
     "@storybook/react-vite": "^10.5.7",
