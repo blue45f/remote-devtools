@@ -49,7 +49,7 @@
     "react-router-dom": "^7.18.2",
     "rrweb": "2.1.1",
     "rrweb-player": "2.1.1",
-    "sonner": "^2.0.7",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
