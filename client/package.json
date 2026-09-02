@@ -75,7 +75,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.10",
     "babel-plugin-react-compiler": "^1.0.0",
-    "eslint": "^10.8.1",
+    "eslint": "^10.9.1",
     "jsdom": "^30.0.1",
     "remote-debug-sdk": "workspace:*",
     "storybook": "^10.5.7",
