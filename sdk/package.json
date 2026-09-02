@@ -32,9 +32,9 @@
     "@rrweb/types": "2.1.1",
     "@types/crypto-js": "^4.2.2",
     "@types/js-cookie": "^3.0.6",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^30.0.1",
-    "vite": "^8.2.1",
-    "vitest": "^4.1.11"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.10"
   }
 }
