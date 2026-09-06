@@ -80,7 +80,7 @@
     "remote-debug-sdk": "workspace:*",
     "storybook": "^10.5.7",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2",
+    "typescript": "~5.9.2",
     "vite": "^8.2.1",
     "vitest": "^4.1.10"
   }
