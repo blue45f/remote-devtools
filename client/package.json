@@ -47,7 +47,7 @@
     "react-hook-form": "^7.85.0",
     "react-i18next": "^17.0.11",
     "react-router-dom": "^7.18.2",
-    "rrweb": "2.1.1",
+    "rrweb": "2.1.4",
     "rrweb-player": "2.1.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
