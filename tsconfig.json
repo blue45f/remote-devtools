@@ -10,8 +10,6 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "ignoreDeprecations": "6.0",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -23,34 +21,34 @@
     "jsx": "preserve",
     "paths": {
       "@remote-platform/core": [
-        "libs/core/src"
+        "./libs/core/src"
       ],
       "@remote-platform/core/*": [
-        "libs/core/src/*"
+        "./libs/core/src/*"
       ],
       "@remote-platform/entity": [
-        "libs/entity/src"
+        "./libs/entity/src"
       ],
       "@remote-platform/entity/*": [
-        "libs/entity/src/*"
+        "./libs/entity/src/*"
       ],
       "@remote-platform/constants": [
-        "libs/constants/src"
+        "./libs/constants/src"
       ],
       "@remote-platform/constants/*": [
-        "libs/constants/src/*"
+        "./libs/constants/src/*"
       ],
       "@remote-platform/interfaces": [
-        "libs/interfaces/src"
+        "./libs/interfaces/src"
       ],
       "@remote-platform/interfaces/*": [
-        "libs/interfaces/src/*"
+        "./libs/interfaces/src/*"
       ],
       "@remote-platform/common": [
-        "libs/common/src"
+        "./libs/common/src"
       ],
       "@remote-platform/common/*": [
-        "libs/common/src/*"
+        "./libs/common/src/*"
       ]
     }
   },
