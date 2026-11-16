@@ -2,10 +2,19 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 
+import type { TestingLibraryMatchers } from '@testing-library/jest-dom/matchers';
+
 // Side-effect: initialise i18n synchronously before any component test mounts.
 // Components under test use `useTranslation`, which would fall through to the
 // raw key string ("topbar.openCommandPalette") if i18n hadn't booted yet.
 import i18n from '@/lib/i18n';
+
+declare module 'vitest' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface Matchers<
+    R extends void | Promise<void> = void | Promise<void>,
+  > extends TestingLibraryMatchers<string, R> {}
+}
 
 expect.extend(matchers);
 

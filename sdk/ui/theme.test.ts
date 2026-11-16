@@ -90,7 +90,7 @@ describe('applyInputStyles', () => {
     const el = document.createElement('input');
     applyInputStyles(el);
     expect(el.style.width).toBe('100%');
-    expect(el.style.outline).toBe('none');
+    expect(el.style.outlineStyle).toBe('none');
   });
 
   it('changes border + box-shadow on focus and reverts on blur', () => {

@@ -10,8 +10,12 @@ type NavigateEventLike = {
   };
 };
 
-type NavigationWithNavigateEvent = Navigation & {
+type NavigationWithNavigateEvent = EventTarget & {
   addEventListener: (type: 'navigate', listener: (event: NavigateEventLike) => void) => void;
+};
+
+type GlobalWithNavigation = typeof globalThis & {
+  navigation?: NavigationWithNavigateEvent;
 };
 
 type RemoteDebuggerSocketMessage = {
@@ -289,14 +293,13 @@ export class RemoteDebugger {
    */
   private setupNavigationAPI(): boolean {
     // Navigation API 지원 확인
-    if (typeof globalThis.navigation === 'undefined') {
+    const navigation = (globalThis as GlobalWithNavigation).navigation;
+    if (typeof navigation === 'undefined') {
       return false;
     }
 
-    const navigation = globalThis.navigation as NavigationWithNavigateEvent;
-
     try {
-      navigation.addEventListener('navigate', (event) => {
+      navigation.addEventListener('navigate', (event: NavigateEventLike) => {
         const destinationUrl = event.destination?.url;
 
         if (!destinationUrl) {
@@ -502,7 +505,8 @@ export class RemoteDebugger {
     assignHooked: boolean;
     historyHooked: boolean;
   } {
-    const navigationAPISupported = typeof globalThis.navigation !== 'undefined';
+    const navigationAPISupported =
+      typeof (globalThis as GlobalWithNavigation).navigation !== 'undefined';
 
     // Location.prototype 후킹 확인
     const replaceHooked =

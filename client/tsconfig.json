@@ -11,7 +11,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "preserve",
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "types": ["vitest/globals"],
     /* Linting */
     "strict": true,
     /* Paths */

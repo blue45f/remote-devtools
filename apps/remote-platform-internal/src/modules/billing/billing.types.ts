@@ -63,9 +63,7 @@ export type BillingSyncResult =
   | {
       readonly action: 'ignored';
       readonly reason:
-        | 'missing_provider_customer_id'
-        | 'subscription_state_not_present'
-        | 'duplicate_event';
+        'missing_provider_customer_id' | 'subscription_state_not_present' | 'duplicate_event';
     };
 
 export interface BillingWebhookResult {

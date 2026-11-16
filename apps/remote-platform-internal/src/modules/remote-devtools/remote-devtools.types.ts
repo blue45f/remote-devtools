@@ -1,10 +1,5 @@
 export type RemoteSessionStatus =
-  | 'idle'
-  | 'waiting'
-  | 'connected'
-  | 'running'
-  | 'stopped'
-  | 'error';
+  'idle' | 'waiting' | 'connected' | 'running' | 'stopped' | 'error';
 
 export type RemoteEventLevel = 'info' | 'warn' | 'error' | 'debug';
 

@@ -10,6 +10,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
+    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -20,47 +21,18 @@
     "moduleResolution": "Node",
     "jsx": "preserve",
     "paths": {
-      "@remote-platform/core": [
-        "./libs/core/src"
-      ],
-      "@remote-platform/core/*": [
-        "./libs/core/src/*"
-      ],
-      "@remote-platform/entity": [
-        "./libs/entity/src"
-      ],
-      "@remote-platform/entity/*": [
-        "./libs/entity/src/*"
-      ],
-      "@remote-platform/constants": [
-        "./libs/constants/src"
-      ],
-      "@remote-platform/constants/*": [
-        "./libs/constants/src/*"
-      ],
-      "@remote-platform/interfaces": [
-        "./libs/interfaces/src"
-      ],
-      "@remote-platform/interfaces/*": [
-        "./libs/interfaces/src/*"
-      ],
-      "@remote-platform/common": [
-        "./libs/common/src"
-      ],
-      "@remote-platform/common/*": [
-        "./libs/common/src/*"
-      ]
+      "@remote-platform/core": ["./libs/core/src"],
+      "@remote-platform/core/*": ["./libs/core/src/*"],
+      "@remote-platform/entity": ["./libs/entity/src"],
+      "@remote-platform/entity/*": ["./libs/entity/src/*"],
+      "@remote-platform/constants": ["./libs/constants/src"],
+      "@remote-platform/constants/*": ["./libs/constants/src/*"],
+      "@remote-platform/interfaces": ["./libs/interfaces/src"],
+      "@remote-platform/interfaces/*": ["./libs/interfaces/src/*"],
+      "@remote-platform/common": ["./libs/common/src"],
+      "@remote-platform/common/*": ["./libs/common/src/*"]
     }
   },
-  "exclude": [
-    "figma-plugin/**/*",
-    "node_modules",
-    "dist",
-    "sdk",
-    "sdk/**/*"
-  ],
-  "include": [
-    "apps/**/*.ts",
-    "libs/**/*.ts"
-  ]
+  "exclude": ["figma-plugin/**/*", "node_modules", "dist", "sdk", "sdk/**/*"],
+  "include": ["apps/**/*.ts", "libs/**/*.ts"]
 }

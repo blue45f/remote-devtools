@@ -241,8 +241,7 @@ export class SessionReplayService {
       const protocol = event.protocol as Record<string, unknown>;
       if (protocol?.method === 'SessionReplay.rrwebEvent') {
         const rrwebEvent = (protocol.params as Record<string, unknown>)?.event as
-          | Record<string, unknown>
-          | undefined;
+          Record<string, unknown> | undefined;
         const type = typeof rrwebEvent?.type === 'number' ? rrwebEvent.type : undefined;
         const data = rrwebEvent?.data;
         const rrwebTimestamp =
