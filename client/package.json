@@ -79,7 +79,7 @@
     "jsdom": "^31.0.1",
     "remote-debug-sdk": "workspace:*",
     "storybook": "^10.5.8",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.5",
     "typescript": "~5.9.2",
     "vite": "^8.3.8",
     "vitest": "^5.0.0"
